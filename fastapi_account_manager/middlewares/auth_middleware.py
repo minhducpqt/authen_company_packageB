@@ -12,6 +12,8 @@ WHITELIST_PREFIXES = (
     "/login",           # đề phòng chạy sub-app độc lập
     "/accounts/static",
     "/static",
+    "/accounts/static",
+    "/static",  # <-- cần dòng này
     "/auth/login",      # API login của Module A (ở root)
     "/auth/refresh",    # API refresh của Module A (ở root)
 )

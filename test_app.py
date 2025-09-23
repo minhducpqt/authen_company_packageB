@@ -7,8 +7,9 @@ import uvicorn
 init_db(); seed_super_admin()
 
 app = FastAPI(title="Demo with Account Manager B")
-app.mount("/accounts", create_app())              # B (UI/middleware) → /accounts/*
-app.include_router(auth_router, prefix="/auth")   # A (API) → /auth/*
+app.mount("/accounts", create_app())            # B (UI)
+app.include_router(auth_router) # A (API)  <-- PHẢI CÓ
+
 
 if __name__ == "__main__":
     uvicorn.run("test_app:app", host="0.0.0.0", port=8201, reload=True)
