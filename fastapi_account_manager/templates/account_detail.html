@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Account: {{ u.username }}{% endblock %}
+{% block content %}
+<h1>{{ u.username }}</h1>
+<p>Role: <b>{{ u.role }}</b> • Company: <b>{{ u.company_code or "(none)" }}</b></p>
+<p>Status: {% if u.is_active %}<b>Active</b>{% else %}<span class="muted">Disabled</span>{% endif %}</p>
+
+<form method="post" action="/accounts/users/{{ u.id }}/force_password" class="card">
+  <h3>Force set password</h3>
+  <div class="row">
+    <label>New password</label>
+    <input name="new_password" type="password" required />
+  </div>
+  <button type="submit">Update password</button>
+  <p class="hint">Yêu cầu quyền: SUPER_ADMIN hoặc COMPANY_ADMIN (cùng company).</p>
+</form>
+
+<form method="post" action="/accounts/users/{{ u.id }}/{{ 'disable' if u.is_active else 'enable' }}" class="card danger">
+  <h3>{{ 'Disable' if u.is_active else 'Enable' }} account</h3>
+  <button type="submit">{{ 'Disable' if u.is_active else 'Enable' }}</button>
+</form>
+{% endblock %}
