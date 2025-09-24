@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="grid md:grid-cols-4 gap-4 mb-5">
+  <div class="card kpi">
+    <div class="kpi-title">AVERAGE SALES</div>
+    <div class="kpi-value">{{ "{:,}".format(kpi.avg_sales) }}</div>
+    <div class="kpi-sub">this month <span class="kpi-up">▲ 8%</span></div>
+  </div>
+  <div class="card kpi">
+    <div class="kpi-title">TOTAL SALES</div>
+    <div class="kpi-value">{{ "{:,}".format(kpi.total_sales) }}</div>
+    <div class="kpi-sub">since last month <span class="kpi-up">▲ 3.48%</span></div>
+  </div>
+  <div class="card kpi">
+    <div class="kpi-title">INQUIRIES</div>
+    <div class="kpi-value">{{ "{:,}".format(kpi.inquiries) }}</div>
+    <div class="kpi-sub">since last month <span class="kpi-down">▼ 3.48%</span></div>
+  </div>
+  <div class="card kpi">
+    <div class="kpi-title">INVOICES</div>
+    <div class="kpi-value">{{ "{:,}".format(kpi.invoices) }}</div>
+    <div class="kpi-sub">since last month <span class="kpi-down">▼ 3.48%</span></div>
+  </div>
+</div>
+
+<div class="grid md:grid-cols-3 gap-5">
+  <div class="card col-span-2">
+    <div class="card-title">Total Sales</div>
+    <canvas id="lineChart" height="110"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-title">Lot Status</div>
+    <canvas id="pieChart" height="110"></canvas>
+  </div>
+</div>
+
+<div class="grid md:grid-cols-2 gap-5 mt-5">
+  <div class="card">
+    <div class="card-title">Product Demand</div>
+    <div class="divide-y">
+      <div class="row"><span>Samsung</span><div class="bar"><span style="width:55%"></span></div></div>
+      <div class="row"><span>Apple</span><div class="bar"><span style="width:85%"></span></div></div>
+      <div class="row"><span>Oppo</span><div class="bar"><span style="width:48%"></span></div></div>
+      <div class="row"><span>Vivo</span><div class="bar"><span style="width:40%"></span></div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title flex items-center justify-between">Average Sales
+      <div class="text-xs bg-slate-100 rounded-md px-2 py-1">Weekly <b>Monthly</b></div>
+    </div>
+    <canvas id="barChart" height="110"></canvas>
+  </div>
+</div>
+
+<script>
+const lotLabels = {{ stats.lot_status_labels | tojson }};
+const lotValues = {{ stats.lot_status_values | tojson }};
+
+new Chart(document.getElementById('lineChart'), {
+  type: 'line',
+  data: {
+    labels:['00:00','01:00','02:00','03:00','04:00','05:00','06:00'],
+    datasets:[
+      {label:'Profit', data:[28,30,26,40,38,90,100], tension:.35, fill:true},
+      {label:'Sales',  data:[25,32,28,36,34,60,78], tension:.35, fill:true}
+    ]
+  },
+  options:{plugins:{legend:{position:'bottom'}}}
+});
+
+new Chart(document.getElementById('pieChart'), {
+  type:'doughnut',
+  data:{labels:lotLabels, datasets:[{data:lotValues}]},
+  options:{plugins:{legend:{position:'bottom'}}}
+});
+
+new Chart(document.getElementById('barChart'), {
+  type:'bar',
+  data:{labels:['Jan','Feb','Mar','Apr','May','Jun','Jul'], datasets:[{label:'Sales', data:[35,50,38,70,90,65,80]}]},
+  options:{plugins:{legend:{position:'bottom'}}}
+});
+</script>
+
+{% endblock %}
