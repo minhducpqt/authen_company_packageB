@@ -21,7 +21,50 @@
         <i class="ri-search-line cursor-pointer"></i>
         <i class="ri-settings-3-line cursor-pointer"></i>
         <i class="ri-notification-3-line cursor-pointer"></i>
-        <div class="avatar"><i class="ri-user-3-fill text-indigo-700"></i></div>
+
+        {% set logged_in = is_logged_in(request) %}
+        <div class="relative">
+          <button
+            onclick="toggleUserMenu()"
+            class="avatar focus:outline-none {% if not logged_in %}opacity-50 cursor-not-allowed{% endif %}"
+            {% if not logged_in %}disabled aria-disabled="true"{% endif %}>
+            <i class="ri-user-3-fill text-indigo-700"></i>
+          </button>
+
+          {# menu user #}
+          <div id="userMenu" class="hidden absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-lg z-50">
+            <a href="/account/change-password-form" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+              <i class="ri-key-2-line mr-2"></i> Đổi mật khẩu
+            </a>
+            <form method="post" action="/account/logout" onsubmit="return confirm('Đăng xuất khỏi thiết bị này?');">
+              <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                <i class="ri-logout-box-line mr-2"></i> Đăng xuất
+              </button>
+            </form>
+            <form method="post" action="/account/logout_all" onsubmit="return confirm('Đăng xuất khỏi tất cả thiết bị?');">
+              <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                <i class="ri-shut-down-line mr-2"></i> Đăng xuất tất cả
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <script>
+          function toggleUserMenu() {
+            {% if not logged_in %}
+            return; // chưa login thì không mở menu
+            {% endif %}
+            document.getElementById("userMenu").classList.toggle("hidden");
+          }
+          window.addEventListener("click", function(e) {
+            const menu = document.getElementById("userMenu");
+            const btn = document.querySelector(".avatar");
+            if (!menu || !btn) return;
+            if (!menu.contains(e.target) && !btn.contains(e.target)) {
+              menu.classList.add("hidden");
+            }
+          });
+        </script>
       </div>
     </div>
   </div>

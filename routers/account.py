@@ -282,3 +282,40 @@ async def admin_user_set_password(
     redir = next or "/account"
     to = f"{redir}?msg=pass_set" if st == 200 else f"{redir}?err=set_pass_failed"
     return RedirectResponse(url=to, status_code=303)
+
+def _clear_auth_cookies(resp: RedirectResponse):
+    resp.delete_cookie(ACCESS_COOKIE, path="/")
+    resp.delete_cookie("refresh_token", path="/")  # hoặc lấy REFRESH_COOKIE từ env nếu có
+    if ACCESS_COOKIE_NAME != ACCESS_COOKIE:
+        resp.delete_cookie(ACCESS_COOKIE_NAME, path="/")
+    return resp
+
+@router.get("/change-password-form", response_class=HTMLResponse)
+async def change_password_form(request: Request):
+    return templates.TemplateResponse(
+        "pages/account/change_password.html",
+        {"request": request, "title": "Đổi mật khẩu"}
+    )
+@router.post("/logout")
+async def logout(request: Request):
+    acc = request.cookies.get(ACCESS_COOKIE) or request.cookies.get(ACCESS_COOKIE_NAME)
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=8.0) as client:
+            if acc:
+                await client.post("/auth/logout", headers={"Authorization": f"Bearer {acc}"})
+    except Exception:
+        pass
+    resp = RedirectResponse(url="/login", status_code=303)
+    return _clear_auth_cookies(resp)
+
+@router.post("/logout_all")
+async def logout_all(request: Request):
+    acc = request.cookies.get(ACCESS_COOKIE) or request.cookies.get(ACCESS_COOKIE_NAME)
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=8.0) as client:
+            if acc:
+                await client.post("/auth/logout_all", headers={"Authorization": f"Bearer {acc}"})
+    except Exception:
+        pass
+    resp = RedirectResponse(url="/login", status_code=303)
+    return _clear_auth_cookies(resp)
