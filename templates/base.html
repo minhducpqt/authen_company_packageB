@@ -31,17 +31,17 @@
             <i class="ri-user-3-fill text-indigo-700"></i>
           </button>
 
-          {# menu user #}
-          <div id="userMenu" class="hidden absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-lg z-50">
+          <!-- User menu -->
+          <div id="userMenu" class="hidden absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-lg z-50">
             <a href="/account/change-password-form" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
               <i class="ri-key-2-line mr-2"></i> Đổi mật khẩu
             </a>
-            <form method="post" action="/account/logout" onsubmit="return confirm('Đăng xuất khỏi thiết bị này?');">
+            <form method="post" action="/account/logout" data-confirm="Đăng xuất khỏi thiết bị này?">
               <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
                 <i class="ri-logout-box-line mr-2"></i> Đăng xuất
               </button>
             </form>
-            <form method="post" action="/account/logout_all" onsubmit="return confirm('Đăng xuất khỏi tất cả thiết bị?');">
+            <form method="post" action="/account/logout_all" data-confirm="Đăng xuất khỏi TẤT CẢ thiết bị?">
               <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
                 <i class="ri-shut-down-line mr-2"></i> Đăng xuất tất cả
               </button>
@@ -51,9 +51,7 @@
 
         <script>
           function toggleUserMenu() {
-            {% if not logged_in %}
-            return; // chưa login thì không mở menu
-            {% endif %}
+            {% if not logged_in %} return; {% endif %}
             document.getElementById("userMenu").classList.toggle("hidden");
           }
           window.addEventListener("click", function(e) {
@@ -116,5 +114,90 @@
       {% block content %}{% endblock %}
     </main>
   </div>
+
+  <!-- ===== Reusable Confirm Modal (global) ===== -->
+  <div id="app-confirm" class="hidden fixed inset-0 z-[100]">
+    <!-- backdrop -->
+    <div class="absolute inset-0 bg-black/40"></div>
+    <!-- dialog -->
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-md">
+        <div class="px-6 py-4 border-b border-slate-100">
+          <h3 id="confirm-title" class="text-lg font-semibold text-slate-800">Xác nhận</h3>
+        </div>
+        <div class="px-6 py-5">
+          <p id="confirm-message" class="text-slate-600">Bạn có chắc chắn?</p>
+        </div>
+        <div class="px-6 py-4 border-t border-slate-100 flex justify-end gap-3">
+          <button id="confirm-cancel" class="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100">
+            Cancel
+          </button>
+          <button id="confirm-ok" class="px-4 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700">
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Promise-based confirm modal
+    window.confirmModal = function ({title = "Xác nhận", message = "Bạn có chắc chắn?"} = {}) {
+      return new Promise((resolve, reject) => {
+        const wrap = document.getElementById("app-confirm");
+        const elTitle = document.getElementById("confirm-title");
+        const elMsg = document.getElementById("confirm-message");
+        const btnOk = document.getElementById("confirm-ok");
+        const btnCancel = document.getElementById("confirm-cancel");
+
+        elTitle.textContent = title;
+        elMsg.textContent = message;
+
+        function close() {
+          wrap.classList.add("hidden");
+          btnOk.removeEventListener("click", onOk);
+          btnCancel.removeEventListener("click", onCancel);
+          wrap.removeEventListener("click", onBackdrop);
+          document.removeEventListener("keydown", onEsc);
+        }
+        function onOk() { close(); resolve(true); }
+        function onCancel() { close(); resolve(false); }
+        function onBackdrop(e) { if (e.target === wrap) onCancel(); }
+        function onEsc(e) { if (e.key === "Escape") onCancel(); }
+
+        btnOk.addEventListener("click", onOk);
+        btnCancel.addEventListener("click", onCancel);
+        wrap.addEventListener("click", onBackdrop);
+        document.addEventListener("keydown", onEsc);
+
+        wrap.classList.remove("hidden");
+      });
+    };
+
+    // Auto-bind cho mọi form/link có data-confirm
+    (function bindConfirm() {
+      // forms
+      document.querySelectorAll('form[data-confirm]').forEach(function (f) {
+        f.addEventListener('submit', async function (e) {
+          const msg = f.getAttribute('data-confirm') || 'Bạn có chắc chắn?';
+          e.preventDefault();
+          const ok = await window.confirmModal({ title: 'Xác nhận', message: msg });
+          if (ok) f.submit();
+        });
+      });
+      // links/buttons
+      document.querySelectorAll('[data-confirm-click]').forEach(function (el) {
+        el.addEventListener('click', async function (e) {
+          const msg = el.getAttribute('data-confirm-click') || 'Bạn có chắc chắn?';
+          e.preventDefault();
+          const ok = await window.confirmModal({ title: 'Xác nhận', message: msg });
+          if (ok) {
+            const target = el.getAttribute('data-target-form');
+            if (target) document.getElementById(target)?.submit();
+          }
+        });
+      });
+    })();
+  </script>
 </body>
 </html>
