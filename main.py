@@ -19,4 +19,4 @@ def healthz():
 # tiện để bạn chạy trực tiếp: python main.py
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8820, reload=False)
+    uvicorn.run("main:app", host="0.0.0.0", port=8820, reload=True)
