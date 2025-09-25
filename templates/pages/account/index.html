@@ -1,184 +1,160 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div class="max-w-6xl mx-auto px-4 py-6">
-  <h1 class="text-2xl font-semibold mb-4">Tài khoản</h1>
-
-  {% if request.query_params.get('msg') %}
-    <div class="mb-4 p-3 rounded bg-green-50 text-green-800 text-sm">
-      ✅ {{ request.query_params.get('msg') }}
-    </div>
-  {% endif %}
-  {% if request.query_params.get('err') %}
-    <div class="mb-4 p-3 rounded bg-red-50 text-red-800 text-sm">
-      ⚠️ {{ request.query_params.get('err') }}
-    </div>
-  {% endif %}
-  {% if load_err %}
-    <div class="mb-4 p-3 rounded bg-red-50 text-red-800 text-sm">
-      ⚠️ {{ load_err }}
-    </div>
-  {% endif %}
-
-  <!-- COMMON: Change password + Profile -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-    <!-- Change password -->
-    <div class="bg-white rounded-xl shadow p-5">
-      <h2 class="font-medium mb-3">Đổi mật khẩu</h2>
-      <form method="post" action="/account/change-password" class="space-y-3">
-        <div>
-          <label class="block text-sm">Mật khẩu hiện tại</label>
-          <input type="password" name="old_password" required class="w-full border rounded px-3 py-2">
-        </div>
-        <div>
-          <label class="block text-sm">Mật khẩu mới</label>
-          <input type="password" name="new_password" required class="w-full border rounded px-3 py-2">
-        </div>
-        <button class="px-4 py-2 rounded bg-black text-white">Đổi mật khẩu</button>
-      </form>
-    </div>
-
-    <!-- Profile -->
-    <div class="bg-white rounded-xl shadow p-5">
-      <h2 class="font-medium mb-3">Hồ sơ cá nhân</h2>
-      {% if profile_err %}
-        <div class="mb-3 p-3 rounded bg-yellow-50 text-yellow-800 text-sm">Không tải được hồ sơ chi tiết. Dùng thông tin rút gọn.</div>
-      {% endif %}
-      <form method="post" action="/account/profile/save" class="space-y-3">
-        <div>
-          <label class="block text-sm">Họ tên</label>
-          <input name="full_name" value="{{ profile.get('full_name','') }}" class="w-full border rounded px-3 py-2">
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm">Số điện thoại</label>
-            <input name="phone" value="{{ profile.get('phone','') }}" class="w-full border rounded px-3 py-2">
-          </div>
-          <div>
-            <label class="block text-sm">Email</label>
-            <input name="email" value="{{ profile.get('email','') }}" class="w-full border rounded px-3 py-2">
-          </div>
-        </div>
-        <div>
-          <label class="block text-sm">Địa chỉ</label>
-          <input name="address" value="{{ profile.get('address','') }}" class="w-full border rounded px-3 py-2">
-        </div>
-        <div class="text-sm text-gray-500">Tài khoản: <b>{{ profile.get('username','') }}</b> • Vai trò: <b>{{ role }}</b> • Công ty: <b>{{ profile.get('company_code','') }}</b></div>
-        <button class="px-4 py-2 rounded bg-black text-white">Lưu hồ sơ</button>
-      </form>
-    </div>
-  </div>
-
-{% if role == "SUPER_ADMIN" %}
-<div class="bg-white rounded-xl shadow p-5 mb-10">
-  <div class="flex items-center justify-between mb-4">
-    <h2 class="font-medium">Quản lý Công ty</h2>
-    <form method="post" action="/account/super/company/create" class="flex gap-2">
-      <input name="company_code" placeholder="Mã công ty" class="border rounded px-3 py-2" required>
-      <input name="name" placeholder="Tên công ty" class="border rounded px-3 py-2" required>
-      <button class="px-4 py-2 rounded bg-black text-white">Thêm công ty</button>
-    </form>
-  </div>
-
-  <div class="overflow-x-auto">
-    <table class="min-w-full text-sm">
-      <thead><tr class="text-left text-gray-500">
-        <th class="py-2">Mã</th><th>Tên</th><th>Trạng thái</th><th></th>
-      </tr></thead>
-      <tbody>
-      {% for c in companies or [] %}
-        <tr class="border-t">
-          <td class="py-2">{{ c.get('company_code') }}</td>
-          <td>{{ c.get('name') }}</td>
-          <td>
-            {% if c.get('is_active') %}
-              <span class="px-2 py-1 rounded bg-green-100 text-green-700">ACTIVE</span>
-            {% else %}
-              <span class="px-2 py-1 rounded bg-gray-200 text-gray-700">INACTIVE</span>
-            {% endif %}
-          </td>
-          <td class="space-x-2">
-            {% if c.get('is_active') %}
-            <form method="post" action="/account/super/company/disable" class="inline" onsubmit="return confirm('Disable công ty?')">
-              <input type="hidden" name="company_code" value="{{ c.get('company_code') }}">
-              <button class="px-3 py-1 rounded border">Disable</button>
-            </form>
-            {% else %}
-            <form method="post" action="/account/super/company/enable" class="inline" onsubmit="return confirm('Enable công ty?')">
-              <input type="hidden" name="company_code" value="{{ c.get('company_code') }}">
-              <button class="px-3 py-1 rounded border">Enable</button>
-            </form>
-            {% endif %}
-          </td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
+<div class="mb-6">
+  <h2 class="text-lg font-semibold text-slate-700 mb-2">Tài khoản</h2>
+  <div class="text-sm text-slate-600">
+    <div><b>Username:</b> {{ profile.username }}</div>
+    <div><b>Role:</b> {{ role }}</div>
+    <div><b>Company:</b> {{ profile.company_code or "-" }}</div>
   </div>
 </div>
+
+{% if load_err %}
+  <div class="p-3 rounded bg-red-50 text-red-700 text-sm mb-6">{{ load_err }}</div>
 {% endif %}
-{% if role in ["COMPANY_ADMIN", "SUPER_ADMIN"] %}
-<div class="bg-white rounded-xl shadow p-5 mb-10">
-  <div class="flex items-center justify-between mb-4">
-    <h2 class="font-medium">Tài khoản con</h2>
-    <form method="post" action="/account/admin/user/create" class="flex gap-2">
-      <input name="username" placeholder="username (a-z0-9_)" class="border rounded px-3 py-2" required>
-      <input type="password" name="password" placeholder="password" class="border rounded px-3 py-2" required>
-      <select name="role" class="border rounded px-3 py-2">
+
+{# ===== SUPER_ADMIN: danh sách công ty + nút Chi tiết ===== #}
+{% if role == "SUPER_ADMIN" %}
+  <div class="mb-8">
+    <h2 class="text-lg font-semibold text-slate-700 mb-3">Danh sách công ty</h2>
+
+    <form action="/account/super/company/create" method="post" class="flex gap-2 mb-4">
+      <input name="company_code" placeholder="Company code" class="input" required>
+      <input name="name" placeholder="Tên công ty" class="input" required>
+      <button class="btn-primary" type="submit">Thêm công ty</button>
+    </form>
+
+    {% if super_companies and super_companies|length > 0 %}
+      <div class="overflow-x-auto border rounded">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-100">
+            <tr>
+              <th class="px-3 py-2 text-left">ID</th>
+              <th class="px-3 py-2 text-left">Code</th>
+              <th class="px-3 py-2 text-left">Tên</th>
+              <th class="px-3 py-2 text-left">Trạng thái</th>
+              <th class="px-3 py-2 text-left">Hành động</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in super_companies %}
+            <tr class="border-t">
+              <td class="px-3 py-2">{{ c.id }}</td>
+
+              {# Click vào code cũng sang trang chi tiết #}
+              <td class="px-3 py-2 font-mono">
+                <a class="text-indigo-600 hover:underline" href="/account/company/{{ c.company_code }}">{{ c.company_code }}</a>
+              </td>
+
+              <td class="px-3 py-2">{{ c.name }}</td>
+
+              <td class="px-3 py-2">
+                {% if c.is_active %}<span class="text-green-600">Active</span>
+                {% else %}<span class="text-slate-500">Disabled</span>{% endif %}
+              </td>
+
+              <td class="px-3 py-2 flex items-center gap-2">
+                {# Nút CHI TIẾT / QUẢN TRỊ #}
+                <a class="btn-primary" href="/account/company/{{ c.company_code }}">Chi tiết</a>
+
+                {% if c.is_active %}
+                  <form action="/account/super/company/disable" method="post"
+                        onsubmit="return confirm('Tắt công ty {{ c.company_code }} ?');">
+                    <input type="hidden" name="company_code" value="{{ c.company_code }}">
+                    <button class="btn-secondary" type="submit">Disable</button>
+                  </form>
+                {% else %}
+                  <form action="/account/super/company/enable" method="post"
+                        onsubmit="return confirm('Bật công ty {{ c.company_code }} ?');">
+                    <input type="hidden" name="company_code" value="{{ c.company_code }}">
+                    <button class="btn-primary" type="submit">Enable</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="text-slate-500 text-sm">Chưa có công ty nào.</div>
+    {% endif %}
+  </div>
+{% endif %}
+
+{# ===== COMPANY_ADMIN: quản lý user công ty mình ===== #}
+{% if role == "COMPANY_ADMIN" %}
+  <div class="mb-8">
+    <h2 class="text-lg font-semibold text-slate-700 mb-3">Tài khoản công ty</h2>
+
+    <form action="/account/admin/user/create" method="post" class="flex gap-2 mb-4">
+      <input name="username" placeholder="username (a-z0-9_)" class="input" required>
+      <input name="password" placeholder="password" type="password" class="input" required>
+      <select name="role" class="input">
         <option value="STAFF">STAFF</option>
         <option value="VIEWER">VIEWER</option>
         <option value="ACCOUNTANT">ACCOUNTANT</option>
         <option value="COMPANY_ADMIN">COMPANY_ADMIN</option>
       </select>
-      <button class="px-4 py-2 rounded bg-black text-white">Thêm tài khoản</button>
+      <button class="btn-primary" type="submit">Thêm tài khoản</button>
     </form>
-  </div>
 
-  <div class="overflow-x-auto">
-    <table class="min-w-full text-sm">
-      <thead>
-        <tr class="text-left text-gray-500"><th class="py-2">ID</th><th>Username</th><th>Role</th><th>Trạng thái</th><th>Công ty</th><th class="text-right">Hành động</th></tr>
-      </thead>
-      <tbody>
-      {% for u in users or [] %}
-        <tr class="border-t">
-          <td class="py-2">{{ u.get('id') }}</td>
-          <td>{{ u.get('username') }}</td>
-          <td>{{ u.get('role') }}</td>
-          <td>
-            {% if u.get('is_active') %}
-              <span class="px-2 py-1 rounded bg-green-100 text-green-700">ACTIVE</span>
-            {% else %}
-              <span class="px-2 py-1 rounded bg-gray-200 text-gray-700">INACTIVE</span>
-            {% endif %}
-          </td>
-          <td>{{ u.get('company_code') or '' }}</td>
-          <td class="text-right">
-            <form method="post" action="/account/admin/user/toggle" class="inline" onsubmit="return confirm('Xác nhận đổi trạng thái?')">
-              <input type="hidden" name="user_id" value="{{ u.get('id') }}">
-              <input type="hidden" name="action" value="{{ 'disable' if u.get('is_active') else 'enable' }}">
-              <button class="px-3 py-1 rounded border">{{ 'Disable' if u.get('is_active') else 'Enable' }}</button>
-            </form>
+    {% if admin_users and admin_users|length > 0 %}
+      <div class="overflow-x-auto border rounded">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-100">
+            <tr>
+              <th class="px-3 py-2 text-left">ID</th>
+              <th class="px-3 py-2 text-left">Username</th>
+              <th class="px-3 py-2 text-left">Role</th>
+              <th class="px-3 py-2 text-left">Trạng thái</th>
+              <th class="px-3 py-2 text-left">Hành động</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in admin_users %}
+            <tr class="border-t">
+              <td class="px-3 py-2">{{ u.id }}</td>
+              <td class="px-3 py-2 font-mono">{{ u.username }}</td>
+              <td class="px-3 py-2">{{ u.role }}</td>
+              <td class="px-3 py-2">
+                {% if u.is_active %}<span class="text-green-600">Active</span>
+                {% else %}<span class="text-slate-500">Disabled</span>{% endif %}
+              </td>
+              <td class="px-3 py-2">
+                {% if u.is_active %}
+                  <form action="/account/admin/user/toggle" method="post" class="inline"
+                        onsubmit="return confirm('Disable user {{ u.username }} ?');">
+                    <input type="hidden" name="user_id" value="{{ u.id }}">
+                    <input type="hidden" name="action" value="disable">
+                    <button class="btn-secondary" type="submit">Disable</button>
+                  </form>
+                {% else %}
+                  <form action="/account/admin/user/toggle" method="post" class="inline"
+                        onsubmit="return confirm('Enable user {{ u.username }} ?');">
+                    <input type="hidden" name="user_id" value="{{ u.id }}">
+                    <input type="hidden" name="action" value="enable">
+                    <button class="btn-primary" type="submit">Enable</button>
+                  </form>
+                {% endif %}
 
-            <details class="inline-block ml-2">
-              <summary class="cursor-pointer px-3 py-1 rounded border bg-gray-50">Chi tiết</summary>
-              <form method="post" action="/account/admin/user/set-password" class="mt-2 p-2 border rounded">
-                <div class="text-xs text-gray-600 mb-1">Đặt mật khẩu cho <b>{{ u.get('username') }}</b></div>
-                <input type="hidden" name="user_id" value="{{ u.get('id') }}">
-                <input type="password" name="new_password" placeholder="new password" class="border rounded px-3 py-2 mr-2" required>
-                <button class="px-3 py-2 rounded bg-black text-white">Cập nhật</button>
-              </form>
-            </details>
-          </td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
+                <form action="/account/admin/user/set-password" method="post" class="inline ml-2"
+                      onsubmit="return confirm('Đặt lại mật khẩu cho {{ u.username }} ?');">
+                  <input type="hidden" name="user_id" value="{{ u.id }}">
+                  <input type="password" name="new_password" placeholder="new password" class="input" required>
+                  <button class="btn-primary" type="submit">Set password</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="text-slate-500 text-sm">Chưa có tài khoản nào.</div>
+    {% endif %}
   </div>
-</div>
 {% endif %}
-
-  <!-- USER thường: không có section riêng; chỉ dùng phần Chung phía trên -->
-</div>
 
 {% endblock %}
