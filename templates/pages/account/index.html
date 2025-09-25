@@ -69,119 +69,114 @@
     </div>
   </div>
 
-  <!-- SUPER_ADMIN: Companies -->
-  {% if role == "SUPER_ADMIN" %}
-  <div class="bg-white rounded-xl shadow p-5 mb-10">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="font-medium">Quản lý Công ty</h2>
-      <form method="post" action="/account/super/company/create" class="flex gap-2">
-        <input name="company_code" placeholder="Mã công ty" class="border rounded px-3 py-2" required>
-        <input name="name" placeholder="Tên công ty" class="border rounded px-3 py-2" required>
-        <button class="px-4 py-2 rounded bg-black text-white">Thêm công ty</button>
-      </form>
-    </div>
-
-    <div class="overflow-x-auto">
-      <table class="min-w-full text-sm">
-        <thead>
-          <tr class="text-left text-gray-500">
-            <th class="py-2">ID</th>
-            <th>Mã</th>
-            <th>Tên</th>
-            <th>Trạng thái</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-        {% for c in super_companies or [] %}
-          <tr class="border-t">
-            <td class="py-2">{{ c.get('id') }}</td>
-            <td>{{ c.get('company_code') }}</td>
-            <td>{{ c.get('name') }}</td>
-            <td>
-              {% if c.get('is_active') %}
-                <span class="px-2 py-1 rounded bg-green-100 text-green-700">ACTIVE</span>
-              {% else %}
-                <span class="px-2 py-1 rounded bg-gray-200 text-gray-700">INACTIVE</span>
-              {% endif %}
-            </td>
-            <td>
-              <form method="post" action="/account/super/company/toggle" onsubmit="return confirm('Xác nhận đổi trạng thái công ty?')">
-                <input type="hidden" name="company_id" value="{{ c.get('id') }}">
-                <button class="px-3 py-1 rounded border">{{ 'Disable' if c.get('is_active') else 'Enable' }}</button>
-              </form>
-            </td>
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
+{% if role == "SUPER_ADMIN" %}
+<div class="bg-white rounded-xl shadow p-5 mb-10">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="font-medium">Quản lý Công ty</h2>
+    <form method="post" action="/account/super/company/create" class="flex gap-2">
+      <input name="company_code" placeholder="Mã công ty" class="border rounded px-3 py-2" required>
+      <input name="name" placeholder="Tên công ty" class="border rounded px-3 py-2" required>
+      <button class="px-4 py-2 rounded bg-black text-white">Thêm công ty</button>
+    </form>
   </div>
-  {% endif %}
 
-  <!-- COMPANY_ADMIN: Users -->
-  {% if role == "COMPANY_ADMIN" %}
-  <div class="bg-white rounded-xl shadow p-5 mb-10">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="font-medium">Tài khoản con</h2>
-      <form method="post" action="/account/admin/user/create" class="flex gap-2">
-        <input name="username" placeholder="username (a-z0-9_)" class="border rounded px-3 py-2" required>
-        <input type="password" name="password" placeholder="password" class="border rounded px-3 py-2" required>
-        <button class="px-4 py-2 rounded bg-black text-white">Thêm tài khoản</button>
-      </form>
-    </div>
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead><tr class="text-left text-gray-500">
+        <th class="py-2">Mã</th><th>Tên</th><th>Trạng thái</th><th></th>
+      </tr></thead>
+      <tbody>
+      {% for c in companies or [] %}
+        <tr class="border-t">
+          <td class="py-2">{{ c.get('company_code') }}</td>
+          <td>{{ c.get('name') }}</td>
+          <td>
+            {% if c.get('is_active') %}
+              <span class="px-2 py-1 rounded bg-green-100 text-green-700">ACTIVE</span>
+            {% else %}
+              <span class="px-2 py-1 rounded bg-gray-200 text-gray-700">INACTIVE</span>
+            {% endif %}
+          </td>
+          <td class="space-x-2">
+            {% if c.get('is_active') %}
+            <form method="post" action="/account/super/company/disable" class="inline" onsubmit="return confirm('Disable công ty?')">
+              <input type="hidden" name="company_code" value="{{ c.get('company_code') }}">
+              <button class="px-3 py-1 rounded border">Disable</button>
+            </form>
+            {% else %}
+            <form method="post" action="/account/super/company/enable" class="inline" onsubmit="return confirm('Enable công ty?')">
+              <input type="hidden" name="company_code" value="{{ c.get('company_code') }}">
+              <button class="px-3 py-1 rounded border">Enable</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% if role in ["COMPANY_ADMIN", "SUPER_ADMIN"] %}
+<div class="bg-white rounded-xl shadow p-5 mb-10">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="font-medium">Tài khoản con</h2>
+    <form method="post" action="/account/admin/user/create" class="flex gap-2">
+      <input name="username" placeholder="username (a-z0-9_)" class="border rounded px-3 py-2" required>
+      <input type="password" name="password" placeholder="password" class="border rounded px-3 py-2" required>
+      <select name="role" class="border rounded px-3 py-2">
+        <option value="STAFF">STAFF</option>
+        <option value="VIEWER">VIEWER</option>
+        <option value="ACCOUNTANT">ACCOUNTANT</option>
+        <option value="COMPANY_ADMIN">COMPANY_ADMIN</option>
+      </select>
+      <button class="px-4 py-2 rounded bg-black text-white">Thêm tài khoản</button>
+    </form>
+  </div>
 
-    <div class="overflow-x-auto">
-      <table class="min-w-full text-sm">
-        <thead>
-          <tr class="text-left text-gray-500">
-            <th class="py-2">ID</th>
-            <th>Username</th>
-            <th>Role</th>
-            <th>Trạng thái</th>
-            <th>Công ty</th>
-            <th class="text-right">Hành động</th>
-          </tr>
-        </thead>
-        <tbody>
-        {% for u in admin_users or [] %}
-          <tr class="border-t">
-            <td class="py-2">{{ u.get('id') }}</td>
-            <td>{{ u.get('username') }}</td>
-            <td>{{ u.get('role') }}</td>
-            <td>
-              {% if u.get('is_active') %}
-                <span class="px-2 py-1 rounded bg-green-100 text-green-700">ACTIVE</span>
-              {% else %}
-                <span class="px-2 py-1 rounded bg-gray-200 text-gray-700">INACTIVE</span>
-              {% endif %}
-            </td>
-            <td>{{ u.get('company_code') or '' }}</td>
-            <td class="text-right">
-              <form method="post" action="/account/admin/user/toggle" class="inline" onsubmit="return confirm('Xác nhận thay đổi trạng thái tài khoản?')">
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead>
+        <tr class="text-left text-gray-500"><th class="py-2">ID</th><th>Username</th><th>Role</th><th>Trạng thái</th><th>Công ty</th><th class="text-right">Hành động</th></tr>
+      </thead>
+      <tbody>
+      {% for u in users or [] %}
+        <tr class="border-t">
+          <td class="py-2">{{ u.get('id') }}</td>
+          <td>{{ u.get('username') }}</td>
+          <td>{{ u.get('role') }}</td>
+          <td>
+            {% if u.get('is_active') %}
+              <span class="px-2 py-1 rounded bg-green-100 text-green-700">ACTIVE</span>
+            {% else %}
+              <span class="px-2 py-1 rounded bg-gray-200 text-gray-700">INACTIVE</span>
+            {% endif %}
+          </td>
+          <td>{{ u.get('company_code') or '' }}</td>
+          <td class="text-right">
+            <form method="post" action="/account/admin/user/toggle" class="inline" onsubmit="return confirm('Xác nhận đổi trạng thái?')">
+              <input type="hidden" name="user_id" value="{{ u.get('id') }}">
+              <input type="hidden" name="action" value="{{ 'disable' if u.get('is_active') else 'enable' }}">
+              <button class="px-3 py-1 rounded border">{{ 'Disable' if u.get('is_active') else 'Enable' }}</button>
+            </form>
+
+            <details class="inline-block ml-2">
+              <summary class="cursor-pointer px-3 py-1 rounded border bg-gray-50">Chi tiết</summary>
+              <form method="post" action="/account/admin/user/set-password" class="mt-2 p-2 border rounded">
+                <div class="text-xs text-gray-600 mb-1">Đặt mật khẩu cho <b>{{ u.get('username') }}</b></div>
                 <input type="hidden" name="user_id" value="{{ u.get('id') }}">
-                <input type="hidden" name="action" value="{{ 'disable' if u.get('is_active') else 'enable' }}">
-                <button class="px-3 py-1 rounded border">{{ 'Disable' if u.get('is_active') else 'Enable' }}</button>
+                <input type="password" name="new_password" placeholder="new password" class="border rounded px-3 py-2 mr-2" required>
+                <button class="px-3 py-2 rounded bg-black text-white">Cập nhật</button>
               </form>
-
-              <!-- Chi tiết + đặt mật khẩu -->
-              <details class="inline-block ml-2">
-                <summary class="cursor-pointer px-3 py-1 rounded border bg-gray-50">Chi tiết</summary>
-                <form method="post" action="/account/admin/user/set-password" class="mt-2 p-2 border rounded">
-                  <div class="text-xs text-gray-600 mb-1">Đặt lại mật khẩu cho <b>{{ u.get('username') }}</b></div>
-                  <input type="hidden" name="user_id" value="{{ u.get('id') }}">
-                  <input type="password" name="new_password" placeholder="new password" class="border rounded px-3 py-2 mr-2" required>
-                  <button class="px-3 py-2 rounded bg-black text-white">Cập nhật</button>
-                </form>
-              </details>
-            </td>
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
+            </details>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
   </div>
-  {% endif %}
+</div>
+{% endif %}
 
   <!-- USER thường: không có section riêng; chỉ dùng phần Chung phía trên -->
 </div>
