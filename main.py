@@ -1,22 +1,26 @@
+# main.py (Dashboard)
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-
-# Routers
-from routers.dashboard import router as dashboard_router
+from fastapi_account_manager.middlewares.auth_guard import AuthGuardMiddleware
+from fastapi_account_manager.routers.auth import router as auth_router
+from routers.dashboard import router as dashboard_router  # router sẵn có của bạn
 
 app = FastAPI(title="Dashboard Công ty — v20")
 
-# Static (CSS/JS/IMG)
+# Static
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Include routers
+# Middleware: chặn truy cập khi chưa login
+app.add_middleware(AuthGuardMiddleware)
+
+# Routers
+app.include_router(auth_router)
 app.include_router(dashboard_router)
 
 @app.get("/healthz")
 def healthz():
     return {"ok": True}
 
-# tiện để bạn chạy trực tiếp: python main.py
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8820, reload=True)
