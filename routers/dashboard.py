@@ -1,14 +1,24 @@
 # routers/dashboard.py
-from fastapi import APIRouter, Request
-from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
+from urllib.parse import quote
 
-templates = Jinja2Templates(directory="templates")
+from fastapi import APIRouter, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
+
+from utils.templates import templates           # dùng templates chung (đã có is_logged_in)
+from utils.auth import get_access_token, fetch_me  # helpers đọc cookie & gọi /auth/me
 
 router = APIRouter(tags=["Dashboard"])
 
 @router.get("/", response_class=HTMLResponse)
-def home(request: Request):
+async def home(request: Request):
+    # Check đăng nhập thống nhất
+    token = get_access_token(request)
+    me = await fetch_me(token)
+    if not me:
+        # chưa login -> chuyển sang trang đăng nhập, giữ next để quay lại /
+        return RedirectResponse(url=f"/login?next={quote('/')}", status_code=303)
+
+    # Demo số liệu KPI (như cũ)
     stats = {
         "kpi": {
             "avg_sales": 50897,
@@ -29,6 +39,7 @@ def home(request: Request):
             "request": request,
             "title": "Dashboard",
             "breadcrumb": ["Dashboard"],
+            "me": me,  # truyền user cho header nếu cần
             "kpi": stats["kpi"],
             "stats": {
                 "lot_status_labels": list(stats["lot_status"].keys()),
