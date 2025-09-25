@@ -1,4 +1,3 @@
-# main.py (Dashboard)
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi_account_manager.middlewares.auth_guard import AuthGuardMiddleware
@@ -6,11 +5,9 @@ from fastapi_account_manager.routers.auth import router as auth_router
 from routers.dashboard import router as dashboard_router  # router sẵn có của bạn
 
 app = FastAPI(title="Dashboard Công ty — v20")
-
-# Static
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Middleware: chặn truy cập khi chưa login
+# Middleware chặn truy cập khi chưa login
 app.add_middleware(AuthGuardMiddleware)
 
 # Routers
@@ -23,4 +20,4 @@ def healthz():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8820, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8820, reload=False)
