@@ -1,82 +1,132 @@
 {% extends "base.html" %}
+
 {% block content %}
+<div class="flex justify-between items-center mb-4">
+  <h1 class="text-2xl font-semibold text-slate-800">Quản lý dự án</h1>
+  <div class="flex items-center gap-2">
+    <a href="/projects/create" class="btn btn-primary">
+      <i class="ri-add-line mr-1"></i> Thêm dự án
+    </a>
 
-<div class="mb-4 flex items-center gap-3">
-  <form method="get" action="/projects" class="flex items-center gap-2">
-    <input name="q" value="{{ filters.q }}" placeholder="Tìm theo tên/mã dự án..."
-           class="input w-72" />
-    <select name="status" class="input">
-      <option value="ACTIVE"  {% if filters.status=='ACTIVE' %}selected{% endif %}>Đang hoạt động</option>
-      <option value="INACTIVE"{% if filters.status=='INACTIVE' %}selected{% endif %}>Ngừng hoạt động</option>
-      <option value="ALL"     {% if filters.status=='ALL' %}selected{% endif %}>Tất cả</option>
-    </select>
-    <button class="btn-primary">Lọc</button>
-  </form>
-
-  {% if me.role in ['SUPER_ADMIN','COMPANY_ADMIN'] %}
-    <a href="/projects/create" class="btn-secondary"><i class="ri-add-line"></i> Thêm dự án</a>
-  {% endif %}
+    <!-- Export / Import -->
+    <a href="/projects-io/template" class="btn btn-outline">
+      <i class="ri-download-2-line mr-1"></i> Tải template
+    </a>
+    <form id="importForm" class="inline-flex items-center gap-2" onsubmit="return false;">
+      <input id="importFile" type="file" accept=".xlsx,.xls" class="hidden" />
+      <button type="button" class="btn" onclick="document.getElementById('importFile').click()">
+        <i class="ri-upload-2-line mr-1"></i> Import
+      </button>
+    </form>
+  </div>
 </div>
 
-{% if load_err %}
-  <div class="alert-err">{{ load_err }}</div>
-{% endif %}
+<!-- Filter -->
+<form method="get" action="/projects" class="flex items-center gap-2 mb-4">
+  <input type="text" name="q" placeholder="Tìm kiếm dự án..."
+         value="{{ request.query_params.get('q') or '' }}"
+         class="border rounded px-3 py-1 w-64"/>
+  <select name="status" class="border rounded px-2 py-1">
+    <option value="">-- Trạng thái --</option>
+    <option value="ACTIVE" {% if request.query_params.get('status')=='ACTIVE' %}selected{% endif %}>ACTIVE</option>
+    <option value="INACTIVE" {% if request.query_params.get('status')=='INACTIVE' %}selected{% endif %}>INACTIVE</option>
+  </select>
+  <button type="submit" class="btn">Lọc</button>
+</form>
 
-<div class="card">
-  <table class="table">
-    <thead>
-      <tr>
-        <th class="w-20">ID</th>
-        <th class="w-40">Mã</th>
-        <th>Tên dự án</th>
-        <th class="w-32">Trạng thái</th>
-        <th class="w-52 text-right">Hành động</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for p in page.data %}
-      <tr>
-        <td>{{ p.id }}</td>
-        <td class="font-mono text-slate-600">{{ p.project_code }}</td>
-        <td>
-          <a class="link" href="/projects/{{ p.id }}">{{ p.name }}</a>
-          {% if p.location %}<div class="text-xs text-slate-400">{{ p.location }}</div>{% endif %}
-        </td>
-        <td>
-          {% if (p.status or 'ACTIVE') == 'ACTIVE' %}
-            <span class="badge-green">ACTIVE</span>
+<!-- Danh sách dự án -->
+<table class="min-w-full bg-white border border-slate-200 rounded-xl">
+  <thead>
+    <tr class="bg-slate-100 text-left">
+      <th class="px-3 py-2 border-b">ID</th>
+      <th class="px-3 py-2 border-b">Mã dự án</th>
+      <th class="px-3 py-2 border-b">Tên dự án</th>
+      <th class="px-3 py-2 border-b">Trạng thái</th>
+      <th class="px-3 py-2 border-b">Hành động</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in projects %}
+    <tr class="hover:bg-slate-50">
+      <td class="px-3 py-2 border-b">{{ p.id }}</td>
+      <td class="px-3 py-2 border-b">{{ p.project_code }}</td>
+      <td class="px-3 py-2 border-b">
+        <a href="/projects/{{ p.id }}" class="text-indigo-600 hover:underline">
+          {{ p.name }}
+        </a>
+      </td>
+      <td class="px-3 py-2 border-b">
+        {% if p.status == 'ACTIVE' %}
+          <span class="text-green-600 font-semibold">ACTIVE</span>
+        {% else %}
+          <span class="text-red-600 font-semibold">INACTIVE</span>
+        {% endif %}
+      </td>
+      <td class="px-3 py-2 border-b">
+        {% if role == 'COMPANY_ADMIN' %}
+          {% if p.status == 'ACTIVE' %}
+          <form method="post" action="/projects/{{ p.id }}/disable" class="inline">
+            <button type="submit" class="text-sm text-red-600 hover:underline"
+                    onclick="return confirm('Vô hiệu hóa dự án này?');">Disable</button>
+          </form>
           {% else %}
-            <span class="badge-gray">INACTIVE</span>
+          <form method="post" action="/projects/{{ p.id }}/enable" class="inline">
+            <button type="submit" class="text-sm text-green-600 hover:underline"
+                    onclick="return confirm('Kích hoạt dự án này?');">Enable</button>
+          </form>
           {% endif %}
-        </td>
-        <td class="text-right">
-          <a class="link mr-3" href="/projects/{{ p.id }}">Chi tiết</a>
+        {% endif %}
+      </td>
+    </tr>
+    {% else %}
+    <tr>
+      <td colspan="5" class="text-center py-4 text-slate-500">Không có dự án nào</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
 
-          {% if me.role in ['SUPER_ADMIN','COMPANY_ADMIN'] %}
-            {% if (p.status or 'ACTIVE') == 'ACTIVE' %}
-              <form method="post" action="/projects/{{ p.id }}/toggle" class="inline"
-                    data-confirm="Tắt dự án này?">
-                <input type="hidden" name="action" value="disable">
-                <input type="hidden" name="next" value="/projects?{{ request.query_params }}">
-                <button class="link text-rose-600">Disable</button>
-              </form>
-            {% else %}
-              <form method="post" action="/projects/{{ p.id }}/toggle" class="inline"
-                    data-confirm="Bật lại dự án này?">
-                <input type="hidden" name="action" value="enable">
-                <input type="hidden" name="next" value="/projects?{{ request.query_params }}">
-                <button class="link text-emerald-700">Enable</button>
-              </form>
-            {% endif %}
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-      {% if page.data|length == 0 %}
-        <tr><td colspan="5" class="text-center text-slate-400 py-6">Không có dữ liệu</td></tr>
-      {% endif %}
-    </tbody>
-  </table>
-</div>
+<script>
+  const fileInput = document.getElementById('importFile');
+  fileInput.addEventListener('change', async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
 
+    const fd = new FormData();
+    fd.append('file', f);
+    const r = await fetch('/projects-io/import/preview', { method: 'POST', body: fd });
+    const js = await r.json();
+
+    if (!js.ok) {
+      alert(js.error || 'Import preview failed');
+      return;
+    }
+
+    const conflicts = js.preview.conflicts || [];
+    const msg = `Sẽ import:\n- Projects: ${js.preview.projects.length}\n- Lots: ${js.preview.lots.length}\n` +
+                (conflicts.length ? `* Mã dự án trùng: ${conflicts.join(', ')}\n` : '') +
+                `\nTiếp tục?`;
+    if (!confirm(msg)) return;
+
+    let companyCode = '{{ me.company_code or "" }}'.trim();
+    if (!companyCode) {
+      companyCode = prompt('Nhập company_code để import vào:') || '';
+      if (!companyCode) return;
+    }
+
+    const fd2 = new FormData();
+    fd2.append('payload_json', JSON.stringify(js.preview));
+    fd2.append('company_code', companyCode);
+    fd2.append('force_replace', 'true');
+
+    const r2 = await fetch('/projects-io/import/apply', { method: 'POST', body: fd2 });
+    const js2 = await r2.json();
+    if (js2.code === 200) {
+      alert('Import thành công!');
+      location.reload();
+    } else {
+      alert(js2.message || 'Import thất bại');
+    }
+  });
+</script>
 {% endblock %}
