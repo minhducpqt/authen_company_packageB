@@ -9,11 +9,9 @@ from utils.templates import templates
 
 router = APIRouter(prefix="/account", tags=["account"])
 
-# ====== ENV / CONFIG ======
 SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8800")
 ACCESS_COOKIE = os.getenv("ACCESS_COOKIE_NAME", "access_token")
 
-# ====== HELPERS ======
 async def _me(request: Request) -> dict | None:
     acc = request.cookies.get(ACCESS_COOKIE) or request.cookies.get(ACCESS_COOKIE_NAME)
     if not acc:
@@ -42,7 +40,6 @@ async def _post_json(client: httpx.AsyncClient, url: str, headers: dict, payload
 def _username_valid(u: str) -> bool:
     return re.fullmatch(r"[a-z0-9_]{3,32}", u or "") is not None
 
-# ====== VIEW: ACCOUNT HOME ======
 @router.get("", response_class=HTMLResponse)
 async def account_home(request: Request):
     me = await _me(request)
@@ -66,15 +63,14 @@ async def account_home(request: Request):
         async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=8.0) as client:
             headers = {"Authorization": f"Bearer {acc}"}
 
-            # SUPER_ADMIN: chỉ hiển thị danh sách công ty
             if role == "SUPER_ADMIN":
-                st, data = await _get_json(client, "/api/v1/admin/companies?page=1&size=100", headers)
+                # size <= 200 để không bị 422
+                st, data = await _get_json(client, "/api/v1/admin/companies?page=1&size=200", headers)
                 if st == 200 and isinstance(data, dict):
                     super_companies = data.get("data", data)
                 else:
                     load_err = f"Không tải được danh sách công ty (HTTP {st})."
 
-            # COMPANY_ADMIN: hiển thị danh sách user công ty của mình
             elif role == "COMPANY_ADMIN":
                 st, data = await _get_json(client, "/api/v1/admin/users?page=1&size=50", headers)
                 if st == 200 and isinstance(data, dict):
@@ -97,7 +93,6 @@ async def account_home(request: Request):
         }
     )
 
-# ====== VIEW: COMPANY DETAIL (SUPER_ADMIN quản trị user theo từng công ty) ======
 @router.get("/company/{company_code}", response_class=HTMLResponse)
 async def company_detail(request: Request, company_code: str):
     me = await _me(request)
@@ -117,13 +112,13 @@ async def company_detail(request: Request, company_code: str):
         async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=8.0) as client:
             headers = {"Authorization": f"Bearer {acc}"}
 
-            # lấy thông tin công ty (từ list, lọc theo code)
-            st, data = await _get_json(client, "/api/v1/admin/companies?size=1000", headers)
+            # lấy thông tin công ty (size <= 200)
+            st, data = await _get_json(client, "/api/v1/admin/companies?page=1&size=200", headers)
             if st == 200 and isinstance(data, dict):
                 arr = data.get("data", [])
                 company = next((c for c in arr if (c.get("company_code") or "").lower() == company_code.lower()), None)
 
-            # lấy user theo company_code (API nên hỗ trợ ?company_code=...)
+            # lấy user theo company_code (API đã được sửa để hỗ trợ filter)
             st, data = await _get_json(client, f"/api/v1/admin/users?company_code={quote(company_code)}&page=1&size=100", headers)
             if st == 200 and isinstance(data, dict):
                 users = data.get("data", data)
@@ -144,7 +139,6 @@ async def company_detail(request: Request, company_code: str):
         }
     )
 
-# ====== COMMON ACTIONS ======
 @router.post("/change-password")
 async def change_password(request: Request, old_password: str = Form(...), new_password: str = Form(...)):
     acc = request.cookies.get(ACCESS_COOKIE) or request.cookies.get(ACCESS_COOKIE_NAME)
@@ -177,7 +171,6 @@ async def profile_save(
     to = "/account?msg=profile_saved" if st == 200 else "/account?err=profile_failed"
     return RedirectResponse(url=to, status_code=303)
 
-# ====== SUPER_ADMIN: COMPANIES ======
 @router.post("/super/company/create")
 async def super_company_create(request: Request, company_code: str = Form(...), name: str = Form(...)):
     acc = request.cookies.get(ACCESS_COOKIE) or request.cookies.get(ACCESS_COOKIE_NAME)
@@ -220,7 +213,6 @@ async def super_company_disable(request: Request, company_code: str = Form(...))
     to = "/account?msg=company_disabled" if st == 200 else "/account?err=disable_failed"
     return RedirectResponse(url=to, status_code=303)
 
-# ====== USER MANAGEMENT ======
 @router.post("/admin/user/create")
 async def admin_user_create(
     request: Request,
@@ -230,10 +222,6 @@ async def admin_user_create(
     company_code: str | None = Form(None),
     next: str | None = Form(None),
 ):
-    """
-    - COMPANY_ADMIN: không cần company_code (service tự gán theo actor).
-    - SUPER_ADMIN: bắt buộc truyền company_code (từ form của trang chi tiết công ty).
-    """
     acc = request.cookies.get(ACCESS_COOKIE) or request.cookies.get(ACCESS_COOKIE_NAME)
     username = (username or "").strip().lower()
     if not _username_valid(username):
@@ -241,7 +229,7 @@ async def admin_user_create(
         return RedirectResponse(url=f"{redir}?err=bad_username", status_code=303)
 
     payload = {"username": username, "password": password, "role": role}
-    if company_code:  # SUPER_ADMIN case
+    if company_code:
         payload["company_code"] = company_code
 
     async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=8.0) as client:
