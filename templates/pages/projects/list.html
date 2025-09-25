@@ -1,7 +1,82 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="card">
-  <div class="card-title">Quản lý dự án</div>
-  <p class="text-slate-600">Trang placeholder. Sẽ gắn bảng, form, filter sau.</p>
+
+<div class="mb-4 flex items-center gap-3">
+  <form method="get" action="/projects" class="flex items-center gap-2">
+    <input name="q" value="{{ filters.q }}" placeholder="Tìm theo tên/mã dự án..."
+           class="input w-72" />
+    <select name="status" class="input">
+      <option value="ACTIVE"  {% if filters.status=='ACTIVE' %}selected{% endif %}>Đang hoạt động</option>
+      <option value="INACTIVE"{% if filters.status=='INACTIVE' %}selected{% endif %}>Ngừng hoạt động</option>
+      <option value="ALL"     {% if filters.status=='ALL' %}selected{% endif %}>Tất cả</option>
+    </select>
+    <button class="btn-primary">Lọc</button>
+  </form>
+
+  {% if me.role in ['SUPER_ADMIN','COMPANY_ADMIN'] %}
+    <a href="/projects/create" class="btn-secondary"><i class="ri-add-line"></i> Thêm dự án</a>
+  {% endif %}
 </div>
+
+{% if load_err %}
+  <div class="alert-err">{{ load_err }}</div>
+{% endif %}
+
+<div class="card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th class="w-20">ID</th>
+        <th class="w-40">Mã</th>
+        <th>Tên dự án</th>
+        <th class="w-32">Trạng thái</th>
+        <th class="w-52 text-right">Hành động</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in page.data %}
+      <tr>
+        <td>{{ p.id }}</td>
+        <td class="font-mono text-slate-600">{{ p.project_code }}</td>
+        <td>
+          <a class="link" href="/projects/{{ p.id }}">{{ p.name }}</a>
+          {% if p.location %}<div class="text-xs text-slate-400">{{ p.location }}</div>{% endif %}
+        </td>
+        <td>
+          {% if (p.status or 'ACTIVE') == 'ACTIVE' %}
+            <span class="badge-green">ACTIVE</span>
+          {% else %}
+            <span class="badge-gray">INACTIVE</span>
+          {% endif %}
+        </td>
+        <td class="text-right">
+          <a class="link mr-3" href="/projects/{{ p.id }}">Chi tiết</a>
+
+          {% if me.role in ['SUPER_ADMIN','COMPANY_ADMIN'] %}
+            {% if (p.status or 'ACTIVE') == 'ACTIVE' %}
+              <form method="post" action="/projects/{{ p.id }}/toggle" class="inline"
+                    data-confirm="Tắt dự án này?">
+                <input type="hidden" name="action" value="disable">
+                <input type="hidden" name="next" value="/projects?{{ request.query_params }}">
+                <button class="link text-rose-600">Disable</button>
+              </form>
+            {% else %}
+              <form method="post" action="/projects/{{ p.id }}/toggle" class="inline"
+                    data-confirm="Bật lại dự án này?">
+                <input type="hidden" name="action" value="enable">
+                <input type="hidden" name="next" value="/projects?{{ request.query_params }}">
+                <button class="link text-emerald-700">Enable</button>
+              </form>
+            {% endif %}
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      {% if page.data|length == 0 %}
+        <tr><td colspan="5" class="text-center text-slate-400 py-6">Không có dữ liệu</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
 {% endblock %}

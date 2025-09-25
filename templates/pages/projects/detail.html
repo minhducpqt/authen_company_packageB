@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+
+{% if load_err %}
+  <div class="alert-err">{{ load_err }}</div>
+{% endif %}
+
+{% if project %}
+  <div class="card mb-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <div class="text-sm text-slate-400">Mã dự án</div>
+        <div class="font-mono text-slate-700">{{ project.project_code }}</div>
+      </div>
+      <div>
+        {% if (project.status or 'ACTIVE') == 'ACTIVE' %}
+          <span class="badge-green">ACTIVE</span>
+        {% else %}
+          <span class="badge-gray">INACTIVE</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <h2 class="text-xl font-semibold mt-2">{{ project.name }}</h2>
+    {% if project.location %}<div class="text-slate-500">{{ project.location }}</div>{% endif %}
+    {% if project.description %}<p class="mt-2 whitespace-pre-line">{{ project.description }}</p>{% endif %}
+
+    {% if me.role in ['SUPER_ADMIN','COMPANY_ADMIN'] %}
+    <div class="mt-4">
+      {% if (project.status or 'ACTIVE') == 'ACTIVE' %}
+        <form method="post" action="/projects/{{ project.id }}/toggle" data-confirm="Tắt dự án này?">
+          <input type="hidden" name="action" value="disable">
+          <input type="hidden" name="next" value="/projects/{{ project.id }}">
+          <button class="btn-danger">Disable</button>
+        </form>
+      {% else %}
+        <form method="post" action="/projects/{{ project.id }}/toggle" data-confirm="Bật lại dự án này?">
+          <input type="hidden" name="action" value="enable">
+          <input type="hidden" name="next" value="/projects/{{ project.id }}">
+          <button class="btn-primary">Enable</button>
+        </form>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+{% endif %}
+
+<a href="/projects" class="link"><i class="ri-arrow-go-back-line"></i> Quay về danh sách</a>
+
+{% endblock %}

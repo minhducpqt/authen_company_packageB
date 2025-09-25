@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="max-w-3xl">
+  <div class="card">
+    <h2 class="card-title">Thêm dự án</h2>
+
+    <form method="post" action="/projects/create" class="space-y-4">
+      <div>
+        <label class="label">Mã dự án *</label>
+        <input name="project_code" required class="input" placeholder="ví dụ: P001">
+      </div>
+
+      <div>
+        <label class="label">Tên dự án *</label>
+        <input name="name" required class="input" placeholder="Tên dự án">
+      </div>
+
+      <div>
+        <label class="label">Vị trí</label>
+        <input name="location" class="input" placeholder="Địa điểm / khu vực">
+      </div>
+
+      <div>
+        <label class="label">Mô tả</label>
+        <textarea name="description" rows="4" class="input"></textarea>
+      </div>
+
+      <div class="flex gap-3 justify-end">
+        <a href="/projects" class="btn-secondary">Hủy</a>
+        <button class="btn-primary">Tạo dự án</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
