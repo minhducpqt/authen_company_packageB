@@ -43,8 +43,72 @@ async def _post_json(client: httpx.AsyncClient, url: str, headers: dict, payload
         return r.status_code, None
 # =============================
 
+
+# =====================================================================
+# 1) TEMPLATE / EXPORT / IMPORT  --> ĐẶT TRƯỚC ROUTE ĐỘNG /{project_id}
+# =====================================================================
+
+@router.get("/template")
+async def download_template(request: Request):
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(url="/login?next=/projects/template", status_code=303)
+
+    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=20.0) as client:
+        r = await client.get(EP_TPL_XLSX, headers={"Authorization": f"Bearer {token}"})
+    return StreamingResponse(
+        iter([r.content]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="projects_template.xlsx"'},
+    )
+
+@router.get("/export")
+async def export_xlsx(request: Request, q: str | None = None, status: str | None = "ACTIVE"):
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(url="/login?next=/projects/export", status_code=303)
+
+    params = {}
+    if q:
+        params["q"] = q
+    if status and status != "ALL":
+        params["status"] = status
+
+    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=40.0) as client:
+        r = await client.get(EP_EXPORT_XLSX, params=params, headers={"Authorization": f"Bearer {token}"})
+    return StreamingResponse(
+        iter([r.content]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="projects_export.xlsx"'},
+    )
+
+@router.get("/import", response_class=HTMLResponse)
+async def import_form(request: Request):
+    token = get_access_token(request)
+    me = await fetch_me(token)
+    if not me:
+        return RedirectResponse(url="/login?next=/projects/import", status_code=303)
+    return templates.TemplateResponse(
+        "pages/projects/import.html",
+        {"request": request, "title": "Nhập dự án từ Excel", "me": me},
+    )
+
+@router.post("/import")
+async def import_xlsx(request: Request, file: UploadFile = File(...)):
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(url="/login?next=/projects/import", status_code=303)
+
+    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=180.0) as client:
+        files = {"file": (file.filename, await file.read(), file.content_type or "application/octet-stream")}
+        r = await client.post(EP_IMPORT_XLSX, headers={"Authorization": f"Bearer {token}"}, files=files)
+
+    to = "/projects?msg=import_ok" if r.status_code == 200 else "/projects/import?err=import_failed"
+    return RedirectResponse(url=to, status_code=303)
+
+
 # =========================
-# LIST
+# 2) LIST
 # =========================
 @router.get("", response_class=HTMLResponse)
 async def list_projects(
@@ -97,8 +161,9 @@ async def list_projects(
         },
     )
 
+
 # =========================
-# DETAIL
+# 3) DETAIL (đặt SAU các route tĩnh)
 # =========================
 @router.get("/{project_id}", response_class=HTMLResponse)
 async def project_detail(request: Request, project_id: int = Path(...)):
@@ -133,8 +198,9 @@ async def project_detail(request: Request, project_id: int = Path(...)):
         },
     )
 
+
 # =========================
-# CREATE - FORM
+# 4) CREATE - FORM
 # =========================
 @router.get("/create", response_class=HTMLResponse)
 async def create_form(request: Request):
@@ -147,8 +213,9 @@ async def create_form(request: Request):
         {"request": request, "title": "Thêm dự án", "me": me},
     )
 
+
 # =========================
-# CREATE - ACTION
+# 5) CREATE - ACTION
 # =========================
 @router.post("/create")
 async def create_submit(
@@ -165,8 +232,8 @@ async def create_submit(
     payload = {
         "project_code": project_code.strip(),
         "name": name.strip(),
-        "description": description.strip() or None,
-        "location": location.strip() or None,
+        "description": (description or "").strip() or None,
+        "location": (location or "").strip() or None,
     }
 
     async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
@@ -175,8 +242,9 @@ async def create_submit(
     to = "/projects?msg=created" if st == 200 else "/projects?err=create_failed"
     return RedirectResponse(url=to, status_code=303)
 
+
 # =========================
-# TOGGLE (Admin)
+# 6) TOGGLE (Admin)
 # =========================
 @router.post("/{project_id}/toggle")
 async def toggle_project(
@@ -202,65 +270,4 @@ async def toggle_project(
 
     redir = next or "/projects"
     to = f"{redir}?msg=toggled" if st == 200 else f"{redir}?err=toggle_failed"
-    return RedirectResponse(url=to, status_code=303)
-
-# =========================
-# IMPORT/EXPORT
-# =========================
-@router.get("/import", response_class=HTMLResponse)
-async def import_form(request: Request):
-    token = get_access_token(request)
-    me = await fetch_me(token)
-    if not me:
-        return RedirectResponse(url="/login?next=/projects/import", status_code=303)
-    return templates.TemplateResponse(
-        "pages/projects/import.html",
-        {"request": request, "title": "Nhập dự án từ Excel", "me": me},
-    )
-
-@router.get("/template")
-async def download_template(request: Request):
-    token = get_access_token(request)
-    if not token:
-        return RedirectResponse(url="/login?next=/projects/template", status_code=303)
-
-    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=20.0) as client:
-        r = await client.get(EP_TPL_XLSX, headers={"Authorization": f"Bearer {token}"})
-    return StreamingResponse(
-        iter([r.content]),
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": 'attachment; filename="projects_template.xlsx"'},
-    )
-
-@router.get("/export")
-async def export_xlsx(request: Request, q: str | None = None, status: str | None = "ACTIVE"):
-    token = get_access_token(request)
-    if not token:
-        return RedirectResponse(url="/login?next=/projects/export", status_code=303)
-
-    params = {}
-    if q:
-        params["q"] = q
-    if status and status != "ALL":
-        params["status"] = status
-
-    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=40.0) as client:
-        r = await client.get(EP_EXPORT_XLSX, params=params, headers={"Authorization": f"Bearer {token}"})
-    return StreamingResponse(
-        iter([r.content]),
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": 'attachment; filename="projects_export.xlsx"'},
-    )
-
-@router.post("/import")
-async def import_xlsx(request: Request, file: UploadFile = File(...)):
-    token = get_access_token(request)
-    if not token:
-        return RedirectResponse(url="/login?next=/projects/import", status_code=303)
-
-    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=180.0) as client:
-        files = {"file": (file.filename, await file.read(), file.content_type or "application/octet-stream")}
-        r = await client.post(EP_IMPORT_XLSX, headers={"Authorization": f"Bearer {token}"}, files=files)
-
-    to = "/projects?msg=import_ok" if r.status_code == 200 else "/projects/import?err=import_failed"
     return RedirectResponse(url=to, status_code=303)

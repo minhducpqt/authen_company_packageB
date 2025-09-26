@@ -18,7 +18,7 @@ app.include_router(auth_router)
 app.include_router(dashboard_router)
 app.include_router(account_router)
 app.include_router(projects_router)                      # <-- THÊM DÒNG NÀY
-x`
+
 @app.get("/healthz")
 def healthz():
     return {"ok": True}
