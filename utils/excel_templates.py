@@ -4,36 +4,84 @@ from datetime import datetime
 from fastapi.responses import StreamingResponse
 from openpyxl.styles import Alignment, Font, PatternFill, Border, Side, NamedStyle
 from openpyxl.utils import get_column_letter
+import httpx, os
+
+SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8800")
 
 
-def build_projects_lots_template() -> StreamingResponse:
+async def _next_project_code(access: str, company_code: str) -> str:
+    """
+    Trả về project_code dạng COMPANYCODEN (N>=1) nhỏ nhất chưa tồn tại.
+    """
+    headers = {"Authorization": f"Bearer {access}"}
+    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+        r = await client.get(
+            "/api/v1/projects",
+            params={"company_code": company_code, "size": 1000},
+            headers=headers,
+        )
+        if r.status_code == 200:
+            data = r.json()
+            existing = {p["project_code"].upper() for p in data.get("data", [])}
+        else:
+            existing = set()
+
+    base = company_code.upper()
+    n = 1
+    while True:
+        cand = f"{base}{n}"
+        if cand not in existing:
+            return cand
+        n += 1
+
+
+async def build_projects_lots_template(access: str, company_code: str) -> StreamingResponse:
     """
     Sinh file Excel template đẹp cho import dự án + lô
-    (bỏ status, extras_json; dự án mới mặc định INACTIVE)
-    Không chèn note row để tránh ảnh hưởng import.
+    - project_code mẫu = COMPANYCODEN chưa tồn tại
+    - Dự án mặc định INACTIVE, lô mặc định ACTIVE (sẽ do API xử lý sau)
     """
+    proj_code = await _next_project_code(access, company_code)
+
     # ---- Cấu trúc cột
     proj_cols = ["project_code", "name", "description", "location"]
-    lot_cols  = ["project_code", "lot_code", "name", "description",
-                 "starting_price", "deposit_amount", "area"]
+    lot_cols = [
+        "project_code",
+        "lot_code",
+        "name",
+        "description",
+        "starting_price",
+        "deposit_amount",
+        "area",
+    ]
 
     # ---- Dòng mẫu
-    dfp = pd.DataFrame([{
-        "project_code": "PJT001",
-        "name": "Dự án mẫu",
-        "description": "",
-        "location": "Quận 1, TP.HCM",
-    }], columns=proj_cols)
+    dfp = pd.DataFrame(
+        [
+            {
+                "project_code": proj_code,
+                "name": "Dự án mẫu",
+                "description": "",
+                "location": "Quận 1, TP.HCM",
+            }
+        ],
+        columns=proj_cols,
+    )
 
-    dfl = pd.DataFrame([{
-        "project_code": "PJT001",
-        "lot_code": "L-A01",
-        "name": "Lô A01",
-        "description": "",
-        "starting_price": 1_500_000_000,
-        "deposit_amount": 150_000_000,
-        "area": 80.0,
-    }], columns=lot_cols)
+    dfl = pd.DataFrame(
+        [
+            {
+                "project_code": proj_code,
+                "lot_code": "L-A01",
+                "name": "Lô A01",
+                "description": "",
+                "starting_price": 1_500_000_000,
+                "deposit_amount": 150_000_000,
+                "area": 80.0,
+            }
+        ],
+        columns=lot_cols,
+    )
 
     buf = io.BytesIO()
     with pd.ExcelWriter(buf, engine="openpyxl") as w:
@@ -108,13 +156,10 @@ def build_projects_lots_template() -> StreamingResponse:
                 for r in range(2, max_row + 1):
                     ws.cell(row=r, column=col).style = area_style
 
-        # Apply cho projects
-        format_sheet(
-            ws_p,
-            widths=[14, 26, 40, 22],
-        )
+        # Apply style cho projects
+        format_sheet(ws_p, widths=[14, 26, 40, 22])
 
-        # Apply cho lots
+        # Apply style cho lots
         format_sheet(
             ws_l,
             widths=[14, 14, 20, 36, 16, 16, 12],
@@ -123,7 +168,7 @@ def build_projects_lots_template() -> StreamingResponse:
         )
 
     buf.seek(0)
-    filename = f"auction_import_template_{datetime.now():%Y%m%d}.xlsx"
+    filename = f"auction_import_template_{company_code}_{datetime.now():%Y%m%d}.xlsx"
     headers = {"Content-Disposition": f'attachment; filename=\"{filename}\"'}
     return StreamingResponse(
         buf,

@@ -50,13 +50,17 @@ async def _post_json(client: httpx.AsyncClient, url: str, headers: dict, payload
 
 @router.get("/template")
 async def download_template(request: Request):
-    # Nếu muốn bắt buộc login để tải template, giữ chặn như sau:
     token = get_access_token(request)
-    if not token:
+    me = await fetch_me(token)
+    if not me:
         return RedirectResponse(url="/login?next=/projects/template", status_code=303)
 
-    # WEB tự sinh file, không gọi API nữa
-    return build_projects_lots_template()
+    company_code = me.get("company_code")
+    if not company_code:
+        return RedirectResponse(url="/projects?err=no_company_code", status_code=303)
+
+    return await build_projects_lots_template(token, company_code)
+
 
 @router.get("/export")
 async def export_xlsx(request: Request, q: str | None = None, status: str | None = "ACTIVE"):
