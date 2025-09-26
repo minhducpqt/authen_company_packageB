@@ -125,16 +125,24 @@ async def import_preview(request: Request, file: UploadFile = File(...)):
         },
     )
 
+# ... giữ nguyên các import ở đầu file
+
+# ... giữ nguyên các import ở đầu file
+
 @router.post("/import/apply", response_class=HTMLResponse)
 async def import_apply(
     request: Request,
     payload: str = Form(...),
-    company_code: str = Form(...),
+    company_code: str = Form(""),
 ):
     token = get_access_token(request)
     me = await fetch_me(token)
     if not me:
         return RedirectResponse(url="/login?next=/projects/import", status_code=303)
+
+    # ❌ SUPER_ADMIN không được import
+    if (me.get("role") or "").upper() == "SUPER_ADMIN":
+        return RedirectResponse(url="/projects?err=forbidden_import", status_code=303)
 
     try:
         data = json.loads(payload)
@@ -145,12 +153,13 @@ async def import_apply(
             status_code=400,
         )
 
+    # company_code lấy từ chính tài khoản admin công ty (không cho sửa)
+    company_code = me.get("company_code") or ""
+
     result = await apply_import_projects(data, token, company_code=company_code)
     if (result or {}).get("code") == 200:
-        # thành công hết -> quay về list, sẽ reload danh sách
         return RedirectResponse(url="/projects?msg=import_ok", status_code=303)
     else:
-        # có lỗi (207 hoặc 4xx/5xx) -> giữ lại preview + show lỗi
         return templates.TemplateResponse(
             "pages/projects/import_preview.html",
             {
@@ -164,7 +173,6 @@ async def import_apply(
             },
             status_code=(result or {}).get("code", 400),
         )
-
 
 # =========================
 # 2) LIST

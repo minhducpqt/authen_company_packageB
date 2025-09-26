@@ -88,18 +88,21 @@
 
   <form method="post" action="/projects/import/apply" class="mb-8">
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-      <div class="md:col-span-2">
-        <label class="block text-sm text-slate-600 mb-1">Company code</label>
-        <input
-          type="text"
-          name="company_code"
-          value="{{ company_code }}"
-          placeholder="VD: KDO"
-          class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          required
-        />
-        <p class="text-xs text-slate-400 mt-1">SUPER_ADMIN: nhập company_code cần ghi dữ liệu vào.</p>
-      </div>
+    <div class="md:col-span-2">
+      <label class="block text-sm text-slate-600 mb-1">Company code</label>
+      <input
+        type="text"
+        name="company_code"
+        value="{{ company_code }}"
+        placeholder="VD: KDO"
+        class="w-full rounded-lg border border-slate-300 px-3 py-2 bg-slate-100 text-slate-600 cursor-not-allowed focus:outline-none"
+        readonly
+        required
+      />
+      <p class="text-xs text-slate-400 mt-1">
+        Giá trị cố định theo tài khoản, không thể chỉnh sửa.
+      </p>
+    </div>
       <div class="text-right md:col-span-2">
         <input type="hidden" name="payload" value='{{ payload_json|tojson|safe }}'/>
         <button type="submit"
