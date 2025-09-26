@@ -5,19 +5,21 @@ import os
 import httpx
 from typing import Optional
 from urllib.parse import urlencode, quote
+import json
 
 from fastapi import APIRouter, Request, Form, Query, Path, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
-from utils.excel_templates import build_projects_lots_template
 
 from utils.templates import templates
 from utils.auth import get_access_token, fetch_me
+from utils.excel_templates import build_projects_lots_template
+from utils.excel_import import handle_import_preview, apply_import_projects
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
 SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8800")
 
-# ---- Endpoints của Service A (đặt 1 chỗ để dễ đổi) ----
+# Endpoints Service A
 EP_LIST         = "/api/v1/projects"
 EP_CREATE       = "/api/v1/projects"
 EP_DETAIL       = "/api/v1/projects/{project_id}"
@@ -25,9 +27,8 @@ EP_ENABLE       = "/api/v1/projects/{project_id}/enable"
 EP_DISABLE      = "/api/v1/projects/{project_id}/disable"
 EP_EXPORT_XLSX  = "/api/v1/projects/export_xlsx"
 EP_IMPORT_XLSX  = "/api/v1/projects/import_xlsx"
-# -------------------------------------------------------
 
-# ========== helpers ==========
+# helpers http
 async def _get_json(client: httpx.AsyncClient, url: str, headers: dict):
     r = await client.get(url, headers=headers)
     try:
@@ -41,11 +42,10 @@ async def _post_json(client: httpx.AsyncClient, url: str, headers: dict, payload
         return r.status_code, r.json()
     except Exception:
         return r.status_code, None
-# =============================
 
 
 # =====================================================================
-# 1) TEMPLATE / EXPORT / IMPORT  --> ĐẶT TRƯỚC ROUTE ĐỘNG /{project_id}
+# 1) TEMPLATE / EXPORT / IMPORT  --> đặt trước /{project_id}
 # =====================================================================
 
 @router.get("/template")
@@ -59,6 +59,7 @@ async def download_template(request: Request):
     if not company_code:
         return RedirectResponse(url="/projects?err=no_company_code", status_code=303)
 
+    # Tự build file template tại WEB (không gọi Service A)
     return await build_projects_lots_template(token, company_code)
 
 
@@ -93,18 +94,76 @@ async def import_form(request: Request):
         {"request": request, "title": "Nhập dự án từ Excel", "me": me},
     )
 
-@router.post("/import")
-async def import_xlsx(request: Request, file: UploadFile = File(...)):
+@router.post("/import/preview", response_class=HTMLResponse)
+async def import_preview(request: Request, file: UploadFile = File(...)):
     token = get_access_token(request)
-    if not token:
+    me = await fetch_me(token)
+    if not me:
         return RedirectResponse(url="/login?next=/projects/import", status_code=303)
 
-    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=180.0) as client:
-        files = {"file": (file.filename, await file.read(), file.content_type or "application/octet-stream")}
-        r = await client.post(EP_IMPORT_XLSX, headers={"Authorization": f"Bearer {token}"}, files=files)
+    file_bytes = await file.read()
+    preview = await handle_import_preview(file_bytes, token)
 
-    to = "/projects?msg=import_ok" if r.status_code == 200 else "/projects/import?err=import_failed"
-    return RedirectResponse(url=to, status_code=303)
+    if not preview.get("ok"):
+        # Lỗi template / dữ liệu → quay về form và báo lỗi
+        return templates.TemplateResponse(
+            "pages/projects/import.html",
+            {"request": request, "title": "Nhập dự án từ Excel", "me": me, "err": preview.get("errors")},
+            status_code=400,
+        )
+
+    company_code = (me or {}).get("company_code") or ""
+    return templates.TemplateResponse(
+        "pages/projects/import_preview.html",
+        {
+            "request": request,
+            "title": "Xem trước import dự án",
+            "me": me,
+            "company_code": company_code,
+            "payload_json": json.dumps(preview, ensure_ascii=False),
+            "preview": preview,
+        },
+    )
+
+@router.post("/import/apply", response_class=HTMLResponse)
+async def import_apply(
+    request: Request,
+    payload: str = Form(...),
+    company_code: str = Form(...),
+):
+    token = get_access_token(request)
+    me = await fetch_me(token)
+    if not me:
+        return RedirectResponse(url="/login?next=/projects/import", status_code=303)
+
+    try:
+        data = json.loads(payload)
+    except Exception:
+        return templates.TemplateResponse(
+            "pages/projects/import.html",
+            {"request": request, "title": "Nhập dự án từ Excel", "me": me, "err": "Payload không hợp lệ."},
+            status_code=400,
+        )
+
+    result = await apply_import_projects(data, token, company_code=company_code)
+    if (result or {}).get("code") == 200:
+        # thành công hết -> quay về list, sẽ reload danh sách
+        return RedirectResponse(url="/projects?msg=import_ok", status_code=303)
+    else:
+        # có lỗi (207 hoặc 4xx/5xx) -> giữ lại preview + show lỗi
+        return templates.TemplateResponse(
+            "pages/projects/import_preview.html",
+            {
+                "request": request,
+                "title": "Xem trước import dự án",
+                "me": me,
+                "company_code": company_code,
+                "payload_json": json.dumps(data, ensure_ascii=False),
+                "preview": data,
+                "err": (result or {}).get("errors") or (result or {}).get("message", "Import thất bại"),
+            },
+            status_code=(result or {}).get("code", 400),
+        )
 
 
 # =========================
@@ -163,7 +222,7 @@ async def list_projects(
 
 
 # =========================
-# 3) DETAIL (đặt SAU các route tĩnh)
+# 3) DETAIL (đặt SAU route tĩnh)
 # =========================
 @router.get("/{project_id}", response_class=HTMLResponse)
 async def project_detail(request: Request, project_id: int = Path(...)):
@@ -200,7 +259,7 @@ async def project_detail(request: Request, project_id: int = Path(...)):
 
 
 # =========================
-# 4) CREATE - FORM
+# 4) CREATE (form + submit)
 # =========================
 @router.get("/create", response_class=HTMLResponse)
 async def create_form(request: Request):
@@ -213,10 +272,6 @@ async def create_form(request: Request):
         {"request": request, "title": "Thêm dự án", "me": me},
     )
 
-
-# =========================
-# 5) CREATE - ACTION
-# =========================
 @router.post("/create")
 async def create_submit(
     request: Request,
@@ -230,8 +285,8 @@ async def create_submit(
         return RedirectResponse(url="/login?next=/projects/create", status_code=303)
 
     payload = {
-        "project_code": project_code.strip(),
-        "name": name.strip(),
+        "project_code": (project_code or "").strip(),
+        "name": (name or "").strip(),
         "description": (description or "").strip() or None,
         "location": (location or "").strip() or None,
     }
@@ -244,7 +299,7 @@ async def create_submit(
 
 
 # =========================
-# 6) TOGGLE (Admin)
+# 5) TOGGLE (Admin)
 # =========================
 @router.post("/{project_id}/toggle")
 async def toggle_project(
@@ -271,68 +326,3 @@ async def toggle_project(
     redir = next or "/projects"
     to = f"{redir}?msg=toggled" if st == 200 else f"{redir}?err=toggle_failed"
     return RedirectResponse(url=to, status_code=303)
-
-# --- PREVIEW & APPLY IMPORT (HTML) ---
-from fastapi import Form
-from utils.excel_import import handle_import_projects, apply_import_projects
-import json
-
-@router.post("/import/preview", response_class=HTMLResponse)
-async def import_preview(request: Request, file: UploadFile = File(...)):
-    token = get_access_token(request)
-    me = await fetch_me(token)
-    if not me:
-        return RedirectResponse(url="/login?next=/projects/import", status_code=303)
-
-    try:
-        preview = await handle_import_projects(file, token)
-        company_code = (me or {}).get("company_code") or ""
-        return templates.TemplateResponse(
-            "pages/projects/import_preview.html",
-            {
-                "request": request, "title": "Xem trước import dự án", "me": me,
-                "company_code": company_code,
-                "payload_json": json.dumps(preview, ensure_ascii=False),
-                "preview": preview,
-            },
-        )
-    except Exception as e:
-        return templates.TemplateResponse(
-            "pages/projects/import.html",
-            {"request": request, "title": "Nhập dự án từ Excel", "me": me, "err": str(e)},
-            status_code=400,
-        )
-
-@router.post("/import/apply", response_class=HTMLResponse)
-async def import_apply(
-    request: Request,
-    payload: str = Form(...),
-    company_code: str = Form(...),
-    force_replace: bool = Form(False),
-):
-    token = get_access_token(request)
-    me = await fetch_me(token)
-    if not me:
-        return RedirectResponse(url="/login?next=/projects/import", status_code=303)
-
-    try:
-        data = json.loads(payload)
-    except Exception:
-        return templates.TemplateResponse(
-            "pages/projects/import.html",
-            {"request": request, "title": "Nhập dự án từ Excel", "me": me, "err": "Payload không hợp lệ."},
-            status_code=400,
-        )
-
-    res = apply_import_projects(data, token, company_code=company_code, force_replace=force_replace)
-    if (res or {}).get("code") == 200:
-        return RedirectResponse(url="/projects?msg=import_ok", status_code=303)
-    return templates.TemplateResponse(
-        "pages/projects/import_preview.html",
-        {
-            "request": request, "title": "Xem trước import dự án", "me": me,
-            "company_code": company_code, "payload_json": payload, "preview": data,
-            "err": (res or {}).get("message", "Import thất bại"),
-        },
-        status_code=(res or {}).get("code", 400),
-    )

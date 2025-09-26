@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bg-white rounded-xl border border-slate-200 p-5">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-xl font-semibold text-slate-800">Xem trước dữ liệu import</h2>
+      <p class="text-slate-500 text-sm">Kiểm tra kỹ trước khi áp dụng vào hệ thống.</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="/projects/import" class="px-3 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50">
+        ← Chọn file khác
+      </a>
+      <a href="/projects" class="px-3 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50">
+        Danh sách dự án
+      </a>
+    </div>
+  </div>
+
+  {% if err %}
+    <div class="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700">
+      <div class="font-medium mb-1"><i class="ri-error-warning-line mr-1"></i> Lỗi:</div>
+      {% if err is string %}
+        <div>{{ err }}</div>
+      {% else %}
+        <ul class="list-disc pl-5">
+          {% for e in err %}
+            <li>
+              {% if e.sheet %}<span class="font-mono">{{ e.sheet }}</span> {% endif %}
+              {% if e.row %}row {{ e.row }} {% endif %}
+              {% if e.field %}(<span class="font-mono">{{ e.field }}</span>) {% endif %}
+              - {{ e.msg or e }}
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
+      <div class="text-slate-500 text-sm">Số dự án</div>
+      <div class="text-2xl font-semibold">{{ preview.projects|length }}</div>
+    </div>
+    <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
+      <div class="text-slate-500 text-sm">Số lô</div>
+      <div class="text-2xl font-semibold">{{ preview.lots|length }}</div>
+    </div>
+    <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
+      <div class="text-slate-500 text-sm">Mã trùng (INACTIVE)</div>
+      <div class="text-2xl font-semibold text-amber-600">{{ preview.conflicts_inactive|length }}</div>
+    </div>
+    <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
+      <div class="text-slate-500 text-sm">Mã bị chặn (ACTIVE)</div>
+      <div class="text-2xl font-semibold text-rose-600">{{ preview.conflicts_active|length }}</div>
+    </div>
+  </div>
+
+  {% if preview.conflicts_active and preview.conflicts_active|length > 0 %}
+    <div class="mb-6 p-4 rounded-lg border border-rose-200 bg-rose-50">
+      <div class="font-medium text-rose-800 mb-2">
+        <i class="ri-close-circle-line mr-1"></i> Không thể import các dự án đang ACTIVE:
+      </div>
+      <div class="flex flex-wrap gap-2">
+        {% for c in preview.conflicts_active %}
+          <span class="px-2 py-1 rounded bg-white border border-rose-300 text-rose-800 text-sm font-mono">{{ c }}</span>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  {% if preview.errors and preview.errors|length > 0 %}
+    <div class="mb-6 p-4 rounded-lg border border-amber-200 bg-amber-50">
+      <div class="font-medium text-amber-800 mb-2">
+        <i class="ri-alert-line mr-1"></i> Lỗi dữ liệu cần sửa trong file:
+      </div>
+      <ul class="list-disc pl-5 text-amber-900">
+        {% for e in preview.errors %}
+          <li>
+            {% if e.sheet %}<span class="font-mono">{{ e.sheet }}</span> {% endif %}
+            {% if e.row %}row {{ e.row }} {% endif %}
+            {% if e.field %}(<span class="font-mono">{{ e.field }}</span>) {% endif %}
+            - {{ e.msg }}
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <form method="post" action="/projects/import/apply" class="mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+      <div class="md:col-span-2">
+        <label class="block text-sm text-slate-600 mb-1">Company code</label>
+        <input
+          type="text"
+          name="company_code"
+          value="{{ company_code }}"
+          placeholder="VD: KDO"
+          class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          required
+        />
+        <p class="text-xs text-slate-400 mt-1">SUPER_ADMIN: nhập company_code cần ghi dữ liệu vào.</p>
+      </div>
+      <div class="text-right md:col-span-2">
+        <input type="hidden" name="payload" value='{{ payload_json|tojson|safe }}'/>
+        <button type="submit"
+                class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
+                {% if (preview.errors and preview.errors|length>0) or (preview.conflicts_active and preview.conflicts_active|length>0) %}
+                  disabled
+                {% endif %}>
+          <i class="ri-upload-2-line mr-1"></i> Áp dụng import
+        </button>
+        {% if (preview.errors and preview.errors|length>0) or (preview.conflicts_active and preview.conflicts_active|length>0) %}
+          <div class="text-xs text-rose-600 mt-2">Sửa lỗi/loại bỏ dự án ACTIVE rồi xem trước lại.</div>
+        {% endif %}
+      </div>
+    </div>
+  </form>
+
+  <div class="mb-6">
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="font-semibold text-slate-800">Projects</h3>
+      <div class="text-sm text-slate-500">Hiển thị tối đa 200 dòng</div>
+    </div>
+    <div class="overflow-x-auto border border-slate-200 rounded-lg">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-50">
+          <tr class="text-left text-slate-600">
+            <th class="px-3 py-2 border-b">#</th>
+            <th class="px-3 py-2 border-b">project_code</th>
+            <th class="px-3 py-2 border-b">name</th>
+            <th class="px-3 py-2 border-b">description</th>
+            <th class="px-3 py-2 border-b">location</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for p in preview.projects[:200] %}
+          {% set is_dup = (p.project_code in preview.conflicts_inactive) %}
+          {% set is_block = (p.project_code in preview.conflicts_active) %}
+          <tr class="{% if is_block %}bg-rose-50{% elif is_dup %}bg-amber-50{% endif %}">
+            <td class="px-3 py-2 border-b">{{ loop.index }}</td>
+            <td class="px-3 py-2 border-b font-mono">{{ p.project_code }}</td>
+            <td class="px-3 py-2 border-b">{{ p.name }}</td>
+            <td class="px-3 py-2 border-b text-slate-600">{{ p.description }}</td>
+            <td class="px-3 py-2 border-b">{{ p.location }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="font-semibold text-slate-800">Lots</h3>
+      <div class="text-sm text-slate-500">Hiển thị tối đa 200 dòng</div>
+    </div>
+    <div class="overflow-x-auto border border-slate-200 rounded-lg">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-50">
+          <tr class="text-left text-slate-600">
+            <th class="px-3 py-2 border-b">#</th>
+            <th class="px-3 py-2 border-b">project_code</th>
+            <th class="px-3 py-2 border-b">lot_code</th>
+            <th class="px-3 py-2 border-b">name</th>
+            <th class="px-3 py-2 border-b">description</th>
+            <th class="px-3 py-2 border-b text-right">starting_price</th>
+            <th class="px-3 py-2 border-b text-right">deposit_amount</th>
+            <th class="px-3 py-2 border-b text-right">area</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for l in preview.lots[:200] %}
+          <tr>
+            <td class="px-3 py-2 border-b">{{ loop.index }}</td>
+            <td class="px-3 py-2 border-b font-mono">{{ l.project_code }}</td>
+            <td class="px-3 py-2 border-b font-mono">{{ l.lot_code }}</td>
+            <td class="px-3 py-2 border-b">{{ l.name }}</td>
+            <td class="px-3 py-2 border-b text-slate-600">{{ l.description }}</td>
+            <td class="px-3 py-2 border-b text-right">
+              {{ "{:,.0f}".format(l.starting_price) if l.starting_price is number else "" }}
+            </td>
+            <td class="px-3 py-2 border-b text-right">
+              {{ "{:,.0f}".format(l.deposit_amount) if l.deposit_amount is number else "" }}
+            </td>
+            <td class="px-3 py-2 border-b text-right">
+              {{ "{:,.2f}".format(l.area) if l.area is number else "" }}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

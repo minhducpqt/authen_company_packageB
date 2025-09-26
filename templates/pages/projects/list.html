@@ -1,132 +1,91 @@
 {% extends "base.html" %}
-
 {% block content %}
-<div class="flex justify-between items-center mb-4">
-  <h1 class="text-2xl font-semibold text-slate-800">Quản lý dự án</h1>
-  <div class="flex items-center gap-2">
-    <a href="/projects/create" class="btn btn-primary">
-      <i class="ri-add-line mr-1"></i> Thêm dự án
-    </a>
-
-    <!-- Export / Import -->
-    <a href="/projects/template" class="btn btn-outline">
-      <i class="ri-download-2-line mr-1"></i> Tải template
-    </a>
-    <form id="importForm" class="inline-flex items-center gap-2" onsubmit="return false;">
-      <input id="importFile" type="file" accept=".xlsx,.xls" class="hidden" />
-      <button type="button" class="btn" onclick="document.getElementById('importFile').click()">
+<div class="bg-white rounded-xl border border-slate-200 p-5">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-xl font-semibold text-slate-800">Quản lý dự án</h2>
+      <p class="text-slate-500 text-sm">Lọc theo trạng thái, tìm theo tên/mã.</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="/projects/template" class="topbtn border border-slate-300 bg-white text-slate-700">
+        <i class="ri-download-2-line mr-1"></i> Template
+      </a>
+      <a href="/projects/export" class="topbtn border border-slate-300 bg-white text-slate-700">
+        <i class="ri-download-cloud-2-line mr-1"></i> Export
+      </a>
+      <a href="/projects/import" class="topbtn bg-indigo-600 text-white hover:bg-indigo-700">
         <i class="ri-upload-2-line mr-1"></i> Import
+      </a>
+      <a href="/projects/create" class="topbtn bg-emerald-600 text-white hover:bg-emerald-700">
+        <i class="ri-add-line mr-1"></i> Thêm dự án
+      </a>
+    </div>
+  </div>
+
+  {% if load_err %}
+    <div class="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700">
+      <i class="ri-error-warning-line mr-1"></i> {{ load_err }}
+    </div>
+  {% endif %}
+
+  <form method="get" class="flex flex-wrap gap-3 items-end mb-4">
+    <div>
+      <label class="block text-sm text-slate-600 mb-1">Tìm kiếm</label>
+      <input name="q" value="{{ filters.q }}" placeholder="Tên hoặc mã dự án..."
+             class="rounded-lg border border-slate-300 px-3 py-2 w-64"/>
+    </div>
+    <div>
+      <label class="block text-sm text-slate-600 mb-1">Trạng thái</label>
+      <select name="status" class="rounded-lg border border-slate-300 px-3 py-2">
+        <option value="ACTIVE"   {% if filters.status=='ACTIVE' %}selected{% endif %}>ACTIVE</option>
+        <option value="INACTIVE" {% if filters.status=='INACTIVE' %}selected{% endif %}>INACTIVE</option>
+        <option value="ALL"      {% if filters.status=='ALL' %}selected{% endif %}>ALL</option>
+      </select>
+    </div>
+    <div>
+      <button class="px-4 py-2 rounded-lg bg-slate-800 text-white hover:bg-slate-900">
+        <i class="ri-search-line mr-1"></i> Lọc
       </button>
-    </form>
+    </div>
+  </form>
+
+  <div class="overflow-x-auto border border-slate-200 rounded-lg">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-50">
+        <tr class="text-left text-slate-600">
+          <th class="px-3 py-2 border-b">#</th>
+          <th class="px-3 py-2 border-b">Mã</th>
+          <th class="px-3 py-2 border-b">Tên dự án</th>
+          <th class="px-3 py-2 border-b">Trạng thái</th>
+          <th class="px-3 py-2 border-b">Vị trí</th>
+          <th class="px-3 py-2 border-b">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for p in page.data %}
+        <tr>
+          <td class="px-3 py-2 border-b">{{ loop.index + (page.page-1)*page.size }}</td>
+          <td class="px-3 py-2 border-b font-mono">{{ p.project_code }}</td>
+          <td class="px-3 py-2 border-b">{{ p.name }}</td>
+          <td class="px-3 py-2 border-b">{{ p.status }}</td>
+          <td class="px-3 py-2 border-b">{{ p.location }}</td>
+          <td class="px-3 py-2 border-b">
+            <a href="/projects/{{ p.id }}" class="px-2 py-1 rounded border border-slate-300 hover:bg-slate-50">Chi tiết</a>
+            {% if me.role in ['SUPER_ADMIN','COMPANY_ADMIN'] %}
+              <form method="post" action="/projects/{{ p.id }}/toggle" class="inline"
+                    onsubmit="return confirm('Xác nhận {{ 'disable' if p.status=='ACTIVE' else 'enable' }} dự án?')">
+                <input type="hidden" name="action" value="{{ 'disable' if p.status=='ACTIVE' else 'enable' }}"/>
+                <input type="hidden" name="next" value="/projects?q={{ filters.q }}&status={{ filters.status }}"/>
+                <button class="px-2 py-1 rounded border border-slate-300 hover:bg-slate-50">
+                  {{ 'Disable' if p.status=='ACTIVE' else 'Enable' }}
+                </button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
   </div>
 </div>
-
-<!-- Filter -->
-<form method="get" action="/projects" class="flex items-center gap-2 mb-4">
-  <input type="text" name="q" placeholder="Tìm kiếm dự án..."
-         value="{{ request.query_params.get('q') or '' }}"
-         class="border rounded px-3 py-1 w-64"/>
-  <select name="status" class="border rounded px-2 py-1">
-    <option value="">-- Trạng thái --</option>
-    <option value="ACTIVE" {% if request.query_params.get('status')=='ACTIVE' %}selected{% endif %}>ACTIVE</option>
-    <option value="INACTIVE" {% if request.query_params.get('status')=='INACTIVE' %}selected{% endif %}>INACTIVE</option>
-  </select>
-  <button type="submit" class="btn">Lọc</button>
-</form>
-
-<!-- Danh sách dự án -->
-<table class="min-w-full bg-white border border-slate-200 rounded-xl">
-  <thead>
-    <tr class="bg-slate-100 text-left">
-      <th class="px-3 py-2 border-b">ID</th>
-      <th class="px-3 py-2 border-b">Mã dự án</th>
-      <th class="px-3 py-2 border-b">Tên dự án</th>
-      <th class="px-3 py-2 border-b">Trạng thái</th>
-      <th class="px-3 py-2 border-b">Hành động</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for p in projects %}
-    <tr class="hover:bg-slate-50">
-      <td class="px-3 py-2 border-b">{{ p.id }}</td>
-      <td class="px-3 py-2 border-b">{{ p.project_code }}</td>
-      <td class="px-3 py-2 border-b">
-        <a href="/projects/{{ p.id }}" class="text-indigo-600 hover:underline">
-          {{ p.name }}
-        </a>
-      </td>
-      <td class="px-3 py-2 border-b">
-        {% if p.status == 'ACTIVE' %}
-          <span class="text-green-600 font-semibold">ACTIVE</span>
-        {% else %}
-          <span class="text-red-600 font-semibold">INACTIVE</span>
-        {% endif %}
-      </td>
-      <td class="px-3 py-2 border-b">
-        {% if role == 'COMPANY_ADMIN' %}
-          {% if p.status == 'ACTIVE' %}
-          <form method="post" action="/projects/{{ p.id }}/disable" class="inline">
-            <button type="submit" class="text-sm text-red-600 hover:underline"
-                    onclick="return confirm('Vô hiệu hóa dự án này?');">Disable</button>
-          </form>
-          {% else %}
-          <form method="post" action="/projects/{{ p.id }}/enable" class="inline">
-            <button type="submit" class="text-sm text-green-600 hover:underline"
-                    onclick="return confirm('Kích hoạt dự án này?');">Enable</button>
-          </form>
-          {% endif %}
-        {% endif %}
-      </td>
-    </tr>
-    {% else %}
-    <tr>
-      <td colspan="5" class="text-center py-4 text-slate-500">Không có dự án nào</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-
-<script>
-  const fileInput = document.getElementById('importFile');
-  fileInput.addEventListener('change', async (e) => {
-    const f = e.target.files[0];
-    if (!f) return;
-
-    const fd = new FormData();
-    fd.append('file', f);
-    const r = await fetch('/projects/import/preview', { method: 'POST', body: fd });
-    const js = await r.json();
-
-    if (!js.ok) {
-      alert(js.error || 'Import preview failed');
-      return;
-    }
-
-    const conflicts = js.preview.conflicts || [];
-    const msg = `Sẽ import:\n- Projects: ${js.preview.projects.length}\n- Lots: ${js.preview.lots.length}\n` +
-                (conflicts.length ? `* Mã dự án trùng: ${conflicts.join(', ')}\n` : '') +
-                `\nTiếp tục?`;
-    if (!confirm(msg)) return;
-
-    let companyCode = '{{ me.company_code or "" }}'.trim();
-    if (!companyCode) {
-      companyCode = prompt('Nhập company_code để import vào:') || '';
-      if (!companyCode) return;
-    }
-
-    const fd2 = new FormData();
-    fd2.append('payload_json', JSON.stringify(js.preview));
-    fd2.append('company_code', companyCode);
-    fd2.append('force_replace', 'true');
-
-    const r2 = await fetch('/projects/import/apply', { method: 'POST', body: fd2 });
-    const js2 = await r2.json();
-    if (js2.code === 200) {
-      alert('Import thành công!');
-      location.reload();
-    } else {
-      alert(js2.message || 'Import thất bại');
-    }
-  });
-</script>
 {% endblock %}
