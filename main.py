@@ -1,20 +1,24 @@
-# main.py (chỉ thêm 1 dòng include)
+# main.py
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
+
 from fastapi_account_manager.middlewares.auth_guard import AuthGuardMiddleware
 from fastapi_account_manager.routers.auth import router as auth_router
 from routers.dashboard import router as dashboard_router
-from routers.account import router as account_router   # <-- thêm
-from fastapi.responses import RedirectResponse
+from routers.account import router as account_router
+from routers.projects import router as projects_router   # <-- THÊM DÒNG NÀY
 
 app = FastAPI(title="Dashboard Công ty — v20")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.add_middleware(AuthGuardMiddleware)
 
+# Routers
 app.include_router(auth_router)
 app.include_router(dashboard_router)
-app.include_router(account_router)  # <-- thêm
-
+app.include_router(account_router)
+app.include_router(projects_router)                      # <-- THÊM DÒNG NÀY
+x`
 @app.get("/healthz")
 def healthz():
     return {"ok": True}

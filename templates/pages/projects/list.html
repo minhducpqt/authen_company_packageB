@@ -9,7 +9,7 @@
     </a>
 
     <!-- Export / Import -->
-    <a href="/projects-io/template" class="btn btn-outline">
+    <a href="/projects/template" class="btn btn-outline">
       <i class="ri-download-2-line mr-1"></i> Tải template
     </a>
     <form id="importForm" class="inline-flex items-center gap-2" onsubmit="return false;">
@@ -94,7 +94,7 @@
 
     const fd = new FormData();
     fd.append('file', f);
-    const r = await fetch('/projects-io/import/preview', { method: 'POST', body: fd });
+    const r = await fetch('/projects/import/preview', { method: 'POST', body: fd });
     const js = await r.json();
 
     if (!js.ok) {
@@ -119,7 +119,7 @@
     fd2.append('company_code', companyCode);
     fd2.append('force_replace', 'true');
 
-    const r2 = await fetch('/projects-io/import/apply', { method: 'POST', body: fd2 });
+    const r2 = await fetch('/projects/import/apply', { method: 'POST', body: fd2 });
     const js2 = await r2.json();
     if (js2.code === 200) {
       alert('Import thành công!');
