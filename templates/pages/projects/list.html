@@ -4,7 +4,7 @@
   <div class="flex items-center justify-between mb-4">
     <div>
       <h2 class="text-xl font-semibold text-slate-800">Quản lý dự án</h2>
-      <p class="text-slate-500 text-sm">Lọc theo trạng thái, tìm theo tên/mã.</p>
+      <p class="text-slate-500 text-sm">Tìm kiếm và lọc theo trạng thái.</p>
     </div>
     <div class="flex gap-2">
       <a href="/projects/template" class="topbtn border border-slate-300 bg-white text-slate-700">
@@ -28,24 +28,19 @@
     </div>
   {% endif %}
 
-  <form method="get" class="flex flex-wrap gap-3 items-end mb-4">
+  <form id="filterForm" action="/projects" method="get" class="flex flex-wrap gap-3 items-end mb-4">
     <div>
       <label class="block text-sm text-slate-600 mb-1">Tìm kiếm</label>
-      <input name="q" value="{{ filters.q }}" placeholder="Tên hoặc mã dự án..."
-             class="rounded-lg border border-slate-300 px-3 py-2 w-64"/>
+      <input id="qInput" name="q" value="{{ filters.q }}" placeholder="Tên hoặc mã dự án..."
+             class="rounded-lg border border-slate-300 px-3 py-2 w-64" autofocus />
     </div>
     <div>
       <label class="block text-sm text-slate-600 mb-1">Trạng thái</label>
-      <select name="status" class="rounded-lg border border-slate-300 px-3 py-2">
+      <select id="statusSelect" name="status" class="rounded-lg border border-slate-300 px-3 py-2">
+        <option value="ALL"      {% if filters.status=='ALL' %}selected{% endif %}>ALL</option>
         <option value="ACTIVE"   {% if filters.status=='ACTIVE' %}selected{% endif %}>ACTIVE</option>
         <option value="INACTIVE" {% if filters.status=='INACTIVE' %}selected{% endif %}>INACTIVE</option>
-        <option value="ALL"      {% if filters.status=='ALL' %}selected{% endif %}>ALL</option>
       </select>
-    </div>
-    <div>
-      <button class="px-4 py-2 rounded-lg bg-slate-800 text-white hover:bg-slate-900">
-        <i class="ri-search-line mr-1"></i> Lọc
-      </button>
     </div>
   </form>
 
@@ -67,19 +62,22 @@
           <td class="px-3 py-2 border-b">{{ loop.index + (page.page-1)*page.size }}</td>
           <td class="px-3 py-2 border-b font-mono">{{ p.project_code }}</td>
           <td class="px-3 py-2 border-b">{{ p.name }}</td>
-          <td class="px-3 py-2 border-b">{{ p.status }}</td>
+          <td class="px-3 py-2 border-b">
+            <span class="px-2 py-1 rounded text-xs font-medium
+              {% if p.status=='ACTIVE' %} bg-emerald-100 text-emerald-700
+              {% else %} bg-slate-100 text-slate-600 {% endif %}">
+              {{ p.status }}
+            </span>
+          </td>
           <td class="px-3 py-2 border-b">{{ p.location }}</td>
           <td class="px-3 py-2 border-b">
             <a href="/projects/{{ p.id }}" class="px-2 py-1 rounded border border-slate-300 hover:bg-slate-50">Chi tiết</a>
             {% if me.role in ['SUPER_ADMIN','COMPANY_ADMIN'] %}
-              <form method="post" action="/projects/{{ p.id }}/toggle" class="inline"
-                    onsubmit="return confirm('Xác nhận {{ 'disable' if p.status=='ACTIVE' else 'enable' }} dự án?')">
-                <input type="hidden" name="action" value="{{ 'disable' if p.status=='ACTIVE' else 'enable' }}"/>
-                <input type="hidden" name="next" value="/projects?q={{ filters.q }}&status={{ filters.status }}"/>
-                <button class="px-2 py-1 rounded border border-slate-300 hover:bg-slate-50">
-                  {{ 'Disable' if p.status=='ACTIVE' else 'Enable' }}
-                </button>
-              </form>
+              <button type="button"
+                      class="px-2 py-1 rounded border border-slate-300 hover:bg-slate-50"
+                      onclick="confirmToggle('{{ p.id }}','{{ 'disable' if p.status=='ACTIVE' else 'enable' }}','{{ filters.q }}','{{ filters.status }}')">
+                {{ 'Disable' if p.status=='ACTIVE' else 'Enable' }}
+              </button>
             {% endif %}
           </td>
         </tr>
@@ -88,4 +86,74 @@
     </table>
   </div>
 </div>
+
+<!-- Popup Confirm -->
+<div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50">
+  <div class="bg-white rounded-xl shadow-lg p-6 w-96">
+    <h3 class="text-lg font-semibold mb-4">Xác nhận thay đổi</h3>
+    <p id="confirmText" class="mb-6 text-slate-700"></p>
+    <div class="flex justify-end gap-3">
+      <button type="button" onclick="closeModal()" class="px-4 py-2 rounded border border-slate-300 hover:bg-slate-50">Hủy</button>
+      <form id="confirmForm" method="post">
+        <input type="hidden" name="action" id="confirmAction">
+        <input type="hidden" name="next" id="confirmNext">
+        <button type="submit" class="px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700">Xác nhận</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Debounce helper
+  function debounce(fn, wait) {
+    let t; return function(...args) {
+      clearTimeout(t); t = setTimeout(() => fn.apply(this, args), wait);
+    };
+  }
+
+  const form = document.getElementById('filterForm');
+  const qInput = document.getElementById('qInput');
+  const statusSelect = document.getElementById('statusSelect');
+
+  // Khôi phục focus & vị trí con trỏ sau khi reload
+  window.addEventListener('DOMContentLoaded', () => {
+    if (sessionStorage.getItem('projects_q_focus') === '1') {
+      const pos = parseInt(sessionStorage.getItem('projects_q_cursor') || qInput.value.length, 10);
+      qInput.focus();
+      try { qInput.setSelectionRange(pos, pos); } catch (e) {}
+      sessionStorage.removeItem('projects_q_focus');
+      sessionStorage.removeItem('projects_q_cursor');
+    }
+  });
+
+  // Tìm kiếm: debounce, lưu vị trí con trỏ & focus trước khi submit
+  const submitWithCaret = debounce(() => {
+    try {
+      sessionStorage.setItem('projects_q_focus', '1');
+      sessionStorage.setItem('projects_q_cursor', qInput.selectionStart ?? (qInput.value||'').length);
+    } catch(e) {}
+    form.submit();
+  }, 450);
+
+  qInput.addEventListener('input', submitWithCaret);
+
+  // Đổi trạng thái: submit ngay
+  statusSelect.addEventListener('change', () => form.submit());
+
+  // Modal confirm cho toggle
+  function confirmToggle(id, action, q, status) {
+    document.getElementById('confirmText').innerText =
+      `Bạn có chắc muốn ${action.toUpperCase()} dự án #${id}?`;
+    document.getElementById('confirmForm').action = `/projects/${id}/toggle`;
+    document.getElementById('confirmAction').value = action;
+    document.getElementById('confirmNext').value =
+      `/projects?q=${encodeURIComponent(q||'')}&status=${encodeURIComponent(status||'ALL')}`;
+    const m = document.getElementById('confirmModal');
+    m.classList.remove('hidden'); m.classList.add('flex');
+  }
+  function closeModal() {
+    const m = document.getElementById('confirmModal');
+    m.classList.add('hidden'); m.classList.remove('flex');
+  }
+</script>
 {% endblock %}

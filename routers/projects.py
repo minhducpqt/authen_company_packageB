@@ -181,7 +181,7 @@ async def import_apply(
 async def list_projects(
     request: Request,
     q: Optional[str] = Query(None, description="free text by name/code"),
-    status: Optional[str] = Query("ACTIVE", description="ACTIVE|INACTIVE|ALL"),
+    status: Optional[str] = Query("ALL", description="ACTIVE|INACTIVE|ALL"),
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=200),
 ):
