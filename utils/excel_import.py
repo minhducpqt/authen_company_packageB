@@ -1,145 +1,183 @@
-import io
-import json
-import pandas as pd
-from fastapi import UploadFile
-from typing import Dict, Any, List
-from app.services import admin_client
+# utils/excel_import.py  (WEB)
+from __future__ import annotations
+from typing import List, Dict, Any, Tuple
+from io import BytesIO
+import unicodedata
+from openpyxl import load_workbook
+from services import admin_client  # dùng client đang gọi Service A
 
-MANDATORY_PROJECTS = ["project_code", "name"]
-MANDATORY_LOTS = ["project_code", "lot_code", "name", "starting_price", "deposit_amount"]
+# ---------- Normalize helpers ----------
+def _strip_accents(s: str) -> str:
+    if s is None: return ""
+    nkfd = unicodedata.normalize("NFD", str(s))
+    no_acc = "".join(ch for ch in nkfd if not unicodedata.combining(ch))
+    return unicodedata.normalize("NFC", no_acc)
 
-def _ensure_headers(df: pd.DataFrame, required: List[str], sheet_name: str):
-    missing = [c for c in required if c not in df.columns]
-    if missing:
-        raise ValueError(f"Thiếu cột bắt buộc trong sheet '{sheet_name}': {', '.join(missing)}")
+def normalize_code(code: str) -> str:
+    if code is None: return ""
+    return _strip_accents(str(code)).upper().replace(" ", "")
 
-def _coerce_numeric(df: pd.DataFrame, cols: List[str], sheet: str):
-    for c in cols:
-        if c in df.columns:
-            try:
-                df[c] = pd.to_numeric(df[c], errors="coerce")
-            except Exception:
-                raise ValueError(f"Giá trị cột '{c}' ở sheet '{sheet}' không phải số.")
+def normalize_text(s: str) -> str:
+    if s is None: return ""
+    return " ".join(str(s).strip().split())
 
-async def handle_import_projects(file: UploadFile, access: str) -> Dict[str, Any]:
-    """
-    Đọc file, verify template + dữ liệu; trả về preview + danh sách project_code trùng.
-    """
+def _headerize(s: str) -> str:
+    s = _strip_accents(str(s)).strip().lower()
+    for ch in "-./": s = s.replace(ch, " ")
+    return "_".join(s.split())
+
+REQ_PROJECTS = {"project_code", "name"}            # chấp nhận 'project_name'
+REQ_LOTS     = {"project_code", "lot_code", "name", "starting_price", "deposit_amount"}
+
+def _validate_headers(headers: List[str], required: set[str], sheet: str) -> List[str]:
+    hset = set(headers)
+    if "project_name" in hset and "name" not in hset:
+        hset.add("name")
+    miss = sorted(required - hset)
+    return [f"Sheet '{sheet}': thiếu cột bắt buộc: {', '.join(miss)}"] if miss else []
+
+def _read_sheet(ws) -> Tuple[List[str], List[List[Any]]]:
+    rows = list(ws.iter_rows(values_only=True))
+    if not rows: return [], []
+    headers = [_headerize((c or "").strip()) for c in rows[0]]
+    return headers, rows[1:]
+
+def _num(v):
+    if v in ("", None): return None, None
+    try:
+        return float(v), None
+    except Exception:
+        return None, "not_a_number"
+
+# ---------- Preview ----------
+async def handle_import_projects(file, access_token: str) -> Dict[str, Any]:
     content = await file.read()
     try:
-        xls = pd.ExcelFile(io.BytesIO(content))
+        wb = load_workbook(BytesIO(content), data_only=True)
     except Exception:
-        raise ValueError("File tải lên không phải Excel hợp lệ (.xlsx/.xls).")
+        raise ValueError("File tải lên không phải Excel hợp lệ.")
 
-    if not set(["projects", "lots"]).issubset(set(xls.sheet_names)):
-        raise ValueError("Template không hợp lệ. Yêu cầu có đủ 2 sheet: 'projects' và 'lots'.")
+    sheets = {s.lower(): s for s in wb.sheetnames}
+    if "projects" not in sheets or "lots" not in sheets:
+        raise ValueError("Template cần đủ 2 sheet: 'projects' và 'lots'.")
 
-    dfp = pd.read_excel(xls, sheet_name="projects").fillna("")
-    dfl = pd.read_excel(xls, sheet_name="lots").fillna("")
+    # projects
+    ws_p = wb[sheets["projects"]]
+    p_headers, p_data = _read_sheet(ws_p)
+    errs = _validate_headers(p_headers, REQ_PROJECTS, "projects")
+    if errs:
+        return {"projects": [], "lots": [], "errors":[{"sheet":"projects","row":1,"field":"_header","msg":errs[0]}], "will_replace":[]}
 
-    _ensure_headers(dfp, MANDATORY_PROJECTS, "projects")
-    _ensure_headers(dfl, MANDATORY_LOTS, "lots")
+    p_idx = {h:i for i,h in enumerate(p_headers)}
+    projects, errors = [], []
 
-    _coerce_numeric(dfl, ["starting_price", "deposit_amount", "area"], "lots")
+    for ridx, row in enumerate(p_data, start=2):
+        code = normalize_code(row[p_idx.get("project_code")] if "project_code" in p_idx else "")
+        name = normalize_text(
+            row[p_idx.get("name")] if "name" in p_idx else row[p_idx.get("project_name")] if "project_name" in p_idx else ""
+        )
+        desc = normalize_text(row[p_idx.get("description")]) if "description" in p_idx else ""
+        loc  = normalize_text(row[p_idx.get("location")])    if "location" in p_idx else ""
 
-    if dfp[MANDATORY_PROJECTS].replace("", pd.NA).isnull().any().any():
-        raise ValueError("Sheet 'projects' có dòng thiếu dữ liệu bắt buộc (project_code, name).")
-    if dfl[MANDATORY_LOTS].replace("", pd.NA).isnull().any().any():
-        raise ValueError("Sheet 'lots' có dòng thiếu dữ liệu bắt buộc (project_code, lot_code, name, starting_price, deposit_amount).")
+        if not code: errors.append({"sheet":"projects","row":ridx,"field":"project_code","msg":"Thiếu project_code"})
+        if not name: errors.append({"sheet":"projects","row":ridx,"field":"name","msg":"Thiếu name"})
 
-    # Chuẩn hoá
-    projects = []
-    for r in dfp.to_dict(orient="records"):
-        projects.append({
-            "project_code": str(r.get("project_code")).strip(),
-            "name": str(r.get("name")).strip(),
-            "description": str(r.get("description") or "").strip() or None,
-            "location": str(r.get("location") or "").strip() or None,
-        })
+        projects.append({"project_code": code, "name": name, "description": desc or None, "location": loc or None})
 
+    # trùng mã trong file
+    seen = set()
+    for i, p in enumerate(projects, start=2):
+        c = p["project_code"]
+        if c:
+            if c in seen:
+                errors.append({"sheet":"projects","row":i,"field":"project_code","msg":"Trùng project_code trong file"})
+            seen.add(c)
+
+    # lots
+    ws_l = wb[sheets["lots"]]
+    l_headers, l_data = _read_sheet(ws_l)
+    errs = _validate_headers(l_headers, REQ_LOTS, "lots")
+    if errs:
+        return {"projects": projects, "lots": [], "errors":[{"sheet":"lots","row":1,"field":"_header","msg":errs[0]}], "will_replace":[]}
+
+    l_idx = {h:i for i,h in enumerate(l_headers)}
     lots = []
-    for r in dfl.to_dict(orient="records"):
+
+    for ridx, row in enumerate(l_data, start=2):
+        pj = normalize_code(row[l_idx.get("project_code")])
+        lc = normalize_code(row[l_idx.get("lot_code")])
+        name = normalize_text(row[l_idx.get("name")])
+        desc = normalize_text(row[l_idx.get("description")]) if "description" in l_idx else ""
+
+        sp, e1 = _num(row[l_idx.get("starting_price")])
+        dp, e2 = _num(row[l_idx.get("deposit_amount")])
+        area, e3 = _num(row[l_idx.get("area")]) if "area" in l_idx else (None, None)
+
+        if not pj:   errors.append({"sheet":"lots","row":ridx,"field":"project_code","msg":"Thiếu project_code"})
+        if not lc:   errors.append({"sheet":"lots","row":ridx,"field":"lot_code","msg":"Thiếu lot_code"})
+        if not name: errors.append({"sheet":"lots","row":ridx,"field":"name","msg":"Thiếu name"})
+
+        if e1: errors.append({"sheet":"lots","row":ridx,"field":"starting_price","msg":"Giá khởi điểm phải là số"})
+        if e2: errors.append({"sheet":"lots","row":ridx,"field":"deposit_amount","msg":"Tiền cọc phải là số"})
+        if e3: errors.append({"sheet":"lots","row":ridx,"field":"area","msg":"Diện tích phải là số"})
+        if (sp is not None) and (dp is not None) and sp < dp:
+            errors.append({"sheet":"lots","row":ridx,"field":"starting_price","msg":"Giá khởi điểm phải ≥ tiền cọc"})
+
         lots.append({
-            "project_code": str(r.get("project_code")).strip(),
-            "lot_code": str(r.get("lot_code")).strip(),
-            "name": str(r.get("name")).strip(),
-            "description": (str(r.get("description")).strip() or None) if "description" in r else None,
-            "starting_price": float(r.get("starting_price")) if r.get("starting_price") not in ("", None) else None,
-            "deposit_amount": float(r.get("deposit_amount")) if r.get("deposit_amount") not in ("", None) else None,
-            "area": float(r.get("area")) if r.get("area") not in ("", None) else None,
+            "project_code": pj, "lot_code": lc, "name": name, "description": desc or None,
+            "starting_price": sp, "deposit_amount": dp, "area": area
         })
 
-    # Xác định trùng mã trên Service A (nếu cần, có thể truyền company_code khi list)
-    codes = sorted({p["project_code"] for p in projects})
-    conflicts: List[str] = []
+    # kiểm tra tồn tại trên Service A: ACTIVE -> lỗi, INACTIVE -> will_replace
+    will_replace = []
+    codes = sorted({p["project_code"] for p in projects if p["project_code"]})
     for code in codes:
-        ex = admin_client.get_project_by_code(access, code)
+        ex = admin_client.get_project_by_code(access_token, code)
         if ex.get("code") == 200 and ex.get("data"):
-            conflicts.append(code)
+            status = (ex["data"].get("status") or "").upper()
+            if status == "ACTIVE":
+                errors.append({"sheet":"projects","row":"?", "field":"project_code", "msg": f"{code} đang ACTIVE, không thể ghi đè"})
+            else:
+                will_replace.append(code)
 
-    return {"projects": projects, "lots": lots, "conflicts": conflicts}
+    return {"projects": projects, "lots": lots, "errors": errors, "will_replace": will_replace}
 
-
-def apply_import_projects(payload: Dict[str, Any], access: str, *, company_code: str, force_replace: bool) -> Dict[str, Any]:
-    """
-    Ghi dữ liệu vào Service A.
-    - Project luôn set INACTIVE
-    - Lots luôn ACTIVE
-    - Nếu trùng project_code -> Server A sẽ REPLACE (đã cài trong API)
-    """
+# ---------- Apply ----------
+def apply_import_projects(payload: Dict[str, Any], access_token: str, *, company_code: str, force_replace: bool) -> Dict[str, Any]:
     if not company_code:
         return {"code": 400, "message": "company_code_required"}
 
-    created, replaced = [], []
     projects = payload.get("projects") or []
-    lots = payload.get("lots") or []
+    lots     = payload.get("lots") or []
+
+    # chặn mọi ACTIVE ở server lần nữa
+    for p in projects:
+        code = p.get("project_code")
+        ex = admin_client.get_project_by_code(access_token, code)
+        if ex.get("code") == 200 and ex.get("data"):
+            if (ex["data"].get("status") or "").upper() == "ACTIVE":
+                return {"code": 409, "message": f"Dự án {code} đang ACTIVE, không thể ghi đè."}
 
     for p in projects:
         code = p["project_code"]
-        name = p["name"]
-
         cp = admin_client.create_project(
-            access,
-            {
-                "project_code": code,
-                "name": name,
-                "description": p.get("description"),
-                "location": p.get("location"),
-                "status": "INACTIVE",
-            },
-            company_code=company_code,   # <<-- GỬI X-Company-Code
+            access_token,
+            {"project_code": code, "name": p["name"], "description": p.get("description"), "location": p.get("location"), "status": "INACTIVE"},
+            company_code=company_code,
         )
         if cp.get("code") != 200:
-            return {
-                "code": cp.get("code", 400),
-                "message": f"Tạo dự án {code} thất bại: {cp.get('message', 'unknown')}",
-            }
+            return {"code": cp.get("code", 400), "message": f"Tạo/ghi đè dự án {code} thất bại: {cp.get('message', 'unknown')}"}
 
-        proj = cp.get("data") or {}
-        pid = proj.get("id")
+        pid = (cp.get("data") or {}).get("id")
         if not pid:
             return {"code": 500, "message": f"Thiếu id sau khi tạo dự án {code}"}
 
-        # Tạo (hoặc replace) lots — Service A set status='ACTIVE'
-        for l in [lot for lot in lots if (lot.get("project_code") or "").strip().upper() == code.strip().upper()]:
-            cl = admin_client.create_lot(
-                access,
-                pid,
-                {
-                    "lot_code": l["lot_code"],
-                    "name": l["name"],
-                    "description": l.get("description"),
-                    "starting_price": l.get("starting_price"),
-                    "deposit_amount": l.get("deposit_amount"),
-                    "area": l.get("area"),
-                },
-            )
+        for l in [x for x in lots if (x.get("project_code") or "").upper() == code.upper()]:
+            cl = admin_client.create_lot(access_token, pid, {
+                "lot_code": l["lot_code"], "name": l["name"], "description": l.get("description"),
+                "starting_price": l.get("starting_price"), "deposit_amount": l.get("deposit_amount"), "area": l.get("area")
+            })
             if cl.get("code") != 200:
-                return {
-                    "code": cl.get("code", 400),
-                    "message": f"Tạo lô {l['lot_code']} của {code} thất bại: {cl.get('message', 'unknown')}",
-                }
+                return {"code": cl.get("code", 400), "message": f"Tạo lô {l['lot_code']} của {code} thất bại: {cl.get('message','unknown')}"}
 
-        replaced.append(code)  # tạo mới hoặc replace đều coi là replaced cho đơn giản
-
-    return {"code": 200, "created": created, "replaced": replaced}
+    return {"code": 200}

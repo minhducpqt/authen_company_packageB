@@ -271,3 +271,68 @@ async def toggle_project(
     redir = next or "/projects"
     to = f"{redir}?msg=toggled" if st == 200 else f"{redir}?err=toggle_failed"
     return RedirectResponse(url=to, status_code=303)
+
+# --- PREVIEW & APPLY IMPORT (HTML) ---
+from fastapi import Form
+from utils.excel_import import handle_import_projects, apply_import_projects
+import json
+
+@router.post("/import/preview", response_class=HTMLResponse)
+async def import_preview(request: Request, file: UploadFile = File(...)):
+    token = get_access_token(request)
+    me = await fetch_me(token)
+    if not me:
+        return RedirectResponse(url="/login?next=/projects/import", status_code=303)
+
+    try:
+        preview = await handle_import_projects(file, token)
+        company_code = (me or {}).get("company_code") or ""
+        return templates.TemplateResponse(
+            "pages/projects/import_preview.html",
+            {
+                "request": request, "title": "Xem trước import dự án", "me": me,
+                "company_code": company_code,
+                "payload_json": json.dumps(preview, ensure_ascii=False),
+                "preview": preview,
+            },
+        )
+    except Exception as e:
+        return templates.TemplateResponse(
+            "pages/projects/import.html",
+            {"request": request, "title": "Nhập dự án từ Excel", "me": me, "err": str(e)},
+            status_code=400,
+        )
+
+@router.post("/import/apply", response_class=HTMLResponse)
+async def import_apply(
+    request: Request,
+    payload: str = Form(...),
+    company_code: str = Form(...),
+    force_replace: bool = Form(False),
+):
+    token = get_access_token(request)
+    me = await fetch_me(token)
+    if not me:
+        return RedirectResponse(url="/login?next=/projects/import", status_code=303)
+
+    try:
+        data = json.loads(payload)
+    except Exception:
+        return templates.TemplateResponse(
+            "pages/projects/import.html",
+            {"request": request, "title": "Nhập dự án từ Excel", "me": me, "err": "Payload không hợp lệ."},
+            status_code=400,
+        )
+
+    res = apply_import_projects(data, token, company_code=company_code, force_replace=force_replace)
+    if (res or {}).get("code") == 200:
+        return RedirectResponse(url="/projects?msg=import_ok", status_code=303)
+    return templates.TemplateResponse(
+        "pages/projects/import_preview.html",
+        {
+            "request": request, "title": "Xem trước import dự án", "me": me,
+            "company_code": company_code, "payload_json": payload, "preview": data,
+            "err": (res or {}).get("message", "Import thất bại"),
+        },
+        status_code=(res or {}).get("code", 400),
+    )
