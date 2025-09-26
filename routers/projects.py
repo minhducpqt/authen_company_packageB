@@ -8,6 +8,7 @@ from urllib.parse import urlencode, quote
 
 from fastapi import APIRouter, Request, Form, Query, Path, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
+from utils.excel_templates import build_projects_lots_template
 
 from utils.templates import templates
 from utils.auth import get_access_token, fetch_me
@@ -22,7 +23,6 @@ EP_CREATE       = "/api/v1/projects"
 EP_DETAIL       = "/api/v1/projects/{project_id}"
 EP_ENABLE       = "/api/v1/projects/{project_id}/enable"
 EP_DISABLE      = "/api/v1/projects/{project_id}/disable"
-EP_TPL_XLSX     = "/api/v1/projects/template"
 EP_EXPORT_XLSX  = "/api/v1/projects/export_xlsx"
 EP_IMPORT_XLSX  = "/api/v1/projects/import_xlsx"
 # -------------------------------------------------------
@@ -50,17 +50,13 @@ async def _post_json(client: httpx.AsyncClient, url: str, headers: dict, payload
 
 @router.get("/template")
 async def download_template(request: Request):
+    # Nếu muốn bắt buộc login để tải template, giữ chặn như sau:
     token = get_access_token(request)
     if not token:
         return RedirectResponse(url="/login?next=/projects/template", status_code=303)
 
-    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=20.0) as client:
-        r = await client.get(EP_TPL_XLSX, headers={"Authorization": f"Bearer {token}"})
-    return StreamingResponse(
-        iter([r.content]),
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": 'attachment; filename="projects_template.xlsx"'},
-    )
+    # WEB tự sinh file, không gọi API nữa
+    return build_projects_lots_template()
 
 @router.get("/export")
 async def export_xlsx(request: Request, q: str | None = None, status: str | None = "ACTIVE"):
