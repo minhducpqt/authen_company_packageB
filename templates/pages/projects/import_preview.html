@@ -104,7 +104,7 @@
       </p>
     </div>
       <div class="text-right md:col-span-2">
-        <input type="hidden" name="payload" value='{{ payload_json|tojson|safe }}'/>
+      <input type="hidden" name="payload" value='{{ payload_json|safe }}'/>
         <button type="submit"
                 class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
                 {% if (preview.errors and preview.errors|length>0) or (preview.conflicts_active and preview.conflicts_active|length>0) %}
