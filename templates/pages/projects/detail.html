@@ -1,50 +1,121 @@
 {% extends "base.html" %}
 {% block content %}
-
-{% if load_err %}
-  <div class="alert-err">{{ load_err }}</div>
-{% endif %}
-
-{% if project %}
-  <div class="card mb-4">
-    <div class="flex items-center justify-between">
-      <div>
-        <div class="text-sm text-slate-400">Mã dự án</div>
-        <div class="font-mono text-slate-700">{{ project.project_code }}</div>
-      </div>
-      <div>
-        {% if (project.status or 'ACTIVE') == 'ACTIVE' %}
-          <span class="badge-green">ACTIVE</span>
-        {% else %}
-          <span class="badge-gray">INACTIVE</span>
+<div class="bg-white rounded-xl border border-slate-200 p-5">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-xl font-semibold text-slate-800">
+        Chi tiết dự án
+        {% if project %}
+          <span class="font-mono text-slate-500">— {{ project.project_code }}</span>
         {% endif %}
+      </h2>
+      <p class="text-slate-500 text-sm">Thông tin tổng quan và danh sách lô thuộc dự án.</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="/projects" class="topbtn border border-slate-300 bg-white text-slate-700">
+        ← Danh sách dự án
+      </a>
+    </div>
+  </div>
+
+  {% if load_err %}
+    <div class="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700">
+      <i class="ri-error-warning-line mr-1"></i> {{ load_err }}
+    </div>
+  {% endif %}
+
+  {% if not project %}
+    <div class="p-4 rounded-lg bg-amber-50 border border-amber-200 text-amber-800">
+      Không tìm thấy dự án.
+    </div>
+  {% else %}
+
+  <!-- Thông tin dự án -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
+      <div class="text-slate-500 text-sm">Mã dự án</div>
+      <div class="text-lg font-mono">{{ project.project_code }}</div>
+    </div>
+    <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
+      <div class="text-slate-500 text-sm">Tên dự án</div>
+      <div class="text-lg font-semibold">{{ project.name }}</div>
+    </div>
+    <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
+      <div class="text-slate-500 text-sm">Trạng thái</div>
+      <div>
+        {% set st = (project.status or '') %}
+        <span class="inline-flex items-center px-2 py-1 rounded text-xs
+          {% if st=='ACTIVE' %} bg-emerald-100 text-emerald-700 border border-emerald-200
+          {% elif st=='INACTIVE' %} bg-amber-100 text-amber-700 border border-amber-200
+          {% elif st=='CLOSED' %} bg-slate-200 text-slate-700 border border-slate-300
+          {% else %} bg-slate-100 text-slate-600 border border-slate-200 {% endif %}">
+          {{ st or 'UNKNOWN' }}
+        </span>
       </div>
     </div>
-
-    <h2 class="text-xl font-semibold mt-2">{{ project.name }}</h2>
-    {% if project.location %}<div class="text-slate-500">{{ project.location }}</div>{% endif %}
-    {% if project.description %}<p class="mt-2 whitespace-pre-line">{{ project.description }}</p>{% endif %}
-
-    {% if me.role in ['SUPER_ADMIN','COMPANY_ADMIN'] %}
-    <div class="mt-4">
-      {% if (project.status or 'ACTIVE') == 'ACTIVE' %}
-        <form method="post" action="/projects/{{ project.id }}/toggle" data-confirm="Tắt dự án này?">
-          <input type="hidden" name="action" value="disable">
-          <input type="hidden" name="next" value="/projects/{{ project.id }}">
-          <button class="btn-danger">Disable</button>
-        </form>
-      {% else %}
-        <form method="post" action="/projects/{{ project.id }}/toggle" data-confirm="Bật lại dự án này?">
-          <input type="hidden" name="action" value="enable">
-          <input type="hidden" name="next" value="/projects/{{ project.id }}">
-          <button class="btn-primary">Enable</button>
-        </form>
-      {% endif %}
+    <div class="md:col-span-3 p-4 rounded-lg bg-slate-50 border border-slate-200">
+      <div class="text-slate-500 text-sm mb-1">Vị trí</div>
+      <div>{{ project.location or '—' }}</div>
     </div>
-    {% endif %}
+    <div class="md:col-span-3 p-4 rounded-lg bg-slate-50 border border-slate-200">
+      <div class="text-slate-500 text-sm mb-1">Mô tả</div>
+      <div class="whitespace-pre-wrap">{{ project.description or '—' }}</div>
+    </div>
   </div>
-{% endif %}
 
-<a href="/projects" class="link"><i class="ri-arrow-go-back-line"></i> Quay về danh sách</a>
+  <!-- Danh sách lô -->
+  <div class="flex items-center justify-between mb-2">
+    <h3 class="font-semibold text-slate-800">Danh sách lô ({{ lots_page.total }})</h3>
+  </div>
+  <div class="overflow-x-auto border border-slate-200 rounded-lg">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-50">
+        <tr class="text-left text-slate-600">
+          <th class="px-3 py-2 border-b">#</th>
+          <th class="px-3 py-2 border-b">Mã lô</th>
+          <th class="px-3 py-2 border-b">Tên lô</th>
+          <th class="px-3 py-2 border-b text-right">Diện tích</th>
+          <th class="px-3 py-2 border-b text-right">Giá khởi điểm</th>
+          <th class="px-3 py-2 border-b text-right">Tiền cọc</th>
+          <th class="px-3 py-2 border-b">Trạng thái</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for l in lots_page.data %}
+        <tr>
+          <td class="px-3 py-2 border-b">{{ loop.index }}</td>
+          <td class="px-3 py-2 border-b font-mono">{{ l.lot_code }}</td>
+          <td class="px-3 py-2 border-b">{{ l.name or '' }}</td>
+          <td class="px-3 py-2 border-b text-right">
+            {{ "{:,.2f}".format(l.area) if l.area is number else "" }}
+          </td>
+          <td class="px-3 py-2 border-b text-right">
+            {{ "{:,.0f}".format(l.starting_price) if l.starting_price is number else "" }}
+          </td>
+          <td class="px-3 py-2 border-b text-right">
+            {{ "{:,.0f}".format(l.deposit_amount) if l.deposit_amount is number else "" }}
+          </td>
+          <td class="px-3 py-2 border-b">
+            {% set ls = (l.status or '') %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs
+              {% if ls=='AVAILABLE' %} bg-emerald-100 text-emerald-700 border border-emerald-200
+              {% elif ls=='LOCKED' %} bg-amber-100 text-amber-700 border border-amber-200
+              {% elif ls=='SOLD' %} bg-slate-200 text-slate-700 border border-slate-300
+              {% else %} bg-slate-100 text-slate-600 border border-slate-200 {% endif %}">
+              {{ ls or '—' }}
+            </span>
+          </td>
+        </tr>
+      {% endfor %}
+      {% if not lots_page.data or lots_page.data|length == 0 %}
+        <tr>
+          <td colspan="7" class="px-3 py-6 text-center text-slate-500">Chưa có lô nào trong dự án này.</td>
+        </tr>
+      {% endif %}
+      </tbody>
+    </table>
+  </div>
 
+  {% endif %}
+</div>
 {% endblock %}

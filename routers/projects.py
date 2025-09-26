@@ -331,9 +331,11 @@ async def project_detail(request: Request, project_id: int = Path(...)):
 
     load_err = None
     project = None
+    lots_page = {"data": [], "total": 0}
 
     try:
-        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
+            # 1) Lấy project
             st, data = await _get_json(
                 client, EP_DETAIL.format(project_id=project_id), {"Authorization": f"Bearer {token}"}
             )
@@ -341,6 +343,23 @@ async def project_detail(request: Request, project_id: int = Path(...)):
                 project = data
             else:
                 load_err = f"Không tải được dự án (HTTP {st})."
+
+            # 2) Nếu có project_code thì lấy danh sách lô theo project_code
+            if project and project.get("project_code"):
+                params = {"project_code": project["project_code"], "size": 1000}
+                lst_st, lst = await _get_json(
+                    client, f"/api/v1/lots?{urlencode(params)}", {"Authorization": f"Bearer {token}"}
+                )
+                if lst_st == 200 and isinstance(lst, dict):
+                    lots_page = {
+                        "data": lst.get("data", []),
+                        "total": lst.get("total", 0),
+                    }
+                else:
+                    # không chặn trang — chỉ ghi nhận lỗi phần lots
+                    if not load_err:
+                        load_err = f"Không tải được danh sách lô (HTTP {lst_st})."
+
     except Exception as e:
         load_err = str(e)
 
@@ -348,13 +367,13 @@ async def project_detail(request: Request, project_id: int = Path(...)):
         "pages/projects/detail.html",
         {
             "request": request,
-            "title": f"Dự án #{project_id}",
+            "title": f"Dự án {project.get('project_code') if project else f'#{project_id}'}",
             "me": me,
             "project": project,
+            "lots_page": lots_page,
             "load_err": load_err,
         },
     )
-
 
 # =========================
 # 4) CREATE (form + submit)
