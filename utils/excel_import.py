@@ -253,82 +253,171 @@ async def handle_import_preview(file_bytes: bytes, access: str) -> Dict[str, Any
         "conflicts_inactive": conflicts_inactive, # những mã có thể replace
     }
 
-async def apply_import_projects(payload: Dict[str, Any], access: str, *, company_code: str) -> Dict[str, Any]:
+from services.admin_client import admin_client  # <- import client mới
+def apply_import_projects(payload: Dict[str, Any], access: str, *, company_code: str, force_replace: bool) -> Dict[str, Any]:
     """
-    Ghi dữ liệu lên Service A (từng dự án một).
-    - Yêu cầu: những mã có trong conflicts_active bị reject từ trước (preview).
-    - Project tạo/replace: POST /api/v1/projects  (X-Company-Code)
-    - Lots tạo theo: POST /api/v1/projects/{project_id}/lots
+    Tạo dự án + lô theo payload preview.
+    Trả về:
+      - 200: tất cả ok
+      - 207: có cái ok, có cái lỗi
+      - 400: thất bại
     """
     if not company_code:
         return {"code": 400, "message": "company_code_required"}
 
-    headers = {"Authorization": f"Bearer {access}", "X-Company-Code": company_code}
-    projects = payload.get("projects") or []
-    lots     = payload.get("lots") or []
-    conflicts_active = set(payload.get("conflicts_active") or [])
-
     created, replaced, errors = [], [], []
+    projects = payload.get("projects") or []
+    lots = payload.get("lots") or []
 
-    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=30.0) as client:
-        for p in projects:
-            code = p.get("project_code")
-            name = p.get("name")
-            if not code or not name:
-                errors.append(f"Bỏ qua dự án thiếu code/name (code={code})")
-                continue
+    for p in projects:
+        code = (p.get("project_code") or "").strip().upper()
 
-            if code in conflicts_active:
-                errors.append(f"Dự án {code} đang ACTIVE, không ghi đè.")
-                continue
+        cp = admin_client.create_project(
+            access,
+            {
+                "project_code": code,
+                "name": (p.get("name") or "").strip(),
+                "description": p.get("description") or None,
+                "location": p.get("location") or None,
+                "status": "INACTIVE",
+            },
+            company_code=company_code,
+        )
+        if cp.get("code") != 200:
+            errors.append({"project_code": code, "stage": "create_project", "message": f"HTTP {cp.get('code')}"})
+            continue
 
-            # Tạo/replace project (server A chịu trách nhiệm interpret replace)
-            resp = await client.post(
-                "/api/v1/projects",
-                headers=headers,
-                json={
-                    "project_code": code,
-                    "name": name,
-                    "description": p.get("description") or None,
-                    "location": p.get("location") or None,
-                    "status": "INACTIVE",  # mặc định
-                },
-            )
-            try:
-                data = resp.json()
-            except Exception:
-                data = None
+        pid = cp.get("id")
+        if not pid:
+            errors.append({"project_code": code, "stage": "create_project", "message": "missing_id_after_create"})
+            continue
 
-            if resp.status_code != 200 or not isinstance(data, dict):
-                errors.append(f"Tạo/cập nhật dự án {code} thất bại (HTTP {resp.status_code}).")
-                continue
-
-            proj = data.get("data") or data  # tuỳ API trả {data:{...}} hay {...}
-            pid = proj.get("id")
-            if not pid:
-                errors.append(f"Dự án {code}: không nhận được id sau khi tạo.")
-                continue
-
-            # Lots thuộc dự án code
-            related_lots = [l for l in lots if (l.get("project_code") or "") == code]
-            for l in related_lots:
-                body = {
-                    "lot_code": l.get("lot_code"),
+        # tạo lots
+        for l in [x for x in lots if (x.get("project_code") or "").strip().upper() == code]:
+            cl = admin_client.create_lot(
+                access,
+                pid,
+                {
+                    "lot_code": l["lot_code"],
                     "name": l.get("name"),
-                    "description": l.get("description") or None,
+                    "description": l.get("description"),
                     "starting_price": l.get("starting_price"),
                     "deposit_amount": l.get("deposit_amount"),
                     "area": l.get("area"),
-                }
-                resp2 = await client.post(
-                    f"/api/v1/projects/{pid}/lots",
-                    headers={"Authorization": f"Bearer {access}"},
-                    json=body,
-                )
-                if resp2.status_code != 200:
-                    errors.append(f"Tạo lô {l.get('lot_code')} của dự án {code} thất bại (HTTP {resp2.status_code}).")
+                },
+            )
+            if cl.get("code") != 200:
+                errors.append({
+                    "project_code": code,
+                    "lot_code": l["lot_code"],
+                    "stage": "create_lot",
+                    "message": f"HTTP {cl.get('code')}",
+                })
 
-            replaced.append(code)  # coi như replace cho đơn giản
+        replaced.append(code)
 
-    code = 200 if not errors else 207  # 207 = multi-status
-    return {"code": code, "created": created, "replaced": replaced, "errors": errors}
+    if errors and (created or replaced):
+        return {"code": 207, "created": created, "replaced": replaced, "errors": errors}
+    if errors and not (created or replaced):
+        return {"code": 400, "errors": errors}
+    return {"code": 200, "created": created, "replaced": replaced}
+
+# =========================
+# 1) PREVIEW
+# =========================
+
+async def handle_import_projects(file, access: str) -> Dict[str, Any]:
+    """
+    Đọc file, validate, chuẩn hóa và xác định các mã trùng/đang active.
+    Trả về dict cho trang preview.
+    """
+    content = await file.read()
+
+    try:
+        xls = pd.ExcelFile(io.BytesIO(content))
+    except Exception:
+        return {"ok": False, "errors": ["File không phải Excel hợp lệ (.xlsx/.xls)."]}
+
+    errors: List[dict] = []
+    if not set(["projects", "lots"]).issubset(set(xls.sheet_names)):
+        return {"ok": False, "errors": ["Template không hợp lệ. Cần 2 sheet: 'projects' và 'lots'."]}
+
+    dfp = pd.read_excel(xls, sheet_name="projects").fillna("")
+    dfl = pd.read_excel(xls, sheet_name="lots").fillna("")
+
+    # validate header
+    _ensure_headers(dfp, REQ_PROJECT_COLS, "projects", errors)
+    _ensure_headers(dfl, REQ_LOT_COLS, "lots", errors)
+    if errors:
+        return {"ok": False, "errors": errors}
+
+    # coerce số
+    _coerce_numeric(dfl, ["starting_price", "deposit_amount", "area"], "lots", errors)
+
+    # validate rỗng các cột bắt buộc
+    if dfp[REQ_PROJECT_COLS].replace("", pd.NA).isnull().any().any():
+        errors.append({"sheet": "projects", "msg": "Có ô bắt buộc bị trống (project_code, name)."})
+    if dfl[REQ_LOT_COLS].replace("", pd.NA).isnull().any().any():
+        errors.append({"sheet": "lots", "msg": "Có ô bắt buộc bị trống ở các cột lots."})
+    if errors:
+        return {"ok": False, "errors": errors}
+
+    # Chuẩn hóa
+    projects: List[Dict[str, Any]] = []
+    for r in dfp.to_dict(orient="records"):
+        projects.append({
+            "project_code": normalize_code(r.get("project_code")),
+            "name":          normalize_text(r.get("name")),
+            "description":   normalize_text(r.get("description")),
+            "location":      normalize_text(r.get("location")),
+        })
+
+    lots: List[Dict[str, Any]] = []
+    for r in dfl.to_dict(orient="records"):
+        lots.append({
+            "project_code":  normalize_code(r.get("project_code")),
+            "lot_code":      normalize_code(r.get("lot_code")),
+            "name":          normalize_text(r.get("name")),
+            "description":   normalize_text(r.get("description")),
+            "starting_price": float(r["starting_price"]) if f"{r.get('starting_price')}".strip() not in ("", "nan") else None,
+            "deposit_amount": float(r["deposit_amount"]) if f"{r.get('deposit_amount')}".strip() not in ("", "nan") else None,
+            "area":           float(r["area"]) if f"{r.get('area')}".strip() not in ("", "nan") else None,
+        })
+
+    # Validate cơ bản lots: giá cọc <= giá khởi điểm; các cột số phải là số dương (nếu có)
+    for idx, l in enumerate(lots, start=2):
+        if l["starting_price"] is not None and l["starting_price"] < 0:
+            errors.append({"sheet": "lots", "row": idx, "field": "starting_price", "msg": "Phải ≥ 0"})
+        if l["deposit_amount"] is not None and l["deposit_amount"] < 0:
+            errors.append({"sheet": "lots", "row": idx, "field": "deposit_amount", "msg": "Phải ≥ 0"})
+        if (l["starting_price"] is not None and l["deposit_amount"] is not None
+                and l["deposit_amount"] > l["starting_price"]):
+            errors.append({"sheet": "lots", "row": idx, "field": "deposit_amount", "msg": "Cọc không được lớn hơn giá khởi điểm"})
+        if l["area"] is not None and l["area"] <= 0:
+            errors.append({"sheet": "lots", "row": idx, "field": "area", "msg": "Phải > 0"})
+
+    # Check trùng / ACTIVE trên server A
+    conflicts_active: List[str] = []
+    conflicts_inactive: List[str] = []
+    seen = set()
+    for p in projects:
+        code = p["project_code"]
+        if not code or code in seen:
+            continue
+        seen.add(code)
+        ex = admin_client.get_project_by_code(access, code)
+        if ex.get("code") == 200 and isinstance(ex.get("data"), dict):
+            status = (ex["data"].get("status") or "").upper()
+            if status == "ACTIVE":
+                conflicts_active.append(code)
+            else:
+                conflicts_inactive.append(code)
+
+    return {
+        "ok": True,
+        "errors": errors,  # nếu rỗng là OK
+        "projects": projects,
+        "lots": lots,
+        "conflicts_active": conflicts_active,
+        "conflicts_inactive": conflicts_inactive,
+    }

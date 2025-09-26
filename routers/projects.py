@@ -125,24 +125,21 @@ async def import_preview(request: Request, file: UploadFile = File(...)):
         },
     )
 
-# ... giữ nguyên các import ở đầu file
-
-# ... giữ nguyên các import ở đầu file
+# routers/projects.py  (chỉ thay đoạn import_apply)
+from utils.excel_import import handle_import_projects, apply_import_projects
+import json
 
 @router.post("/import/apply", response_class=HTMLResponse)
 async def import_apply(
     request: Request,
     payload: str = Form(...),
-    company_code: str = Form(""),
+    company_code: str = Form(...),
+    force_replace: bool = Form(False),
 ):
     token = get_access_token(request)
     me = await fetch_me(token)
     if not me:
         return RedirectResponse(url="/login?next=/projects/import", status_code=303)
-
-    # ❌ SUPER_ADMIN không được import
-    if (me.get("role") or "").upper() == "SUPER_ADMIN":
-        return RedirectResponse(url="/projects?err=forbidden_import", status_code=303)
 
     try:
         data = json.loads(payload)
@@ -153,26 +150,29 @@ async def import_apply(
             status_code=400,
         )
 
-    # company_code lấy từ chính tài khoản admin công ty (không cho sửa)
-    company_code = me.get("company_code") or ""
+    result = apply_import_projects(data, token, company_code=company_code, force_replace=force_replace)
 
-    result = await apply_import_projects(data, token, company_code=company_code)
-    if (result or {}).get("code") == 200:
-        return RedirectResponse(url="/projects?msg=import_ok", status_code=303)
-    else:
-        return templates.TemplateResponse(
-            "pages/projects/import_preview.html",
-            {
-                "request": request,
-                "title": "Xem trước import dự án",
-                "me": me,
-                "company_code": company_code,
-                "payload_json": json.dumps(data, ensure_ascii=False),
-                "preview": data,
-                "err": (result or {}).get("errors") or (result or {}).get("message", "Import thất bại"),
-            },
-            status_code=(result or {}).get("code", 400),
-        )
+    code = (result or {}).get("code", 400)
+    if code in (200, 207):
+        # Có thể nhét con số vào query để hiện toast
+        created = len(result.get("created", []))
+        replaced = len(result.get("replaced", []))
+        return RedirectResponse(url=f"/projects?msg=import_ok&c={created}&r={replaced}", status_code=303)
+
+    # thất bại hẳn -> quay lại preview và show lỗi
+    return templates.TemplateResponse(
+        "pages/projects/import_preview.html",
+        {
+            "request": request,
+            "title": "Xem trước import dự án",
+            "me": me,
+            "company_code": company_code,
+            "payload_json": payload,
+            "preview": data,
+            "err": (result or {}).get("errors") or (result or {}).get("message", "Import thất bại"),
+        },
+        status_code=code,
+    )
 
 # =========================
 # 2) LIST
