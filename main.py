@@ -33,4 +33,4 @@ def _legacy_account_redirect():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8820, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8887, reload=True)
