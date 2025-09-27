@@ -1,59 +1,83 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div class="mb-5">
-  <h1 class="text-xl font-semibold text-slate-800">Tài khoản ngân hàng</h1>
-  <p class="text-slate-500 text-sm">Quản lý danh sách tài khoản ngân hàng gắn với công ty của bạn.</p>
-</div>
-
 {% if load_err %}
-  <div class="p-3 rounded bg-red-50 text-red-700 text-sm mb-4">{{ load_err }}</div>
+  <div class="p-3 rounded-xl bg-rose-50 text-rose-700 text-sm mb-4">{{ load_err }}</div>
 {% endif %}
 
-<div class="flex items-center justify-between mb-3">
-  <form method="get" class="flex gap-2">
-    <input class="input" name="q" value="{{ filters.q }}" placeholder="Tìm theo số TK / tên TK / mã ngân hàng">
-    <button class="btn-secondary" type="submit">Tìm</button>
-  </form>
-  <a class="btn-primary" href="/settings/bank-accounts/create">+ Thêm tài khoản</a>
+<div class="flex items-center justify-between mb-4">
+  <div>
+    <h2 class="text-2xl font-semibold text-slate-800">Tài khoản ngân hàng</h2>
+    <p class="text-slate-500 text-sm">Quản lý danh sách tài khoản ngân hàng gắn với công ty của bạn.</p>
+  </div>
+  <a href="/settings/bank-accounts/create"
+     class="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm">
+    <i class="ri-add-line text-lg"></i> Thêm tài khoản
+  </a>
 </div>
 
-<div class="overflow-x-auto border rounded">
-  <table class="min-w-full text-sm">
-    <thead class="bg-slate-100">
+<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+  <table class="min-w-full">
+    <thead class="bg-slate-50/70 text-slate-600">
       <tr>
-        <th class="px-3 py-2 text-left">ID</th>
-        <th class="px-3 py-2 text-left">Ngân hàng</th>
-        <th class="px-3 py-2 text-left">Số TK</th>
-        <th class="px-3 py-2 text-left">Tên TK</th>
-        <th class="px-3 py-2 text-left">Trạng thái</th>
-        <th class="px-3 py-2 text-left">Hành động</th>
+        <th class="text-left text-sm font-medium px-5 py-3 w-16">Ngân hàng</th>
+        <th class="text-left text-sm font-medium px-5 py-3">Số TK</th>
+        <th class="text-left text-sm font-medium px-5 py-3">Tên TK</th>
+        <th class="text-left text-sm font-medium px-5 py-3">Trạng thái</th>
+        <th class="text-right text-sm font-medium px-5 py-3 w-40">Hành động</th>
       </tr>
     </thead>
-    <tbody>
-      {% for it in page.data %}
-      <tr class="border-t">
-        <td class="px-3 py-2">{{ it.id }}</td>
-        <td class="px-3 py-2 font-mono">
-          {{ it.bank_code }} — {{ bank_name_map[it.bank_code|upper] if bank_name_map[it.bank_code|upper] else '' }}
-        </td>
-        <td class="px-3 py-2 font-mono">{{ it.account_number }}</td>
-        <td class="px-3 py-2">{{ it.account_name or '' }}</td>
-        <td class="px-3 py-2">
-          {% if it.is_active %}<span class="text-green-600">Active</span>
-          {% else %}<span class="text-slate-500">Inactive</span>{% endif %}
-        </td>
-        <td class="px-3 py-2">
-          <a class="btn-primary" href="/settings/bank-accounts/{{ it.id }}/edit">Sửa</a>
-          <form action="/settings/bank-accounts/{{ it.id }}/delete" method="post" class="inline"
-                onsubmit="return confirm('Xoá tài khoản {{ it.account_number }} ?');">
-            <button class="btn-secondary ml-2" type="submit">Xoá</button>
-          </form>
-        </td>
-      </tr>
-      {% endfor %}
-      {% if page.data|length == 0 %}
-      <tr><td class="px-3 py-3 text-slate-500" colspan="6">Chưa có tài khoản nào.</td></tr>
+    <tbody class="divide-y divide-slate-100">
+      {% if page.data and page.data|length > 0 %}
+        {% for r in page.data %}
+          {% set code = (r.bank_code or '')|upper %}
+          {% set name = bank_name_map.get(code, code) %}
+          <tr class="hover:bg-slate-50/50">
+            <td class="px-5 py-3 flex items-center gap-3">
+              {% set bank = banks|selectattr("code","equalto",code)|first %}
+              {% if bank and bank.logo %}
+                <img src="{{ bank.logo }}" alt="{{ name }}" class="w-9 h-9 rounded object-contain bg-white border border-slate-200"/>
+              {% else %}
+                <i class="ri-bank-line text-slate-400 text-xl"></i>
+              {% endif %}
+              <div>
+                <div class="text-slate-800 font-medium">{{ code }}</div>
+                <div class="text-slate-500 text-sm truncate">{{ name }}</div>
+              </div>
+            </td>
+            <td class="px-5 py-3 font-mono text-slate-800">{{ r.account_number }}</td>
+            <td class="px-5 py-3 text-slate-800">{{ r.account_name or '' }}</td>
+            <td class="px-5 py-3">
+              {% if r.is_active %}
+                <span class="inline-flex items-center px-2.5 h-7 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium border border-emerald-200">Active</span>
+              {% else %}
+                <span class="inline-flex items-center px-2.5 h-7 rounded-full bg-slate-50 text-slate-600 text-xs font-medium border border-slate-200">Inactive</span>
+              {% endif %}
+            </td>
+            <td class="px-5 py-3">
+              <div class="flex items-center justify-end gap-2">
+                <a href="/settings/bank-accounts/{{ r.id }}/edit"
+                   class="px-3 h-9 rounded-lg border border-slate-300 text-slate-700 text-sm hover:bg-slate-50">
+                  Sửa
+                </a>
+
+                <form id="delete-form-{{ r.id }}" method="post" action="/settings/bank-accounts/{{ r.id }}/delete"></form>
+                <button
+                  class="px-3 h-9 rounded-lg bg-rose-600 text-white text-sm hover:bg-rose-700"
+                  data-confirm-click="Xoá tài khoản ngân hàng này? Thao tác không thể hoàn tác."
+                  data-target-form="delete-form-{{ r.id }}">
+                  Xoá
+                </button>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td colspan="5" class="px-5 py-10 text-center text-slate-500">
+            Chưa có tài khoản nào.
+          </td>
+        </tr>
       {% endif %}
     </tbody>
   </table>
