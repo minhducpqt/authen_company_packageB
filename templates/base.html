@@ -68,60 +68,59 @@
   </div>
 
   <div class="max-w-screen-2xl mx-auto px-5 py-5 flex gap-5">
-    <aside class="w-64 bg-white rounded-xl border border-slate-200 h-[84vh] overflow-y-auto">
-      <ul class="p-2">
-        <li class="side-title">eCommerce</li>
-        <li>
-          <a class="side-link {% if request.url.path == '/' %}active{% endif %}" href="/">
-            <i class="ri-shopping-bag-2-line"></i> eCommerce
-          </a>
-        </li>
+   <aside class="w-64 bg-white rounded-xl border border-slate-200 h-[84vh] overflow-y-auto">
+  <ul class="p-2">
+    <li class="side-title">eCommerce</li>
+    <li>
+      <a class="side-link {% if request.url.path == '/' %}active{% endif %}" href="/">
+        <i class="ri-shopping-bag-2-line"></i> eCommerce
+      </a>
+    </li>
 
-        <li class="side-title mt-4">1. Dự án & Giao dịch</li>
-        <li>
-          <a class="side-link {% if request.url.path.startswith('/projects') %}active{% endif %}" href="/projects">
-            <i class="ri-community-line"></i> 1.1 Quản lý dự án
-          </a>
-        </li>
-        <li><a class="side-link" href="/khach-hang"><i class="ri-team-line"></i> 1.2 Khách hàng</a></li>
+    <li class="side-title mt-4">1. Dự án & Giao dịch</li>
+    <li>
+      <a class="side-link {% if request.url.path.startswith('/projects') %}active{% endif %}" href="/projects">
+        <i class="ri-community-line"></i> 1.1 Quản lý dự án
+      </a>
+    </li>
+    <li><a class="side-link" href="/khach-hang"><i class="ri-team-line"></i> 1.2 Khách hàng</a></li>
 
-        <li class="side-title mt-4">2. Giao dịch</li>
-        <li><a class="side-link" href="/mua-ho-so"><i class="ri-file-list-2-line"></i> 2.1 Mua hồ sơ</a></li>
-        <li><a class="side-link" href="/dat-coc"><i class="ri-hand-coin-line"></i> 2.2 Đặt cọc</a></li>
+    <li class="side-title mt-4">2. Giao dịch</li>
+    <li><a class="side-link" href="/mua-ho-so"><i class="ri-file-list-2-line"></i> 2.1 Mua hồ sơ</a></li>
+    <li><a class="side-link" href="/dat-coc"><i class="ri-hand-coin-line"></i> 2.2 Đặt cọc</a></li>
 
-        <li class="side-title mt-4">3. Quản lý dòng tiền</li>
-        <li><a class="side-link" href="/giao-dich-ngan-hang"><i class="ri-bank-card-line"></i> 3.1 Giao dịch ngân hàng</a></li>
-        <li><a class="side-link" href="/giao-dich-tien-mat"><i class="ri-cash-line"></i> 3.2 Giao dịch tiền mặt</a></li>
+    <li class="side-title mt-4">3. Quản lý dòng tiền</li>
+    <li><a class="side-link" href="/giao-dich-ngan-hang"><i class="ri-bank-card-line"></i> 3.1 Giao dịch ngân hàng</a></li>
+    <li><a class="side-link" href="/giao-dich-tien-mat"><i class="ri-cash-line"></i> 3.2 Giao dịch tiền mặt</a></li>
 
-        <li class="side-title mt-4">4. Gửi thông tin</li>
-        <li><a class="side-link" href="/thong-tin-khach-mua-ho-so"><i class="ri-send-plane-line"></i> 4.1 Khách mua hồ sơ</a></li>
-        <li><a class="side-link" href="/thong-tin-khach-coc"><i class="ri-send-plane-2-line"></i> 4.2 Khách cọc</a></li>
+    <li class="side-title mt-4">4. Gửi thông tin</li>
+    <li><a class="side-link" href="/thong-tin-khach-mua-ho-so"><i class="ri-send-plane-line"></i> 4.1 Khách mua hồ sơ</a></li>
+    <li><a class="side-link" href="/thong-tin-khach-coc"><i class="ri-send-plane-2-line"></i> 4.2 Khách cọc</a></li>
 
-        <li class="side-title mt-4">5. Thủ tục hành chính</li>
-        <li><a class="side-link" href="/xuat-hoa-don"><i class="ri-bill-line"></i> 5.1 Xuất hoá đơn</a></li>
-        <li><a class="side-link" href="/tien-ich-khac"><i class="ri-function-line"></i> 5.2 Tiện ích khác</a></li>
+    <li class="side-title mt-4">5. Thủ tục hành chính</li>
+    <li><a class="side-link" href="/xuat-hoa-don"><i class="ri-bill-line"></i> 5.1 Xuất hoá đơn</a></li>
+    <li><a class="side-link" href="/tien-ich-khac"><i class="ri-function-line"></i> 5.2 Tiện ích khác</a></li>
 
-        <!-- === Đổi nhóm: 6. Thiết lập === -->
-        <li class="side-title mt-4">6. Thiết lập</li>
-        <li>
-          <a class="side-link {% if request.url.path.startswith('/settings/bank-accounts') %}active{% endif %}"
-             href="/settings/bank-accounts">
-            <i class="ri-bank-line"></i> 6.1 Tài khoản ngân hàng
-          </a>
-        </li>
-        <li>
-          <a class="side-link {% if request.url.path.startswith('/settings/company') %}active{% endif %}"
-             href="/settings/company">
-            <i class="ri-building-4-line"></i> 6.2 Thông tin công ty
-          </a>
-        </li>
-        <li>
-          <a class="side-link {% if request.url.path.startswith('/account') %}active{% endif %}" href="/account">
-            <i class="ri-user-settings-line"></i> Tài khoản
-          </a>
-        </li>
-      </ul>
-    </aside>
+    <!-- === Nhóm mới: 6. Thiết lập === -->
+    <li class="side-title mt-4">6. Thiết lập</li>
+    <li>
+      <a class="side-link {% if request.url.path.startswith('/settings/company') %}active{% endif %}"
+         href="/settings/company">
+        <i class="ri-building-4-line"></i> 6.2 Thông tin công ty
+      </a>
+    </li>
+    <li>
+      <a class="side-link {% if request.url.path.startswith('/settings/bank-accounts') %}active{% endif %}" href="/settings/bank-accounts">
+        <i class="ri-bank-line"></i> 6.2 Tài khoản ngân hàng
+      </a>
+    </li>
+    <li>
+      <a class="side-link {% if request.url.path.startswith('/account') %}active{% endif %}" href="/account">
+        <i class="ri-user-settings-line"></i> Tài khoản
+      </a>
+    </li>
+  </ul>
+</aside>
 
     <main class="flex-1">
       <div class="mb-4">

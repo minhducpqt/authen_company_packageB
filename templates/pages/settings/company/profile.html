@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block content %}
+
+{% set V = item or {} %}
+
+{# ====== Toast lỗi tải (nếu có) ====== #}
+{% if load_err %}
+  <div class="p-3 rounded-xl bg-red-50 text-red-700 text-sm mb-5 border border-red-100">
+    {{ load_err }}
+  </div>
+{% endif %}
+
+<div class="bg-white rounded-2xl border border-slate-200 shadow-sm max-w-5xl">
+  <!-- Header -->
+  <div class="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+    <div class="min-w-0">
+      <div class="text-xs font-medium text-slate-400">Mã công ty</div>
+      <div class="mt-0.5 text-lg font-semibold text-slate-800 truncate">
+        {{ (V.company_code | default('', true)) or '-' }}
+      </div>
+    </div>
+    <span class="shrink-0 inline-flex items-center gap-1.5 px-3 h-7 rounded-full text-xs font-medium
+                {% if V.is_active %}bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200{% else %}bg-slate-100 text-slate-600 ring-1 ring-slate-200{% endif %}">
+      {% if V.is_active %}<i class="ri-check-line"></i> ACTIVE{% else %}<i class="ri-pause-line"></i> DISABLED{% endif %}
+    </span>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="px-6 py-6">
+
+    <!-- VIEW MODE (default) -->
+    <div id="viewMode" class="block">
+      <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
+        <div>
+          <dt class="text-xs font-medium text-slate-500">Tên công ty</dt>
+          <dd class="mt-1 text-base text-slate-900">{{ V.name or '-' }}</dd>
+        </div>
+
+        <div>
+          <dt class="text-xs font-medium text-slate-500">Điện thoại</dt>
+          <dd class="mt-1 text-base text-slate-900">{{ V.phone or '-' }}</dd>
+        </div>
+
+        <div>
+          <dt class="text-xs font-medium text-slate-500">Mã số thuế</dt>
+          <dd class="mt-1 text-base text-slate-900">{{ V.tax_code or '-' }}</dd>
+        </div>
+
+        <div>
+          <dt class="text-xs font-medium text-slate-500">Email</dt>
+          <dd class="mt-1 text-base text-slate-900">{{ V.email or '-' }}</dd>
+        </div>
+
+        <div class="md:col-span-2">
+          <dt class="text-xs font-medium text-slate-500">Địa chỉ</dt>
+          <dd class="mt-1 text-base text-slate-900">{{ V.address or '-' }}</dd>
+          <p class="mt-2 text-xs text-slate-500">Địa chỉ này sẽ hiển thị trên chứng từ và hoá đơn.</p>
+        </div>
+      </dl>
+
+      <div class="pt-6 border-t border-slate-100 mt-6 flex items-center gap-3">
+        <button id="btnEdit" type="button"
+                class="px-5 h-11 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm">
+          Chỉnh sửa
+        </button>
+      </div>
+    </div>
+
+    <!-- EDIT MODE (hidden by default) -->
+    <form id="editMode" method="post" action="/settings/company/save" class="hidden">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="md:col-span-2">
+          <label class="label">Tên công ty</label>
+          <input name="name" value="{{ V.name | default('', true) }}"
+                 class="input w-full h-12 text-base" placeholder="Công ty TNHH ABC">
+        </div>
+
+        <div>
+          <label class="label">Mã số thuế</label>
+          <input name="tax_code" value="{{ V.tax_code | default('', true) }}"
+                 class="input w-full h-12 text-base" placeholder="VD: 0101xxxxx">
+        </div>
+
+        <div>
+          <label class="label">Điện thoại</label>
+          <input name="phone" value="{{ V.phone | default('', true) }}"
+                 class="input w-full h-12 text-base" inputmode="tel" autocomplete="tel" placeholder="VD: 0903xxxxxx">
+        </div>
+
+        <div>
+          <label class="label">Email</label>
+          <input type="email" name="email" value="{{ V.email | default('', true) }}"
+                 class="input w-full h-12 text-base" placeholder="ketoan@company.vn" autocomplete="email">
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="label">Địa chỉ</label>
+          <textarea name="address" rows="3" class="input w-full text-base min-h-[3rem] py-3"
+                    placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành">{{ V.address | default('', true) }}</textarea>
+          <p class="mt-1 text-xs text-slate-500">Địa chỉ này sẽ hiển thị trên chứng từ và hoá đơn.</p>
+        </div>
+      </div>
+
+      <div class="pt-6 border-t border-slate-100 mt-6 flex items-center gap-3">
+        <button class="px-5 h-11 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm" type="submit">
+          Lưu thay đổi
+        </button>
+        <button id="btnCancel" type="button"
+                class="px-5 h-11 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50">
+          Huỷ
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== Custom Modal (no permission) ===== -->
+<div id="noPermModal" class="fixed inset-0 z-[60] hidden">
+  <div class="absolute inset-0 bg-slate-900/40"></div>
+  <div class="relative mx-auto mt-32 w-[92%] max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200">
+    <div class="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
+      <i class="ri-information-line text-indigo-600 text-xl"></i>
+      <div class="font-semibold text-slate-800">Không đủ quyền</div>
+    </div>
+    <div class="px-5 py-4 text-slate-700">
+      Bạn không có quyền chỉnh sửa thông tin công ty. Vui lòng liên hệ quản trị công ty để được cấp quyền.
+    </div>
+    <div class="px-5 py-4 border-t border-slate-100 text-right">
+      <button id="noPermClose"
+              class="px-4 h-10 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700">
+        Đã hiểu
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .label{ @apply block text-sm font-medium text-slate-700 mb-2; }
+  .input{ @apply rounded-xl border border-slate-300 bg-white placeholder:text-slate-400 px-3; }
+</style>
+
+<script>
+  // server side flag
+  const CAN_EDIT = {{ (can_edit and True) | tojson }};
+
+  const $view   = document.getElementById('viewMode');
+  const $edit   = document.getElementById('editMode');
+  const $btnEd  = document.getElementById('btnEdit');
+  const $btnCan = document.getElementById('btnCancel');
+
+  const $modal      = document.getElementById('noPermModal');
+  const $modalClose = document.getElementById('noPermClose');
+
+  function openEdit() {
+    $view.classList.add('hidden');
+    $edit.classList.remove('hidden');
+  }
+  function closeEdit() {
+    $edit.classList.add('hidden');
+    $view.classList.remove('hidden');
+  }
+  function openNoPerm() { $modal.classList.remove('hidden'); }
+  function closeNoPerm(){ $modal.classList.add('hidden'); }
+
+  $btnEd.addEventListener('click', () => {
+    if (CAN_EDIT) openEdit();
+    else openNoPerm();
+  });
+  $btnCan.addEventListener('click', (e) => { e.preventDefault(); closeEdit(); });
+  $modalClose.addEventListener('click', closeNoPerm);
+  $modal.addEventListener('click', (e) => { if (e.target === $modal) closeNoPerm(); });
+</script>
+
+{% endblock %}
