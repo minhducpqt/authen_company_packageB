@@ -28,10 +28,12 @@ EP_DISABLE         = "/api/v1/projects/{project_id}/disable"
 EP_BYCODE_PROJ     = "/api/v1/projects/by_code/{code}"
 EP_UPDATE_PROJ     = "/api/v1/projects/{pid}"
 EP_EXPORT_XLSX     = "/api/v1/projects/export_xlsx"
-EP_IMPORT_XLSX     = "/api/v1/projects/import_xlsx"   # (nếu dùng Service A build)
+EP_IMPORT_XLSX     = "/api/v1/projects/import_xlsx"
 EP_CREATE_LOT      = "/api/v1/lots"
+EP_COMPANY_ACCS    = "/api/v1/company_bank_accounts"                 # GET list của Cty hiện tại
+EP_SET_PAY_ACCS    = "/api/v1/projects/{code}/payment_accounts"      # PUT lưu 2 TK nhận tiền
 
-# helpers http
+# ---------------- helpers http ----------------
 async def _get_json(client: httpx.AsyncClient, url: str, headers: dict):
     r = await client.get(url, headers=headers)
     try:
@@ -41,6 +43,13 @@ async def _get_json(client: httpx.AsyncClient, url: str, headers: dict):
 
 async def _post_json(client: httpx.AsyncClient, url: str, headers: dict, payload: dict | None):
     r = await client.post(url, headers=headers, json=payload or {})
+    try:
+        return r.status_code, r.json()
+    except Exception:
+        return r.status_code, None
+
+async def _put_json(client: httpx.AsyncClient, url: str, headers: dict, payload: dict | None):
+    r = await client.put(url, headers=headers, json=payload or {})
     try:
         return r.status_code, r.json()
     except Exception:
@@ -62,7 +71,6 @@ async def download_template(request: Request):
     if not company_code:
         return RedirectResponse(url="/projects?err=no_company_code", status_code=303)
 
-    # Build template tại WEB (không gọi Service A)
     return await build_projects_lots_template(token, company_code)
 
 
@@ -110,7 +118,6 @@ async def import_preview(request: Request, file: UploadFile = File(...)):
     preview = await handle_import_preview(file_bytes, token)
 
     if not preview.get("ok"):
-        # Lỗi template / dữ liệu → quay về form và báo lỗi
         return templates.TemplateResponse(
             "pages/projects/import.html",
             {"request": request, "title": "Nhập dự án từ Excel", "me": me, "err": preview.get("errors")},
@@ -138,11 +145,6 @@ async def import_apply(
     company_code: str = Form(...),
     force_replace: bool = Form(False),
 ):
-    """
-    Ghi từng dự án + lô:
-    - Project: POST; nếu 409 và force_replace=True → GET by_code lấy id rồi PUT (giữ status='INACTIVE').
-    - Lot: POST; nếu 409 hiện bỏ qua (chưa ghi đè).
-    """
     token = get_access_token(request)
     me = await fetch_me(token)
     if not me:
@@ -166,7 +168,6 @@ async def import_apply(
     headers = {"Authorization": f"Bearer {token}", "X-Company-Code": company_code}
 
     async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=30.0) as client:
-        # --- Ghi PROJECTS ---
         for p in projects:
             code = (p.get("project_code") or "").strip()
             name = (p.get("name") or "").strip()
@@ -177,13 +178,11 @@ async def import_apply(
                 "location": p.get("location") or None,
                 "status": "INACTIVE",
             }
-            # Tạo
             r = await client.post(EP_CREATE_PROJ, json=body, headers=headers)
             if r.status_code == 200:
                 created_codes.append(code)
             elif r.status_code == 409:
                 if force_replace:
-                    # Lấy id theo code rồi PUT
                     r0 = await client.get(EP_BYCODE_PROJ.format(code=code), headers=headers,
                                           params={"company_code": company_code})
                     if r0.status_code != 200:
@@ -207,7 +206,6 @@ async def import_apply(
                     msg = ""
                 errors.append(f"Dự án {code}: tạo thất bại (HTTP {r.status_code}) {msg}")
 
-            # --- Ghi LOTS cho project này ---
             proj_lots = [l for l in lots if (l.get("project_code") or "").strip().upper() == code.upper()]
             for l in proj_lots:
                 lot_body = {
@@ -225,7 +223,6 @@ async def import_apply(
                 if rl.status_code in (200, 201, 204):
                     continue
                 if rl.status_code == 409:
-                    # Chưa có API update-by-code cho lot → BỎ QUA (không ghi đè)
                     continue
                 try:
                     lmsg = (rl.json() or {}).get("detail") or (rl.json() or {}).get("message") or ""
@@ -235,9 +232,7 @@ async def import_apply(
                     f"Lô {l.get('lot_code')} thuộc {code}: tạo thất bại (HTTP {rl.status_code}) {lmsg}"
                 )
 
-    # Kết luận
     if errors and (created_codes or replaced_codes):
-        # Partial OK
         return RedirectResponse(
             url=f"/projects?msg=import_ok&c={len(created_codes)}&r={len(replaced_codes)}",
             status_code=303,
@@ -248,7 +243,6 @@ async def import_apply(
             status_code=303,
         )
 
-    # Có lỗi → quay lại preview hiển thị lỗi
     return templates.TemplateResponse(
         "pages/projects/import_preview.html",
         {
@@ -256,7 +250,7 @@ async def import_apply(
             "title": "Xem trước import dự án",
             "me": me,
             "company_code": company_code,
-            "payload_json": payload,           # giữ để người dùng Apply lại nếu muốn
+            "payload_json": payload,
             "preview": json.loads(payload),
             "err": errors,
         },
@@ -332,6 +326,7 @@ async def project_detail(request: Request, project_id: int = Path(...)):
     load_err = None
     project = None
     lots_page = {"data": [], "total": 0}
+    company_accounts = []
 
     try:
         async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
@@ -344,24 +339,32 @@ async def project_detail(request: Request, project_id: int = Path(...)):
             else:
                 load_err = f"Không tải được dự án (HTTP {st})."
 
-            # 2) Nếu có project_code thì lấy danh sách lô theo project_code
+            # 2) Lấy danh sách lô
             if project and project.get("project_code"):
                 params = {"project_code": project["project_code"], "size": 1000}
                 lst_st, lst = await _get_json(
                     client, f"/api/v1/lots?{urlencode(params)}", {"Authorization": f"Bearer {token}"}
                 )
                 if lst_st == 200 and isinstance(lst, dict):
-                    lots_page = {
-                        "data": lst.get("data", []),
-                        "total": lst.get("total", 0),
-                    }
-                else:
-                    # không chặn trang — chỉ ghi nhận lỗi phần lots
-                    if not load_err:
-                        load_err = f"Không tải được danh sách lô (HTTP {lst_st})."
+                    lots_page = {"data": lst.get("data", []), "total": lst.get("total", 0)}
+
+            # 3) Lấy danh sách tài khoản NH của công ty
+            company_code = me.get("company_code")
+            if company_code:
+                acc_st, acc_data = await _get_json(
+                    client,
+                    f"/api/v1/company_bank_accounts?company_code={company_code}&size=200",
+                    {"Authorization": f"Bearer {token}"},
+                )
+                if acc_st == 200 and isinstance(acc_data, dict):
+                    company_accounts = acc_data.get("data", [])
 
     except Exception as e:
         load_err = str(e)
+
+    # ====== xác định quyền ======
+    role = (me or {}).get("role") or ""
+    can_edit = role in ("COMPANY_ADMIN", "SUPER_ADMIN")   # tuỳ định nghĩa roles của bạn
 
     return templates.TemplateResponse(
         "pages/projects/detail.html",
@@ -371,9 +374,67 @@ async def project_detail(request: Request, project_id: int = Path(...)):
             "me": me,
             "project": project,
             "lots_page": lots_page,
+            "company_accounts": company_accounts,
+            "can_edit": can_edit,
             "load_err": load_err,
         },
     )
+
+
+
+# ===== LƯU cấu hình tài khoản nhận tiền (admin công ty hoặc SUPER/ADMIN) =====
+@router.post("/{project_id}/payment-accounts")
+async def save_project_payment_accounts(
+    request: Request,
+    project_id: int = Path(...),
+    cba_application_id: int | None = Form(None),
+    cba_deposit_id: int | None = Form(None),
+):
+    token = get_access_token(request)
+    me = await fetch_me(token)
+    if not me:
+        return RedirectResponse(url=f"/login?next={quote(f'/projects/{project_id}')}", status_code=303)
+
+    can_edit = bool(me and (me.get("is_company_admin") or me.get("role") in ("SUPER", "ADMIN")))
+    if not can_edit:
+        return RedirectResponse(url=f"/projects/{project_id}?err=no_perm", status_code=303)
+
+    # Lấy project để biết project_code
+    project_code = None
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            st, data = await _get_json(
+                client, EP_DETAIL.format(project_id=project_id), {"Authorization": f"Bearer {token}"}
+            )
+            if st == 200 and isinstance(data, dict):
+                project_code = data.get("project_code")
+    except Exception:
+        project_code = None
+
+    if not project_code:
+        return RedirectResponse(url=f"/projects/{project_id}?err=no_project_code", status_code=303)
+
+    payload = {
+        "cba_application_id": cba_application_id,
+        "cba_deposit_id": cba_deposit_id,
+    }
+
+    ok = False
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            st, _ = await _put_json(
+                client,
+                EP_SET_PAY_ACCS.format(code=project_code),
+                {"Authorization": f"Bearer {token}"},
+                payload,
+            )
+            ok = (st == 200)
+    except Exception:
+        ok = False
+
+    to = f"/projects/{project_id}?{'msg=saved' if ok else 'err=save_failed'}"
+    return RedirectResponse(url=to, status_code=303)
+
 
 # =========================
 # 4) CREATE (form + submit)
