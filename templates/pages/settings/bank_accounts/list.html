@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="mb-5">
+  <h1 class="text-xl font-semibold text-slate-800">Tài khoản ngân hàng</h1>
+  <p class="text-slate-500 text-sm">Quản lý danh sách tài khoản ngân hàng gắn với công ty của bạn.</p>
+</div>
+
+{% if load_err %}
+  <div class="p-3 rounded bg-red-50 text-red-700 text-sm mb-4">{{ load_err }}</div>
+{% endif %}
+
+<div class="flex items-center justify-between mb-3">
+  <form method="get" class="flex gap-2">
+    <input class="input" name="q" value="{{ filters.q }}" placeholder="Tìm theo số TK / tên TK / mã ngân hàng">
+    <button class="btn-secondary" type="submit">Tìm</button>
+  </form>
+  <a class="btn-primary" href="/settings/bank-accounts/create">+ Thêm tài khoản</a>
+</div>
+
+<div class="overflow-x-auto border rounded">
+  <table class="min-w-full text-sm">
+    <thead class="bg-slate-100">
+      <tr>
+        <th class="px-3 py-2 text-left">ID</th>
+        <th class="px-3 py-2 text-left">Ngân hàng</th>
+        <th class="px-3 py-2 text-left">Số TK</th>
+        <th class="px-3 py-2 text-left">Tên TK</th>
+        <th class="px-3 py-2 text-left">Trạng thái</th>
+        <th class="px-3 py-2 text-left">Hành động</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for it in page.data %}
+      <tr class="border-t">
+        <td class="px-3 py-2">{{ it.id }}</td>
+        <td class="px-3 py-2 font-mono">
+          {{ it.bank_code }} — {{ bank_name_map[it.bank_code|upper] if bank_name_map[it.bank_code|upper] else '' }}
+        </td>
+        <td class="px-3 py-2 font-mono">{{ it.account_number }}</td>
+        <td class="px-3 py-2">{{ it.account_name or '' }}</td>
+        <td class="px-3 py-2">
+          {% if it.is_active %}<span class="text-green-600">Active</span>
+          {% else %}<span class="text-slate-500">Inactive</span>{% endif %}
+        </td>
+        <td class="px-3 py-2">
+          <a class="btn-primary" href="/settings/bank-accounts/{{ it.id }}/edit">Sửa</a>
+          <form action="/settings/bank-accounts/{{ it.id }}/delete" method="post" class="inline"
+                onsubmit="return confirm('Xoá tài khoản {{ it.account_number }} ?');">
+            <button class="btn-secondary ml-2" type="submit">Xoá</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+      {% if page.data|length == 0 %}
+      <tr><td class="px-3 py-3 text-slate-500" colspan="6">Chưa có tài khoản nào.</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

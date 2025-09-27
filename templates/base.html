@@ -101,7 +101,20 @@
         <li><a class="side-link" href="/xuat-hoa-don"><i class="ri-bill-line"></i> 5.1 Xuất hoá đơn</a></li>
         <li><a class="side-link" href="/tien-ich-khac"><i class="ri-function-line"></i> 5.2 Tiện ích khác</a></li>
 
-        <li class="side-title mt-4">6. Quản lý tài khoản</li>
+        <!-- === Đổi nhóm: 6. Thiết lập === -->
+        <li class="side-title mt-4">6. Thiết lập</li>
+        <li>
+          <a class="side-link {% if request.url.path.startswith('/settings/bank-accounts') %}active{% endif %}"
+             href="/settings/bank-accounts">
+            <i class="ri-bank-line"></i> 6.1 Tài khoản ngân hàng
+          </a>
+        </li>
+        <li>
+          <a class="side-link {% if request.url.path.startswith('/settings/company') %}active{% endif %}"
+             href="/settings/company">
+            <i class="ri-building-4-line"></i> 6.2 Thông tin công ty
+          </a>
+        </li>
         <li>
           <a class="side-link {% if request.url.path.startswith('/account') %}active{% endif %}" href="/account">
             <i class="ri-user-settings-line"></i> Tài khoản
