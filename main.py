@@ -19,8 +19,8 @@ app.include_router(dashboard_router)
 app.include_router(account_router)
 app.include_router(projects_router)                      # <-- THÊM DÒNG NÀY
 
-from routers.settings_bank_accounts import router as settings_bank_accounts_router
-from routers.settings_company import router as settings_company_router
+from routers.settings.settings_bank_accounts import router as settings_bank_accounts_router
+from routers.settings.settings_company import router as settings_company_router
 app.include_router(settings_bank_accounts_router)
 app.include_router(settings_company_router)
 
