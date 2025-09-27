@@ -31,8 +31,8 @@
           <th class="px-3 py-2 border-b">Dự án</th>
           <th class="px-3 py-2 border-b">Vị trí</th>
           <th class="px-3 py-2 border-b">Trạng thái</th>
-          <th class="px-3 py-2 border-b">Mua hồ sơ</th>
-          <th class="px-3 py-2 border-b">Đặt cọc</th>
+          <th class="px-3 py-2 border-b w-48">Mua hồ sơ</th>
+          <th class="px-3 py-2 border-b w-48">Đặt cọc</th>
           <th class="px-3 py-2 border-b text-right">Thao tác</th>
         </tr>
       </thead>
@@ -57,33 +57,44 @@
               {{ st or '—' }}
             </span>
           </td>
+
+          <!-- MUA HỒ SƠ -->
           <td class="px-3 py-3 border-b">
-            {% if cba_app %}
-              <span class="inline-flex items-center text-xs px-2 py-1 rounded bg-slate-100 border border-slate-200">
-                ID: {{ cba_app }}
-              </span>
+            {% if cba_app and cba_map.get(cba_app) %}
+              {% set info = cba_map[cba_app] %}
+              <div class="px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm leading-tight w-48">
+                <div class="font-semibold text-slate-700">{{ info.short_name }}</div>
+                <div class="font-mono text-slate-600 text-xs">{{ info.account_number }}</div>
+              </div>
             {% else %}
               <span class="text-slate-400 text-xs">Chưa cấu hình</span>
             {% endif %}
           </td>
+
+          <!-- ĐẶT CỌC -->
           <td class="px-3 py-3 border-b">
-            {% if cba_dep %}
-              <span class="inline-flex items-center text-xs px-2 py-1 rounded bg-slate-100 border border-slate-200">
-                ID: {{ cba_dep }}
-              </span>
+            {% if cba_dep and cba_map.get(cba_dep) %}
+              {% set info2 = cba_map[cba_dep] %}
+              <div class="px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm leading-tight w-48">
+                <div class="font-semibold text-slate-700">{{ info2.short_name }}</div>
+                <div class="font-mono text-slate-600 text-xs">{{ info2.account_number }}</div>
+              </div>
             {% else %}
               <span class="text-slate-400 text-xs">Chưa cấu hình</span>
             {% endif %}
           </td>
+
           <td class="px-3 py-3 border-b text-right">
             <button class="px-3 h-9 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
                     type="button" data-edit="{{ p.id }}">Chỉnh sửa</button>
           </td>
         </tr>
 
+        <!-- ROW EDIT -->
         <tr id="edit-row-{{ p.id }}" class="hidden bg-slate-50">
           <td colspan="6" class="px-3 py-3 border-b">
-            <form method="post" action="/projects/{{ p.id }}/payment-accounts" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <form method="post" action="/projects/payment-accounts/{{ p.id }}"
+                  class="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
                 <label class="text-sm text-slate-600 mb-1 block">Tài khoản mua hồ sơ</label>
                 <select name="cba_application_id" class="w-full h-10 rounded-lg border border-slate-300 px-3">

@@ -13,7 +13,8 @@ from utils.auth import get_access_token, fetch_me
 
 API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8824")
 
-router = APIRouter()
+# IMPORTANT: dùng prefix cố định để tránh đè /projects/{project_id}
+router = APIRouter(prefix="/projects/payment-accounts")
 
 async def _fetch_json(client: httpx.AsyncClient, url: str, access: Optional[str] = None):
     headers = {}
@@ -23,7 +24,7 @@ async def _fetch_json(client: httpx.AsyncClient, url: str, access: Optional[str]
     r.raise_for_status()
     return r.json()
 
-@router.get("/projects/payment-accounts", response_class=HTMLResponse)
+@router.get("", response_class=HTMLResponse)
 async def page_projects_payment_accounts(
     request: Request,
     q: Optional[str] = Query(None),
@@ -31,7 +32,7 @@ async def page_projects_payment_accounts(
 ):
     access = get_access_token(request)
     me = await fetch_me(request)
-    # Tải danh sách dự án (phụ thuộc company_scope từ cookie/token ở Service A)
+
     params = []
     if q: params.append(("q", q))
     if status: params.append(("status", status))
@@ -39,30 +40,36 @@ async def page_projects_payment_accounts(
     url_projects = f"{API_BASE_URL}/api/v1/projects" + (f"?{qs}" if qs else "")
 
     async with httpx.AsyncClient() as client:
+        # 1) Projects
         projects_resp = await _fetch_json(client, url_projects, access)
         projects = projects_resp.get("data", [])
 
-        # Tải danh sách tài khoản công ty (để render label & cho user chọn)
+        # 2) Company Bank Accounts (để render label & chọn)
         url_cba = f"{API_BASE_URL}/api/v1/company_bank_accounts?size=200"
         cba_page = await _fetch_json(client, url_cba, access)
         company_accounts = cba_page.get("data", [])
 
-        # Map id -> label
+        # Build options + map
         def _label(cba: Dict[str, Any]) -> str:
             b = cba.get("bank") or {}
-            parts = [
-                (b.get("short_name") or b.get("name") or b.get("code") or "").strip(),
-                cba.get("account_number") or "",
-                cba.get("account_name") or "",
-            ]
-            return " — ".join([p for p in [parts[0], parts[1]] if p]) + (f" · {parts[2]}" if parts[2] else "")
+            name = (b.get("short_name") or b.get("name") or b.get("code") or "").strip()
+            acc_no = (cba.get("account_number") or "").strip()
+            acc_name = (cba.get("account_name") or "").strip()
+            base = " — ".join([p for p in [name, acc_no] if p])
+            return base + (f" · {acc_name}" if acc_name else "")
 
-        cba_options = [
-            {"id": c["id"], "label": _label(c)}
-            for c in company_accounts
-        ]
+        cba_options = [{"id": c["id"], "label": _label(c)} for c in company_accounts]
 
-        # Lấy summary payment-accounts cho từng dự án
+        # id -> {short_name, account_number}
+        cba_map: Dict[int, Dict[str, str]] = {}
+        for c in company_accounts:
+            b = c.get("bank") or {}
+            cba_map[c["id"]] = {
+                "short_name": (b.get("short_name") or b.get("name") or b.get("code") or "").strip(),
+                "account_number": (c.get("account_number") or "").strip(),
+            }
+
+        # 3) Summaries cho từng project
         summaries: Dict[int, Dict[str, Any]] = {}
         for p in projects:
             pid = p["id"]
@@ -81,12 +88,14 @@ async def page_projects_payment_accounts(
             "projects": projects,
             "summaries": summaries,
             "cba_options": cba_options,
+            "cba_map": cba_map,   # <-- thêm map để hiển thị đẹp
             "q": q or "",
             "status": status or "",
+            "title": "Cấu hình nhận tiền",
         }
     )
 
-@router.post("/projects/{project_id}/payment-accounts")
+@router.post("/{project_id}")
 async def save_project_payment_accounts(
     request: Request,
     project_id: int = Path(..., ge=1),
