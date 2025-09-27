@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="bg-white rounded-xl border border-slate-200 p-5">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-xl font-semibold text-slate-800">Cấu hình nhận tiền</h2>
+      <p class="text-slate-500 text-sm">Chọn tài khoản nhận tiền mua hồ sơ và đặt cọc cho từng dự án.</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="/projects" class="topbtn border border-slate-300 bg-white text-slate-700">← Quản lý dự án</a>
+    </div>
+  </div>
+
+  <form method="get" class="mb-3 flex gap-2">
+    <input name="q" value="{{ q }}" placeholder="Tìm mã/tên dự án..."
+           class="h-10 w-64 rounded-lg border border-slate-300 px-3" />
+    <select name="status" class="h-10 rounded-lg border border-slate-300 px-3">
+      <option value="">-- Trạng thái --</option>
+      {% for st in ["ACTIVE","INACTIVE","CLOSED"] %}
+        <option value="{{ st }}" {% if status==st %}selected{% endif %}>{{ st }}</option>
+      {% endfor %}
+    </select>
+    <button class="h-10 px-4 rounded-lg bg-slate-800 text-white">Lọc</button>
+  </form>
+
+  <div class="overflow-x-auto border border-slate-200 rounded-lg">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-50">
+        <tr class="text-left text-slate-600">
+          <th class="px-3 py-2 border-b">Dự án</th>
+          <th class="px-3 py-2 border-b">Vị trí</th>
+          <th class="px-3 py-2 border-b">Trạng thái</th>
+          <th class="px-3 py-2 border-b">Mua hồ sơ</th>
+          <th class="px-3 py-2 border-b">Đặt cọc</th>
+          <th class="px-3 py-2 border-b text-right">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for p in projects %}
+        {% set s = summaries.get(p.id) or {} %}
+        {% set cba_app = s.get("cba_application_id") %}
+        {% set cba_dep = s.get("cba_deposit_id") %}
+        <tr class="align-top">
+          <td class="px-3 py-3 border-b">
+            <div class="font-semibold">{{ p.name }}</div>
+            <div class="text-xs text-slate-500 font-mono">{{ p.project_code }}</div>
+          </td>
+          <td class="px-3 py-3 border-b text-slate-600">{{ p.location or '—' }}</td>
+          <td class="px-3 py-3 border-b">
+            {% set st = (p.status or '') %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs
+              {% if st=='ACTIVE' %} bg-emerald-100 text-emerald-700 border border-emerald-200
+              {% elif st=='INACTIVE' %} bg-amber-100 text-amber-700 border border-amber-200
+              {% elif st=='CLOSED' %} bg-slate-200 text-slate-700 border border-slate-300
+              {% else %} bg-slate-100 text-slate-600 border border-slate-200 {% endif %}">
+              {{ st or '—' }}
+            </span>
+          </td>
+          <td class="px-3 py-3 border-b">
+            {% if cba_app %}
+              <span class="inline-flex items-center text-xs px-2 py-1 rounded bg-slate-100 border border-slate-200">
+                ID: {{ cba_app }}
+              </span>
+            {% else %}
+              <span class="text-slate-400 text-xs">Chưa cấu hình</span>
+            {% endif %}
+          </td>
+          <td class="px-3 py-3 border-b">
+            {% if cba_dep %}
+              <span class="inline-flex items-center text-xs px-2 py-1 rounded bg-slate-100 border border-slate-200">
+                ID: {{ cba_dep }}
+              </span>
+            {% else %}
+              <span class="text-slate-400 text-xs">Chưa cấu hình</span>
+            {% endif %}
+          </td>
+          <td class="px-3 py-3 border-b text-right">
+            <button class="px-3 h-9 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
+                    type="button" data-edit="{{ p.id }}">Chỉnh sửa</button>
+          </td>
+        </tr>
+
+        <tr id="edit-row-{{ p.id }}" class="hidden bg-slate-50">
+          <td colspan="6" class="px-3 py-3 border-b">
+            <form method="post" action="/projects/{{ p.id }}/payment-accounts" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label class="text-sm text-slate-600 mb-1 block">Tài khoản mua hồ sơ</label>
+                <select name="cba_application_id" class="w-full h-10 rounded-lg border border-slate-300 px-3">
+                  <option value="">— Chọn tài khoản —</option>
+                  {% for opt in cba_options %}
+                    <option value="{{ opt.id }}" {% if cba_app and opt.id==cba_app %}selected{% endif %}>
+                      {{ opt.label }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div>
+                <label class="text-sm text-slate-600 mb-1 block">Tài khoản đặt cọc</label>
+                <select name="cba_deposit_id" class="w-full h-10 rounded-lg border border-slate-300 px-3">
+                  <option value="">— Chọn tài khoản —</option>
+                  {% for opt in cba_options %}
+                    <option value="{{ opt.id }}" {% if cba_dep and opt.id==cba_dep %}selected{% endif %}>
+                      {{ opt.label }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="flex items-end justify-end gap-2">
+                <button type="button" class="px-4 h-10 rounded-lg border border-slate-300 bg-white text-slate-700"
+                        data-cancel="{{ p.id }}">Hủy</button>
+                <button class="px-4 h-10 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">Lưu</button>
+              </div>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      {% if projects|length == 0 %}
+        <tr><td colspan="6" class="px-3 py-6 text-center text-slate-500">Không có dự án.</td></tr>
+      {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  (function () {
+    document.querySelectorAll('button[data-edit]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-edit');
+        document.getElementById('edit-row-' + id)?.classList.toggle('hidden');
+      });
+    });
+    document.querySelectorAll('button[data-cancel]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-cancel');
+        document.getElementById('edit-row-' + id)?.classList.add('hidden');
+      });
+    });
+  })();
+</script>
+
+{% endblock %}

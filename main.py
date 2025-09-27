@@ -13,6 +13,8 @@ app = FastAPI(title="Dashboard Công ty — v20")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.add_middleware(AuthGuardMiddleware)
 
+from routers.project_payment_accounts import router as ppa_router
+app.include_router(ppa_router)
 # Routers
 app.include_router(auth_router)
 app.include_router(dashboard_router)
