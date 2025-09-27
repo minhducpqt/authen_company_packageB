@@ -2,7 +2,7 @@
 import os
 import httpx
 
-SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8800")
+SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 ACCESS_COOKIE_ENV  = os.getenv("ACCESS_COOKIE_NAME", "access_token")  # ví dụ: access_token
 
 def get_access_token(request) -> str | None:

@@ -17,7 +17,7 @@ from utils.excel_import import handle_import_preview  # chỉ dùng preview
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
-SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8800")
+SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 
 # Endpoints Service A
 EP_LIST            = "/api/v1/projects"

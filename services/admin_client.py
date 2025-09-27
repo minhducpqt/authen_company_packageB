@@ -2,7 +2,7 @@
 import os
 import httpx
 
-SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8800")
+SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 
 def _auth_headers(access: str) -> dict:
     return {"Authorization": f"Bearer {access}"}

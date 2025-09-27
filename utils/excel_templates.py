@@ -6,7 +6,7 @@ from openpyxl.styles import Alignment, Font, PatternFill, Border, Side, NamedSty
 from openpyxl.utils import get_column_letter
 import httpx, os
 
-SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8800")
+SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 
 
 async def _next_project_code(access: str, company_code: str) -> str:

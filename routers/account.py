@@ -9,7 +9,7 @@ from utils.templates import templates
 
 router = APIRouter(prefix="/account", tags=["account"])
 
-SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8800")
+SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 ACCESS_COOKIE = os.getenv("ACCESS_COOKIE_NAME", "access_token")
 
 async def _me(request: Request) -> dict | None:

@@ -14,7 +14,7 @@ import httpx
 
 from openpyxl import load_workbook
 
-SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8800")
+SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 
 # =========================
 # 1) Chuẩn hoá & validate cơ bản
@@ -266,7 +266,7 @@ import pandas as pd
 from typing import Dict, Any, List, Tuple
 from fastapi import UploadFile
 
-SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8800")
+SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 
 # ==== cấu hình cột & validate cơ bản ====
 MANDATORY_PROJECTS = ["project_code", "name"]
