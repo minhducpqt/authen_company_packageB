@@ -30,7 +30,7 @@
     </div>
   {% else %}
 
-  {# ================== THẺ THÔNG TIN DỰ ÁN ================== #}
+  <!-- Thông tin dự án -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
     <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
       <div class="text-slate-500 text-sm">Mã dự án</div>
@@ -42,104 +42,28 @@
     </div>
     <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
       <div class="text-slate-500 text-sm">Trạng thái</div>
-      {% set st = (project.status or '') %}
-      <span class="inline-flex items-center px-2 py-1 rounded text-xs
-        {% if st=='ACTIVE' %} bg-emerald-100 text-emerald-700 border border-emerald-200
-        {% elif st=='INACTIVE' %} bg-amber-100 text-amber-700 border border-amber-200
-        {% elif st=='CLOSED' %} bg-slate-200 text-slate-700 border border-slate-300
-        {% else %} bg-slate-100 text-slate-600 border border-slate-200 {% endif %}">
-        {{ st or 'UNKNOWN' }}
-      </span>
+      <div>
+        {% set st = (project.status or '') %}
+        <span class="inline-flex items-center px-2 py-1 rounded text-xs
+          {% if st=='ACTIVE' %} bg-emerald-100 text-emerald-700 border border-emerald-200
+          {% elif st=='INACTIVE' %} bg-amber-100 text-amber-700 border border-amber-200
+          {% elif st=='CLOSED' %} bg-slate-200 text-slate-700 border border-slate-300
+          {% else %} bg-slate-100 text-slate-600 border border-slate-200 {% endif %}">
+          {{ st or 'UNKNOWN' }}
+        </span>
+      </div>
     </div>
-
     <div class="md:col-span-3 p-4 rounded-lg bg-slate-50 border border-slate-200">
       <div class="text-slate-500 text-sm mb-1">Vị trí</div>
       <div>{{ project.location or '—' }}</div>
     </div>
-
     <div class="md:col-span-3 p-4 rounded-lg bg-slate-50 border border-slate-200">
       <div class="text-slate-500 text-sm mb-1">Mô tả</div>
       <div class="whitespace-pre-wrap">{{ project.description or '—' }}</div>
     </div>
   </div>
 
-  {# ================== CẤU HÌNH TÀI KHOẢN NHẬN TIỀN ================== #}
-  <div class="mb-8 p-5 rounded-xl border border-slate-200 bg-white">
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="font-semibold text-slate-800">Cấu hình tài khoản nhận tiền</h3>
-      {% if not can_edit %}
-        <button id="btn-open-no-perm"
-                type="button"
-                class="px-3 h-9 rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50">
-          Chỉnh sửa
-        </button>
-      {% endif %}
-    </div>
-
-    {% set sel_app = project.cba_application_id or (project.payment_accounts.cba_application_id if project.payment_accounts is defined else None) %}
-    {% set sel_dep = project.cba_deposit_id     or (project.payment_accounts.cba_deposit_id     if project.payment_accounts is defined else None) %}
-
-    <form method="post"
-          action="/projects/{{ project.id }}/payment-accounts"
-          class="grid grid-cols-1 md:grid-cols-2 gap-5">
-      <div>
-        <label class="text-sm text-slate-600 mb-2 block">Tài khoản nhận tiền mua hồ sơ</label>
-        <select name="cba_application_id"
-                class="w-full h-11 rounded-lg border border-slate-300 bg-white px-3 disabled:bg-slate-50"
-                {% if not can_edit %}disabled{% endif %}>
-          <option value="">— Chọn tài khoản —</option>
-          {% for acc in company_accounts %}
-            {% set b = acc.bank or {} %}
-            {% set label = (b.short_name or b.name or b.code or '') ~
-                           ((' — ' ~ (acc.account_number or '')) if acc.account_number else '') ~
-                           ((' · ' ~ (acc.account_name or '')) if acc.account_name else '') %}
-            <option value="{{ acc.id }}"
-                    {% if sel_app and acc.id == sel_app %}selected{% endif %}>
-              {{ label }}
-            </option>
-          {% endfor %}
-        </select>
-        <p class="text-xs text-slate-500 mt-1">Khoản người mua nộp khi mua hồ sơ.</p>
-      </div>
-
-      <div>
-        <label class="text-sm text-slate-600 mb-2 block">Tài khoản nhận tiền đặt cọc</label>
-        <select name="cba_deposit_id"
-                class="w-full h-11 rounded-lg border border-slate-300 bg-white px-3 disabled:bg-slate-50"
-                {% if not can_edit %}disabled{% endif %}>
-          <option value="">— Chọn tài khoản —</option>
-          {% for acc in company_accounts %}
-            {% set b = acc.bank or {} %}
-            {% set label = (b.short_name or b.name or b.code or '') ~
-                           ((' — ' ~ (acc.account_number or '')) if acc.account_number else '') ~
-                           ((' · ' ~ (acc.account_name or '')) if acc.account_name else '') %}
-            <option value="{{ acc.id }}"
-                    {% if sel_dep and acc.id == sel_dep %}selected{% endif %}>
-              {{ label }}
-            </option>
-          {% endfor %}
-        </select>
-        <p class="text-xs text-slate-500 mt-1">Tiền đặt cọc khi tham gia đấu giá.</p>
-      </div>
-
-      <div class="md:col-span-2 mt-2">
-        {% if can_edit %}
-          <button type="submit"
-                  class="px-5 h-11 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm">
-            Lưu cấu hình
-          </button>
-        {% else %}
-          <button type="button" id="btn-open-no-perm-2"
-                  class="px-5 h-11 rounded-xl bg-indigo-600 text-white/70 cursor-not-allowed"
-                  disabled>
-            Lưu cấu hình
-          </button>
-        {% endif %}
-      </div>
-    </form>
-  </div>
-
-  {# ================== DANH SÁCH LÔ ================== #}
+  <!-- Danh sách lô -->
   <div class="flex items-center justify-between mb-2">
     <h3 class="font-semibold text-slate-800">Danh sách lô ({{ lots_page.total }})</h3>
   </div>
@@ -194,42 +118,4 @@
 
   {% endif %}
 </div>
-
-{# ================== MODAL: KHÔNG CÓ QUYỀN ================== #}
-<div id="modal-no-perm"
-     class="hidden fixed inset-0 z-[60] flex items-center justify-center">
-  <div class="absolute inset-0 bg-black/30"></div>
-  <div class="relative w-[92%] max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 p-5">
-    <div class="flex items-start gap-3">
-      <i class="ri-error-warning-line text-amber-500 text-2xl"></i>
-      <div>
-        <h4 class="font-semibold text-slate-800">Bạn không có quyền chỉnh sửa</h4>
-        <p class="text-slate-600 mt-1 text-sm">
-          Chỉ <span class="font-medium">quản trị viên công ty</span> (hoặc SUPER/ADMIN) mới được cập nhật cấu hình tài khoản nhận tiền của dự án.
-        </p>
-      </div>
-    </div>
-    <div class="mt-4 flex justify-end">
-      <button id="btn-close-no-perm"
-              class="px-4 h-10 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
-        Đã hiểu
-      </button>
-    </div>
-  </div>
-</div>
-
-<script>
-  (function () {
-    const $modal = document.getElementById('modal-no-perm');
-    const $open1 = document.getElementById('btn-open-no-perm');
-    const $open2 = document.getElementById('btn-open-no-perm-2');
-    const $close = document.getElementById('btn-close-no-perm');
-    function open() { $modal.classList.remove('hidden'); }
-    function close() { $modal.classList.add('hidden'); }
-    if ($open1) $open1.addEventListener('click', open);
-    if ($open2) $open2.addEventListener('click', open);
-    if ($close)  $close.addEventListener('click', close);
-    $modal?.addEventListener('click', (e) => { if (e.target === $modal) close(); });
-  })();
-</script>
 {% endblock %}
