@@ -2,7 +2,6 @@
 {% extends "base.html" %}
 {% block content %}
 
-{# ===== Card ===== #}
 <form method="post"
       action="{% if mode == 'create' %}/settings/bank-accounts/create{% else %}/settings/bank-accounts/{{ item.id }}/edit{% endif %}"
       class="max-w-4xl">
@@ -23,13 +22,13 @@
         <input type="hidden" name="bank_code" id="bank_code"
                value="{{ (item.bank_code if item else '') or '' }}"/>
 
-        <!-- readonly “pill” showing current selection; click to open dropdown -->
+        <!-- readonly “pill”; click để mở danh sách -->
         <button id="bank_chosen"
                 type="button"
                 class="w-full h-12 px-4 rounded-xl border border-slate-300 bg-slate-50/60 text-left flex items-center gap-3 hover:bg-white focus:ring-2 focus:ring-indigo-200"
                 aria-haspopup="listbox" aria-expanded="false">
           <i class="ri-bank-line text-slate-400 text-xl"></i>
-          <span id="bank_chosen_text" class="text-slate-500">
+          <span id="bank_chosen_text" class="text-slate-600">
             {% if selected_bank %}
               {{ selected_bank.short_name or selected_bank.name or selected_bank.code }} — {{ selected_bank.name or '' }}{% if selected_bank.code %} — {{ selected_bank.code }}{% endif %}
             {% else %}
@@ -56,13 +55,15 @@
 
       {# ====== ACCOUNT NUMBER ====== #}
       <div>
-        <label class="block text-sm font-medium text-slate-700 mb-2">Số tài khoản <span class="text-rose-600">*</span></label>
+        <label class="block text-sm font-medium text-slate-700 mb-2">
+          Số tài khoản <span class="text-rose-600">*</span>
+        </label>
         <input name="account_number"
                value="{{ item.account_number if item else '' }}"
                required
                pattern="[0-9]{6,20}"
                title="Chỉ số, 6–20 ký tự"
-               class="input w-full h-12 text-base"
+               class="w-full h-12 rounded-xl border-2 border-slate-300 px-4 font-mono font-semibold text-slate-900 tracking-wide focus:outline-none focus:ring-2 focus:ring-indigo-200"
                placeholder="Ví dụ: 0123456789">
       </div>
 
@@ -71,15 +72,20 @@
         <label class="block text-sm font-medium text-slate-700 mb-2">Tên tài khoản</label>
         <input name="account_name"
                value="{{ item.account_name if item else '' }}"
-               class="input w-full h-12 text-base"
+               class="w-full h-12 rounded-xl border-2 border-slate-300 px-4 text-base font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                placeholder="(tuỳ chọn)">
       </div>
 
       {# ====== STATUS SWITCH ====== #}
       <div class="md:col-span-2">
         <label class="block text-sm font-medium text-slate-700 mb-2">Trạng thái</label>
+
+        {# Gửi luôn false khi tắt (checkbox không gửi gì) #}
+        <input type="hidden" name="is_active" value="false">
+
         <label class="inline-flex items-center gap-3 select-none">
-          <input type="checkbox" name="is_active" value="1"
+          {# Khi bật sẽ gửi 'true' (khớp parser truthy phía Service A) #}
+          <input type="checkbox" name="is_active" value="true"
                  class="peer sr-only"
                  {% if item is none or item.is_active %}checked{% endif %}>
           <span class="w-11 h-6 rounded-full bg-slate-300 peer-checked:bg-emerald-500 relative transition-all">
@@ -96,7 +102,7 @@
   <div class="mt-6 flex items-center gap-3">
     <button class="px-5 h-11 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
             type="submit">
-      {% if mode == 'create' %}Thêm{% else %}Lưu{% endif %}
+      {% if mode == 'create' %}Lưu{% else %}Lưu{% endif %}
     </button>
     <a href="/settings/bank-accounts"
        class="px-5 h-11 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50">
@@ -122,7 +128,6 @@
   let filtered = [];
   let cursor   = -1;
 
-  // ===== Helper labels =====
   function label(b) {
     const sn   = b.short_name || b.shortname || '';
     const name = b.name || '';
@@ -132,7 +137,6 @@
     return `${main}${sub} — ${code}`;
   }
 
-  // Normalize string (remove accents) on client to improve UX without DB changes
   function fold(s) {
     return (s || '')
       .toString()
@@ -142,7 +146,7 @@
       .trim();
   }
 
-  // Score by priority: shortname > code > name; startsWith > includes
+  // Ưu tiên: shortname > code > name; startsWith > includes
   function scoreItem(b, q) {
     if (!q) return 9999;
     const qf = fold(q);
@@ -176,7 +180,7 @@
       $listbox.innerHTML = '<li class="px-4 py-3 text-sm text-slate-500">Không tìm thấy ngân hàng</li>';
       return;
     }
-    items.forEach((b, idx) => {
+    items.forEach((b) => {
       const li = document.createElement('li');
       li.setAttribute('role', 'option');
       li.setAttribute('data-code', b.code);
@@ -208,10 +212,8 @@
   function openDropdown() {
     $dropdown.classList.remove('hidden');
     $chosen.setAttribute('aria-expanded', 'true');
-    // default list: id ascending (smaller id first)
     filtered = (BANKS.slice()).sort((a,b)=> (a.id??1e9)-(b.id??1e9));
     renderList(filtered);
-    // small delay to ensure focus after paint
     setTimeout(() => $filter.focus(), 0);
   }
 
@@ -221,18 +223,14 @@
   }
 
   function doFilter(q) {
-    if (!q) {
-      filtered = (BANKS.slice()).sort((a,b)=> (a.id??1e9)-(b.id??1e9));
-    } else {
-      filtered = sortByScoreThenId(BANKS, q);
-    }
+    filtered = q ? sortByScoreThenId(BANKS, q)
+                 : (BANKS.slice()).sort((a,b)=> (a.id??1e9)-(b.id??1e9));
     renderList(filtered);
   }
 
-  // ===== Bindings =====
+  // Bindings
   $chosen.addEventListener('click', (e) => {
     e.preventDefault();
-    // toggle open/close
     if ($dropdown.classList.contains('hidden')) openDropdown();
     else closeDropdown();
   });
@@ -261,12 +259,10 @@
   function highlight() {
     const lis = $listbox.querySelectorAll('li[role="option"]');
     lis.forEach((li, idx) => li.classList.toggle('bg-slate-50', idx === cursor));
-    if (lis[cursor]) {
-      lis[cursor].scrollIntoView({ block: 'nearest' });
-    }
+    if (lis[cursor]) lis[cursor].scrollIntoView({ block: 'nearest' });
   }
 
-  // ===== Init selected (if any) =====
+  // Init selected (nếu có)
   (function initSelected(){
     if (SELECTED && (SELECTED.code || SELECTED.id)) {
       $hidden.value  = SELECTED.code || '';
