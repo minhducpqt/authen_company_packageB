@@ -1,57 +1,278 @@
+{# templates/pages/settings/bank_account_form.html #}
 {% extends "base.html" %}
 {% block content %}
 
-<div class="mb-5">
-  <h1 class="text-xl font-semibold text-slate-800">
-    {% if mode == 'create' %}Thêm tài khoản ngân hàng{% else %}Sửa tài khoản ngân hàng{% endif %}
-  </h1>
-</div>
+{# ===== Card ===== #}
+<form method="post"
+      action="{% if mode == 'create' %}/settings/bank-accounts/create{% else %}/settings/bank-accounts/{{ item.id }}/edit{% endif %}"
+      class="max-w-4xl">
 
-{% if load_err %}
-  <div class="p-3 rounded bg-red-50 text-red-700 text-sm mb-4">{{ load_err }}</div>
-{% endif %}
+  {% if load_err %}
+    <div class="p-3 rounded bg-red-50 text-red-700 text-sm mb-4">{{ load_err }}</div>
+  {% endif %}
 
-<form method="post" action="{% if mode == 'create' %}/settings/bank-accounts/create{% else %}/settings/bank-accounts/{{ item.id }}/edit{% endif %}" class="max-w-xl space-y-3">
-  <div>
-    <label class="label">Ngân hàng</label>
-    <select name="bank_code" class="input" required>
-      <option value="">-- Chọn ngân hàng --</option>
-      {% for b in banks %}
-        {% set selected = (item.bank_code if item else '')|upper == (b.code|upper) %}
-        <option value="{{ b.code }}" {% if selected %}selected{% endif %}>{{ b.code }} — {{ b.name or b.short_name }}</option>
-      {% endfor %}
-    </select>
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 md:p-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+      {# ====== BANK PICKER ====== #}
+      <div class="md:col-span-2">
+        <label class="block text-sm font-medium text-slate-700 mb-2">
+          Ngân hàng <span class="text-rose-600">*</span>
+        </label>
+
+        <input type="hidden" name="bank_code" id="bank_code"
+               value="{{ (item.bank_code if item else '') or '' }}"/>
+
+        <!-- readonly “pill” showing current selection; click to open dropdown -->
+        <button id="bank_chosen"
+                type="button"
+                class="w-full h-12 px-4 rounded-xl border border-slate-300 bg-slate-50/60 text-left flex items-center gap-3 hover:bg-white focus:ring-2 focus:ring-indigo-200"
+                aria-haspopup="listbox" aria-expanded="false">
+          <i class="ri-bank-line text-slate-400 text-xl"></i>
+          <span id="bank_chosen_text" class="text-slate-500">
+            {% if selected_bank %}
+              {{ selected_bank.short_name or selected_bank.name or selected_bank.code }} — {{ selected_bank.name or '' }}{% if selected_bank.code %} — {{ selected_bank.code }}{% endif %}
+            {% else %}
+              Chọn ngân hàng…
+            {% endif %}
+          </span>
+        </button>
+
+        <!-- dropdown -->
+        <div id="bank_dropdown" class="relative hidden">
+          <div class="absolute z-40 mt-2 w-full bg-white rounded-xl shadow-2xl border border-slate-200">
+            <div class="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
+              <i class="ri-search-line text-slate-400"></i>
+              <input id="bank_filter" type="text"
+                     class="w-full outline-none text-base placeholder:text-slate-400"
+                     placeholder="Tìm tên hoặc mã ngân hàng…">
+            </div>
+            <ul id="bank_list"
+                role="listbox"
+                class="max-h-80 overflow-auto py-1"></ul>
+          </div>
+        </div>
+      </div>
+
+      {# ====== ACCOUNT NUMBER ====== #}
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-2">Số tài khoản <span class="text-rose-600">*</span></label>
+        <input name="account_number"
+               value="{{ item.account_number if item else '' }}"
+               required
+               pattern="[0-9]{6,20}"
+               title="Chỉ số, 6–20 ký tự"
+               class="input w-full h-12 text-base"
+               placeholder="Ví dụ: 0123456789">
+      </div>
+
+      {# ====== ACCOUNT NAME ====== #}
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-2">Tên tài khoản</label>
+        <input name="account_name"
+               value="{{ item.account_name if item else '' }}"
+               class="input w-full h-12 text-base"
+               placeholder="(tuỳ chọn)">
+      </div>
+
+      {# ====== STATUS SWITCH ====== #}
+      <div class="md:col-span-2">
+        <label class="block text-sm font-medium text-slate-700 mb-2">Trạng thái</label>
+        <label class="inline-flex items-center gap-3 select-none">
+          <input type="checkbox" name="is_active" value="1"
+                 class="peer sr-only"
+                 {% if item is none or item.is_active %}checked{% endif %}>
+          <span class="w-11 h-6 rounded-full bg-slate-300 peer-checked:bg-emerald-500 relative transition-all">
+            <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-all peer-checked:left-[22px]"></span>
+          </span>
+          <span class="text-slate-700">Bật</span>
+        </label>
+      </div>
+
+    </div>
   </div>
 
-  <div>
-    <label class="label">Số tài khoản</label>
-    <input class="input" name="account_number" value="{{ item.account_number if item else '' }}" required>
-  </div>
-
-  <div>
-    <label class="label">Tên tài khoản</label>
-    <input class="input" name="account_name" value="{{ item.account_name if item else '' }}" placeholder="(tuỳ chọn)">
-  </div>
-
-  <div>
-    <label class="label">Trạng thái</label>
-    <select name="bank_code" class="input" required>
-      <option value="">-- Chọn ngân hàng --</option>
-      {% for b in banks %}
-        {% set code = b.code if b.code is defined else (b['code'] if 'code' in b else '') %}
-        {% set name = b.name if b.name is defined else (b['name'] if 'name' in b else code) %}
-        {% set selected = (item.bank_code if item else '')|upper == code|upper %}
-        <option value="{{ code }}" {% if selected %}selected{% endif %}>
-          {{ code }} — {{ name }}
-        </option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <div class="pt-2">
-    <button class="btn-primary" type="submit">{% if mode == 'create' %}Thêm{% else %}Lưu{% endif %}</button>
-    <a class="btn-secondary ml-2" href="/settings/bank-accounts">Huỷ</a>
+  {# ===== Actions ===== #}
+  <div class="mt-6 flex items-center gap-3">
+    <button class="px-5 h-11 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
+            type="submit">
+      {% if mode == 'create' %}Thêm{% else %}Lưu{% endif %}
+    </button>
+    <a href="/settings/bank-accounts"
+       class="px-5 h-11 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50">
+      Huỷ
+    </a>
   </div>
 </form>
+
+{# =================== SCRIPT =================== #}
+<script>
+  // Data passed from server (array of banks)
+  const BANKS = {{ (banks or []) | tojson }};
+  const SELECTED = {{ (selected_bank or {}) | tojson }};
+
+  // Elements
+  const $hidden   = document.getElementById('bank_code');
+  const $chosen   = document.getElementById('bank_chosen');
+  const $chosenTx = document.getElementById('bank_chosen_text');
+  const $dropdown = document.getElementById('bank_dropdown');
+  const $filter   = document.getElementById('bank_filter');
+  const $listbox  = document.getElementById('bank_list');
+
+  let filtered = [];
+  let cursor   = -1;
+
+  // ===== Helper labels =====
+  function label(b) {
+    const sn   = b.short_name || b.shortname || '';
+    const name = b.name || '';
+    const code = b.code || '';
+    const main = sn || name || code;
+    const sub  = name && name !== sn ? ` · ${name}` : '';
+    return `${main}${sub} — ${code}`;
+  }
+
+  // Normalize string (remove accents) on client to improve UX without DB changes
+  function fold(s) {
+    return (s || '')
+      .toString()
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .toLowerCase()
+      .trim();
+  }
+
+  // Score by priority: shortname > code > name; startsWith > includes
+  function scoreItem(b, q) {
+    if (!q) return 9999;
+    const qf = fold(q);
+    const sn = fold(b.short_name || b.shortname);
+    const cd = fold(b.code);
+    const nm = fold(b.name);
+
+    if (sn && sn.startsWith(qf)) return 0;
+    if (sn && sn.includes(qf))   return 1;
+
+    if (cd && cd.startsWith(qf)) return 2;
+    if (cd && cd.includes(qf))   return 3;
+
+    if (nm && nm.startsWith(qf)) return 4;
+    if (nm && nm.includes(qf))   return 5;
+
+    return 9999;
+  }
+
+  function sortByScoreThenId(items, q) {
+    return items
+      .map(b => ({ b, s: scoreItem(b, q) }))
+      .filter(x => x.s < 9999)
+      .sort((a, b) => a.s - b.s || (a.b.id ?? 1e9) - (b.b.id ?? 1e9))
+      .map(x => x.b);
+  }
+
+  function renderList(items) {
+    $listbox.innerHTML = '';
+    if (!items.length) {
+      $listbox.innerHTML = '<li class="px-4 py-3 text-sm text-slate-500">Không tìm thấy ngân hàng</li>';
+      return;
+    }
+    items.forEach((b, idx) => {
+      const li = document.createElement('li');
+      li.setAttribute('role', 'option');
+      li.setAttribute('data-code', b.code);
+      li.className = "px-4 py-3 hover:bg-slate-50 cursor-pointer flex items-center gap-4";
+      li.innerHTML = `
+        <img src="${b.logo || ''}" onerror="this.style.display='none'"
+             class="w-9 h-9 rounded object-contain bg-white border border-slate-200" alt="">
+        <div class="flex-1 min-w-0">
+          <div class="text-base text-slate-800 leading-5 truncate">
+            ${ (b.short_name || b.shortname || b.name || b.code) || '' }
+          </div>
+          <div class="text-sm text-slate-500 truncate">
+            ${ b.name || '' } · <span class="font-mono">${ b.code || '' }</span>
+          </div>
+        </div>
+      `;
+      li.addEventListener('click', () => choose(b));
+      $listbox.appendChild(li);
+    });
+    cursor = -1;
+  }
+
+  function choose(b) {
+    $hidden.value  = b.code || '';
+    $chosenTx.textContent = label(b);
+    closeDropdown();
+  }
+
+  function openDropdown() {
+    $dropdown.classList.remove('hidden');
+    $chosen.setAttribute('aria-expanded', 'true');
+    // default list: id ascending (smaller id first)
+    filtered = (BANKS.slice()).sort((a,b)=> (a.id??1e9)-(b.id??1e9));
+    renderList(filtered);
+    // small delay to ensure focus after paint
+    setTimeout(() => $filter.focus(), 0);
+  }
+
+  function closeDropdown() {
+    $dropdown.classList.add('hidden');
+    $chosen.setAttribute('aria-expanded', 'false');
+  }
+
+  function doFilter(q) {
+    if (!q) {
+      filtered = (BANKS.slice()).sort((a,b)=> (a.id??1e9)-(b.id??1e9));
+    } else {
+      filtered = sortByScoreThenId(BANKS, q);
+    }
+    renderList(filtered);
+  }
+
+  // ===== Bindings =====
+  $chosen.addEventListener('click', (e) => {
+    e.preventDefault();
+    // toggle open/close
+    if ($dropdown.classList.contains('hidden')) openDropdown();
+    else closeDropdown();
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!$dropdown.contains(e.target) && !$chosen.contains(e.target)) {
+      closeDropdown();
+    }
+  });
+
+  $filter.addEventListener('input', (e) => doFilter(e.target.value));
+
+  // Keyboard navigation
+  $filter.addEventListener('keydown', (e) => {
+    const max = filtered.length - 1;
+    if (e.key === 'ArrowDown') { e.preventDefault(); cursor = Math.min(max, cursor + 1); highlight(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); cursor = Math.max(0, cursor - 1); highlight(); }
+    else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (cursor >= 0 && cursor <= max) choose(filtered[cursor]);
+    } else if (e.key === 'Escape') {
+      closeDropdown();
+    }
+  });
+
+  function highlight() {
+    const lis = $listbox.querySelectorAll('li[role="option"]');
+    lis.forEach((li, idx) => li.classList.toggle('bg-slate-50', idx === cursor));
+    if (lis[cursor]) {
+      lis[cursor].scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  // ===== Init selected (if any) =====
+  (function initSelected(){
+    if (SELECTED && (SELECTED.code || SELECTED.id)) {
+      $hidden.value  = SELECTED.code || '';
+      $chosenTx.textContent = label(SELECTED);
+    }
+  })();
+</script>
 
 {% endblock %}
