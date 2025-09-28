@@ -1,57 +1,61 @@
 # routers/customers.py
 from __future__ import annotations
-
-import os
-import httpx
-from typing import Optional
-
+import os, httpx
+from typing import Optional, List, Tuple
 from fastapi import APIRouter, Request, Query
-from fastapi.responses import HTMLResponse
-
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from utils.templates import templates
-from utils.auth import get_access_token, fetch_me
+from utils.auth import get_access_token
 
 API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8824")
 
 router = APIRouter()
 
-async def _fetch_json(client: httpx.AsyncClient, url: str, access: Optional[str]):
-    headers = {}
-    if access:
-        headers["Authorization"] = f"Bearer {access}"
-    r = await client.get(url, headers=headers, timeout=20.0)
-    r.raise_for_status()
-    return r.json()
+async def _api_get(client: httpx.AsyncClient, path: str, token: str, params: List[Tuple[str, str|int]]):
+    r = await client.get(f"{API_BASE_URL}{path}",
+                         headers={"Authorization": f"Bearer {token}"},
+                         params=params, timeout=20.0)
+    return r
 
 @router.get("/customers", response_class=HTMLResponse)
-async def page_customers(
+async def customers_page(
     request: Request,
     q: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
-    size: int = Query(200, le=200),
+    size: int = Query(50, ge=10, le=200),  # mặc định 50 cho mượt
 ):
-    access = get_access_token(request)
-    me = await fetch_me(request)
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(url=f"/login?next=%2Fcustomers", status_code=303)
+    # Trang HTML chỉ render “khung”, dữ liệu do JS gọi JSON endpoint bên dưới
+    return templates.TemplateResponse("customers/interactive.html", {
+        "request": request,
+        "title": "Khách hàng",
+        "init_q": q or "",
+        "init_page": page,
+        "init_size": size,
+    })
 
-    params = [("page", page), ("size", size)]
-    if q:
-        params.append(("q", q))
-    url = f"{API_BASE_URL}/api/v1/customers"
+@router.get("/customers/data", response_class=JSONResponse)
+async def customers_data(
+    request: Request,
+    q: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    size: int = Query(50, ge=10, le=200),
+):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    params: List[Tuple[str, str|int]] = [("page", page), ("size", size)]
+    if q: params.append(("q", q))
+
     async with httpx.AsyncClient() as client:
-        resp = await _fetch_json(client, url, access)
-    customers = resp.get("data", [])
-    total = resp.get("total", 0)
+        r = await _api_get(client, "/api/v1/customers", token, params)
 
-    return templates.TemplateResponse(
-        "customers/list.html",
-        {
-            "request": request,
-            "me": me,
-            "customers": customers,
-            "q": q or "",
-            "page": page,
-            "size": size,
-            "total": total,
-            "title": "Khách hàng",
-        },
-    )
+    if r.status_code == 401:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    if r.status_code >= 500:
+        return JSONResponse({"error": "server", "msg": r.text[:300]}, status_code=502)
+
+    return JSONResponse(r.json(), status_code=200)

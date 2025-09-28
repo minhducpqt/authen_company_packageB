@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="bg-white rounded-xl border border-slate-200 p-5">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-xl font-semibold text-slate-800">Khách hàng</h2>
+      <p class="text-slate-500 text-sm">Tìm theo họ tên (không dấu), CCCD hoặc địa chỉ. Gõ tới đâu tìm tới đó.</p>
+    </div>
+  </div>
+
+  <!-- Search bar -->
+  <div class="mb-3 flex items-center gap-2">
+    <div class="relative">
+      <input id="q" value="{{ init_q }}" type="text" autocomplete="off"
+             placeholder="Nhập họ tên / CCCD / địa chỉ…"
+             class="h-11 w-96 rounded-lg border border-slate-300 px-10 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+      <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+      <div id="spinner" class="hidden absolute right-3 top-1/2 -translate-y-1/2">
+        <svg class="animate-spin h-5 w-5 text-slate-400" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4A4 4 0 004 12z"></path>
+        </svg>
+      </div>
+    </div>
+    <button id="btn-search"
+            class="h-11 px-4 rounded-lg bg-slate-800 text-white hover:bg-slate-900 transition">Tìm</button>
+    <div class="text-sm text-slate-500" id="meta"></div>
+  </div>
+
+  <!-- Table -->
+  <div class="overflow-x-auto border border-slate-200 rounded-lg">
+    <table class="min-w-full text-sm" id="tbl">
+      <thead class="bg-slate-50">
+        <tr class="text-left text-slate-600">
+          <th class="px-3 py-2 border-b w-14">#</th>
+          <th class="px-3 py-2 border-b">Họ tên</th>
+          <th class="px-3 py-2 border-b">CCCD</th>
+          <th class="px-3 py-2 border-b">Địa chỉ</th>
+          <th class="px-3 py-2 border-b">SĐT</th>
+          <th class="px-3 py-2 border-b">Email</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr><td colspan="6" class="px-3 py-6 text-center text-slate-500">Đang tải…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Paging -->
+  <div class="flex justify-between items-center mt-4">
+    <div class="text-sm text-slate-600">Tổng: <span id="total">0</span></div>
+    <div class="flex gap-2">
+      <button id="prev" class="px-3 h-9 rounded-lg border border-slate-300 bg-white text-slate-700 disabled:opacity-50">← Trang trước</button>
+      <button id="next" class="px-3 h-9 rounded-lg border border-slate-300 bg-white text-slate-700 disabled:opacity-50">Trang sau →</button>
+      <select id="pageSize" class="h-9 rounded-lg border border-slate-300 bg-white px-2">
+        <option value="50">50 / trang</option>
+        <option value="100">100 / trang</option>
+        <option value="200">200 / trang</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const state = {
+    q: "{{ init_q|e }}",
+    page: {{ init_page }},
+    size: {{ init_size }},
+    busy: false,
+    timer: null,
+  };
+
+  const elQ = document.getElementById('q');
+  const elBtn = document.getElementById('btn-search');
+  const elSpin = document.getElementById('spinner');
+  const elBody = document.getElementById('tbody');
+  const elTotal = document.getElementById('total');
+  const elMeta = document.getElementById('meta');
+  const elPrev = document.getElementById('prev');
+  const elNext = document.getElementById('next');
+  const elSize = document.getElementById('pageSize');
+
+  // init page size
+  [...elSize.options].forEach(o => { if (+o.value === state.size) o.selected = true; });
+
+  function setBusy(b){
+    state.busy = b;
+    elSpin.classList.toggle('hidden', !b);
+    elBtn.disabled = b;
+  }
+
+  function fmt(n){ return n?.toLocaleString('vi-VN') ?? ''; }
+
+  function render(rows, page, size, total){
+    elBody.innerHTML = '';
+    if(!rows || rows.length === 0){
+      elBody.innerHTML = `<tr><td colspan="6" class="px-3 py-6 text-center text-slate-500">Không có khách hàng.</td></tr>`;
+    }else{
+      rows.forEach((c, idx) => {
+        const i = (page-1)*size + idx + 1;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="px-3 py-2 border-b">${i}</td>
+          <td class="px-3 py-2 border-b font-medium">${c.full_name ?? '—'}</td>
+          <td class="px-3 py-2 border-b font-mono">${c.cccd ?? '—'}</td>
+          <td class="px-3 py-2 border-b">${c.address ?? '—'}</td>
+          <td class="px-3 py-2 border-b">${c.phone ?? '—'}</td>
+          <td class="px-3 py-2 border-b">${c.email ?? '—'}</td>
+        `;
+        elBody.appendChild(tr);
+      });
+    }
+    elTotal.textContent = fmt(total);
+    const totalPages = Math.max(1, Math.ceil(total / size));
+    elPrev.disabled = page <= 1;
+    elNext.disabled = page >= totalPages;
+    elMeta.textContent = `Trang ${page}/${totalPages}`;
+  }
+
+  async function load(){
+    if(state.busy) return;
+    setBusy(true);
+    try{
+      const params = new URLSearchParams({ page: String(state.page), size: String(state.size) });
+      if(state.q?.trim()) params.set('q', state.q.trim());
+      const r = await fetch(`/customers/data?${params.toString()}`, { credentials: 'same-origin' });
+      if(r.status === 401){
+        window.location.href = `/login?next=${encodeURIComponent('/customers')}`;
+        return;
+      }
+      if(!r.ok){
+        const t = await r.text();
+        elBody.innerHTML = `<tr><td colspan="6" class="px-3 py-6 text-rose-600 text-center">Lỗi tải dữ liệu (${r.status}). ${t.slice(0,200)}</td></tr>`;
+        elTotal.textContent = "0";
+        elMeta.textContent = "";
+        return;
+      }
+      const data = await r.json();
+      render(data.data || [], data.page || 1, data.size || state.size, data.total || 0);
+    }catch(e){
+      elBody.innerHTML = `<tr><td colspan="6" class="px-3 py-6 text-rose-600 text-center">Lỗi mạng, vui lòng thử lại.</td></tr>`;
+      elTotal.textContent = "0";
+      elMeta.textContent = "";
+    }finally{
+      setBusy(false);
+      updateButton();
+      syncUrl();
+    }
+  }
+
+  function syncUrl(){
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', String(state.page));
+    url.searchParams.set('size', String(state.size));
+    if(state.q?.trim()) url.searchParams.set('q', state.q.trim()); else url.searchParams.delete('q');
+    history.replaceState(null, '', url.toString());
+  }
+
+  function updateButton(){
+    const hasQ = (elQ.value || '').trim().length > 0;
+    elBtn.textContent = hasQ ? 'Xóa' : 'Tìm';
+    elBtn.classList.toggle('bg-rose-600', hasQ);
+    elBtn.classList.toggle('hover:bg-rose-700', hasQ);
+    elBtn.classList.toggle('bg-slate-800', !hasQ);
+    elBtn.classList.toggle('hover:bg-slate-900', !hasQ);
+  }
+
+  // Debounced search: 350ms sau khi ngừng gõ mới gọi API
+  function schedule(){
+    clearTimeout(state.timer);
+    state.timer = setTimeout(() => {
+      state.page = 1;
+      state.q = elQ.value;
+      load();
+    }, 350);
+  }
+
+  // Events
+  elQ.addEventListener('input', () => { updateButton(); schedule(); });
+  elQ.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter'){ e.preventDefault(); clearTimeout(state.timer); state.page = 1; state.q = elQ.value; load(); }
+    if(e.key === 'Escape'){ elQ.value=''; updateButton(); state.page=1; state.q=''; load(); }
+  });
+
+  elBtn.addEventListener('click', (e) => {
+    const hasQ = (elQ.value || '').trim().length > 0;
+    if(hasQ){
+      elQ.value = '';
+      state.q = '';
+      state.page = 1;
+      updateButton();
+      load();
+    }else{
+      // không làm gì: trang đã auto load
+      state.page = 1;
+      load();
+    }
+  });
+
+  elPrev.addEventListener('click', () => { if(state.page>1){ state.page--; load(); }});
+  elNext.addEventListener('click', () => { state.page++; load(); });
+  elSize.addEventListener('change', () => { state.size = +elSize.value; state.page = 1; load(); });
+
+  // first load
+  updateButton();
+  load();
+})();
+</script>
+{% endblock %}
