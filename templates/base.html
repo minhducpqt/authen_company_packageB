@@ -83,7 +83,11 @@
         <i class="ri-community-line"></i> 1.1 Quản lý dự án
       </a>
     </li>
-    <li><a class="side-link" href="/khach-hang"><i class="ri-team-line"></i> 1.2 Khách hàng</a></li>
+    <li>
+      <a class="side-link {% if request.url.path.startswith('/customers') %}active{% endif %}" href="/customers">
+        <i class="ri-team-line"></i> 1.2 Khách hàng
+      </a>
+    </li>
     <li>
       <a class="side-link {% if request.url.path.startswith('/projects/payment-accounts') %}active{% endif %}"
          href="/projects/payment-accounts">

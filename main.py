@@ -14,18 +14,19 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.add_middleware(AuthGuardMiddleware)
 
 from routers.project_payment_accounts import router as ppa_router
-app.include_router(ppa_router)
+from routers.customers import router as customers_router
+from routers.settings.settings_bank_accounts import router as settings_bank_accounts_router
+from routers.settings.settings_company import router as settings_company_router
+
 # Routers
+app.include_router(ppa_router)
 app.include_router(auth_router)
 app.include_router(dashboard_router)
 app.include_router(account_router)
 app.include_router(projects_router)                      # <-- THÊM DÒNG NÀY
-
-from routers.settings.settings_bank_accounts import router as settings_bank_accounts_router
-from routers.settings.settings_company import router as settings_company_router
 app.include_router(settings_bank_accounts_router)
 app.include_router(settings_company_router)
-
+app.include_router(customers_router)
 
 @app.get("/healthz")
 def healthz():

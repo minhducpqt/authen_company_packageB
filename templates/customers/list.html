@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="bg-white rounded-xl border border-slate-200 p-5">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-xl font-semibold text-slate-800">Danh sách khách hàng</h2>
+      <p class="text-slate-500 text-sm">Quản lý và tìm kiếm khách hàng theo họ tên, CCCD hoặc địa chỉ.</p>
+    </div>
+  </div>
+
+  <form method="get" class="mb-3 flex gap-2">
+    <input name="q" value="{{ q }}" placeholder="Nhập họ tên / CCCD / địa chỉ..."
+           class="h-10 w-80 rounded-lg border border-slate-300 px-3" />
+    <button class="h-10 px-4 rounded-lg bg-slate-800 text-white">Tìm</button>
+  </form>
+
+  <div class="overflow-x-auto border border-slate-200 rounded-lg">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-50">
+        <tr class="text-left text-slate-600">
+          <th class="px-3 py-2 border-b">#</th>
+          <th class="px-3 py-2 border-b">Họ tên</th>
+          <th class="px-3 py-2 border-b">CCCD</th>
+          <th class="px-3 py-2 border-b">Địa chỉ</th>
+          <th class="px-3 py-2 border-b">SĐT</th>
+          <th class="px-3 py-2 border-b">Email</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for c in customers %}
+        <tr>
+          <td class="px-3 py-2 border-b">{{ loop.index + ((page-1)*size) }}</td>
+          <td class="px-3 py-2 border-b font-semibold">{{ c.full_name or '—' }}</td>
+          <td class="px-3 py-2 border-b font-mono">{{ c.cccd or '—' }}</td>
+          <td class="px-3 py-2 border-b">{{ c.address or '—' }}</td>
+          <td class="px-3 py-2 border-b">{{ c.phone or '—' }}</td>
+          <td class="px-3 py-2 border-b">{{ c.email or '—' }}</td>
+        </tr>
+      {% endfor %}
+      {% if customers|length == 0 %}
+        <tr><td colspan="6" class="px-3 py-6 text-center text-slate-500">Không có khách hàng.</td></tr>
+      {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="flex justify-between items-center mt-4">
+    <div class="text-sm text-slate-600">Tổng: {{ total }}</div>
+    <div class="flex gap-2">
+      {% set total_pages = (total // size) + (1 if total % size > 0 else 0) %}
+      {% if page > 1 %}
+        <a href="?q={{ q }}&page={{ page-1 }}&size={{ size }}"
+           class="px-3 h-9 rounded-lg border border-slate-300 bg-white text-slate-700">← Trang trước</a>
+      {% endif %}
+      {% if page < total_pages %}
+        <a href="?q={{ q }}&page={{ page+1 }}&size={{ size }}"
+           class="px-3 h-9 rounded-lg border border-slate-300 bg-white text-slate-700">Trang sau →</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}
