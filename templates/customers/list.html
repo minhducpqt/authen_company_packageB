@@ -19,12 +19,13 @@
     <table class="min-w-full text-sm">
       <thead class="bg-slate-50">
         <tr class="text-left text-slate-600">
-          <th class="px-3 py-2 border-b">#</th>
+          <th class="px-3 py-2 border-b w-14">#</th>
           <th class="px-3 py-2 border-b">Họ tên</th>
           <th class="px-3 py-2 border-b">CCCD</th>
           <th class="px-3 py-2 border-b">Địa chỉ</th>
           <th class="px-3 py-2 border-b">SĐT</th>
           <th class="px-3 py-2 border-b">Email</th>
+          <th class="px-3 py-2 border-b text-center">Chi tiết</th>
         </tr>
       </thead>
       <tbody>
@@ -36,10 +37,13 @@
           <td class="px-3 py-2 border-b">{{ c.address or '—' }}</td>
           <td class="px-3 py-2 border-b">{{ c.phone or '—' }}</td>
           <td class="px-3 py-2 border-b">{{ c.email or '—' }}</td>
+          <td class="px-3 py-2 border-b text-center">
+            <a href="/customers/{{ c.id }}" class="text-indigo-600 hover:underline">Chi tiết</a>
+          </td>
         </tr>
       {% endfor %}
       {% if customers|length == 0 %}
-        <tr><td colspan="6" class="px-3 py-6 text-center text-slate-500">Không có khách hàng.</td></tr>
+        <tr><td colspan="7" class="px-3 py-6 text-center text-slate-500">Không có khách hàng.</td></tr>
       {% endif %}
       </tbody>
     </table>

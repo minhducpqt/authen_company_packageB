@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Toast -->
+<div id="toast" class="fixed top-4 right-4 z-50 hidden">
+  <div id="toastBox" class="rounded-lg shadow-lg px-4 py-3 text-sm bg-slate-800 text-white"></div>
+</div>
+
+<!-- Confirm Modal -->
+<div id="confirmMask" class="hidden fixed inset-0 z-40 bg-black/40"></div>
+<div id="confirmModal"
+     class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-md rounded-2xl bg-white shadow-xl border border-slate-200">
+    <div class="px-5 pt-5">
+      <h3 class="text-lg font-semibold text-slate-800">Xác nhận lưu thay đổi?</h3>
+      <p class="mt-1 text-slate-500 text-sm">
+        Thông tin mới sẽ ghi đè dữ liệu hiện có và được lưu vào lịch sử <em>audit</em>.
+      </p>
+    </div>
+    <div class="px-5 pb-5 mt-4 flex justify-end gap-2">
+      <button id="btnCancelConfirm"
+              class="h-10 px-4 rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50">
+        Hủy
+      </button>
+      <button id="btnDoConfirm"
+              class="h-10 px-4 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50">
+        Xác nhận
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <!-- Left: Profile summary -->
+  <div class="bg-white rounded-xl border border-slate-200 p-5">
+    <h2 class="text-lg font-semibold text-slate-800 mb-4">Thông tin cơ bản</h2>
+    <div class="space-y-3 text-sm">
+      <div class="flex justify-between">
+        <span class="text-slate-500">ID</span>
+        <span class="font-medium">{{ customer.id }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-slate-500">Công ty</span>
+        <span class="font-medium">{{ customer.company_code }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-slate-500">Tạo lúc</span>
+        <span class="font-medium">{{ customer.created_at or '—' }}</span>
+      </div>
+      <p class="pt-2 text-slate-500">
+        Sau này sẽ hiển thị thêm lịch sử giao dịch, đơn hàng, thanh toán…
+      </p>
+      <div class="pt-3">
+        <a href="/customers"
+           class="inline-flex items-center gap-2 text-slate-700 hover:text-slate-900">
+          <span class="ri-arrow-left-line"></span> Quay lại danh sách
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Edit form -->
+  <div class="bg-white rounded-xl border border-slate-200 p-5">
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-slate-800">
+        🧑‍💼 Chỉnh sửa thông tin khách hàng
+      </h2>
+    </div>
+
+    <form id="frm" class="mt-4 space-y-4" onsubmit="return false;">
+      <!-- Họ tên -->
+      <div>
+        <label class="block text-sm font-medium text-slate-700">Họ tên *</label>
+        <input id="full_name" name="full_name" type="text"
+               class="mt-1 h-11 w-full rounded-lg border border-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+               value="{{ customer.full_name or '' }}" placeholder="Nguyễn Văn A">
+        <p id="err_full_name" class="mt-1 text-sm text-rose-600 hidden"></p>
+      </div>
+
+      <!-- CCCD -->
+      <div>
+        <label class="block text-sm font-medium text-slate-700">CCCD *</label>
+        <input id="cccd" name="cccd" type="text"
+               class="mt-1 h-11 w-full rounded-lg border border-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-200 font-mono"
+               value="{{ customer.cccd or '' }}" placeholder="12 chữ số">
+        <p id="err_cccd" class="mt-1 text-sm text-rose-600 hidden"></p>
+      </div>
+
+      <!-- Địa chỉ -->
+      <div>
+        <label class="block text-sm font-medium text-slate-700">Địa chỉ</label>
+        <input id="address" name="address" type="text"
+               class="mt-1 h-11 w-full rounded-lg border border-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+               value="{{ customer.address or '' }}" placeholder="Số nhà, đường, phường/xã…">
+        <p id="err_address" class="mt-1 text-sm text-rose-600 hidden"></p>
+      </div>
+
+      <!-- Phone -->
+      <div>
+        <label class="block text-sm font-medium text-slate-700">SĐT</label>
+        <input id="phone" name="phone" type="text"
+               class="mt-1 h-11 w-full rounded-lg border border-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-200 font-mono"
+               value="{{ customer.phone or '' }}" placeholder="10 chữ số, bắt đầu 0">
+        <p id="err_phone" class="mt-1 text-sm text-rose-600 hidden"></p>
+      </div>
+
+      <!-- Email -->
+      <div>
+        <label class="block text-sm font-medium text-slate-700">Email</label>
+        <input id="email" name="email" type="email"
+               class="mt-1 h-11 w-full rounded-lg border border-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+               value="{{ customer.email or '' }}" placeholder="name@example.com">
+        <p id="err_email" class="mt-1 text-sm text-rose-600 hidden"></p>
+      </div>
+
+      <div class="pt-3 flex items-center justify-end gap-3">
+        <button id="btnSave"
+                class="h-11 px-4 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                disabled>
+          💾 Lưu thay đổi
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function () {
+  const customerId = {{ customer.id }};
+  const initial = {
+    full_name: {{ (customer.full_name or '')|tojson }},
+    cccd: {{ (customer.cccd or '')|tojson }},
+    address: {{ (customer.address or '')|tojson }},
+    phone: {{ (customer.phone or '')|tojson }},
+    email: {{ (customer.email or '')|tojson }},
+  };
+
+  // Elements
+  const el = (id) => document.getElementById(id);
+  const btnSave = el('btnSave');
+
+  // Validation helpers
+  function showErr(id, msg) {
+    const p = el('err_' + id);
+    if (!p) return;
+    if (msg) {
+      p.textContent = msg;
+      p.classList.remove('hidden');
+    } else {
+      p.textContent = '';
+      p.classList.add('hidden');
+    }
+  }
+  function isEmail(s) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+  }
+  function validate(values) {
+    let ok = true;
+    // Họ tên: >= 2 cụm (mỗi cụm >=2 ký tự)
+    const name = (values.full_name || '').trim().replace(/\s+/g, ' ');
+    const chunks = name.split(' ').filter(Boolean);
+    if (chunks.length < 2 || chunks.some(x => x.length < 2)) {
+      showErr('full_name', 'Họ tên phải gồm ≥ 2 cụm, mỗi cụm ≥ 2 ký tự.');
+      ok = false;
+    } else showErr('full_name', '');
+
+    // CCCD: 12 chữ số
+    const cccd = (values.cccd || '').trim();
+    if (!/^\d{12}$/.test(cccd)) {
+      showErr('cccd', 'CCCD phải đúng 12 chữ số.');
+      ok = false;
+    } else showErr('cccd', '');
+
+    // Phone: nếu nhập thì 10 chữ số, bắt đầu 0
+    const phone = (values.phone || '').trim();
+    if (phone && !/^0\d{9}$/.test(phone)) {
+      showErr('phone', 'SĐT phải gồm 10 chữ số và bắt đầu bằng 0.');
+      ok = false;
+    } else showErr('phone', '');
+
+    // Email: nếu nhập phải hợp lệ
+    const email = (values.email || '').trim();
+    if (email && !isEmail(email)) {
+      showErr('email', 'Email không hợp lệ.');
+      ok = false;
+    } else showErr('email', '');
+
+    return ok;
+  }
+
+  // Dirty tracking
+  function currentValues() {
+    return {
+      full_name: el('full_name').value,
+      cccd: el('cccd').value,
+      address: el('address').value,
+      phone: el('phone').value,
+      email: el('email').value,
+    };
+  }
+  function isDirty() {
+    const v = currentValues();
+    return Object.keys(initial).some(k => (initial[k] || '') !== (v[k] || ''));
+  }
+  function updateSaveState() {
+    btnSave.disabled = !isDirty();
+  }
+
+  ['full_name','cccd','address','phone','email'].forEach(id => {
+    el(id).addEventListener('input', () => {
+      updateSaveState();
+      // live-clear error when user edits
+      showErr(id, '');
+    });
+  });
+  updateSaveState();
+
+  // Toast
+  function toast(msg, kind='info') {
+    const box = document.getElementById('toastBox');
+    const wrap = document.getElementById('toast');
+    box.textContent = msg;
+    box.className =
+      'rounded-lg shadow-lg px-4 py-3 text-sm ' +
+      (kind === 'error' ? 'bg-rose-600 text-white' :
+       kind === 'success' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-white');
+    wrap.classList.remove('hidden');
+    setTimeout(() => wrap.classList.add('hidden'), 2800);
+  }
+
+  // Confirm modal
+  const mask = document.getElementById('confirmMask');
+  const modal = document.getElementById('confirmModal');
+  const btnCancelConfirm = document.getElementById('btnCancelConfirm');
+  const btnDoConfirm = document.getElementById('btnDoConfirm');
+  function openConfirm() {
+    mask.classList.remove('hidden');
+    modal.classList.remove('hidden');
+  }
+  function closeConfirm() {
+    mask.classList.add('hidden');
+    modal.classList.add('hidden');
+  }
+  btnCancelConfirm.addEventListener('click', closeConfirm);
+
+  // Save
+  btnSave.addEventListener('click', async () => {
+    const values = currentValues();
+    if (!validate(values)) {
+      toast('Vui lòng sửa các lỗi trước khi lưu.', 'error');
+      return;
+    }
+    if (!isDirty()) return; // nothing to do
+    openConfirm();
+
+    // One-shot confirm handler
+    const handler = async () => {
+      btnDoConfirm.removeEventListener('click', handler);
+      closeConfirm();
+      btnSave.disabled = true;
+
+      try {
+        const r = await fetch(`/customers/${customerId}`, {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          credentials: 'same-origin',
+          body: JSON.stringify(values),
+        });
+
+        if (r.status === 401) {
+          window.location.href = `/login?next=${encodeURIComponent(location.pathname)}`;
+          return;
+        }
+
+        const data = await r.json().catch(() => ({}));
+
+        if (!r.ok) {
+          // 409 trùng CCCD
+          if (r.status === 409) {
+            showErr('cccd', (data.detail || 'CCCD đã tồn tại trong hệ thống.'));
+            toast('Không thể lưu: CCCD bị trùng.', 'error');
+            btnSave.disabled = false;
+            return;
+          }
+          // 422/400…
+          const msg = data.detail || 'Lưu thất bại.';
+          toast(msg, 'error');
+          btnSave.disabled = false;
+          return;
+        }
+
+        // OK
+        toast('Đã lưu thay đổi.', 'success');
+        // Cập nhật initial để tắt trạng thái dirty
+        Object.assign(initial, values);
+        updateSaveState();
+      } catch (e) {
+        toast('Lỗi mạng, thử lại sau.', 'error');
+        btnSave.disabled = false;
+      }
+    };
+    btnDoConfirm.addEventListener('click', handler, { once: true });
+  });
+})();
+</script>
+
+{% endblock %}

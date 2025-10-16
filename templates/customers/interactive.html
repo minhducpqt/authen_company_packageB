@@ -39,10 +39,11 @@
           <th class="px-3 py-2 border-b">Địa chỉ</th>
           <th class="px-3 py-2 border-b">SĐT</th>
           <th class="px-3 py-2 border-b">Email</th>
+          <th class="px-3 py-2 border-b w-28 text-center">Hành động</th>
         </tr>
       </thead>
       <tbody id="tbody">
-        <tr><td colspan="6" class="px-3 py-6 text-center text-slate-500">Đang tải…</td></tr>
+        <tr><td colspan="7" class="px-3 py-6 text-center text-slate-500">Đang tải…</td></tr>
       </tbody>
     </table>
   </div>
@@ -82,21 +83,15 @@
   const elNext = document.getElementById('next');
   const elSize = document.getElementById('pageSize');
 
-  // init page size
   [...elSize.options].forEach(o => { if (+o.value === state.size) o.selected = true; });
 
-  function setBusy(b){
-    state.busy = b;
-    elSpin.classList.toggle('hidden', !b);
-    elBtn.disabled = b;
-  }
-
+  function setBusy(b){ state.busy=b; elSpin.classList.toggle('hidden', !b); elBtn.disabled=b; }
   function fmt(n){ return n?.toLocaleString('vi-VN') ?? ''; }
 
   function render(rows, page, size, total){
     elBody.innerHTML = '';
     if(!rows || rows.length === 0){
-      elBody.innerHTML = `<tr><td colspan="6" class="px-3 py-6 text-center text-slate-500">Không có khách hàng.</td></tr>`;
+      elBody.innerHTML = `<tr><td colspan="7" class="px-3 py-6 text-center text-slate-500">Không có khách hàng.</td></tr>`;
     }else{
       rows.forEach((c, idx) => {
         const i = (page-1)*size + idx + 1;
@@ -108,6 +103,12 @@
           <td class="px-3 py-2 border-b">${c.address ?? '—'}</td>
           <td class="px-3 py-2 border-b">${c.phone ?? '—'}</td>
           <td class="px-3 py-2 border-b">${c.email ?? '—'}</td>
+          <td class="px-3 py-2 border-b text-center">
+            <a href="/customers/${c.id}"
+               class="inline-flex items-center gap-1 px-3 h-8 rounded-lg border border-slate-300 hover:bg-slate-50">
+               <i class="ri-file-user-line"></i> Chi tiết
+            </a>
+          </td>
         `;
         elBody.appendChild(tr);
       });
@@ -126,27 +127,19 @@
       const params = new URLSearchParams({ page: String(state.page), size: String(state.size) });
       if(state.q?.trim()) params.set('q', state.q.trim());
       const r = await fetch(`/customers/data?${params.toString()}`, { credentials: 'same-origin' });
-      if(r.status === 401){
-        window.location.href = `/login?next=${encodeURIComponent('/customers')}`;
-        return;
-      }
+      if(r.status === 401){ window.location.href = `/login?next=${encodeURIComponent('/customers')}`; return; }
       if(!r.ok){
         const t = await r.text();
-        elBody.innerHTML = `<tr><td colspan="6" class="px-3 py-6 text-rose-600 text-center">Lỗi tải dữ liệu (${r.status}). ${t.slice(0,200)}</td></tr>`;
-        elTotal.textContent = "0";
-        elMeta.textContent = "";
-        return;
+        elBody.innerHTML = `<tr><td colspan="7" class="px-3 py-6 text-rose-600 text-center">Lỗi tải dữ liệu (${r.status}). ${t.slice(0,200)}</td></tr>`;
+        elTotal.textContent = "0"; elMeta.textContent = ""; return;
       }
       const data = await r.json();
       render(data.data || [], data.page || 1, data.size || state.size, data.total || 0);
     }catch(e){
-      elBody.innerHTML = `<tr><td colspan="6" class="px-3 py-6 text-rose-600 text-center">Lỗi mạng, vui lòng thử lại.</td></tr>`;
-      elTotal.textContent = "0";
-      elMeta.textContent = "";
+      elBody.innerHTML = `<tr><td colspan="7" class="px-3 py-6 text-rose-600 text-center">Lỗi mạng, vui lòng thử lại.</td></tr>`;
+      elTotal.textContent = "0"; elMeta.textContent = "";
     }finally{
-      setBusy(false);
-      updateButton();
-      syncUrl();
+      setBusy(false); updateButton(); syncUrl();
     }
   }
 
@@ -167,45 +160,28 @@
     elBtn.classList.toggle('hover:bg-slate-900', !hasQ);
   }
 
-  // Debounced search: 350ms sau khi ngừng gõ mới gọi API
   function schedule(){
     clearTimeout(state.timer);
-    state.timer = setTimeout(() => {
-      state.page = 1;
-      state.q = elQ.value;
-      load();
-    }, 350);
+    state.timer = setTimeout(() => { state.page=1; state.q=elQ.value; load(); }, 350);
   }
 
-  // Events
   elQ.addEventListener('input', () => { updateButton(); schedule(); });
   elQ.addEventListener('keydown', (e) => {
-    if(e.key === 'Enter'){ e.preventDefault(); clearTimeout(state.timer); state.page = 1; state.q = elQ.value; load(); }
+    if(e.key === 'Enter'){ e.preventDefault(); clearTimeout(state.timer); state.page=1; state.q=elQ.value; load(); }
     if(e.key === 'Escape'){ elQ.value=''; updateButton(); state.page=1; state.q=''; load(); }
   });
 
-  elBtn.addEventListener('click', (e) => {
+  elBtn.addEventListener('click', () => {
     const hasQ = (elQ.value || '').trim().length > 0;
-    if(hasQ){
-      elQ.value = '';
-      state.q = '';
-      state.page = 1;
-      updateButton();
-      load();
-    }else{
-      // không làm gì: trang đã auto load
-      state.page = 1;
-      load();
-    }
+    if(hasQ){ elQ.value=''; state.q=''; state.page=1; updateButton(); load(); }
+    else{ state.page=1; load(); }
   });
 
   elPrev.addEventListener('click', () => { if(state.page>1){ state.page--; load(); }});
   elNext.addEventListener('click', () => { state.page++; load(); });
-  elSize.addEventListener('change', () => { state.size = +elSize.value; state.page = 1; load(); });
+  elSize.addEventListener('change', () => { state.size=+elSize.value; state.page=1; load(); });
 
-  // first load
-  updateButton();
-  load();
+  updateButton(); load();
 })();
 </script>
 {% endblock %}
