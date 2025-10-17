@@ -216,14 +216,3 @@ async def bank_txn_data(
     if r_txn.status_code >= 400:
         return JSONResponse({"error": "upstream", "status": r_txn.status_code}, status_code=502)
     return JSONResponse(r_txn.json(), status_code=200)
-
-
-# ============================
-# 3) Import placeholder
-# ============================
-@router.get("/giao-dich-ngan-hang/import", response_class=HTMLResponse)
-async def bank_txn_import_placeholder(request: Request):
-    return templates.TemplateResponse(
-        "bank/import_placeholder.html",
-        {"request": request, "title": "Import sao kê (sắp có)"},
-    )
