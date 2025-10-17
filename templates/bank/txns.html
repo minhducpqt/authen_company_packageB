@@ -1,0 +1,13 @@
+<script>
+async function loadData(params = {}) {
+  const qs = new URLSearchParams(params).toString();
+  const r = await fetch('/giao-dich-ngan-hang/data?' + qs);
+  if (r.status === 401) {
+    window.location = '/login?next=' + encodeURIComponent('/giao-dich-ngan-hang');
+    return;
+  }
+  const data = await r.json();
+  // ...render bảng...
+}
+loadData({ page: {{ init_filters.page }}, size: {{ init_filters.size }} });
+</script>

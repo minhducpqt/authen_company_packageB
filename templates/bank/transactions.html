@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bg-white rounded-xl border border-slate-200 p-5">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-xl font-semibold text-slate-800">3.1 Giao dịch ngân hàng</h2>
+      <p class="text-slate-500 text-sm">Xem, lọc và tìm kiếm giao dịch theo tài khoản công ty.</p>
+    </div>
+    <a href="/giao-dich-ngan-hang/import" class="h-10 px-4 rounded-lg bg-emerald-600 text-white flex items-center gap-2">
+      <i class="ri-upload-2-line"></i> Import sao kê
+    </a>
+  </div>
+
+  <form method="get" class="grid grid-cols-12 gap-3 items-end">
+    <!-- Tài khoản -->
+    <div class="col-span-12 md:col-span-5">
+      <label class="block text-xs text-slate-500 mb-1">Tài khoản</label>
+      <select name="account_id" class="h-10 w-full rounded-lg border border-slate-300 px-3">
+        <option value="">— Tất cả tài khoản —</option>
+        {% for a in accounts %}
+          <option value="{{ a.id }}"
+            {% if filters.account_id and (a.id|string) == (filters.account_id|string) %}selected{% endif %}>
+            {{ (a.bank_code or '—') }} — {{ a.account_number }} ({{ a.holder_name or a.display_name or '—' }})
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Tìm kiếm -->
+    <div class="col-span-12 md:col-span-7">
+      <label class="block text-xs text-slate-500 mb-1">Tìm kiếm</label>
+      <input name="q" value="{{ filters.q }}"
+             placeholder="mô tả / số TK đối ứng / số TK / provider_uid / statement_uid"
+             class="h-10 w-full rounded-lg border border-slate-300 px-3"/>
+    </div>
+
+    <!-- Từ ngày -->
+    <div class="col-span-6 md:col-span-3">
+      <label class="block text-xs text-slate-500 mb-1">Từ ngày</label>
+      <input type="date" name="date_from" value="{{ filters.date_from }}"
+             class="h-10 w-full rounded-lg border border-slate-300 px-3"/>
+    </div>
+
+    <!-- Đến ngày -->
+    <div class="col-span-6 md:col-span-3">
+      <label class="block text-xs text-slate-500 mb-1">Đến ngày</label>
+      <input type="date" name="date_to" value="{{ filters.date_to }}"
+             class="h-10 w-full rounded-lg border border-slate-300 px-3"/>
+    </div>
+
+    <!-- Trạng thái -->
+    <div class="col-span-6 md:col-span-2">
+      <label class="block text-xs text-slate-500 mb-1">Trạng thái</label>
+      <select name="status" class="h-10 w-full rounded-lg border border-slate-300 px-3">
+        <option value="ALL"  {% if filters.status == 'ALL' %}selected{% endif %}>— Tất cả —</option>
+        <option value="OK"   {% if filters.status == 'OK' %}selected{% endif %}>OK</option>
+        <option value="PEND" {% if filters.status == 'PEND' %}selected{% endif %}>Chờ đối soát</option>
+        <option value="ERR"  {% if filters.status == 'ERR' %}selected{% endif %}>Lỗi</option>
+      </select>
+    </div>
+
+    <!-- Sort -->
+    <div class="col-span-6 md:col-span-2">
+      <label class="block text-xs text-slate-500 mb-1">Sắp xếp</label>
+      <select name="sort" class="h-10 w-full rounded-lg border border-slate-300 px-3">
+        <option value="-txn_time" {% if filters.sort == '-txn_time' %}selected{% endif %}>-txn_time</option>
+        <option value="txn_time"  {% if filters.sort == 'txn_time' %}selected{% endif %}>txn_time</option>
+        <option value="-amount"   {% if filters.sort == '-amount' %}selected{% endif %}>-amount</option>
+        <option value="amount"    {% if filters.sort == 'amount' %}selected{% endif %}>amount</option>
+      </select>
+    </div>
+
+    <!-- Actions -->
+    <div class="col-span-12 md:col-span-2 flex gap-2">
+      <button class="h-10 px-4 rounded-lg bg-slate-800 text-white flex items-center gap-2">
+        <i class="ri-search-line"></i> Lọc
+      </button>
+      <a href="/giao-dich-ngan-hang" class="h-10 px-4 rounded-lg border border-slate-300">Reset</a>
+    </div>
+  </form>
+
+  <!-- Summary -->
+  <div class="text-sm text-slate-500 mt-3">
+    Tổng: {{ page.total }}, Trang: {{ page.page }}/{{ (page.total // page.size) + (1 if page.total % page.size > 0 else 0) }}
+  </div>
+
+  <div class="overflow-x-auto border border-slate-200 rounded-lg mt-3">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-50">
+        <tr class="text-left text-slate-600">
+          <th class="px-3 py-2 border-b w-12">#</th>
+          <th class="px-3 py-2 border-b">Thời gian</th>
+          <th class="px-3 py-2 border-b text-right">Số tiền</th>
+          <th class="px-3 py-2 border-b">Mô tả</th>
+          <th class="px-3 py-2 border-b">TK công ty</th>
+          <th class="px-3 py-2 border-b">TK đối ứng</th>
+          <th class="px-3 py-2 border-b">Ref</th>
+          <th class="px-3 py-2 border-b">ProviderUID</th>
+          <th class="px-3 py-2 border-b">StatementUID</th>
+          <th class="px-3 py-2 border-b">Trạng thái</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in page.data %}
+        <tr>
+          <td class="px-3 py-2 border-b">{{ loop.index + ((page.page-1) * page.size) }}</td>
+          <td class="px-3 py-2 border-b font-mono">{{ t.txn_time or '—' }}</td>
+          <td class="px-3 py-2 border-b text-right font-mono">{{ t.amount }}</td>
+          <td class="px-3 py-2 border-b">{{ t.description or '—' }}</td>
+          <td class="px-3 py-2 border-b font-mono">
+            {{ t.company_bank_code or t.bank_code or '—' }} — {{ t.company_account_no or '—' }}
+          </td>
+          <td class="px-3 py-2 border-b font-mono">{{ t.counter_account_no or '—' }}</td>
+          <td class="px-3 py-2 border-b font-mono">{{ t.ref_no or '—' }}</td>
+          <td class="px-3 py-2 border-b font-mono">{{ t.provider_uid or '—' }}</td>
+          <td class="px-3 py-2 border-b font-mono">{{ t.statement_uid or '—' }}</td>
+          <td class="px-3 py-2 border-b">{{ t.status or '—' }}</td>
+        </tr>
+        {% endfor %}
+        {% if page.data|length == 0 %}
+        <tr>
+          <td colspan="10" class="px-3 py-6 text-center text-slate-500">Không có giao dịch.</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% set total_pages = (page.total // page.size) + (1 if page.total % page.size > 0 else 0) %}
+  {% if total_pages > 1 %}
+  <div class="flex justify-end items-center gap-2 mt-4">
+    {# jinja không có max/min builtin -> tự tính window #}
+    {% set start = page.page - 2 %}
+    {% if start < 1 %}{% set start = 1 %}{% endif %}
+    {% set end = page.page + 2 %}
+    {% if end > total_pages %}{% set end = total_pages %}{% endif %}
+
+    {% if page.page > 1 %}
+      <a class="px-3 h-9 rounded-lg border border-slate-300 bg-white"
+         href="?account_id={{ filters.account_id }}&q={{ filters.q }}&date_from={{ filters.date_from }}&date_to={{ filters.date_to }}&status={{ filters.status }}&sort={{ filters.sort }}&page={{ page.page-1 }}&size={{ page.size }}">←</a>
+    {% endif %}
+
+    {% for p in range(start, end + 1) %}
+      <a class="px-3 h-9 rounded-lg border {{ 'bg-indigo-600 text-white border-indigo-600' if p == page.page else 'bg-white' }}"
+         href="?account_id={{ filters.account_id }}&q={{ filters.q }}&date_from={{ filters.date_from }}&date_to={{ filters.date_to }}&status={{ filters.status }}&sort={{ filters.sort }}&page={{ p }}&size={{ page.size }}">
+        {{ p }}
+      </a>
+    {% endfor %}
+
+    {% if page.page < total_pages %}
+      <a class="px-3 h-9 rounded-lg border border-slate-300 bg-white"
+         href="?account_id={{ filters.account_id }}&q={{ filters.q }}&date_from={{ filters.date_from }}&date_to={{ filters.date_to }}&status={{ filters.status }}&sort={{ filters.sort }}&page={{ page.page+1 }}&size={{ page.size }}">→</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
