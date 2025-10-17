@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bg-white rounded-xl border border-slate-200 p-5">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-xl font-semibold text-slate-800">Import sao kê</h2>
+      <p class="text-slate-500 text-sm">Chọn tài khoản công ty & upload file CSV/XLS/XLSX.</p>
+    </div>
+    <a href="/giao-dich-ngan-hang" class="h-10 px-4 rounded-lg border border-slate-300">Quay lại</a>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" action="/giao-dich-ngan-hang/import/preview" class="grid grid-cols-12 gap-4">
+    <div class="col-span-12 md:col-span-4">
+      <label class="block text-xs text-slate-500 mb-1">Tài khoản công ty</label>
+      <select name="account_id" class="h-10 w-full rounded-lg border border-slate-300 px-3" required>
+        <option value="">— Chọn tài khoản —</option>
+        {% for a in accounts %}
+          <option value="{{ a.id }}" {% if prefill_account_id and (a.id|string)==(prefill_account_id|string) %}selected{% endif %}>
+            {{ a.bank_code or '—' }} — {{ a.account_number }} ({{ a.holder_name or a.display_name or '—' }})
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-span-12 md:col-span-8">
+      <label class="block text-xs text-slate-500 mb-1">File sao kê (CSV/XLS/XLSX)</label>
+      <input type="file" name="file" accept=".csv,.xls,.xlsx" class="h-10 w-full rounded-lg border border-slate-300 px-3 bg-white" required />
+    </div>
+
+    <div class="col-span-12">
+      <button class="h-10 px-4 rounded-lg bg-emerald-600 text-white">
+        Xem trước
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

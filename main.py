@@ -21,6 +21,7 @@ from routers.customers import router as customers_router
 from routers.settings.settings_bank_accounts import router as settings_bank_accounts_router
 from routers.settings.settings_company import router as settings_company_router
 from routers import bank_transactions
+from routers.bank_import.router import router as bank_import_router
 
 
 def _dump_bank_routes(app: FastAPI) -> None:
@@ -60,6 +61,7 @@ app.include_router(settings_bank_accounts_router)
 app.include_router(settings_company_router)
 app.include_router(customers_router)
 app.include_router(bank_transactions.router)
+app.include_router(bank_import_router)
 
 
 @app.get("/healthz")

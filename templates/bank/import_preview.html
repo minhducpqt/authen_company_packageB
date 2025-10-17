@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bg-white rounded-xl border border-slate-200 p-5">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-xl font-semibold text-slate-800">Xem trước sao kê</h2>
+      <p class="text-slate-500 text-sm">File: <span class="font-mono">{{ filename }}</span></p>
+    </div>
+    <a href="/giao-dich-ngan-hang/import" class="h-10 px-4 rounded-lg border border-slate-300">Chọn file khác</a>
+  </div>
+
+  {% if error %}
+    <div class="p-3 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 mb-4">
+      {{ error }}
+      {% if result and result.errors %}
+        <ul class="list-disc ml-6">
+          {% for e in result.errors %}
+          <li>{{ e }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="mb-3 text-sm text-slate-600">
+    Hợp lệ: <b>{{ result.rows|length }}</b> — Lỗi dòng: <b>{{ result.row_errors|length }}</b>
+  </div>
+
+  {% if result.row_errors and result.row_errors|length > 0 %}
+    <details class="mb-4">
+      <summary class="cursor-pointer text-slate-700">Chi tiết dòng lỗi</summary>
+      <ul class="list-disc ml-6 text-sm mt-2">
+        {% for e in result.row_errors %}
+        <li>Row {{ e.row }}: {{ e.reason }}</li>
+        {% endfor %}
+      </ul>
+    </details>
+  {% endif %}
+
+  <div class="overflow-x-auto border border-slate-200 rounded-lg">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-50">
+        <tr class="text-left text-slate-600">
+          <th class="px-3 py-2 border-b w-12">#</th>
+          <th class="px-3 py-2 border-b">Thời gian</th>
+          <th class="px-3 py-2 border-b">Mô tả</th>
+          <th class="px-3 py-2 border-b text-right">Số tiền</th>
+          <th class="px-3 py-2 border-b text-right">Số dư sau</th>
+          <th class="px-3 py-2 border-b">Ref</th>
+          <th class="px-3 py-2 border-b">UID</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in result.rows %}
+        <tr>
+          <td class="px-3 py-2 border-b">{{ loop.index }}</td>
+          <td class="px-3 py-2 border-b font-mono">{{ r.txn_time }}</td>
+          <td class="px-3 py-2 border-b">{{ r.description }}</td>
+          <td class="px-3 py-2 border-b text-right font-mono">{{ r.amount }}</td>
+          <td class="px-3 py-2 border-b text-right font-mono">{{ r.balance_after }}</td>
+          <td class="px-3 py-2 border-b font-mono">{{ r.ref_no or '—' }}</td>
+          <td class="px-3 py-2 border-b font-mono">{{ r.statement_uid }}</td>
+        </tr>
+        {% endfor %}
+        {% if result.rows|length == 0 %}
+        <tr><td colspan="7" class="px-3 py-6 text-center text-slate-500">Không có dữ liệu hợp lệ.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="mt-4 flex items-center justify-between">
+    <div class="text-sm text-slate-600">
+      Tài khoản áp dụng: <span class="font-semibold">{{ account_id }}</span>
+    </div>
+    <button id="btnApply" class="h-10 px-4 rounded-lg bg-indigo-600 text-white" {% if result.rows|length == 0 %}disabled class="opacity-50 cursor-not-allowed"{% endif %}>
+      Gửi import sang Service A
+    </button>
+  </div>
+</div>
+
+<script>
+  const rows = {{ result.rows | tojson }};
+  const accountId = {{ account_id }};
+  document.getElementById('btnApply')?.addEventListener('click', async () => {
+    if (!rows || rows.length === 0) {
+      alert('Không có dữ liệu để import');
+      return;
+    }
+    const res = await fetch('/giao-dich-ngan-hang/import/apply', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ account_id: accountId, rows: rows })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alert('Import lỗi: ' + (data.body?.detail || JSON.stringify(data)));
+      return;
+    }
+    alert('Import thành công: ' + JSON.stringify(data));
+    // quay lại list:
+    window.location.href = '/giao-dich-ngan-hang';
+  });
+</script>
+{% endblock %}
