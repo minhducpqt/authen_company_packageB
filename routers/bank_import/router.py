@@ -109,10 +109,10 @@ async def import_preview(request: Request, file: UploadFile, account_id: int = F
 @router.post("/apply", response_class=JSONResponse)
 async def import_apply(request: Request):
     """
-    Nhận:
+    Body từ FE:
       { "account_id": 123, "rows": [ ... ] }
 
-    Gửi sang Service A theo schema BankBulkImportIn:
+    Gọi Service A (BankBulkImportIn):
       {
         "company_code": "...",
         "policy": "STRICT" | "REPLACE",
@@ -123,7 +123,7 @@ async def import_apply(request: Request):
     if not token:
         return JSONResponse({"error": "unauthorized"}, status_code=401)
 
-    # ---- Parse payload ----
+    # --- Parse payload ---
     try:
         payload_in = await request.json()
     except Exception:
@@ -134,7 +134,7 @@ async def import_apply(request: Request):
     if not account_id or not isinstance(rows, list) or len(rows) == 0:
         return JSONResponse({"error": "invalid_payload"}, status_code=400)
 
-    # ---- Lấy company_code từ /auth/me ----
+    # --- Lấy company_code ---
     company_code = None
     async with httpx.AsyncClient() as client:
         r_me = await _api_get(client, "/auth/me", token)
@@ -147,7 +147,7 @@ async def import_apply(request: Request):
     if not company_code:
         return JSONResponse({"error": "no_company_code"}, status_code=400)
 
-    # ---- Lấy thông tin tài khoản công ty ----
+    # --- Lấy thông tin tài khoản công ty (bắt buộc để enrich) ---
     async with httpx.AsyncClient() as client:
         r_acc = await _api_get(client, f"/api/v1/company_bank_accounts/{int(account_id)}", token)
     if r_acc.status_code != 200:
@@ -160,51 +160,63 @@ async def import_apply(request: Request):
     if not account:
         return JSONResponse({"error": "account_not_found"}, status_code=400)
 
-    # Chuẩn hoá thông tin TK
     acc_number_raw = account.get("account_number") or account.get("account_no") or ""
-    bank_code_raw = account.get("bank_code") or account.get("code") or ""
+    bank_code_raw  = account.get("bank_code") or account.get("code") or ""
+    is_active      = account.get("is_active", True)
+
     acc_number = str(acc_number_raw).replace(" ", "").replace(".", "")
-    bank_code = str(bank_code_raw).upper().strip()
+    bank_code  = str(bank_code_raw).upper().strip()
 
     if not acc_number or not bank_code:
-        return JSONResponse({
-            "error": "account_missing_fields",
-            "detail": {"bank_code": bank_code_raw, "account_number": acc_number_raw}
-        }, status_code=400)
-
-    if account.get("is_active") is False:
+        return JSONResponse(
+            {"error": "account_missing_fields",
+             "detail": {"bank_code": bank_code_raw, "account_number": acc_number_raw}},
+            status_code=400,
+        )
+    if not is_active:
         return JSONResponse({"error": "account_inactive"}, status_code=400)
 
-    # ---- Map rows -> items (NormalizedTxnIn) ----
+    # --- Map rows -> items (NormalizedTxnIn) ---
     items: list[dict] = []
     for i, r in enumerate(rows, start=1):
         amt = float(r.get("amount") or 0)
         items.append({
-            "bank_code": bank_code,
-            "account_number": acc_number,
+            "bank_code"     : bank_code,                # luôn dùng từ tài khoản công ty
+            "account_number": acc_number,               # luôn dùng từ tài khoản công ty
             "counter_account": r.get("counter_account") or None,
-            "txn_time": r.get("txn_time"),      # ISO string
-            "amount": amt,
-            "currency": r.get("currency") or "VND",
-            "description": r.get("description") or None,
-            "ref_no": r.get("ref_no") or None,
-            "provider_uid": r.get("provider_uid") or None,
-            "statement_uid": r.get("statement_uid") or None,
-            "src_line": i,
+            "txn_time"      : r.get("txn_time"),        # ISO string (có timezone)
+            "amount"        : amt,
+            "currency"      : (r.get("currency") or "VND").upper(),
+            "description"   : r.get("description") or None,
+            "ref_no"        : r.get("ref_no") or None,
+            "provider_uid"  : r.get("provider_uid") or None,
+            "statement_uid" : r.get("statement_uid") or None,
+            "src_line"      : r.get("src_line") or i,
         })
 
     body = {
         "company_code": company_code,
-        "policy": "STRICT",  # hoặc "REPLACE" nếu bạn muốn cho phép cập nhật trùng
+        "policy": "STRICT",  # đổi thành "REPLACE" nếu muốn cho phép cập nhật khi khác dữ liệu
         "items": items,
     }
     params = {"body_company_code": company_code}
 
-    # ---- Gọi API Service A ----
+    # --- DEBUG: log payload gửi sang Service A ---
+    try:
+        print("=== [DEBUG] Import Bulk -> ServiceA ===")
+        print(f"company_code={company_code} account_id={account_id} items={len(items)}")
+        if items:
+            print("sample[0]:", {k: items[0].get(k) for k in ["bank_code","account_number","txn_time","amount","currency","ref_no","statement_uid"]})
+        if len(items) > 1:
+            print("sample[1]:", {k: items[1].get(k) for k in ["bank_code","account_number","txn_time","amount","currency","ref_no","statement_uid"]})
+    except Exception:
+        pass
+
+    # --- Gọi Service A ---
     async with httpx.AsyncClient() as client:
         r = await _api_post_json(client, "/api/v1/bank-transactions/bulk", token, body, params)
 
-    # ---- In log chi tiết để debug ----
+    # --- Log và trả về ---
     print("=== [DEBUG] ServiceA bulk result ===")
     print("Status:", r.status_code)
     try:
@@ -212,103 +224,6 @@ async def import_apply(request: Request):
     except Exception:
         print("Text:", r.text[:400])
 
-    # ---- Trả về frontend ----
-    try:
-        j = r.json()
-    except Exception:
-        j = {"detail": r.text[:400]}
-
-    if r.status_code >= 400:
-        return JSONResponse({
-            "error": "upstream",
-            "status": r.status_code,
-            "body": j
-        }, status_code=502)
-
-    return JSONResponse(j, status_code=200)
-
-async def import_apply(request: Request):
-    """
-    Nhận:
-      { "account_id": 123, "rows": [ ... ] }
-
-    Gửi sang Service A theo schema BankBulkImportIn:
-      {
-        "company_code": "...",
-        "policy": "STRICT" | "REPLACE",
-        "items": [NormalizedTxnIn, ...]
-      }
-    """
-    token = get_access_token(request)
-    if not token:
-        return JSONResponse({"error": "unauthorized"}, status_code=401)
-
-    try:
-        payload_in = await request.json()
-    except Exception:
-        return JSONResponse({"error": "bad_json"}, status_code=400)
-
-    account_id = payload_in.get("account_id")
-    rows = payload_in.get("rows") or []
-    if not account_id or not isinstance(rows, list) or len(rows) == 0:
-        return JSONResponse({"error": "invalid_payload"}, status_code=400)
-
-    # Lấy company_code
-    company_code = None
-    async with httpx.AsyncClient() as client:
-        r_me = await _api_get(client, "/auth/me", token)
-    if r_me.status_code == 200:
-        try:
-            me = r_me.json()
-            company_code = (me or {}).get("company_code")
-        except Exception:
-            pass
-    if not company_code:
-        return JSONResponse({"error": "no_company_code"}, status_code=400)
-
-    # Lấy thông tin tài khoản công ty để có account_number/bank_code
-    account = None
-    async with httpx.AsyncClient() as client:
-        r_acc = await _api_get(client, f"/api/v1/company_bank_accounts/{int(account_id)}", token)
-    if r_acc.status_code == 200:
-        try:
-            account = r_acc.json()
-        except Exception:
-            account = None
-    if not account or not account.get("account_number"):
-        return JSONResponse({"error": "account_not_found"}, status_code=400)
-
-    acc_number = account["account_number"]
-    acc_bank_code = account.get("bank_code")
-
-    # Map rows -> items (NormalizedTxnIn)
-    items: list[dict] = []
-    for i, r in enumerate(rows, start=1):
-        items.append({
-            "bank_code"     : r.get("bank_code") or acc_bank_code,
-            "account_number": acc_number,
-            "counter_account": r.get("counter_account") or None,
-            "txn_time"      : r.get("txn_time"),            # ISO string
-            "amount"        : float(r.get("amount") or 0),  # bắt buộc
-            "currency"      : r.get("currency") or "VND",
-            "description"   : r.get("description") or None,
-            "ref_no"        : r.get("ref_no") or None,
-            "provider_uid"  : r.get("provider_uid") or None,
-            "statement_uid" : r.get("statement_uid") or None,
-            "src_line"      : i,
-        })
-
-    body = {
-        "company_code": company_code,
-        "policy": "STRICT",
-        "items": items,
-    }
-    params = {"body_company_code": company_code}
-
-    async with httpx.AsyncClient() as client:
-        r = await _api_post_json(client, "/api/v1/bank-transactions/bulk", token, body, params)
-
-    # trả kết quả
     try:
         j = r.json()
     except Exception:
