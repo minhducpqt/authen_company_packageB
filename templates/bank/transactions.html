@@ -89,6 +89,7 @@
           <th class="px-3 py-2 border-b w-12">#</th>
           <th class="px-3 py-2 border-b">Thời gian</th>
           <th class="px-3 py-2 border-b text-right">Số tiền</th>
+          <th class="px-3 py-2 border-b text-right">Số dư (sau GD)</th> <!-- NEW -->
           <th class="px-3 py-2 border-b">Mô tả</th>
           <th class="px-3 py-2 border-b">TK công ty</th>
           <th class="px-3 py-2 border-b">TK đối ứng</th>
@@ -103,6 +104,7 @@
           <td class="px-3 py-2 border-b">{{ loop.index + ((page.page-1) * page.size) }}</td>
           <td class="px-3 py-2 border-b font-mono">{{ t.txn_time or '—' }}</td>
           <td class="px-3 py-2 border-b text-right font-mono">{{ t.amount }}</td>
+          <td class="px-3 py-2 border-b text-right font-mono">{{ t.balance_after if t.balance_after is not none else '—' }}</td> <!-- NEW -->
           <td class="px-3 py-2 border-b">{{ t.description or '—' }}</td>
           <td class="px-3 py-2 border-b font-mono">{{ t.bank_code or '—' }} — {{ t.account_number or '—' }}</td>
           <td class="px-3 py-2 border-b font-mono">{{ t.counter_account or '—' }}</td>
@@ -112,7 +114,7 @@
         {% endfor %}
         {% if page.data|length == 0 %}
         <tr>
-          <td colspan="8" class="px-3 py-6 text-center text-slate-500">Không có giao dịch.</td>
+          <td colspan="9" class="px-3 py-6 text-center text-slate-500">Không có giao dịch.</td> <!-- colspan 9 -->
         </tr>
         {% endif %}
       </tbody>
@@ -189,12 +191,12 @@
     const params = buildParams(overrides);
     const url = `/giao-dich-ngan-hang/data?${params.toString()}`;
 
-    tableBody.innerHTML = `<tr><td colspan="8" class="px-3 py-6 text-center text-slate-500">Đang tải...</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="9" class="px-3 py-6 text-center text-slate-500">Đang tải...</td></tr>`; // colspan 9
 
     try {
       const res = await fetch(url, { credentials: 'same-origin' });
       if (!res.ok) {
-        tableBody.innerHTML = `<tr><td colspan="8" class="px-3 py-6 text-center text-rose-600">Lỗi tải dữ liệu (${res.status}).</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="9" class="px-3 py-6 text-center text-rose-600">Lỗi tải dữ liệu (${res.status}).</td></tr>`;
         return;
       }
       const data = await res.json();
@@ -205,29 +207,31 @@
       pageUrl.search = buildParams().toString();
       window.history.replaceState({}, '', pageUrl.toString());
     } catch (e) {
-      tableBody.innerHTML = `<tr><td colspan="8" class="px-3 py-6 text-center text-rose-600">Lỗi kết nối.</td></tr>`;
+      tableBody.innerHTML = `<tr><td colspan="9" class="px-3 py-6 text-center text-rose-600">Lỗi kết nối.</td></tr>`;
     }
   }
 
   function render(data) {
     if (!data.data || data.data.length === 0) {
-      tableBody.innerHTML = `<tr><td colspan="8" class="px-3 py-6 text-center text-slate-500">Không có giao dịch.</td></tr>`;
+      tableBody.innerHTML = `<tr><td colspan="9" class="px-3 py-6 text-center text-slate-500">Không có giao dịch.</td></tr>`;
     } else {
       tableBody.innerHTML = data.data.map((t, idx) => {
         const rowNo = (data.page - 1) * data.size + idx + 1;
         const bank = t.bank_code || '—';
-        const acc = t.account_number || '—';
+        const acc  = t.account_number || '—';
         const counter = t.counter_account || t.counter_account_no || '—';
-        const amt = (t.amount ?? '—');
+        const amt  = (t.amount ?? '—');
+        const bal  = (t.balance_after ?? '—');   // NEW
         const time = t.txn_time || '—';
         const desc = t.description || '—';
-        const ref = t.ref_no || '—';
-        const st = t.status || '—';
+        const ref  = t.ref_no || '—';
+        const st   = t.status || '—';
         return `
           <tr>
             <td class="px-3 py-2 border-b">${rowNo}</td>
             <td class="px-3 py-2 border-b font-mono">${time}</td>
             <td class="px-3 py-2 border-b text-right font-mono">${amt}</td>
+            <td class="px-3 py-2 border-b text-right font-mono">${bal}</td>
             <td class="px-3 py-2 border-b">${desc}</td>
             <td class="px-3 py-2 border-b font-mono">${bank} — ${acc}</td>
             <td class="px-3 py-2 border-b font-mono">${counter}</td>
@@ -247,10 +251,9 @@
   function renderPagination(current, totalPages) {
     if (totalPages <= 1) {
       pagination.style.display = 'none';
-      pagination.innerHTML = '';
-      return;
+    } else {
+      pagination.style.display = '';
     }
-    pagination.style.display = '';
     const links = [];
     const start = Math.max(1, current - 2);
     const end = Math.min(totalPages, current + 2);
@@ -272,8 +275,9 @@
         e.preventDefault();
         const p = parseInt(a.getAttribute('data-page'), 10);
         if (Number.isFinite(p)) {
+          fetchData({ page: p });
+          // giữ state.page đồng bộ
           state.page = p;
-          fetchData();
         }
       });
     });
