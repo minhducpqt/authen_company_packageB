@@ -12,3 +12,17 @@ def is_logged_in(request) -> bool:
 
 templates.env.globals["ACCESS_COOKIE_NAME"] = ACCESS_COOKIE_NAME
 templates.env.globals["is_logged_in"] = is_logged_in
+
+from datetime import datetime
+
+def datetimeformat(value, fmt="%d/%m/%Y %H:%M:%S"):
+    if not value:
+        return ""
+    try:
+        if isinstance(value, datetime):
+            return value.strftime(fmt)
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).strftime(fmt)
+    except Exception:
+        return str(value)
+
+templates.env.filters["datetimeformat"] = datetimeformat

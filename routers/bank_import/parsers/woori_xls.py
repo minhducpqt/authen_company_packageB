@@ -2,26 +2,34 @@
 from __future__ import annotations
 import io
 import re
-import pandas as pd
 import hashlib
+import math
 from datetime import datetime
+from zoneinfo import ZoneInfo
+
+import pandas as pd
 
 from ..base_parser import ParseResult
 from ..utils.date_utils import parse_date as parse_date_util
-from ..utils.money_utils import parse_amount
+from ..utils.money_utils import parse_amount as parse_amount_util
+from ..utils.refer_code import gen_refer_code  # <- mới
+
+VN_TZ = ZoneInfo("Asia/Ho_Chi_Minh")
+
 
 class WooriXlsParser:
     """
     Parser Woori: chấp nhận .xls, .xlsx, .csv.
 
     Chuẩn hoá về:
-      - txn_time (ISO)
+      - txn_time (ISO, timezone VN)
       - description (str)
       - amount (credit - debit)
       - balance_after (float)
       - ref_no (str) (Woori KHÔNG có ref rõ ràng -> để trống)
       - statement_uid (unique)
       - bank_code = "WOORI"
+      - refer_code (hash rút gọn từ full dòng)
     """
     BANK_CODE = "WOORI"
 
@@ -36,13 +44,13 @@ class WooriXlsParser:
         "summary": "summary",
     }
 
+    # ---------- helpers ----------
     def can_parse(self, file_bytes: bytes, filename: str) -> bool:
         name = (filename or "").lower()
         if "woori" in name:
             return True
         return name.endswith(".xls") or name.endswith(".xlsx") or name.endswith(".csv")
 
-    # ---------- helpers ----------
     def _read_any(self, file_bytes: bytes, filename: str) -> pd.DataFrame:
         name = (filename or "").lower()
         if name.endswith(".csv"):
@@ -51,7 +59,7 @@ class WooriXlsParser:
         try:
             return pd.read_excel(io.BytesIO(file_bytes), header=None, dtype=str)
         except Exception:
-            # .xls là HTML table
+            # một số .xls là HTML table
             tables = pd.read_html(io.BytesIO(file_bytes))
             if not tables:
                 raise
@@ -64,75 +72,90 @@ class WooriXlsParser:
         if x is None:
             return ""
         s = str(x)
-        # bỏ ngoặc kép, khoảng trắng thừa
         s = s.replace('"', "").replace("’", "'").strip()
-        # collapse whitespace
         s = re.sub(r"\s+", " ", s)
         return s
 
     def _detect_header_row(self, df: pd.DataFrame) -> int:
-        """
-        Tìm dòng chứa header thật của Woori.
-        Ví dụ cell: `"                        Transaction time and date"`
-        """
+        """Tìm dòng chứa header thật của Woori."""
         for i in range(min(50, len(df))):
             row_vals = [self._norm_text(v).lower() for v in df.iloc[i].tolist()]
             row_join = " | ".join(row_vals)
             if "transaction time and date" in row_join:
                 return i
-        # fallback: không tìm thấy -> 0
         return 0
 
     def _build_named_df(self, df_raw: pd.DataFrame, header_row: int) -> pd.DataFrame:
-        # Lấy hàng header
         raw_headers = [self._norm_text(c) for c in df_raw.iloc[header_row].tolist()]
-        # Map header Woori -> tên chuẩn
         mapped = []
         for h in raw_headers:
             key = h.lower()
             std = self.WOORI_HEADER_KEYS.get(key)
             mapped.append(std if std else h)  # giữ nguyên nếu không map được
 
-        # Cắt phần dữ liệu bên dưới header
-        df = df_raw.iloc[header_row + 1 : ].reset_index(drop=True)
-        # Gán tên cột
-        # Nếu số cột dữ liệu nhiều hơn header (hiếm), cắt bớt; nếu ít hơn, pad thêm
+        df = df_raw.iloc[header_row + 1:].reset_index(drop=True)
+
         if df.shape[1] != len(mapped):
             mapped = (mapped + [None] * df.shape[1])[: df.shape[1]]
         df.columns = mapped
 
-        # loại bỏ các cột không tên (None)
         keep_cols = [c for c in df.columns if c]
         df = df[keep_cols]
-
         return df
 
     def _parse_txn_time(self, val) -> datetime | None:
         """
-        Dùng date_utils.parse_date trước, nếu fail thì thử các format Woori thực tế.
+        Dùng date_utils.parse_date trước, nếu fail thì thử các format Woori.
         Ví dụ: 13.10.2025 16:31:40
         """
         s = self._norm_text(val)
         if not s:
             return None
 
-        # 1) util của dự án
         dt = parse_date_util(s)
         if dt:
             return dt
 
-        # 2) fallback các format Woori
-        fmts = [
-            "%d.%m.%Y %H:%M:%S",
-            "%d.%m.%Y %H:%M",
-            "%d.%m.%Y",
-        ]
+        fmts = ["%d.%m.%Y %H:%M:%S", "%d.%m.%Y %H:%M", "%d.%m.%Y"]
         for f in fmts:
             try:
                 return datetime.strptime(s, f)
             except Exception:
                 pass
         return None
+
+    def _parse_amount_any(self, v) -> float | None:
+        """
+        Ưu tiên dùng parse_amount_util của dự án.
+        Nếu kết quả None/NaN thì tự fallback cho các biến thể:
+        - "1,234.56" / "1.234,56" / "1 234,56" / "+1,234" / "- 1.234"
+        """
+        # 1) util hiện có
+        val = parse_amount_util(v)
+        if val is not None and not (isinstance(val, float) and math.isnan(val)):
+            return float(val)
+
+        s = self._norm_text(v)
+        if not s or s.lower() == "nan":
+            return None
+
+        # bỏ khoảng trắng & ký tự không số, giữ dấu âm
+        s2 = s.replace("\u00a0", " ").replace(" ", "")
+        s2 = s2.replace("VND", "").replace("vnd", "")
+
+        # Nếu có cả '.' và ',' và ',' nằm phía sau '.' -> thường là định dạng EU ("1.234,56")
+        if "." in s2 and "," in s2 and s2.rfind(",") > s2.rfind("."):
+            s2 = s2.replace(".", "").replace(",", ".")
+        else:
+            # ngược lại coi ',' là thousand separator
+            s2 = s2.replace(",", "")
+
+        # loại các kí tự thừa
+        s2 = re.sub(r"[^\d\.\-]", "", s2)
+        try:
+            return float(s2)
+        except Exception:
+            return None
 
     # ---------- main ----------
     def parse(self, file_bytes: bytes) -> ParseResult:
@@ -141,7 +164,6 @@ class WooriXlsParser:
         except Exception as e:
             return {"ok": False, "errors": [f"Lỗi đọc file: {e}"], "rows": [], "row_errors": []}
 
-        # dò header
         header_row = self._detect_header_row(df_raw)
         df = self._build_named_df(df_raw, header_row)
 
@@ -149,39 +171,52 @@ class WooriXlsParser:
 
         for idx, row in df.iterrows():
             try:
-                txn_time = self._parse_txn_time(row.get("txn_time"))
-                desc = ""
-                # ghép remarks/summary nếu có
+                txn_time_dt = self._parse_txn_time(row.get("txn_time"))
+                if not txn_time_dt:
+                    raise ValueError("Thiếu ngày giao dịch")
+
+                # Gán timezone VN nếu thiếu
+                if txn_time_dt.tzinfo is None:
+                    txn_time_dt = txn_time_dt.replace(tzinfo=VN_TZ)
+                # đảm bảo biểu diễn theo VN:
+                txn_time_iso = txn_time_dt.astimezone(VN_TZ).isoformat()
+
+                # Description: ghép remarks/summary nếu có
                 remarks = self._norm_text(row.get("remarks"))
                 summary = self._norm_text(row.get("summary"))
                 parts = [p for p in [remarks, summary] if p]
                 desc = " — ".join(parts) if parts else ""
 
-                debit = parse_amount(row.get("debit"))
-                credit = parse_amount(row.get("credit"))
-                amount = (credit or 0) - (debit or 0)
+                debit = self._parse_amount_any(row.get("debit")) or 0.0
+                credit = self._parse_amount_any(row.get("credit")) or 0.0
+                amount = credit - debit
+                if abs(amount) < 1e-9:
+                    raise ValueError("Số tiền = 0 hoặc không đọc được")
 
-                balance = parse_amount(row.get("balance_after"))
+                balance = self._parse_amount_any(row.get("balance_after"))
                 ref = ""  # Woori không có ref rõ ràng
 
-                if not txn_time:
-                    raise ValueError("Thiếu ngày giao dịch")
-                if (debit or 0) == 0 and (credit or 0) == 0:
-                    raise ValueError("Số tiền = 0")
-
-                uid_src = f"{txn_time.isoformat()}|{desc}|{amount}|{balance}|{ref}"
+                # statement_uid ổn định theo nội dung cốt lõi
+                uid_src = f"{txn_time_iso}|{desc}|{amount}|{balance}|{ref}"
                 statement_uid = f"{self.BANK_CODE}:{hashlib.md5(uid_src.encode()).hexdigest()[:16]}"
 
-                rows.append({
+                row_obj = {
                     "bank_code": self.BANK_CODE,
-                    "txn_time": txn_time.isoformat(),
+                    "txn_time": txn_time_iso,
                     "description": desc or None,
                     "amount": amount,
                     "balance_after": balance,
                     "ref_no": ref or None,
                     "statement_uid": statement_uid,
-                    "raw": {k: (None if pd.isna(v) else v) for k, v in row.to_dict().items()},
-                })
+                    "raw": {k: (None if (isinstance(v, float) and math.isnan(v)) else v)
+                            for k, v in row.to_dict().items()},
+                }
+
+                # refer_code sinh từ full row (có thể dùng đối soát sau này)
+                row_obj["refer_code"] = gen_refer_code(row_obj)
+
+                rows.append(row_obj)
+
             except Exception as e:
                 row_errors.append({"row": int(idx) + 1, "reason": str(e)})
 

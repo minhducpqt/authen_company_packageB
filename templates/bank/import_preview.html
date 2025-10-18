@@ -47,6 +47,7 @@
           <th class="px-3 py-2 border-b text-right">Số tiền</th>
           <th class="px-3 py-2 border-b text-right">Số dư sau</th>
           <th class="px-3 py-2 border-b">Ref</th>
+          <th class="px-3 py-2 border-b">ReferCode</th>
           <th class="px-3 py-2 border-b">UID</th>
         </tr>
       </thead>
@@ -54,16 +55,23 @@
         {% for r in result.rows %}
         <tr>
           <td class="px-3 py-2 border-b">{{ loop.index }}</td>
-          <td class="px-3 py-2 border-b font-mono">{{ r.txn_time }}</td>
+          <td class="px-3 py-2 border-b font-mono">
+            {{ r.txn_time | replace('T', ' ') | replace('+07:00', '') | datetimeformat("%d/%m/%Y %H:%M:%S") }}
+          </td>
           <td class="px-3 py-2 border-b">{{ r.description }}</td>
-          <td class="px-3 py-2 border-b text-right font-mono">{{ r.amount }}</td>
-          <td class="px-3 py-2 border-b text-right font-mono">{{ r.balance_after }}</td>
+          <td class="px-3 py-2 border-b text-right font-mono">
+            {{ "{:,.0f}".format((r.amount or 0)) }}
+          </td>
+          <td class="px-3 py-2 border-b text-right font-mono">
+            {{ "{:,.0f}".format((r.balance_after or 0)) }}
+          </td>
           <td class="px-3 py-2 border-b font-mono">{{ r.ref_no or '—' }}</td>
+          <td class="px-3 py-2 border-b font-mono">{{ r.refer_code or '—' }}</td>
           <td class="px-3 py-2 border-b font-mono">{{ r.statement_uid }}</td>
         </tr>
         {% endfor %}
         {% if result.rows|length == 0 %}
-        <tr><td colspan="7" class="px-3 py-6 text-center text-slate-500">Không có dữ liệu hợp lệ.</td></tr>
+        <tr><td colspan="8" class="px-3 py-6 text-center text-slate-500">Không có dữ liệu hợp lệ.</td></tr>
         {% endif %}
       </tbody>
     </table>
@@ -73,7 +81,9 @@
     <div class="text-sm text-slate-600">
       Tài khoản áp dụng: <span class="font-semibold">{{ account_id }}</span>
     </div>
-    <button id="btnApply" class="h-10 px-4 rounded-lg bg-indigo-600 text-white" {% if result.rows|length == 0 %}disabled class="opacity-50 cursor-not-allowed"{% endif %}>
+    <button id="btnApply"
+            class="h-10 px-4 rounded-lg bg-indigo-600 text-white {% if result.rows|length == 0 %}opacity-50 cursor-not-allowed{% endif %}"
+            {% if result.rows|length == 0 %}disabled{% endif %}>
       Gửi import sang Service A
     </button>
   </div>
@@ -98,7 +108,6 @@
       return;
     }
     alert('Import thành công: ' + JSON.stringify(data));
-    // quay lại list:
     window.location.href = '/giao-dich-ngan-hang';
   });
 </script>
