@@ -180,18 +180,24 @@ async def import_apply(request: Request):
     items: list[dict] = []
     for i, r in enumerate(rows, start=1):
         amt = float(r.get("amount") or 0)
+
+        # balance_after: có thể None
+        bal = r.get("balance_after")
+        bal = float(bal) if bal not in (None, "",) else None
+
         items.append({
-            "bank_code"     : bank_code,                # luôn dùng từ tài khoản công ty
-            "account_number": acc_number,               # luôn dùng từ tài khoản công ty
+            "bank_code"      : bank_code,                # luôn dùng từ tài khoản công ty
+            "account_number" : acc_number,               # luôn dùng từ tài khoản công ty
             "counter_account": r.get("counter_account") or None,
-            "txn_time"      : r.get("txn_time"),        # ISO string (có timezone)
-            "amount"        : amt,
-            "currency"      : (r.get("currency") or "VND").upper(),
-            "description"   : r.get("description") or None,
-            "ref_no"        : r.get("ref_no") or None,
-            "provider_uid"  : r.get("provider_uid") or None,
-            "statement_uid" : r.get("statement_uid") or None,
-            "src_line"      : r.get("src_line") or i,
+            "txn_time"       : r.get("txn_time"),        # ISO string (có timezone)
+            "amount"         : amt,
+            "currency"       : (r.get("currency") or "VND").upper(),
+            "description"    : r.get("description") or None,
+            "ref_no"         : r.get("ref_no") or None,
+            "provider_uid"   : r.get("provider_uid") or None,
+            "statement_uid"  : None,                     # ép None -> để Service A tự tính UID
+            "balance_after"  : bal,                      # *** gửi sang A để dedup v2 ***
+            "src_line"       : r.get("src_line") or i,
         })
 
     body = {
@@ -206,9 +212,13 @@ async def import_apply(request: Request):
         print("=== [DEBUG] Import Bulk -> ServiceA ===")
         print(f"company_code={company_code} account_id={account_id} items={len(items)}")
         if items:
-            print("sample[0]:", {k: items[0].get(k) for k in ["bank_code","account_number","txn_time","amount","currency","ref_no","statement_uid"]})
+            print("sample[0]:", {k: items[0].get(k) for k in [
+                "bank_code","account_number","txn_time","amount","currency","ref_no","balance_after","statement_uid"
+            ]})
         if len(items) > 1:
-            print("sample[1]:", {k: items[1].get(k) for k in ["bank_code","account_number","txn_time","amount","currency","ref_no","statement_uid"]})
+            print("sample[1]:", {k: items[1].get(k) for k in [
+                "bank_code","account_number","txn_time","amount","currency","ref_no","balance_after","statement_uid"
+            ]})
     except Exception:
         pass
 

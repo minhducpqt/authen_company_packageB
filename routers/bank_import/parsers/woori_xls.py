@@ -1,8 +1,6 @@
-# routers/bank_import/parsers/woori_xls.py
 from __future__ import annotations
 import io
 import re
-import hashlib
 import math
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -12,7 +10,7 @@ import pandas as pd
 from ..base_parser import ParseResult
 from ..utils.date_utils import parse_date as parse_date_util
 from ..utils.money_utils import parse_amount as parse_amount_util
-from ..utils.refer_code import gen_refer_code  # <- mới
+from ..utils.refer_code import gen_refer_code  # <- giữ nguyên
 
 VN_TZ = ZoneInfo("Asia/Ho_Chi_Minh")
 
@@ -27,9 +25,10 @@ class WooriXlsParser:
       - amount (credit - debit)
       - balance_after (float)
       - ref_no (str) (Woori KHÔNG có ref rõ ràng -> để trống)
-      - statement_uid (unique)
       - bank_code = "WOORI"
       - refer_code (hash rút gọn từ full dòng)
+
+    LƯU Ý: KHÔNG tạo statement_uid ở parser. Service A sẽ tính UID theo rule mới.
     """
     BANK_CODE = "WOORI"
 
@@ -178,8 +177,9 @@ class WooriXlsParser:
                 # Gán timezone VN nếu thiếu
                 if txn_time_dt.tzinfo is None:
                     txn_time_dt = txn_time_dt.replace(tzinfo=VN_TZ)
-                # đảm bảo biểu diễn theo VN:
-                txn_time_iso = txn_time_dt.astimezone(VN_TZ).isoformat()
+                # đảm bảo biểu diễn theo VN (bỏ micro giây)
+                txn_time_dt = txn_time_dt.astimezone(VN_TZ).replace(microsecond=0)
+                txn_time_iso = txn_time_dt.isoformat()
 
                 # Description: ghép remarks/summary nếu có
                 remarks = self._norm_text(row.get("remarks"))
@@ -196,23 +196,19 @@ class WooriXlsParser:
                 balance = self._parse_amount_any(row.get("balance_after"))
                 ref = ""  # Woori không có ref rõ ràng
 
-                # statement_uid ổn định theo nội dung cốt lõi
-                uid_src = f"{txn_time_iso}|{desc}|{amount}|{balance}|{ref}"
-                statement_uid = f"{self.BANK_CODE}:{hashlib.md5(uid_src.encode()).hexdigest()[:16]}"
-
                 row_obj = {
-                    "bank_code": self.BANK_CODE,
+                    "bank_code": self.BANK_CODE,       # chỉ để preview; khi apply sẽ override bằng TK công ty
                     "txn_time": txn_time_iso,
                     "description": desc or None,
                     "amount": amount,
                     "balance_after": balance,
                     "ref_no": ref or None,
-                    "statement_uid": statement_uid,
+                    # KHÔNG gửi statement_uid từ parser
                     "raw": {k: (None if (isinstance(v, float) and math.isnan(v)) else v)
                             for k, v in row.to_dict().items()},
                 }
 
-                # refer_code sinh từ full row (có thể dùng đối soát sau này)
+                # refer_code sinh từ full row (để đối soát sau này)
                 row_obj["refer_code"] = gen_refer_code(row_obj)
 
                 rows.append(row_obj)
