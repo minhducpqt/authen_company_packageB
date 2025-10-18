@@ -31,14 +31,29 @@ async def _api_get(
     )
 
 
-# ============================
-# 1) PAGE: /giao-dich-ngan-hang
-# ============================
+# -----------------------
+# Small util
+# -----------------------
+def _to_int_or_none(v: Optional[str]) -> Optional[int]:
+    """Chuyển chuỗi sang int nếu hợp lệ, nếu rỗng hoặc None thì trả None."""
+    if v is None:
+        return None
+    s = str(v).strip()
+    if s == "":
+        return None
+    try:
+        return int(s)
+    except Exception:
+        return None
+
+
+# ============================================================
+# 1) PAGE: /giao-dich-ngan-hang — danh sách giao dịch (HTML)
+# ============================================================
 @router.get("/giao-dich-ngan-hang", response_class=HTMLResponse)
 async def bank_transactions_page(
     request: Request,
-    # bộ lọc
-    account_id: Optional[int] = Query(None),
+    account_id: Optional[str] = Query(None),  # nhận string để không 422 khi account_id=
     q: Optional[str] = Query(None, description="free text: mô tả / số TK đối ứng / provider_uid / statement_uid"),
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
@@ -50,10 +65,13 @@ async def bank_transactions_page(
     token = get_access_token(request)
     print(f"[BANK] INFO ENTER PAGE token_present={bool(token)} path={request.url.path}")
     if not token:
-        # Để middleware chuyển hướng; trả template login ở đây sẽ sai flow.
-        return HTMLResponse("Redirecting...", status_code=303, headers={"Location": f"/login?next=%2Fgiao-dich-ngan-hang"})
+        return HTMLResponse(
+            "Redirecting...",
+            status_code=303,
+            headers={"Location": "/login?next=%2Fgiao-dich-ngan-hang"},
+        )
 
-    # 1) Xác thực nhanh qua /auth/me để biết company_code
+    # 1️⃣ Lấy company_code từ /auth/me
     company_code = None
     async with httpx.AsyncClient() as client:
         r_me = await _api_get(client, "/auth/me", token)
@@ -65,7 +83,7 @@ async def bank_transactions_page(
             except Exception:
                 company_code = None
 
-    # 2) Lấy danh sách tài khoản ngân hàng của công ty
+    # 2️⃣ Lấy danh sách tài khoản công ty
     accounts: list[dict] = []
     async with httpx.AsyncClient() as client:
         params_acc: List[Tuple[str, str | int]] = [("status", True), ("page", 1), ("size", 200)]
@@ -80,24 +98,18 @@ async def bank_transactions_page(
             except Exception:
                 accounts = []
 
-    # 3) Gọi danh sách giao dịch
+    # 3️⃣ Gọi danh sách giao dịch (Service A)
+    account_id_int = _to_int_or_none(account_id)
     page_data = {"data": [], "total": 0, "page": page, "size": size}
+
     try:
-        # Build params
-        params: Dict[str, str | int] = {
-            "page": page,
-            "size": size,
-            "sort": sort,
-        }
-        # luôn ưu tiên lọc theo company_code nếu có
+        params: Dict[str, str | int] = {"page": page, "size": size, "sort": sort}
         if company_code:
             params["company_code"] = company_code
 
-        # chỉ giữ tài khoản; ko có input ngân hàng.
-        if account_id:
-            params["account_id"] = int(account_id)
-            # Tự nội suy bank_code (nếu API Service A dùng — không bắt buộc)
-            acc = next((a for a in accounts if int(a.get("id", 0)) == int(account_id)), None)
+        if account_id_int is not None:
+            params["account_id"] = account_id_int
+            acc = next((a for a in accounts if int(a.get("id", 0)) == account_id_int), None)
             if acc and acc.get("bank_code"):
                 params["bank_code"] = acc["bank_code"]
 
@@ -125,13 +137,12 @@ async def bank_transactions_page(
     except Exception as e:
         print("[BANK] ERROR list txn:", e)
 
-    # 4) Render
-    resp = templates.TemplateResponse(
+    # 4️⃣ Render template
+    return templates.TemplateResponse(
         "bank/transactions.html",
         {
             "request": request,
             "title": "Giao dịch ngân hàng",
-            # UI data
             "accounts": accounts,
             "filters": {
                 "account_id": account_id or "",
@@ -144,16 +155,15 @@ async def bank_transactions_page(
             "page": page_data,
         },
     )
-    return resp
 
 
-# ============================
-# 2) DATA JSON (nếu cần AJAX)
-# ============================
+# ============================================================
+# 2) DATA JSON (AJAX) — gọi cùng API /api/v1/bank-transactions
+# ============================================================
 @router.get("/giao-dich-ngan-hang/data", response_class=JSONResponse)
 async def bank_txn_data(
     request: Request,
-    account_id: Optional[int] = Query(None),
+    account_id: Optional[str] = Query(None),
     q: Optional[str] = Query(None),
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
@@ -166,14 +176,14 @@ async def bank_txn_data(
     if not token:
         return JSONResponse({"error": "unauthorized"}, status_code=401)
 
-    # company_code
+    # 1️⃣ company_code
     async with httpx.AsyncClient() as client:
         r_me = await _api_get(client, "/auth/me", token)
     if r_me.status_code != 200:
         return JSONResponse({"error": "unauthorized"}, status_code=401)
     company_code = (r_me.json() or {}).get("company_code")
 
-    # lấy accounts để suy ra bank_code nếu cần
+    # 2️⃣ accounts để suy ra bank_code nếu cần
     accounts: list[dict] = []
     async with httpx.AsyncClient() as client:
         r_acc = await _api_get(
@@ -189,16 +199,14 @@ async def bank_txn_data(
         except Exception:
             accounts = []
 
-    params: Dict[str, str | int] = {
-        "page": page,
-        "size": size,
-        "sort": sort,
-    }
+    # 3️⃣ Gọi Service A
+    account_id_int = _to_int_or_none(account_id)
+    params: Dict[str, str | int] = {"page": page, "size": size, "sort": sort}
     if company_code:
         params["company_code"] = company_code
-    if account_id:
-        params["account_id"] = int(account_id)
-        acc = next((a for a in accounts if int(a.get("id", 0)) == int(account_id)), None)
+    if account_id_int is not None:
+        params["account_id"] = account_id_int
+        acc = next((a for a in accounts if int(a.get("id", 0)) == account_id_int), None)
         if acc and acc.get("bank_code"):
             params["bank_code"] = acc["bank_code"]
     if q:
