@@ -71,7 +71,7 @@
       </select>
     </div>
 
-    <!-- Actions (giữ Reset cho tiện) -->
+    <!-- Actions -->
     <div class="col-span-12 md:col-span-2 flex gap-2">
       <a href="/giao-dich-ngan-hang" class="h-10 px-4 rounded-lg border border-slate-300">Reset</a>
     </div>
@@ -93,6 +93,7 @@
           <th class="px-3 py-2 border-b">TK công ty</th>
           <th class="px-3 py-2 border-b">TK đối ứng</th>
           <th class="px-3 py-2 border-b">Ref</th>
+          <!-- ĐÃ BỎ ProviderUID & StatementUID -->
           <th class="px-3 py-2 border-b">Trạng thái</th>
         </tr>
       </thead>
@@ -103,9 +104,7 @@
           <td class="px-3 py-2 border-b font-mono">{{ t.txn_time or '—' }}</td>
           <td class="px-3 py-2 border-b text-right font-mono">{{ t.amount }}</td>
           <td class="px-3 py-2 border-b">{{ t.description or '—' }}</td>
-          <td class="px-3 py-2 border-b font-mono">
-            {{ t.bank_code or '—' }} — {{ t.account_number or '—' }}
-          </td>
+          <td class="px-3 py-2 border-b font-mono">{{ t.bank_code or '—' }} — {{ t.account_number or '—' }}</td>
           <td class="px-3 py-2 border-b font-mono">{{ t.counter_account or '—' }}</td>
           <td class="px-3 py-2 border-b font-mono">{{ t.ref_no or '—' }}</td>
           <td class="px-3 py-2 border-b">{{ t.status or '—' }}</td>
@@ -120,7 +119,7 @@
     </table>
   </div>
 
-  <!-- Pagination -->
+  <!-- Pagination (AJAX) -->
   {% set total_pages = (page.total // page.size) + (1 if page.total % page.size > 0 else 0) %}
   <div id="pagination" class="flex justify-end items-center gap-2 mt-4" {% if total_pages <= 1 %}style="display:none"{% endif %}>
     {% set start = page.page - 2 %}
@@ -153,7 +152,7 @@
 
   let state = {
     page: {{ page.page }},
-    size: {{ page.size }},
+    size: {{ page.size }},      // mặc định 50 từ backend
     q: "{{ filters.q or '' }}",
     account_id: "{{ filters.account_id or '' }}",
     date_from: "{{ filters.date_from or '' }}",
@@ -172,7 +171,6 @@
       size: state.size,
       sort: state.sort
     };
-    // chỉ đính kèm nếu có giá trị
     if (state.account_id) p.account_id = state.account_id;
     if (state.q) p.q = state.q;
     if (state.date_from) p.date_from = state.date_from;
@@ -184,7 +182,6 @@
   }
 
   async function fetchData(overrides = {}) {
-    // nếu thay đổi filter -> reset về page 1
     if (overrides.resetPage) {
       state.page = 1;
       delete overrides.resetPage;
@@ -192,26 +189,27 @@
     const params = buildParams(overrides);
     const url = `/giao-dich-ngan-hang/data?${params.toString()}`;
 
-    // loading
     tableBody.innerHTML = `<tr><td colspan="8" class="px-3 py-6 text-center text-slate-500">Đang tải...</td></tr>`;
 
-    const res = await fetch(url, { credentials: 'same-origin' });
-    if (!res.ok) {
-      tableBody.innerHTML = `<tr><td colspan="8" class="px-3 py-6 text-center text-rose-600">Lỗi tải dữ liệu (${res.status}).</td></tr>`;
-      return;
+    try {
+      const res = await fetch(url, { credentials: 'same-origin' });
+      if (!res.ok) {
+        tableBody.innerHTML = `<tr><td colspan="8" class="px-3 py-6 text-center text-rose-600">Lỗi tải dữ liệu (${res.status}).</td></tr>`;
+        return;
+      }
+      const data = await res.json();
+      render(data);
+
+      // cập nhật URL hiện tại (để back/forward + share link)
+      const pageUrl = new URL(window.location.href);
+      pageUrl.search = buildParams().toString();
+      window.history.replaceState({}, '', pageUrl.toString());
+    } catch (e) {
+      tableBody.innerHTML = `<tr><td colspan="8" class="px-3 py-6 text-center text-rose-600">Lỗi kết nối.</td></tr>`;
     }
-
-    const data = await res.json(); // {data,total,page,size}
-    render(data);
-
-    // cập nhật URL (để back/forward hoạt động, share link được)
-    const pageUrl = new URL(window.location.href);
-    pageUrl.search = buildParams().toString();
-    window.history.replaceState({}, '', pageUrl.toString());
   }
 
   function render(data) {
-    // table
     if (!data.data || data.data.length === 0) {
       tableBody.innerHTML = `<tr><td colspan="8" class="px-3 py-6 text-center text-slate-500">Không có giao dịch.</td></tr>`;
     } else {
@@ -240,15 +238,13 @@
       }).join('');
     }
 
-    // summary
     const totalPages = Math.floor(data.total / data.size) + (data.total % data.size > 0 ? 1 : 0);
     summary.textContent = `Tổng: ${data.total}, Trang: ${data.page}/${totalPages}`;
 
-    // pagination
-    renderPagination(data.page, totalPages, data.size);
+    renderPagination(data.page, totalPages);
   }
 
-  function renderPagination(current, totalPages, size) {
+  function renderPagination(current, totalPages) {
     if (totalPages <= 1) {
       pagination.style.display = 'none';
       pagination.innerHTML = '';
@@ -271,7 +267,6 @@
     }
     pagination.innerHTML = links.join('');
 
-    // gán click handlers
     pagination.querySelectorAll('.page-link').forEach(a => {
       a.addEventListener('click', (e) => {
         e.preventDefault();
@@ -284,10 +279,9 @@
     });
   }
 
-  // Lắng nghe thay đổi bộ lọc
+  // Lắng nghe thay đổi bộ lọc (auto update)
   const onQuickChange = debounce(() => fetchData({ resetPage: true }), 300);
 
-  // input text, date -> dùng input event
   ['q', 'date_from', 'date_to'].forEach(name => {
     const el = form.querySelector(`[name="${name}"]`);
     if (el) {
@@ -298,7 +292,6 @@
     }
   });
 
-  // select -> change event
   ['account_id', 'status', 'sort'].forEach(name => {
     const el = form.querySelector(`[name="${name}"]`);
     if (el) {
@@ -309,10 +302,7 @@
     }
   });
 
-  // Nếu muốn auto load lại ngay cả khi người dùng mở trang từ link có query:
-  // (Trang đã có dữ liệu SSR rồi, phần này tùy chọn)
-  // fetchData();
-
+  // Trang đã SSR sẵn; không auto fetch lại khi load.
 })();
 </script>
 {% endblock %}

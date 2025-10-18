@@ -30,12 +30,11 @@ async def _api_get(
         timeout=25.0,
     )
 
-
 # -----------------------
 # Small util
 # -----------------------
 def _to_int_or_none(v: Optional[str]) -> Optional[int]:
-    """Chuyển chuỗi sang int nếu hợp lệ, nếu rỗng hoặc None thì trả None."""
+    """Chuẩn hoá: '' hoặc None -> None; số hợp lệ -> int."""
     if v is None:
         return None
     s = str(v).strip()
@@ -45,7 +44,6 @@ def _to_int_or_none(v: Optional[str]) -> Optional[int]:
         return int(s)
     except Exception:
         return None
-
 
 # ============================================================
 # 1) PAGE: /giao-dich-ngan-hang — danh sách giao dịch (HTML)
@@ -60,7 +58,7 @@ async def bank_transactions_page(
     status: Optional[str] = Query("ALL"),
     sort: str = Query("-txn_time"),
     page: int = Query(1, ge=1),
-    size: int = Query(20, ge=1, le=200),
+    size: int = Query(50, ge=1, le=200),   # <-- mặc định 50
 ):
     token = get_access_token(request)
     print(f"[BANK] INFO ENTER PAGE token_present={bool(token)} path={request.url.path}")
@@ -71,7 +69,7 @@ async def bank_transactions_page(
             headers={"Location": "/login?next=%2Fgiao-dich-ngan-hang"},
         )
 
-    # 1️⃣ Lấy company_code từ /auth/me
+    # 1) Lấy company_code
     company_code = None
     async with httpx.AsyncClient() as client:
         r_me = await _api_get(client, "/auth/me", token)
@@ -83,7 +81,7 @@ async def bank_transactions_page(
             except Exception:
                 company_code = None
 
-    # 2️⃣ Lấy danh sách tài khoản công ty
+    # 2) Lấy danh sách tài khoản công ty
     accounts: list[dict] = []
     async with httpx.AsyncClient() as client:
         params_acc: List[Tuple[str, str | int]] = [("status", True), ("page", 1), ("size", 200)]
@@ -98,7 +96,7 @@ async def bank_transactions_page(
             except Exception:
                 accounts = []
 
-    # 3️⃣ Gọi danh sách giao dịch (Service A)
+    # 3) Gọi danh sách giao dịch (SSR)
     account_id_int = _to_int_or_none(account_id)
     page_data = {"data": [], "total": 0, "page": page, "size": size}
 
@@ -106,13 +104,8 @@ async def bank_transactions_page(
         params: Dict[str, str | int] = {"page": page, "size": size, "sort": sort}
         if company_code:
             params["company_code"] = company_code
-
         if account_id_int is not None:
             params["account_id"] = account_id_int
-            acc = next((a for a in accounts if int(a.get("id", 0)) == account_id_int), None)
-            if acc and acc.get("bank_code"):
-                params["bank_code"] = acc["bank_code"]
-
         if q:
             params["q"] = q
         if date_from:
@@ -137,7 +130,7 @@ async def bank_transactions_page(
     except Exception as e:
         print("[BANK] ERROR list txn:", e)
 
-    # 4️⃣ Render template
+    # 4) Render template
     return templates.TemplateResponse(
         "bank/transactions.html",
         {
@@ -156,9 +149,8 @@ async def bank_transactions_page(
         },
     )
 
-
 # ============================================================
-# 2) DATA JSON (AJAX) — gọi cùng API /api/v1/bank-transactions
+# 2) DATA JSON (AJAX) — cùng API Service A
 # ============================================================
 @router.get("/giao-dich-ngan-hang/data", response_class=JSONResponse)
 async def bank_txn_data(
@@ -170,45 +162,26 @@ async def bank_txn_data(
     status: Optional[str] = Query("ALL"),
     sort: str = Query("-txn_time"),
     page: int = Query(1, ge=1),
-    size: int = Query(50, ge=1, le=200),
+    size: int = Query(50, ge=1, le=200),   # <-- mặc định 50
 ):
     token = get_access_token(request)
     if not token:
         return JSONResponse({"error": "unauthorized"}, status_code=401)
 
-    # 1️⃣ company_code
+    # 1) company_code
     async with httpx.AsyncClient() as client:
         r_me = await _api_get(client, "/auth/me", token)
     if r_me.status_code != 200:
         return JSONResponse({"error": "unauthorized"}, status_code=401)
     company_code = (r_me.json() or {}).get("company_code")
 
-    # 2️⃣ accounts để suy ra bank_code nếu cần
-    accounts: list[dict] = []
-    async with httpx.AsyncClient() as client:
-        r_acc = await _api_get(
-            client,
-            "/api/v1/company_bank_accounts",
-            token,
-            [("status", True), ("page", 1), ("size", 200), ("company_code", company_code or "")],
-        )
-    if r_acc.status_code == 200:
-        try:
-            j = r_acc.json()
-            accounts = j.get("data", [])
-        except Exception:
-            accounts = []
-
-    # 3️⃣ Gọi Service A
+    # 2) gọi Service A
     account_id_int = _to_int_or_none(account_id)
     params: Dict[str, str | int] = {"page": page, "size": size, "sort": sort}
     if company_code:
         params["company_code"] = company_code
     if account_id_int is not None:
         params["account_id"] = account_id_int
-        acc = next((a for a in accounts if int(a.get("id", 0)) == account_id_int), None)
-        if acc and acc.get("bank_code"):
-            params["bank_code"] = acc["bank_code"]
     if q:
         params["q"] = q
     if date_from:
