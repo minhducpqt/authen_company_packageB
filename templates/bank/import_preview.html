@@ -104,11 +104,13 @@
     });
     const data = await res.json();
     if (!res.ok) {
-      alert('Import lỗi: ' + (data.body?.detail || JSON.stringify(data)));
+      const msg = data?.body?.detail || data?.error || JSON.stringify(data);
+      alert('Import lỗi: ' + msg);
       return;
     }
     alert('Import thành công: ' + JSON.stringify(data));
     window.location.href = '/giao-dich-ngan-hang';
   });
 </script>
+
 {% endblock %}
