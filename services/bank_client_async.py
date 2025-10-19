@@ -1,4 +1,3 @@
-# services/bank_client_async.py
 from __future__ import annotations
 import os
 import typing as t
@@ -36,10 +35,20 @@ class BankClientAsync:
             return await _get_json(c, "/api/v1/company_bank_accounts", _auth_headers(access), params)
 
     async def list_bank_transactions(
-        self, access: str, *, company_code: str, account_number: str | None = None,
-        bank_code: str | None = None, from_date: dt.date | None = None, to_date: dt.date | None = None,
-        q: str | None = None, page: int = 1, size: int = 20, sort: str = "-txn_time",
-        status: str | None = None, min_amount: float | None = None, max_amount: float | None = None
+        self, access: str, *, company_code: str,
+        account_number: str | None = None,
+        bank_code: str | None = None,
+        from_date: dt.date | None = None,
+        to_date: dt.date | None = None,
+        q: str | None = None,
+        page: int = 1,
+        size: int = 20,
+        sort: str = "-txn_time",
+        status: str | None = None,
+        min_amount: float | None = None,
+        max_amount: float | None = None,
+        matched: bool | None = None,          # NEW
+        no_ref_only: bool | None = None       # NEW
     ) -> tuple[int, dict | None]:
         params: dict[str, t.Any] = {
             "company_code": company_code, "page": page, "size": size, "sort": sort
@@ -52,6 +61,8 @@ class BankClientAsync:
         if to_date: params["to_date"] = to_date.isoformat()
         if min_amount is not None: params["min_amount"] = min_amount
         if max_amount is not None: params["max_amount"] = max_amount
+        if matched is not None: params["matched"] = str(matched).lower()
+        if no_ref_only: params["no_ref_only"] = "true"
 
         async with httpx.AsyncClient(base_url=self.base_url, timeout=15.0) as c:
             return await _get_json(c, "/api/v1/bank-transactions", _auth_headers(access), params)

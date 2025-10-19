@@ -1,5 +1,3 @@
-## app/routers/bank_transactions.py
-
 from __future__ import annotations
 import os
 from typing import Optional, List, Tuple, Dict, Any
@@ -46,6 +44,22 @@ def _to_int_or_none(v: Optional[str]) -> Optional[int]:
     except Exception:
         return None
 
+def _match_to_bool(matched_str: Optional[str]) -> Optional[bool]:
+    """
+    Map UI matched filter:
+      - 'MATCHED'   -> True
+      - 'UNMATCHED' -> False
+      - 'ALL'/None  -> None
+    """
+    if not matched_str or matched_str.upper() == "ALL":
+        return None
+    s = matched_str.upper()
+    if s == "MATCHED":
+        return True
+    if s == "UNMATCHED":
+        return False
+    return None
+
 # ============================================================
 # 1) PAGE: /giao-dich-ngan-hang — danh sách giao dịch (HTML)
 # ============================================================
@@ -57,6 +71,8 @@ async def bank_transactions_page(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     status: Optional[str] = Query("ALL"),
+    matched: Optional[str] = Query("ALL", description="ALL|MATCHED|UNMATCHED"),  # NEW
+    no_ref_only: Optional[bool] = Query(False),  # NEW
     sort: str = Query("-txn_time"),
     page: int = Query(1, ge=1),
     size: int = Query(50, ge=1, le=200),   # <-- mặc định 50
@@ -105,8 +121,16 @@ async def bank_transactions_page(
         params: Dict[str, str | int] = {"page": page, "size": size, "sort": sort}
         if company_code:
             params["company_code"] = company_code
+
+        # Map account_id -> bank_code + account_number (Service A dùng cặp này)
         if account_id_int is not None:
-            params["account_id"] = account_id_int
+            selected = next((a for a in accounts if int(a.get("id", -1)) == account_id_int), None)
+            if selected:
+                if selected.get("bank_code"):
+                    params["bank_code"] = selected["bank_code"]
+                if selected.get("account_number"):
+                    params["account_number"] = selected["account_number"]
+
         if q:
             params["q"] = q
         if date_from:
@@ -115,6 +139,15 @@ async def bank_transactions_page(
             params["date_to"] = date_to
         if status and status != "ALL":
             params["status"] = status
+
+        # NEW: matched filter
+        matched_bool = _match_to_bool(matched)
+        if matched_bool is not None:
+            params["matched"] = str(matched_bool).lower()
+
+        # NEW: no_ref_only filter
+        if bool(no_ref_only):
+            params["no_ref_only"] = "true"
 
         async with httpx.AsyncClient() as client:
             r_txn = await _api_get(client, "/api/v1/bank-transactions", token, list(params.items()))
@@ -144,6 +177,8 @@ async def bank_transactions_page(
                 "date_from": date_from or "",
                 "date_to": date_to or "",
                 "status": status or "ALL",
+                "matched": matched or "ALL",
+                "no_ref_only": bool(no_ref_only),
                 "sort": sort or "-txn_time",
             },
             "page": page_data,
@@ -161,6 +196,8 @@ async def bank_txn_data(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     status: Optional[str] = Query("ALL"),
+    matched: Optional[str] = Query("ALL"),         # NEW
+    no_ref_only: Optional[bool] = Query(False),    # NEW
     sort: str = Query("-txn_time"),
     page: int = Query(1, ge=1),
     size: int = Query(50, ge=1, le=200),   # <-- mặc định 50
@@ -176,13 +213,34 @@ async def bank_txn_data(
         return JSONResponse({"error": "unauthorized"}, status_code=401)
     company_code = (r_me.json() or {}).get("company_code")
 
+    # 1.1) Lấy danh sách CBA để map account_id -> bank_code/account_number
+    accounts: list[dict] = []
+    async with httpx.AsyncClient() as client:
+        params_acc: List[Tuple[str, str | int]] = [("status", True), ("page", 1), ("size", 200)]
+        if company_code:
+            params_acc.append(("company_code", company_code))
+        r_acc = await _api_get(client, "/api/v1/company_bank_accounts", token, params_acc)
+        if r_acc.status_code == 200:
+            try:
+                j = r_acc.json()
+                accounts = j.get("data", []) if isinstance(j, dict) else []
+            except Exception:
+                accounts = []
+
     # 2) gọi Service A
     account_id_int = _to_int_or_none(account_id)
     params: Dict[str, str | int] = {"page": page, "size": size, "sort": sort}
     if company_code:
         params["company_code"] = company_code
+
     if account_id_int is not None:
-        params["account_id"] = account_id_int
+        selected = next((a for a in accounts if int(a.get("id", -1)) == account_id_int), None)
+        if selected:
+            if selected.get("bank_code"):
+                params["bank_code"] = selected["bank_code"]
+            if selected.get("account_number"):
+                params["account_number"] = selected["account_number"]
+
     if q:
         params["q"] = q
     if date_from:
@@ -191,6 +249,15 @@ async def bank_txn_data(
         params["date_to"] = date_to
     if status and status != "ALL":
         params["status"] = status
+
+    # NEW: matched filter
+    matched_bool = _match_to_bool(matched)
+    if matched_bool is not None:
+        params["matched"] = str(matched_bool).lower()
+
+    # NEW: no_ref_only
+    if bool(no_ref_only):
+        params["no_ref_only"] = "true"
 
     async with httpx.AsyncClient() as client:
         r_txn = await _api_get(client, "/api/v1/bank-transactions", token, list(params.items()))

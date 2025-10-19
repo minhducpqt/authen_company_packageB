@@ -14,7 +14,7 @@
   <!-- Form lọc (không submit, JS sẽ tự fetch) -->
   <form id="filtersForm" class="grid grid-cols-12 gap-3 items-end" onsubmit="return false;">
     <!-- Tài khoản -->
-    <div class="col-span-12 md:col-span-5">
+    <div class="col-span-12 md:col-span-4">
       <label class="block text-xs text-slate-500 mb-1">Tài khoản</label>
       <select name="account_id" class="h-10 w-full rounded-lg border border-slate-300 px-3">
         <option value="">— Tất cả tài khoản —</option>
@@ -28,10 +28,10 @@
     </div>
 
     <!-- Tìm kiếm -->
-    <div class="col-span-12 md:col-span-7">
+    <div class="col-span-12 md:col-span-8">
       <label class="block text-xs text-slate-500 mb-1">Tìm kiếm</label>
       <input name="q" value="{{ filters.q }}"
-             placeholder="mô tả / số TK đối ứng / số TK / ref_no / statement_uid"
+             placeholder="mô tả / số TK đối ứng / số TK / ref_no / statement_uid / ref_extracted"
              class="h-10 w-full rounded-lg border border-slate-300 px-3"/>
     </div>
 
@@ -49,7 +49,7 @@
              class="h-10 w-full rounded-lg border border-slate-300 px-3"/>
     </div>
 
-    <!-- Trạng thái -->
+    <!-- Trạng thái (legacy) -->
     <div class="col-span-6 md:col-span-2">
       <label class="block text-xs text-slate-500 mb-1">Trạng thái</label>
       <select name="status" class="h-10 w-full rounded-lg border border-slate-300 px-3">
@@ -58,6 +58,25 @@
         <option value="PEND" {% if filters.status == 'PEND' %}selected{% endif %}>Chờ đối soát</option>
         <option value="ERR"  {% if filters.status == 'ERR' %}selected{% endif %}>Lỗi</option>
       </select>
+    </div>
+
+    <!-- NEW: Matched filter -->
+    <div class="col-span-6 md:col-span-2">
+      <label class="block text-xs text-slate-500 mb-1">Matched</label>
+      <select name="matched" class="h-10 w-full rounded-lg border border-slate-300 px-3">
+        <option value="ALL" {% if filters.matched == 'ALL' %}selected{% endif %}>— Tất cả —</option>
+        <option value="MATCHED" {% if filters.matched == 'MATCHED' %}selected{% endif %}>Đã matched</option>
+        <option value="UNMATCHED" {% if filters.matched == 'UNMATCHED' %}selected{% endif %}>Chưa matched</option>
+      </select>
+    </div>
+
+    <!-- NEW: Only no ref_extracted -->
+    <div class="col-span-6 md:col-span-2">
+      <label class="block text-xs text-slate-500 mb-1">Ref bóc tách</label>
+      <div class="h-10 flex items-center gap-2 rounded-lg border border-slate-300 px-3">
+        <input type="checkbox" id="no_ref_only" name="no_ref_only" {% if filters.no_ref_only %}checked{% endif %}/>
+        <label for="no_ref_only" class="text-sm">Chỉ giao dịch không có ref_extracted</label>
+      </div>
     </div>
 
     <!-- Sort -->
@@ -89,12 +108,11 @@
           <th class="px-3 py-2 border-b w-12">#</th>
           <th class="px-3 py-2 border-b">Thời gian</th>
           <th class="px-3 py-2 border-b text-right">Số tiền</th>
-          <th class="px-3 py-2 border-b text-right">Số dư (sau GD)</th> <!-- NEW -->
+          <th class="px-3 py-2 border-b text-right">Số dư (sau GD)</th>
           <th class="px-3 py-2 border-b">Mô tả</th>
           <th class="px-3 py-2 border-b">TK công ty</th>
           <th class="px-3 py-2 border-b">TK đối ứng</th>
           <th class="px-3 py-2 border-b">Ref</th>
-          <!-- ĐÃ BỎ ProviderUID & StatementUID -->
           <th class="px-3 py-2 border-b">Trạng thái</th>
         </tr>
       </thead>
@@ -104,7 +122,7 @@
           <td class="px-3 py-2 border-b">{{ loop.index + ((page.page-1) * page.size) }}</td>
           <td class="px-3 py-2 border-b font-mono">{{ t.txn_time or '—' }}</td>
           <td class="px-3 py-2 border-b text-right font-mono">{{ t.amount }}</td>
-          <td class="px-3 py-2 border-b text-right font-mono">{{ t.balance_after if t.balance_after is not none else '—' }}</td> <!-- NEW -->
+          <td class="px-3 py-2 border-b text-right font-mono">{{ t.balance_after if t.balance_after is not none else '—' }}</td>
           <td class="px-3 py-2 border-b">{{ t.description or '—' }}</td>
           <td class="px-3 py-2 border-b font-mono">{{ t.bank_code or '—' }} — {{ t.account_number or '—' }}</td>
           <td class="px-3 py-2 border-b font-mono">{{ t.counter_account or '—' }}</td>
@@ -114,14 +132,13 @@
         {% endfor %}
         {% if page.data|length == 0 %}
         <tr>
-          <td colspan="9" class="px-3 py-6 text-center text-slate-500">Không có giao dịch.</td> <!-- colspan 9 -->
+          <td colspan="9" class="px-3 py-6 text-center text-slate-500">Không có giao dịch.</td>
         </tr>
         {% endif %}
       </tbody>
     </table>
   </div>
 
-  <!-- Pagination (AJAX) -->
   {% set total_pages = (page.total // page.size) + (1 if page.total % page.size > 0 else 0) %}
   <div id="pagination" class="flex justify-end items-center gap-2 mt-4" {% if total_pages <= 1 %}style="display:none"{% endif %}>
     {% set start = page.page - 2 %}
@@ -154,12 +171,14 @@
 
   let state = {
     page: {{ page.page }},
-    size: {{ page.size }},      // mặc định 50 từ backend
+    size: {{ page.size }},
     q: "{{ filters.q or '' }}",
     account_id: "{{ filters.account_id or '' }}",
     date_from: "{{ filters.date_from or '' }}",
     date_to: "{{ filters.date_to or '' }}",
     status: "{{ filters.status or 'ALL' }}",
+    matched: "{{ filters.matched or 'ALL' }}",
+    no_ref_only: {{ 'true' if filters.no_ref_only else 'false' }},
     sort: "{{ filters.sort or '-txn_time' }}"
   };
 
@@ -179,6 +198,10 @@
     if (state.date_to) p.date_to = state.date_to;
     if (state.status && state.status !== 'ALL') p.status = state.status;
 
+    // NEW filters
+    if (state.matched && state.matched !== 'ALL') p.matched = state.matched;
+    if (state.no_ref_only) p.no_ref_only = 'true';
+
     Object.assign(p, overrides);
     return new URLSearchParams(p);
   }
@@ -191,7 +214,7 @@
     const params = buildParams(overrides);
     const url = `/giao-dich-ngan-hang/data?${params.toString()}`;
 
-    tableBody.innerHTML = `<tr><td colspan="9" class="px-3 py-6 text-center text-slate-500">Đang tải...</td></tr>`; // colspan 9
+    tableBody.innerHTML = `<tr><td colspan="9" class="px-3 py-6 text-center text-slate-500">Đang tải...</td></tr>`;
 
     try {
       const res = await fetch(url, { credentials: 'same-origin' });
@@ -202,7 +225,6 @@
       const data = await res.json();
       render(data);
 
-      // cập nhật URL hiện tại (để back/forward + share link)
       const pageUrl = new URL(window.location.href);
       pageUrl.search = buildParams().toString();
       window.history.replaceState({}, '', pageUrl.toString());
@@ -221,7 +243,7 @@
         const acc  = t.account_number || '—';
         const counter = t.counter_account || t.counter_account_no || '—';
         const amt  = (t.amount ?? '—');
-        const bal  = (t.balance_after ?? '—');   // NEW
+        const bal  = (t.balance_after ?? '—');
         const time = t.txn_time || '—';
         const desc = t.description || '—';
         const ref  = t.ref_no || '—';
@@ -244,16 +266,16 @@
 
     const totalPages = Math.floor(data.total / data.size) + (data.total % data.size > 0 ? 1 : 0);
     summary.textContent = `Tổng: ${data.total}, Trang: ${data.page}/${totalPages}`;
-
     renderPagination(data.page, totalPages);
   }
 
   function renderPagination(current, totalPages) {
     if (totalPages <= 1) {
       pagination.style.display = 'none';
-    } else {
-      pagination.style.display = '';
+      pagination.innerHTML = '';
+      return;
     }
+    pagination.style.display = '';
     const links = [];
     const start = Math.max(1, current - 2);
     const end = Math.min(totalPages, current + 2);
@@ -275,9 +297,8 @@
         e.preventDefault();
         const p = parseInt(a.getAttribute('data-page'), 10);
         if (Number.isFinite(p)) {
-          fetchData({ page: p });
-          // giữ state.page đồng bộ
           state.page = p;
+          fetchData();
         }
       });
     });
@@ -296,7 +317,8 @@
     }
   });
 
-  ['account_id', 'status', 'sort'].forEach(name => {
+  // Selects
+  ['account_id', 'status', 'matched', 'sort'].forEach(name => {
     const el = form.querySelector(`[name="${name}"]`);
     if (el) {
       el.addEventListener('change', () => {
@@ -305,6 +327,15 @@
       });
     }
   });
+
+  // Checkbox: no_ref_only
+  const elNoRef = form.querySelector('#no_ref_only');
+  if (elNoRef) {
+    elNoRef.addEventListener('change', () => {
+      state.no_ref_only = !!elNoRef.checked;
+      fetchData({ resetPage: true });
+    });
+  }
 
   // Trang đã SSR sẵn; không auto fetch lại khi load.
 })();
