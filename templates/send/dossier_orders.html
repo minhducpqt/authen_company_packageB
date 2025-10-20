@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bg-white rounded-xl border border-slate-200 p-5">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-xl font-semibold text-slate-800">4.1 Khách mua hồ sơ</h2>
+      <p class="text-slate-500 text-sm">Xem danh sách đơn mua hồ sơ, lọc theo dự án.</p>
+    </div>
+  </div>
+
+  <!-- Bộ lọc (SSR + JS) -->
+  <form id="filtersForm" class="grid grid-cols-12 gap-3 items-end" onsubmit="return false;">
+    <div class="col-span-12 md:col-span-4">
+      <label class="block text-xs text-slate-500 mb-1">Dự án</label>
+      <select name="project_id" class="h-10 w-full rounded-lg border border-slate-300 px-3">
+        <option value="">— Tất cả dự án —</option>
+        {% for p in projects %}
+          <option value="{{ p.id }}" {% if (filters.project_id|string)==(p.id|string) %}selected{% endif %}>
+            {{ p.project_code or ('#'+(p.id|string)) }} — {{ p.project_name or p.name or '' }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-span-12 md:col-span-8 flex gap-2">
+      <a id="resetBtn" href="/thong-tin-khach-mua-ho-so" class="h-10 px-4 rounded-lg border border-slate-300">Reset</a>
+    </div>
+  </form>
+
+  <!-- Summary -->
+  <div id="summary" class="text-sm text-slate-500 mt-3">
+    Tổng: {{ page.total }}, Trang: {{ page.page }}/{{ (page.total // page.size) + (1 if page.total % page.size > 0 else 0) }}
+  </div>
+
+  <div class="overflow-x-auto border border-slate-200 rounded-lg mt-3">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-50">
+        <tr class="text-left text-slate-600">
+          <th class="px-3 py-2 border-b w-14">#</th>
+          <th class="px-3 py-2 border-b">Mã tham chiếu</th>
+          <th class="px-3 py-2 border-b">Trạng thái</th>
+          <th class="px-3 py-2 border-b text-right">Số tiền</th>
+          <th class="px-3 py-2 border-b">KH</th>
+          <th class="px-3 py-2 border-b">Dự án</th>
+          <th class="px-3 py-2 border-b">Tạo lúc</th>
+          <th class="px-3 py-2 border-b">Thanh toán</th>
+          <!-- Nếu Service A đã expose tổng qty/đã dùng thì hiển thị 2 cột dưới -->
+          <th class="px-3 py-2 border-b">SL mua</th>
+          <th class="px-3 py-2 border-b">SL đã dùng</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        {% for o in page.data %}
+        <tr>
+          <td class="px-3 py-2 border-b">{{ loop.index + ((page.page-1)*page.size) }}</td>
+          <td class="px-3 py-2 border-b font-mono">{{ o.reference or ('#'+(o.id|string)) }}</td>
+          <td class="px-3 py-2 border-b">
+            <span class="inline-flex px-2 py-0.5 rounded bg-slate-100">{{ o.status or '—' }}</span>
+          </td>
+          <td class="px-3 py-2 border-b text-right font-mono">{{ o.total_vnd or 0 }}</td>
+          <td class="px-3 py-2 border-b">{{ o.customer_id or '—' }}</td>
+          <td class="px-3 py-2 border-b">{{ o.project_id or '—' }}</td>
+          <td class="px-3 py-2 border-b font-mono">{{ o.created_at or '—' }}</td>
+          <td class="px-3 py-2 border-b font-mono">{{ o.paid_at or '—' }}</td>
+          <td class="px-3 py-2 border-b">{{ o.items_total_qty or o.total_qty or '—' }}</td>
+          <td class="px-3 py-2 border-b">{{ o.items_used_qty or '—' }}</td>
+        </tr>
+        {% endfor %}
+        {% if page.data|length == 0 %}
+        <tr>
+          <td colspan="10" class="px-3 py-6 text-center text-slate-500">Không có đơn mua hồ sơ.</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  {% set total_pages = (page.total // page.size) + (1 if page.total % page.size > 0 else 0) %}
+  <div id="pagination" class="flex justify-end items-center gap-2 mt-4" {% if total_pages <= 1 %}style="display:none"{% endif %}>
+    {% set start = page.page - 2 %}
+    {% if start < 1 %}{% set start = 1 %}{% endif %}
+    {% set end = page.page + 2 %}
+    {% if end > total_pages %}{% set end = total_pages %}{% endif %}
+
+    {% if page.page > 1 %}
+      <a data-page="{{ page.page-1 }}" class="page-link px-3 h-9 rounded-lg border border-slate-300 bg-white" href="#">←</a>
+    {% endif %}
+
+    {% for p in range(start, end + 1) %}
+      <a data-page="{{ p }}" class="page-link px-3 h-9 rounded-lg border {{ 'bg-indigo-600 text-white border-indigo-600' if p == page.page else 'bg-white' }}" href="#">
+        {{ p }}
+      </a>
+    {% endfor %}
+
+    {% if page.page < total_pages %}
+      <a data-page="{{ page.page+1 }}" class="page-link px-3 h-9 rounded-lg border border-slate-300 bg-white" href="#">→</a>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+(function() {
+  const form = document.getElementById('filtersForm');
+  const tableBody = document.getElementById('tableBody');
+  const summary = document.getElementById('summary');
+  const pagination = document.getElementById('pagination');
+
+  let state = {
+    page: {{ page.page }},
+    size: {{ page.size }},
+    project_id: "{{ filters.project_id or '' }}"
+  };
+
+  function buildParams(overrides={}) {
+    const p = { page: state.page, size: state.size };
+    if (state.project_id) p.project_id = state.project_id;
+    Object.assign(p, overrides);
+    return new URLSearchParams(p);
+  }
+
+  async function fetchData(overrides = {}) {
+    if (overrides.resetPage) {
+      state.page = 1;
+      delete overrides.resetPage;
+    }
+    const params = buildParams(overrides);
+    const url = `/thong-tin-khach-mua-ho-so/data?${params.toString()}`;
+
+    tableBody.innerHTML = `<tr><td colspan="10" class="px-3 py-6 text-center text-slate-500">Đang tải...</td></tr>`;
+
+    try {
+      const res = await fetch(url, { credentials: 'same-origin' });
+      if (!res.ok) {
+        tableBody.innerHTML = `<tr><td colspan="10" class="px-3 py-6 text-center text-rose-600">Lỗi tải dữ liệu (${res.status}).</td></tr>`;
+        return;
+      }
+      const data = await res.json();
+      render(data);
+
+      // update URL
+      const pageUrl = new URL(window.location.href);
+      pageUrl.search = buildParams().toString();
+      window.history.replaceState({}, '', pageUrl.toString());
+    } catch (e) {
+      tableBody.innerHTML = `<tr><td colspan="10" class="px-3 py-6 text-center text-rose-600">Lỗi kết nối.</td></tr>`;
+    }
+  }
+
+  function render(data) {
+    const rows = data.data || [];
+    if (!rows.length) {
+      tableBody.innerHTML = `<tr><td colspan="10" class="px-3 py-6 text-center text-slate-500">Không có đơn mua hồ sơ.</td></tr>`;
+    } else {
+      tableBody.innerHTML = rows.map((o, idx) => {
+        const rowNo = (data.page - 1) * data.size + idx + 1;
+        const ref = o.reference || ('#' + (o.id ?? '—'));
+        const st  = o.status || '—';
+        const total = o.total_vnd ?? 0;
+        const cust = o.customer_id ?? '—';
+        const proj = o.project_id ?? '—';
+        const created = o.created_at || '—';
+        const paid = o.paid_at || '—';
+        const qty = o.items_total_qty ?? o.total_qty ?? '—';
+        const used = o.items_used_qty ?? '—';
+        return `
+          <tr>
+            <td class="px-3 py-2 border-b">${rowNo}</td>
+            <td class="px-3 py-2 border-b font-mono">${ref}</td>
+            <td class="px-3 py-2 border-b"><span class="inline-flex px-2 py-0.5 rounded bg-slate-100">${st}</span></td>
+            <td class="px-3 py-2 border-b text-right font-mono">${total}</td>
+            <td class="px-3 py-2 border-b">${cust}</td>
+            <td class="px-3 py-2 border-b">${proj}</td>
+            <td class="px-3 py-2 border-b font-mono">${created}</td>
+            <td class="px-3 py-2 border-b font-mono">${paid}</td>
+            <td class="px-3 py-2 border-b">${qty}</td>
+            <td class="px-3 py-2 border-b">${used}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    const totalPages = Math.floor(data.total / data.size) + (data.total % data.size > 0 ? 1 : 0);
+    summary.textContent = `Tổng: ${data.total}, Trang: ${data.page}/${totalPages}`;
+    renderPagination(data.page, totalPages);
+  }
+
+  function renderPagination(current, totalPages) {
+    if (totalPages <= 1) {
+      pagination.style.display = 'none';
+      pagination.innerHTML = '';
+      return;
+    }
+    pagination.style.display = '';
+    const links = [];
+    const start = Math.max(1, current - 2);
+    const end = Math.min(totalPages, current + 2);
+
+    if (current > 1) {
+      links.push(`<a data-page="${current-1}" class="page-link px-3 h-9 rounded-lg border border-slate-300 bg-white" href="#">←</a>`);
+    }
+    for (let p = start; p <= end; p++) {
+      const active = p === current ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white';
+      links.push(`<a data-page="${p}" class="page-link px-3 h-9 rounded-lg border ${active}" href="#">${p}</a>`);
+    }
+    if (current < totalPages) {
+      links.push(`<a data-page="${current+1}" class="page-link px-3 h-9 rounded-lg border border-slate-300 bg-white" href="#">→</a>`);
+    }
+    pagination.innerHTML = links.join('');
+    pagination.querySelectorAll('.page-link').forEach(a => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        const p = parseInt(a.getAttribute('data-page'), 10);
+        if (Number.isFinite(p)) {
+          state.page = p;
+          fetchData();
+        }
+      });
+    });
+  }
+
+  // Events
+  const selProject = form.querySelector('[name="project_id"]');
+  if (selProject) {
+    selProject.addEventListener('change', () => {
+      state.project_id = selProject.value || '';
+      fetchData({ resetPage: true });
+    });
+  }
+})();
+</script>
+{% endblock %}
