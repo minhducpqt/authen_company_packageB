@@ -69,7 +69,7 @@
 <script>
 (function() {
   const DATA_URL = "/transactions/dossiers/data";
-  const PROJECTS_URL = "/projects/data?status=ACTIVE&page=1&size=1000";
+  const PROJECTS_URL = "/projects/options/active";
 
   const elProject = document.getElementById("projectSelect");
   const elSearch  = document.getElementById("searchInput");
@@ -87,10 +87,7 @@
 
   // Debounce
   let t;
-  function debounce(fn, ms=400) {
-    clearTimeout(t);
-    t = setTimeout(fn, ms);
-  }
+  function debounce(fn, ms=400) { clearTimeout(t); t = setTimeout(fn, ms); }
 
   function rowHtml(r) {
     const full = r.full_name ?? "-";
@@ -165,11 +162,11 @@
   }
 
   // Events
-  elProject.addEventListener("change", loadData);
-  elSize.addEventListener("change", () => { elPage.value = "1"; loadData(); });
-  elPage.addEventListener("change", loadData);
-  btnPrev.addEventListener("click", () => { const p = Math.max(1, (parseInt(elPage.value||"1")-1)); elPage.value = p; loadData(); });
-  btnNext.addEventListener("click", () => { elPage.value = (parseInt(elPage.value||"1")+1); loadData(); });
+  elProject.addEventListener("change", () => { elPage.value = "1"; loadData(); });
+  elSize.addEventListener("change",  () => { elPage.value = "1"; loadData(); });
+  elPage.addEventListener("change",  loadData);
+  btnPrev.addEventListener("click",  () => { elPage.value = Math.max(1, (parseInt(elPage.value||"1")-1)); loadData(); });
+  btnNext.addEventListener("click",  () => { elPage.value = (parseInt(elPage.value||"1")+1); loadData(); });
   btnRefresh.addEventListener("click", loadData);
   elSearch.addEventListener("input", () => debounce(() => { elPage.value="1"; loadData(); }, 350));
 

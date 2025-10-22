@@ -61,7 +61,7 @@
 <script>
 (function() {
   const DATA_URL = "/transactions/summary/data";
-  const PROJECTS_URL = "/projects/data?status=ACTIVE&page=1&size=1000";
+  const PROJECTS_URL = "/projects/options/active";
 
   const elProject = document.getElementById("projectSelect");
   const elSearch  = document.getElementById("searchInput");
@@ -160,7 +160,7 @@
     elTotal.textContent = `Tổng: ${total.toLocaleString()}`;
   }
 
-  elProject.addEventListener("change", loadData);
+  elProject.addEventListener("change", () => { elPage.value = "1"; loadData(); });
   elSize.addEventListener("change", () => { elPage.value = "1"; loadData(); });
   elPage.addEventListener("change", loadData);
   btnPrev.addEventListener("click", () => { elPage.value = Math.max(1, (parseInt(elPage.value||"1")-1)); loadData(); });

@@ -25,6 +25,7 @@ from routers.bank_import.router import router as bank_import_router
 from routers.send_info_dossier import router as send_info_dossier_router
 from routers.dossier_buyers import router as dossier_buyers_router
 from routers import transactions  # <-- NEW
+from routers.api_proxy import router as api_proxy_router   # <-- NEW
 
 
 def _dump_bank_routes(app: FastAPI) -> None:
@@ -55,6 +56,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.middleware("http")(auth_guard_middleware)
 
 # Đăng ký routers
+app.include_router(api_proxy_router)                 # <-- NEW: /api/*
 app.include_router(ppa_router)
 app.include_router(auth_router)
 app.include_router(dashboard_router)

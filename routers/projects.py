@@ -443,3 +443,169 @@ async def toggle_project(
     redir = next or "/projects"
     to = f"{redir}?msg=toggled" if st == 200 else f"{redir}?err=toggle_failed"
     return RedirectResponse(url=to, status_code=303)
+
+# =========================
+# X) DATA CHO DROPDOWN DỰ ÁN (ACTIVE, theo scope công ty)
+# =========================
+from fastapi.responses import JSONResponse
+import base64, json as pyjson
+
+EP_PUBLIC_PROJECTS = "/api/v1/projects/public"
+EP_COMPANY_PROFILE = "/api/v1/company/profile"
+
+def _b64url_decode(data: str) -> bytes:
+    # helper đọc payload JWT (không verify)
+    data += "=" * ((4 - len(data) % 4) % 4)
+    return base64.urlsafe_b64decode(data.encode("utf-8"))
+
+def _company_from_jwt(token: str | None) -> str | None:
+    if not token or token.count(".") != 2:
+        return None
+    try:
+        payload_b = _b64url_decode(token.split(".")[1])
+        payload = pyjson.loads(payload_b.decode("utf-8"))
+        cc = payload.get("company_code") or payload.get("companyCode")
+        return (cc or "").strip() or None
+    except Exception:
+        return None
+
+@router.get("/data", response_class=JSONResponse)
+async def projects_data(
+    request: Request,
+    status: Optional[str] = Query("ACTIVE", description="ACTIVE|INACTIVE"),
+    q: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    size: int = Query(1000, ge=1, le=1000),
+):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    # 1) me.company_code
+    me = await fetch_me(token)
+    company_code: Optional[str] = (me or {}).get("company_code")
+
+    # 2) /api/v1/company/profile (nếu cần)
+    if not company_code:
+        try:
+            async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=8.0) as client:
+                r_prof = await client.get(EP_COMPANY_PROFILE, headers={"Authorization": f"Bearer {token}"})
+            if r_prof.status_code == 200:
+                prof = r_prof.json() or {}
+                # thử vài key phổ biến
+                company_code = (
+                    prof.get("company_code")
+                    or (prof.get("company") or {}).get("company_code")
+                    or (prof.get("profile") or {}).get("company_code")
+                )
+        except Exception:
+            pass
+
+    # 3) Fallback: đọc từ JWT claim
+    if not company_code:
+        company_code = _company_from_jwt(token)
+
+    if not company_code:
+        return JSONResponse(
+            {"error": "missing_company_code", "message": "Không xác định được công ty từ token/scope."},
+            status_code=400,
+        )
+
+    # 4) Gọi danh sách dự án PUBLIC theo company_code
+    params = [("company_code", company_code), ("page", page), ("size", size)]
+    if status:
+        params.append(("status", status))
+    if q:
+        params.append(("q", q))
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
+            r = await client.get(EP_PUBLIC_PROJECTS, params=params, headers={"Authorization": f"Bearer {token}"})
+        if r.status_code != 200:
+            # trả lỗi kèm chi tiết để dễ debug curl
+            detail = None
+            try:
+                detail = r.json()
+            except Exception:
+                detail = (r.text or "")[:500]
+            return JSONResponse(
+                {"error": "projects_fetch_failed", "status": r.status_code, "detail": detail},
+                status_code=502,
+            )
+
+        raw = r.json() or {}
+        items = raw.get("data") or []
+        def pick(x: dict) -> dict:
+            code = x.get("project_code") or x.get("code")
+            name = x.get("name") or code
+            return {"project_code": code, "name": name, "status": x.get("status")}
+        data = [pick(x) for x in items if x]
+
+        return JSONResponse(
+            {"data": data, "page": raw.get("page", page), "size": raw.get("size", size), "total": raw.get("total", len(data))},
+            status_code=200,
+        )
+    except Exception as e:
+        return JSONResponse({"error": "exception", "message": str(e)}, status_code=500)
+
+# --- THÊM VÀO CUỐI FILE routers/projects.py (hoặc ngay dưới phần LIST) ---
+from fastapi.responses import JSONResponse
+
+@router.get("/options/active", response_class=JSONResponse)
+async def project_options_active(
+    request: Request,
+    q: Optional[str] = Query(None, description="search by code/name (optional)"),
+    size: int = Query(1000, ge=1, le=1000),
+):
+    """
+    Trả danh sách dự án ACTIVE của công ty (dùng làm dropdown).
+    - Lấy company_code từ /auth/me
+    - Gọi Service A: GET /api/v1/projects/public?company_code=...&status=ACTIVE
+    - Chuẩn hóa kết quả: {data: [{project_code, name}, ...]}
+    """
+    token = get_access_token(request)
+    me = await fetch_me(token)
+    if not me:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    company_code = (me or {}).get("company_code")
+    if not company_code:
+        return JSONResponse({"error": "no_company_code"}, status_code=400)
+
+    params = {
+        "company_code": company_code,
+        "status": "ACTIVE",
+        "page": 1,
+        "size": size,
+    }
+    if q:
+        params["q"] = q
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
+            r = await client.get("/api/v1/projects/public", params=params,
+                                 headers={"Authorization": f"Bearer {token}"})
+    except Exception as e:
+        return JSONResponse({"error": "upstream_error", "msg": str(e)}, status_code=502)
+
+    if r.status_code == 401:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    if r.status_code >= 500:
+        return JSONResponse({"error": "upstream_5xx", "msg": r.text[:300]}, status_code=502)
+    if r.status_code != 200:
+        return JSONResponse({"error": "upstream", "status": r.status_code}, status_code=502)
+
+    js = r.json() or {}
+    items = js.get("data") or js.get("items") or js  # phòng khi service A trả mảng thẳng
+    if not isinstance(items, list):
+        items = []
+
+    # Chuẩn hóa trường cho dropdown
+    data = []
+    for p in items:
+        code = (p or {}).get("project_code") or (p or {}).get("code")
+        name = (p or {}).get("name") or code
+        if code:
+            data.append({"project_code": code, "name": name})
+
+    return JSONResponse({"data": data}, status_code=200)
