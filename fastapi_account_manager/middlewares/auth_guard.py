@@ -11,7 +11,14 @@ ALLOW_LIST = {
     "/giao-dich-ngan-hang", "/giao-dich-ngan-hang/data", "/giao-dich-ngan-hang/import",
     "/bank/txns",
 }
-ALLOW_PREFIXES = ("/static/", "/favicon.ico", "/login")
+
+# ✅ Thêm '/transactions/' vào prefix cho qua
+ALLOW_PREFIXES = (
+    "/static/",
+    "/favicon.ico",
+    "/login",
+    "/transactions/",   # <--- thêm dòng này
+)
 
 async def auth_guard_middleware(request, call_next):
     path = request.url.path
