@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bg-white rounded-xl border border-slate-200 p-5">
+  <div class="mb-4">
+    <h2 class="text-xl font-semibold text-slate-800">4.1 Khách mua hồ sơ</h2>
+    <p class="text-slate-500 text-sm">Xem danh sách đơn mua hồ sơ, lọc theo dự án.</p>
+  </div>
+
+  <form id="filtersForm" class="grid grid-cols-12 gap-3 items-end" onsubmit="return false;">
+    <div class="col-span-12 md:col-span-6">
+      <label class="block text-xs text-slate-500 mb-1">Dự án</label>
+      <select id="project_id" name="project_id" class="h-10 w-full rounded-lg border border-slate-300 px-3">
+        <option value="">— Chọn dự án —</option>
+        {% for p in projects %}
+          <option value="{{ p.id }}" {% if (selected_project_id|string) == (p.id|string) %}selected{% endif %}>
+            {{ p.project_code }} — {{ p.project_name or p.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-span-12 md:col-span-2 flex gap-2">
+      <a id="btnReset" class="h-10 px-4 rounded-lg border border-slate-300 flex items-center justify-center cursor-pointer">Reset</a>
+    </div>
+  </form>
+
+  <div id="summary" class="text-sm text-slate-500 mt-3">
+    Tổng: {{ page.total }}, Trang: {{ page.page }}/{{ (page.total // page.size) + (1 if page.total % page.size > 0 else 0) }}
+  </div>
+
+  <div class="overflow-x-auto border border-slate-200 rounded-lg mt-3">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-50">
+        <tr class="text-left text-slate-600 align-top">
+          <th class="px-3 py-2 border-b w-14">#</th>
+          <th class="px-3 py-2 border-b w-20">KH</th>
+          <th class="px-3 py-2 border-b">Số lần (T/P/PD)</th>
+          <th class="px-3 py-2 border-b">100k (Paid/Pend/Used/Remain)</th>
+          <th class="px-3 py-2 border-b">200k (Paid/Pend/Used/Remain)</th>
+          <th class="px-3 py-2 border-b">300k (Paid/Pend/Used/Remain)</th>
+          <th class="px-3 py-2 border-b text-right">Tiền Paid</th>
+          <th class="px-3 py-2 border-b text-right">Tiền Pending</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        {% for r in page.data %}
+        <tr>
+          <td class="px-3 py-2 border-b">{{ loop.index + ((page.page-1) * page.size) }}</td>
+          <td class="px-3 py-2 border-b font-mono">{{ r.customer_id }}</td>
+          <td class="px-3 py-2 border-b font-mono">
+            {{ r.orders_total or 0 }}/{{ r.orders_paid or 0 }}/{{ r.orders_pending or 0 }}
+          </td>
+          <td class="px-3 py-2 border-b font-mono">
+            {{ r.qty_paid_100k or 0 }}/{{ r.qty_pending_100k or 0 }}/{{ r.used_100k or 0 }}/{{ r.remain_100k or 0 }}
+          </td>
+          <td class="px-3 py-2 border-b font-mono">
+            {{ r.qty_paid_200k or 0 }}/{{ r.qty_pending_200k or 0 }}/{{ r.used_200k or 0 }}/{{ r.remain_200k or 0 }}
+          </td>
+          <td class="px-3 py-2 border-b font-mono">
+            {{ r.qty_paid_300k or 0 }}/{{ r.qty_pending_300k or 0 }}/{{ r.used_300k or 0 }}/{{ r.remain_300k or 0 }}
+          </td>
+          <td class="px-3 py-2 border-b text-right font-mono">{{ r.amount_paid_vnd or 0 }}</td>
+          <td class="px-3 py-2 border-b text-right font-mono">{{ r.amount_pending_vnd or 0 }}</td>
+        </tr>
+        {% endfor %}
+        {% if page.data|length == 0 %}
+        <tr><td colspan="8" class="px-3 py-6 text-center text-slate-500">Không có dữ liệu.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  {% set total_pages = (page.total // page.size) + (1 if page.total % page.size > 0 else 0) %}
+  <div id="pagination" class="flex justify-end items-center gap-2 mt-4" {% if total_pages <= 1 %}style="display:none"{% endif %}>
+    {% set start = page.page - 2 %}
+    {% if start < 1 %}{% set start = 1 %}{% endif %}
+    {% set end = page.page + 2 %}
+    {% if end > total_pages %}{% set end = total_pages %}{% endif %}
+
+    {% if page.page > 1 %}
+      <a data-page="{{ page.page-1 }}" class="page-link px-3 h-9 rounded-lg border border-slate-300 bg-white" href="#">←</a>
+    {% endif %}
+    {% for p in range(start, end + 1) %}
+      <a data-page="{{ p }}" class="page-link px-3 h-9 rounded-lg border {{ 'bg-indigo-600 text-white border-indigo-600' if p == page.page else 'bg-white' }}" href="#">
+        {{ p }}
+      </a>
+    {% endfor %}
+    {% if page.page < total_pages %}
+      <a data-page="{{ page.page+1 }}" class="page-link px-3 h-9 rounded-lg border border-slate-300 bg-white" href="#">→</a>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+(function(){
+  const selProject = document.getElementById('project_id');
+  const btnReset   = document.getElementById('btnReset');
+  const tableBody  = document.getElementById('tableBody');
+  const summary    = document.getElementById('summary');
+  const pagination = document.getElementById('pagination');
+
+  let state = {
+    project_id: "{{ selected_project_id or '' }}",
+    page: {{ page.page }},
+    size: {{ page.size }}
+  };
+
+  function buildParams(overrides={}) {
+    const p = { project_id: state.project_id, page: state.page, size: state.size };
+    Object.assign(p, overrides);
+    return new URLSearchParams(p);
+  }
+
+  async function fetchData(overrides = {}) {
+    if (!state.project_id) {
+      tableBody.innerHTML = `<tr><td colspan="8" class="px-3 py-6 text-center text-slate-500">Chọn dự án để xem dữ liệu.</td></tr>`;
+      summary.textContent = `Tổng: 0, Trang: 0/0`;
+      pagination.style.display = 'none';
+      return;
+    }
+    if (overrides.resetPage) { state.page = 1; delete overrides.resetPage; }
+    const params = buildParams(overrides);
+    const url = `/thong-tin-khach-mua-ho-so/data?${params.toString()}`;
+
+    tableBody.innerHTML = `<tr><td colspan="8" class="px-3 py-6 text-center text-slate-500">Đang tải...</td></tr>`;
+    try {
+      const res = await fetch(url, { credentials: 'same-origin' });
+      if (!res.ok) {
+        tableBody.innerHTML = `<tr><td colspan="8" class="px-3 py-6 text-center text-rose-600">Lỗi tải dữ liệu (${res.status}).</td></tr>`;
+        return;
+      }
+      const data = await res.json();
+      render(data);
+
+      // push query to URL (giữ project_id)
+      const pageUrl = new URL(window.location.href);
+      const q = new URLSearchParams(pageUrl.search);
+      if (state.project_id) q.set('project_id', state.project_id); else q.delete('project_id');
+      q.set('page', state.page);
+      q.set('size', state.size);
+      pageUrl.search = q.toString();
+      window.history.replaceState({}, '', pageUrl.toString());
+    } catch {
+      tableBody.innerHTML = `<tr><td colspan="8" class="px-3 py-6 text-center text-rose-600">Lỗi kết nối.</td></tr>`;
+    }
+  }
+
+  function fmt(n) { return (n ?? 0).toLocaleString('vi-VN'); }
+
+  function render(data) {
+    if (!data.data || data.data.length === 0) {
+      tableBody.innerHTML = `<tr><td colspan="8" class="px-3 py-6 text-center text-slate-500">Không có dữ liệu.</td></tr>`;
+    } else {
+      tableBody.innerHTML = data.data.map((r, idx) => {
+        const rowNo = (data.page - 1) * data.size + idx + 1;
+        return `
+          <tr>
+            <td class="px-3 py-2 border-b">${rowNo}</td>
+            <td class="px-3 py-2 border-b font-mono">${r.customer_id}</td>
+            <td class="px-3 py-2 border-b font-mono">${fmt(r.orders_total)}/${fmt(r.orders_paid)}/${fmt(r.orders_pending)}</td>
+            <td class="px-3 py-2 border-b font-mono">${fmt(r.qty_paid_100k)}/${fmt(r.qty_pending_100k)}/${fmt(r.used_100k)}/${fmt(r.remain_100k)}</td>
+            <td class="px-3 py-2 border-b font-mono">${fmt(r.qty_paid_200k)}/${fmt(r.qty_pending_200k)}/${fmt(r.used_200k)}/${fmt(r.remain_200k)}</td>
+            <td class="px-3 py-2 border-b font-mono">${fmt(r.qty_paid_300k)}/${fmt(r.qty_pending_300k)}/${fmt(r.used_300k)}/${fmt(r.remain_300k)}</td>
+            <td class="px-3 py-2 border-b text-right font-mono">${fmt(r.amount_paid_vnd)}</td>
+            <td class="px-3 py-2 border-b text-right font-mono">${fmt(r.amount_pending_vnd)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+    const totalPages = Math.floor(data.total / data.size) + (data.total % data.size > 0 ? 1 : 0);
+    summary.textContent = `Tổng: ${fmt(data.total)}, Trang: ${data.page}/${totalPages}`;
+    renderPagination(data.page, totalPages);
+  }
+
+  function renderPagination(current, totalPages) {
+    if (totalPages <= 1) { pagination.style.display = 'none'; pagination.innerHTML = ''; return; }
+    pagination.style.display = '';
+    const links = [];
+    const start = Math.max(1, current - 2);
+    const end = Math.min(totalPages, current + 2);
+    if (current > 1) links.push(`<a data-page="${current-1}" class="page-link px-3 h-9 rounded-lg border border-slate-300 bg-white" href="#">←</a>`);
+    for (let p = start; p <= end; p++) {
+      const active = p === current ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white';
+      links.push(`<a data-page="${p}" class="page-link px-3 h-9 rounded-lg border ${active}" href="#">${p}</a>`);
+    }
+    if (current < totalPages) links.push(`<a data-page="${current+1}" class="page-link px-3 h-9 rounded-lg border border-slate-300 bg-white" href="#">→</a>`);
+    pagination.innerHTML = links.join('');
+    pagination.querySelectorAll('.page-link').forEach(a => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        const p = parseInt(a.getAttribute('data-page'), 10);
+        if (Number.isFinite(p)) { state.page = p; fetchData(); }
+      });
+    });
+  }
+
+  // events
+  selProject?.addEventListener('change', () => {
+    state.project_id = selProject.value || '';
+    fetchData({ resetPage: true });
+  });
+
+  btnReset?.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (selProject) selProject.value = '';
+    state.project_id = '';
+    fetchData({ resetPage: true });
+  });
+
+  // auto fetch nếu đã có selected_project_id
+  if (state.project_id) fetchData();
+})();
+</script>
+{% endblock %}

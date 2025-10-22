@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bg-white rounded-xl border border-slate-200 p-4">
+  <form id="filter-form" class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+    <input type="text" id="q" name="q" value="{{ init_q }}" placeholder="Tìm theo họ tên / CCCD / SĐT"
+           class="input"/>
+    <input type="text" id="project_code" name="project_code" value="{{ init_project_code }}" placeholder="Mã dự án (bỏ trống = tất cả)"
+           class="input"/>
+    <select id="size" name="size" class="input">
+      {% for n in [20,50,100] %}
+      <option value="{{n}}" {% if init_size==n %}selected{% endif %}>{{n}}/trang</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn-primary"><i class="ri-search-line"></i> Lọc</button>
+  </form>
+
+  <div id="list" class="divide-y divide-slate-100"></div>
+
+  <div class="flex items-center justify-between mt-4">
+    <button id="prev" class="btn" disabled>Trước</button>
+    <div id="paging" class="text-sm text-slate-500"></div>
+    <button id="next" class="btn" disabled>Tiếp</button>
+  </div>
+</div>
+
+<script>
+  const state = {
+    page: {{ init_page }},
+    size: {{ init_size }},
+    q: "{{ init_q }}",
+    project_code: "{{ init_project_code }}",
+    total: 0
+  };
+
+  function qs(params) {
+    const u = new URLSearchParams();
+    Object.entries(params).forEach(([k,v]) => { if (v!==undefined && v!==null && v!=="") u.set(k, v); });
+    return u.toString();
+  }
+  function fmtInt(x){ try{ return (x??0).toLocaleString('vi-VN'); }catch{ return x; } }
+
+  async function load() {
+    const url = `/transactions/deposits/data?${qs({
+      page: state.page, size: state.size, q: state.q, project_code: state.project_code
+    })}`;
+
+    const r = await fetch(url);
+    if (r.status === 401) { window.location.href = "/login?next=%2Ftransactions%2Fdeposits"; return; }
+    const data = await r.json();
+
+    const wrap = document.getElementById('list');
+    wrap.innerHTML = "";
+
+    (data.data || []).forEach(row => {
+      const cust = row.customer || {};
+      const proj = row.project || {};
+      const paidLots = row.paid_lots || []; // [{lot_code, deposit_amount, paid_at}]
+      const pendingQrs = row.pending_qr || []; // [{lot_code, amount_vnd, qr_url, expires_at}]
+
+      const paidHtml = paidLots.map(l => `
+        <div class="flex items-center justify-between py-1 text-sm">
+          <div class="text-slate-600">Lô <b>${l.lot_code || ('#'+(l.lot_id||''))}</b></div>
+          <div class="text-slate-600">Đã cọc: <b>${fmtInt(l.deposit_amount||0)}</b> — ${l.paid_at ? ('<span class="text-slate-500">'+l.paid_at+'</span>') : ''}</div>
+        </div>
+      `).join("");
+
+      const pendingHtml = pendingQrs.map(q => `
+        <div class="flex items-center justify-between py-1 text-sm">
+          <div class="text-slate-600">Lô <b>${q.lot_code || ('#'+(q.lot_id||''))}</b></div>
+          <div class="text-slate-600">Chờ chuyển khoản: <b>${fmtInt(q.amount_vnd||0)}</b>
+            — Hết hạn: <span class="text-amber-600">${q.expires_at || '-'}</span>
+            — <a href="${q.qr_url}" target="_blank" class="text-indigo-600 hover:underline">QR</a>
+          </div>
+        </div>
+      `).join("");
+
+      wrap.insertAdjacentHTML('beforeend', `
+        <div class="py-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-semibold text-slate-800">${cust.full_name || 'Khách #' + row.customer_id}</div>
+              <div class="text-slate-500 text-sm">CCCD: ${cust.cccd || '-'} — SDT: ${cust.phone || '-'}</div>
+              <div class="text-slate-500 text-sm">Dự án: ${proj.project_code || 'ALL'}</div>
+            </div>
+            <div class="text-right text-sm text-slate-600">
+              Lô đã cọc: <b>${fmtInt(paidLots.length)}</b> — QR chờ CK: <b>${fmtInt(pendingQrs.length)}</b>
+            </div>
+          </div>
+
+          <div class="mt-2 grid md:grid-cols-2 gap-3">
+            <div class="bg-slate-50 rounded-lg p-2">
+              <div class="font-medium text-slate-700 mb-1"><i class="ri-check-double-line"></i> Đã cọc</div>
+              ${paidHtml || '<div class="text-sm text-slate-400">Không có.</div>'}
+            </div>
+            <div class="bg-slate-50 rounded-lg p-2">
+              <div class="font-medium text-slate-700 mb-1"><i class="ri-time-line"></i> Đang chờ chuyển khoản</div>
+              ${pendingHtml || '<div class="text-sm text-slate-400">Không có.</div>'}
+            </div>
+          </div>
+        </div>
+      `);
+    });
+
+    state.total = data.total || 0;
+    document.getElementById('paging').textContent = `Trang ${data.page}/${Math.max(1, Math.ceil(state.total/state.size))} — Tổng ${fmtInt(state.total)} khách`;
+    document.getElementById('prev').disabled = state.page <= 1;
+    document.getElementById('next').disabled = state.page >= Math.max(1, Math.ceil(state.total/state.size));
+  }
+
+  document.getElementById('filter-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    state.q = document.getElementById('q').value.trim();
+    state.project_code = document.getElementById('project_code').value.trim();
+    state.size = parseInt(document.getElementById('size').value || "50", 10);
+    state.page = 1;
+    load();
+    const url = new URL(window.location.href);
+    url.search = qs({ q: state.q, project_code: state.project_code, page: state.page, size: state.size });
+    history.replaceState(null, "", url.toString());
+  });
+
+  document.getElementById('prev').addEventListener('click', () => { state.page -= 1; load(); });
+  document.getElementById('next').addEventListener('click', () => { state.page += 1; load(); });
+
+  load();
+</script>
+{% endblock %}
