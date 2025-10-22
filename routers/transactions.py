@@ -1,10 +1,10 @@
 # routers/transactions.py
 from __future__ import annotations
 import os
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Dict, Any
 
 import httpx
-from fastapi import APIRouter, Request, Query
+from fastapi import APIRouter, Request, Query, Path
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from utils.templates import templates
@@ -15,6 +15,9 @@ API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8824")
 router = APIRouter()
 
 
+# -----------------------
+# Internal HTTP helpers
+# -----------------------
 async def _api_get(
     client: httpx.AsyncClient,
     path: str,
@@ -29,9 +32,9 @@ async def _api_get(
     )
 
 
-# =========================
-# 2.1 MUA HỒ SƠ — PAGE
-# =========================
+# =========================================================
+# 2.1 MUA HỒ SƠ — PAGE + DATA
+# =========================================================
 @router.get("/transactions/dossiers", response_class=HTMLResponse)
 async def dossiers_page(
     request: Request,
@@ -45,7 +48,7 @@ async def dossiers_page(
         return RedirectResponse(url="/login?next=%2Ftransactions%2Fdossiers", status_code=303)
 
     return templates.TemplateResponse(
-        "pages/transactions/dossiers.html",  # <--- sửa đường dẫn
+        "pages/transactions/dossiers.html",
         {
             "request": request,
             "title": "2.1 Mua hồ sơ",
@@ -76,20 +79,20 @@ async def dossiers_data(
         params.append(("project_code", project_code))
 
     async with httpx.AsyncClient() as client:
-        r = await _api_get(
-            client, "/api/v1/admin/transactions/applications/customers", token, params
-        )
+        # GỌI ĐÚNG API BÊN A
+        r = await _api_get(client, "/api/v1/overview/applications", token, params)
 
     if r.status_code == 401:
         return JSONResponse({"error": "unauthorized"}, status_code=401)
     if r.status_code >= 500:
         return JSONResponse({"error": "server", "msg": r.text[:300]}, status_code=502)
+
     return JSONResponse(r.json(), status_code=200)
 
 
-# =========================
-# 2.2 ĐẶT CỌC — PAGE
-# =========================
+# =========================================================
+# 2.2 ĐẶT CỌC — PAGE + DATA
+# =========================================================
 @router.get("/transactions/deposits", response_class=HTMLResponse)
 async def deposits_page(
     request: Request,
@@ -103,7 +106,7 @@ async def deposits_page(
         return RedirectResponse(url="/login?next=%2Ftransactions%2Fdeposits", status_code=303)
 
     return templates.TemplateResponse(
-        "pages/transactions/deposits.html",  # <--- sửa đường dẫn
+        "pages/transactions/deposits.html",
         {
             "request": request,
             "title": "2.2 Đặt cọc",
@@ -134,20 +137,20 @@ async def deposits_data(
         params.append(("project_code", project_code))
 
     async with httpx.AsyncClient() as client:
-        r = await _api_get(
-            client, "/api/v1/admin/transactions/deposits/customers", token, params
-        )
+        # GỌI ĐÚNG API BÊN A
+        r = await _api_get(client, "/api/v1/overview/deposits", token, params)
 
     if r.status_code == 401:
         return JSONResponse({"error": "unauthorized"}, status_code=401)
     if r.status_code >= 500:
         return JSONResponse({"error": "server", "msg": r.text[:300]}, status_code=502)
+
     return JSONResponse(r.json(), status_code=200)
 
 
-# =========================
-# 2.3 TỔNG HỢP — PAGE
-# =========================
+# =========================================================
+# 2.3 TỔNG HỢP — PAGE + DATA
+# =========================================================
 @router.get("/transactions/summary", response_class=HTMLResponse)
 async def summary_page(
     request: Request,
@@ -161,7 +164,7 @@ async def summary_page(
         return RedirectResponse(url="/login?next=%2Ftransactions%2Fsummary", status_code=303)
 
     return templates.TemplateResponse(
-        "pages/transactions/summary.html",  # <--- sửa đường dẫn
+        "pages/transactions/summary.html",
         {
             "request": request,
             "title": "2.3 Tổng hợp",
@@ -192,12 +195,52 @@ async def summary_data(
         params.append(("project_code", project_code))
 
     async with httpx.AsyncClient() as client:
-        r = await _api_get(
-            client, "/api/v1/admin/transactions/summary/customers", token, params
-        )
+        # GỌI ĐÚNG API BÊN A
+        r = await _api_get(client, "/api/v1/overview/summary", token, params)
 
     if r.status_code == 401:
         return JSONResponse({"error": "unauthorized"}, status_code=401)
     if r.status_code >= 500:
         return JSONResponse({"error": "server", "msg": r.text[:300]}, status_code=502)
+
+    return JSONResponse(r.json(), status_code=200)
+
+
+# =========================================================
+# DETAIL: Toàn bộ orders của 1 khách (pending + paid)
+# (phục vụ popup/detail ở cả 3 màn)
+# =========================================================
+@router.get("/transactions/customers/{customer_id}/orders", response_class=JSONResponse)
+async def customer_orders_detail(
+    request: Request,
+    customer_id: int = Path(..., ge=1),
+    project_code: Optional[str] = Query(None),
+    type: Optional[str] = Query(None),  # APPLICATION | DEPOSIT | None
+):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    params: List[Tuple[str, str | int]] = []
+    if project_code:
+        params.append(("project_code", project_code))
+    if type:
+        params.append(("type", type))
+
+    async with httpx.AsyncClient() as client:
+        # GỌI ĐÚNG API BÊN A
+        r = await _api_get(
+            client,
+            f"/api/v1/overview/customers/{customer_id}/orders",
+            token,
+            params,
+        )
+
+    if r.status_code == 401:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    if r.status_code == 404:
+        return JSONResponse({"error": "not_found"}, status_code=404)
+    if r.status_code >= 500:
+        return JSONResponse({"error": "server", "msg": r.text[:300]}, status_code=502)
+
     return JSONResponse(r.json(), status_code=200)
