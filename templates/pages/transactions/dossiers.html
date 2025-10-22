@@ -1,91 +1,180 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="bg-white rounded-xl border border-slate-200 p-4">
-  <form id="filterForm" class="flex flex-wrap items-end gap-3">
-    <div>
-      <label class="form-label">Dự án</label>
-      <input id="project_code" name="project_code" class="form-input" placeholder="Mã dự án" value="{{ init_project_code }}">
+<div class="bg-white rounded-xl border border-slate-200">
+  <!-- FILTER BAR -->
+  <div class="p-4 flex flex-wrap gap-4 items-center">
+    <div class="w-72">
+      <label class="block text-sm text-slate-500 mb-1">Dự án</label>
+      <select id="projectSelect" class="w-full border rounded-lg px-3 py-2">
+        <option value="">Tất cả dự án</option>
+      </select>
     </div>
-    <div>
-      <label class="form-label">Tìm khách</label>
-      <input id="q" name="q" class="form-input" placeholder="Tên/CCCD/SDT" value="{{ init_q }}">
+
+    <div class="flex-1 min-w-[280px]">
+      <label class="block text-sm text-slate-500 mb-1">Tìm khách (Tên/CCCD/SDT)</label>
+      <input id="searchInput" type="text" placeholder="Gõ để tìm..."
+             class="w-full border rounded-lg px-3 py-2">
     </div>
-    <div>
-      <label class="form-label">Trang</label>
-      <input id="page" name="page" type="number" class="form-input w-28" value="{{ init_page }}">
+
+    <div class="w-28">
+      <label class="block text-sm text-slate-500 mb-1">Trang</label>
+      <input id="pageInput" type="number" min="1" value="{{ init_page or 1 }}"
+             class="w-full border rounded-lg px-3 py-2">
     </div>
-    <div>
-      <label class="form-label">Size</label>
-      <input id="size" name="size" type="number" class="form-input w-28" value="{{ init_size }}">
+
+    <div class="w-28">
+      <label class="block text-sm text-slate-500 mb-1">Size</label>
+      <select id="sizeSelect" class="w-full border rounded-lg px-3 py-2">
+        {% for n in [25,50,100] %}
+        <option value="{{n}}" {% if (init_size or 50) == n %}selected{% endif %}>{{n}}</option>
+        {% endfor %}
+      </select>
     </div>
-    <button type="submit" class="btn-primary"><i class="ri-search-line mr-1"></i>Lọc</button>
-  </form>
+
+    <button id="refreshBtn"
+            class="h-10 px-4 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
+      <i class="ri-refresh-line"></i> Nạp
+    </button>
+  </div>
+
+  <!-- TABLE -->
+  <div class="border-t border-slate-100">
+    <table class="w-full text-sm">
+      <thead class="bg-slate-50">
+        <tr class="text-left text-slate-600">
+          <th class="py-3 px-4">Họ tên</th>
+          <th class="py-3 px-4">CCCD</th>
+          <th class="py-3 px-4">SĐT</th>
+          <th class="py-3 px-4 text-right">Đơn đã trả</th>
+          <th class="py-3 px-4 text-right">Còn khả dụng</th>
+          <th class="py-3 px-4 text-right">QR chờ TT</th>
+        </tr>
+      </thead>
+      <tbody id="dataBody">
+        <tr><td class="py-6 px-4 text-slate-400" colspan="6">Đang tải...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PAGINATION FOOTER -->
+  <div class="p-4 flex items-center justify-between text-sm text-slate-500">
+    <div id="totalInfo">Tổng: 0</div>
+    <div class="flex items-center gap-2">
+      <button id="prevBtn" class="px-3 py-1 rounded border">Trước</button>
+      <button id="nextBtn" class="px-3 py-1 rounded border">Sau</button>
+    </div>
+  </div>
 </div>
 
-<div id="result" class="mt-4"></div>
-
 <script>
-async function fetchData() {
-  const pc = document.getElementById("project_code").value.trim();
-  const q  = document.getElementById("q").value.trim();
-  const page = document.getElementById("page").value || 1;
-  const size = document.getElementById("size").value || 50;
+(function() {
+  const DATA_URL = "/transactions/dossiers/data";
+  const PROJECTS_URL = "/projects/data?status=ACTIVE&page=1&size=1000";
 
-  const params = new URLSearchParams({ page, size });
-  if (pc) params.append("project_code", pc);
-  if (q)  params.append("q", q);
+  const elProject = document.getElementById("projectSelect");
+  const elSearch  = document.getElementById("searchInput");
+  const elPage    = document.getElementById("pageInput");
+  const elSize    = document.getElementById("sizeSelect");
+  const elBody    = document.getElementById("dataBody");
+  const elTotal   = document.getElementById("totalInfo");
+  const btnPrev   = document.getElementById("prevBtn");
+  const btnNext   = document.getElementById("nextBtn");
+  const btnRefresh= document.getElementById("refreshBtn");
 
-  const r = await fetch(`/transactions/dossiers/data?${params.toString()}`);
-  const el = document.getElementById("result");
-  if (!r.ok) {
-    el.innerHTML = `<div class="alert-error">Lỗi tải dữ liệu (${r.status}).</div>`;
-    return;
+  // init values from server (if any)
+  elSearch.value = "{{ init_q or '' }}";
+  elProject.dataset.init = "{{ init_project_code or '' }}";
+
+  // Debounce
+  let t;
+  function debounce(fn, ms=400) {
+    clearTimeout(t);
+    t = setTimeout(fn, ms);
   }
-  const data = await r.json();
-  renderList(el, data);
-}
 
-function renderList(el, payload) {
-  const rows = (payload.data || []).map((it) => {
-    const customer = it.customer || {};
-    const stats = it.stats || {};
-    const unpaid = it.unpaid_qr_count || 0;
+  function rowHtml(r) {
+    const full = r.full_name ?? "-";
+    const cccd = r.cccd ?? "-";
+    const phone = r.phone ?? "-";
+    const ordersPaid = Number(r.orders_paid ?? 0);
+    const totalAmount = Number(r.total_amount ?? 0);
+    const totalPaid = Number(r.total_paid ?? 0);
+    const available = Math.max(totalAmount - totalPaid, 0);
+    const unpaidQR = Number(r.unpaid_qr_count ?? 0);
+
     return `
-      <tr class="border-b">
-        <td class="px-3 py-2">${customer.full_name || "-"}</td>
-        <td class="px-3 py-2">${customer.cccd || "-"}</td>
-        <td class="px-3 py-2">${customer.phone || "-"}</td>
-        <td class="px-3 py-2 text-right">${stats.total_purchased || 0}</td>
-        <td class="px-3 py-2 text-right">${stats.total_available || 0}</td>
-        <td class="px-3 py-2 text-right">${unpaid}</td>
+      <tr class="border-t">
+        <td class="py-3 px-4">${full}</td>
+        <td class="py-3 px-4">${cccd}</td>
+        <td class="py-3 px-4">${phone}</td>
+        <td class="py-3 px-4 text-right">${ordersPaid.toLocaleString()}</td>
+        <td class="py-3 px-4 text-right">${available.toLocaleString()}</td>
+        <td class="py-3 px-4 text-right">${unpaidQR}</td>
       </tr>
     `;
-  }).join("");
+  }
 
-  el.innerHTML = `
-    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-      <table class="w-full text-sm">
-        <thead class="bg-slate-50 text-slate-600">
-          <tr>
-            <th class="px-3 py-2 text-left">Họ tên</th>
-            <th class="px-3 py-2 text-left">CCCD</th>
-            <th class="px-3 py-2 text-left">SĐT</th>
-            <th class="px-3 py-2 text-right">Đã mua</th>
-            <th class="px-3 py-2 text-right">Còn khả dụng</th>
-            <th class="px-3 py-2 text-right">QR chờ TT</th>
-          </tr>
-        </thead>
-        <tbody>${rows || `<tr><td colspan="6" class="px-3 py-6 text-center text-slate-400">Không có dữ liệu</td></tr>`}</tbody>
-      </table>
-    </div>
-  `;
-}
+  async function loadProjects() {
+    try {
+      const r = await fetch(PROJECTS_URL, {headers: {"X-Requested-With":"fetch"}});
+      const js = await r.json();
+      const list = js.data ?? js.items ?? [];
+      // reset
+      elProject.innerHTML = `<option value="">Tất cả dự án</option>`;
+      for (const p of list) {
+        const code = p.project_code ?? p.code ?? "";
+        const name = p.name ?? code;
+        const opt = document.createElement("option");
+        opt.value = code;
+        opt.textContent = `${code} — ${name}`;
+        elProject.appendChild(opt);
+      }
+      // set default if server gave init
+      const initCode = elProject.dataset.init;
+      if (initCode) elProject.value = initCode;
+    } catch (e) {
+      console.warn("Load projects error", e);
+    }
+  }
 
-document.getElementById("filterForm").addEventListener("submit", function (e) {
-  e.preventDefault();
-  fetchData();
-});
+  async function loadData() {
+    const q = (elSearch.value || "").trim();
+    const page = parseInt(elPage.value || "1", 10) || 1;
+    const size = parseInt(elSize.value || "50", 10) || 50;
+    const project_code = elProject.value || "";
 
-fetchData();
+    const params = new URLSearchParams();
+    params.set("page", page);
+    params.set("size", size);
+    if (q) params.set("q", q);
+    if (project_code) params.set("project_code", project_code);
+
+    elBody.innerHTML = `<tr><td class="py-6 px-4 text-slate-400" colspan="6">Đang tải...</td></tr>`;
+    const r = await fetch(`${DATA_URL}?${params.toString()}`, {headers: {"X-Requested-With":"fetch"}});
+    const js = await r.json();
+
+    const rows = js.data ?? js.items ?? [];
+    const total = js.total ?? 0;
+
+    if (!rows.length) {
+      elBody.innerHTML = `<tr><td class="py-6 px-4 text-slate-400" colspan="6">Không có dữ liệu</td></tr>`;
+    } else {
+      elBody.innerHTML = rows.map(rowHtml).join("");
+    }
+    elTotal.textContent = `Tổng: ${total.toLocaleString()}`;
+  }
+
+  // Events
+  elProject.addEventListener("change", loadData);
+  elSize.addEventListener("change", () => { elPage.value = "1"; loadData(); });
+  elPage.addEventListener("change", loadData);
+  btnPrev.addEventListener("click", () => { const p = Math.max(1, (parseInt(elPage.value||"1")-1)); elPage.value = p; loadData(); });
+  btnNext.addEventListener("click", () => { elPage.value = (parseInt(elPage.value||"1")+1); loadData(); });
+  btnRefresh.addEventListener("click", loadData);
+  elSearch.addEventListener("input", () => debounce(() => { elPage.value="1"; loadData(); }, 350));
+
+  // init
+  loadProjects().then(loadData);
+})();
 </script>
 {% endblock %}
