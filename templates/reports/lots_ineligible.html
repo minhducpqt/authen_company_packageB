@@ -5,29 +5,102 @@
 {% set export_kind = "lots_ineligible" %}
 {% include "reports/_toolbar.html" %}
 
-<div class="bg-white rounded-xl border">
+{% set rows = data.get('items') or data.get('rows') or [] %}
+{% set total = data.get('count') or rows|length %}
+
+<div class="mb-4 text-sm text-slate-600">
+  <span class="font-semibold text-slate-800">{{ total }}</span>
+  lô <span class="text-rose-600 font-semibold">KHÔNG đủ điều kiện</span> được tìm thấy.
+</div>
+
+<div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
   <div class="overflow-x-auto">
-    <table class="min-w-full text-sm">
-      <thead class="bg-slate-50 text-slate-500">
+    <table class="min-w-full text-sm text-slate-800">
+      <thead class="bg-slate-50 text-slate-500 border-b">
         <tr>
-          <th class="th">Dự án</th>
-          <th class="th">Mã lô</th>
-          <th class="th">Lý do không đủ ĐK</th>
+          <th class="px-4 py-2 text-left font-semibold">Dự án</th>
+          <th class="px-4 py-2 text-left font-semibold">Mã lô</th>
+          <th class="px-4 py-2 text-right font-semibold">Giá khởi điểm</th>
+          <th class="px-4 py-2 text-left font-semibold">Số KH tham gia</th>
+          <th class="px-4 py-2 text-left font-semibold">Khách hàng (Họ tên — CCCD)</th>
         </tr>
       </thead>
-      <tbody class="divide-y">
-      {% for row in (data.rows or []) %}
-        <tr>
-          <td class="td">{{ row.project_code }}</td>
-          <td class="td font-medium">{{ row.lot_code }}</td>
-          <td class="td">{{ row.reason }}</td>
+      <tbody class="divide-y divide-slate-100">
+        {% for r in rows %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-4 py-3">{{ r.project_code }}</td>
+          <td class="px-4 py-3 font-medium">{{ r.lot_code }}</td>
+          <td class="px-4 py-3 text-right">
+            <span class="money" data-money="{{ (r.starting_price_vnd or 0) | int }}"></span>
+          </td>
+          <td class="px-4 py-3">{{ r.total_customers or 0 }}</td>
+          <td class="px-4 py-3">
+            {% if r.customer_names %}
+              {% set names = r.customer_names.split(", ") if r.customer_names else [] %}
+              {% set cccds = r.customer_cccds.split(", ") if r.customer_cccds else [] %}
+              <div class="flex flex-wrap gap-2">
+                {% for i in range(names|length) %}
+                  <span class="inline-flex items-center gap-2 px-2 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-700">
+                    {{ names[i] }} — {{ cccds[i] if i < cccds|length else '' }}
+                  </span>
+                {% endfor %}
+              </div>
+            {% else %}
+              <span class="text-slate-400">—</span>
+            {% endif %}
+          </td>
         </tr>
-      {% endfor %}
-      {% if not data.rows or data.rows|length == 0 %}
-        <tr><td class="td text-slate-400" colspan="3">Không có dữ liệu.</td></tr>
-      {% endif %}
+        {% endfor %}
+        {% if rows|length == 0 %}
+        <tr><td class="px-4 py-4 text-center text-slate-400" colspan="5">Không có dữ liệu.</td></tr>
+        {% endif %}
       </tbody>
     </table>
   </div>
 </div>
+
+<style>
+  table th, table td { white-space: nowrap; }
+  table td:last-child { white-space: normal; }
+</style>
+
+<script>
+(function () {
+  // ---- Format tiền
+  document.querySelectorAll('.money[data-money]').forEach(el => {
+    const n = Number(el.getAttribute('data-money') || '0');
+    el.textContent = Number.isFinite(n) ? n.toLocaleString('vi-VN') : '0';
+  });
+
+  // ---- Giữ/persist ô tìm kiếm (fix clear sau reload)
+  const qEl = document.getElementById('qInput');
+  const key = 'reports:q:' + location.pathname;
+  if (qEl) {
+    const urlQ = new URL(location.href).searchParams.get('q');
+    if (urlQ !== null) {
+      qEl.value = urlQ;
+      sessionStorage.setItem(key, urlQ);
+    } else {
+      const saved = sessionStorage.getItem(key);
+      if (saved !== null && !qEl.value) qEl.value = saved;
+    }
+
+    let t = null;
+    qEl.addEventListener('input', () => {
+      const v = qEl.value || '';
+      sessionStorage.setItem(key, v);
+      clearTimeout(t);
+      t = setTimeout(() => {
+        const u = new URL(window.location.href);
+        if (v) u.searchParams.set('q', v); else u.searchParams.delete('q');
+        window.location.href = u.toString();
+      }, 600);
+    });
+
+    qEl.form && qEl.form.addEventListener('submit', () => {
+      sessionStorage.setItem(key, qEl.value || '');
+    });
+  }
+})();
+</script>
 {% endblock %}

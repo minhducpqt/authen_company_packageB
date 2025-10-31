@@ -5,30 +5,38 @@
 {% set export_kind = "customers_eligible" %}
 {% include "reports/_toolbar.html" %}
 
-<div class="bg-white rounded-xl border">
+{% set rows = data.get('items') or data.get('rows') or [] %}
+{% set total = data.get('count') or rows|length %}
+
+<div class="mb-4 text-sm text-slate-600">
+  <span class="font-semibold text-slate-800">{{ total }}</span>
+  khách hàng <span class="text-emerald-600 font-semibold">đủ điều kiện</span> được tìm thấy.
+</div>
+
+<div class="bg-white border rounded-2xl shadow-sm overflow-hidden">
   <div class="overflow-x-auto">
-    <table class="min-w-full text-sm">
-      <thead class="bg-slate-50 text-slate-500">
+    <table class="min-w-full text-sm text-slate-700">
+      <thead class="bg-slate-50 text-slate-500 border-b">
         <tr>
-          <th class="th">Khách hàng</th>
-          <th class="th">CCCD</th>
-          <th class="th">SĐT</th>
-          <th class="th">Email</th>
-          <th class="th">Các lô đủ ĐK</th>
+          <th class="px-4 py-2 text-left font-semibold">Khách hàng</th>
+          <th class="px-4 py-2 text-left font-semibold">CCCD</th>
+          <th class="px-4 py-2 text-left font-semibold">SĐT</th>
+          <th class="px-4 py-2 text-left font-semibold">Email</th>
+          <th class="px-4 py-2 text-left font-semibold">Các lô đủ ĐK</th>
         </tr>
       </thead>
-      <tbody class="divide-y">
-      {% for row in (data.rows or []) %}
-        <tr>
-          <td class="td font-medium">{{ row.full_name }}</td>
-          <td class="td">{{ row.cccd }}</td>
-          <td class="td">{{ row.phone }}</td>
-          <td class="td">{{ row.email }}</td>
-          <td class="td">
-            {% if row.lots and row.lots|length>0 %}
+      <tbody class="divide-y divide-slate-100">
+      {% for row in rows %}
+        <tr class="hover:bg-slate-50 transition">
+          <td class="px-4 py-3 font-medium text-slate-800">{{ row.full_name }}</td>
+          <td class="px-4 py-3">{{ row.cccd }}</td>
+          <td class="px-4 py-3">{{ row.phone }}</td>
+          <td class="px-4 py-3">{{ row.email or '-' }}</td>
+          <td class="px-4 py-3">
+            {% if row.lots and row.lots|length > 0 %}
               <div class="flex flex-wrap gap-2">
                 {% for l in row.lots %}
-                  <span class="px-2 py-1 rounded bg-slate-100 border">
+                  <span class="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg px-2 py-1">
                     {{ l.project_code }} / {{ l.lot_code }}
                   </span>
                 {% endfor %}
@@ -39,11 +47,20 @@
           </td>
         </tr>
       {% endfor %}
-      {% if not data.rows or data.rows|length == 0 %}
-        <tr><td class="td text-slate-400" colspan="5">Không có dữ liệu.</td></tr>
+      {% if rows|length == 0 %}
+        <tr>
+          <td class="px-4 py-4 text-center text-slate-400" colspan="5">
+            Không có dữ liệu.
+          </td>
+        </tr>
       {% endif %}
       </tbody>
     </table>
   </div>
 </div>
+
+<style>
+  table th, table td { white-space: nowrap; }
+  table td:last-child { white-space: normal; }
+</style>
 {% endblock %}
