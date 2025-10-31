@@ -609,3 +609,51 @@ async def project_options_active(
             data.append({"project_code": code, "name": name})
 
     return JSONResponse({"data": data}, status_code=200)
+
+
+
+# routers/projects.py (Service B)
+from fastapi import APIRouter, Request, HTTPException
+import httpx
+import os
+
+
+def _auth_headers(request: Request) -> dict:
+    # Nếu bạn xác thực bằng cookie/bearer, bê nguyên header Authorization sang A
+    h = {}
+    auth = request.headers.get("Authorization")
+    if auth:
+        h["Authorization"] = auth
+    return h
+
+@router.get("/api/projects/options")
+async def projects_options(request: Request, status: str = "ACTIVE", company_code: str | None = None):
+    """
+    Trả về options dự án cho FE: { options: [{project_code, name}] }
+    - Ưu tiên gọi endpoint public của Service A:
+      /api/v1/projects/public?company_code=...&status=ACTIVE&page=1&size=1000
+    - Nếu không có company_code, Service A sẽ suy ra từ token (nếu hỗ trợ).
+    """
+    params = {"status": status, "page": 1, "size": 1000}
+    if company_code:
+        params["company_code"] = company_code
+
+    url = f"{SERVICE_A_BASE}/api/v1/projects/public"
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.get(url, params=params, headers=_auth_headers(request))
+        if r.status_code != 200:
+            raise HTTPException(status_code=502, detail=f"Upstream A error {r.status_code}: {r.text}")
+        data = r.json() or {}
+        items = data.get("items") or data.get("rows") or []
+        options = [
+            {
+                "project_code": i.get("project_code") or i.get("code"),
+                "name": i.get("name") or i.get("project_name") or ""
+            }
+            for i in items
+            if (i.get("project_code") or i.get("code"))
+        ]
+        return {"options": options}
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=502, detail=f"Cannot reach Service A: {e}") from e
