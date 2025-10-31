@@ -123,9 +123,31 @@
         <li><a class="side-link" href="/thong-tin-khach-mua-ho-so"><i class="ri-send-plane-line"></i> 4.1 Khách mua hồ sơ</a></li>
         <li><a class="side-link" href="/thong-tin-khach-coc"><i class="ri-send-plane-2-line"></i> 4.2 Khách cọc</a></li>
 
-        <li class="side-title mt-4">5. Thủ tục hành chính</li>
-        <li><a class="side-link" href="/xuat-hoa-don"><i class="ri-bill-line"></i> 5.1 Xuất hoá đơn</a></li>
-        <li><a class="side-link" href="/tien-ich-khac"><i class="ri-function-line"></i> 5.2 Tiện ích khác</a></li>
+        <!-- === MỤC 5 MỚI: BÁO CÁO THỐNG KÊ === -->
+        <li class="side-title mt-4">5. Báo cáo thống kê</li>
+        <li>
+          <a class="side-link {% if request.url.path == '/reports' %}active{% endif %}" href="/reports">
+            <i class="ri-bar-chart-2-line"></i> 5.0 Tổng quan báo cáo
+          </a>
+        </li>
+        <li>
+          <a class="side-link {% if request.url.path.startswith('/reports/lots') %}active{% endif %}"
+             href="/reports/lots/eligible">
+            <i class="ri-community-line"></i> 5.1 Lô & điều kiện
+          </a>
+        </li>
+        <li>
+          <a class="side-link {% if request.url.path.startswith('/reports/customers') %}active{% endif %}"
+             href="/reports/customers/eligible-lots">
+            <i class="ri-team-line"></i> 5.2 Khách hàng & điều kiện
+          </a>
+        </li>
+        <li>
+          <a class="side-link {% if request.url.path.startswith('/reports/dossiers') %}active{% endif %}"
+             href="/reports/dossiers/paid/detail">
+            <i class="ri-file-list-2-line"></i> 5.3 Mua hồ sơ (chi tiết/tổng hợp)
+          </a>
+        </li>
 
         <li class="side-title mt-4">6. Thiết lập</li>
         <li>

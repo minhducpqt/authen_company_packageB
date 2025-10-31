@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Mua hồ sơ — {{ "Tổng hợp" if mode=="summary" else "Chi tiết" }}{% endblock %}
+{% block content %}
+{% set export_kind = "dossiers_paid" %}
+<form class="flex flex-col md:flex-row gap-3 items-stretch md:items-end mb-4">
+  <div>
+    <label class="block text-xs text-slate-500">Mã dự án</label>
+    <input name="project_code" value="{{ project_code or '' }}" class="input" placeholder="VD: KIDO2025">
+  </div>
+  <div class="md:w-72">
+    <label class="block text-xs text-slate-500">Tìm kiếm</label>
+    <input name="q" value="{{ q or '' }}" class="input" placeholder="Tên/CCCD/SĐT...">
+  </div>
+  <div class="flex gap-2">
+    <button class="btn-primary h-10 md:mt-6" type="submit"><i class="ri-search-line mr-1"></i> Lọc</button>
+    {% if mode == "summary" %}
+      <a class="btn-outline h-10 md:mt-6"
+         href="/api/reports/export/dossiers_paid_summary.xlsx?project_code={{ project_code }}&q={{ q }}">
+        <i class="ri-download-2-line mr-1"></i> Xuất XLSX (tổng hợp)
+      </a>
+    {% else %}
+      <a class="btn-outline h-10 md:mt-6"
+         href="/api/reports/export/dossiers_paid_detail.xlsx?project_code={{ project_code }}&q={{ q }}">
+        <i class="ri-download-2-line mr-1"></i> Xuất XLSX (chi tiết)
+      </a>
+    {% endif %}
+  </div>
+</form>
+
+{% if mode == "summary" %}
+  <div class="bg-white rounded-xl border p-4">
+    <div class="grid md:grid-cols-4 gap-4">
+      <div class="p-4 rounded-lg border">
+        <div class="text-slate-500 text-xs">Tổng lượt mua</div>
+        <div class="text-2xl font-semibold">{{ data.total_orders or 0 }}</div>
+      </div>
+      <div class="p-4 rounded-lg border">
+        <div class="text-slate-500 text-xs">Tổng tiền</div>
+        <div class="text-2xl font-semibold">{{ data.total_vnd or 0 | int }}</div>
+      </div>
+      <div class="p-4 rounded-lg border">
+        <div class="text-slate-500 text-xs">Số loại hồ sơ</div>
+        <div class="text-2xl font-semibold">{{ data.kinds or 0 }}</div>
+      </div>
+      <div class="p-4 rounded-lg border">
+        <div class="text-slate-500 text-xs">Tổng số lượng (theo loại)</div>
+        <div class="text-2xl font-semibold">{{ data.total_qty or 0 }}</div>
+      </div>
+    </div>
+
+    <div class="mt-6 border rounded-lg overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-50 text-slate-500">
+          <tr>
+            <th class="th">Loại hồ sơ</th>
+            <th class="th text-right">Số lượng</th>
+            <th class="th text-right">Thành tiền</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y">
+        {% for r in (data.by_kind or []) %}
+          <tr>
+            <td class="td">{{ r.kind }}</td>
+            <td class="td text-right">{{ r.qty }}</td>
+            <td class="td text-right">{{ r.amount_vnd | int }}</td>
+          </tr>
+        {% endfor %}
+        {% if not data.by_kind or data.by_kind|length == 0 %}
+          <tr><td class="td text-slate-400" colspan="3">Không có dữ liệu.</td></tr>
+        {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% else %}
+  <div class="border rounded-xl overflow-x-auto bg-white">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-50 text-slate-500">
+        <tr>
+          <th class="th">Thời gian</th>
+          <th class="th">Khách hàng</th>
+          <th class="th">CCCD</th>
+          <th class="th">SĐT</th>
+          <th class="th">Loại</th>
+          <th class="th text-right">Số lượng</th>
+          <th class="th text-right">Số tiền</th>
+          <th class="th">Mã đơn</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y">
+      {% for r in (data.rows or []) %}
+        <tr>
+          <td class="td">{{ r.paid_at }}</td>
+          <td class="td font-medium">{{ r.full_name }}</td>
+          <td class="td">{{ r.cccd }}</td>
+          <td class="td">{{ r.phone }}</td>
+          <td class="td">{{ r.kind }}</td>
+          <td class="td text-right">{{ r.qty }}</td>
+          <td class="td text-right">{{ r.amount_vnd | int }}</td>
+          <td class="td">{{ r.order_code }}</td>
+        </tr>
+      {% endfor %}
+      {% if not data.rows or data.rows|length == 0 %}
+        <tr><td class="td text-slate-400" colspan="8">Không có dữ liệu.</td></tr>
+      {% endif %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
+{% endblock %}

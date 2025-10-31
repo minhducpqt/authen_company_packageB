@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Khách hàng đủ điều kiện & các lô{% endblock %}
+{% block content %}
+{% set export_kind = "customers_eligible" %}
+{% include "reports/_toolbar.html" %}
+<div class="bg-white rounded-xl border">
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-50 text-slate-500">
+        <tr>
+          <th class="th">Khách hàng</th>
+          <th class="th">CCCD</th>
+          <th class="th">SĐT</th>
+          <th class="th">Email</th>
+          <th class="th">Các lô đủ ĐK</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y">
+      {% for row in (data.rows or []) %}
+        <tr>
+          <td class="td font-medium">{{ row.full_name }}</td>
+          <td class="td">{{ row.cccd }}</td>
+          <td class="td">{{ row.phone }}</td>
+          <td class="td">{{ row.email }}</td>
+          <td class="td">
+            {% if row.lots and row.lots|length>0 %}
+              <div class="flex flex-wrap gap-2">
+                {% for l in row.lots %}
+                <span class="px-2 py-1 rounded bg-slate-100 border">{{ l.project_code }} / {{ l.lot_code }}</span>
+                {% endfor %}
+              </div>
+            {% else %}<span class="text-slate-400">—</span>{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      {% if not data.rows or data.rows|length == 0 %}
+        <tr><td class="td text-slate-400" colspan="5">Không có dữ liệu.</td></tr>
+      {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
