@@ -1,14 +1,16 @@
 {# PARTIAL: include trong trang report #}
 <div class="mb-4 bg-white border rounded-xl p-4">
   <form id="filtersForm" class="flex flex-col md:flex-row gap-3 items-start md:items-end">
+    <!-- Chọn dự án -->
     <div class="flex-1">
       <label class="block text-xs text-slate-500 mb-1">Dự án</label>
-      <select id="projectSelect" name="project_code"
+      <select id="projectSelect" name="project"
               class="w-full rounded-lg border-slate-300 focus:ring-2 focus:ring-indigo-500">
         <option value="">— Tất cả dự án —</option>
       </select>
     </div>
 
+    <!-- Ô tìm kiếm -->
     <div class="flex-1">
       <label class="block text-xs text-slate-500 mb-1">Tìm kiếm</label>
       <input id="qInput" name="q" type="text" placeholder="Tên, CCCD, SĐT, mã lô..."
@@ -16,6 +18,7 @@
              value="{{ init_q or '' }}">
     </div>
 
+    <!-- Action buttons -->
     <div class="flex items-center gap-2">
       <button type="submit"
               class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
@@ -26,6 +29,7 @@
               class="px-3 py-2 rounded-lg border border-slate-300 hover:bg-slate-50">
         Export CSV
       </button>
+
       <button type="button" id="btnExportXlsx"
               class="px-3 py-2 rounded-lg border border-slate-300 hover:bg-slate-50">
         Export XLSX
@@ -41,43 +45,48 @@
     const qEl = document.getElementById('qInput');
     const formEl = document.getElementById('filtersForm');
 
-    // Load project options from Service B proxy -> Service A
+    // --- Load project options ---
     fetch(`/api/projects/options`)
       .then(r => r.json())
-      .then(({options}) => {
+      .then(({ options }) => {
         if (!Array.isArray(options)) return;
         for (const o of options) {
           const op = document.createElement('option');
-          op.value = o.project_code || o.code || o.id;
-          op.textContent = `${o.project_code || o.code} — ${o.name || ''}`;
-          if (initProject && op.value === initProject) op.selected = true;
+          const code = o.project_code || o.code || o.id || '';
+          op.value = code;
+          op.textContent = `${code} — ${o.name || ''}`;
+          if (initProject && code === initProject) op.selected = true;
           selectEl.appendChild(op);
         }
-      }).catch(()=>{});
+      })
+      .catch(() => {});
 
-    // Submit filters by GET to giữ URL shareable
+    // --- Submit filters (GET, giữ URL shareable) ---
     formEl.addEventListener('submit', function (e) {
       e.preventDefault();
       const url = new URL(window.location.href);
-      const pc = selectEl.value || '';
+      const project = selectEl.value || '';
       const q = qEl.value || '';
-      if (pc) url.searchParams.set('project_code', pc); else url.searchParams.delete('project_code');
+      if (project) url.searchParams.set('project', project); else url.searchParams.delete('project');
       if (q) url.searchParams.set('q', q); else url.searchParams.delete('q');
       window.location.href = url.toString();
     });
 
+    // --- Export CSV/XLSX ---
     function doExport(fmt) {
       const url = new URL(`/reports/export`, window.location.origin);
       url.searchParams.set('kind', "{{ export_kind }}");
-      const pc = selectEl.value || "{{ init_project_code or '' }}";
+      const project = selectEl.value || "{{ init_project_code or '' }}";
       const q = qEl.value || "{{ init_q or '' }}";
-      if (pc) url.searchParams.set('project_code', pc);
+      if (project) url.searchParams.set('project', project);  // <-- chuẩn khớp với Service A
       if (q) url.searchParams.set('q', q);
-      url.searchParams.set('fmt', fmt);        // csv | xlsx
+      url.searchParams.set('fmt', fmt); // csv | xlsx
       window.location.href = url.toString();
     }
 
-    document.getElementById('btnExportCsv').addEventListener('click', () => doExport('csv'));
-    document.getElementById('btnExportXlsx').addEventListener('click', () => doExport('xlsx'));
+    document.getElementById('btnExportCsv')
+      .addEventListener('click', () => doExport('csv'));
+    document.getElementById('btnExportXlsx')
+      .addEventListener('click', () => doExport('xlsx'));
   })();
 </script>
