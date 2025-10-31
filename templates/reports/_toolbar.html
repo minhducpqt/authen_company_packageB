@@ -57,13 +57,21 @@
       .then(r => r.json())
       .then(({ options }) => {
         if (!Array.isArray(options)) return;
+        let firstActive = null;
         for (const o of options) {
-          const op = document.createElement('option');
           const code = o.project_code || o.code || o.id || '';
+          const op = document.createElement('option');
           op.value = code;
           op.textContent = `${code} — ${o.name || ''}`;
-          if (initProject && code === initProject) op.selected = true;
+          if (o.status === 'ACTIVE' && !firstActive) firstActive = code;
           selectEl.appendChild(op);
+        }
+        // ✅ Tự động chọn nếu chưa có init_project
+        if (!initProject && firstActive) {
+          selectEl.value = firstActive;
+          console.log('Auto-selected project:', firstActive);
+        } else if (initProject) {
+          selectEl.value = initProject;
         }
       })
       .catch(err => console.warn('Project list load error:', err));
