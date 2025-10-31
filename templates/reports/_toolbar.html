@@ -1,33 +1,83 @@
-{% extends "base.html" %}
-{% block title %}Báo cáo thống kê{% endblock %}
-{% block content %}
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-  <a href="/reports/lots/eligible" class="block p-5 rounded-xl border bg-white hover:shadow">
-    <div class="text-slate-500 text-sm">5.1</div>
-    <div class="mt-1 font-semibold text-slate-800">Lô đủ điều kiện</div>
-    <p class="text-slate-500 text-sm mt-1">Danh sách lô đủ ĐK + khách đã đặt cọc từng lô.</p>
-  </a>
-  <a href="/reports/lots/ineligible" class="block p-5 rounded-xl border bg-white hover:shadow">
-    <div class="text-slate-500 text-sm">5.1</div>
-    <div class="mt-1 font-semibold text-slate-800">Lô KHÔNG đủ điều kiện</div>
-    <p class="text-slate-500 text-sm mt-1">Lý do không đủ ĐK.</p>
-  </a>
-  <a href="/reports/customers/eligible-lots" class="block p-5 rounded-xl border bg-white hover:shadow">
-    <div class="text-slate-500 text-sm">5.2</div>
-    <div class="mt-1 font-semibold text-slate-800">Khách hàng đủ điều kiện</div>
-    <p class="text-slate-500 text-sm mt-1">Kèm các lô khách đủ ĐK tham gia.</p>
-  </a>
-  <a href="/reports/customers/ineligible-lots" class="block p-5 rounded-xl border bg-white hover:shadow">
-    <div class="text-slate-500 text-sm">5.2</div>
-    <div class="mt-1 font-semibold text-slate-800">Khách hàng KHÔNG đủ điều kiện</div>
-  </a>
-  <a href="/reports/dossiers/paid/detail" class="block p-5 rounded-xl border bg-white hover:shadow">
-    <div class="text-slate-500 text-sm">5.3</div>
-    <div class="mt-1 font-semibold text-slate-800">Mua hồ sơ — Chi tiết</div>
-  </a>
-  <a href="/reports/dossiers/paid/summary" class="block p-5 rounded-xl border bg-white hover:shadow">
-    <div class="text-slate-500 text-sm">5.3</div>
-    <div class="mt-1 font-semibold text-slate-800">Mua hồ sơ — Tổng hợp</div>
-  </a>
+{# PARTIAL: include trong trang report #}
+<div class="mb-4 bg-white border rounded-xl p-4">
+  <form id="filtersForm" class="flex flex-col md:flex-row gap-3 items-start md:items-end">
+    <div class="flex-1">
+      <label class="block text-xs text-slate-500 mb-1">Dự án</label>
+      <select id="projectSelect" name="project_code"
+              class="w-full rounded-lg border-slate-300 focus:ring-2 focus:ring-indigo-500">
+        <option value="">— Tất cả dự án —</option>
+      </select>
+    </div>
+
+    <div class="flex-1">
+      <label class="block text-xs text-slate-500 mb-1">Tìm kiếm</label>
+      <input id="qInput" name="q" type="text" placeholder="Tên, CCCD, SĐT, mã lô..."
+             class="w-full rounded-lg border-slate-300 focus:ring-2 focus:ring-indigo-500"
+             value="{{ init_q or '' }}">
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button type="submit"
+              class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
+        Áp dụng
+      </button>
+
+      <button type="button" id="btnExportCsv"
+              class="px-3 py-2 rounded-lg border border-slate-300 hover:bg-slate-50">
+        Export CSV
+      </button>
+      <button type="button" id="btnExportXlsx"
+              class="px-3 py-2 rounded-lg border border-slate-300 hover:bg-slate-50">
+        Export XLSX
+      </button>
+    </div>
+  </form>
 </div>
-{% endblock %}
+
+<script>
+  (function () {
+    const initProject = "{{ init_project_code or '' }}";
+    const selectEl = document.getElementById('projectSelect');
+    const qEl = document.getElementById('qInput');
+    const formEl = document.getElementById('filtersForm');
+
+    // Load project options from Service B proxy -> Service A
+    fetch(`/api/projects/options`)
+      .then(r => r.json())
+      .then(({options}) => {
+        if (!Array.isArray(options)) return;
+        for (const o of options) {
+          const op = document.createElement('option');
+          op.value = o.project_code || o.code || o.id;
+          op.textContent = `${o.project_code || o.code} — ${o.name || ''}`;
+          if (initProject && op.value === initProject) op.selected = true;
+          selectEl.appendChild(op);
+        }
+      }).catch(()=>{});
+
+    // Submit filters by GET to giữ URL shareable
+    formEl.addEventListener('submit', function (e) {
+      e.preventDefault();
+      const url = new URL(window.location.href);
+      const pc = selectEl.value || '';
+      const q = qEl.value || '';
+      if (pc) url.searchParams.set('project_code', pc); else url.searchParams.delete('project_code');
+      if (q) url.searchParams.set('q', q); else url.searchParams.delete('q');
+      window.location.href = url.toString();
+    });
+
+    function doExport(fmt) {
+      const url = new URL(`/reports/export`, window.location.origin);
+      url.searchParams.set('kind', "{{ export_kind }}");
+      const pc = selectEl.value || "{{ init_project_code or '' }}";
+      const q = qEl.value || "{{ init_q or '' }}";
+      if (pc) url.searchParams.set('project_code', pc);
+      if (q) url.searchParams.set('q', q);
+      url.searchParams.set('fmt', fmt);        // csv | xlsx
+      window.location.href = url.toString();
+    }
+
+    document.getElementById('btnExportCsv').addEventListener('click', () => doExport('csv'));
+    document.getElementById('btnExportXlsx').addEventListener('click', () => doExport('xlsx'));
+  })();
+</script>

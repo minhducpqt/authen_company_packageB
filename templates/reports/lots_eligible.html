@@ -1,8 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Lô đủ điều kiện{% endblock %}
+
 {% block content %}
 {% set export_kind = "lots_eligible" %}
 {% include "reports/_toolbar.html" %}
+
 <div class="bg-white rounded-xl border">
   <div class="overflow-x-auto">
     <table class="min-w-full text-sm">
@@ -20,14 +22,14 @@
         <tr>
           <td class="td">{{ row.project_code }}</td>
           <td class="td font-medium">{{ row.lot_code }}</td>
-          <td class="td text-right">{{ row.starting_price_vnd | default(0) | int }}</td>
+          <td class="td text-right">{{ (row.starting_price_vnd or 0) | int }}</td>
           <td class="td">{{ row.eligibility_status }}</td>
           <td class="td">
             {% if row.deposited_customers and row.deposited_customers|length > 0 %}
               <ul class="list-disc ml-5">
-              {% for c in row.deposited_customers %}
-                <li>{{ c.full_name }} — {{ c.phone }} ({{ c.deposit_paid_vnd | int }})</li>
-              {% endfor %}
+                {% for c in row.deposited_customers %}
+                  <li>{{ c.full_name }} — {{ c.phone }} ({{ (c.deposit_paid_vnd or 0) | int }})</li>
+                {% endfor %}
               </ul>
             {% else %}
               <span class="text-slate-400">—</span>

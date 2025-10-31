@@ -1,8 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Khách hàng đủ điều kiện & các lô{% endblock %}
+
 {% block content %}
 {% set export_kind = "customers_eligible" %}
 {% include "reports/_toolbar.html" %}
+
 <div class="bg-white rounded-xl border">
   <div class="overflow-x-auto">
     <table class="min-w-full text-sm">
@@ -26,10 +28,14 @@
             {% if row.lots and row.lots|length>0 %}
               <div class="flex flex-wrap gap-2">
                 {% for l in row.lots %}
-                <span class="px-2 py-1 rounded bg-slate-100 border">{{ l.project_code }} / {{ l.lot_code }}</span>
+                  <span class="px-2 py-1 rounded bg-slate-100 border">
+                    {{ l.project_code }} / {{ l.lot_code }}
+                  </span>
                 {% endfor %}
               </div>
-            {% else %}<span class="text-slate-400">—</span>{% endif %}
+            {% else %}
+              <span class="text-slate-400">—</span>
+            {% endif %}
           </td>
         </tr>
       {% endfor %}
