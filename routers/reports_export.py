@@ -1,126 +1,136 @@
 # routers/reports_export.py
 from __future__ import annotations
-import os, io, csv, httpx, datetime as dt, urllib.parse
-from typing import Dict, Any, List, Optional
+import os, base64, json
+from typing import Optional, Dict, Any
+
+import httpx
 from fastapi import APIRouter, Request, Query
-from fastapi.responses import StreamingResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import StreamingResponse, JSONResponse, RedirectResponse
+
 from utils.auth import get_access_token
 
-router = APIRouter(prefix="/reports", tags=["reports"])
+router = APIRouter(prefix="/reports", tags=["Reports"])
+
 SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 
-# kind -> (path_on_A, csv_default_field_order)
-KIND_MAP: dict[str, tuple[str, List[str]]] = {
-    # 5.1 Lô
-    "lots_eligible":   ("/api/v1/reports/lot-deposits/eligible",
-                        ["company_code","project_code","lot_code","starting_price_vnd","deposit_vnd","total_customers","customer_names","customer_cccds"]),
-    "lots_ineligible": ("/api/v1/reports/lot-deposits/not-eligible",
-                        ["company_code","project_code","lot_code","reason","total_customers","customer_names","customer_cccds"]),
-    # 5.2 Khách hàng
-    "customers_eligible":   ("/api/v1/reports/customers/eligible-lots",
-                             ["customer_id","full_name","cccd","project_code","eligible_lots","eligible_count"]),
-    "customers_ineligible": ("/api/v1/reports/customers/not-eligible-lots",
-                             ["customer_id","full_name","cccd","project_code","not_eligible_lots","not_eligible_count","reason"]),
-    # 5.3 Mua hồ sơ
-    "dossiers_paid_detail":  ("/api/v1/reports/dossiers/paid/detail",
-                              ["company_code","project_code","order_code","paid_at","full_name","cccd","dossier_label","qty","unit_price_vnd","line_total_vnd"]),
-    "dossiers_paid_summary": ("/api/v1/reports/dossiers/paid/summary-customer",
-                              ["customer_id","full_name","cccd","total_qty","total_amount","type_breakdown"]),
-    # optional: tổng hợp theo loại
-    "dossiers_paid_totals_by_type": ("/api/v1/reports/dossiers/paid/totals-by-type",
-                                     ["dossier_label","total_qty","total_amount"]),
-}
 
-def _unauth():
-    return JSONResponse({"error": "unauthorized"}, status_code=401)
+# === Helpers ======================================================
+def _log(msg: str):
+    print(f"[REPORTS_EXPORT] {msg}")
 
-def _filename(kind: str, project: Optional[str], ext: str) -> str:
-    pc = (project or "all").replace("/", "-")
-    ts = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
-    return f"{kind}_{pc}_{ts}.{ext}"
+def _b64url_decode(data: str) -> bytes:
+    data += "=" * ((4 - len(data) % 4) % 4)
+    return base64.urlsafe_b64decode(data.encode("utf-8"))
 
+def _company_from_jwt(token: str | None) -> str | None:
+    if not token or token.count(".") != 2:
+        return None
+    try:
+        payload_b = _b64url_decode(token.split(".")[1])
+        payload = json.loads(payload_b.decode("utf-8"))
+        cc = payload.get("company_code") or payload.get("companyCode")
+        return (cc or "").strip() or None
+    except Exception:
+        return None
+
+def _build_target(kind: str) -> Optional[str]:
+    mapping = {
+        "lots_eligible":       f"{SERVICE_A_BASE_URL}/api/v1/reports/lot-deposits/eligible",
+        "lots_ineligible":     f"{SERVICE_A_BASE_URL}/api/v1/reports/lot-deposits/not-eligible",
+        "customers_eligible":  f"{SERVICE_A_BASE_URL}/api/v1/reports/customers/eligible-lots",
+        "customers_ineligible":f"{SERVICE_A_BASE_URL}/api/v1/reports/customers/not-eligible-lots",
+        "dossier_detail":      f"{SERVICE_A_BASE_URL}/api/v1/reports/dossiers/paid/detail",
+        "dossier_summary":     f"{SERVICE_A_BASE_URL}/api/v1/reports/dossiers/paid/summary-customer",
+        "dossier_totals_by_type": f"{SERVICE_A_BASE_URL}/api/v1/reports/dossiers/paid/totals-by-type",
+    }
+    return mapping.get(kind)
+
+def _content_type_for(fmt: str) -> str:
+    if fmt.lower() == "xlsx":
+        return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    if fmt.lower() == "csv":
+        return "text/csv; charset=utf-8"
+    return "application/octet-stream"
+
+
+# === Main endpoint ================================================
 @router.get("/export")
 async def export_report(
     request: Request,
-    kind: str = Query(..., description="lots_eligible|lots_ineligible|customers_eligible|customers_ineligible|dossiers_paid_detail|dossiers_paid_summary|dossiers_paid_totals_by_type"),
-    fmt: str = Query("xlsx", pattern="^(xlsx|csv)$"),
-    # Lưu ý: Service A dùng 'project' (không phải project_code). Hỗ trợ cả 2 để tương thích.
-    project: Optional[str] = Query(None),
+    kind: str = Query(..., description="Report kind (lots_eligible, dossier_summary, ...)"),
+    project: Optional[str] = Query(None, description="Project code"),
     project_code: Optional[str] = Query(None),
     q: Optional[str] = Query(None),
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
+    fmt: str = Query("xlsx"),
 ):
-    access = get_access_token(request)
-    if not access:
-        return _unauth()
+    """Proxy xuất báo cáo từ Service A về frontend (XLSX / CSV)."""
+    _log(f"BEGIN export_report kind={kind} fmt={fmt} project={project or project_code}")
 
-    if kind not in KIND_MAP:
-        return JSONResponse({"error": "invalid_kind", "supported": list(KIND_MAP)}, status_code=400)
+    # 1️⃣ Token
+    token = get_access_token(request)
+    if not token:
+        _log("⚠️  No token -> redirect to login")
+        return RedirectResponse(url=f"/login?next={request.url}", status_code=303)
 
-    path_a, csv_order = KIND_MAP[kind]
-    params: Dict[str, Any] = {}
+    company_code = _company_from_jwt(token)
+    if not company_code:
+        return JSONResponse({"error": "missing_company_code"}, status_code=400)
 
-    # Chuẩn hoá tham số 'project'
+    # 2️⃣ Xác định endpoint bên A
+    target = _build_target(kind)
+    if not target:
+        return JSONResponse({"error": "unsupported_kind", "kind": kind}, status_code=400)
+
+    # 3️⃣ Chuẩn hóa project
     proj = project or project_code
-    if proj:
-        params["project"] = proj
+    if not proj:
+        _log("❌ Missing project param → cannot call Service A")
+        return JSONResponse({"error": "missing_project_param"}, status_code=422)
+
+    # 4️⃣ Gói params
+    params: Dict[str, Any] = {"format": fmt, "project": proj}
     if q: params["q"] = q
     if date_from: params["date_from"] = date_from
     if date_to: params["date_to"] = date_to
 
-    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=120.0) as client:
-        # --- XLSX: proxy stream từ A ---
-        if fmt == "xlsx":
-            params["format"] = "xlsx"  # Service A nhận 'format'
-            try:
-                r = await client.get(path_a, params=params, headers={"Authorization": f"Bearer {access}"})
-            except Exception as e:
-                return JSONResponse({"error": "service_a_unreachable", "detail": str(e)}, status_code=502)
-            if r.status_code != 200:
-                # trả lỗi để biết rõ lý do
-                body = None
-                try:
-                    body = r.json()
-                except Exception:
-                    body = {"detail": r.text[:500]}
-                return JSONResponse({"error": "service_a_failed", "status": r.status_code, "body": body}, status_code=502)
+    _log(f"→ target={target}")
+    _log(f"→ params={params}")
 
-            filename = _filename(kind, proj, "xlsx")
-            dispo = f'attachment; filename="{urllib.parse.quote(filename)}"'
-            return StreamingResponse(
-                r.aiter_raw(),
-                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                headers={"Content-Disposition": dispo},
-            )
+    # 5️⃣ Headers
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "X-Company-Code": company_code,
+    }
 
-        # --- CSV: B gọi A lấy JSON rồi tự kết xuất CSV ---
+    # 6️⃣ Call Service A
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            resp = await client.get(target, params=params, headers=headers)
+    except Exception as e:
+        _log(f"❌ Service A unreachable: {e}")
+        return JSONResponse({"error": "service_a_unreachable", "detail": str(e)}, status_code=502)
+
+    # 7️⃣ Handle lỗi
+    if resp.status_code != 200:
         try:
-            r = await client.get(path_a, params=params, headers={"Authorization": f"Bearer {access}"})
-        except Exception as e:
-            return JSONResponse({"error": "service_a_unreachable", "detail": str(e)}, status_code=502)
+            body = resp.json()
+        except Exception:
+            body = {"detail": resp.text[:300]}
+        _log(f"❌ Service A error {resp.status_code}: {body}")
+        return JSONResponse(
+            {"error": "service_a_failed", "status": resp.status_code, "body": body},
+            status_code=resp.status_code,
+        )
 
-        if r.status_code != 200:
-            body = None
-            try:
-                body = r.json()
-            except Exception:
-                body = {"detail": r.text[:500]}
-            return JSONResponse({"error": "service_a_failed", "status": r.status_code, "body": body}, status_code=502)
+    # 8️⃣ Stream file về browser
+    dispo = resp.headers.get("content-disposition") or f'attachment; filename="{kind}.{fmt}"'
+    ctype = resp.headers.get("content-type") or _content_type_for(fmt)
+    _log(f"✅ OK → streaming {ctype} ({dispo})")
 
-        data = r.json() if r.headers.get("content-type","").startswith("application/json") else {}
-        items: List[Dict[str, Any]] = data.get("items") or data.get("rows") or []
-
-        # Build CSV
-        # Ưu tiên field order được định nghĩa; nếu field thiếu/thừa sẽ tự mở rộng
-        fieldnames = list(dict.fromkeys([*csv_order, *([k for it in items for k in it.keys()])]))
-        buf = io.StringIO()
-        w = csv.DictWriter(buf, fieldnames=fieldnames, extrasaction="ignore")
-        w.writeheader()
-        for it in items:
-            w.writerow(it)
-        buf.seek(0)
-
-        filename = _filename(kind, proj, "csv")
-        dispo = f'attachment; filename="{urllib.parse.quote(filename)}"'
-        return StreamingResponse(iter([buf.getvalue()]), media_type="text/csv", headers={"Content-Disposition": dispo})
+    return StreamingResponse(
+        resp.aiter_bytes(),
+        media_type=ctype,
+        headers={"Content-Disposition": dispo},
+    )
