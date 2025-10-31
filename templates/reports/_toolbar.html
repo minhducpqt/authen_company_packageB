@@ -1,13 +1,11 @@
-{# PARTIAL: include trong trang report #}
+{# templates/reports/_toolbar.html #}
 <div class="mb-4 bg-white border rounded-xl p-4 shadow-sm">
   <form id="filtersForm"
         class="flex flex-col md:flex-row gap-3 items-start md:items-end">
 
     <!-- Chọn dự án -->
     <div class="flex-1 min-w-[200px]">
-      <label class="block text-xs text-slate-500 mb-1 font-semibold">
-        Dự án
-      </label>
+      <label class="block text-xs text-slate-500 mb-1 font-semibold">Dự án</label>
       <select id="projectSelect" name="project"
               class="w-full rounded-lg border-slate-300 focus:ring-2 focus:ring-indigo-500">
         <option value="">— Tất cả dự án —</option>
@@ -16,94 +14,76 @@
 
     <!-- Ô tìm kiếm -->
     <div class="flex-1 min-w-[200px]">
-      <label class="block text-xs text-slate-500 mb-1 font-semibold">
-        Tìm kiếm
-      </label>
+      <label class="block text-xs text-slate-500 mb-1 font-semibold">Tìm kiếm</label>
       <input id="qInput" name="q" type="text"
              placeholder="Tên, CCCD, SĐT, mã lô..."
              class="w-full rounded-lg border-slate-300 focus:ring-2 focus:ring-indigo-500"
              value="{{ init_q or '' }}">
     </div>
 
-    <!-- Action buttons -->
+    <!-- Nút -->
     <div class="flex flex-wrap items-center gap-2">
       <button type="submit"
-              class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 shadow">
-        Áp dụng
-      </button>
-
+              class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 shadow">Áp dụng</button>
       <button type="button" id="btnExportCsv"
-              class="px-3 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50">
-        Export CSV
-      </button>
-
+              class="px-3 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50">Export CSV</button>
       <button type="button" id="btnExportXlsx"
-              class="px-3 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50">
-        Export XLSX
-      </button>
+              class="px-3 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50">Export XLSX</button>
     </div>
   </form>
 </div>
 
 <script>
-  (function () {
-    const initProject = "{{ init_project_code or '' }}";
-    const selectEl = document.getElementById('projectSelect');
-    const qEl = document.getElementById('qInput');
-    const formEl = document.getElementById('filtersForm');
+(function () {
+  const initProject = "{{ init_project_code or '' }}";
+  const selectEl = document.getElementById('projectSelect');
+  const qEl = document.getElementById('qInput');
+  const formEl = document.getElementById('filtersForm');
 
-    // --- Load danh sách dự án ---
-    fetch(`/api/projects/options`)
-      .then(r => r.json())
-      .then(({ options }) => {
-        if (!Array.isArray(options)) return;
-        let firstActive = null;
-        for (const o of options) {
-          const code = o.project_code || o.code || o.id || '';
-          const op = document.createElement('option');
-          op.value = code;
-          op.textContent = `${code} — ${o.name || ''}`;
-          if (o.status === 'ACTIVE' && !firstActive) firstActive = code;
-          selectEl.appendChild(op);
-        }
-        // ✅ Tự động chọn nếu chưa có init_project
-        if (!initProject && firstActive) {
-          selectEl.value = firstActive;
-          console.log('Auto-selected project:', firstActive);
-        } else if (initProject) {
-          selectEl.value = initProject;
-        }
-      })
-      .catch(err => console.warn('Project list load error:', err));
+  // 🔹 Lấy danh sách dự án ACTIVE từ Service B (server side đã gọi A)
+  fetch('/api/projects/options')
+    .then(r => r.ok ? r.json() : Promise.reject(r))
+    .then(({ options }) => {
+      if (!Array.isArray(options)) return;
+      let firstActive = null;
+      for (const o of options) {
+        const code = o.project_code || o.code || o.id || '';
+        if (!code) continue;
+        const op = document.createElement('option');
+        op.value = code;
+        op.textContent = `${code} — ${o.name || ''}`;
+        selectEl.appendChild(op);
+        if (!firstActive) firstActive = code; // đã lọc ACTIVE nên phần tử đầu là active
+      }
+      // ✅ Auto-select nếu URL chưa có project
+      if (!initProject && firstActive) selectEl.value = firstActive;
+      else if (initProject) selectEl.value = initProject;
+    })
+    .catch(err => console.warn('Project options load error:', err));
 
-    // --- Submit filters (GET, giữ URL shareable) ---
-    formEl.addEventListener('submit', function (e) {
-      e.preventDefault();
-      const url = new URL(window.location.href);
-      const project = selectEl.value || '';
-      const q = qEl.value || '';
-      if (project) url.searchParams.set('project', project);
-      else url.searchParams.delete('project');
-      if (q) url.searchParams.set('q', q);
-      else url.searchParams.delete('q');
-      window.location.href = url.toString();
-    });
+  // Submit filters (GET, giữ URL shareable)
+  formEl.addEventListener('submit', function (e) {
+    e.preventDefault();
+    const u = new URL(window.location.href);
+    const project = selectEl.value || '';
+    const q = qEl.value || '';
+    if (project) u.searchParams.set('project', project); else u.searchParams.delete('project');
+    if (q) u.searchParams.set('q', q); else u.searchParams.delete('q');
+    window.location.href = u.toString();
+  });
 
-    // --- Export CSV/XLSX ---
-    function doExport(fmt) {
-      const url = new URL(`/reports/export`, window.location.origin);
-      url.searchParams.set('kind', "{{ export_kind }}");
-      const project = selectEl.value || "{{ init_project_code or '' }}";
-      const q = qEl.value || "{{ init_q or '' }}";
-      if (project) url.searchParams.set('project', project); // ✅ chuẩn khớp với Service A
-      if (q) url.searchParams.set('q', q);
-      url.searchParams.set('fmt', fmt); // csv | xlsx
-      window.location.href = url.toString();
-    }
-
-    document.getElementById('btnExportCsv')
-      .addEventListener('click', () => doExport('csv'));
-    document.getElementById('btnExportXlsx')
-      .addEventListener('click', () => doExport('xlsx'));
-  })();
+  // Export
+  function doExport(fmt) {
+    const u = new URL('/reports/export', window.location.origin);
+    u.searchParams.set('kind', "{{ export_kind }}");
+    const project = selectEl.value || "{{ init_project_code or '' }}";
+    const q = qEl.value || "{{ init_q or '' }}";
+    if (project) u.searchParams.set('project', project);
+    if (q) u.searchParams.set('q', q);
+    u.searchParams.set('fmt', fmt);
+    window.location.href = u.toString();
+  }
+  document.getElementById('btnExportCsv').addEventListener('click', () => doExport('csv'));
+  document.getElementById('btnExportXlsx').addEventListener('click', () => doExport('xlsx'));
+})();
 </script>

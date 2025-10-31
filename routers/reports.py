@@ -8,7 +8,7 @@ from fastapi import APIRouter, Request, Query
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from utils.templates import templates
-from utils.auth import get_access_token
+from utils.auth import get_access_token, fetch_me  # <-- dùng fetch_me để lấy company_code
 
 router = APIRouter(tags=["reports"])
 SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
@@ -43,7 +43,7 @@ async def reports_home(request: Request):
 @router.get("/reports/lots/eligible", response_class=HTMLResponse)
 async def lots_eligible_page(
     request: Request,
-    project_code: Optional[str] = Query(None),
+    project: Optional[str] = Query(None, alias="project_code"),
     page: int = Query(1, ge=1),
     size: int = Query(100, ge=10, le=1000),
     q: Optional[str] = Query(None),
@@ -52,16 +52,16 @@ async def lots_eligible_page(
     if not token:
         return RedirectResponse(url="/login?next=%2Freports%2Flots%2Feligible", status_code=303)
     params: Dict[str, Any] = {"page": page, "size": size}
-    if project_code: params["project_code"] = project_code
+    if project: params["project"] = project
     if q: params["q"] = q
-    st, data = await _get_json("/api/v1/reports/lots/eligible", token, params)
+    st, data = await _get_json("/api/v1/reports/lot-deposits/eligible", token, params)
     return templates.TemplateResponse(
         "reports/lots_eligible.html",
         {
             "request": request, "title": "Lô đủ điều kiện",
             "data": data if st == 200 else {"error": data},
-            "project_code": project_code or "",
-            "q": q or "",
+            "init_project_code": project or "",
+            "init_q": q or "",
             "page": page, "size": size,
         },
         status_code=200 if st == 200 else 502,
@@ -70,7 +70,7 @@ async def lots_eligible_page(
 @router.get("/reports/lots/ineligible", response_class=HTMLResponse)
 async def lots_ineligible_page(
     request: Request,
-    project_code: Optional[str] = Query(None),
+    project: Optional[str] = Query(None, alias="project_code"),
     page: int = Query(1, ge=1),
     size: int = Query(100, ge=10, le=1000),
     q: Optional[str] = Query(None),
@@ -79,16 +79,16 @@ async def lots_ineligible_page(
     if not token:
         return RedirectResponse(url="/login?next=%2Freports%2Flots%2Fineligible", status_code=303)
     params: Dict[str, Any] = {"page": page, "size": size}
-    if project_code: params["project_code"] = project_code
+    if project: params["project"] = project
     if q: params["q"] = q
-    st, data = await _get_json("/api/v1/reports/lots/ineligible", token, params)
+    st, data = await _get_json("/api/v1/reports/lot-deposits/not-eligible", token, params)
     return templates.TemplateResponse(
         "reports/lots_ineligible.html",
         {
             "request": request, "title": "Lô KHÔNG đủ điều kiện",
             "data": data if st == 200 else {"error": data},
-            "project_code": project_code or "",
-            "q": q or "",
+            "init_project_code": project or "",
+            "init_q": q or "",
             "page": page, "size": size,
         },
         status_code=200 if st == 200 else 502,
@@ -99,7 +99,7 @@ async def lots_ineligible_page(
 @router.get("/reports/customers/eligible-lots", response_class=HTMLResponse)
 async def customers_eligible_lots_page(
     request: Request,
-    project_code: Optional[str] = Query(None),
+    project: Optional[str] = Query(None, alias="project_code"),
     page: int = Query(1, ge=1),
     size: int = Query(100, ge=10, le=1000),
     q: Optional[str] = Query(None),
@@ -108,16 +108,16 @@ async def customers_eligible_lots_page(
     if not token:
         return RedirectResponse(url="/login?next=%2Freports%2Fcustomers%2Feligible-lots", status_code=303)
     params: Dict[str, Any] = {"page": page, "size": size}
-    if project_code: params["project_code"] = project_code
+    if project: params["project"] = project
     if q: params["q"] = q
-    st, data = await _get_json("/api/v1/reports/customers/eligible", token, params)
+    st, data = await _get_json("/api/v1/reports/customers/eligible-lots", token, params)
     return templates.TemplateResponse(
         "reports/customers_eligible.html",
         {
             "request": request, "title": "Khách hàng đủ điều kiện & các lô liên quan",
             "data": data if st == 200 else {"error": data},
-            "project_code": project_code or "",
-            "q": q or "",
+            "init_project_code": project or "",
+            "init_q": q or "",
             "page": page, "size": size,
         },
         status_code=200 if st == 200 else 502,
@@ -126,7 +126,7 @@ async def customers_eligible_lots_page(
 @router.get("/reports/customers/ineligible-lots", response_class=HTMLResponse)
 async def customers_ineligible_lots_page(
     request: Request,
-    project_code: Optional[str] = Query(None),
+    project: Optional[str] = Query(None, alias="project_code"),
     page: int = Query(1, ge=1),
     size: int = Query(100, ge=10, le=1000),
     q: Optional[str] = Query(None),
@@ -135,27 +135,27 @@ async def customers_ineligible_lots_page(
     if not token:
         return RedirectResponse(url="/login?next=%2Freports%2Fcustomers%2Fineligible-lots", status_code=303)
     params: Dict[str, Any] = {"page": page, "size": size}
-    if project_code: params["project_code"] = project_code
+    if project: params["project"] = project
     if q: params["q"] = q
-    st, data = await _get_json("/api/v1/reports/customers/ineligible", token, params)
+    st, data = await _get_json("/api/v1/reports/customers/not-eligible-lots", token, params)
     return templates.TemplateResponse(
         "reports/customers_ineligible.html",
         {
             "request": request, "title": "Khách hàng KHÔNG đủ điều kiện & các lô liên quan",
             "data": data if st == 200 else {"error": data},
-            "project_code": project_code or "",
-            "q": q or "",
+            "init_project_code": project or "",
+            "init_q": q or "",
             "page": page, "size": size,
         },
         status_code=200 if st == 200 else 502,
     )
 
 
-# ---------- 5.3 Mua hồ sơ (chi tiết/tổng hợp) ----------
+# ---------- 5.3 Mua hồ sơ ----------
 @router.get("/reports/dossiers/paid/detail", response_class=HTMLResponse)
 async def dossiers_paid_detail_page(
     request: Request,
-    project_code: Optional[str] = Query(None),
+    project: Optional[str] = Query(None, alias="project_code"),
     page: int = Query(1, ge=1),
     size: int = Query(100, ge=10, le=1000),
     q: Optional[str] = Query(None),
@@ -164,7 +164,7 @@ async def dossiers_paid_detail_page(
     if not token:
         return RedirectResponse(url="/login?next=%2Freports%2Fdossiers%2Fpaid%2Fdetail", status_code=303)
     params: Dict[str, Any] = {"page": page, "size": size}
-    if project_code: params["project_code"] = project_code
+    if project: params["project"] = project
     if q: params["q"] = q
     st, data = await _get_json("/api/v1/reports/dossiers/paid/detail", token, params)
     return templates.TemplateResponse(
@@ -173,8 +173,8 @@ async def dossiers_paid_detail_page(
             "request": request, "title": "Mua hồ sơ — chi tiết",
             "mode": "detail",
             "data": data if st == 200 else {"error": data},
-            "project_code": project_code or "",
-            "q": q or "",
+            "init_project_code": project or "",
+            "init_q": q or "",
             "page": page, "size": size,
         },
         status_code=200 if st == 200 else 502,
@@ -183,62 +183,71 @@ async def dossiers_paid_detail_page(
 @router.get("/reports/dossiers/paid/summary", response_class=HTMLResponse)
 async def dossiers_paid_summary_page(
     request: Request,
-    project_code: Optional[str] = Query(None),
+    project: Optional[str] = Query(None, alias="project_code"),
     q: Optional[str] = Query(None),
 ):
     token = get_access_token(request)
     if not token:
         return RedirectResponse(url="/login?next=%2Freports%2Fdossiers%2Fpaid%2Fsummary", status_code=303)
     params: Dict[str, Any] = {}
-    if project_code: params["project_code"] = project_code
+    if project: params["project"] = project
     if q: params["q"] = q
-    st, data = await _get_json("/api/v1/reports/dossiers/paid/summary", token, params)
+    st, data = await _get_json("/api/v1/reports/dossiers/paid/summary-customer", token, params)
     return templates.TemplateResponse(
         "reports/dossiers_paid.html",
         {
             "request": request, "title": "Mua hồ sơ — tổng hợp",
             "mode": "summary",
             "data": data if st == 200 else {"error": data},
-            "project_code": project_code or "",
-            "q": q or "",
+            "init_project_code": project or "",
+            "init_q": q or "",
         },
         status_code=200 if st == 200 else 502,
     )
 
 
-# ---------- JSON endpoints (nếu cần load động từ FE) ----------
-@router.get("/api/reports/{kind}", response_class=JSONResponse)
-async def reports_api(
+# ---------- API cho toolbar: trả danh sách dự án ACTIVE ----------
+@router.get("/api/projects/options", response_class=JSONResponse)
+async def project_options_for_reports(
     request: Request,
-    kind: str,
-    project_code: Optional[str] = Query(None),
-    q: Optional[str] = Query(None),
-    page: int = Query(1, ge=1),
-    size: int = Query(100, ge=10, le=1000),
+    size: int = Query(1000, ge=1, le=2000),
 ):
+    """
+    Dùng cho toolbar report (dropdown dự án).
+    - Lấy company_code từ Service A: /auth/me
+    - Gọi Service A: /api/v1/projects/public?company_code=...&status=ACTIVE
+    - Trả về {options: [{project_code, name, status}]}
+    """
     token = get_access_token(request)
     if not token:
         return _unauth()
 
-    map_path = {
-        "lots_eligible": "/api/v1/reports/lots/eligible",
-        "lots_ineligible": "/api/v1/reports/lots/ineligible",
-        "customers_eligible": "/api/v1/reports/customers/eligible",
-        "customers_ineligible": "/api/v1/reports/customers/ineligible",
-        "dossiers_paid_detail": "/api/v1/reports/dossiers/paid/detail",
-        "dossiers_paid_summary": "/api/v1/reports/dossiers/paid/summary",
+    me = await fetch_me(token)
+    company_code = (me or {}).get("company_code")
+    if not company_code:
+        return JSONResponse({"error": "missing_company_code"}, status_code=400)
+
+    params = {
+        "company_code": company_code,
+        "status": "ACTIVE",
+        "page": 1,
+        "size": size,
     }
-    path = map_path.get(kind)
-    if not path:
-        return JSONResponse({"error": "invalid_kind"}, status_code=400)
+    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=20.0) as c:
+        r = await c.get("/api/v1/projects/public", params=params, headers={"Authorization": f"Bearer {token}"})
+    if r.status_code != 200:
+        try:
+            detail = r.json()
+        except Exception:
+            detail = r.text[:300]
+        return JSONResponse({"error": "service_a_failed", "status": r.status_code, "detail": detail}, status_code=502)
 
-    params: Dict[str, Any] = {"page": page, "size": size}
-    if project_code: params["project_code"] = project_code
-    if q: params["q"] = q
-
-    st, data = await _get_json(path, token, params)
-    if st == 401:
-        return _unauth()
-    if st != 200:
-        return JSONResponse({"error": "service_a_failed", "status": st, "body": data}, status_code=502)
-    return JSONResponse(data, status_code=200)
+    raw = r.json() or {}
+    items = raw.get("data") or []
+    options = []
+    for x in items:
+        code = (x or {}).get("project_code") or (x or {}).get("code")
+        name = (x or {}).get("name") or code
+        if code:
+            options.append({"project_code": code, "name": name, "status": x.get("status")})
+    return JSONResponse({"options": options}, status_code=200)
