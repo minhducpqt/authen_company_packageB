@@ -638,7 +638,7 @@ async def projects_options(request: Request, status: str = "ACTIVE", company_cod
     if company_code:
         params["company_code"] = company_code
 
-    url = f"{SERVICE_A_BASE}/api/v1/projects/public"
+    url = f"{SERVICE_A_BASE_URL}/api/v1/projects/public"
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             r = await client.get(url, params=params, headers=_auth_headers(request))
