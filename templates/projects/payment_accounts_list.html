@@ -1,39 +1,83 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div class="bg-white rounded-xl border border-slate-200 p-5">
-  <div class="flex items-center justify-between mb-4">
+<style>
+  :root{
+    --b:#e5e7eb; --b2:#d1d5db; --muted:#64748b; --txt:#0f172a;
+    --surface:#ffffff; --bg:#f8fafc; --shadow:0 16px 44px rgba(2,6,23,.10);
+    --primary:#4f46e5; --primary-600:#4338ca; --ok:#059669; --warn:#b45309; --danger:#dc2626;
+  }
+  .page{background:var(--surface); border:1px solid var(--b); border-radius:18px; box-shadow:var(--shadow); padding:18px}
+  .toolbar .btn{height:40px; border-radius:10px; padding:0 14px; font-weight:600}
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; border:1px solid transparent}
+  .btn-ghost{background:#fff; border-color:var(--b); color:#334155}
+  .btn-primary{background:var(--primary); color:#fff}
+  .btn-primary:hover{background:var(--primary-600)}
+  .btn-danger{background:var(--danger); color:#fff}
+  .btn-danger:hover{filter:brightness(.95)}
+  .btn-slate{background:#334155; color:#fff}
+  .btn-disabled{background:#cbd5e1 !important; color:#ffffff !important; cursor:not-allowed; opacity:.7}
+
+  .pill{display:inline-flex; align-items:center; gap:8px; padding:10px 12px; border:1px solid var(--b); border-radius:12px; background:#f8fafc}
+  .pill .name{font-weight:700; color:#0f172a}
+  .pill .acc{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; color:#475569; font-size:12px}
+
+  .status{display:inline-flex; align-items:center; border-radius:999px; font-size:12px; font-weight:700; padding:2px 8px; border:1px solid}
+  .st-active{background:#ecfdf5; color:#047857; border-color:#a7f3d0}
+  .st-inactive{background:#fffbeb; color:#92400e; border-color:#fde68a}
+  .st-closed{background:#f3f4f6; color:#334155; border-color:#e5e7eb}
+
+  .lock{display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:6px; background:#fee2e2; color:#b91c1c; border:1px solid #fecaca}
+  .muted{color:#64748b}
+  .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+
+  .table{width:100%; border-collapse:separate; border-spacing:0}
+  .th, .td{padding:12px 12px; border-bottom:1px solid var(--b);}
+  .head{background:#f1f5f9; color:#475569; font-weight:700}
+
+  /* Modal */
+  .modal-backdrop{position:fixed; inset:0; background:rgba(2,6,23,.45); display:none; z-index:50}
+  .modal-wrap{position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:51}
+  .modal-card{width:100%; max-width:560px; background:#fff; border:1px solid var(--b); border-radius:16px; box-shadow:0 22px 70px rgba(2,6,23,.22)}
+  .modal-head{padding:16px 20px; border-bottom:1px solid var(--b)}
+  .modal-body{padding:16px 20px}
+  .modal-foot{padding:14px 20px; border-top:1px solid var(--b); display:flex; gap:10px; justify-content:flex-end}
+  @media (max-width:640px){ .modal-card{margin:16px; max-width:none} }
+  .kbd{display:inline-flex; align-items:center; justify-content:center; padding:0 8px; min-width:40px; height:30px; border-radius:8px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:800; letter-spacing:2px}
+</style>
+
+<div class="page">
+  <div class="flex items-center justify-between toolbar mb-4">
     <div>
-      <h2 class="text-xl font-semibold text-slate-800">Cấu hình nhận tiền</h2>
-      <p class="text-slate-500 text-sm">Chọn tài khoản nhận tiền mua hồ sơ và đặt cọc cho từng dự án.</p>
+      <h2 class="text-xl font-bold text-slate-900">Cấu hình nhận tiền</h2>
+      <p class="muted text-sm">Chọn tài khoản nhận tiền mua hồ sơ và đặt cọc cho từng dự án. Có thể <strong>đóng băng</strong> để chặn mọi thay đổi.</p>
     </div>
-    <div class="flex gap-2">
-      <a href="/projects" class="topbtn border border-slate-300 bg-white text-slate-700">← Quản lý dự án</a>
+    <div>
+      <a href="/projects" class="btn btn-ghost">← Quản lý dự án</a>
     </div>
   </div>
 
-  <form method="get" class="mb-3 flex gap-2">
-    <input name="q" value="{{ q }}" placeholder="Tìm mã/tên dự án..."
-           class="h-10 w-64 rounded-lg border border-slate-300 px-3" />
+  <form method="get" class="mb-4 flex gap-2 flex-wrap">
+    <input name="q" value="{{ q }}" placeholder="Tìm mã/tên dự án…" class="h-10 w-64 rounded-lg border border-slate-300 px-3" />
     <select name="status" class="h-10 rounded-lg border border-slate-300 px-3">
       <option value="">-- Trạng thái --</option>
       {% for st in ["ACTIVE","INACTIVE","CLOSED"] %}
         <option value="{{ st }}" {% if status==st %}selected{% endif %}>{{ st }}</option>
       {% endfor %}
     </select>
-    <button class="h-10 px-4 rounded-lg bg-slate-800 text-white">Lọc</button>
+    <button class="btn btn-slate">Lọc</button>
   </form>
 
-  <div class="overflow-x-auto border border-slate-200 rounded-lg">
-    <table class="min-w-full text-sm">
-      <thead class="bg-slate-50">
-        <tr class="text-left text-slate-600">
-          <th class="px-3 py-2 border-b">Dự án</th>
-          <th class="px-3 py-2 border-b">Vị trí</th>
-          <th class="px-3 py-2 border-b">Trạng thái</th>
-          <th class="px-3 py-2 border-b w-48">Mua hồ sơ</th>
-          <th class="px-3 py-2 border-b w-48">Đặt cọc</th>
-          <th class="px-3 py-2 border-b text-right">Thao tác</th>
+  <div class="overflow-x-auto border border-slate-200 rounded-xl">
+    <table class="table text-sm">
+      <thead class="head">
+        <tr>
+          <th class="th">Dự án</th>
+          <th class="th">Vị trí</th>
+          <th class="th">Trạng thái</th>
+          <th class="th" style="width:280px">Mua hồ sơ</th>
+          <th class="th" style="width:280px">Đặt cọc</th>
+          <th class="th text-right">Thao tác</th>
         </tr>
       </thead>
       <tbody>
@@ -41,105 +85,210 @@
         {% set s = summaries.get(p.id) or {} %}
         {% set cba_app = s.get("cba_application_id") %}
         {% set cba_dep = s.get("cba_deposit_id") %}
-        <tr class="align-top">
-          <td class="px-3 py-3 border-b">
-            <div class="font-semibold">{{ p.name }}</div>
-            <div class="text-xs text-slate-500 font-mono">{{ p.project_code }}</div>
+        {% set f = (freeze_map.get(p.id) or {}) %}
+        {% set is_frozen = f.get("frozen") %}
+
+        <tr>
+          <!-- Dự án -->
+          <td class="td">
+            <div class="flex items-start gap-2">
+              {% if is_frozen %}
+                <span class="lock" title="Đã đóng băng">
+                  <!-- icon khoá -->
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M17 8V7a5 5 0 10-10 0v1H5a1 1 0 00-1 1v11a1 1 0 001 1h14a1 1 0 001-1V9a1 1 0 00-1-1h-2zm-8 0V7a3 3 0 116 0v1H9z"/>
+                  </svg>
+                </span>
+              {% endif %}
+              <div>
+                <div class="font-semibold text-slate-900 leading-5">{{ p.name }}</div>
+                <div class="mono text-xs text-slate-500">{{ p.project_code }}</div>
+                {% if is_frozen and (f.get("reason") or f.get("frozen_at")) %}
+                  <div class="mt-1 text-xs text-slate-500">
+                    {% if f.get("reason") %}<div>Lý do: {{ f.get("reason") }}</div>{% endif %}
+                    {% if f.get("frozen_at") %}<div>Thời điểm: {{ f.get("frozen_at") }}</div>{% endif %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
           </td>
-          <td class="px-3 py-3 border-b text-slate-600">{{ p.location or '—' }}</td>
-          <td class="px-3 py-3 border-b">
+
+          <!-- Vị trí -->
+          <td class="td text-slate-700">{{ p.location or '—' }}</td>
+
+          <!-- Trạng thái -->
+          <td class="td">
             {% set st = (p.status or '') %}
-            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs
-              {% if st=='ACTIVE' %} bg-emerald-100 text-emerald-700 border border-emerald-200
-              {% elif st=='INACTIVE' %} bg-amber-100 text-amber-700 border border-amber-200
-              {% elif st=='CLOSED' %} bg-slate-200 text-slate-700 border border-slate-300
-              {% else %} bg-slate-100 text-slate-600 border border-slate-200 {% endif %}">
+            <span class="status
+              {% if st=='ACTIVE' %} st-active
+              {% elif st=='INACTIVE' %} st-inactive
+              {% elif st=='CLOSED' %} st-closed
+              {% else %} st-closed {% endif %}">
               {{ st or '—' }}
             </span>
           </td>
 
-          <!-- MUA HỒ SƠ -->
-          <td class="px-3 py-3 border-b">
+          <!-- Mua hồ sơ -->
+          <td class="td">
             {% if cba_app and cba_map.get(cba_app) %}
               {% set info = cba_map[cba_app] %}
-              <div class="px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm leading-tight w-48">
-                <div class="font-semibold text-slate-700">{{ info.short_name }}</div>
-                <div class="font-mono text-slate-600 text-xs">{{ info.account_number }}</div>
+              <div class="pill">
+                <span class="name">{{ info.short_name }}</span>
+                <span class="acc">{{ info.account_number }}</span>
               </div>
             {% else %}
-              <span class="text-slate-400 text-xs">Chưa cấu hình</span>
+              <span class="muted text-xs">Chưa cấu hình</span>
             {% endif %}
           </td>
 
-          <!-- ĐẶT CỌC -->
-          <td class="px-3 py-3 border-b">
+          <!-- Đặt cọc -->
+          <td class="td">
             {% if cba_dep and cba_map.get(cba_dep) %}
               {% set info2 = cba_map[cba_dep] %}
-              <div class="px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm leading-tight w-48">
-                <div class="font-semibold text-slate-700">{{ info2.short_name }}</div>
-                <div class="font-mono text-slate-600 text-xs">{{ info2.account_number }}</div>
+              <div class="pill">
+                <span class="name">{{ info2.short_name }}</span>
+                <span class="acc">{{ info2.account_number }}</span>
               </div>
             {% else %}
-              <span class="text-slate-400 text-xs">Chưa cấu hình</span>
+              <span class="muted text-xs">Chưa cấu hình</span>
             {% endif %}
           </td>
 
-          <td class="px-3 py-3 border-b text-right">
-            <button class="px-3 h-9 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
-                    type="button" data-edit="{{ p.id }}">Chỉnh sửa</button>
+          <!-- Thao tác -->
+          <td class="td text-right">
+            <div class="inline-flex gap-2 items-center justify-end">
+              <button class="btn {% if is_frozen %}btn-disabled{% else %}btn-primary{% endif %}"
+                      type="button" data-edit="{{ p.id }}"
+                      {% if is_frozen %}disabled aria-disabled="true" title="Đã đóng băng"{% endif %}>
+                Chỉnh sửa
+              </button>
+              {% if not is_frozen %}
+                <button class="btn btn-danger"
+                        type="button"
+                        data-open-freeze
+                        data-project-id="{{ p.id }}"
+                        data-project-code="{{ p.project_code }}"
+                        data-project-name="{{ p.name }}">
+                  Đóng băng
+                </button>
+              {% endif %}
+            </div>
           </td>
         </tr>
 
         <!-- ROW EDIT -->
-        <tr id="edit-row-{{ p.id }}" class="hidden bg-slate-50">
-          <td colspan="6" class="px-3 py-3 border-b">
+        <tr id="edit-row-{{ p.id }}" class="hidden bg-slate-50" data-frozen="{{ '1' if is_frozen else '0' }}">
+          <td class="td" colspan="6">
+            {% if is_frozen %}
+              <div class="mb-3 p-3 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">
+                Dự án đã <strong>đóng băng</strong>. Không thể chỉnh sửa cấu hình tài khoản nhận tiền.
+              </div>
+            {% endif %}
             <form method="post" action="/projects/payment-accounts/{{ p.id }}"
                   class="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div>
-                <label class="text-sm text-slate-600 mb-1 block">Tài khoản mua hồ sơ</label>
-                <select name="cba_application_id" class="w-full h-10 rounded-lg border border-slate-300 px-3">
-                  <option value="">— Chọn tài khoản —</option>
-                  {% for opt in cba_options %}
-                    <option value="{{ opt.id }}" {% if cba_app and opt.id==cba_app %}selected{% endif %}>
-                      {{ opt.label }}
-                    </option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div>
-                <label class="text-sm text-slate-600 mb-1 block">Tài khoản đặt cọc</label>
-                <select name="cba_deposit_id" class="w-full h-10 rounded-lg border border-slate-300 px-3">
-                  <option value="">— Chọn tài khoản —</option>
-                  {% for opt in cba_options %}
-                    <option value="{{ opt.id }}" {% if cba_dep and opt.id==cba_dep %}selected{% endif %}>
-                      {{ opt.label }}
-                    </option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="flex items-end justify-end gap-2">
-                <button type="button" class="px-4 h-10 rounded-lg border border-slate-300 bg-white text-slate-700"
-                        data-cancel="{{ p.id }}">Hủy</button>
-                <button class="px-4 h-10 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">Lưu</button>
-              </div>
+              <fieldset {% if is_frozen %}disabled{% endif %}>
+                <div>
+                  <label class="text-sm text-slate-600 mb-1 block">Tài khoản mua hồ sơ</label>
+                  <select name="cba_application_id" class="w-full h-10 rounded-lg border border-slate-300 px-3">
+                    <option value="">— Chọn tài khoản —</option>
+                    {% for opt in cba_options %}
+                      <option value="{{ opt.id }}" {% if cba_app and opt.id==cba_app %}selected{% endif %}>
+                        {{ opt.label }}
+                      </option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div>
+                  <label class="text-sm text-slate-600 mb-1 block">Tài khoản đặt cọc</label>
+                  <select name="cba_deposit_id" class="w-full h-10 rounded-lg border border-slate-300 px-3">
+                    <option value="">— Chọn tài khoản —</option>
+                    {% for opt in cba_options %}
+                      <option value="{{ opt.id }}" {% if cba_dep and opt.id==cba_dep %}selected{% endif %}>
+                        {{ opt.label }}
+                      </option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="flex items-end justify-end gap-2">
+                  <button type="button" class="btn btn-ghost" data-cancel="{{ p.id }}">Đóng</button>
+                  <button class="btn btn-primary" {% if is_frozen %}disabled aria-disabled="true"{% endif %}>Lưu</button>
+                </div>
+              </fieldset>
             </form>
           </td>
         </tr>
       {% endfor %}
       {% if projects|length == 0 %}
-        <tr><td colspan="6" class="px-3 py-6 text-center text-slate-500">Không có dự án.</td></tr>
+        <tr><td class="td text-center muted py-6" colspan="6">Không có dự án.</td></tr>
       {% endif %}
       </tbody>
     </table>
   </div>
 </div>
 
+<!-- ===== Modal Đóng băng (custom) ===== -->
+<div id="freeze-backdrop" class="modal-backdrop"></div>
+<div id="freeze-modal" class="modal-wrap" role="dialog" aria-modal="true" aria-labelledby="freeze-title">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3 id="freeze-title" class="text-lg font-semibold text-slate-800">Xác nhận đóng băng dự án</h3>
+    </div>
+    <form id="freeze-form" method="post">
+      <div class="modal-body space-y-3">
+        <div class="text-sm text-slate-600">
+          Bạn sắp <span class="font-semibold text-slate-900">ĐÓNG BĂNG</span> cấu hình nhận tiền của dự án:
+          <span id="freeze-project-name" class="font-semibold"></span>
+          <span class="text-slate-400">(<span id="freeze-project-code"></span>)</span>.
+          Sau khi đóng băng sẽ <span class="font-semibold">không thể sửa</span> qua giao diện (chỉ có thể thay đổi trực tiếp DB).
+        </div>
+
+        <div class="rounded-lg border border-amber-200 bg-amber-50 text-amber-800 p-3 text-sm">
+          Để xác nhận, vui lòng nhập lại đúng mã 4 chữ số bên dưới.
+        </div>
+
+        <div class="flex items-center gap-3">
+          <span class="text-sm text-slate-600">Mã xác nhận:</span>
+          <span id="freeze-code" class="kbd text-slate-900">0000</span>
+          <button type="button" id="freeze-regenerate" class="btn btn-ghost h-8 px-3">Tạo lại mã</button>
+        </div>
+
+        <div>
+          <label class="text-sm text-slate-700 mb-1 block" for="freeze-code-input">Nhập mã 4 chữ số</label>
+          <input id="freeze-code-input" type="text" inputmode="numeric" maxlength="4"
+                 class="w-full h-10 rounded-lg border border-slate-300 px-3 mono tracking-widest"
+                 placeholder="Nhập 4 số hiển thị ở trên" autocomplete="one-time-code" />
+          <p id="freeze-error" class="mt-1 text-xs text-red-600 hidden">Mã xác nhận không khớp. Vui lòng thử lại.</p>
+        </div>
+
+        <div>
+          <label class="text-sm text-slate-700 mb-1 block" for="freeze-reason">Lý do (tuỳ chọn)</label>
+          <input id="freeze-reason" name="reason" type="text" maxlength="200"
+                 class="w-full h-10 rounded-lg border border-slate-300 px-3"
+                 placeholder="Ví dụ: Khoá cấu hình nhận tiền trước ngày mở bán" />
+        </div>
+
+        <!-- hidden fields -->
+        <input type="hidden" id="freeze-project-id-hidden" />
+      </div>
+      <div class="modal-foot">
+        <button type="button" id="freeze-cancel" class="btn btn-ghost">Huỷ</button>
+        <button type="submit" id="freeze-confirm" class="btn btn-danger disabled:opacity-50" disabled>Xác nhận đóng băng</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
   (function () {
+    // ===== Toggle row editor (blocked if frozen) =====
     document.querySelectorAll('button[data-edit]').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-edit');
-        document.getElementById('edit-row-' + id)?.classList.toggle('hidden');
+        const row = document.getElementById('edit-row-' + id);
+        if (!row) return;
+        const frozen = row.getAttribute('data-frozen') === '1';
+        if (frozen) return;
+        row.classList.toggle('hidden');
       });
     });
     document.querySelectorAll('button[data-cancel]').forEach(btn => {
@@ -147,6 +296,92 @@
         const id = btn.getAttribute('data-cancel');
         document.getElementById('edit-row-' + id)?.classList.add('hidden');
       });
+    });
+
+    // ===== Modal helpers =====
+    const $backdrop = document.getElementById('freeze-backdrop');
+    const $modal    = document.getElementById('freeze-modal');
+    const $pname    = document.getElementById('freeze-project-name');
+    const $pcode    = document.getElementById('freeze-project-code');
+    const $pidHid   = document.getElementById('freeze-project-id-hidden');
+    const $form     = document.getElementById('freeze-form');
+    const $reason   = document.getElementById('freeze-reason');
+    const $codeView = document.getElementById('freeze-code');
+    const $codeInput= document.getElementById('freeze-code-input');
+    const $error    = document.getElementById('freeze-error');
+    const $regen    = document.getElementById('freeze-regenerate');
+    const $cancel   = document.getElementById('freeze-cancel');
+    const $confirm  = document.getElementById('freeze-confirm');
+
+    let currentCode = '0000';
+
+    function genCode(){
+      currentCode = String(Math.floor(1000 + Math.random() * 9000));
+      $codeView.textContent = currentCode;
+      $codeInput.value = '';
+      $confirm.disabled = true;
+      $error.classList.add('hidden');
+      setTimeout(() => $codeInput.focus(), 50);
+    }
+
+    function openModal({ id, code, name }){
+      $pidHid.value = id;
+      $pname.textContent = name || '';
+      $pcode.textContent = code || '';
+      genCode();
+      $backdrop.style.display = 'block';
+      $modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+      // Quan trọng: POST đúng endpoint Service B → Service A
+      $form.setAttribute('action', `/projects/payment-accounts/${id}/freeze`);
+    }
+
+    function closeModal(){
+      $backdrop.style.display = 'none';
+      $modal.style.display = 'none';
+      document.body.style.overflow = '';
+      $reason.value = '';
+      $codeInput.value = '';
+      $confirm.disabled = true;
+      $error.classList.add('hidden');
+    }
+
+    // open handlers
+    document.querySelectorAll('[data-open-freeze]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id   = btn.getAttribute('data-project-id');
+        const code = btn.getAttribute('data-project-code');
+        const name = btn.getAttribute('data-project-name');
+        openModal({ id, code, name });
+      });
+    });
+
+    // close handlers
+    $cancel.addEventListener('click', closeModal);
+    $backdrop.addEventListener('click', closeModal);
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+    // regenerate code
+    $regen.addEventListener('click', genCode);
+
+    // validate input
+    function validate(){
+      const v = ($codeInput.value || '').trim();
+      const ok = (v.length === 4 && v === currentCode);
+      $confirm.disabled = !ok;
+      if (v.length === 4 && v !== currentCode) $error.classList.remove('hidden'); else $error.classList.add('hidden');
+    }
+    $codeInput.addEventListener('input', validate);
+
+    // submit
+    document.getElementById('freeze-form').addEventListener('submit', (e) => {
+      const v = ($codeInput.value || '').trim();
+      if (!(v.length === 4 && v === currentCode)) {
+        e.preventDefault();
+        validate();
+        return;
+      }
+      // submit bình thường tới /projects/payment-accounts/{id}/freeze
     });
   })();
 </script>
