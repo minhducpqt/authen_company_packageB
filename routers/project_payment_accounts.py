@@ -71,14 +71,28 @@ async def page_projects_payment_accounts(
 
         # 3) Summaries cho từng project
         summaries: Dict[int, Dict[str, Any]] = {}
+        # 4) Freeze status cho từng project
+        freeze_map: Dict[int, Dict[str, Any]] = {}
+
         for p in projects:
             pid = p["id"]
             url_summary = f"{API_BASE_URL}/api/v1/projects/{pid}/payment-accounts/summary"
+            url_freeze = f"{API_BASE_URL}/api/v1/projects/{pid}/payment-accounts/freeze-status"
             try:
                 s = await _fetch_json(client, url_summary, access)
             except Exception:
                 s = {"project_id": pid, "payment_accounts": {}, "cba_application_id": None, "cba_deposit_id": None}
             summaries[pid] = s
+
+            try:
+                fz = await _fetch_json(client, url_freeze, access)
+                freeze_map[pid] = {
+                    "frozen": bool(fz.get("frozen", False)),
+                    "frozen_at": fz.get("frozen_at"),
+                    "reason": fz.get("reason"),
+                }
+            except Exception:
+                freeze_map[pid] = {"frozen": False, "frozen_at": None, "reason": None}
 
     return templates.TemplateResponse(
         "projects/payment_accounts_list.html",
@@ -87,8 +101,9 @@ async def page_projects_payment_accounts(
             "me": me,
             "projects": projects,
             "summaries": summaries,
+            "freeze_map": freeze_map,     # <-- dùng trong template để hiện badge/disable
             "cba_options": cba_options,
-            "cba_map": cba_map,   # <-- thêm map để hiển thị đẹp
+            "cba_map": cba_map,           # <-- thêm map để hiển thị đẹp
             "q": q or "",
             "status": status or "",
             "title": "Cấu hình nhận tiền",
@@ -122,4 +137,28 @@ async def save_project_payment_accounts(
                 status_code=303
             )
 
-    return RedirectResponse(url="/projects/payment-accounts", status_code=303)
+    return RedirectResponse(url="/projects/payment-accounts?status=OK:SAVED", status_code=303)
+
+# NEW: nút “Đóng băng” từ UI (không có gỡ)
+@router.post("/{project_id}/freeze")
+async def freeze_project_payment_accounts_ui(
+    request: Request,
+    project_id: int = Path(..., ge=1),
+    reason: Optional[str] = Form(None),
+):
+    access = get_access_token(request)
+    # reason là tùy chọn; đẩy lên query cho đơn giản (API A nhận qua query)
+    qs = f"?reason={reason}" if reason else ""
+    async with httpx.AsyncClient() as client:
+        r = await client.post(
+            f"{API_BASE_URL}/api/v1/projects/{project_id}/payment-accounts/freeze{qs}",
+            headers={"Authorization": f"Bearer {access}"},
+            timeout=20.0,
+        )
+        if r.status_code >= 400:
+            msg = r.text.replace("\n", " ")[:400]
+            return RedirectResponse(
+                url=f"/projects/payment-accounts?status=ERR:{msg}",
+                status_code=303
+            )
+    return RedirectResponse(url="/projects/payment-accounts?status=OK:FROZEN", status_code=303)
