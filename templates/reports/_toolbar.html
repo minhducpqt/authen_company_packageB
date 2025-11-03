@@ -1,4 +1,4 @@
-{# templates/reports/_toolbar.html — FINAL #}
+{# templates/reports/_toolbar.html — FINAL SAFE VERSION #}
 <div class="mb-4 bg-white border rounded-xl p-4 shadow-sm">
   <form id="filtersForm"
         class="flex flex-col md:flex-row gap-3 items-start md:items-end"
@@ -39,18 +39,25 @@
   const qEl = document.getElementById('qInput');
   const getUrl = () => new URL(window.location.href);
 
+  // --- Helper ---
   function applyFilters(next = {}) {
-    const u = getUrl();
     const project = (next.project ?? selectEl.value ?? '').trim();
     const q = (next.q ?? qEl.value ?? '').trim();
+
+    // nếu chưa có project → KHÔNG gọi lại (tránh lỗi 422)
+    if (!project) return;
+
+    const u = getUrl();
     project ? u.searchParams.set('project', project) : u.searchParams.delete('project');
     q ? u.searchParams.set('q', q) : u.searchParams.delete('q');
-    if (u.toString() !== window.location.href) window.location.replace(u.toString());
+
+    if (u.toString() !== window.location.href)
+      window.location.replace(u.toString());
   }
 
   const debounce = (fn, d) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), d); }; };
 
-  // --- load project options (public) ---
+  // --- load project options ---
   fetch('/projects/options/active', { credentials: 'same-origin' })
     .then(r => r.ok ? r.json() : Promise.reject(r))
     .then(({ data }) => {
@@ -65,12 +72,14 @@
         selectEl.appendChild(op);
         if (!firstActive) firstActive = code;
       }
+
+      // chọn giá trị hiện tại nếu có
       const urlProject = getUrl().searchParams.get('project');
       if (urlProject) selectEl.value = urlProject;
       else if (initProject) selectEl.value = initProject;
       else if (firstActive) {
-        selectEl.value = firstActive;
-        applyFilters({ project: firstActive, q: initQ });
+        // auto-apply dự án đầu tiên (gọi sau 1 tick để DOM ổn định)
+        setTimeout(() => applyFilters({ project: firstActive, q: initQ }), 200);
         return;
       }
     })
@@ -80,15 +89,19 @@
   selectEl.addEventListener('change', () => applyFilters());
   const debouncedApply = debounce(() => applyFilters(), 500);
   qEl.addEventListener('input', debouncedApply);
-  qEl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); applyFilters(); } });
+  qEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); applyFilters(); }
+  });
 
   // --- export XLSX ---
   document.getElementById('btnExportXlsx').addEventListener('click', () => {
+    const project = (selectEl.value || '').trim();
+    if (!project) { alert('Vui lòng chọn dự án trước khi export.'); return; }
+
     const u = new URL('/reports/export', window.location.origin);
     u.searchParams.set('kind', "{{ export_kind }}");
-    const project = (selectEl.value || '').trim();
     const q = (qEl.value || '').trim();
-    if (project) u.searchParams.set('project', project);
+    u.searchParams.set('project', project);
     if (q) u.searchParams.set('q', q);
     u.searchParams.set('fmt', 'xlsx');
     window.location.href = u.toString();

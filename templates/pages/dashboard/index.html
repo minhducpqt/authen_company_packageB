@@ -1,85 +1,111 @@
 {% extends "base.html" %}
+{% block title %}Bảng điều khiển{% endblock %}
+
 {% block content %}
 
-<div class="grid md:grid-cols-4 gap-4 mb-5">
-  <div class="card kpi">
-    <div class="kpi-title">AVERAGE SALES</div>
-    <div class="kpi-value">{{ "{:,}".format(kpi.avg_sales) }}</div>
-    <div class="kpi-sub">this month <span class="kpi-up">▲ 8%</span></div>
-  </div>
-  <div class="card kpi">
-    <div class="kpi-title">TOTAL SALES</div>
-    <div class="kpi-value">{{ "{:,}".format(kpi.total_sales) }}</div>
-    <div class="kpi-sub">since last month <span class="kpi-up">▲ 3.48%</span></div>
-  </div>
-  <div class="card kpi">
-    <div class="kpi-title">INQUIRIES</div>
-    <div class="kpi-value">{{ "{:,}".format(kpi.inquiries) }}</div>
-    <div class="kpi-sub">since last month <span class="kpi-down">▼ 3.48%</span></div>
-  </div>
-  <div class="card kpi">
-    <div class="kpi-title">INVOICES</div>
-    <div class="kpi-value">{{ "{:,}".format(kpi.invoices) }}</div>
-    <div class="kpi-sub">since last month <span class="kpi-down">▼ 3.48%</span></div>
-  </div>
+<style>
+  .k-grid{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:16px}
+  @media (min-width:768px){.k-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media (min-width:1100px){.k-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+  .k-card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:18px}
+  .k-mono{font-variant-numeric:tabular-nums}
+  .k-muted{color:#64748b}
+  .k-title{font-size:22px;font-weight:800;margin:0 0 6px}
+  .k-chip{display:inline-flex;align-items:center;gap:8px;
+    background:#f8fafc;border:1px solid #e2e8f0;border-radius:999px;padding:6px 10px;font-size:12px}
+  .k-h2{font-size:14px;color:#475569;margin:0 0 8px;font-weight:700;text-transform:uppercase;letter-spacing:.02em}
+  .k-val{font-size:26px;font-weight:800}
+  .k-sub{font-size:12px;color:#64748b;margin-top:4px}
+  .k-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .k-link{display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:#0ea5e9;font-weight:600}
+  .k-table{width:100%;border-collapse:separate;border-spacing:0;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden}
+  .k-table th,.k-table td{padding:10px 12px;font-size:13px}
+  .k-table thead th{background:#f8fafc;color:#64748b;text-align:left}
+  .k-table tbody tr+tr td{border-top:1px dashed #e5e7eb}
+</style>
+
+<div class="k-row" style="margin-bottom:12px">
+  <h1 class="k-title">Bảng điều khiển</h1>
+  {% if company_name %}
+    <span class="k-chip" title="Công ty hiện tại">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M3 21h18M5 21V7a2 2 0 0 1 2-2h4v16M19 21V11a2 2 0 0 0-2-2h-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      {{ company_name }}
+    </span>
+  {% endif %}
 </div>
 
-<div class="grid md:grid-cols-3 gap-5">
-  <div class="card col-span-2">
-    <div class="card-title">Total Sales</div>
-    <canvas id="lineChart" height="110"></canvas>
+<div class="k-grid" style="margin-bottom:16px">
+  <div class="k-card">
+    <div class="k-h2">Dự án</div>
+    <div class="k-row">
+      <div>
+        <div class="k-val k-mono">{{ (stats.projects_total or 0) | int }}</div>
+        <div class="k-sub">Tổng số dự án</div>
+      </div>
+      <a class="k-link" href="/projects">Xem dự án →</a>
+    </div>
+    <div class="k-sub" style="margin-top:8px">Đang hoạt động: <b>{{ (stats.projects_active or 0) | int }}</b></div>
   </div>
-  <div class="card">
-    <div class="card-title">Lot Status</div>
-    <canvas id="pieChart" height="110"></canvas>
-  </div>
-</div>
 
-<div class="grid md:grid-cols-2 gap-5 mt-5">
-  <div class="card">
-    <div class="card-title">Product Demand</div>
-    <div class="divide-y">
-      <div class="row"><span>Samsung</span><div class="bar"><span style="width:55%"></span></div></div>
-      <div class="row"><span>Apple</span><div class="bar"><span style="width:85%"></span></div></div>
-      <div class="row"><span>Oppo</span><div class="bar"><span style="width:48%"></span></div></div>
-      <div class="row"><span>Vivo</span><div class="bar"><span style="width:40%"></span></div></div>
+  <div class="k-card">
+    <div class="k-h2">Khách hàng</div>
+    <div class="k-val k-mono">{{ (stats.customers_total or 0) | int }}</div>
+    <div class="k-sub">Tổng khách trong hệ thống</div>
+    <div style="margin-top:8px"><a class="k-link" href="/customers">Quản lý khách hàng →</a></div>
+  </div>
+
+  <div class="k-card">
+    <div class="k-h2">Mua hồ sơ</div>
+    <div class="k-row">
+      <div>
+        <div class="k-val k-mono">{{ (stats.dossier_orders_total or 0) | int }}</div>
+        <div class="k-sub">Đơn mua hồ sơ</div>
+      </div>
+      <div style="text-align:right">
+        <div class="k-val k-mono" style="font-size:20px">
+          {{ (stats.dossier_amount_vnd or 0) | int | string | replace(",", ".") }}₫
+        </div>
+        <div class="k-sub">Tổng tiền hồ sơ</div>
+      </div>
+    </div>
+    <div style="margin-top:8px">
+      <a class="k-link" href="/transactions/dossiers">Chi tiết mua hồ sơ →</a>
     </div>
   </div>
-  <div class="card">
-    <div class="card-title flex items-center justify-between">Average Sales
-      <div class="text-xs bg-slate-100 rounded-md px-2 py-1">Weekly <b>Monthly</b></div>
+
+  <div class="k-card">
+    <div class="k-h2">Đặt cọc (Đặt trước)</div>
+    <div class="k-row">
+      <div>
+        <div class="k-val k-mono">{{ (stats.deposit_orders_total or 0) | int }}</div>
+        <div class="k-sub">Đơn đặt cọc</div>
+      </div>
+      <div style="text-align:right">
+        <div class="k-val k-mono" style="font-size:20px">
+          {{ (stats.deposit_amount_vnd or 0) | int | string | replace(",", ".") }}₫
+        </div>
+        <div class="k-sub">Tổng tiền đặt cọc</div>
+      </div>
     </div>
-    <canvas id="barChart" height="110"></canvas>
+    <div style="margin-top:8px">
+      <a class="k-link" href="/transactions/deposits">Chi tiết đặt cọc →</a>
+    </div>
   </div>
 </div>
 
-<script>
-const lotLabels = {{ stats.lot_status_labels | tojson }};
-const lotValues = {{ stats.lot_status_values | tojson }};
-
-new Chart(document.getElementById('lineChart'), {
-  type: 'line',
-  data: {
-    labels:['00:00','01:00','02:00','03:00','04:00','05:00','06:00'],
-    datasets:[
-      {label:'Profit', data:[28,30,26,40,38,90,100], tension:.35, fill:true},
-      {label:'Sales',  data:[25,32,28,36,34,60,78], tension:.35, fill:true}
-    ]
-  },
-  options:{plugins:{legend:{position:'bottom'}}}
-});
-
-new Chart(document.getElementById('pieChart'), {
-  type:'doughnut',
-  data:{labels:lotLabels, datasets:[{data:lotValues}]},
-  options:{plugins:{legend:{position:'bottom'}}}
-});
-
-new Chart(document.getElementById('barChart'), {
-  type:'bar',
-  data:{labels:['Jan','Feb','Mar','Apr','May','Jun','Jul'], datasets:[{label:'Sales', data:[35,50,38,70,90,65,80]}]},
-  options:{plugins:{legend:{position:'bottom'}}}
-});
-</script>
+<div class="k-card" style="margin-top:8px">
+  <div class="k-row" style="margin-bottom:8px">
+    <div class="k-h2" style="margin:0">Tác vụ nhanh</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:10px">
+    <a class="k-chip" href="/projects">Duyệt dự án</a>
+    <a class="k-chip" href="/transactions/dossiers">Giao dịch hồ sơ</a>
+    <a class="k-chip" href="/transactions/deposits">Giao dịch đặt cọc</a>
+    <a class="k-chip" href="/giao-dich-ngan-hang">Giao dịch ngân hàng</a>
+    <a class="k-chip" href="/account">Thiết lập tài khoản</a>
+  </div>
+</div>
 
 {% endblock %}
