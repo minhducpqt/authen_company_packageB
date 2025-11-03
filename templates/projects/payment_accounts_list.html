@@ -3,37 +3,59 @@
 
 <style>
   :root{
-    --b:#e5e7eb; --b2:#d1d5db; --muted:#64748b; --txt:#0f172a;
-    --surface:#ffffff; --bg:#f8fafc; --shadow:0 16px 44px rgba(2,6,23,.10);
-    --primary:#4f46e5; --primary-600:#4338ca; --ok:#059669; --warn:#b45309; --danger:#dc2626;
+    --b:#cbd5e1; --b2:#94a3b8; --muted:#64748b; --txt:#0f172a;
+    --surface:#ffffff; --bg:#f8fafc; --shadow:0 16px 44px rgba(2,6,23,.08);
+    --primary:#4f46e5; --primary-600:#4338ca; --primary-700:#3730a3;
+    --ok:#059669; --warn:#b45309; --danger:#dc2626; --danger-700:#b91c1c;
+    --ring:#a5b4fc;
   }
   .page{background:var(--surface); border:1px solid var(--b); border-radius:18px; box-shadow:var(--shadow); padding:18px}
-  .toolbar .btn{height:40px; border-radius:10px; padding:0 14px; font-weight:600}
-  .btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; border:1px solid transparent}
-  .btn-ghost{background:#fff; border-color:var(--b); color:#334155}
-  .btn-primary{background:var(--primary); color:#fff}
-  .btn-primary:hover{background:var(--primary-600)}
-  .btn-danger{background:var(--danger); color:#fff}
-  .btn-danger:hover{filter:brightness(.95)}
-  .btn-slate{background:#334155; color:#fff}
-  .btn-disabled{background:#cbd5e1 !important; color:#ffffff !important; cursor:not-allowed; opacity:.7}
 
-  .pill{display:inline-flex; align-items:center; gap:8px; padding:10px 12px; border:1px solid var(--b); border-radius:12px; background:#f8fafc}
-  .pill .name{font-weight:700; color:#0f172a}
-  .pill .acc{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; color:#475569; font-size:12px}
+  /* ===== Buttons (visible borders) ===== */
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:8px;
+       min-height:40px; padding:0 14px; border-radius:10px; font-weight:700;
+       border:1.25px solid var(--b2); background:#fff; color:#0f172a;
+       transition:background .15s ease, border-color .15s ease, box-shadow .15s ease, transform .02s ease}
+  .btn:hover{background:#f8fafc}
+  .btn:active{transform:translateY(0.5px)}
+  .btn:focus-visible{outline:none; box-shadow:0 0 0 3px var(--ring)}
+  .btn-primary{background:linear-gradient(#5750f2,#4f46e5); color:#fff; border-color:#4338ca}
+  .btn-primary:hover{background:linear-gradient(#4f46e5,#4338ca); border-color:#3730a3}
+  .btn-danger{background:linear-gradient(#ef4444,#dc2626); color:#fff; border-color:#b91c1c}
+  .btn-danger:hover{background:linear-gradient(#dc2626,#b91c1c)}
+  .btn-ghost{background:#fff; color:#334155; border-color:var(--b2)}
+  .btn-ghost:hover{background:#f8fafc}
+  .btn-slate{background:#111827; color:#fff; border-color:#0b1220}
+  .btn-disabled{background:#e5e7eb !important; color:#475569 !important; border-color:#cbd5e1 !important; cursor:not-allowed; opacity:.85}
 
-  .status{display:inline-flex; align-items:center; border-radius:999px; font-size:12px; font-weight:700; padding:2px 8px; border:1px solid}
+  .toolbar .btn{min-height:40px}
+
+  .pill{display:inline-flex; align-items:center; gap:8px; padding:8px 12px;
+        border:1px solid var(--b2); border-radius:12px; background:#fff; max-width:100%}
+  .pill .name{font-weight:800; color:#0f172a; white-space:nowrap}
+  .pill .acc{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+             color:#475569; font-size:12px; white-space:nowrap}
+
+  .status{display:inline-flex; align-items:center; border-radius:999px; font-size:12px; font-weight:800; padding:2px 8px; border:1px solid}
   .st-active{background:#ecfdf5; color:#047857; border-color:#a7f3d0}
   .st-inactive{background:#fffbeb; color:#92400e; border-color:#fde68a}
   .st-closed{background:#f3f4f6; color:#334155; border-color:#e5e7eb}
 
-  .lock{display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:6px; background:#fee2e2; color:#b91c1c; border:1px solid #fecaca}
+  .lock{display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px;
+        border-radius:8px; background:#fff; color:#b91c1c; border:1.25px solid #fecaca}
+
   .muted{color:#64748b}
   .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
 
-  .table{width:100%; border-collapse:separate; border-spacing:0}
+  .table{width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed}
   .th, .td{padding:12px 12px; border-bottom:1px solid var(--b);}
-  .head{background:#f1f5f9; color:#475569; font-weight:700}
+  .head{background:#f1f5f9; color:#475569; font-weight:800}
+
+  /* Responsive column sizing */
+  .col-project{min-width:340px; width:40%}
+  .col-location{min-width:260px; width:24%}
+  .col-app, .col-dep{width:180px}
+  .col-actions{width:200px}
 
   /* Modal */
   .modal-backdrop{position:fixed; inset:0; background:rgba(2,6,23,.45); display:none; z-index:50}
@@ -42,14 +64,21 @@
   .modal-head{padding:16px 20px; border-bottom:1px solid var(--b)}
   .modal-body{padding:16px 20px}
   .modal-foot{padding:14px 20px; border-top:1px solid var(--b); display:flex; gap:10px; justify-content:flex-end}
-  @media (max-width:640px){ .modal-card{margin:16px; max-width:none} }
-  .kbd{display:inline-flex; align-items:center; justify-content:center; padding:0 8px; min-width:40px; height:30px; border-radius:8px; border:1px solid #cbd5e1; background:#f8fafc; font-weight:800; letter-spacing:2px}
+  @media (max-width:640px){
+    .modal-card{margin:16px; max-width:none}
+    .col-project{min-width:260px; width:44%}
+    .col-location{min-width:220px; width:28%}
+    .col-app, .col-dep{width:150px}
+    .col-actions{width:160px}
+  }
+  .kbd{display:inline-flex; align-items:center; justify-content:center; padding:0 8px; min-width:44px; height:32px;
+       border-radius:9px; border:1.25px solid var(--b2); background:#fff; font-weight:900; letter-spacing:2px}
 </style>
 
 <div class="page">
   <div class="flex items-center justify-between toolbar mb-4">
     <div>
-      <h2 class="text-xl font-bold text-slate-900">Cấu hình nhận tiền</h2>
+      <h2 class="text-xl font-extrabold text-slate-900">Cấu hình nhận tiền</h2>
       <p class="muted text-sm">Chọn tài khoản nhận tiền mua hồ sơ và đặt cọc cho từng dự án. Có thể <strong>đóng băng</strong> để chặn mọi thay đổi.</p>
     </div>
     <div>
@@ -72,12 +101,12 @@
     <table class="table text-sm">
       <thead class="head">
         <tr>
-          <th class="th">Dự án</th>
-          <th class="th">Vị trí</th>
-          <th class="th">Trạng thái</th>
-          <th class="th" style="width:280px">Mua hồ sơ</th>
-          <th class="th" style="width:280px">Đặt cọc</th>
-          <th class="th text-right">Thao tác</th>
+          <th class="th col-project">Dự án</th>
+          <th class="th col-location">Vị trí</th>
+          <th class="th" style="width:120px">Trạng thái</th>
+          <th class="th col-app">Mua hồ sơ</th>
+          <th class="th col-dep">Đặt cọc</th>
+          <th class="th col-actions text-right">Thao tác</th>
         </tr>
       </thead>
       <tbody>
@@ -90,12 +119,11 @@
 
         <tr>
           <!-- Dự án -->
-          <td class="td">
+          <td class="td col-project">
             <div class="flex items-start gap-2">
               {% if is_frozen %}
                 <span class="lock" title="Đã đóng băng">
-                  <!-- icon khoá -->
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                     <path d="M17 8V7a5 5 0 10-10 0v1H5a1 1 0 00-1 1v11a1 1 0 001 1h14a1 1 0 001-1V9a1 1 0 00-1-1h-2zm-8 0V7a3 3 0 116 0v1H9z"/>
                   </svg>
                 </span>
@@ -104,9 +132,13 @@
                 <div class="font-semibold text-slate-900 leading-5">{{ p.name }}</div>
                 <div class="mono text-xs text-slate-500">{{ p.project_code }}</div>
                 {% if is_frozen and (f.get("reason") or f.get("frozen_at")) %}
-                  <div class="mt-1 text-xs text-slate-500">
-                    {% if f.get("reason") %}<div>Lý do: {{ f.get("reason") }}</div>{% endif %}
-                    {% if f.get("frozen_at") %}<div>Thời điểm: {{ f.get("frozen_at") }}</div>{% endif %}
+                  <div class="mt-1 text-xs text-slate-500 space-x-2">
+                    {% if f.get("reason") %}<span>Lý do: {{ f.get("reason") }}</span>{% endif %}
+                    {% if f.get("frozen_at") %}
+                      <span>Thời điểm khóa:
+                        <span class="vn-dt" data-iso="{{ f.get('frozen_at') }}"></span>
+                      </span>
+                    {% endif %}
                   </div>
                 {% endif %}
               </div>
@@ -114,7 +146,9 @@
           </td>
 
           <!-- Vị trí -->
-          <td class="td text-slate-700">{{ p.location or '—' }}</td>
+          <td class="td col-location text-slate-700">
+            {{ p.location or '—' }}
+          </td>
 
           <!-- Trạng thái -->
           <td class="td">
@@ -129,7 +163,7 @@
           </td>
 
           <!-- Mua hồ sơ -->
-          <td class="td">
+          <td class="td col-app">
             {% if cba_app and cba_map.get(cba_app) %}
               {% set info = cba_map[cba_app] %}
               <div class="pill">
@@ -142,7 +176,7 @@
           </td>
 
           <!-- Đặt cọc -->
-          <td class="td">
+          <td class="td col-dep">
             {% if cba_dep and cba_map.get(cba_dep) %}
               {% set info2 = cba_map[cba_dep] %}
               <div class="pill">
@@ -155,7 +189,7 @@
           </td>
 
           <!-- Thao tác -->
-          <td class="td text-right">
+          <td class="td col-actions text-right">
             <div class="inline-flex gap-2 items-center justify-end">
               <button class="btn {% if is_frozen %}btn-disabled{% else %}btn-primary{% endif %}"
                       type="button" data-edit="{{ p.id }}"
@@ -180,7 +214,7 @@
         <tr id="edit-row-{{ p.id }}" class="hidden bg-slate-50" data-frozen="{{ '1' if is_frozen else '0' }}">
           <td class="td" colspan="6">
             {% if is_frozen %}
-              <div class="mb-3 p-3 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">
+              <div class="mb-3 p-3 rounded-lg border border-red-300 bg-red-50 text-red-700 text-sm">
                 Dự án đã <strong>đóng băng</strong>. Không thể chỉnh sửa cấu hình tài khoản nhận tiền.
               </div>
             {% endif %}
@@ -242,14 +276,14 @@
           Sau khi đóng băng sẽ <span class="font-semibold">không thể sửa</span> qua giao diện (chỉ có thể thay đổi trực tiếp DB).
         </div>
 
-        <div class="rounded-lg border border-amber-200 bg-amber-50 text-amber-800 p-3 text-sm">
+        <div class="rounded-lg border border-amber-300 bg-amber-50 text-amber-900 p-3 text-sm">
           Để xác nhận, vui lòng nhập lại đúng mã 4 chữ số bên dưới.
         </div>
 
         <div class="flex items-center gap-3">
           <span class="text-sm text-slate-600">Mã xác nhận:</span>
           <span id="freeze-code" class="kbd text-slate-900">0000</span>
-          <button type="button" id="freeze-regenerate" class="btn btn-ghost h-8 px-3">Tạo lại mã</button>
+          <button type="button" id="freeze-regenerate" class="btn btn-ghost h-9 px-3">Tạo lại mã</button>
         </div>
 
         <div>
@@ -267,7 +301,6 @@
                  placeholder="Ví dụ: Khoá cấu hình nhận tiền trước ngày mở bán" />
         </div>
 
-        <!-- hidden fields -->
         <input type="hidden" id="freeze-project-id-hidden" />
       </div>
       <div class="modal-foot">
@@ -280,7 +313,7 @@
 
 <script>
   (function () {
-    // ===== Toggle row editor (blocked if frozen) =====
+    // Toggle editor
     document.querySelectorAll('button[data-edit]').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-edit');
@@ -298,14 +331,33 @@
       });
     });
 
-    // ===== Modal helpers =====
+    // ===== Format VN datetime for all .vn-dt =====
+    function pad(n){ return String(n).padStart(2,'0'); }
+    function formatVN(iso){
+      try{
+        const d = new Date(iso);
+        if (isNaN(d.getTime())) return iso;
+        const dd = pad(d.getDate());
+        const mm = pad(d.getMonth()+1);
+        const yyyy = d.getFullYear();
+        const hh = pad(d.getHours());
+        const mi = pad(d.getMinutes());
+        const ss = pad(d.getSeconds());
+        return `${dd}/${mm}/${yyyy} ${hh}:${mi}:${ss}`;
+      }catch(e){ return iso; }
+    }
+    document.querySelectorAll('.vn-dt[data-iso]').forEach(el=>{
+      const iso = el.getAttribute('data-iso');
+      el.textContent = formatVN(iso);
+    });
+
+    // ===== Modal
     const $backdrop = document.getElementById('freeze-backdrop');
     const $modal    = document.getElementById('freeze-modal');
     const $pname    = document.getElementById('freeze-project-name');
     const $pcode    = document.getElementById('freeze-project-code');
     const $pidHid   = document.getElementById('freeze-project-id-hidden');
     const $form     = document.getElementById('freeze-form');
-    const $reason   = document.getElementById('freeze-reason');
     const $codeView = document.getElementById('freeze-code');
     const $codeInput= document.getElementById('freeze-code-input');
     const $error    = document.getElementById('freeze-error');
@@ -321,7 +373,7 @@
       $codeInput.value = '';
       $confirm.disabled = true;
       $error.classList.add('hidden');
-      setTimeout(() => $codeInput.focus(), 50);
+      setTimeout(() => $codeInput.focus(), 30);
     }
 
     function openModal({ id, code, name }){
@@ -332,7 +384,6 @@
       $backdrop.style.display = 'block';
       $modal.style.display = 'flex';
       document.body.style.overflow = 'hidden';
-      // Quan trọng: POST đúng endpoint Service B → Service A
       $form.setAttribute('action', `/projects/payment-accounts/${id}/freeze`);
     }
 
@@ -340,13 +391,11 @@
       $backdrop.style.display = 'none';
       $modal.style.display = 'none';
       document.body.style.overflow = '';
-      $reason.value = '';
       $codeInput.value = '';
       $confirm.disabled = true;
       $error.classList.add('hidden');
     }
 
-    // open handlers
     document.querySelectorAll('[data-open-freeze]').forEach(btn => {
       btn.addEventListener('click', () => {
         const id   = btn.getAttribute('data-project-id');
@@ -355,16 +404,12 @@
         openModal({ id, code, name });
       });
     });
-
-    // close handlers
     $cancel.addEventListener('click', closeModal);
     $backdrop.addEventListener('click', closeModal);
     window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 
-    // regenerate code
     $regen.addEventListener('click', genCode);
 
-    // validate input
     function validate(){
       const v = ($codeInput.value || '').trim();
       const ok = (v.length === 4 && v === currentCode);
@@ -373,15 +418,13 @@
     }
     $codeInput.addEventListener('input', validate);
 
-    // submit
     document.getElementById('freeze-form').addEventListener('submit', (e) => {
       const v = ($codeInput.value || '').trim();
       if (!(v.length === 4 && v === currentCode)) {
         e.preventDefault();
         validate();
-        return;
       }
-      // submit bình thường tới /projects/payment-accounts/{id}/freeze
+      // submit normally if ok
     });
   })();
 </script>
