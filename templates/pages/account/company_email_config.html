@@ -1,116 +1,202 @@
 {% extends "base.html" %}
+{% block title %}Cấu hình email — {{ company_code|upper }}{% endblock %}
 {% block content %}
+<style>
+:root{--b:#e5e7eb;--muted:#64748b;--txt:#0f172a;--ok:#10b981;--warn:#f59e0b;--err:#ef4444}
+.page-wrap{max-width:980px;margin:0 auto}
+.h1{font-size:22px;font-weight:800;margin:10px 0 14px}
+.card{background:#fff;border:1px solid var(--b);border-radius:14px;padding:14px;box-shadow:0 8px 24px rgba(2,6,23,.06)}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th,.tbl td{border-bottom:1px solid var(--b);padding:10px 8px;text-align:left;font-size:14px}
+.badge{font-size:12px;border-radius:999px;padding:2px 8px;display:inline-block}
+.badge.ok{background:rgba(16,185,129,.12);color:#065f46;border:1px solid rgba(16,185,129,.3)}
+.badge.off{background:rgba(100,116,139,.12);color:#334155;border:1px solid rgba(100,116,139,.3)}
+.btn{display:inline-flex;align-items:center;padding:8px 12px;border-radius:10px;border:1px solid var(--b);background:#0f172a;color:#fff}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-ghost{background:#fff;color:#0f172a}
+.input{width:100%;border:1px solid var(--b);border-radius:10px;padding:8px 10px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:820px){.grid{grid-template-columns:1fr}}
+.help{font-size:12px;color:var(--muted)}
+</style>
 
-<a href="/account/company/{{ company_code }}" class="text-sm text-indigo-600 hover:text-indigo-700">&larr; Quay lại công ty</a>
+<div class="page-wrap">
+  <a href="/account/company/{{ company_code }}" class="text-sm text-indigo-600">&larr; Quay lại chi tiết công ty</a>
+  <h1 class="h1">Cấu hình email — <b>{{ company_code|upper }}</b></h1>
 
-<header class="mt-3 mb-6">
-  <h2 class="text-xl font-semibold text-slate-800">Cấu hình email gửi đi — <span class="font-mono">{{ company_code }}</span></h2>
-  <p class="text-slate-500 text-sm">Chỉ <b>SUPER_ADMIN</b> được phép thiết lập SMTP cho công ty.</p>
-</header>
-
-{% if load_err %}
-  <div class="p-3 rounded bg-red-50 text-red-700 text-sm mb-4">{{ load_err }}</div>
-{% endif %}
-{% if msg %}
-  <div class="p-3 rounded bg-green-50 text-green-700 text-sm mb-4">{{ msg }}</div>
-{% endif %}
-
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-  <!-- Form -->
-  <form method="post" action="/account/company/{{ company_code }}/email-config/save"
-        class="lg:col-span-2 space-y-4 p-5 bg-white border rounded-2xl shadow-sm">
-    <div class="grid grid-cols-1 gap-4">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <label class="block">
-          <span class="text-sm text-slate-700">From email <span class="text-red-500">*</span></span>
-          <input name="from_email" value="{{ cfg.from_email or '' }}" required class="input"
-                 placeholder="no-reply@company.vn">
-          <span class="mt-1 block text-xs text-slate-500">Địa chỉ hiển thị trong phần “From”.</span>
-        </label>
-
-        <label class="block">
-          <span class="text-sm text-slate-700">Display name</span>
-          <input name="display_name" value="{{ cfg.display_name or '' }}" class="input" placeholder="KDO Auction">
-          <span class="mt-1 block text-xs text-slate-500">Tên hiển thị cạnh địa chỉ email.</span>
-        </label>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <label class="block">
-          <span class="text-sm text-slate-700">SMTP host <span class="text-red-500">*</span></span>
-          <input name="smtp_host" value="{{ cfg.smtp_host or '' }}" required class="input" placeholder="smtp.gmail.com">
-        </label>
-
-        <label class="block">
-          <span class="text-sm text-slate-700">SMTP port <span class="text-red-500">*</span></span>
-          <input name="smtp_port" type="number" value="{{ cfg.smtp_port or 587 }}" required class="input" min="1">
-        </label>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <label class="block">
-          <span class="text-sm text-slate-700">Username</span>
-          <input name="username" value="{{ cfg.username or '' }}" class="input" placeholder="no-reply@company.vn">
-        </label>
-
-        <label class="block">
-          <span class="text-sm text-slate-700">App password</span>
-          <input name="app_password" value="{{ cfg.app_password or '' }}" class="input" placeholder="16 ký tự app password">
-          <span class="mt-1 block text-xs text-slate-500">Với Gmail: dùng App Password (không phải mật khẩu đăng nhập).</span>
-        </label>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <label class="inline-flex items-center gap-2 select-none">
-          <input type="checkbox" name="use_tls" {% if cfg.use_tls %}checked{% endif %}>
-          <span class="text-sm text-slate-700">Use TLS (STARTTLS)</span>
-        </label>
-        <label class="inline-flex items-center gap-2 select-none">
-          <input type="checkbox" name="use_ssl" {% if cfg.use_ssl %}checked{% endif %}>
-          <span class="text-sm text-slate-700">Use SSL</span>
-        </label>
-        <label class="inline-flex items-center gap-2 select-none">
-          <input type="checkbox" name="enabled" {% if cfg.enabled %}checked{% endif %}>
-          <span class="text-sm text-slate-700">Enable sending</span>
-        </label>
-      </div>
-
-      <label class="block">
-        <span class="text-sm text-slate-700">Ghi chú (tùy chọn)</span>
-        <input name="note" value="{{ cfg.note or '' }}" class="input" placeholder="VD: Gmail app password 16 ký tự…">
-      </label>
+  <div class="card" style="margin-bottom:14px">
+    <h3 style="margin:0 0 10px;font-weight:800">Danh sách cấu hình</h3>
+    <div class="help" style="margin-bottom:8px">Hệ thống cho phép nhiều cấu hình; chọn <i>Kích hoạt</i> để đánh dấu cấu hình đang dùng.</div>
+    <div id="list-wrap">
+      <table class="tbl" id="mailer-table">
+        <thead>
+          <tr>
+            <th>ID</th><th>From</th><th>Host</th><th>Port</th><th>User</th><th>STARTTLS</th><th>SSL</th><th>Trạng thái</th><th style="width:180px">Hành động</th>
+          </tr>
+        </thead>
+        <tbody id="mailer-tbody"><tr><td colspan="9">Đang tải...</td></tr></tbody>
+      </table>
     </div>
+  </div>
 
-    <div class="pt-2 flex items-center gap-2">
-      <button type="submit" class="btn-primary inline-flex items-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M5 13l4 4L19 7"/>
-        </svg>
-        Lưu cấu hình
-      </button>
-      <a href="/account/company/{{ company_code }}" class="btn-secondary">Huỷ</a>
-    </div>
-  </form>
-
-  <!-- Tips / trạng thái -->
-  <aside class="space-y-3 p-5 bg-white border rounded-2xl shadow-sm">
-    <h3 class="text-sm font-semibold text-slate-800">Hướng dẫn nhanh</h3>
-    <ul class="text-sm text-slate-600 list-disc pl-5 space-y-1">
-      <li>Gmail: bật <i>App Password</i>, chọn port <b>587</b> với <b>TLS</b> (hoặc 465 với SSL).</li>
-      <li>Vietnix/Outlook/Zoho: dùng thông số SMTP nhà cung cấp.</li>
-      <li><b>Enable sending</b> để kích hoạt gửi mail cho công ty này.</li>
-    </ul>
-
-    <div class="mt-4 p-3 rounded bg-slate-50 text-slate-600 text-xs">
-      <div><b>From:</b> {{ cfg.display_name or 'Display Name' }} &lt;{{ cfg.from_email or 'no-reply@company.vn' }}&gt;</div>
-      <div><b>SMTP:</b> {{ cfg.smtp_host or 'smtp.gmail.com' }}:{{ cfg.smtp_port or 587 }},
-        TLS={{ 'on' if cfg.use_tls else 'off' }}, SSL={{ 'on' if cfg.use_ssl else 'off' }}</div>
-      <div><b>Trạng thái:</b>
-        {% if cfg.enabled %}<span class="text-green-700">Đang bật</span>{% else %}<span class="text-slate-500">Đang tắt</span>{% endif %}
+  <div class="card">
+    <h3 style="margin:0 0 10px;font-weight:800">Thêm cấu hình</h3>
+    <form id="create-form" onsubmit="return submitCreate(event)">
+      <div class="grid">
+        <div>
+          <label>From email</label>
+          <input class="input" name="from_email" required placeholder="noreply@company.com">
+        </div>
+        <div>
+          <label>Reply-To (tuỳ chọn)</label>
+          <input class="input" name="reply_to" placeholder="support@company.com">
+        </div>
+        <div>
+          <label>SMTP Host</label>
+          <input class="input" name="host" required placeholder="smtp.gmail.com">
+        </div>
+        <div>
+          <label>Port</label>
+          <input class="input" name="port" type="number" value="587" required>
+        </div>
+        <div>
+          <label>Username</label>
+          <input class="input" name="username" required placeholder="noreply@company.com">
+        </div>
+        <div>
+          <label>App Password</label>
+          <input class="input" name="app_password" required placeholder="16 ký tự App Password">
+          <div class="help">Gmail: bật 2FA & tạo App password.</div>
+        </div>
+        <div>
+          <label>STARTTLS</label>
+          <select class="input" name="use_starttls">
+            <option value="true" selected>Có</option>
+            <option value="false">Không</option>
+          </select>
+        </div>
+        <div>
+          <label>SSL</label>
+          <select class="input" name="use_ssl">
+            <option value="false" selected>Không</option>
+            <option value="true">Có</option>
+          </select>
+        </div>
+        <div>
+          <label>Kích hoạt ngay</label>
+          <select class="input" name="is_active">
+            <option value="true" selected>Có</option>
+            <option value="false">Không</option>
+          </select>
+        </div>
+        <div>
+          <label>Ghi chú</label>
+          <input class="input" name="notes" placeholder="Gmail SMTP">
+        </div>
       </div>
-    </div>
-  </aside>
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <button class="btn" type="submit">Tạo cấu hình</button>
+        <button class="btn btn-ghost" type="reset">Xoá</button>
+      </div>
+    </form>
+  </div>
 </div>
 
+<script>
+const COMPANY_CODE = "{{ company_code }}";
+
+async function fetchJSON(url, opts={}){
+  const res = await fetch(url, Object.assign({credentials:'include'}, opts));
+  if(!res.ok){
+    const text = await res.text();
+    throw new Error(text || (res.status + " " + res.statusText));
+  }
+  return res.json();
+}
+
+async function loadList(){
+  const tb = document.getElementById('mailer-tbody');
+  tb.innerHTML = '<tr><td colspan="9">Đang tải...</td></tr>';
+  try{
+    const data = await fetchJSON(`/api/v1/company-mailers?company_code=${encodeURIComponent(COMPANY_CODE)}`);
+    const items = data.items || [];
+    if(items.length === 0){
+      tb.innerHTML = '<tr><td colspan="9">Chưa có cấu hình.</td></tr>';
+      return;
+    }
+    tb.innerHTML = items.map(it => `
+      <tr>
+        <td>${it.id}</td>
+        <td>${it.from_email}${it.reply_to ? `<div class="help">Reply-To: ${it.reply_to}</div>`:''}</td>
+        <td>${it.host}</td>
+        <td>${it.port}</td>
+        <td>${it.username}</td>
+        <td>${it.use_starttls ? '✓' : '—'}</td>
+        <td>${it.use_ssl ? '✓' : '—'}</td>
+        <td>${it.is_active ? '<span class="badge ok">Đang dùng</span>' : '<span class="badge off">Tắt</span>'}</td>
+        <td style="display:flex;gap:6px">
+          <button class="btn btn-ghost" onclick="activate(${it.id})">Kích hoạt</button>
+          <button class="btn btn-ghost" onclick="editItem(${it.id})">Sửa</button>
+          <button class="btn btn-ghost" onclick="removeItem(${it.id})" style="color:var(--err);border-color:#fecaca">Xoá</button>
+        </td>
+      </tr>
+    `).join('');
+  }catch(e){
+    tb.innerHTML = `<tr><td colspan="9" style="color:var(--err)">${e.message}</td></tr>`;
+  }
+}
+
+async function submitCreate(e){
+  e.preventDefault();
+  const f = e.target;
+  const payload = {
+    company_code: COMPANY_CODE,
+    from_email: f.from_email.value.trim(),
+    reply_to: f.reply_to.value.trim() || null,
+    host: f.host.value.trim(),
+    port: Number(f.port.value),
+    username: f.username.value.trim(),
+    app_password: f.app_password.value.trim(),
+    use_ssl: f.use_ssl.value === 'true',
+    use_starttls: f.use_starttls.value === 'true',
+    is_active: f.is_active.value === 'true',
+    notes: f.notes.value.trim() || null
+  };
+  await fetchJSON('/api/v1/company-mailers', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  });
+  f.reset();
+  await loadList();
+}
+
+async function activate(id){
+  await fetchJSON(`/api/v1/company-mailers/${id}/activate`, {method:'POST'});
+  await loadList();
+}
+
+async function editItem(id){
+  const from_email = prompt('From email (để trống nếu không đổi):') || undefined;
+  const reply_to  = prompt('Reply-To (để trống nếu không đổi):') || undefined;
+  const payload = {};
+  if(from_email) payload.from_email = from_email;
+  if(reply_to)   payload.reply_to   = reply_to;
+  if(Object.keys(payload).length === 0) return;
+  await fetchJSON(`/api/v1/company-mailers/${id}`, {
+    method:'PUT',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  });
+  await loadList();
+}
+
+async function removeItem(id){
+  if(!confirm('Xoá cấu hình này?')) return;
+  await fetch(`/api/v1/company-mailers/${id}`, {method:'DELETE', credentials:'include'});
+  await loadList();
+}
+
+document.addEventListener('DOMContentLoaded', loadList);
+</script>
 {% endblock %}
