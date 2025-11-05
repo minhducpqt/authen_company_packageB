@@ -11,13 +11,22 @@
 .badge{font-size:12px;border-radius:999px;padding:2px 8px;display:inline-block}
 .badge.ok{background:rgba(16,185,129,.12);color:#065f46;border:1px solid rgba(16,185,129,.3)}
 .badge.off{background:rgba(100,116,139,.12);color:#334155;border:1px solid rgba(100,116,139,.3)}
-.btn{display:inline-flex;align-items:center;padding:8px 12px;border-radius:10px;border:1px solid var(--b);background:#0f172a;color:#fff}
+.btn{display:inline-flex;align-items:center;padding:8px 12px;border-radius:10px;border:1px solid var(--b);background:#0f172a;color:#fff;cursor:pointer}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .btn-ghost{background:#fff;color:#0f172a}
 .input{width:100%;border:1px solid var(--b);border-radius:10px;padding:8px 10px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media (max-width:820px){.grid{grid-template-columns:1fr}}
 .help{font-size:12px;color:var(--muted)}
+
+/* Modal */
+.modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+.modal{width:100%;max-width:680px;background:#fff;border:1px solid var(--b);border-radius:16px;box-shadow:0 20px 48px rgba(2,6,23,.2);overflow:hidden}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--b)}
+.modal-tt{font-weight:800;color:#0f172a}
+.modal-bd{padding:16px}
+.modal-ft{display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;border-top:1px solid var(--b);background:#f8fafc}
+.close-x{background:transparent;border:none;font-size:20px;line-height:1;cursor:pointer;color:#475569}
 </style>
 
 <div class="page-wrap">
@@ -31,7 +40,7 @@
       <table class="tbl" id="mailer-table">
         <thead>
           <tr>
-            <th>ID</th><th>From</th><th>Host</th><th>Port</th><th>User</th><th>STARTTLS</th><th>SSL</th><th>Trạng thái</th><th style="width:180px">Hành động</th>
+            <th>ID</th><th>From</th><th>Host</th><th>Port</th><th>User</th><th>STARTTLS</th><th>SSL</th><th>Trạng thái</th><th style="width:220px">Hành động</th>
           </tr>
         </thead>
         <tbody id="mailer-tbody"><tr><td colspan="9">Đang tải...</td></tr></tbody>
@@ -102,6 +111,77 @@
   </div>
 </div>
 
+<!-- EDIT MODAL -->
+<div id="edit-modal" class="modal-backdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+    <div class="modal-hd">
+      <div id="edit-title" class="modal-tt">Sửa cấu hình email</div>
+      <button class="close-x" type="button" onclick="closeEdit()">×</button>
+    </div>
+    <form id="edit-form" onsubmit="return submitEdit(event)">
+      <div class="modal-bd">
+        <input type="hidden" name="id">
+        <div class="grid">
+          <div>
+            <label>From email</label>
+            <input class="input" name="from_email" required>
+          </div>
+          <div>
+            <label>Reply-To (tuỳ chọn)</label>
+            <input class="input" name="reply_to" placeholder="support@company.com">
+          </div>
+          <div>
+            <label>SMTP Host</label>
+            <input class="input" name="host" required>
+          </div>
+          <div>
+            <label>Port</label>
+            <input class="input" name="port" type="number" required>
+          </div>
+          <div>
+            <label>Username</label>
+            <input class="input" name="username" required>
+          </div>
+          <div>
+            <label>App Password</label>
+            <input class="input" name="app_password" placeholder="(để trống nếu không đổi)">
+            <div class="help">Để trống nếu giữ nguyên app password hiện tại.</div>
+          </div>
+          <div>
+            <label>STARTTLS</label>
+            <select class="input" name="use_starttls">
+              <option value="true">Có</option>
+              <option value="false">Không</option>
+            </select>
+          </div>
+          <div>
+            <label>SSL</label>
+            <select class="input" name="use_ssl">
+              <option value="false">Không</option>
+              <option value="true">Có</option>
+            </select>
+          </div>
+          <div>
+            <label>Kích hoạt</label>
+            <select class="input" name="is_active">
+              <option value="true">Có</option>
+              <option value="false">Không</option>
+            </select>
+          </div>
+          <div>
+            <label>Ghi chú</label>
+            <input class="input" name="notes" placeholder="Gmail SMTP">
+          </div>
+        </div>
+      </div>
+      <div class="modal-ft">
+        <button type="button" class="btn btn-ghost" onclick="closeEdit()">Huỷ</button>
+        <button type="submit" class="btn">Lưu thay đổi</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
 const COMPANY_CODE = "{{ company_code }}";
 
@@ -114,12 +194,15 @@ async function fetchJSON(url, opts={}){
   return res.json();
 }
 
+let ITEMS = [];   // cache danh sách để phục vụ popup edit
+
 async function loadList(){
   const tb = document.getElementById('mailer-tbody');
   tb.innerHTML = '<tr><td colspan="9">Đang tải...</td></tr>';
   try{
     const data = await fetchJSON(`/api/v1/company-mailers?company_code=${encodeURIComponent(COMPANY_CODE)}`);
     const items = data.items || [];
+    ITEMS = items;
     if(items.length === 0){
       tb.innerHTML = '<tr><td colspan="9">Chưa có cấu hình.</td></tr>';
       return;
@@ -127,24 +210,26 @@ async function loadList(){
     tb.innerHTML = items.map(it => `
       <tr>
         <td>${it.id}</td>
-        <td>${it.from_email}${it.reply_to ? `<div class="help">Reply-To: ${it.reply_to}</div>`:''}</td>
+        <td>${it.from_email}${it.reply_to ? `<div class="help">Reply-To: ${escapeHtml(it.reply_to)}</div>`:''}</td>
         <td>${it.host}</td>
         <td>${it.port}</td>
         <td>${it.username}</td>
         <td>${it.use_starttls ? '✓' : '—'}</td>
         <td>${it.use_ssl ? '✓' : '—'}</td>
         <td>${it.is_active ? '<span class="badge ok">Đang dùng</span>' : '<span class="badge off">Tắt</span>'}</td>
-        <td style="display:flex;gap:6px">
+        <td style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="btn btn-ghost" onclick="activate(${it.id})">Kích hoạt</button>
-          <button class="btn btn-ghost" onclick="editItem(${it.id})">Sửa</button>
+          <button class="btn btn-ghost" onclick="openEdit(${it.id})">Sửa</button>
           <button class="btn btn-ghost" onclick="removeItem(${it.id})" style="color:var(--err);border-color:#fecaca">Xoá</button>
         </td>
       </tr>
     `).join('');
   }catch(e){
-    tb.innerHTML = `<tr><td colspan="9" style="color:var(--err)">${e.message}</td></tr>`;
+    tb.innerHTML = `<tr><td colspan="9" style="color:var(--err)">${escapeHtml(e.message)}</td></tr>`;
   }
 }
+
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 
 async function submitCreate(e){
   e.preventDefault();
@@ -176,27 +261,74 @@ async function activate(id){
   await loadList();
 }
 
-async function editItem(id){
-  const from_email = prompt('From email (để trống nếu không đổi):') || undefined;
-  const reply_to  = prompt('Reply-To (để trống nếu không đổi):') || undefined;
-  const payload = {};
-  if(from_email) payload.from_email = from_email;
-  if(reply_to)   payload.reply_to   = reply_to;
-  if(Object.keys(payload).length === 0) return;
+/* ===== Modal Edit ===== */
+const modal = document.getElementById('edit-modal');
+const editForm = document.getElementById('edit-form');
+
+function openEdit(id){
+  const it = ITEMS.find(x => x.id === id);
+  if(!it) return;
+
+  editForm.id.value = it.id;
+  editForm.from_email.value = it.from_email || '';
+  editForm.reply_to.value  = it.reply_to || '';
+  editForm.host.value      = it.host || '';
+  editForm.port.value      = it.port || 587;
+  editForm.username.value  = it.username || '';
+  editForm.app_password.value = ''; // để trống nếu không đổi
+  editForm.use_starttls.value = it.use_starttls ? 'true' : 'false';
+  editForm.use_ssl.value      = it.use_ssl ? 'true' : 'false';
+  editForm.is_active.value    = it.is_active ? 'true' : 'false';
+  editForm.notes.value        = it.notes || '';
+
+  modal.style.display = 'flex';
+  document.body.classList.add('vk-open');
+}
+
+function closeEdit(){
+  modal.style.display = 'none';
+  document.body.classList.remove('vk-open');
+}
+
+async function submitEdit(e){
+  e.preventDefault();
+  const f = e.target;
+  const id = f.id.value;
+  const payload = {
+    from_email: f.from_email.value.trim(),
+    reply_to: f.reply_to.value.trim() || null,
+    host: f.host.value.trim(),
+    port: Number(f.port.value),
+    username: f.username.value.trim(),
+    use_ssl: f.use_ssl.value === 'true',
+    use_starttls: f.use_starttls.value === 'true',
+    is_active: f.is_active.value === 'true',
+    notes: f.notes.value.trim() || null
+  };
+  // chỉ gửi app_password nếu người dùng nhập
+  const pw = f.app_password.value.trim();
+  if(pw) payload.app_password = pw;
+
   await fetchJSON(`/api/v1/company-mailers/${id}`, {
     method:'PUT',
     headers:{'Content-Type':'application/json'},
     body: JSON.stringify(payload)
   });
+  closeEdit();
   await loadList();
 }
 
+/* ===== Delete ===== */
 async function removeItem(id){
   if(!confirm('Xoá cấu hình này?')) return;
   await fetch(`/api/v1/company-mailers/${id}`, {method:'DELETE', credentials:'include'});
   await loadList();
 }
 
+/* Init */
 document.addEventListener('DOMContentLoaded', loadList);
+/* đóng modal khi click backdrop */
+modal.addEventListener('click', (e)=>{ if(e.target === modal) closeEdit(); });
+document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape' && modal.style.display==='flex') closeEdit(); });
 </script>
 {% endblock %}
