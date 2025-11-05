@@ -1,16 +1,39 @@
 {% extends "base.html" %}
 {% block content %}
 
-<a href="/account" class="text-sm text-indigo-600">&larr; Quay lại danh sách công ty</a>
+<a href="/account" class="text-sm text-indigo-600 hover:text-indigo-700">&larr; Quay lại danh sách công ty</a>
 
-<div class="mt-3 mb-6">
-  <h2 class="text-xl font-semibold text-slate-800">Công ty: {{ company_code }}</h2>
-  {% if company %}
-    <p class="text-slate-500 text-sm">
-      Tên: <b>{{ company.name }}</b>
-      {% if company.is_active %}<span class="ml-2 text-green-600">Active</span>{% else %}<span class="ml-2 text-slate-500">Disabled</span>{% endif %}
-    </p>
-  {% endif %}
+<div class="mt-3 mb-6 flex items-start justify-between gap-3">
+  <div>
+    <h2 class="text-xl font-semibold text-slate-800">Công ty: {{ company_code }}</h2>
+    {% if company %}
+      <p class="text-slate-500 text-sm">
+        Tên: <b class="text-slate-700">{{ company.name }}</b>
+        {% if company.is_active %}
+          <span class="ml-2 inline-flex items-center text-green-700">
+            <span class="h-2 w-2 rounded-full bg-green-500 mr-1"></span> Active
+          </span>
+        {% else %}
+          <span class="ml-2 inline-flex items-center text-slate-500">
+            <span class="h-2 w-2 rounded-full bg-slate-400 mr-1"></span> Disabled
+          </span>
+        {% endif %}
+      </p>
+    {% endif %}
+  </div>
+
+  <!-- NEW: Cấu hình email -->
+  <div class="shrink-0">
+    <a href="/account/company/{{ company_code }}/email-config"
+       class="btn-primary inline-flex items-center gap-2">
+      <!-- simple envelope icon -->
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8m-18 8h18a2 2 0 002-2V8a2 2 0 00-2-2H3a2 2 0 00-2 2v6a2 2 0 002 2z"/>
+      </svg>
+      Cấu hình email
+    </a>
+  </div>
 </div>
 
 {% if load_err %}
@@ -19,43 +42,59 @@
 
 {# Form tạo user cho công ty này #}
 <div class="mb-4">
-  <form action="/account/admin/user/create" method="post" class="flex gap-2">
+  <form action="/account/admin/user/create" method="post" class="flex flex-wrap items-end gap-2">
     <input type="hidden" name="company_code" value="{{ company_code }}">
     <input type="hidden" name="next" value="/account/company/{{ company_code }}">
-    <input name="username" placeholder="username (a-z0-9_)" class="input" required>
-    <input name="password" placeholder="password" type="password" class="input" required>
-    <select name="role" class="input">
-      <option value="STAFF">STAFF</option>
-      <option value="VIEWER">VIEWER</option>
-      <option value="ACCOUNTANT">ACCOUNTANT</option>
-      <option value="COMPANY_ADMIN">COMPANY_ADMIN</option>
-    </select>
+    <label class="block">
+      <span class="sr-only">Username</span>
+      <input name="username" placeholder="username (a-z0-9_)" class="input" required>
+    </label>
+    <label class="block">
+      <span class="sr-only">Password</span>
+      <input name="password" placeholder="password" type="password" class="input" required>
+    </label>
+    <label class="block">
+      <span class="sr-only">Role</span>
+      <select name="role" class="input">
+        <option value="STAFF">STAFF</option>
+        <option value="VIEWER">VIEWER</option>
+        <option value="ACCOUNTANT">ACCOUNTANT</option>
+        <option value="COMPANY_ADMIN">COMPANY_ADMIN</option>
+      </select>
+    </label>
     <button class="btn-primary" type="submit">Thêm tài khoản</button>
   </form>
 </div>
 
 {# Danh sách user của công ty #}
 {% if users and users|length > 0 %}
-  <div class="overflow-x-auto border rounded">
+  <div class="overflow-x-auto border rounded bg-white">
     <table class="min-w-full text-sm">
-      <thead class="bg-slate-100">
+      <thead class="bg-slate-50 text-slate-600">
         <tr>
-          <th class="px-3 py-2 text-left">ID</th>
-          <th class="px-3 py-2 text-left">Username</th>
-          <th class="px-3 py-2 text-left">Role</th>
-          <th class="px-3 py-2 text-left">Trạng thái</th>
-          <th class="px-3 py-2 text-left">Hành động</th>
+          <th class="px-3 py-2 text-left font-medium">ID</th>
+          <th class="px-3 py-2 text-left font-medium">Username</th>
+          <th class="px-3 py-2 text-left font-medium">Role</th>
+          <th class="px-3 py-2 text-left font-medium">Trạng thái</th>
+          <th class="px-3 py-2 text-left font-medium">Hành động</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody class="divide-y divide-slate-100">
         {% for u in users %}
-        <tr class="border-t">
+        <tr class="hover:bg-slate-50">
           <td class="px-3 py-2">{{ u.id }}</td>
-          <td class="px-3 py-2 font-mono">{{ u.username }}</td>
+          <td class="px-3 py-2 font-mono text-slate-800">{{ u.username }}</td>
           <td class="px-3 py-2">{{ u.role }}</td>
           <td class="px-3 py-2">
-            {% if u.is_active %}<span class="text-green-600">Active</span>
-            {% else %}<span class="text-slate-500">Disabled</span>{% endif %}
+            {% if u.is_active %}
+              <span class="inline-flex items-center text-green-700">
+                <span class="h-2 w-2 rounded-full bg-green-500 mr-1"></span> Active
+              </span>
+            {% else %}
+              <span class="inline-flex items-center text-slate-500">
+                <span class="h-2 w-2 rounded-full bg-slate-400 mr-1"></span> Disabled
+              </span>
+            {% endif %}
           </td>
           <td class="px-3 py-2">
             {% if u.is_active %}
@@ -80,7 +119,7 @@
                   onsubmit="return confirm('Đặt lại mật khẩu cho {{ u.username }} ?');">
               <input type="hidden" name="user_id" value="{{ u.id }}">
               <input type="hidden" name="next" value="/account/company/{{ company_code }}">
-              <input type="password" name="new_password" placeholder="new password" class="input" required>
+              <input type="password" name="new_password" placeholder="new password" class="input">
               <button class="btn-primary" type="submit">Set password</button>
             </form>
           </td>

@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block content %}
+
+<a href="/account/company/{{ company_code }}" class="text-sm text-indigo-600 hover:text-indigo-700">&larr; Quay lại công ty</a>
+
+<header class="mt-3 mb-6">
+  <h2 class="text-xl font-semibold text-slate-800">Cấu hình email gửi đi — <span class="font-mono">{{ company_code }}</span></h2>
+  <p class="text-slate-500 text-sm">Chỉ <b>SUPER_ADMIN</b> được phép thiết lập SMTP cho công ty.</p>
+</header>
+
+{% if load_err %}
+  <div class="p-3 rounded bg-red-50 text-red-700 text-sm mb-4">{{ load_err }}</div>
+{% endif %}
+{% if msg %}
+  <div class="p-3 rounded bg-green-50 text-green-700 text-sm mb-4">{{ msg }}</div>
+{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <!-- Form -->
+  <form method="post" action="/account/company/{{ company_code }}/email-config/save"
+        class="lg:col-span-2 space-y-4 p-5 bg-white border rounded-2xl shadow-sm">
+    <div class="grid grid-cols-1 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <label class="block">
+          <span class="text-sm text-slate-700">From email <span class="text-red-500">*</span></span>
+          <input name="from_email" value="{{ cfg.from_email or '' }}" required class="input"
+                 placeholder="no-reply@company.vn">
+          <span class="mt-1 block text-xs text-slate-500">Địa chỉ hiển thị trong phần “From”.</span>
+        </label>
+
+        <label class="block">
+          <span class="text-sm text-slate-700">Display name</span>
+          <input name="display_name" value="{{ cfg.display_name or '' }}" class="input" placeholder="KDO Auction">
+          <span class="mt-1 block text-xs text-slate-500">Tên hiển thị cạnh địa chỉ email.</span>
+        </label>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <label class="block">
+          <span class="text-sm text-slate-700">SMTP host <span class="text-red-500">*</span></span>
+          <input name="smtp_host" value="{{ cfg.smtp_host or '' }}" required class="input" placeholder="smtp.gmail.com">
+        </label>
+
+        <label class="block">
+          <span class="text-sm text-slate-700">SMTP port <span class="text-red-500">*</span></span>
+          <input name="smtp_port" type="number" value="{{ cfg.smtp_port or 587 }}" required class="input" min="1">
+        </label>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <label class="block">
+          <span class="text-sm text-slate-700">Username</span>
+          <input name="username" value="{{ cfg.username or '' }}" class="input" placeholder="no-reply@company.vn">
+        </label>
+
+        <label class="block">
+          <span class="text-sm text-slate-700">App password</span>
+          <input name="app_password" value="{{ cfg.app_password or '' }}" class="input" placeholder="16 ký tự app password">
+          <span class="mt-1 block text-xs text-slate-500">Với Gmail: dùng App Password (không phải mật khẩu đăng nhập).</span>
+        </label>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <label class="inline-flex items-center gap-2 select-none">
+          <input type="checkbox" name="use_tls" {% if cfg.use_tls %}checked{% endif %}>
+          <span class="text-sm text-slate-700">Use TLS (STARTTLS)</span>
+        </label>
+        <label class="inline-flex items-center gap-2 select-none">
+          <input type="checkbox" name="use_ssl" {% if cfg.use_ssl %}checked{% endif %}>
+          <span class="text-sm text-slate-700">Use SSL</span>
+        </label>
+        <label class="inline-flex items-center gap-2 select-none">
+          <input type="checkbox" name="enabled" {% if cfg.enabled %}checked{% endif %}>
+          <span class="text-sm text-slate-700">Enable sending</span>
+        </label>
+      </div>
+
+      <label class="block">
+        <span class="text-sm text-slate-700">Ghi chú (tùy chọn)</span>
+        <input name="note" value="{{ cfg.note or '' }}" class="input" placeholder="VD: Gmail app password 16 ký tự…">
+      </label>
+    </div>
+
+    <div class="pt-2 flex items-center gap-2">
+      <button type="submit" class="btn-primary inline-flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M5 13l4 4L19 7"/>
+        </svg>
+        Lưu cấu hình
+      </button>
+      <a href="/account/company/{{ company_code }}" class="btn-secondary">Huỷ</a>
+    </div>
+  </form>
+
+  <!-- Tips / trạng thái -->
+  <aside class="space-y-3 p-5 bg-white border rounded-2xl shadow-sm">
+    <h3 class="text-sm font-semibold text-slate-800">Hướng dẫn nhanh</h3>
+    <ul class="text-sm text-slate-600 list-disc pl-5 space-y-1">
+      <li>Gmail: bật <i>App Password</i>, chọn port <b>587</b> với <b>TLS</b> (hoặc 465 với SSL).</li>
+      <li>Vietnix/Outlook/Zoho: dùng thông số SMTP nhà cung cấp.</li>
+      <li><b>Enable sending</b> để kích hoạt gửi mail cho công ty này.</li>
+    </ul>
+
+    <div class="mt-4 p-3 rounded bg-slate-50 text-slate-600 text-xs">
+      <div><b>From:</b> {{ cfg.display_name or 'Display Name' }} &lt;{{ cfg.from_email or 'no-reply@company.vn' }}&gt;</div>
+      <div><b>SMTP:</b> {{ cfg.smtp_host or 'smtp.gmail.com' }}:{{ cfg.smtp_port or 587 }},
+        TLS={{ 'on' if cfg.use_tls else 'off' }}, SSL={{ 'on' if cfg.use_ssl else 'off' }}</div>
+      <div><b>Trạng thái:</b>
+        {% if cfg.enabled %}<span class="text-green-700">Đang bật</span>{% else %}<span class="text-slate-500">Đang tắt</span>{% endif %}
+      </div>
+    </div>
+  </aside>
+</div>
+
+{% endblock %}
