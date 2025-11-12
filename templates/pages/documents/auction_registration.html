@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>Đơn đăng ký tham gia đấu giá tài sản</title>
+  <style>
+    @page { size: A4; margin: 18mm 16mm; }
+    html, body { font-family: "Times New Roman", Times, serif; font-size: 13pt; color: #000; }
+    .center { text-align: center; }
+    .bold { font-weight: 700; }
+    .mt-6 { margin-top: 6mm; } .mb-4 { margin-bottom: 4mm; } .mb-6 { margin-bottom: 6mm; }
+    .underline { text-decoration: underline; }
+    .header-line { letter-spacing: 2px; }
+    .divider { text-align:center; margin: 2mm 0 6mm; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; }
+    .row { display: flex; align-items: baseline; gap: 6mm; }
+    .label { min-width: 38mm; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #000; padding: 4px 6px; vertical-align: top; }
+    th { text-align: center; }
+    .w-stt { width: 10mm; }
+    .w-name { width: auto; }
+    .w-area { width: 28mm; text-align: right; }
+    .w-price { width: 42mm; text-align: right; }
+    .signature { width: 60%; margin-left: auto; text-align: center; }
+    .note { font-style: italic; font-size: 11pt; }
+    .small { font-size: 11.5pt; }
+    .title { font-size: 18pt; font-weight: 800; text-transform: uppercase; }
+    .gov { font-size: 16pt; font-weight: 800; text-transform: uppercase; }
+  </style>
+</head>
+<body>
+
+  <div class="center gov">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+  <div class="center bold">Độc lập – Tự do – Hạnh phúc</div>
+  <div class="divider">-----------------o0o-----------------</div>
+
+  <div class="center title mb-6">ĐƠN ĐĂNG KÝ THAM GIA ĐẤU GIÁ TÀI SẢN</div>
+
+  <div class="mb-6"><span class="bold">Kính gửi:</span> {{ data.company.name }}</div>
+
+  <div class="row mb-4">
+    <div class="label bold">Người đăng ký TGĐG:</div>
+    <div class="flex-1 underline" style="flex:1">
+      {{ data.customer.full_name }}
+    </div>
+    <div class="label bold" style="margin-left:6mm">SĐT:</div>
+    <div class="underline" style="min-width:40mm">{{ data.customer.phone or "" }}</div>
+  </div>
+
+  <div class="row mb-4">
+    <div class="label bold">CCCD/CC số:</div>
+    <div class="underline" style="flex:1">{{ data.customer.cccd }}</div>
+    <div class="label bold" style="margin-left:6mm">Email:</div>
+    <div class="underline" style="min-width:55mm">{{ data.customer.email or "" }}</div>
+  </div>
+
+  <div class="row mb-6">
+    <div class="label bold">Nơi thường trú:</div>
+    <div class="underline" style="flex:1">{{ data.customer.address or "" }}</div>
+  </div>
+
+  <div class="mb-4 small">
+    <span class="bold">Tài sản đấu giá:</span>
+    Quyền sử dụng đất thuộc dự án <span class="bold">{{ data.project.name }}</span>.
+  </div>
+
+  <table class="mb-6">
+    <thead>
+      <tr>
+        <th class="w-stt">STT</th>
+        <th class="w-name">Tên lô / thửa đất</th>
+        <th class="w-area">Diện tích (m²)</th>
+        <th class="w-price">Giá khởi điểm (VND)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for i, lot in enumerate(data.lots or [], start=1) %}
+      <tr>
+        <td class="center">{{ i }}</td>
+        <td>{{ lot.code }}</td>
+        <td class="w-area">{{ "{:,.2f}".format(lot.area_m2|float) if lot.area_m2 is not none else "" }}</td>
+        <td class="w-price">{{ "{:,.0f}".format(lot.reserve_price_vnd|float) if lot.reserve_price_vnd is not none else "" }}</td>
+      </tr>
+      {% endfor %}
+      {% if (data.lots or [])|length == 0 %}
+      <tr><td class="center">1</td><td>&nbsp;</td><td class="w-area"></td><td class="w-price"></td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+  <div class="bold mb-4">Tôi xin cam kết:</div>
+  <ol class="small mb-6" style="margin-top:0;">
+    <li>Tôi là người duy nhất đại diện cho hộ gia đình đăng ký tham gia đấu giá lô/thửa đất trên và không thuộc trường hợp không đủ điều kiện đăng ký tham gia đấu giá theo Luật ĐGTS.</li>
+    <li>Đã xem tài sản đấu giá, xem giấy tờ về quyền sở hữu, sử dụng tài sản trên. Đã nhận, đọc và hiểu rõ nội dung tại Thông báo đấu giá tài sản và Quy chế đấu giá tài sản của Công ty; tự nguyện đăng ký tham gia đấu giá tại phiên nêu trên.</li>
+    <li>Chấp nhận tham gia đấu giá theo hình thức, điều kiện mà Công ty lựa chọn cho phiên đấu giá.</li>
+    <li>Khi tham gia đấu giá, tôi cam kết thực hiện đúng Quy chế đấu giá tài sản mà Công ty đã ban hành và các quy định pháp luật có liên quan đến việc bán đấu giá tài sản.</li>
+    <li>Không nhận tiền lãi phát sinh của khoản tiền đặt trước (nếu có).</li>
+  </ol>
+
+  <div class="signature">
+    <div>…, ngày …. tháng … năm {{ year }}</div>
+    <div class="bold">Người đăng ký tham gia đấu giá</div>
+    <div class="note">(Ký, ghi rõ họ tên)</div>
+  </div>
+
+</body>
+</html>

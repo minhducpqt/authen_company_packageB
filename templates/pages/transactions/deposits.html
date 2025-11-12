@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="bg-white rounded-xl border border-slate-200">
+<div class="bg-white rounded-xl border border-slate-200" id="pageRoot" data-company="{{ company_code or '' }}">
   <!-- FILTER BAR -->
   <div class="p-4 flex flex-wrap gap-4 items-center">
     <div class="w-72">
@@ -44,10 +44,11 @@
           <th class="py-3 px-4 text-right">Đã trả</th>
           <th class="py-3 px-4 text-right">Pending</th>
           <th class="py-3 px-4 text-right">QR chờ TT</th>
+          <th class="py-3 px-4 text-right">Đơn</th>
         </tr>
       </thead>
       <tbody id="dataBody">
-        <tr><td class="py-6 px-4 text-slate-400" colspan="6">Đang tải...</td></tr>
+        <tr><td class="py-6 px-4 text-slate-400" colspan="7">Đang tải...</td></tr>
       </tbody>
     </table>
   </div>
@@ -62,8 +63,8 @@
   </div>
 </div>
 
-<!-- SLIDE-OVER DETAIL -->
-<div id="drawer" class="fixed inset-0 hidden z-50">
+<!-- SLIDE-OVER DETAIL (giữ nguyên) -->
+<div id="drawer" class="fixed inset-0 hidden z-40">
   <div class="absolute inset-0 bg-black/40" id="drawerBackdrop"></div>
   <div class="absolute right-0 top-0 h-full w-full sm:w-[560px] bg-white shadow-2xl flex flex-col">
     <div class="px-5 py-4 border-b flex items-center justify-between">
@@ -76,10 +77,8 @@
       </button>
     </div>
 
-    <!-- Header chips -->
     <div id="drawerHeaderStats" class="px-5 py-3 grid grid-cols-3 gap-3 border-b"></div>
 
-    <!-- Tabs -->
     <div class="px-5 pt-3">
       <div class="flex gap-2">
         <button data-tab="paid" class="tab px-3 py-1.5 rounded-lg border text-sm">Đã trả</button>
@@ -89,8 +88,26 @@
       </div>
     </div>
 
-    <!-- Tab panes -->
     <div class="flex-1 overflow-auto p-5 space-y-4" id="tabContent"></div>
+  </div>
+</div>
+
+<!-- DOC MODAL -->
+<div id="docModal" class="fixed inset-0 hidden z-50">
+  <div class="absolute inset-0 bg-black/50" id="docBackdrop"></div>
+  <div class="absolute inset-4 sm:inset-10 bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden">
+    <div class="px-4 py-3 border-b flex items-center justify-between">
+      <div class="font-semibold">Đơn đăng ký tham gia đấu giá</div>
+      <div class="flex items-center gap-2">
+        <button id="btnDocDownload" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
+          <i class="ri-download-2-line"></i> Tải PDF
+        </button>
+        <button id="btnDocClose" class="h-9 w-9 rounded-full hover:bg-slate-100 flex items-center justify-center">
+          <i class="ri-close-line text-xl"></i>
+        </button>
+      </div>
+    </div>
+    <iframe id="docFrame" class="flex-1 w-full" style="border:0"></iframe>
   </div>
 </div>
 
@@ -99,16 +116,25 @@
   const DATA_URL = "/transactions/deposits/data";
   const PROJ_URL = "/projects/options/active";
   const DETAIL_URL = (cid) => `/transactions/customers/${cid}/orders?type=DEPOSIT`;
+  const DOC_URL = (company_code, project_code, cccd) => {
+    const p = new URLSearchParams();
+    if (company_code) p.set("company_code", company_code);
+    p.set("project_code", project_code);
+    p.set("cccd", cccd);
+    return `/documents/auction/registration?${p.toString()}`;
+  };
 
-  const elProject = document.getElementById("projectSelect");
-  const elSearch  = document.getElementById("searchInput");
-  const elPage    = document.getElementById("pageInput");
-  const elSize    = document.getElementById("sizeSelect");
-  const elBody    = document.getElementById("dataBody");
-  const elTotal   = document.getElementById("totalInfo");
-  const btnPrev   = document.getElementById("prevBtn");
-  const btnNext   = document.getElementById("nextBtn");
-  const btnRefresh= document.getElementById("refreshBtn");
+  const root     = document.getElementById("pageRoot");
+  const COMPANY  = root.dataset.company || "";   // nên truyền từ server
+  const elProject= document.getElementById("projectSelect");
+  const elSearch = document.getElementById("searchInput");
+  const elPage   = document.getElementById("pageInput");
+  const elSize   = document.getElementById("sizeSelect");
+  const elBody   = document.getElementById("dataBody");
+  const elTotal  = document.getElementById("totalInfo");
+  const btnPrev  = document.getElementById("prevBtn");
+  const btnNext  = document.getElementById("nextBtn");
+  const btnRefresh = document.getElementById("refreshBtn");
 
   // drawer
   const drawer = document.getElementById("drawer");
@@ -118,11 +144,18 @@
   const headerStats = document.getElementById("drawerHeaderStats");
   const tabContent = document.getElementById("tabContent");
 
+  // doc modal
+  const docModal = document.getElementById("docModal");
+  const docBackdrop = document.getElementById("docBackdrop");
+  const btnDocClose = document.getElementById("btnDocClose");
+  const btnDocDownload = document.getElementById("btnDocDownload");
+  const docFrame = document.getElementById("docFrame");
+
   // init server defaults
   elSearch.value = "{{ init_q or '' }}";
   elProject.dataset.init = "{{ init_project_code or '' }}";
 
-  let t; const debounce=(fn,ms=350)=>{clearTimeout(t); t=setTimeout(fn,ms);};
+  let t; const debounce=(fn,ms=350)=>{ clearTimeout(t); t=setTimeout(fn,ms); };
 
   function chip(number,label){
     return `<div class="rounded-xl border p-3">
@@ -243,6 +276,37 @@
     setActiveTab('paid');
   }
 
+  // ===== DOC MODAL =====
+  function openDoc(cccd, project_code){
+    if (!project_code){
+      alert("Vui lòng chọn dự án trước khi xem đơn.");
+      return;
+    }
+    const url = DOC_URL(COMPANY, project_code, cccd);
+    docFrame.src = url;
+    docModal.classList.remove("hidden");
+
+    // set filename on load for Save as PDF
+    docFrame.onload = () => {
+      try {
+        const filename = `${(COMPANY||'COMPANY')}_${cccd}_${project_code}.pdf`;
+        docFrame.contentDocument.title = filename;
+      } catch (e) {}
+    };
+  }
+  function closeDoc(){ docModal.classList.add("hidden"); docFrame.src = "about:blank"; }
+  btnDocClose.onclick = closeDoc;
+  docBackdrop.onclick = closeDoc;
+  btnDocDownload.onclick = () => {
+    try {
+      docFrame.contentWindow.focus();
+      docFrame.contentWindow.print();  // dùng Print → Save as PDF (lấy title đã set làm tên file)
+    } catch (e) {
+      alert("Không thể mở hộp thoại in. Vui lòng kiểm tra popup blocker.");
+    }
+  };
+
+  // ===== TABLE LIST =====
   function rowHtml(r){
     const full = r.full_name ?? "-";
     const cccd = r.cccd ?? "-";
@@ -251,6 +315,15 @@
     const pending = Number(r.orders_pending ?? 0);
     const qr = Number(r.unpaid_qr_count ?? 0);
     const cid = r.customer_id;
+
+    const canViewDoc = paid > 0;
+    const viewBtn = canViewDoc
+      ? `<button class="ml-2 px-2.5 py-1 rounded border text-xs hover:bg-slate-50"
+            data-view-doc="${cccd}" title="Xem đơn">
+           <i class="ri-file-text-line"></i> Xem đơn
+         </button>`
+      : `<span class="text-slate-400 text-xs">—</span>`;
+
     return `<tr class="border-t">
       <td class="py-3 px-4">
         <button class="text-indigo-600 hover:underline" data-cid="${cid}" data-name="${full}">${full}</button>
@@ -260,6 +333,7 @@
       <td class="py-3 px-4 text-right">${paid}</td>
       <td class="py-3 px-4 text-right">${pending}</td>
       <td class="py-3 px-4 text-right">${qr}</td>
+      <td class="py-3 px-4 text-right">${viewBtn}</td>
     </tr>`;
   }
 
@@ -287,18 +361,23 @@
     if(q) params.set('q',q);
     if(project_code) params.set('project_code',project_code);
 
-    elBody.innerHTML = `<tr><td class="py-6 px-4 text-slate-400" colspan="6">Đang tải...</td></tr>`;
+    elBody.innerHTML = `<tr><td class="py-6 px-4 text-slate-400" colspan="7">Đang tải...</td></tr>`;
     const r = await fetch(`${DATA_URL}?${params.toString()}`, {headers:{'X-Requested-With':'fetch'}});
     const js = await r.json();
     const rows = js.data ?? js.items ?? [];
     const total = js.total ?? 0;
 
     if(!rows.length){
-      elBody.innerHTML = `<tr><td class="py-6 px-4 text-slate-400" colspan="6">Không có dữ liệu</td></tr>`;
+      elBody.innerHTML = `<tr><td class="py-6 px-4 text-slate-400" colspan="7">Không có dữ liệu</td></tr>`;
     }else{
       elBody.innerHTML = rows.map(rowHtml).join('');
+
+      // attach events
       elBody.querySelectorAll('button[data-cid]').forEach(b=>{
         b.onclick = ()=> renderDetail(b.dataset.cid, b.dataset.name);
+      });
+      elBody.querySelectorAll('button[data-view-doc]').forEach(b=>{
+        b.onclick = ()=> openDoc(b.dataset.viewDoc, elProject.value || '');
       });
     }
     elTotal.textContent = `Tổng: ${total.toLocaleString()}`;
