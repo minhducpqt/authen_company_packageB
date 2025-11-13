@@ -4,87 +4,194 @@
   <meta charset="utf-8">
   <title>Đơn đăng ký tham gia đấu giá tài sản</title>
   <style>
-    @page { size: A4; margin: 18mm 16mm; }
+    /* In ra A4 */
+    @page {
+      size: A4;
+      margin: 0;
+    }
+
     html, body {
+      margin: 0;
+      padding: 0;
+      background: #e5e7eb; /* xám nhạt để dễ nhìn khi preview */
       font-family: "Times New Roman", Times, serif;
       font-size: 13pt;
       color: #000;
     }
+
+    /* Khung 1 trang A4 căn giữa */
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 10px auto;
+      background: #fff;
+      box-shadow: 0 0 6px rgba(0,0,0,0.18);
+      box-sizing: border-box;
+      padding: 18mm 16mm;
+    }
+
+    @media print {
+      html, body {
+        background: #ffffff;
+      }
+      .page {
+        margin: 0;
+        box-shadow: none;
+        width: 210mm;
+        min-height: 297mm;
+        padding: 18mm 16mm;
+      }
+    }
+
     .center { text-align: center; }
     .bold { font-weight: 700; }
     .mt-6 { margin-top: 6mm; }
     .mb-4 { margin-bottom: 4mm; }
     .mb-6 { margin-bottom: 6mm; }
-    .underline { text-decoration: underline; }
     .divider { text-align:center; margin: 2mm 0 6mm; }
-    .row { display: flex; align-items: baseline; gap: 6mm; }
-    .label { min-width: 38mm; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { border: 1px solid #000; padding: 4px 6px; vertical-align: top; }
-    th { text-align: center; }
+    .small { font-size: 11.5pt; }
+    .note { font-style: italic; font-size: 11pt; }
+    .title { font-size: 18pt; font-weight: 800; text-transform: uppercase; }
+    .gov   { font-size: 16pt; font-weight: 800; text-transform: uppercase; }
+
+    /* Bảng thông tin cá nhân + TK hoàn tiền */
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 4mm;
+    }
+    .info-table td {
+      padding: 1mm 0;
+      vertical-align: top;
+    }
+    .info-label {
+      width: 38mm;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .info-sep {
+      width: 4mm;
+    }
+    .info-value {
+      /* không gạch chân, chỉ text bình thường */
+    }
+
+    /* Bảng lô */
+    table.lots {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 2mm;
+      margin-bottom: 6mm;
+    }
+    table.lots th,
+    table.lots td {
+      border: 1px solid #000;
+      padding: 4px 6px;
+      vertical-align: top;
+    }
+    table.lots th {
+      text-align: center;
+    }
     .w-stt   { width: 10mm; }
     .w-name  { width: auto; }
     .w-area  { width: 28mm; text-align: right; }
     .w-price { width: 42mm; text-align: right; }
-    .signature { width: 60%; margin-left: auto; text-align: center; }
-    .note { font-style: italic; font-size: 11pt; }
-    .small { font-size: 11.5pt; }
-    .title { font-size: 18pt; font-weight: 800; text-transform: uppercase; }
-    .gov   { font-size: 16pt; font-weight: 800; text-transform: uppercase; }
+
+    .signature {
+      width: 60%;
+      margin-left: auto;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
 
+<div class="page">
+
+  <!-- Quốc hiệu -->
   <div class="center gov">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
   <div class="center bold">Độc lập – Tự do – Hạnh phúc</div>
   <div class="divider">-----------------o0o-----------------</div>
 
+  <!-- Tiêu đề -->
   <div class="center title mb-6">ĐƠN ĐĂNG KÝ THAM GIA ĐẤU GIÁ TÀI SẢN</div>
 
-  <div class="mb-6">
+  <!-- Kính gửi -->
+  <div class="mb-4">
     <span class="bold">Kính gửi:</span>
     {{ (data.company or {}).name or "" }}
   </div>
 
-  <div class="row mb-4">
-    <div class="label bold">Người đăng ký TGĐG:</div>
-    <div class="flex-1 underline" style="flex:1">
-      {{ (data.customer or {}).full_name or "" }}
-    </div>
-    <div class="label bold" style="margin-left:6mm">SĐT:</div>
-    <div class="underline" style="min-width:40mm">
-      {{ (data.customer or {}).phone or "" }}
-    </div>
-  </div>
+  {# Chuẩn hoá biến cho gọn #}
+  {% set customer = data.customer or {} %}
+  {% set refund   = data.refund_bank or {} %}
+  {% set project  = data.project or {} %}
+  {% set lots     = data.lots or [] %}
 
-  <div class="row mb-4">
-    <div class="label bold">CCCD/CC số:</div>
-    <div class="underline" style="flex:1">
-      {{ (data.customer or {}).cccd or "" }}
-    </div>
-    <div class="label bold" style="margin-left:6mm">Email:</div>
-    <div class="underline" style="min-width:55mm">
-      {{ (data.customer or {}).email or "" }}
-    </div>
-  </div>
+  <!-- THÔNG TIN CÁ NHÂN -->
+  <table class="info-table">
+    <tr>
+      <td class="info-label">Người đăng ký TGĐG</td>
+      <td class="info-sep">:</td>
+      <td class="info-value">{{ customer.full_name or "" }}</td>
 
-  <div class="row mb-6">
-    <div class="label bold">Nơi thường trú:</div>
-    <div class="underline" style="flex:1">
-      {{ (data.customer or {}).address or "" }}
-    </div>
-  </div>
+      <td class="info-label">Số điện thoại</td>
+      <td class="info-sep">:</td>
+      <td class="info-value">{{ customer.phone or "" }}</td>
+    </tr>
+    <tr>
+      <td class="info-label">CCCD/CMND</td>
+      <td class="info-sep">:</td>
+      <td class="info-value">{{ customer.cccd or "" }}</td>
 
+      <td class="info-label">Email</td>
+      <td class="info-sep">:</td>
+      <td class="info-value">{{ customer.email or "" }}</td>
+    </tr>
+    <tr>
+      <td class="info-label">Nơi thường trú</td>
+      <td class="info-sep">:</td>
+      <td class="info-value" colspan="4">
+        {{ customer.address or "" }}
+      </td>
+    </tr>
+  </table>
+
+  <!-- TÀI KHOẢN NHẬN HOÀN TIỀN ĐẶT TRƯỚC -->
+  {% if refund %}
+  <table class="info-table mb-6">
+    <tr>
+      <td class="info-label">Ngân hàng</td>
+      <td class="info-sep">:</td>
+      <td class="info-value" colspan="4">
+        {{ refund.bank_name or refund.bank_short_name or refund.bank_code or "" }}
+      </td>
+    </tr>
+    <tr>
+      <td class="info-label">Số tài khoản</td>
+      <td class="info-sep">:</td>
+      <td class="info-value">
+        {{ refund.account_number or "" }}
+      </td>
+
+      <td class="info-label">Chủ tài khoản</td>
+      <td class="info-sep">:</td>
+      <td class="info-value">
+        {{ refund.account_name or "" }}
+      </td>
+    </tr>
+  </table>
+  {% endif %}
+
+  <!-- Mô tả tài sản -->
   <div class="mb-4 small">
     <span class="bold">Tài sản đấu giá:</span>
     Quyền sử dụng đất thuộc dự án
-    <span class="bold">{{ (data.project or {}).name or "" }}</span>.
+    <span class="bold">{{ project.name or "" }}</span>.
   </div>
 
-  {# Chuẩn hoá danh sách lô #}
-  {% set lots = data.lots or [] %}
-
-  <table class="mb-6">
+  <!-- Bảng lô / thửa -->
+  <table class="lots">
     <thead>
       <tr>
         <th class="w-stt">STT</th>
@@ -95,7 +202,6 @@
     </thead>
     <tbody>
       {% for lot in lots %}
-        {# Mã lô: ưu tiên lot_code, fallback lot_number #}
         {% if 'lot_code' in lot %}
           {% set lot_code = lot.lot_code %}
         {% elif 'lot_number' in lot %}
@@ -104,17 +210,12 @@
           {% set lot_code = '' %}
         {% endif %}
 
-        {# Diện tích #}
         {% if 'area_m2' in lot %}
           {% set area = lot.area_m2 %}
         {% else %}
           {% set area = None %}
         {% endif %}
 
-        {# Giá khởi điểm:
-           - ưu tiên starting_price_vnd
-           - nếu không có thì dùng reserve_price_vnd (nếu A bổ sung sau này)
-           - cuối cùng fallback deposit_amount_vnd để khỏi bị trống #}
         {% if 'starting_price_vnd' in lot and lot.starting_price_vnd is not none %}
           {% set price = lot.starting_price_vnd %}
         {% elif 'reserve_price_vnd' in lot and lot.reserve_price_vnd is not none %}
@@ -152,16 +253,7 @@
     </tbody>
   </table>
 
-  {# Nếu muốn in thêm tài khoản hoàn cọc ở cuối đơn (optional) #}
-  {% if data.refund_bank %}
-    <div class="small mb-6">
-      <span class="bold">Tài khoản nhận hoàn tiền đặt trước (nếu không trúng đấu giá):</span><br>
-      Ngân hàng: {{ data.refund_bank.bank_name or data.refund_bank.bank_short_name or data.refund_bank.bank_code }}<br>
-      Số tài khoản: {{ data.refund_bank.account_number }}<br>
-      Chủ tài khoản: {{ data.refund_bank.account_name }}
-    </div>
-  {% endif %}
-
+  <!-- Cam kết -->
   <div class="bold mb-4">Tôi xin cam kết:</div>
   <ol class="small mb-6" style="margin-top:0;">
     <li>Tôi là người duy nhất đại diện cho hộ gia đình đăng ký tham gia đấu giá lô/thửa đất trên và không thuộc trường hợp không đủ điều kiện đăng ký tham gia đấu giá theo Luật ĐGTS.</li>
@@ -171,11 +263,14 @@
     <li>Không nhận tiền lãi phát sinh của khoản tiền đặt trước (nếu có).</li>
   </ol>
 
+  <!-- Ký tên -->
   <div class="signature">
     <div>…, ngày …. tháng … năm {{ year }}</div>
     <div class="bold">Người đăng ký tham gia đấu giá</div>
     <div class="note">(Ký, ghi rõ họ tên)</div>
   </div>
+
+</div>
 
 </body>
 </html>
