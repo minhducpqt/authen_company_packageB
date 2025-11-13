@@ -119,19 +119,23 @@
 
   let t; const debounce=(fn,ms=350)=>{clearTimeout(t); t=setTimeout(fn,ms);};
 
+  // Gộp tất cả loại hồ sơ thành 3 số tổng mua/đã dùng/còn
   function statsCompact(list){
-    if (!Array.isArray(list) || !list.length) return "-";
-    return list.map(x=>{
-      const label=x.label ?? x.dossier_type_id ?? "?";
-      const p=+x.purchased||0, u=+x.used||0, a=+x.available||0;
-      return `${label}: ${p}/${u}/${a}`;
-    }).join("; ");
+    if (!Array.isArray(list) || !list.length) return "0/0/0";
+    let p=0,u=0,a=0;
+    for (const x of list){
+      p += Number(x.purchased || 0);
+      u += Number(x.used || 0);
+      a += Number(x.available || 0);
+    }
+    return `${p}/${u}/${a}`;
   }
+
   function chipList(list, field){
     if (!Array.isArray(list) || !list.length) return "-";
     return list.slice(0,4).map(x=>{
       const code = x[field] ?? "-";
-      return `<span class="inline-block px-2 py-0.5 rounded bg-slate-100 text-slate-700 mr-1">${code}</span>`;
+      return `<span class="inline-block px-2 py-0.5 rounded bg-slate-100 text-slate-700 mr-1 whitespace-nowrap">${code}</span>`;
     }).join("") + (list.length>4 ? ` +${list.length-4}` : "");
   }
 
@@ -294,9 +298,9 @@
       </td>
       <td class="py-3 px-4">${cccd}</td>
       <td class="py-3 px-4">${phone}</td>
-      <td class="py-3 px-4 text-right">${ds}</td>
-      <td class="py-3 px-4">${lotsPaid}</td>
-      <td class="py-3 px-4">${lotsPending}</td>
+      <td class="py-3 px-4 text-right whitespace-nowrap">${ds}</td>
+      <td class="py-3 px-4 whitespace-nowrap">${lotsPaid}</td>
+      <td class="py-3 px-4 whitespace-nowrap">${lotsPending}</td>
     </tr>`;
   }
 
