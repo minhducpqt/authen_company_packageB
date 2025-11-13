@@ -37,33 +37,47 @@
 
   <div class="center title mb-6">ĐƠN ĐĂNG KÝ THAM GIA ĐẤU GIÁ TÀI SẢN</div>
 
-  <div class="mb-6"><span class="bold">Kính gửi:</span> {{ data.company.name }}</div>
+  <div class="mb-6">
+    <span class="bold">Kính gửi:</span>
+    {{ (data.company or {}).name or "" }}
+  </div>
 
   <div class="row mb-4">
     <div class="label bold">Người đăng ký TGĐG:</div>
     <div class="flex-1 underline" style="flex:1">
-      {{ data.customer.full_name }}
+      {{ (data.customer or {}).full_name or "" }}
     </div>
     <div class="label bold" style="margin-left:6mm">SĐT:</div>
-    <div class="underline" style="min-width:40mm">{{ data.customer.phone or "" }}</div>
+    <div class="underline" style="min-width:40mm">
+      {{ (data.customer or {}).phone or "" }}
+    </div>
   </div>
 
   <div class="row mb-4">
     <div class="label bold">CCCD/CC số:</div>
-    <div class="underline" style="flex:1">{{ data.customer.cccd }}</div>
+    <div class="underline" style="flex:1">
+      {{ (data.customer or {}).cccd or "" }}
+    </div>
     <div class="label bold" style="margin-left:6mm">Email:</div>
-    <div class="underline" style="min-width:55mm">{{ data.customer.email or "" }}</div>
+    <div class="underline" style="min-width:55mm">
+      {{ (data.customer or {}).email or "" }}
+    </div>
   </div>
 
   <div class="row mb-6">
     <div class="label bold">Nơi thường trú:</div>
-    <div class="underline" style="flex:1">{{ data.customer.address or "" }}</div>
+    <div class="underline" style="flex:1">
+      {{ (data.customer or {}).address or "" }}
+    </div>
   </div>
 
   <div class="mb-4 small">
     <span class="bold">Tài sản đấu giá:</span>
-    Quyền sử dụng đất thuộc dự án <span class="bold">{{ data.project.name }}</span>.
+    Quyền sử dụng đất thuộc dự án
+    <span class="bold">{{ (data.project or {}).name or "" }}</span>.
   </div>
+
+  {% set lots = data.lots or [] %}
 
   <table class="mb-6">
     <thead>
@@ -75,16 +89,50 @@
       </tr>
     </thead>
     <tbody>
-      {% for i, lot in enumerate(data.lots or [], start=1) %}
-      <tr>
-        <td class="center">{{ i }}</td>
-        <td>{{ lot.code }}</td>
-        <td class="w-area">{{ "{:,.2f}".format(lot.area_m2|float) if lot.area_m2 is not none else "" }}</td>
-        <td class="w-price">{{ "{:,.0f}".format(lot.reserve_price_vnd|float) if lot.reserve_price_vnd is not none else "" }}</td>
-      </tr>
+      {% for lot in lots %}
+        {# Lấy mã lô an toàn #}
+        {% if 'lot_code' in lot %}
+          {% set lot_code = lot.lot_code %}
+        {% elif 'code' in lot %}
+          {% set lot_code = lot.code %}
+        {% else %}
+          {% set lot_code = '' %}
+        {% endif %}
+
+        {# Lấy giá khởi điểm: ưu tiên reserve_price_vnd, fallback starting_price_vnd #}
+        {% if 'reserve_price_vnd' in lot %}
+          {% set reserve = lot.reserve_price_vnd %}
+        {% elif 'starting_price_vnd' in lot %}
+          {% set reserve = lot.starting_price_vnd %}
+        {% else %}
+          {% set reserve = None %}
+        {% endif %}
+
+        {% set area = lot.area_m2 if 'area_m2' in lot else None %}
+
+        <tr>
+          <td class="center">{{ loop.index }}</td>
+          <td>{{ lot_code }}</td>
+          <td class="w-area">
+            {% if area is not none %}
+              {{ "{:,.2f}".format(area|float) }}
+            {% endif %}
+          </td>
+          <td class="w-price">
+            {% if reserve is not none %}
+              {{ "{:,.0f}".format(reserve|float) }}
+            {% endif %}
+          </td>
+        </tr>
       {% endfor %}
-      {% if (data.lots or [])|length == 0 %}
-      <tr><td class="center">1</td><td>&nbsp;</td><td class="w-area"></td><td class="w-price"></td></tr>
+
+      {% if lots|length == 0 %}
+      <tr>
+        <td class="center">1</td>
+        <td>&nbsp;</td>
+        <td class="w-area"></td>
+        <td class="w-price"></td>
+      </tr>
       {% endif %}
     </tbody>
   </table>
