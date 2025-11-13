@@ -318,7 +318,19 @@
       opt.value = code; opt.textContent = `${code} — ${name}`;
       elProject.appendChild(opt);
     }
-    const initCode = elProject.dataset.init; if (initCode) elProject.value = initCode;
+
+    const initCode = elProject.dataset.init;
+    if (initCode) {
+      // nếu server đã set init_project_code thì ưu tiên
+      elProject.value = initCode;
+    } else if (list.length === 1) {
+      // nếu chỉ có 1 dự án active thì auto select nó
+      const only = list[0] || {};
+      const onlyCode = only.project_code || only.code || "";
+      if (onlyCode) {
+        elProject.value = onlyCode;
+      }
+    }
   }
 
   async function loadData(){
