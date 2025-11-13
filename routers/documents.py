@@ -18,32 +18,30 @@ async def view_auction_registration(
     project_code: str = Query(..., description="Mã dự án"),
     cccd: str = Query(..., description="Số CCCD khách"),
     download: Optional[str] = Query(
-        None, description="html -> tải file HTML; để trống -> hiển thị"
+        None,
+        description="html -> tải file HTML; để trống -> hiển thị",
     ),
 ):
-    """
-    Hiển thị **Đơn đăng ký tham gia đấu giá** (HTML).
-    - Nếu `download=html` thì trả về file đính kèm .html.
-    - Mặc định trả về trang HTML để xem/Print to PDF từ trình duyệt.
-    """
     token = get_access_token(request)
     if not token:
         return RedirectResponse(
-            url="/login?next=%2Fdocuments%2Fauction%2Fregistration", status_code=303
+            url="/login?next=%2Fdocuments%2Fauction%2Fregistration",
+            status_code=303,
         )
 
-    # Gọi Service A lấy payload dựng đơn
     resp = fetch_registration_doc_payload(
-        request, project_code=project_code, cccd=cccd
+        request,
+        project_code=project_code,
+        cccd=cccd,
     )
 
     code = int(resp.get("code", 500))
     if code == 401:
         return RedirectResponse(url="/login", status_code=303)
     if code == 404:
-        return HTMLResponse("<h3>Không tìm thấy dữ liệu.</h3>", status_code=404)
+        return HTMLResponse("<h3>Không tìm thấy dữ liệu (khách/lô chưa đủ điều kiện).</h3>", status_code=404)
     if code >= 500:
-        return HTMLResponse("<h3>Lỗi upstream (A).</h3>", status_code=502)
+        return HTMLResponse("<h3>Lỗi upstream (Service A).</h3>", status_code=502)
 
     data = resp.get("data") or {}
 
@@ -57,7 +55,8 @@ async def view_auction_registration(
     )
 
     if download == "html":
-        filename = f"{cccd}_{project_code}.html"
+        company_code = (data.get("company") or {}).get("company_code", "COMPANY")
+        filename = f"{company_code}_{cccd}_{project_code}.html"
         return Response(
             content=html,
             media_type="text/html; charset=utf-8",
@@ -73,12 +72,13 @@ async def view_auction_registration_data(
     project_code: str = Query(...),
     cccd: str = Query(...),
 ):
-    """
-    Endpoint JSON (nếu FE cần debug/test).
-    """
     token = get_access_token(request)
     if not token:
         return JSONResponse({"error": "unauthorized"}, status_code=401)
 
-    resp = fetch_registration_doc_payload(request, project_code=project_code, cccd=cccd)
+    resp = fetch_registration_doc_payload(
+        request,
+        project_code=project_code,
+        cccd=cccd,
+    )
     return JSONResponse(resp, status_code=resp.get("code", 200))

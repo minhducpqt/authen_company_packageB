@@ -29,7 +29,8 @@ from routers.reports import router as reports_router
 from routers.reports_export import router as reports_export_router
 from routers.dashboard import router as dashboard_router
 from routers import company_mailers
-from routers import documents
+from routers import auction_docs  # import file mới
+
 
 
 def _dump_bank_routes(app: FastAPI) -> None:
@@ -76,8 +77,7 @@ app.include_router(transactions.router)  # <-- NEW
 app.include_router(reports_router)
 app.include_router(reports_export_router)
 app.include_router(company_mailers.router)
-app.include_router(documents.router)
-
+app.include_router(auction_docs.router)
 
 
 @app.get("/healthz")
