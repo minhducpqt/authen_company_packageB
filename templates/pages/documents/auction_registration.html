@@ -3,19 +3,18 @@
 <head>
   <meta charset="utf-8">
 
-  {# Chuẩn bị biến khách hàng để đặt tên file PDF #}
+  {# Chuẩn bị biến khách hàng để đặt title (gợi ý tên file) #}
   {% set customer = (data.customer or {}) %}
   {% set raw_name = (customer.full_name or '') %}
-  {# Title Case rồi bỏ khoảng trắng: "LUU MINH DUC" -> "LuuMinhDuc" #}
   {% set filename = (raw_name|title|replace(' ', '')) ~ '_' ~ (customer.cccd or '') ~ '.pdf' %}
 
   <title>{{ filename }}</title>
 
   <style>
-    /* In ra A4 */
+    /* Lề in thật sự của mỗi trang A4 */
     @page {
       size: A4;
-      margin: 0;
+      margin: 18mm 16mm;
     }
 
     html, body {
@@ -27,7 +26,7 @@
       color: #000;
     }
 
-    /* Khung 1 trang A4 căn giữa */
+    /* Khung A4 cho màn hình (preview) */
     .page {
       width: 210mm;
       min-height: 297mm;
@@ -35,19 +34,23 @@
       background: #fff;
       box-shadow: 0 0 6px rgba(0,0,0,0.18);
       box-sizing: border-box;
-      padding: 18mm 16mm;
+      padding: 18mm 16mm;  /* chỉ áp dụng cho màn hình */
     }
 
     @media print {
       html, body {
         background: #ffffff;
       }
+      body {
+        margin: 0;
+        padding: 0;
+      }
       .page {
+        width: auto;
+        min-height: auto;
         margin: 0;
         box-shadow: none;
-        width: 210mm;
-        min-height: 297mm;
-        padding: 18mm 16mm;
+        padding: 0;  /* lề đã do @page quản */
       }
     }
 
@@ -73,15 +76,12 @@
       vertical-align: top;
     }
     .info-label {
-      width: 38mm;
+      width: 42mm;
       font-weight: 700;
       white-space: nowrap;
     }
     .info-sep {
       width: 4mm;
-    }
-    .info-value {
-      /* không gạch chân */
     }
 
     /* Bảng lô */
@@ -90,6 +90,7 @@
       border-collapse: collapse;
       margin-top: 2mm;
       margin-bottom: 6mm;
+      page-break-inside: auto;
     }
     table.lots th,
     table.lots td {
@@ -109,6 +110,7 @@
       width: 60%;
       margin-left: auto;
       text-align: center;
+      page-break-inside: avoid;
     }
   </style>
 </head>
@@ -127,51 +129,45 @@
   <!-- Kính gửi -->
   <div class="mb-4">
     <span class="bold">Kính gửi:</span>
-    <span class="bold">{{ (data.company or {}).name or "" }}</span>
+    <span class="bold">
+      {{ (data.company or {}).name or "" }}
+    </span>
   </div>
 
   {# Rút gọn biến #}
-  {# (customer đã set ở phần head, dùng lại ở đây) #}
   {% set refund   = data.refund_bank or {} %}
   {% set project  = data.project or {} %}
   {% set lots     = data.lots or [] %}
 
-  <!-- THÔNG TIN CÁ NHÂN -->
+  <!-- THÔNG TIN CÁ NHÂN (4 dòng: tên, CCCD, địa chỉ, SĐT + Email) -->
   <table class="info-table">
-    <!-- Dòng 1: Người đăng ký TGĐG -->
     <tr>
       <td class="info-label">Người đăng ký TGĐG</td>
       <td class="info-sep">:</td>
-      <td class="info-value" colspan="4">{{ customer.full_name or "" }}</td>
+      <td colspan="4">{{ customer.full_name or "" }}</td>
     </tr>
-
-    <!-- Dòng 2: CCCD/CMND -->
     <tr>
       <td class="info-label">CCCD/CMND</td>
       <td class="info-sep">:</td>
-      <td class="info-value" colspan="4">{{ customer.cccd or "" }}</td>
+      <td colspan="4">{{ customer.cccd or "" }}</td>
     </tr>
-
-    <!-- Dòng 3: Nơi thường trú -->
     <tr>
       <td class="info-label">Nơi thường trú</td>
       <td class="info-sep">:</td>
-      <td class="info-value" colspan="4">
+      <td colspan="4">
         {{ customer.address or "" }}
       </td>
     </tr>
-
-    <!-- Dòng 4: Số điện thoại (trái) / Email (phải) -->
     <tr>
       <td class="info-label">Số điện thoại</td>
       <td class="info-sep">:</td>
-      <td class="info-value" style="width:35mm;">
+      <td style="width: 35mm;">
         {{ customer.phone or "" }}
       </td>
 
       <td class="info-label">Email</td>
       <td class="info-sep">:</td>
-      <td class="info-value">
+      <td>
         {{ customer.email or "" }}
       </td>
     </tr>
@@ -214,13 +210,15 @@
     và cam kết chấp hành đầy đủ các quy định của pháp luật có liên quan.
   </div>
 
-  <!-- Mô tả tài sản -->
+  <!-- Mô tả tài sản (chỉ mô tả dự án, bỏ câu "Quyền sử dụng đất thuộc dự án") -->
   <div class="mb-4 small">
     <span class="bold">Tài sản đấu giá:</span>
-    <span class="bold">{{ project.description or project.name or "" }}</span>.
+    <span class="bold">
+      {{ project.description or project.name or "" }}
+    </span>
   </div>
 
-  <!-- Bảng lô / thửa -->
+  <!-- Bảng lô / thửa (có thể chạy qua nhiều trang, vẫn giữ lề chuẩn nhờ @page margin) -->
   <table class="lots">
     <thead>
       <tr>
