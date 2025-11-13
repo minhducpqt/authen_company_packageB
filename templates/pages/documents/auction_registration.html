@@ -5,28 +5,32 @@
   <title>Đơn đăng ký tham gia đấu giá tài sản</title>
   <style>
     @page { size: A4; margin: 18mm 16mm; }
-    html, body { font-family: "Times New Roman", Times, serif; font-size: 13pt; color: #000; }
+    html, body {
+      font-family: "Times New Roman", Times, serif;
+      font-size: 13pt;
+      color: #000;
+    }
     .center { text-align: center; }
     .bold { font-weight: 700; }
-    .mt-6 { margin-top: 6mm; } .mb-4 { margin-bottom: 4mm; } .mb-6 { margin-bottom: 6mm; }
+    .mt-6 { margin-top: 6mm; }
+    .mb-4 { margin-bottom: 4mm; }
+    .mb-6 { margin-bottom: 6mm; }
     .underline { text-decoration: underline; }
-    .header-line { letter-spacing: 2px; }
     .divider { text-align:center; margin: 2mm 0 6mm; }
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; }
     .row { display: flex; align-items: baseline; gap: 6mm; }
     .label { min-width: 38mm; }
     table { width: 100%; border-collapse: collapse; }
     th, td { border: 1px solid #000; padding: 4px 6px; vertical-align: top; }
     th { text-align: center; }
-    .w-stt { width: 10mm; }
-    .w-name { width: auto; }
-    .w-area { width: 28mm; text-align: right; }
+    .w-stt   { width: 10mm; }
+    .w-name  { width: auto; }
+    .w-area  { width: 28mm; text-align: right; }
     .w-price { width: 42mm; text-align: right; }
     .signature { width: 60%; margin-left: auto; text-align: center; }
     .note { font-style: italic; font-size: 11pt; }
     .small { font-size: 11.5pt; }
     .title { font-size: 18pt; font-weight: 800; text-transform: uppercase; }
-    .gov { font-size: 16pt; font-weight: 800; text-transform: uppercase; }
+    .gov   { font-size: 16pt; font-weight: 800; text-transform: uppercase; }
   </style>
 </head>
 <body>
@@ -77,6 +81,7 @@
     <span class="bold">{{ (data.project or {}).name or "" }}</span>.
   </div>
 
+  {# Chuẩn hoá danh sách lô #}
   {% set lots = data.lots or [] %}
 
   <table class="mb-6">
@@ -90,25 +95,35 @@
     </thead>
     <tbody>
       {% for lot in lots %}
-        {# Lấy mã lô an toàn #}
+        {# Mã lô: ưu tiên lot_code, fallback lot_number #}
         {% if 'lot_code' in lot %}
           {% set lot_code = lot.lot_code %}
-        {% elif 'code' in lot %}
-          {% set lot_code = lot.code %}
+        {% elif 'lot_number' in lot %}
+          {% set lot_code = lot.lot_number %}
         {% else %}
           {% set lot_code = '' %}
         {% endif %}
 
-        {# Lấy giá khởi điểm: ưu tiên reserve_price_vnd, fallback starting_price_vnd #}
-        {% if 'reserve_price_vnd' in lot %}
-          {% set reserve = lot.reserve_price_vnd %}
-        {% elif 'starting_price_vnd' in lot %}
-          {% set reserve = lot.starting_price_vnd %}
+        {# Diện tích #}
+        {% if 'area_m2' in lot %}
+          {% set area = lot.area_m2 %}
         {% else %}
-          {% set reserve = None %}
+          {% set area = None %}
         {% endif %}
 
-        {% set area = lot.area_m2 if 'area_m2' in lot else None %}
+        {# Giá khởi điểm:
+           - ưu tiên starting_price_vnd
+           - nếu không có thì dùng reserve_price_vnd (nếu A bổ sung sau này)
+           - cuối cùng fallback deposit_amount_vnd để khỏi bị trống #}
+        {% if 'starting_price_vnd' in lot and lot.starting_price_vnd is not none %}
+          {% set price = lot.starting_price_vnd %}
+        {% elif 'reserve_price_vnd' in lot and lot.reserve_price_vnd is not none %}
+          {% set price = lot.reserve_price_vnd %}
+        {% elif 'deposit_amount_vnd' in lot and lot.deposit_amount_vnd is not none %}
+          {% set price = lot.deposit_amount_vnd %}
+        {% else %}
+          {% set price = None %}
+        {% endif %}
 
         <tr>
           <td class="center">{{ loop.index }}</td>
@@ -119,8 +134,8 @@
             {% endif %}
           </td>
           <td class="w-price">
-            {% if reserve is not none %}
-              {{ "{:,.0f}".format(reserve|float) }}
+            {% if price is not none %}
+              {{ "{:,.0f}".format(price|float) }}
             {% endif %}
           </td>
         </tr>
@@ -136,6 +151,16 @@
       {% endif %}
     </tbody>
   </table>
+
+  {# Nếu muốn in thêm tài khoản hoàn cọc ở cuối đơn (optional) #}
+  {% if data.refund_bank %}
+    <div class="small mb-6">
+      <span class="bold">Tài khoản nhận hoàn tiền đặt trước (nếu không trúng đấu giá):</span><br>
+      Ngân hàng: {{ data.refund_bank.bank_name or data.refund_bank.bank_short_name or data.refund_bank.bank_code }}<br>
+      Số tài khoản: {{ data.refund_bank.account_number }}<br>
+      Chủ tài khoản: {{ data.refund_bank.account_name }}
+    </div>
+  {% endif %}
 
   <div class="bold mb-4">Tôi xin cam kết:</div>
   <ol class="small mb-6" style="margin-top:0;">
