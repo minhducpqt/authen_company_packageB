@@ -2,7 +2,15 @@
 <html lang="vi">
 <head>
   <meta charset="utf-8">
-  <title>Đơn đăng ký tham gia đấu giá tài sản</title>
+
+  {# Chuẩn bị biến khách hàng để đặt tên file PDF #}
+  {% set customer = (data.customer or {}) %}
+  {% set raw_name = (customer.full_name or '') %}
+  {# Title Case rồi bỏ khoảng trắng: "LUU MINH DUC" -> "LuuMinhDuc" #}
+  {% set filename = (raw_name|title|replace(' ', '')) ~ '_' ~ (customer.cccd or '') ~ '.pdf' %}
+
+  <title>{{ filename }}</title>
+
   <style>
     /* In ra A4 */
     @page {
@@ -123,7 +131,7 @@
   </div>
 
   {# Rút gọn biến #}
-  {% set customer = data.customer or {} %}
+  {# (customer đã set ở phần head, dùng lại ở đây) #}
   {% set refund   = data.refund_bank or {} %}
   {% set project  = data.project or {} %}
   {% set lots     = data.lots or [] %}
