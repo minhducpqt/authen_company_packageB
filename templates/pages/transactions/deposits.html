@@ -125,7 +125,7 @@
   };
 
   const root     = document.getElementById("pageRoot");
-  const COMPANY  = root.dataset.company || "";   // nên truyền từ server
+  const COMPANY  = root.dataset.company || "";
   const elProject= document.getElementById("projectSelect");
   const elSearch = document.getElementById("searchInput");
   const elPage   = document.getElementById("pageInput");
@@ -286,7 +286,6 @@
     docFrame.src = url;
     docModal.classList.remove("hidden");
 
-    // set filename on load for Save as PDF
     docFrame.onload = () => {
       try {
         const filename = `${(COMPANY||'COMPANY')}_${cccd}_${project_code}.pdf`;
@@ -300,7 +299,7 @@
   btnDocDownload.onclick = () => {
     try {
       docFrame.contentWindow.focus();
-      docFrame.contentWindow.print();  // dùng Print → Save as PDF (lấy title đã set làm tên file)
+      docFrame.contentWindow.print();
     } catch (e) {
       alert("Không thể mở hộp thoại in. Vui lòng kiểm tra popup blocker.");
     }
@@ -341,15 +340,32 @@
     const r = await fetch(PROJ_URL, {headers:{'X-Requested-With':'fetch'}});
     const js = await r.json();
     const list = js.data ?? js.items ?? [];
+
     elProject.innerHTML = `<option value="">Tất cả dự án</option>`;
+
+    let onlyCode = null;
     for (const p of list){
       const code = p.project_code ?? p.code ?? "";
       const name = p.name ?? code;
       const opt = document.createElement('option');
-      opt.value = code; opt.textContent = `${code} — ${name}`;
+      opt.value = code;
+      opt.textContent = `${code} — ${name}`;
       elProject.appendChild(opt);
+      if (!onlyCode) {
+        onlyCode = code;
+      } else {
+        // đã có >1 project
+        onlyCode = null;
+      }
     }
-    const initCode = elProject.dataset.init; if (initCode) elProject.value = initCode;
+
+    const initCode = elProject.dataset.init;
+    if (initCode) {
+      elProject.value = initCode;
+    } else if (onlyCode) {
+      // chỉ có đúng 1 dự án active → auto select
+      elProject.value = onlyCode;
+    }
   }
 
   async function loadData(){
@@ -372,7 +388,6 @@
     }else{
       elBody.innerHTML = rows.map(rowHtml).join('');
 
-      // attach events
       elBody.querySelectorAll('button[data-cid]').forEach(b=>{
         b.onclick = ()=> renderDetail(b.dataset.cid, b.dataset.name);
       });
