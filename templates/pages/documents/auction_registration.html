@@ -127,7 +127,7 @@
   <!-- Kính gửi -->
   <div class="mb-4">
     <span class="bold">Kính gửi:</span>
-    {{ (data.company or {}).name or "" }}
+    <span class="bold">{{ (data.company or {}).name or "" }}</span>
   </div>
 
   {# Rút gọn biến #}
@@ -138,29 +138,41 @@
 
   <!-- THÔNG TIN CÁ NHÂN -->
   <table class="info-table">
+    <!-- Dòng 1: Người đăng ký TGĐG -->
     <tr>
       <td class="info-label">Người đăng ký TGĐG</td>
       <td class="info-sep">:</td>
-      <td class="info-value">{{ customer.full_name or "" }}</td>
-
-      <td class="info-label">Số điện thoại</td>
-      <td class="info-sep">:</td>
-      <td class="info-value">{{ customer.phone or "" }}</td>
+      <td class="info-value" colspan="4">{{ customer.full_name or "" }}</td>
     </tr>
+
+    <!-- Dòng 2: CCCD/CMND -->
     <tr>
       <td class="info-label">CCCD/CMND</td>
       <td class="info-sep">:</td>
-      <td class="info-value">{{ customer.cccd or "" }}</td>
-
-      <td class="info-label">Email</td>
-      <td class="info-sep">:</td>
-      <td class="info-value">{{ customer.email or "" }}</td>
+      <td class="info-value" colspan="4">{{ customer.cccd or "" }}</td>
     </tr>
+
+    <!-- Dòng 3: Nơi thường trú -->
     <tr>
       <td class="info-label">Nơi thường trú</td>
       <td class="info-sep">:</td>
       <td class="info-value" colspan="4">
         {{ customer.address or "" }}
+      </td>
+    </tr>
+
+    <!-- Dòng 4: Số điện thoại (trái) / Email (phải) -->
+    <tr>
+      <td class="info-label">Số điện thoại</td>
+      <td class="info-sep">:</td>
+      <td class="info-value" style="width:35mm;">
+        {{ customer.phone or "" }}
+      </td>
+
+      <td class="info-label">Email</td>
+      <td class="info-sep">:</td>
+      <td class="info-value">
+        {{ customer.email or "" }}
       </td>
     </tr>
   </table>
@@ -205,8 +217,7 @@
   <!-- Mô tả tài sản -->
   <div class="mb-4 small">
     <span class="bold">Tài sản đấu giá:</span>
-    Quyền sử dụng đất thuộc dự án
-    <span class="bold">{{ project.name or "" }}</span>.
+    <span class="bold">{{ project.description or project.name or "" }}</span>.
   </div>
 
   <!-- Bảng lô / thửa -->

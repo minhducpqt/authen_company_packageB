@@ -308,15 +308,30 @@
     const r = await fetch(PROJ_URL, {headers:{'X-Requested-With':'fetch'}});
     const js = await r.json();
     const list = js.data ?? js.items ?? [];
+
     elProject.innerHTML = `<option value="">Tất cả dự án</option>`;
+
+    let singleCode = "";
+    if (list.length === 1) {
+      singleCode = list[0].project_code ?? list[0].code ?? "";
+    }
+
     for (const p of list){
       const code = p.project_code ?? p.code ?? "";
       const name = p.name ?? code;
       const opt = document.createElement('option');
-      opt.value = code; opt.textContent = `${code} — ${name}`;
+      opt.value = code;
+      opt.textContent = `${code} — ${name}`;
       elProject.appendChild(opt);
     }
-    const initCode = elProject.dataset.init; if (initCode) elProject.value = initCode;
+
+    const initCode = elProject.dataset.init;
+    if (initCode) {
+      elProject.value = initCode;
+    } else if (singleCode) {
+      // chỉ có 1 dự án active → auto select
+      elProject.value = singleCode;
+    }
   }
 
   async function loadData(){
