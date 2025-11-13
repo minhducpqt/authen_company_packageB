@@ -13,7 +13,7 @@
     html, body {
       margin: 0;
       padding: 0;
-      background: #e5e7eb; /* xám nhạt để dễ nhìn khi preview */
+      background: #e5e7eb; /* xám nhạt cho preview */
       font-family: "Times New Roman", Times, serif;
       font-size: 13pt;
       color: #000;
@@ -73,7 +73,7 @@
       width: 4mm;
     }
     .info-value {
-      /* không gạch chân, chỉ text bình thường */
+      /* không gạch chân */
     }
 
     /* Bảng lô */
@@ -122,7 +122,7 @@
     {{ (data.company or {}).name or "" }}
   </div>
 
-  {# Chuẩn hoá biến cho gọn #}
+  {# Rút gọn biến #}
   {% set customer = data.customer or {} %}
   {% set refund   = data.refund_bank or {} %}
   {% set project  = data.project or {} %}
@@ -159,14 +159,7 @@
 
   <!-- TÀI KHOẢN NHẬN HOÀN TIỀN ĐẶT TRƯỚC -->
   {% if refund %}
-  <table class="info-table mb-6">
-    <tr>
-      <td class="info-label">Ngân hàng</td>
-      <td class="info-sep">:</td>
-      <td class="info-value" colspan="4">
-        {{ refund.bank_name or refund.bank_short_name or refund.bank_code or "" }}
-      </td>
-    </tr>
+  <table class="info-table mb-4">
     <tr>
       <td class="info-label">Số tài khoản</td>
       <td class="info-sep">:</td>
@@ -180,8 +173,26 @@
         {{ refund.account_name or "" }}
       </td>
     </tr>
+    <tr>
+      <td class="info-label">Tại ngân hàng</td>
+      <td class="info-sep">:</td>
+      <td class="info-value" colspan="4">
+        {{ refund.bank_name or refund.bank_short_name or refund.bank_code or "" }}
+      </td>
+    </tr>
   </table>
   {% endif %}
+
+  <!-- ĐOẠN NỘI DUNG TĨNH SAU TÀI KHOẢN NGÂN HÀNG -->
+  <div class="small mb-4" style="text-align: justify;">
+    Trong trường hợp cuộc đấu giá bị tạm dừng, tạm hoãn theo yêu cầu của cơ quan có thẩm quyền hoặc tôi không trúng đấu giá,
+    tôi xin được nhận lại số tiền đặt trước đã nộp về số tài khoản nêu trên.
+  </div>
+
+  <div class="small mb-4" style="text-align: justify;">
+    Tôi xin đăng ký tham gia đấu giá tài sản theo Thông báo đấu giá tài sản và Quy chế đấu giá tài sản do Công ty ban hành
+    và cam kết chấp hành đầy đủ các quy định của pháp luật có liên quan.
+  </div>
 
   <!-- Mô tả tài sản -->
   <div class="mb-4 small">
