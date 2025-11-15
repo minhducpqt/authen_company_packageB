@@ -120,7 +120,7 @@
         {% for t in page.data %}
         <tr>
           <td class="px-3 py-2 border-b">{{ loop.index + ((page.page-1) * page.size) }}</td>
-          <td class="px-3 py-2 border-b font-mono">{{ t.txn_time or '—' }}</td>
+          <td class="px-3 py-2 border-b font-mono js-txn-time" data-txntime="{{ t.txn_time or '' }}">{{ t.txn_time or '—' }}</td>
           <td class="px-3 py-2 border-b text-right font-mono">{{ t.amount }}</td>
           <td class="px-3 py-2 border-b text-right font-mono">{{ t.balance_after if t.balance_after is not none else '—' }}</td>
           <td class="px-3 py-2 border-b">{{ t.description or '—' }}</td>
@@ -181,6 +181,47 @@
     no_ref_only: {{ 'true' if filters.no_ref_only else 'false' }},
     sort: "{{ filters.sort or '-txn_time' }}"
   };
+
+  // Formatter cho múi giờ Việt Nam (Asia/Bangkok)
+  let vnTimeFormatter;
+  try {
+    vnTimeFormatter = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Bangkok',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+  } catch (e) {
+    vnTimeFormatter = null;
+  }
+
+  function formatTxnTime(value) {
+    if (!value) return '—';
+    const d = new Date(value);
+    if (!Number.isFinite(d.getTime())) return value;
+
+    if (!vnTimeFormatter) {
+      // Fallback nếu Intl/timeZone không hỗ trợ
+      return value;
+    }
+
+    const parts = vnTimeFormatter.formatToParts(d);
+    let year = '0000', month = '00', day = '00', hour = '00', minute = '00', second = '00';
+
+    for (const p of parts) {
+      if (p.type === 'year') year = p.value;
+      else if (p.type === 'month') month = p.value;
+      else if (p.type === 'day') day = p.value;
+      else if (p.type === 'hour') hour = p.value;
+      else if (p.type === 'minute') minute = p.value;
+      else if (p.type === 'second') second = p.value;
+    }
+    return `${year}/${month}/${day} ${hour}:${minute}:${second}`;
+  }
 
   const debounce = (fn, ms=300) => {
     let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
@@ -244,7 +285,8 @@
         const counter = t.counter_account || t.counter_account_no || '—';
         const amt  = (t.amount ?? '—');
         const bal  = (t.balance_after ?? '—');
-        const time = t.txn_time || '—';
+        const timeRaw = t.txn_time || '';
+        const time = formatTxnTime(timeRaw);
         const desc = t.description || '—';
         const ref  = t.ref_no || '—';
         const st   = t.status || '—';
@@ -337,6 +379,16 @@
     });
   }
 
+  // Áp dụng format thời gian cho các dòng SSR ban đầu
+  function applyInitialTimeFormat() {
+    const cells = document.querySelectorAll('.js-txn-time');
+    cells.forEach(el => {
+      const raw = el.getAttribute('data-txntime');
+      el.textContent = formatTxnTime(raw);
+    });
+  }
+
+  applyInitialTimeFormat();
   // Trang đã SSR sẵn; không auto fetch lại khi load.
 })();
 </script>
