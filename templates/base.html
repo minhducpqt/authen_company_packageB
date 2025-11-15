@@ -116,36 +116,33 @@
         </li>
 
         <li class="side-title mt-4">3. Quản lý dòng tiền</li>
-        <li><a class="side-link" href="/giao-dich-ngan-hang"><i class="ri-bank-card-line"></i> 3.1 Giao dịch ngân hàng</a></li>
-        <li><a class="side-link" href="/giao-dich-tien-mat"><i class="ri-cash-line"></i> 3.2 Giao dịch tiền mặt</a></li>
+        <li>
+          <a class="side-link" href="/giao-dich-ngan-hang">
+            <i class="ri-bank-card-line"></i> 3.1 Giao dịch ngân hàng
+          </a>
+        </li>
 
         <li class="side-title mt-4">4. Gửi thông tin</li>
-        <li><a class="side-link" href="/thong-tin-khach-mua-ho-so"><i class="ri-send-plane-line"></i> 4.1 Khách mua hồ sơ</a></li>
-        <li><a class="side-link" href="/thong-tin-khach-coc"><i class="ri-send-plane-2-line"></i> 4.2 Khách cọc</a></li>
+        <li>
+          <a class="side-link opacity-50 cursor-not-allowed pointer-events-none"
+             aria-disabled="true"
+             title="Tính năng đang phát triển">
+            <i class="ri-send-plane-line"></i> 4.1 Khách mua hồ sơ
+          </a>
+        </li>
+        <li>
+          <a class="side-link opacity-50 cursor-not-allowed pointer-events-none"
+             aria-disabled="true"
+             title="Tính năng đang phát triển">
+            <i class="ri-send-plane-2-line"></i> 4.2 Khách cọc
+          </a>
+        </li>
 
-        <!-- === MỤC 5 MỚI: BÁO CÁO THỐNG KÊ === -->
+        <!-- === MỤC 5: BÁO CÁO THỐNG KÊ === -->
         <li class="side-title mt-4">5. Báo cáo thống kê</li>
         <li>
           <a class="side-link {% if request.url.path == '/reports' %}active{% endif %}" href="/reports">
             <i class="ri-bar-chart-2-line"></i> 5.0 Tổng quan báo cáo
-          </a>
-        </li>
-        <li>
-          <a class="side-link {% if request.url.path.startswith('/reports/lots') %}active{% endif %}"
-             href="/reports/lots/eligible">
-            <i class="ri-community-line"></i> 5.1 Lô & điều kiện
-          </a>
-        </li>
-        <li>
-          <a class="side-link {% if request.url.path.startswith('/reports/customers') %}active{% endif %}"
-             href="/reports/customers/eligible-lots">
-            <i class="ri-team-line"></i> 5.2 Khách hàng & điều kiện
-          </a>
-        </li>
-        <li>
-          <a class="side-link {% if request.url.path.startswith('/reports/dossiers') %}active{% endif %}"
-             href="/reports/dossiers/paid/detail">
-            <i class="ri-file-list-2-line"></i> 5.3 Mua hồ sơ (chi tiết/tổng hợp)
           </a>
         </li>
 
