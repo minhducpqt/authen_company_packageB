@@ -121,8 +121,14 @@
         <tr>
           <td class="px-3 py-2 border-b">{{ loop.index + ((page.page-1) * page.size) }}</td>
           <td class="px-3 py-2 border-b font-mono js-txn-time" data-txntime="{{ t.txn_time or '' }}">{{ t.txn_time or '—' }}</td>
-          <td class="px-3 py-2 border-b text-right font-mono">{{ t.amount }}</td>
-          <td class="px-3 py-2 border-b text-right font-mono">{{ t.balance_after if t.balance_after is not none else '—' }}</td>
+          <!-- Số tiền (SSR) -->
+          <td class="px-3 py-2 border-b text-right font-mono js-money-amount"
+              data-raw="{{ t.amount }}">{{ t.amount }}</td>
+          <!-- Số dư sau GD (SSR) -->
+          <td class="px-3 py-2 border-b text-right font-mono js-money-balance"
+              data-raw="{{ t.balance_after if t.balance_after is not none else '' }}">
+            {{ t.balance_after if t.balance_after is not none else '—' }}
+          </td>
           <td class="px-3 py-2 border-b">{{ t.description or '—' }}</td>
           <td class="px-3 py-2 border-b font-mono">{{ t.bank_code or '—' }} — {{ t.account_number or '—' }}</td>
           <td class="px-3 py-2 border-b font-mono">{{ t.counter_account or '—' }}</td>
@@ -223,6 +229,23 @@
     return `${year}/${month}/${day} ${hour}:${minute}:${second}`;
   }
 
+  // ===== FORMAT SỐ TIỀN: số nguyên + ngăn cách hàng nghìn =====
+  function formatMoneyInt(value) {
+    if (value === null || value === undefined) return '—';
+    if (value === '—' || value === '') return '—';
+
+    const n = Number(value);
+    if (!Number.isFinite(n)) return value;
+
+    const rounded = Math.round(n); // đảm bảo không có phần thập phân
+    try {
+      return rounded.toLocaleString('vi-VN'); // 1.234.567.890
+    } catch (e) {
+      // Fallback nếu môi trường không hỗ trợ locale
+      return String(rounded).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+  }
+
   const debounce = (fn, ms=300) => {
     let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
   };
@@ -283,8 +306,8 @@
         const bank = t.bank_code || '—';
         const acc  = t.account_number || '—';
         const counter = t.counter_account || t.counter_account_no || '—';
-        const amt  = (t.amount ?? '—');
-        const bal  = (t.balance_after ?? '—');
+        const amt  = formatMoneyInt(t.amount);
+        const bal  = formatMoneyInt(t.balance_after);
         const timeRaw = t.txn_time || '';
         const time = formatTxnTime(timeRaw);
         const desc = t.description || '—';
@@ -388,7 +411,23 @@
     });
   }
 
+  // Áp dụng format tiền cho các dòng SSR ban đầu
+  function applyInitialMoneyFormat() {
+    const amountCells = document.querySelectorAll('.js-money-amount');
+    amountCells.forEach(el => {
+      const raw = el.getAttribute('data-raw') ?? el.textContent;
+      el.textContent = formatMoneyInt(raw);
+    });
+
+    const balanceCells = document.querySelectorAll('.js-money-balance');
+    balanceCells.forEach(el => {
+      const raw = el.getAttribute('data-raw') ?? el.textContent;
+      el.textContent = formatMoneyInt(raw);
+    });
+  }
+
   applyInitialTimeFormat();
+  applyInitialMoneyFormat();
   // Trang đã SSR sẵn; không auto fetch lại khi load.
 })();
 </script>
