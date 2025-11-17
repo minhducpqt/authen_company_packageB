@@ -63,6 +63,86 @@
     </div>
   </div>
 
+  <!-- Deadlines: bán hồ sơ & nhận tiền đặt trước -->
+  <form method="post" action="/projects/{{ project.id }}/deadlines" class="mb-6">
+    <div class="p-4 rounded-lg bg-indigo-50 border border-indigo-200">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-semibold text-slate-800">Mốc thời gian (deadline)</h3>
+        <button
+          type="submit"
+          class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700">
+          <i class="ri-save-3-line mr-1"></i> Lưu deadline
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-500 mb-3">
+        Hiển thị theo giờ Việt Nam (UTC+7) dạng <code>dd/mm/yyyy HH:MM:SS</code>. Để trống nếu không giới hạn.
+      </p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Hạn bán hồ sơ -->
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">
+            Hạn bán hồ sơ
+          </label>
+
+          <!-- Nút hiển thị + click để mở picker -->
+          <button
+            type="button"
+            id="dossier_deadline_at_display"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white text-left hover:border-indigo-500 hover:ring-2 hover:ring-indigo-200 transition js-deadline-btn"
+            data-field="dossier_deadline_at"
+            data-raw="{{ project.application_deadline_at or '' }}"
+          >
+            —
+          </button>
+
+          <!-- hidden gửi lên server (Service B map sang application_deadline_at) -->
+          <input
+            type="hidden"
+            id="dossier_deadline_at"
+            name="dossier_deadline_at"
+            value="{{ project.application_deadline_at or '' }}"
+          >
+
+          <p class="mt-1 text-xs text-slate-500">
+            Giá trị hiện tại:
+            <span class="deadline-summary" data-field="dossier_deadline_at">—</span>
+          </p>
+        </div>
+
+        <!-- Hạn nhận tiền đặt trước -->
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">
+            Hạn nhận tiền đặt trước
+          </label>
+
+          <button
+            type="button"
+            id="deposit_deadline_at_display"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white text-left hover:border-indigo-500 hover:ring-2 hover:ring-indigo-200 transition js-deadline-btn"
+            data-field="deposit_deadline_at"
+            data-raw="{{ project.deposit_deadline_at or '' }}"
+          >
+            —
+          </button>
+
+          <input
+            type="hidden"
+            id="deposit_deadline_at"
+            name="deposit_deadline_at"
+            value="{{ project.deposit_deadline_at or '' }}"
+          >
+
+          <p class="mt-1 text-xs text-slate-500">
+            Giá trị hiện tại:
+            <span class="deadline-summary" data-field="deposit_deadline_at">—</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  </form>
+
   <!-- Danh sách lô -->
   <div class="flex items-center justify-between mb-2">
     <h3 class="font-semibold text-slate-800">Danh sách lô ({{ lots_page.total }})</h3>
@@ -118,4 +198,141 @@
 
   {% endif %}
 </div>
+
+<!-- Overlay picker chọn ngày giờ với nút Áp dụng -->
+<div id="dt_overlay" class="fixed inset-0 bg-black/40 flex items-center justify-center hidden z-50">
+  <div class="bg-white rounded-xl p-5 w-80 shadow-xl">
+    <h3 class="font-semibold text-slate-800 mb-3">Chọn ngày giờ</h3>
+
+    <input
+      id="dt_picker_input"
+      type="datetime-local"
+      class="w-full border border-slate-300 rounded-lg px-3 py-2 mb-4"
+    >
+
+    <div class="flex justify-end gap-2">
+      <button type="button"
+              class="px-3 py-1.5 rounded bg-slate-200 text-slate-700"
+              onclick="closePicker()">Hủy</button>
+      <button type="button"
+              class="px-3 py-1.5 rounded bg-indigo-600 text-white"
+              onclick="applyPicker()">Áp dụng</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let currentField = null;
+
+  // Parse chuỗi ISO DB/local sang các phần YYYY,MM,DD,HH,MM,SS (bỏ timezone, coi là giờ VN)
+  function parseRaw(raw) {
+    if (!raw) return null;
+    let s = String(raw).trim();
+    if (!s) return null;
+
+    // cắt timezone nếu có, ví dụ "+07:00" hoặc "Z"
+    const tzPosPlus = s.indexOf("+", 10);
+    const tzPosMinus = s.indexOf("-", 10);
+    const tzPosZ = s.indexOf("Z");
+    let cut = s;
+
+    if (tzPosPlus > 10) cut = s.slice(0, tzPosPlus);
+    else if (tzPosMinus > 10) cut = s.slice(0, tzPosMinus);
+    else if (tzPosZ > 0) cut = s.slice(0, tzPosZ);
+
+    // thay khoảng trắng bằng 'T' nếu có
+    cut = cut.replace(" ", "T");
+
+    const parts = cut.split("T");
+    if (parts.length < 1) return null;
+
+    const datePart = parts[0];
+    const timePart = parts[1] || "00:00:00";
+
+    const dArr = datePart.split("-");
+    if (dArr.length !== 3) return null;
+    const [year, month, day] = dArr;
+
+    const tArr = timePart.split(":");
+    const hh = tArr[0] || "00";
+    const mm = tArr[1] || "00";
+    const ss = tArr[2] || "00";
+
+    return {year, month, day, hh, mm, ss};
+  }
+
+  // Format hiển thị dd/mm/yyyy HH:MM:SS (giờ VN)
+  function formatVN(raw) {
+    const p = parseRaw(raw);
+    if (!p) return "—";
+    return `${p.day}/${p.month}/${p.year} ${p.hh}:${p.mm}:${p.ss} (giờ VN)`;
+  }
+
+  // Convert raw -> giá trị cho datetime-local (YYYY-MM-DDTHH:MM)
+  function toPickerValue(raw) {
+    const p = parseRaw(raw);
+    if (!p) return "";
+    return `${p.year}-${p.month}-${p.day}T${p.hh}:${p.mm}`;
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    // Khởi tạo hiển thị nút & summary từ data-raw / hidden value
+    document.querySelectorAll(".js-deadline-btn").forEach(function (btn) {
+      const field = btn.getAttribute("data-field");
+      const rawAttr = btn.getAttribute("data-raw") || "";
+      const hidden = document.getElementById(field);
+      const raw = (hidden && hidden.value) || rawAttr || "";
+
+      const text = raw ? formatVN(raw) : "—";
+      btn.textContent = text;
+
+      const summary = document.querySelector(`.deadline-summary[data-field="${field}"]`);
+      if (summary) {
+        summary.textContent = text;
+      }
+
+      btn.addEventListener("click", function () {
+        openPicker(field);
+      });
+    });
+  });
+
+  function openPicker(fieldName) {
+    currentField = fieldName;
+    const hiddenInput = document.getElementById(fieldName);
+    const raw = hiddenInput ? hiddenInput.value : "";
+    const pickerVal = toPickerValue(raw);
+    document.getElementById("dt_picker_input").value = pickerVal;
+    document.getElementById("dt_overlay").classList.remove("hidden");
+  }
+
+  function closePicker() {
+    document.getElementById("dt_overlay").classList.add("hidden");
+    currentField = null;
+  }
+
+  function applyPicker() {
+    if (!currentField) return;
+
+    const val = document.getElementById("dt_picker_input").value; // "YYYY-MM-DDTHH:MM"
+    const hiddenInput = document.getElementById(currentField);
+    const btn = document.getElementById(currentField + "_display");
+    const summary = document.querySelector(`.deadline-summary[data-field="${currentField}"]`);
+
+    if (val) {
+      // Lưu dưới dạng "YYYY-MM-DDTHH:MM" (Service A _parse_dt sẽ đọc được)
+      if (hiddenInput) hiddenInput.value = val;
+
+      const displayText = formatVN(val);
+      if (btn) btn.textContent = displayText;
+      if (summary) summary.textContent = displayText;
+    } else {
+      if (hiddenInput) hiddenInput.value = "";
+      if (btn) btn.textContent = "—";
+      if (summary) summary.textContent = "—";
+    }
+
+    closePicker();
+  }
+</script>
 {% endblock %}

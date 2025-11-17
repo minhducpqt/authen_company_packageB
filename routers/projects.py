@@ -30,6 +30,7 @@ EP_UPDATE_PROJ     = "/api/v1/projects/{pid}"
 EP_EXPORT_XLSX     = "/api/v1/projects/export_xlsx"
 EP_IMPORT_XLSX     = "/api/v1/projects/import_xlsx"   # (nếu dùng Service A build)
 EP_CREATE_LOT      = "/api/v1/lots"
+EP_DEADLINES       = "/api/v1/projects/{project_id}/deadlines"
 
 # helpers http
 async def _get_json(client: httpx.AsyncClient, url: str, headers: dict):
@@ -657,3 +658,70 @@ async def projects_options(request: Request, status: str = "ACTIVE", company_cod
         return {"options": options}
     except httpx.RequestError as e:
         raise HTTPException(status_code=502, detail=f"Cannot reach Service A: {e}") from e
+
+@router.post("/{project_id}/deadlines")
+async def update_project_deadlines(
+    request: Request,
+    project_id: int = Path(...),
+    dossier_deadline_at: str = Form(""),     # FE: hạn bán hồ sơ
+    deposit_deadline_at: str = Form(""),     # FE: hạn nhận tiền đặt trước
+):
+    """
+    Cập nhật 2 deadline của dự án (Service B → Service A):
+    - dossier_deadline_at  → application_deadline_at
+    - deposit_deadline_at  → deposit_deadline_at
+    """
+
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(
+            url=f"/login?next=/projects/{project_id}",
+            status_code=303,
+        )
+
+    # Rỗng -> None
+    dossier_v = (dossier_deadline_at or "").strip() or None
+    deposit_v = (deposit_deadline_at or "").strip() or None
+
+    # SERVICE A EXPECTS EXACT FIELDS ↓↓↓
+    payload = {
+        "application_deadline_at": dossier_v,
+        "deposit_deadline_at": deposit_v,
+    }
+
+    print("====== [DEBUG] SERVICE B → A DEADLINES PAYLOAD ======")
+    print(payload)
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            r = await client.put(
+                EP_DEADLINES.format(project_id=project_id),
+                json=payload,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        if r.status_code != 200:
+            try:
+                detail = r.json()
+            except Exception:
+                detail = r.text
+
+            print("⚠️ DEADLINE UPDATE FAILED:", detail)
+
+            return RedirectResponse(
+                url=f"/projects/{project_id}?err=deadlines_update_failed",
+                status_code=303,
+            )
+
+    except Exception as e:
+        print("🔥 EXCEPTION update_project_deadlines:", e)
+        return RedirectResponse(
+            url=f"/projects/{project_id}?err=deadlines_update_failed",
+            status_code=303,
+        )
+
+    return RedirectResponse(
+        url=f"/projects/{project_id}?msg=deadlines_updated",
+        status_code=303,
+    )
+
