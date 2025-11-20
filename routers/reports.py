@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any, List, Tuple
 
 import httpx
 from fastapi import APIRouter, Request, Query
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from utils.templates import templates
 from utils.auth import get_access_token
@@ -32,7 +32,7 @@ def _preview_body(data: Any, limit: int = 300) -> str:
 
 
 # ---------- HTTP helpers (auto log) ----------
-async def _get_raw(
+async def _get_json(
     path: str,
     token: str,
     params: Dict[str, Any] | List[Tuple[str, Any]] | None = None,
@@ -41,39 +41,20 @@ async def _get_raw(
     headers = {"Authorization": f"Bearer {token}"}
     _log(f"→ GET {url} params={params or {}} headers.keys={list(headers.keys())}")
 
-    async with httpx.AsyncClient(timeout=60.0) as c:
+    async with httpx.AsyncClient(timeout=30.0) as c:
         try:
             r = await c.get(url, headers=headers, params=params or {})
         except Exception as e:
             _log(f"← EXC {url} error={e}")
-            # giả lập Response-like
-            class Dummy:
-                status_code = 599
-                content = b""
-                headers = {}
-                text = str(e)
+            return 599, {"detail": str(e)}
 
-                def json(self):
-                    raise ValueError("no json")
-
-            return Dummy()
-    _log(f"← {r.status_code} {url} (len={len(r.content)})")
-    return r
-
-
-async def _get_json(
-    path: str,
-    token: str,
-    params: Dict[str, Any] | List[Tuple[str, Any]] | None = None,
-):
-    r = await _get_raw(path, token, params)
     try:
         js = r.json()
-        _log(f"   json={_preview_body(js)}")
+        _log(f"← {r.status_code} {url} json={_preview_body(js)}")
         return r.status_code, js
     except Exception:
         text_preview = (r.text or "")[:300]
-        _log(f"   text={text_preview}")
+        _log(f"← {r.status_code} {url} text={text_preview}")
         return r.status_code, {"detail": r.text[:500]}
 
 
@@ -81,38 +62,35 @@ def _unauth():
     return JSONResponse({"error": "unauthorized"}, status_code=401)
 
 
-# ---------- Helper: load list active projects ----------
-async def _fetch_active_projects(token: str) -> Tuple[List[Dict[str, Any]], Optional[str]]:
+# ---------- Helper: load ACTIVE projects & chọn dự án ----------
+async def _load_projects(token: str, project_param: Optional[str]) -> tuple[list[dict], str]:
     """
-    Gọi Service A lấy danh sách dự án ACTIVE của company hiện tại.
-    Trả về (projects, default_project_code). Nếu chỉ có 1 dự án thì
-    dùng project_code của nó làm mặc định.
+    Gọi Service A /api/v1/projects để lấy danh sách dự án ACTIVE.
+    - Nếu project_param có giá trị -> dùng luôn (upper & strip).
+    - Nếu không có, và chỉ có 1 dự án ACTIVE -> auto chọn dự án đó.
+    - Trả về (projects, selected_project_code)
     """
-    # NOTE: path/param này dựa theo convention trước đây.
-    # Nếu Service A dùng path khác (vd /api/v1/business/projects)
-    # bạn chỉ cần chỉnh lại ở đây.
-    st, data = await _get_json(
+    st, pj = await _get_json(
         "/api/v1/projects",
         token,
         {"status": "ACTIVE", "size": 1000},
     )
-    projects: List[Dict[str, Any]] = []
-    default_project: Optional[str] = None
+    projects: list[dict] = []
+    selected = (project_param or "").strip().upper()
 
-    if st == 200 and isinstance(data, dict):
-        projects = data.get("items") or data.get("projects") or []
-        if len(projects) == 1:
-            p0 = projects[0] or {}
-            default_project = p0.get("project_code") or p0.get("code")
+    if st == 200 and isinstance(pj, dict):
+        projects = pj.get("data") or pj.get("items") or []
+        _log(f"_load_projects: got {len(projects)} active projects")
+        if not selected and len(projects) == 1:
+            selected = (projects[0].get("project_code") or "").upper()
+            _log(f"_load_projects: auto-selected single project={selected}")
     else:
-        _log(f"_fetch_active_projects: upstream status={st} body={_preview_body(data)}")
+        _log(f"_load_projects: failed to load projects status={st} body={pj}")
 
-    return projects, default_project
+    return projects, selected
 
 
-# ======================================================
-# 5.0 Tổng quan
-# ======================================================
+# ---------- 5.0 Tổng quan ----------
 @router.get("/reports", response_class=HTMLResponse)
 async def reports_home(request: Request):
     _log(f"REQ /reports url={request.url}")
@@ -126,357 +104,269 @@ async def reports_home(request: Request):
     )
 
 
-# ======================================================
-# 5.1 Lô & điều kiện (sử dụng các VIEW /view/... bên Service A)
-# ======================================================
+# ============================================================
+# 5.1 LÔ & ĐIỀU KIỆN  (dùng các VIEW /view/project-*)
+# ============================================================
 
 @router.get("/reports/lots/eligible", response_class=HTMLResponse)
 async def lots_eligible_page(
     request: Request,
     project: Optional[str] = Query(None, description="project_code như KIDO6"),
-    lot_code: Optional[str] = Query(None, description="lọc mã lô (prefix, không phân biệt hoa thường)"),
-    limit: Optional[int] = Query(500, ge=1, le=5000, description="Số dòng tối đa"),
-    export: Optional[str] = Query(None, description="xlsx để xuất file"),
+    lot_prefix: Optional[str] = Query(None, description="Prefix mã lô, ví dụ: CL03"),
+    limit: Optional[int] = Query(500, ge=1, le=5000, description="Giới hạn số dòng tối đa"),
 ):
     """
-    Màn 'Lô đủ điều kiện' (>= 2 khách đặt tiền trên cùng lô).
-    Dùng VIEW: /api/v1/reports/view/project-lots-eligible
+    Lô đủ điều kiện (≥ 2 khách đặt tiền).
+    Gọi Service A: /api/v1/reports/view/project-lots-eligible
     """
     _log(f"REQ /reports/lots/eligible url={request.url}")
     token = get_access_token(request)
     if not token:
+        _log("AUTH missing → redirect /login")
         return RedirectResponse(url="/login?next=%2Freports%2Flots%2Feligible", status_code=303)
 
-    projects, default_project = await _fetch_active_projects(token)
-    effective_project = project or default_project
+    projects, selected_project = await _load_projects(token, project)
+    data: Dict[str, Any] | None = None
+    error: Dict[str, Any] | None = None
 
-    data: Dict[str, Any]
-    status = 200
-
-    params: Dict[str, Any] = {}
-    if effective_project:
-        params["project"] = effective_project
-        if lot_code:
-            params["lot_code"] = lot_code
-        if limit:
+    if selected_project:
+        params: Dict[str, Any] = {"project": selected_project}
+        if lot_prefix:
+            params["lot_code"] = lot_prefix
+        if limit is not None:
             params["limit"] = limit
 
-        # export trực tiếp từ Service A
-        if export == "xlsx":
-            params["format"] = "xlsx"
-            raw = await _get_raw("/api/v1/reports/view/project-lots-eligible", token, params)
-            filename = f"lots_eligible_{effective_project}.xlsx"
-            return Response(
-                content=raw.content,
-                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-                status_code=raw.status_code,
-            )
-
-        status, data = await _get_json(
-            "/api/v1/reports/view/project-lots-eligible",
-            token,
-            params,
-        )
-        if status != 200:
-            data = {"error": data, "status": status}
-    else:
-        # chưa chọn dự án
-        data = {"items": [], "count": 0}
+        st, js = await _get_json("/api/v1/reports/view/project-lots-eligible", token, params)
+        if st == 200:
+            data = js
+        else:
+            error = {"status": st, "body": js}
 
     ctx = {
         "request": request,
         "title": "Lô đủ điều kiện",
-        "data": data,
         "projects": projects,
-        "project": effective_project or "",
-        "lot_code": lot_code or "",
+        "project": selected_project,
+        "lot_prefix": lot_prefix or "",
         "limit": limit,
+        "data": data or {"items": [], "count": 0},
+        "error": error,
     }
-    return templates.TemplateResponse(
-        "reports/lots_eligible.html",
-        ctx,
-        status_code=200 if status == 200 else 502,
-    )
+    return templates.TemplateResponse("reports/lots_eligible.html", ctx)
 
 
 @router.get("/reports/lots/ineligible", response_class=HTMLResponse)
 async def lots_ineligible_page(
     request: Request,
     project: Optional[str] = Query(None, description="project_code như KIDO6"),
-    lot_code: Optional[str] = Query(None, description="lọc mã lô (prefix)"),
-    limit: Optional[int] = Query(500, ge=1, le=5000, description="Số dòng tối đa"),
-    export: Optional[str] = Query(None, description="xlsx để xuất file"),
+    lot_prefix: Optional[str] = Query(None, description="Prefix mã lô, ví dụ: CL03"),
+    limit: Optional[int] = Query(500, ge=1, le=5000, description="Giới hạn số dòng tối đa"),
 ):
     """
-    Màn 'Lô KHÔNG đủ điều kiện' (0–1 khách).
-    Dùng VIEW: /api/v1/reports/view/project-lots-not-eligible
+    Lô KHÔNG đủ điều kiện (0–1 khách).
+    Gọi Service A: /api/v1/reports/view/project-lots-not-eligible
     """
     _log(f"REQ /reports/lots/ineligible url={request.url}")
     token = get_access_token(request)
     if not token:
+        _log("AUTH missing → redirect /login")
         return RedirectResponse(url="/login?next=%2Freports%2Flots%2Fineligible", status_code=303)
 
-    projects, default_project = await _fetch_active_projects(token)
-    effective_project = project or default_project
+    projects, selected_project = await _load_projects(token, project)
+    data: Dict[str, Any] | None = None
+    error: Dict[str, Any] | None = None
 
-    data: Dict[str, Any]
-    status = 200
-
-    params: Dict[str, Any] = {}
-    if effective_project:
-        params["project"] = effective_project
-        if lot_code:
-            params["lot_code"] = lot_code
-        if limit:
+    if selected_project:
+        params: Dict[str, Any] = {"project": selected_project}
+        if lot_prefix:
+            params["lot_code"] = lot_prefix
+        if limit is not None:
             params["limit"] = limit
 
-        if export == "xlsx":
-            params["format"] = "xlsx"
-            raw = await _get_raw("/api/v1/reports/view/project-lots-not-eligible", token, params)
-            filename = f"lots_not_eligible_{effective_project}.xlsx"
-            return Response(
-                content=raw.content,
-                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-                status_code=raw.status_code,
-            )
-
-        status, data = await _get_json(
-            "/api/v1/reports/view/project-lots-not-eligible",
-            token,
-            params,
-        )
-        if status != 200:
-            data = {"error": data, "status": status}
-    else:
-        data = {"items": [], "count": 0}
+        st, js = await _get_json("/api/v1/reports/view/project-lots-not-eligible", token, params)
+        if st == 200:
+            data = js
+        else:
+            error = {"status": st, "body": js}
 
     ctx = {
         "request": request,
         "title": "Lô KHÔNG đủ điều kiện",
-        "data": data,
         "projects": projects,
-        "project": effective_project or "",
-        "lot_code": lot_code or "",
+        "project": selected_project,
+        "lot_prefix": lot_prefix or "",
         "limit": limit,
+        "data": data or {"items": [], "count": 0},
+        "error": error,
     }
-    return templates.TemplateResponse(
-        "reports/lots_ineligible.html",
-        ctx,
-        status_code=200 if status == 200 else 502,
-    )
+    return templates.TemplateResponse("reports/lots_ineligible.html", ctx)
 
 
-# ======================================================
-# 5.2 Khách hàng & điều kiện (VIEW /view/project-customers-...)
-# ======================================================
+# ============================================================
+# 5.2 KHÁCH HÀNG & ĐIỀU KIỆN
+# ============================================================
 
 @router.get("/reports/customers/eligible-lots", response_class=HTMLResponse)
 async def customers_eligible_lots_page(
     request: Request,
     project: Optional[str] = Query(None, description="project_code như KIDO6"),
-    customer_cccd: Optional[str] = Query(None, description="lọc CCCD khách (exact)"),
-    lot_code: Optional[str] = Query(None, description="lọc mã lô (prefix)"),
+    customer_cccd: Optional[str] = Query(None, description="Lọc theo CCCD khách"),
+    lot_prefix: Optional[str] = Query(None, description="Prefix mã lô"),
     limit: Optional[int] = Query(500, ge=1, le=5000),
-    export: Optional[str] = Query(None, description="xlsx để xuất file"),
 ):
+    """
+    Khách + lô đủ điều kiện.
+    Gọi Service A: /api/v1/reports/view/project-customers-lots-eligible
+    """
     _log(f"REQ /reports/customers/eligible-lots url={request.url}")
     token = get_access_token(request)
     if not token:
+        _log("AUTH missing → redirect /login")
         return RedirectResponse(url="/login?next=%2Freports%2Fcustomers%2Feligible-lots", status_code=303)
 
-    projects, default_project = await _fetch_active_projects(token)
-    effective_project = project or default_project
+    projects, selected_project = await _load_projects(token, project)
+    data: Dict[str, Any] | None = None
+    error: Dict[str, Any] | None = None
 
-    data: Dict[str, Any]
-    status = 200
-
-    params: Dict[str, Any] = {}
-    if effective_project:
-        params["project"] = effective_project
+    if selected_project:
+        params: Dict[str, Any] = {
+            "project": selected_project,
+            "expose_phone": "true",  # cho phép A hydrate phone nếu user có quyền
+        }
         if customer_cccd:
             params["customer_cccd"] = customer_cccd
-        if lot_code:
-            params["lot_code"] = lot_code
-        if limit:
+        if lot_prefix:
+            params["lot_code"] = lot_prefix
+        if limit is not None:
             params["limit"] = limit
 
-        if export == "xlsx":
-            params["format"] = "xlsx"
-            raw = await _get_raw("/api/v1/reports/view/project-customers-lots-eligible", token, params)
-            filename = f"customers_lots_eligible_{effective_project}.xlsx"
-            return Response(
-                content=raw.content,
-                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-                status_code=raw.status_code,
-            )
-
-        status, data = await _get_json(
-            "/api/v1/reports/view/project-customers-lots-eligible",
-            token,
-            params,
-        )
-        if status != 200:
-            data = {"error": data, "status": status}
-    else:
-        data = {"items": [], "count": 0}
+        st, js = await _get_json("/api/v1/reports/view/project-customers-lots-eligible", token, params)
+        if st == 200:
+            data = js
+        else:
+            error = {"status": st, "body": js}
 
     ctx = {
         "request": request,
         "title": "Khách hàng đủ điều kiện & các lô",
-        "data": data,
         "projects": projects,
-        "project": effective_project or "",
+        "project": selected_project,
         "customer_cccd": customer_cccd or "",
-        "lot_code": lot_code or "",
+        "lot_prefix": lot_prefix or "",
         "limit": limit,
+        "data": data or {"items": [], "count": 0},
+        "error": error,
     }
-    return templates.TemplateResponse(
-        "reports/customers_eligible.html",
-        ctx,
-        status_code=200 if status == 200 else 502,
-    )
+    return templates.TemplateResponse("reports/customers_eligible.html", ctx)
 
 
 @router.get("/reports/customers/not-eligible-lots", response_class=HTMLResponse)
 async def customers_ineligible_lots_page(
     request: Request,
     project: Optional[str] = Query(None, description="project_code như KIDO6"),
-    customer_cccd: Optional[str] = Query(None, description="lọc CCCD khách (exact)"),
-    lot_code: Optional[str] = Query(None, description="lọc mã lô (prefix)"),
+    customer_cccd: Optional[str] = Query(None, description="Lọc theo CCCD khách"),
+    lot_prefix: Optional[str] = Query(None, description="Prefix mã lô"),
     limit: Optional[int] = Query(500, ge=1, le=5000),
-    export: Optional[str] = Query(None, description="xlsx để xuất file"),
 ):
+    """
+    Khách + lô KHÔNG đủ điều kiện.
+    Gọi Service A: /api/v1/reports/view/project-customers-lots-not-enough
+    """
     _log(f"REQ /reports/customers/not-eligible-lots url={request.url}")
     token = get_access_token(request)
     if not token:
-        return RedirectResponse(url="/login?next=%2Freports%2Fcustomers%2Fnot-eligible-lots", status_code=303)
+        _log("AUTH missing → redirect /login")
+        return RedirectResponse(url="/login?next=%2Freports%2Fcustomers%2Fineligible-lots", status_code=303)
 
-    projects, default_project = await _fetch_active_projects(token)
-    effective_project = project or default_project
+    projects, selected_project = await _load_projects(token, project)
+    data: Dict[str, Any] | None = None
+    error: Dict[str, Any] | None = None
 
-    data: Dict[str, Any]
-    status = 200
-
-    params: Dict[str, Any] = {}
-    if effective_project:
-        params["project"] = effective_project
+    if selected_project:
+        params: Dict[str, Any] = {
+            "project": selected_project,
+            "expose_phone": "true",
+        }
         if customer_cccd:
             params["customer_cccd"] = customer_cccd
-        if lot_code:
-            params["lot_code"] = lot_code
-        if limit:
+        if lot_prefix:
+            params["lot_code"] = lot_prefix
+        if limit is not None:
             params["limit"] = limit
 
-        if export == "xlsx":
-            params["format"] = "xlsx"
-            raw = await _get_raw("/api/v1/reports/view/project-customers-lots-not-enough", token, params)
-            filename = f"customers_lots_not_enough_{effective_project}.xlsx"
-            return Response(
-                content=raw.content,
-                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-                status_code=raw.status_code,
-            )
-
-        status, data = await _get_json(
-            "/api/v1/reports/view/project-customers-lots-not-enough",
-            token,
-            params,
-        )
-        if status != 200:
-            data = {"error": data, "status": status}
-    else:
-        data = {"items": [], "count": 0}
+        st, js = await _get_json("/api/v1/reports/view/project-customers-lots-not-enough", token, params)
+        if st == 200:
+            data = js
+        else:
+            error = {"status": st, "body": js}
 
     ctx = {
         "request": request,
         "title": "Khách hàng KHÔNG đủ điều kiện & các lô",
-        "data": data,
         "projects": projects,
-        "project": effective_project or "",
+        "project": selected_project,
         "customer_cccd": customer_cccd or "",
-        "lot_code": lot_code or "",
+        "lot_prefix": lot_prefix or "",
         "limit": limit,
+        "data": data or {"items": [], "count": 0},
+        "error": error,
     }
-    return templates.TemplateResponse(
-        "reports/customers_ineligible.html",
-        ctx,
-        status_code=200 if status == 200 else 502,
-    )
+    return templates.TemplateResponse("reports/customers_ineligible.html", ctx)
 
 
-# ======================================================
-# 5.3 Mua hồ sơ (chi tiết/tổng hợp)
-#   - Chi tiết dùng VIEW v_report_project_customer_dossier_items
-#   - Tổng hợp dùng các API cũ /dossiers/paid/*
-# ======================================================
+# ============================================================
+# 5.3 MUA HỒ SƠ (chi tiết / tổng hợp)
+# ============================================================
 
 @router.get("/reports/dossiers/paid/detail", response_class=HTMLResponse)
 async def dossiers_paid_detail_page(
     request: Request,
     project: Optional[str] = Query(None, description="project_code như KIDO6"),
-    customer_cccd: Optional[str] = Query(None, description="lọc CCCD khách"),
-    limit: Optional[int] = Query(500, ge=1, le=5000),
-    export: Optional[str] = Query(None, description="xlsx để xuất file"),
+    customer_cccd: Optional[str] = Query(None, description="Lọc theo CCCD khách"),
+    limit: Optional[int] = Query(1000, ge=1, le=10000),
 ):
+    """
+    Chi tiết các đơn mua hồ sơ theo dự án.
+    Gọi Service A: /api/v1/reports/view/project-dossier-items
+    """
     _log(f"REQ /reports/dossiers/paid/detail url={request.url}")
     token = get_access_token(request)
     if not token:
+        _log("AUTH missing → redirect /login")
         return RedirectResponse(url="/login?next=%2Freports%2Fdossiers%2Fpaid%2Fdetail", status_code=303)
 
-    projects, default_project = await _fetch_active_projects(token)
-    effective_project = project or default_project
+    projects, selected_project = await _load_projects(token, project)
+    data: Dict[str, Any] | None = None
+    error: Dict[str, Any] | None = None
 
-    data: Dict[str, Any]
-    status = 200
-
-    params: Dict[str, Any] = {}
-    if effective_project:
-        params["project"] = effective_project
+    if selected_project:
+        params: Dict[str, Any] = {
+            "project": selected_project,
+            "expose_phone": "true",
+        }
         if customer_cccd:
             params["customer_cccd"] = customer_cccd
-        if limit:
+        if limit is not None:
             params["limit"] = limit
 
-        if export == "xlsx":
-            params["format"] = "xlsx"
-            raw = await _get_raw("/api/v1/reports/view/project-dossier-items", token, params)
-            filename = f"dossier_items_{effective_project}.xlsx"
-            return Response(
-                content=raw.content,
-                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-                status_code=raw.status_code,
-            )
-
-        status, data = await _get_json(
-            "/api/v1/reports/view/project-dossier-items",
-            token,
-            params,
-        )
-        if status != 200:
-            data = {"error": data, "status": status}
-    else:
-        data = {"items": [], "count": 0}
+        st, js = await _get_json("/api/v1/reports/view/project-dossier-items", token, params)
+        if st == 200:
+            data = js
+        else:
+            error = {"status": st, "body": js}
 
     ctx = {
         "request": request,
         "title": "Mua hồ sơ — chi tiết",
         "mode": "detail",
-        "data": data,
         "projects": projects,
-        "project": effective_project or "",
+        "project": selected_project,
         "customer_cccd": customer_cccd or "",
         "limit": limit,
+        "data": data or {"items": [], "count": 0},
+        "error": error,
     }
-    return templates.TemplateResponse(
-        "reports/dossiers_paid.html",
-        ctx,
-        status_code=200 if status == 200 else 502,
-    )
+    return templates.TemplateResponse("reports/dossiers_paid.html", ctx)
 
 
 @router.get("/reports/dossiers/paid/summary", response_class=HTMLResponse)
@@ -484,17 +374,23 @@ async def dossiers_paid_summary_page(
     request: Request,
     project: Optional[str] = Query(None, description="project_code như KIDO6"),
 ):
+    """
+    Tổng hợp mua hồ sơ:
+    - v_dossier_paid_summary_customer
+    - v_dossier_paid_totals_by_type
+    (phần này vẫn dùng các API cũ của Service A)
+    """
     _log(f"REQ /reports/dossiers/paid/summary url={request.url}")
     token = get_access_token(request)
     if not token:
+        _log("AUTH missing → redirect /login")
         return RedirectResponse(url="/login?next=%2Freports%2Fdossiers%2Fpaid%2Fsummary", status_code=303)
 
-    projects, default_project = await _fetch_active_projects(token)
-    effective_project = project or default_project
+    projects, selected_project = await _load_projects(token, project)
 
     params: Dict[str, Any] = {}
-    if effective_project:
-        params["project"] = effective_project
+    if selected_project:
+        params["project"] = selected_project
 
     st1, data1 = await _get_json("/api/v1/reports/dossiers/paid/summary-customer", token, params)
     st2, data2 = await _get_json("/api/v1/reports/dossiers/paid/totals-by-type", token, params)
@@ -509,26 +405,21 @@ async def dossiers_paid_summary_page(
         "request": request,
         "title": "Mua hồ sơ — tổng hợp",
         "mode": "summary",
-        "data": data,
         "projects": projects,
-        "project": effective_project or "",
+        "project": selected_project,
+        "data": data,
     }
-    return templates.TemplateResponse(
-        "reports/dossiers_paid.html",
-        ctx,
-        status_code=200 if ok else 502,
-    )
+    return templates.TemplateResponse("reports/dossiers_paid.html", ctx, status_code=200 if ok else 502)
 
 
-# ======================================================
-# JSON proxy (nếu FE cần load động)
-# ======================================================
+# ---------- JSON proxy cũ (nếu FE cần load động) ----------
 @router.get("/api/reports/{kind}", response_class=JSONResponse)
 async def reports_api(
     request: Request,
     kind: str,
     project: Optional[str] = Query(None, description="project_code như KIDO6"),
-    limit: Optional[int] = Query(500, ge=1, le=5000),
+    page: int = Query(1, ge=1),
+    size: int = Query(100, ge=10, le=1000),
 ):
     _log(f"REQ /api/reports/{kind} url={request.url}")
     token = get_access_token(request)
@@ -536,25 +427,24 @@ async def reports_api(
         _log("AUTH missing → 401 JSON")
         return _unauth()
 
+    # Map sang endpoint bên A (cũ)
     map_path = {
-        "lots_eligible": "/api/v1/reports/view/project-lots-eligible",
-        "lots_ineligible": "/api/v1/reports/view/project-lots-not-eligible",
-        "customers_eligible": "/api/v1/reports/view/project-customers-lots-eligible",
-        "customers_not_enough": "/api/v1/reports/view/project-customers-lots-not-enough",
-        "dossiers_items": "/api/v1/reports/view/project-dossier-items",
-        "dossiers_summary_cust": "/api/v1/reports/dossiers/paid/summary-customer",
-        "dossiers_totals_type": "/api/v1/reports/dossiers/paid/totals-by-type",
+        "lots_eligible":              "/api/v1/reports/lot-deposits/eligible",
+        "lots_ineligible":            "/api/v1/reports/lot-deposits/not-eligible",
+        "customers_eligible":         "/api/v1/reports/customers/eligible-lots",
+        "customers_ineligible":       "/api/v1/reports/customers/not-eligible-lots",
+        "dossiers_paid_detail":       "/api/v1/reports/dossiers/paid/detail",
+        "dossiers_paid_summary_cust": "/api/v1/reports/dossiers/paid/summary-customer",
+        "dossiers_paid_totals_type":  "/api/v1/reports/dossiers/paid/totals-by-type",
     }
     path = map_path.get(kind)
     if not path:
         _log(f"ERR invalid kind={kind}")
         return JSONResponse({"error": "invalid_kind"}, status_code=400)
 
-    params: Dict[str, Any] = {}
+    params: Dict[str, Any] = {"page": page, "size": size}
     if project:
         params["project"] = project
-    if "view/project-" in path and limit:
-        params["limit"] = limit
 
     st, data = await _get_json(path, token, params)
     if st == 401:
