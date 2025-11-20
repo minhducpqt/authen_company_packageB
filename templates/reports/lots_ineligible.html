@@ -1,13 +1,14 @@
 {% extends "base.html" %}
-{% block title %}Lô không đủ điều kiện{% endblock %}
+{% block title %}Lô KHÔNG đủ điều kiện{% endblock %}
 
 {% block content %}
 <div class="mb-6">
-  <h1 class="text-2xl font-semibold text-slate-900">
+  <h1 class="text-2xl font-semibold text-slate-900 flex items-center gap-2">
+    <i class="ri-alert-line text-rose-600 text-3xl"></i>
     Lô KHÔNG đủ điều kiện đấu giá
   </h1>
   <p class="text-slate-500 text-sm mt-1">
-    Các lô có <span class="font-semibold text-rose-600">0–1 khách</span> nộp tiền đặt trước.
+    Các lô có <span class="font-semibold text-slate-800">&le; 1 khách đặt tiền</span> hoặc chưa đủ điều kiện theo quy định.
   </p>
 </div>
 
@@ -29,8 +30,8 @@
     <label class="text-xs font-semibold text-slate-500 mb-1">Mã lô (prefix)</label>
     <input
       type="text"
-      name="lot_prefix"
-      value="{{ lot_prefix }}"
+      name="lot_code"
+      value="{{ lot_code }}"
       class="h-10 rounded-xl border px-3 text-sm min-w-[140px]"
       placeholder="VD: L01"
     >
@@ -51,17 +52,18 @@
   <div class="flex items-center gap-3 ml-auto">
     <button
       type="submit"
-      class="h-10 px-4 rounded-xl bg-indigo-600 text-white text-sm font-medium shadow-sm hover:bg-indigo-700"
+      class="h-10 px-4 rounded-xl bg-rose-600 text-white text-sm font-medium shadow-sm hover:bg-rose-700"
     >Áp dụng</button>
 
-    <button
-      type="submit"
-      name="export"
-      value="xlsx"
-      class="h-10 px-4 rounded-xl border border-slate-300 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50"
-    >
-      Export XLSX
-    </button>
+    {% if project %}
+      <a
+        href="/reports/lots/ineligible/export?project={{ project }}{% if lot_code %}&lot_code={{ lot_code }}{% endif %}{% if limit %}&limit={{ limit }}{% endif %}"
+        class="h-10 px-4 rounded-xl border border-slate-300 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 inline-flex items-center gap-2"
+      >
+        <i class="ri-file-excel-2-line"></i>
+        Export XLSX
+      </a>
+    {% endif %}
   </div>
 </form>
 
@@ -78,36 +80,32 @@
     <table class="min-w-full text-sm text-slate-700">
       <thead class="bg-slate-50 text-slate-500 border-b">
         <tr>
-          <th class="px-4 py-2 text-left font-semibold">Dự án</th>
           <th class="px-4 py-2 text-left font-semibold">Mã lô</th>
-          <th class="px-4 py-2 text-left font-semibold">Diện tích (m²)</th>
-          <th class="px-4 py-2 text-right font-semibold">Giá khởi điểm</th>
+          <th class="px-4 py-2 text-left font-semibold">Mô tả</th>
+          <th class="px-4 py-2 text-right font-semibold">Diện tích (m²)</th>
           <th class="px-4 py-2 text-right font-semibold">Tiền đặt trước</th>
-          <th class="px-4 py-2 text-left font-semibold">Trạng thái lô</th>
-          <th class="px-4 py-2 text-right font-semibold">Số KH tham gia</th>
-          <th class="px-4 py-2 text-right font-semibold">Tổng tiền đặt trước</th>
-          <th class="px-4 py-2 text-left font-semibold">Thời điểm nộp đầu tiên</th>
-          <th class="px-4 py-2 text-left font-semibold">Thời điểm nộp gần nhất</th>
+          <th class="px-4 py-2 text-right font-semibold">Số KH đặt</th>
+          <th class="px-4 py-2 text-right font-semibold">Tổng tiền đặt</th>
+          <th class="px-4 py-2 text-left font-semibold">Lần đầu đặt</th>
+          <th class="px-4 py-2 text-left font-semibold">Lần cuối đặt</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-100">
       {% for r in rows %}
         <tr class="hover:bg-slate-50 transition">
-          <td class="px-4 py-3 font-medium text-slate-900">{{ r.project_code }}</td>
-          <td class="px-4 py-3 font-semibold text-slate-900">{{ r.lot_code }}</td>
-          <td class="px-4 py-3 text-right">{{ r.area_m2 }}</td>
-          <td class="px-4 py-3 text-right">{{ r.starting_price_vnd }}</td>
-          <td class="px-4 py-3 text-right">{{ r.deposit_amount_vnd }}</td>
-          <td class="px-4 py-3">{{ r.lot_status }}</td>
-          <td class="px-4 py-3 text-right">{{ r.deposit_customer_count or 0 }}</td>
-          <td class="px-4 py-3 text-right">{{ r.total_deposit_amount_vnd }}</td>
-          <td class="px-4 py-3 text-xs text-slate-500">{{ r.first_paid_at or '' }}</td>
-          <td class="px-4 py-3 text-xs text-slate-500">{{ r.last_paid_at or '' }}</td>
+          <td class="px-4 py-3 font-semibold text-slate-900 whitespace-nowrap">{{ r.lot_code }}</td>
+          <td class="px-4 py-3 text-xs cell-wrap">{{ r.lot_description or '-' }}</td>
+          <td class="px-4 py-3 text-right whitespace-nowrap">{{ r.area_m2 or '' }}</td>
+          <td class="px-4 py-3 text-right whitespace-nowrap">{{ r.deposit_amount_vnd or '' }}</td>
+          <td class="px-4 py-3 text-right whitespace-nowrap">{{ r.deposit_customer_count or 0 }}</td>
+          <td class="px-4 py-3 text-right whitespace-nowrap">{{ r.total_deposit_amount_vnd or '' }}</td>
+          <td class="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{{ r.first_paid_at or '' }}</td>
+          <td class="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{{ r.last_paid_at or '' }}</td>
         </tr>
       {% endfor %}
       {% if rows|length == 0 %}
         <tr>
-          <td colspan="10" class="px-4 py-4 text-center text-slate-400">
+          <td colspan="8" class="px-4 py-4 text-center text-slate-400">
             Chọn dự án và bấm "Áp dụng" để xem dữ liệu.
           </td>
         </tr>
@@ -119,5 +117,6 @@
 
 <style>
   table th, table td { white-space: nowrap; }
+  .cell-wrap { white-space: normal; }
 </style>
 {% endblock %}

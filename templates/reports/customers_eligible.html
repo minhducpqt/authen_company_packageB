@@ -3,9 +3,13 @@
 
 {% block content %}
 <div class="mb-6">
-  <h1 class="text-2xl font-semibold text-slate-900">Khách hàng đủ điều kiện</h1>
+  <h1 class="text-2xl font-semibold text-slate-900 flex items-center gap-2">
+    <i class="ri-user-star-line text-emerald-600 text-3xl"></i>
+    Khách hàng đủ điều kiện & các lô
+  </h1>
   <p class="text-slate-500 text-sm mt-1">
-    Các khách hàng có lô đủ điều kiện (trên cùng lô có &ge; 2 khách đặt tiền).
+    Mỗi dòng là <span class="font-semibold text-slate-800">1 khách + 1 lô đủ điều kiện</span>,
+    dùng để chuẩn bị danh sách tham gia đấu giá.
   </p>
 </div>
 
@@ -38,8 +42,8 @@
     <label class="text-xs font-semibold text-slate-500 mb-1">Mã lô (prefix)</label>
     <input
       type="text"
-      name="lot_prefix"
-      value="{{ lot_prefix }}"
+      name="lot_code"
+      value="{{ lot_code }}"
       class="h-10 rounded-xl border px-3 text-sm min-w-[140px]"
       placeholder="VD: L01"
     >
@@ -60,17 +64,18 @@
   <div class="flex items-center gap-3 ml-auto">
     <button
       type="submit"
-      class="h-10 px-4 rounded-xl bg-indigo-600 text-white text-sm font-medium shadow-sm hover:bg-indigo-700"
+      class="h-10 px-4 rounded-xl bg-emerald-600 text-white text-sm font-medium shadow-sm hover:bg-emerald-700"
     >Áp dụng</button>
 
-    <button
-      type="submit"
-      name="export"
-      value="xlsx"
-      class="h-10 px-4 rounded-xl border border-slate-300 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50"
-    >
-      Export XLSX
-    </button>
+    {% if project %}
+      <a
+        href="/reports/customers/eligible-lots/export?project={{ project }}&expose_phone=true{% if customer_cccd %}&customer_cccd={{ customer_cccd }}{% endif %}{% if lot_code %}&lot_code={{ lot_code }}{% endif %}{% if limit %}&limit={{ limit }}{% endif %}"
+        class="h-10 px-4 rounded-xl border border-slate-300 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 inline-flex items-center gap-2"
+      >
+        <i class="ri-file-excel-2-line"></i>
+        Export XLSX
+      </a>
+    {% endif %}
   </div>
 </form>
 
@@ -102,16 +107,16 @@
       <tbody class="divide-y divide-slate-100">
       {% for r in rows %}
         <tr class="hover:bg-slate-50 transition">
-          <td class="px-4 py-3 font-medium text-slate-900">{{ r.customer_full_name }}</td>
-          <td class="px-4 py-3">{{ r.cccd }}</td>
-          <td class="px-4 py-3">{{ r.phone }}</td>
-          <td class="px-4 py-3">{{ r.email or '-' }}</td>
-          <td class="px-4 py-3 font-semibold text-slate-900">{{ r.lot_code }}</td>
-          <td class="px-4 py-3 text-right">{{ r.deposit_amount | default('', true) }}</td>
-          <td class="px-4 py-3 text-right">{{ r.deposit_customer_count or 0 }}</td>
-          <td class="px-4 py-3 text-right">{{ r.total_deposit_amount_per_lot | default('', true) }}</td>
-          <td class="px-4 py-3 text-right">{{ r.total_deposit_amount_per_customer_project | default('', true) }}</td>
-          <td class="px-4 py-3 text-xs text-slate-500">{{ r.paid_at or '' }}</td>
+          <td class="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">{{ r.customer_full_name }}</td>
+          <td class="px-4 py-3 whitespace-nowrap">{{ r.cccd }}</td>
+          <td class="px-4 py-3 whitespace-nowrap">{{ r.phone }}</td>
+          <td class="px-4 py-3 whitespace-nowrap">{{ r.email or '-' }}</td>
+          <td class="px-4 py-3 font-semibold text-slate-900 whitespace-nowrap">{{ r.lot_code }}</td>
+          <td class="px-4 py-3 text-right whitespace-nowrap">{{ r.deposit_amount or '' }}</td>
+          <td class="px-4 py-3 text-right whitespace-nowrap">{{ r.deposit_customer_count or 0 }}</td>
+          <td class="px-4 py-3 text-right whitespace-nowrap">{{ r.total_deposit_amount_per_lot or '' }}</td>
+          <td class="px-4 py-3 text-right whitespace-nowrap">{{ r.total_deposit_amount_per_customer_project or '' }}</td>
+          <td class="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{{ r.paid_at or '' }}</td>
         </tr>
       {% endfor %}
       {% if rows|length == 0 %}

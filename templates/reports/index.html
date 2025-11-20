@@ -2,119 +2,193 @@
 {% block title %}Báo cáo thống kê{% endblock %}
 
 {% block content %}
-<div class="mb-8">
-  <h1 class="text-2xl font-semibold text-slate-900 flex items-center gap-3">
-    <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow">
-      <i class="ri-bar-chart-2-line text-lg"></i>
-    </span>
-    Báo cáo thống kê
+<div class="mb-6">
+  <h1 class="text-2xl font-semibold text-slate-900 flex items-center gap-2">
+    <i class="ri-bar-chart-2-line text-indigo-600 text-3xl"></i>
+    Bảng điều khiển báo cáo
   </h1>
-  <p class="text-slate-500 text-sm mt-2">
-    Tổng hợp nhanh các báo cáo phục vụ kiểm soát hồ sơ, tiền đặt trước và điều kiện tham gia đấu giá.
+  <p class="text-slate-500 text-sm mt-1">
+    Tổng hợp nhanh các báo cáo về lô, khách hàng và mua hồ sơ trong từng dự án.
   </p>
 </div>
 
-<div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-  <!-- Lô đủ điều kiện -->
-  <a href="/reports/lots/eligible"
-     class="group bg-white border rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-indigo-200 transition flex flex-col gap-3">
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <span class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
-          <i class="ri-medal-line text-xl"></i>
-        </span>
-        <div>
-          <div class="text-sm font-semibold text-slate-900">Lô đủ điều kiện</div>
-          <div class="text-xs text-slate-500">Các lô có từ 2 khách đặt tiền trở lên.</div>
-        </div>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+  <a href="/reports/lots/eligible" class="group bg-white border rounded-2xl p-4 shadow-sm hover:shadow-md transition">
+    <div class="flex items-center justify-between mb-3">
+      <div>
+        <div class="text-xs font-semibold text-indigo-600 uppercase tracking-wide">5.1 A</div>
+        <div class="text-base font-semibold text-slate-900 mt-1">Lô đủ điều kiện</div>
       </div>
-      <i class="ri-arrow-right-s-line text-slate-300 group-hover:text-indigo-400 text-2xl"></i>
+      <div class="h-10 w-10 rounded-2xl bg-indigo-50 flex items-center justify-center group-hover:bg-indigo-100">
+        <i class="ri-checkbox-circle-line text-indigo-600 text-xl"></i>
+      </div>
     </div>
+    <p class="text-xs text-slate-500">
+      Danh sách các lô có &ge; 2 khách đặt tiền, kèm số lượng khách và tổng số tiền đặt trước.
+    </p>
   </a>
 
-  <!-- Lô không đủ điều kiện -->
-  <a href="/reports/lots/ineligible"
-     class="group bg-white border rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-indigo-200 transition flex flex-col gap-3">
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <span class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
-          <i class="ri-alert-line text-xl"></i>
-        </span>
-        <div>
-          <div class="text-sm font-semibold text-slate-900">Lô không đủ điều kiện</div>
-          <div class="text-xs text-slate-500">Các lô chỉ có 0–1 khách đặt tiền.</div>
-        </div>
+  <a href="/reports/lots/ineligible" class="group bg-white border rounded-2xl p-4 shadow-sm hover:shadow-md transition">
+    <div class="flex items-center justify-between mb-3">
+      <div>
+        <div class="text-xs font-semibold text-rose-600 uppercase tracking-wide">5.1 B</div>
+        <div class="text-base font-semibold text-slate-900 mt-1">Lô KHÔNG đủ điều kiện</div>
       </div>
-      <i class="ri-arrow-right-s-line text-slate-300 group-hover:text-indigo-400 text-2xl"></i>
+      <div class="h-10 w-10 rounded-2xl bg-rose-50 flex items-center justify-center group-hover:bg-rose-100">
+        <i class="ri-alert-line text-rose-600 text-xl"></i>
+      </div>
     </div>
+    <p class="text-xs text-slate-500">
+      Các lô có 0–1 khách đặt hoặc chưa đạt điều kiện đấu giá.
+    </p>
   </a>
 
-  <!-- Khách + lô đủ điều kiện -->
-  <a href="/reports/customers/eligible-lots"
-     class="group bg-white border rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-indigo-200 transition flex flex-col gap-3">
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <span class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
-          <i class="ri-user-star-line text-xl"></i>
-        </span>
-        <div>
-          <div class="text-sm font-semibold text-slate-900">Khách đủ điều kiện &amp; các lô</div>
-          <div class="text-xs text-slate-500">Chi tiết khách + lô trên cùng dự án.</div>
-        </div>
+  <a href="/reports/lots/deposit-stats" class="group bg-white border rounded-2xl p-4 shadow-sm hover:shadow-md transition">
+    <div class="flex items-center justify-between mb-3">
+      <div>
+        <div class="text-xs font-semibold text-sky-600 uppercase tracking-wide">5.1 C</div>
+        <div class="text-base font-semibold text-slate-900 mt-1">Thống kê tiền đặt trước</div>
       </div>
-      <i class="ri-arrow-right-s-line text-slate-300 group-hover:text-indigo-400 text-2xl"></i>
+      <div class="h-10 w-10 rounded-2xl bg-sky-50 flex items-center justify-center group-hover:bg-sky-100">
+        <i class="ri-funds-line text-sky-600 text-xl"></i>
+      </div>
     </div>
+    <p class="text-xs text-slate-500">
+      Thống kê tiền đặt trước cho từng lô: số khách, tổng tiền, thời điểm đặt đầu/ cuối.
+    </p>
   </a>
 
-  <!-- Khách + lô không đủ điều kiện -->
-  <a href="/reports/customers/not-eligible-lots"
-     class="group bg-white border rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-indigo-200 transition flex flex-col gap-3">
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <span class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
-          <i class="ri-user-unfollow-line text-xl"></i>
-        </span>
-        <div>
-          <div class="text-sm font-semibold text-slate-900">Khách không đủ điều kiện</div>
-          <div class="text-xs text-slate-500">Khách chỉ có lô 0–1 người đặt tiền.</div>
-        </div>
+  <a href="/reports/customers/eligible-lots" class="group bg-white border rounded-2xl p-4 shadow-sm hover:shadow-md transition">
+    <div class="flex items-center justify-between mb-3">
+      <div>
+        <div class="text-xs font-semibold text-emerald-600 uppercase tracking-wide">5.2 A</div>
+        <div class="text-base font-semibold text-slate-900 mt-1">KH đủ điều kiện & lô</div>
       </div>
-      <i class="ri-arrow-right-s-line text-slate-300 group-hover:text-indigo-400 text-2xl"></i>
+      <div class="h-10 w-10 rounded-2xl bg-emerald-50 flex items-center justify-center group-hover:bg-emerald-100">
+        <i class="ri-user-star-line text-emerald-600 text-xl"></i>
+      </div>
     </div>
+    <p class="text-xs text-slate-500">
+      1 dòng = 1 khách + 1 lô đủ điều kiện, có SĐT, email, số tiền đặt.
+    </p>
+  </a>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+  <a href="/reports/customers/not-eligible-lots" class="group bg-white border rounded-2xl p-4 shadow-sm hover:shadow-md transition">
+    <div class="flex items-center justify-between mb-3">
+      <div>
+        <div class="text-xs font-semibold text-rose-600 uppercase tracking-wide">5.2 B</div>
+        <div class="text-base font-semibold text-slate-900 mt-1">KH KHÔNG đủ điều kiện & lô</div>
+      </div>
+      <div class="h-10 w-10 rounded-2xl bg-rose-50 flex items-center justify-center group-hover:bg-rose-100">
+        <i class="ri-user-forbid-line text-rose-600 text-xl"></i>
+      </div>
+    </div>
+    <p class="text-xs text-slate-500">
+      Khách + lô chưa đủ điều kiện (lô chỉ có 0–1 khách đặt).
+    </p>
   </a>
 
-  <!-- Mua hồ sơ chi tiết -->
-  <a href="/reports/dossiers/paid/detail"
-     class="group bg-white border rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-indigo-200 transition flex flex-col gap-3">
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <span class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
-          <i class="ri-file-list-2-line text-xl"></i>
-        </span>
-        <div>
-          <div class="text-sm font-semibold text-slate-900">Mua hồ sơ — chi tiết</div>
-          <div class="text-xs text-slate-500">Danh sách từng đơn hồ sơ theo khách.</div>
-        </div>
+  <a href="/reports/dossiers/paid/detail" class="group bg-white border rounded-2xl p-4 shadow-sm hover:shadow-md transition">
+    <div class="flex items-center justify-between mb-3">
+      <div>
+        <div class="text-xs font-semibold text-amber-600 uppercase tracking-wide">5.3 A</div>
+        <div class="text-base font-semibold text-slate-900 mt-1">Mua hồ sơ — chi tiết</div>
       </div>
-      <i class="ri-arrow-right-s-line text-slate-300 group-hover:text-indigo-400 text-2xl"></i>
+      <div class="h-10 w-10 rounded-2xl bg-amber-50 flex items-center justify-center group-hover:bg-amber-100">
+        <i class="ri-file-list-3-line text-amber-600 text-xl"></i>
+      </div>
     </div>
+    <p class="text-xs text-slate-500">
+      Chi tiết từng dòng mua hồ sơ theo khách, đơn, loại hồ sơ.
+    </p>
   </a>
 
-  <!-- Mua hồ sơ tổng hợp -->
-  <a href="/reports/dossiers/paid/summary"
-     class="group bg-white border rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-indigo-200 transition flex flex-col gap-3">
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <span class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
-          <i class="ri-pie-chart-2-line text-xl"></i>
-        </span>
-        <div>
-          <div class="text-sm font-semibold text-slate-900">Mua hồ sơ — tổng hợp</div>
-          <div class="text-xs text-slate-500">Theo khách &amp; theo loại hồ sơ.</div>
-        </div>
+  <a href="/reports/dossiers/paid/summary" class="group bg-white border rounded-2xl p-4 shadow-sm hover:shadow-md transition">
+    <div class="flex items-center justify-between mb-3">
+      <div>
+        <div class="text-xs font-semibold text-violet-600 uppercase tracking-wide">5.3 B</div>
+        <div class="text-base font-semibold text-slate-900 mt-1">Mua hồ sơ — tổng hợp</div>
       </div>
-      <i class="ri-arrow-right-s-line text-slate-300 group-hover:text-indigo-400 text-2xl"></i>
+      <div class="h-10 w-10 rounded-2xl bg-violet-50 flex items-center justify-center group-hover:bg-violet-100">
+        <i class="ri-pie-chart-2-line text-violet-600 text-xl"></i>
+      </div>
     </div>
+    <p class="text-xs text-slate-500">
+      Tổng hợp theo khách & theo loại hồ sơ, phục vụ chốt số liệu.
+    </p>
   </a>
+</div>
+
+<div class="bg-white border rounded-2xl shadow-sm p-4">
+  <div class="flex items-center justify-between mb-3">
+    <div>
+      <div class="text-sm font-semibold text-slate-900 flex items-center gap-2">
+        <i class="ri-community-line text-sky-500"></i>
+        Dự án đang hoạt động
+      </div>
+      <p class="text-xs text-slate-500 mt-1">
+        Danh sách các dự án ACTIVE hiện tại.
+      </p>
+    </div>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm text-slate-700">
+      <thead class="bg-slate-50 text-slate-500 border-b">
+        <tr>
+          <th class="px-3 py-2 text-left font-semibold">Mã dự án</th>
+          <th class="px-3 py-2 text-left font-semibold">Tên dự án</th>
+          <th class="px-3 py-2 text-left font-semibold">Vị trí</th>
+          <th class="px-3 py-2 text-left font-semibold">Loại sản phẩm</th>
+          <th class="px-3 py-2 text-left font-semibold">Truy cập nhanh</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for p in projects or [] %}
+          {% set code = p.project_code or p.code %}
+          <tr class="hover:bg-slate-50 transition">
+            <td class="px-3 py-2 font-semibold text-slate-900 whitespace-nowrap">{{ code }}</td>
+            <td class="px-3 py-2 whitespace-nowrap">{{ p.name }}</td>
+            <td class="px-3 py-2 text-xs text-slate-500">{{ p.location or '-' }}</td>
+            <td class="px-3 py-2 text-xs uppercase tracking-wide text-slate-500">
+              {{ p.product_type or '-' }}
+            </td>
+            <td class="px-3 py-2">
+              <div class="flex flex-wrap items-center gap-2 text-xs">
+                <a href="/reports/lots/eligible?project={{ code }}" class="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800">
+                  <i class="ri-checkbox-circle-line"></i> Lô đủ
+                </a>
+                <span class="text-slate-300">|</span>
+                <a href="/reports/lots/ineligible?project={{ code }}" class="inline-flex items-center gap-1 text-rose-600 hover:text-rose-800">
+                  <i class="ri-alert-line"></i> Lô không đủ
+                </a>
+                <span class="text-slate-300">|</span>
+                <a href="/reports/lots/deposit-stats?project={{ code }}" class="inline-flex items-center gap-1 text-sky-600 hover:text-sky-800">
+                  <i class="ri-funds-line"></i> Tiền đặt
+                </a>
+                <span class="text-slate-300">|</span>
+                <a href="/reports/customers/eligible-lots?project={{ code }}" class="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-800">
+                  <i class="ri-user-star-line"></i> KH đủ
+                </a>
+                <span class="text-slate-300">|</span>
+                <a href="/reports/dossiers/paid/detail?project={{ code }}" class="inline-flex items-center gap-1 text-amber-600 hover:text-amber-800">
+                  <i class="ri-file-list-3-line"></i> Hồ sơ
+                </a>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+        {% if (projects or [])|length == 0 %}
+          <tr>
+            <td colspan="5" class="px-3 py-4 text-center text-slate-400 text-sm">
+              Chưa có dự án ACTIVE nào hoặc không tải được danh sách dự án.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
 </div>
 {% endblock %}
