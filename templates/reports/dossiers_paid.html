@@ -1,110 +1,280 @@
 {% extends "base.html" %}
-{% block title %}Mua hồ sơ — {{ "Tổng hợp" if mode=="summary" else "Chi tiết" }}{% endblock %}
+{% block title %}Mua hồ sơ{% endblock %}
+
 {% block content %}
-{% set export_kind = "dossiers_paid" %}
-<form class="flex flex-col md:flex-row gap-3 items-stretch md:items-end mb-4">
-  <div>
-    <label class="block text-xs text-slate-500">Mã dự án</label>
-    <input name="project_code" value="{{ project_code or '' }}" class="input" placeholder="VD: KIDO2025">
-  </div>
-  <div class="md:w-72">
-    <label class="block text-xs text-slate-500">Tìm kiếm</label>
-    <input name="q" value="{{ q or '' }}" class="input" placeholder="Tên/CCCD/SĐT...">
-  </div>
-  <div class="flex gap-2">
-    <button class="btn-primary h-10 md:mt-6" type="submit"><i class="ri-search-line mr-1"></i> Lọc</button>
-    {% if mode == "summary" %}
-      <a class="btn-outline h-10 md:mt-6"
-         href="/api/reports/export/dossiers_paid_summary.xlsx?project_code={{ project_code }}&q={{ q }}">
-        <i class="ri-download-2-line mr-1"></i> Xuất XLSX (tổng hợp)
+{# ==== HEADER & TABS ==== #}
+<div class="mb-6">
+  <div class="flex items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">
+        {% if mode == "summary" %}
+          Mua hồ sơ — tổng hợp
+        {% else %}
+          Mua hồ sơ — chi tiết
+        {% endif %}
+      </h1>
+      <p class="text-slate-500 text-sm mt-1">
+        Dữ liệu các đơn <span class="font-semibold text-emerald-600">mua hồ sơ đã thanh toán</span> theo từng dự án.
+      </p>
+    </div>
+    <div class="inline-flex rounded-full bg-slate-100 p-1 text-xs font-medium text-slate-600">
+      <a
+        href="/reports/dossiers/paid/detail"
+        class="px-3 py-1.5 rounded-full {% if mode != 'summary' %}bg-white shadow-sm text-slate-900{% endif %}"
+      >
+        Chi tiết
       </a>
-    {% else %}
-      <a class="btn-outline h-10 md:mt-6"
-         href="/api/reports/export/dossiers_paid_detail.xlsx?project_code={{ project_code }}&q={{ q }}">
-        <i class="ri-download-2-line mr-1"></i> Xuất XLSX (chi tiết)
+      <a
+        href="/reports/dossiers/paid/summary"
+        class="px-3 py-1.5 rounded-full {% if mode == 'summary' %}bg-white shadow-sm text-slate-900{% endif %}"
+      >
+        Tổng hợp
       </a>
-    {% endif %}
+    </div>
+  </div>
+</div>
+
+{# ==== FILTER BAR ==== #}
+<form method="get" class="bg-white border rounded-2xl shadow-sm p-4 mb-4 flex flex-wrap gap-4 items-end">
+  <div class="flex flex-col">
+    <label class="text-xs font-semibold text-slate-500 mb-1">Dự án</label>
+    <select name="project" class="h-10 rounded-xl border px-3 text-sm min-w-[220px]">
+      <option value="">— Chọn dự án —</option>
+      {% for p in projects or [] %}
+        {% set code = p.project_code or p.code %}
+        <option value="{{ code }}" {% if code == project %}selected{% endif %}>
+          {{ code }} — {{ p.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="flex items-center gap-2">
+    <input
+      id="show_contact"
+      type="checkbox"
+      name="show_contact"
+      value="1"
+      class="rounded border-slate-300"
+      {% if show_contact %}checked{% endif %}
+    >
+    <label for="show_contact" class="text-xs font-semibold text-slate-500">
+      Hiển thị SĐT &amp; email (nếu có quyền)
+    </label>
+  </div>
+
+  <div class="flex items-center gap-3 ml-auto">
+    <button
+      type="submit"
+      class="h-10 px-4 rounded-xl bg-indigo-600 text-white text-sm font-medium shadow-sm hover:bg-indigo-700"
+    >Áp dụng</button>
+
+    <button
+      type="submit"
+      name="export"
+      value="xlsx"
+      class="h-10 px-4 rounded-xl border border-slate-300 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50"
+    >
+      Export XLSX
+    </button>
   </div>
 </form>
 
-{% if mode == "summary" %}
-  <div class="bg-white rounded-xl border p-4">
-    <div class="grid md:grid-cols-4 gap-4">
-      <div class="p-4 rounded-lg border">
-        <div class="text-slate-500 text-xs">Tổng lượt mua</div>
-        <div class="text-2xl font-semibold">{{ data.total_orders or 0 }}</div>
-      </div>
-      <div class="p-4 rounded-lg border">
-        <div class="text-slate-500 text-xs">Tổng tiền</div>
-        <div class="text-2xl font-semibold">{{ data.total_vnd or 0 | int }}</div>
-      </div>
-      <div class="p-4 rounded-lg border">
-        <div class="text-slate-500 text-xs">Số loại hồ sơ</div>
-        <div class="text-2xl font-semibold">{{ data.kinds or 0 }}</div>
-      </div>
-      <div class="p-4 rounded-lg border">
-        <div class="text-slate-500 text-xs">Tổng số lượng (theo loại)</div>
-        <div class="text-2xl font-semibold">{{ data.total_qty or 0 }}</div>
-      </div>
-    </div>
+{# ==== MODE: CHI TIẾT ==== #}
+{% if mode != "summary" %}
+  {% set rows = (data or {}).get('items') or (data or {}).get('rows') or [] %}
+  {% set total = (data or {}).get('count') or rows|length %}
 
-    <div class="mt-6 border rounded-lg overflow-x-auto">
-      <table class="min-w-full text-sm">
-        <thead class="bg-slate-50 text-slate-500">
+  {% if (data or {}).get('error') %}
+    <div class="mb-4 bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-2xl px-4 py-3">
+      Lỗi tải dữ liệu từ Service A:
+      <code class="break-all">{{ data.error }}</code>
+    </div>
+  {% endif %}
+
+  <div class="mb-3 text-sm text-slate-600">
+    <span class="font-semibold text-slate-900">{{ total }}</span>
+    dòng chi tiết <span class="font-semibold text-emerald-600">mua hồ sơ</span> được tìm thấy.
+  </div>
+
+  <div class="bg-white border rounded-2xl shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm text-slate-700">
+        <thead class="bg-slate-50 text-slate-500 border-b">
           <tr>
-            <th class="th">Loại hồ sơ</th>
-            <th class="th text-right">Số lượng</th>
-            <th class="th text-right">Thành tiền</th>
+            <th class="px-4 py-2 text-left font-semibold">Dự án</th>
+            <th class="px-4 py-2 text-left font-semibold">Mã đơn</th>
+            <th class="px-4 py-2 text-left font-semibold">Thời điểm thanh toán</th>
+            <th class="px-4 py-2 text-left font-semibold">Khách hàng</th>
+            <th class="px-4 py-2 text-left font-semibold">CCCD</th>
+            <th class="px-4 py-2 text-left font-semibold">SĐT</th>
+            <th class="px-4 py-2 text-left font-semibold">Email</th>
+            <th class="px-4 py-2 text-left font-semibold">Loại hồ sơ</th>
+            <th class="px-4 py-2 text-right font-semibold">SL</th>
+            <th class="px-4 py-2 text-right font-semibold">Đơn giá</th>
+            <th class="px-4 py-2 text-right font-semibold">Thành tiền</th>
           </tr>
         </thead>
-        <tbody class="divide-y">
-        {% for r in (data.by_kind or []) %}
-          <tr>
-            <td class="td">{{ r.kind }}</td>
-            <td class="td text-right">{{ r.qty }}</td>
-            <td class="td text-right">{{ r.amount_vnd | int }}</td>
+        <tbody class="divide-y divide-slate-100">
+        {% for r in rows %}
+          <tr class="hover:bg-slate-50 transition">
+            <td class="px-4 py-3 font-medium text-slate-800">{{ r.project_code }}</td>
+            <td class="px-4 py-3 font-mono text-xs text-slate-700">{{ r.order_code }}</td>
+            <td class="px-4 py-3 text-xs text-slate-500">{{ r.paid_at or '' }}</td>
+            <td class="px-4 py-3 font-medium text-slate-900">{{ r.full_name }}</td>
+            <td class="px-4 py-3">{{ r.cccd }}</td>
+            <td class="px-4 py-3">{{ r.phone }}</td>
+            <td class="px-4 py-3">{{ r.email or '-' }}</td>
+            <td class="px-4 py-3">{{ r.dossier_label }}</td>
+            <td class="px-4 py-3 text-right">{{ r.qty or '' }}</td>
+            <td class="px-4 py-3 text-right">{{ r.unit_price_vnd | default('', true) }}</td>
+            <td class="px-4 py-3 text-right font-semibold text-slate-900">{{ r.line_total_vnd | default('', true) }}</td>
           </tr>
         {% endfor %}
-        {% if not data.by_kind or data.by_kind|length == 0 %}
-          <tr><td class="td text-slate-400" colspan="3">Không có dữ liệu.</td></tr>
+        {% if rows|length == 0 %}
+          <tr>
+            <td colspan="11" class="px-4 py-4 text-center text-slate-400">
+              Chọn dự án và bấm "Áp dụng" để xem dữ liệu.
+            </td>
+          </tr>
         {% endif %}
         </tbody>
       </table>
     </div>
   </div>
+
+{# ==== MODE: TỔNG HỢP ==== #}
 {% else %}
-  <div class="border rounded-xl overflow-x-auto bg-white">
-    <table class="min-w-full text-sm">
-      <thead class="bg-slate-50 text-slate-500">
-        <tr>
-          <th class="th">Thời gian</th>
-          <th class="th">Khách hàng</th>
-          <th class="th">CCCD</th>
-          <th class="th">SĐT</th>
-          <th class="th">Loại</th>
-          <th class="th text-right">Số lượng</th>
-          <th class="th text-right">Số tiền</th>
-          <th class="th">Mã đơn</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y">
-      {% for r in (data.rows or []) %}
-        <tr>
-          <td class="td">{{ r.paid_at }}</td>
-          <td class="td font-medium">{{ r.full_name }}</td>
-          <td class="td">{{ r.cccd }}</td>
-          <td class="td">{{ r.phone }}</td>
-          <td class="td">{{ r.kind }}</td>
-          <td class="td text-right">{{ r.qty }}</td>
-          <td class="td text-right">{{ r.amount_vnd | int }}</td>
-          <td class="td">{{ r.order_code }}</td>
-        </tr>
-      {% endfor %}
-      {% if not data.rows or data.rows|length == 0 %}
-        <tr><td class="td text-slate-400" colspan="8">Không có dữ liệu.</td></tr>
+  {# data.summary_customer & data.totals_by_type #}
+  {% set cust_block = (data or {}).get('summary_customer') or {} %}
+  {% set type_block = (data or {}).get('totals_by_type') or {} %}
+
+  {% if cust_block.get('error') or type_block.get('error') %}
+    <div class="mb-4 bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-2xl px-4 py-3 space-y-1">
+      <div class="font-semibold">Lỗi tải dữ liệu từ Service A:</div>
+      {% if cust_block.get('error') %}
+        <div>- summary_customer: <code class="break-all">{{ cust_block.error }}</code></div>
       {% endif %}
-      </tbody>
-    </table>
+      {% if type_block.get('error') %}
+        <div>- totals_by_type: <code class="break-all">{{ type_block.error }}</code></div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% set rows_cust = cust_block.get('items') or cust_block.get('rows') or [] %}
+  {% set total_cust = cust_block.get('count') or rows_cust|length %}
+
+  {% set rows_type = type_block.get('items') or type_block.get('rows') or [] %}
+  {% set total_type = type_block.get('count') or rows_type|length %}
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+    <div class="bg-white border rounded-2xl shadow-sm p-4 flex flex-col justify-center">
+      <div class="text-xs uppercase tracking-wide text-slate-500 mb-1">Tổng khách mua hồ sơ</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ total_cust }}</div>
+    </div>
+    <div class="bg-white border rounded-2xl shadow-sm p-4 flex flex-col justify-center">
+      <div class="text-xs uppercase tracking-wide text-slate-500 mb-1">Tổng lượt hồ sơ</div>
+      <div class="text-2xl font-semibold text-slate-900">
+        {{ rows_type | map(attribute='total_qty') | sum }}
+      </div>
+    </div>
+    <div class="bg-white border rounded-2xl shadow-sm p-4 flex flex-col justify-center">
+      <div class="text-xs uppercase tracking-wide text-slate-500 mb-1">Tổng tiền</div>
+      <div class="text-2xl font-semibold text-slate-900">
+        {{ rows_type | map(attribute='total_amount') | sum }}
+      </div>
+    </div>
+  </div>
+
+  {# --- Bảng 1: theo khách hàng --- #}
+  <div class="mb-4 flex items-center justify-between">
+    <div class="text-sm font-semibold text-slate-800">
+      Tổng hợp theo khách hàng
+      <span class="text-slate-500 font-normal">({{ total_cust }} dòng)</span>
+    </div>
+  </div>
+
+  <div class="bg-white border rounded-2xl shadow-sm overflow-hidden mb-8">
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm text-slate-700">
+        <thead class="bg-slate-50 text-slate-500 border-b">
+          <tr>
+            <th class="px-4 py-2 text-left font-semibold">Khách hàng</th>
+            <th class="px-4 py-2 text-left font-semibold">CCCD</th>
+            <th class="px-4 py-2 text-left font-semibold">SĐT</th>
+            <th class="px-4 py-2 text-left font-semibold">Email</th>
+            <th class="px-4 py-2 text-right font-semibold">Tổng SL hồ sơ</th>
+            <th class="px-4 py-2 text-right font-semibold">Tổng tiền</th>
+            <th class="px-4 py-2 text-left font-semibold">Cơ cấu loại hồ sơ</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+        {% for r in rows_cust %}
+          <tr class="hover:bg-slate-50 transition">
+            <td class="px-4 py-3 font-medium text-slate-900">{{ r.full_name }}</td>
+            <td class="px-4 py-3">{{ r.cccd }}</td>
+            <td class="px-4 py-3">{{ r.phone }}</td>
+            <td class="px-4 py-3">{{ r.email or '-' }}</td>
+            <td class="px-4 py-3 text-right">{{ r.total_qty or 0 }}</td>
+            <td class="px-4 py-3 text-right font-semibold text-slate-900">{{ r.total_amount | default('', true) }}</td>
+            <td class="px-4 py-3 text-xs text-slate-600 cell-wrap">
+              {{ r.type_breakdown or '' }}
+            </td>
+          </tr>
+        {% endfor %}
+        {% if rows_cust|length == 0 %}
+          <tr>
+            <td colspan="7" class="px-4 py-4 text-center text-slate-400">
+              Chọn dự án và bấm "Áp dụng" để xem dữ liệu.
+            </td>
+          </tr>
+        {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {# --- Bảng 2: theo loại hồ sơ --- #}
+  <div class="mb-4 flex items-center justify-between">
+    <div class="text-sm font-semibold text-slate-800">
+      Tổng hợp theo loại hồ sơ
+      <span class="text-slate-500 font-normal">({{ total_type }} dòng)</span>
+    </div>
+  </div>
+
+  <div class="bg-white border rounded-2xl shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm text-slate-700">
+        <thead class="bg-slate-50 text-slate-500 border-b">
+          <tr>
+            <th class="px-4 py-2 text-left font-semibold">Loại hồ sơ</th>
+            <th class="px-4 py-2 text-right font-semibold">Tổng SL</th>
+            <th class="px-4 py-2 text-right font-semibold">Tổng tiền</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+        {% for r in rows_type %}
+          <tr class="hover:bg-slate-50 transition">
+            <td class="px-4 py-3 font-medium text-slate-900">{{ r.dossier_label }}</td>
+            <td class="px-4 py-3 text-right">{{ r.total_qty or 0 }}</td>
+            <td class="px-4 py-3 text-right font-semibold text-slate-900">{{ r.total_amount | default('', true) }}</td>
+          </tr>
+        {% endfor %}
+        {% if rows_type|length == 0 %}
+          <tr>
+            <td colspan="3" class="px-4 py-4 text-center text-slate-400">
+              Chọn dự án và bấm "Áp dụng" để xem dữ liệu.
+            </td>
+          </tr>
+        {% endif %}
+        </tbody>
+      </table>
+    </div>
   </div>
 {% endif %}
+
+<style>
+  table th, table td { white-space: nowrap; }
+  .cell-wrap { white-space: normal; }
+</style>
 {% endblock %}

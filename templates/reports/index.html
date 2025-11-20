@@ -1,40 +1,213 @@
 {% extends "base.html" %}
-{% block title %}Báo cáo thống kê{% endblock %}
+{% block title %}Báo cáo &amp; thống kê{% endblock %}
 
 {% block content %}
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-  <a href="/reports/lots/eligible" class="block p-5 rounded-xl border bg-white hover:shadow">
-    <div class="text-slate-500 text-sm">5.1</div>
-    <div class="mt-1 font-semibold text-slate-800">Lô đủ điều kiện</div>
-    <p class="text-slate-500 text-sm mt-1">Danh sách lô đủ ĐK + khách đã đặt cọc từng lô.</p>
-  </a>
+<div class="mb-8">
+  <div class="flex items-center justify-between gap-4">
+    <div>
+      <h1 class="text-3xl font-semibold text-slate-900">Báo cáo &amp; thống kê</h1>
+      <p class="mt-2 text-sm text-slate-500">
+        Tổng hợp các báo cáo phục vụ công tác tổ chức đấu giá: lô đủ điều kiện, khách hàng tham gia,
+        và tình hình mua hồ sơ.
+      </p>
+    </div>
+    <div class="hidden md:flex items-center gap-3 text-xs text-slate-500">
+      <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
+        <i class="ri-check-double-line text-base"></i>
+        <span>Đã đăng nhập &amp; có quyền STAFF trở lên</span>
+      </div>
+    </div>
+  </div>
+</div>
 
-  <a href="/reports/lots/ineligible" class="block p-5 rounded-xl border bg-white hover:shadow">
-    <div class="text-slate-500 text-sm">5.1</div>
-    <div class="mt-1 font-semibold text-slate-800">Lô KHÔNG đủ điều kiện</div>
-    <p class="text-slate-500 text-sm mt-1">Lý do không đủ ĐK.</p>
-  </a>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-  <a href="/reports/customers/eligible-lots" class="block p-5 rounded-xl border bg-white hover:shadow">
-    <div class="text-slate-500 text-sm">5.2</div>
-    <div class="mt-1 font-semibold text-slate-800">Khách hàng đủ điều kiện</div>
-    <p class="text-slate-500 text-sm mt-1">Kèm các lô khách đủ ĐK tham gia.</p>
-  </a>
+  {# 1. Lô & điều kiện #}
+  <div class="bg-white border rounded-2xl shadow-sm p-5 flex flex-col">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="h-11 w-11 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+        <i class="ri-auction-line text-2xl"></i>
+      </div>
+      <div>
+        <div class="text-xs font-semibold tracking-wide uppercase text-slate-500">1. Lô &amp; điều kiện</div>
+        <div class="text-sm text-slate-600">
+          Thống kê các lô đã/ chưa đủ điều kiện đấu giá theo tiền đặt trước.
+        </div>
+      </div>
+    </div>
 
-  <a href="/reports/customers/ineligible-lots" class="block p-5 rounded-xl border bg-white hover:shadow">
-    <div class="text-slate-500 text-sm">5.2</div>
-    <div class="mt-1 font-semibold text-slate-800">Khách hàng KHÔNG đủ điều kiện</div>
-    <p class="text-slate-500 text-sm mt-1">Các lô liên quan & lý do.</p>
-  </a>
+    <ul class="space-y-2 flex-1">
+      <li>
+        <a href="/reports/lots/eligible"
+           class="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-indigo-50 group">
+          <div class="flex items-center gap-2">
+            <span class="h-7 w-7 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <i class="ri-shield-check-line text-base"></i>
+            </span>
+            <div>
+              <div class="text-sm font-medium text-slate-900 group-hover:text-indigo-700">
+                Lô đủ điều kiện (≥ 2 khách đặt tiền)
+              </div>
+              <div class="text-xs text-slate-500">
+                Thống kê lô có ít nhất 2 khách nộp tiền đặt trước.
+              </div>
+            </div>
+          </div>
+          <i class="ri-arrow-right-s-line text-slate-400 group-hover:text-indigo-500"></i>
+        </a>
+      </li>
 
-  <a href="/reports/dossiers/paid/detail" class="block p-5 rounded-xl border bg-white hover:shadow">
-    <div class="text-slate-500 text-sm">5.3</div>
-    <div class="mt-1 font-semibold text-slate-800">Mua hồ sơ — Chi tiết</div>
-  </a>
+      <li>
+        <a href="/reports/lots/ineligible"
+           class="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-50 group">
+          <div class="flex items-center gap-2">
+            <span class="h-7 w-7 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
+              <i class="ri-alert-line text-base"></i>
+            </span>
+            <div>
+              <div class="text-sm font-medium text-slate-900 group-hover:text-indigo-700">
+                Lô chưa đủ điều kiện (0–1 khách)
+              </div>
+              <div class="text-xs text-slate-500">
+                Các lô có ít khách đặt tiền, cần xem xét xử lý/ghép phiên.
+              </div>
+            </div>
+          </div>
+          <i class="ri-arrow-right-s-line text-slate-400 group-hover:text-indigo-500"></i>
+        </a>
+      </li>
+    </ul>
 
-  <a href="/reports/dossiers/paid/summary" class="block p-5 rounded-xl border bg-white hover:shadow">
-    <div class="text-slate-500 text-sm">5.3</div>
-    <div class="mt-1 font-semibold text-slate-800">Mua hồ sơ — Tổng hợp</div>
-  </a>
+    <div class="mt-4 text-xs text-slate-400">
+      Dữ liệu lấy từ <code>v20.v_report_project_lot_deposit_stats</code> và view liên quan.
+    </div>
+  </div>
+
+  {# 2. Khách hàng & điều kiện #}
+  <div class="bg-white border rounded-2xl shadow-sm p-5 flex flex-col">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="h-11 w-11 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center">
+        <i class="ri-user-star-line text-2xl"></i>
+      </div>
+      <div>
+        <div class="text-xs font-semibold tracking-wide uppercase text-slate-500">
+          2. Khách hàng &amp; các lô đăng ký
+        </div>
+        <div class="text-sm text-slate-600">
+          Danh sách khách + các lô họ tham gia, phân theo điều kiện đấu giá.
+        </div>
+      </div>
+    </div>
+
+    <ul class="space-y-2 flex-1">
+      <li>
+        <a href="/reports/customers/eligible-lots"
+           class="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-sky-50 group">
+          <div class="flex items-center gap-2">
+            <span class="h-7 w-7 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <i class="ri-user-follow-line text-base"></i>
+            </span>
+            <div>
+              <div class="text-sm font-medium text-slate-900 group-hover:text-sky-700">
+                Khách hàng + lô đủ điều kiện
+              </div>
+              <div class="text-xs text-slate-500">
+                Khách tham gia trên các lô có ≥ 2 khách đặt tiền.
+              </div>
+            </div>
+          </div>
+          <i class="ri-arrow-right-s-line text-slate-400 group-hover:text-sky-500"></i>
+        </a>
+      </li>
+
+      <li>
+        <a href="/reports/customers/not-eligible-lots"
+           class="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-50 group">
+          <div class="flex items-center gap-2">
+            <span class="h-7 w-7 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
+              <i class="ri-user-unfollow-line text-base"></i>
+            </span>
+            <div>
+              <div class="text-sm font-medium text-slate-900 group-hover:text-sky-700">
+                Khách hàng + lô chưa đủ điều kiện
+              </div>
+              <div class="text-xs text-slate-500">
+                Hỗ trợ rà soát các lô cần xử lý vì ít người đăng ký.
+              </div>
+            </div>
+          </div>
+          <i class="ri-arrow-right-s-line text-slate-400 group-hover:text-sky-500"></i>
+        </a>
+      </li>
+    </ul>
+
+    <div class="mt-4 text-xs text-slate-400">
+      Có thể bật hiển thị SĐT/email nếu tài khoản có quyền đọc PII.
+    </div>
+  </div>
+
+  {# 3. Mua hồ sơ #}
+  <div class="bg-white border rounded-2xl shadow-sm p-5 flex flex-col">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="h-11 w-11 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+        <i class="ri-file-list-3-line text-2xl"></i>
+      </div>
+      <div>
+        <div class="text-xs font-semibold tracking-wide uppercase text-slate-500">
+          3. Mua hồ sơ tham gia đấu giá
+        </div>
+        <div class="text-sm text-slate-600">
+          Theo dõi chi tiết &amp; tổng hợp doanh thu từ bán hồ sơ theo từng dự án.
+        </div>
+      </div>
+    </div>
+
+    <ul class="space-y-2 flex-1">
+      <li>
+        <a href="/reports/dossiers/paid/detail"
+           class="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-emerald-50 group">
+          <div class="flex items-center gap-2">
+            <span class="h-7 w-7 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <i class="ri-list-unordered text-base"></i>
+            </span>
+            <div>
+              <div class="text-sm font-medium text-slate-900 group-hover:text-emerald-700">
+                Chi tiết các đơn mua hồ sơ
+              </div>
+              <div class="text-xs text-slate-500">
+                Từng giao dịch, khách hàng, loại hồ sơ, số lượng và số tiền.
+              </div>
+            </div>
+          </div>
+          <i class="ri-arrow-right-s-line text-slate-400 group-hover:text-emerald-600"></i>
+        </a>
+      </li>
+
+      <li>
+        <a href="/reports/dossiers/paid/summary"
+           class="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-50 group">
+          <div class="flex items-center gap-2">
+            <span class="h-7 w-7 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center">
+              <i class="ri-pie-chart-2-line text-base"></i>
+            </span>
+            <div>
+              <div class="text-sm font-medium text-slate-900 group-hover:text-emerald-700">
+                Tổng hợp doanh thu bán hồ sơ
+              </div>
+              <div class="text-xs text-slate-500">
+                Tổng hợp theo khách hàng và theo từng loại hồ sơ.
+              </div>
+            </div>
+          </div>
+          <i class="ri-arrow-right-s-line text-slate-400 group-hover:text-emerald-600"></i>
+        </a>
+      </li>
+    </ul>
+
+    <div class="mt-4 text-xs text-slate-400">
+      Tất cả báo cáo đều hỗ trợ <span class="font-semibold">Export XLSX</span> trực tiếp từ giao diện.
+    </div>
+  </div>
+
 </div>
 {% endblock %}
