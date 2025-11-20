@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any, List, Tuple
 
 import httpx
 from fastapi import APIRouter, Request, Query
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
 from utils.templates import templates
 from utils.auth import get_access_token
@@ -58,6 +58,38 @@ async def _get_json(
         return r.status_code, {"detail": r.text[:500]}
 
 
+async def _proxy_export(
+    path: str,
+    token: str,
+    params: Dict[str, Any],
+    fallback_filename: str,
+) -> Response:
+    """
+    Gọi Service A để nhận file (xlsx) và stream về cho browser.
+    """
+    url = f"{SERVICE_A_BASE_URL}{path}"
+    headers = {"Authorization": f"Bearer {token}"}
+    _log(f"→ EXPORT {url} params={params}")
+    async with httpx.AsyncClient(timeout=120.0) as c:
+        r = await c.get(url, headers=headers, params=params)
+
+    content_type = r.headers.get(
+        "content-type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    disposition = r.headers.get(
+        "content-disposition",
+        f'attachment; filename="{fallback_filename}"',
+    )
+    _log(f"← EXPORT {url} status={r.status_code} len={len(r.content)}")
+    return Response(
+        content=r.content,
+        status_code=r.status_code,
+        media_type=content_type,
+        headers={"Content-Disposition": disposition},
+    )
+
+
 def _unauth():
     return JSONResponse({"error": "unauthorized"}, status_code=401)
 
@@ -105,7 +137,7 @@ async def reports_home(request: Request):
 
 
 # ============================================================
-# 5.1 LÔ & ĐIỀU KIỆN  (dùng các VIEW /view/project-*)
+# 5.1 LÔ & ĐIỀU KIỆN  (VIEW /view/project-*)
 # ============================================================
 
 @router.get("/reports/lots/eligible", response_class=HTMLResponse)
@@ -114,6 +146,7 @@ async def lots_eligible_page(
     project: Optional[str] = Query(None, description="project_code như KIDO6"),
     lot_prefix: Optional[str] = Query(None, description="Prefix mã lô, ví dụ: CL03"),
     limit: Optional[int] = Query(500, ge=1, le=5000, description="Giới hạn số dòng tối đa"),
+    export: Optional[str] = Query(None, description="xlsx để export"),
 ):
     """
     Lô đủ điều kiện (≥ 2 khách đặt tiền).
@@ -126,11 +159,27 @@ async def lots_eligible_page(
         return RedirectResponse(url="/login?next=%2Freports%2Flots%2Feligible", status_code=303)
 
     projects, selected_project = await _load_projects(token, project)
+
+    # Export XLSX
+    if export == "xlsx" and selected_project:
+        params: Dict[str, Any] = {"project": selected_project, "format": "xlsx"}
+        if lot_prefix:
+            params["lot_code"] = lot_prefix
+        if limit is not None:
+            params["limit"] = limit
+        filename = f"project_lots_eligible_{selected_project}.xlsx"
+        return await _proxy_export(
+            "/api/v1/reports/view/project-lots-eligible",
+            token,
+            params,
+            filename,
+        )
+
+    # View HTML
     data: Dict[str, Any] | None = None
     error: Dict[str, Any] | None = None
-
     if selected_project:
-        params: Dict[str, Any] = {"project": selected_project}
+        params = {"project": selected_project}
         if lot_prefix:
             params["lot_code"] = lot_prefix
         if limit is not None:
@@ -161,6 +210,7 @@ async def lots_ineligible_page(
     project: Optional[str] = Query(None, description="project_code như KIDO6"),
     lot_prefix: Optional[str] = Query(None, description="Prefix mã lô, ví dụ: CL03"),
     limit: Optional[int] = Query(500, ge=1, le=5000, description="Giới hạn số dòng tối đa"),
+    export: Optional[str] = Query(None, description="xlsx để export"),
 ):
     """
     Lô KHÔNG đủ điều kiện (0–1 khách).
@@ -173,11 +223,27 @@ async def lots_ineligible_page(
         return RedirectResponse(url="/login?next=%2Freports%2Flots%2Fineligible", status_code=303)
 
     projects, selected_project = await _load_projects(token, project)
+
+    # Export
+    if export == "xlsx" and selected_project:
+        params: Dict[str, Any] = {"project": selected_project, "format": "xlsx"}
+        if lot_prefix:
+            params["lot_code"] = lot_prefix
+        if limit is not None:
+            params["limit"] = limit
+        filename = f"project_lots_not_eligible_{selected_project}.xlsx"
+        return await _proxy_export(
+            "/api/v1/reports/view/project-lots-not-eligible",
+            token,
+            params,
+            filename,
+        )
+
+    # View
     data: Dict[str, Any] | None = None
     error: Dict[str, Any] | None = None
-
     if selected_project:
-        params: Dict[str, Any] = {"project": selected_project}
+        params = {"project": selected_project}
         if lot_prefix:
             params["lot_code"] = lot_prefix
         if limit is not None:
@@ -213,6 +279,7 @@ async def customers_eligible_lots_page(
     customer_cccd: Optional[str] = Query(None, description="Lọc theo CCCD khách"),
     lot_prefix: Optional[str] = Query(None, description="Prefix mã lô"),
     limit: Optional[int] = Query(500, ge=1, le=5000),
+    export: Optional[str] = Query(None, description="xlsx để export"),
 ):
     """
     Khách + lô đủ điều kiện.
@@ -225,13 +292,37 @@ async def customers_eligible_lots_page(
         return RedirectResponse(url="/login?next=%2Freports%2Fcustomers%2Feligible-lots", status_code=303)
 
     projects, selected_project = await _load_projects(token, project)
+
+    # Export
+    if export == "xlsx" and selected_project:
+        params: Dict[str, Any] = {
+            "project": selected_project,
+            "expose_phone": "true",
+            "format": "xlsx",
+        }
+        if customer_cccd:
+            params["customer_cccd"] = customer_cccd
+        if lot_prefix:
+            params["lot_code"] = lot_prefix
+        if limit is not None:
+            params["limit"] = limit
+
+        filename = f"project_customers_lots_eligible_{selected_project}.xlsx"
+        return await _proxy_export(
+            "/api/v1/reports/view/project-customers-lots-eligible",
+            token,
+            params,
+            filename,
+        )
+
+    # View
     data: Dict[str, Any] | None = None
     error: Dict[str, Any] | None = None
 
     if selected_project:
-        params: Dict[str, Any] = {
+        params = {
             "project": selected_project,
-            "expose_phone": "true",  # cho phép A hydrate phone nếu user có quyền
+            "expose_phone": "true",
         }
         if customer_cccd:
             params["customer_cccd"] = customer_cccd
@@ -267,6 +358,7 @@ async def customers_ineligible_lots_page(
     customer_cccd: Optional[str] = Query(None, description="Lọc theo CCCD khách"),
     lot_prefix: Optional[str] = Query(None, description="Prefix mã lô"),
     limit: Optional[int] = Query(500, ge=1, le=5000),
+    export: Optional[str] = Query(None, description="xlsx để export"),
 ):
     """
     Khách + lô KHÔNG đủ điều kiện.
@@ -279,11 +371,35 @@ async def customers_ineligible_lots_page(
         return RedirectResponse(url="/login?next=%2Freports%2Fcustomers%2Fineligible-lots", status_code=303)
 
     projects, selected_project = await _load_projects(token, project)
+
+    # Export
+    if export == "xlsx" and selected_project:
+        params: Dict[str, Any] = {
+            "project": selected_project,
+            "expose_phone": "true",
+            "format": "xlsx",
+        }
+        if customer_cccd:
+            params["customer_cccd"] = customer_cccd
+        if lot_prefix:
+            params["lot_code"] = lot_prefix
+        if limit is not None:
+            params["limit"] = limit
+
+        filename = f"project_customers_lots_not_enough_{selected_project}.xlsx"
+        return await _proxy_export(
+            "/api/v1/reports/view/project-customers-lots-not-enough",
+            token,
+            params,
+            filename,
+        )
+
+    # View
     data: Dict[str, Any] | None = None
     error: Dict[str, Any] | None = None
 
     if selected_project:
-        params: Dict[str, Any] = {
+        params = {
             "project": selected_project,
             "expose_phone": "true",
         }
@@ -324,6 +440,7 @@ async def dossiers_paid_detail_page(
     project: Optional[str] = Query(None, description="project_code như KIDO6"),
     customer_cccd: Optional[str] = Query(None, description="Lọc theo CCCD khách"),
     limit: Optional[int] = Query(1000, ge=1, le=10000),
+    export: Optional[str] = Query(None, description="xlsx để export"),
 ):
     """
     Chi tiết các đơn mua hồ sơ theo dự án.
@@ -336,11 +453,33 @@ async def dossiers_paid_detail_page(
         return RedirectResponse(url="/login?next=%2Freports%2Fdossiers%2Fpaid%2Fdetail", status_code=303)
 
     projects, selected_project = await _load_projects(token, project)
+
+    # Export
+    if export == "xlsx" and selected_project:
+        params: Dict[str, Any] = {
+            "project": selected_project,
+            "expose_phone": "true",
+            "format": "xlsx",
+        }
+        if customer_cccd:
+            params["customer_cccd"] = customer_cccd
+        if limit is not None:
+            params["limit"] = limit
+
+        filename = f"dossier_detail_{selected_project}.xlsx"
+        return await _proxy_export(
+            "/api/v1/reports/view/project-dossier-items",
+            token,
+            params,
+            filename,
+        )
+
+    # View
     data: Dict[str, Any] | None = None
     error: Dict[str, Any] | None = None
 
     if selected_project:
-        params: Dict[str, Any] = {
+        params = {
             "project": selected_project,
             "expose_phone": "true",
         }
@@ -373,6 +512,7 @@ async def dossiers_paid_detail_page(
 async def dossiers_paid_summary_page(
     request: Request,
     project: Optional[str] = Query(None, description="project_code như KIDO6"),
+    export: Optional[str] = Query(None, description="summary_customer / totals_by_type để export"),
 ):
     """
     Tổng hợp mua hồ sơ:
@@ -392,6 +532,19 @@ async def dossiers_paid_summary_page(
     if selected_project:
         params["project"] = selected_project
 
+    # Export
+    if export in ("summary_customer", "totals_by_type") and selected_project:
+        exp_params = dict(params)
+        exp_params["format"] = "xlsx"
+        if export == "summary_customer":
+            path = "/api/v1/reports/dossiers/paid/summary-customer"
+            filename = f"dossier_summary_customer_{selected_project}.xlsx"
+        else:
+            path = "/api/v1/reports/dossiers/paid/totals-by-type"
+            filename = f"dossier_totals_by_type_{selected_project}.xlsx"
+        return await _proxy_export(path, token, exp_params, filename)
+
+    # View
     st1, data1 = await _get_json("/api/v1/reports/dossiers/paid/summary-customer", token, params)
     st2, data2 = await _get_json("/api/v1/reports/dossiers/paid/totals-by-type", token, params)
 

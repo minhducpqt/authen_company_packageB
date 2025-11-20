@@ -1,15 +1,14 @@
 {% extends "base.html" %}
-{% block title %}Khách hàng KHÔNG đủ điều kiện{% endblock %}
+{% block title %}Khách hàng KHÔNG đủ điều kiện & các lô{% endblock %}
 
 {% block content %}
 <div class="mb-6">
   <h1 class="text-2xl font-semibold text-slate-900">Khách hàng KHÔNG đủ điều kiện</h1>
   <p class="text-slate-500 text-sm mt-1">
-    Các khách hàng chỉ có lô có <span class="font-semibold text-rose-600">0 hoặc 1 khách</span> nộp tiền trên lô đó.
+    Các khách hàng chỉ nắm giữ các lô có 0–1 khách đặt tiền.
   </p>
 </div>
 
-{# Filter form: giữ y hệt customers_eligible, chỉ khác heading #}
 <form method="get" class="bg-white border rounded-2xl shadow-sm p-4 mb-4 flex flex-wrap gap-4 items-end">
   <div class="flex flex-col">
     <label class="text-xs font-semibold text-slate-500 mb-1">Dự án</label>
@@ -39,8 +38,8 @@
     <label class="text-xs font-semibold text-slate-500 mb-1">Mã lô (prefix)</label>
     <input
       type="text"
-      name="lot_code"
-      value="{{ lot_code }}"
+      name="lot_prefix"
+      value="{{ lot_prefix }}"
       class="h-10 rounded-xl border px-3 text-sm min-w-[140px]"
       placeholder="VD: L01"
     >
