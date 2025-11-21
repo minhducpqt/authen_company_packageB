@@ -69,7 +69,7 @@
       </div>
     </div>
     <p class="text-xs text-slate-500">
-      1 dòng = 1 khách + 1 lô đủ điều kiện, có SĐT, email, số tiền đặt.
+      1 dòng = 1 khách + 1 lô đủ điều kiện, có SĐT, email, số tiền đặt & thông tin TK hoàn cọc.
     </p>
   </a>
 </div>
@@ -86,7 +86,7 @@
       </div>
     </div>
     <p class="text-xs text-slate-500">
-      Khách + lô chưa đủ điều kiện (lô chỉ có 0–1 khách đặt).
+      Khách + lô chưa đủ điều kiện (lô chỉ có 0–1 khách đặt), vẫn kèm TK hoàn cọc để xử lý.
     </p>
   </a>
 
@@ -134,7 +134,7 @@
     </div>
   </div>
 
-  <div class="overflow-x-auto">
+  <div class="overflow-auto max-h-[70vh]">
     <table class="min-w-full text-sm text-slate-700">
       <thead class="bg-slate-50 text-slate-500 border-b">
         <tr>
@@ -151,8 +151,8 @@
           <tr class="hover:bg-slate-50 transition">
             <td class="px-3 py-2 font-semibold text-slate-900 whitespace-nowrap">{{ code }}</td>
             <td class="px-3 py-2 whitespace-nowrap">{{ p.name }}</td>
-            <td class="px-3 py-2 text-xs text-slate-500">{{ p.location or '-' }}</td>
-            <td class="px-3 py-2 text-xs uppercase tracking-wide text-slate-500">
+            <td class="px-3 py-2 text-xs text-slate-500 whitespace-nowrap">{{ p.location or '-' }}</td>
+            <td class="px-3 py-2 text-xs uppercase tracking-wide text-slate-500 whitespace-nowrap">
               {{ p.product_type or '-' }}
             </td>
             <td class="px-3 py-2">

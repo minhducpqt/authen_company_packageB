@@ -1,4 +1,4 @@
-{# templates/reports/_toolbar.html — FINAL SAFE VERSION #}
+{# templates/reports/_toolbar.html — FINAL #}
 <div class="mb-4 bg-white border rounded-xl p-4 shadow-sm">
   <form id="filtersForm"
         class="flex flex-col md:flex-row gap-3 items-start md:items-end"
@@ -39,12 +39,11 @@
   const qEl = document.getElementById('qInput');
   const getUrl = () => new URL(window.location.href);
 
-  // --- Helper ---
   function applyFilters(next = {}) {
     const project = (next.project ?? selectEl.value ?? '').trim();
     const q = (next.q ?? qEl.value ?? '').trim();
 
-    // nếu chưa có project → KHÔNG gọi lại (tránh lỗi 422)
+    // nếu chưa có project → không reload (tránh lỗi 422)
     if (!project) return;
 
     const u = getUrl();
@@ -73,12 +72,10 @@
         if (!firstActive) firstActive = code;
       }
 
-      // chọn giá trị hiện tại nếu có
       const urlProject = getUrl().searchParams.get('project');
       if (urlProject) selectEl.value = urlProject;
       else if (initProject) selectEl.value = initProject;
       else if (firstActive) {
-        // auto-apply dự án đầu tiên (gọi sau 1 tick để DOM ổn định)
         setTimeout(() => applyFilters({ project: firstActive, q: initQ }), 200);
         return;
       }

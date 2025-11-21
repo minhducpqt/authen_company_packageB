@@ -9,11 +9,13 @@
   </h1>
   <p class="text-slate-500 text-sm mt-1">
     Các khách hàng có lô <span class="font-semibold text-slate-800">chưa đủ điều kiện đấu giá</span>
-    (lô chỉ có 0–1 khách đặt hoặc theo quy tắc view).
+    (lô chỉ có 0–1 khách đặt hoặc theo quy tắc view). Thời gian hiển thị theo
+    <span class="font-semibold">giờ Việt Nam (GMT+7)</span>.
   </p>
 </div>
 
-<form method="get" class="bg-white border rounded-2xl shadow-sm p-4 mb-4 flex flex-wrap gap-4 items-end">
+<form method="get"
+      class="bg-white border rounded-2xl shadow-sm p-4 mb-4 flex flex-wrap gap-4 items-end">
   <div class="flex flex-col">
     <label class="text-xs font-semibold text-slate-500 mb-1">Dự án</label>
     <select name="project" class="h-10 rounded-xl border px-3 text-sm min-w-[220px]">
@@ -96,6 +98,9 @@
           <th class="px-4 py-2 text-left font-semibold">CCCD</th>
           <th class="px-4 py-2 text-left font-semibold">SĐT</th>
           <th class="px-4 py-2 text-left font-semibold">Email</th>
+          <th class="px-4 py-2 text-left font-semibold">Ngân hàng hoàn cọc</th>
+          <th class="px-4 py-2 text-left font-semibold">Số TK hoàn cọc</th>
+          <th class="px-4 py-2 text-left font-semibold">Chủ TK hoàn cọc</th>
           <th class="px-4 py-2 text-left font-semibold">Mã lô</th>
           <th class="px-4 py-2 text-right font-semibold">Tiền đặt cho lô</th>
           <th class="px-4 py-2 text-right font-semibold">Số KH trên lô</th>
@@ -107,21 +112,51 @@
       <tbody class="divide-y divide-slate-100">
       {% for r in rows %}
         <tr class="hover:bg-slate-50 transition">
-          <td class="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">{{ r.customer_full_name }}</td>
+          <td class="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">
+            {{ r.customer_full_name }}
+          </td>
           <td class="px-4 py-3 whitespace-nowrap">{{ r.cccd }}</td>
           <td class="px-4 py-3 whitespace-nowrap">{{ r.phone }}</td>
           <td class="px-4 py-3 whitespace-nowrap">{{ r.email or '-' }}</td>
-          <td class="px-4 py-3 font-semibold text-slate-900 whitespace-nowrap">{{ r.lot_code }}</td>
-          <td class="px-4 py-3 text-right whitespace-nowrap">{{ r.deposit_amount or '' }}</td>
-          <td class="px-4 py-3 text-right whitespace-nowrap">{{ r.deposit_customer_count or 0 }}</td>
-          <td class="px-4 py-3 text-right whitespace-nowrap">{{ r.total_deposit_amount_per_lot or '' }}</td>
-          <td class="px-4 py-3 text-right whitespace-nowrap">{{ r.total_deposit_amount_per_customer_project or '' }}</td>
-          <td class="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{{ r.paid_at or '' }}</td>
+
+          {# --- Thông tin TK refund --- #}
+          <td class="px-4 py-3 whitespace-nowrap">
+            {{ r.refund_bank_code and (r.refund_bank_code ~ ' — ' ~ (r.refund_bank_name or '')) or '-' }}
+          </td>
+          <td class="px-4 py-3 whitespace-nowrap">
+            {{ r.refund_account_number or '-' }}
+          </td>
+          <td class="px-4 py-3 whitespace-nowrap">
+            {{ r.refund_account_name or '-' }}
+          </td>
+
+          <td class="px-4 py-3 font-semibold text-slate-900 whitespace-nowrap">
+            {{ r.lot_code }}
+          </td>
+          <td class="px-4 py-3 text-right whitespace-nowrap js-money"
+              data-value="{{ r.deposit_amount or 0 }}">
+            {{ r.deposit_amount or '' }}
+          </td>
+          <td class="px-4 py-3 text-right whitespace-nowrap">
+            {{ r.deposit_customer_count or 0 }}
+          </td>
+          <td class="px-4 py-3 text-right whitespace-nowrap js-money"
+              data-value="{{ r.total_deposit_amount_per_lot or 0 }}">
+            {{ r.total_deposit_amount_per_lot or '' }}
+          </td>
+          <td class="px-4 py-3 text-right whitespace-nowrap js-money"
+              data-value="{{ r.total_deposit_amount_per_customer_project or 0 }}">
+            {{ r.total_deposit_amount_per_customer_project or '' }}
+          </td>
+          <td class="px-4 py-3 text-xs text-slate-500 whitespace-nowrap js-datetime"
+              data-value="{{ r.paid_at or '' }}">
+            {{ r.paid_at or '' }}
+          </td>
         </tr>
       {% endfor %}
       {% if rows|length == 0 %}
         <tr>
-          <td colspan="10" class="px-4 py-4 text-center text-slate-400">
+          <td colspan="13" class="px-4 py-4 text-center text-slate-400">
             Chọn dự án và bấm "Áp dụng" để xem dữ liệu.
           </td>
         </tr>
@@ -132,6 +167,54 @@
 </div>
 
 <style>
-  table th, table td { white-space: nowrap; }
+  table th,
+  table td {
+    white-space: nowrap;
+  }
 </style>
+
+<script>
+(function () {
+  function formatMoney(v) {
+    if (v === null || v === undefined) return "";
+    const n = Number(v) || 0;
+    return n.toLocaleString("vi-VN", {
+      maximumFractionDigits: 0,
+      minimumFractionDigits: 0
+    });
+  }
+
+  function formatDateVN(s) {
+    if (!s) return "";
+    try {
+      const d = new Date(s);
+      return d.toLocaleString("vi-VN", {
+        timeZone: "Asia/Ho_Chi_Minh",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    } catch (e) {
+      console.warn("formatDateVN error", e, s);
+      return s;
+    }
+  }
+
+  document.querySelectorAll(".js-money").forEach(td => {
+    const raw = td.getAttribute("data-value");
+    if (raw !== null && raw !== "") {
+      td.textContent = formatMoney(raw);
+    }
+  });
+
+  document.querySelectorAll(".js-datetime").forEach(td => {
+    const raw = td.getAttribute("data-value");
+    if (raw) {
+      td.textContent = formatDateVN(raw);
+    }
+  });
+})();
+</script>
 {% endblock %}
