@@ -181,7 +181,7 @@ async def lots_eligible_page(
     request: Request,
     project: Optional[str] = Query(None, description="project_code như KIDO6"),
     lot_code: Optional[str] = Query(None, description="Prefix mã lô, ví dụ: CL03"),
-    limit: Optional[int] = Query(500, ge=1, le=5000, description="Giới hạn số dòng tối đa"),
+    limit: Optional[int] = Query(5000, ge=1, le=5000, description="Giới hạn số dòng tối đa"),
 ):
     """
     Lô đủ điều kiện (≥ 2 khách).
@@ -251,7 +251,7 @@ async def lots_ineligible_page(
     request: Request,
     project: Optional[str] = Query(None, description="project_code như KIDO6"),
     lot_code: Optional[str] = Query(None, description="Prefix mã lô, ví dụ: CL03"),
-    limit: Optional[int] = Query(500, ge=1, le=5000, description="Giới hạn số dòng tối đa"),
+    limit: Optional[int] = Query(5000, ge=1, le=5000, description="Giới hạn số dòng tối đa"),
 ):
     """
     Lô KHÔNG đủ điều kiện (0–1 khách).
@@ -412,7 +412,7 @@ async def customers_eligible_lots_page(
     project: Optional[str] = Query(None, description="project_code như KIDO6"),
     customer_cccd: Optional[str] = Query(None, description="Exact CCCD"),
     lot_code: Optional[str] = Query(None, description="Prefix mã lô"),
-    limit: Optional[int] = Query(500, ge=1, le=5000),
+    limit: Optional[int] = Query(5000, ge=1, le=5000),
 ):
     """
     Khách + lô đủ điều kiện.
@@ -495,7 +495,7 @@ async def customers_ineligible_lots_page(
     project: Optional[str] = Query(None, description="project_code như KIDO6"),
     customer_cccd: Optional[str] = Query(None, description="Exact CCCD"),
     lot_code: Optional[str] = Query(None, description="Prefix mã lô"),
-    limit: Optional[int] = Query(500, ge=1, le=5000),
+    limit: Optional[int] = Query(5000, ge=1, le=5000),
 ):
     """
     Khách + lô KHÔNG đủ điều kiện.
@@ -652,6 +652,7 @@ async def dossiers_paid_detail_export(
     filename = f"project_dossier_items_{project}.xlsx"
     return await _proxy_xlsx("/api/v1/reports/view/project-dossier-items", token, params, filename)
 
+
 @router.get("/reports/dossiers/paid/summary", response_class=HTMLResponse)
 async def dossiers_paid_summary_page(
     request: Request,
@@ -710,7 +711,6 @@ async def dossiers_paid_summary_page(
         ctx,
         status_code=200 if ok else 502,
     )
-
 
 
 @router.get("/reports/dossiers/paid/summary/customer/export")
