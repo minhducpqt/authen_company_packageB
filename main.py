@@ -56,7 +56,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # (nếu cần đóng kết nối/cleanup thì thêm ở đây)
 
 
-app = FastAPI(title="Dashboard Công ty — v20", lifespan=lifespan)
+app = FastAPI(
+    title="Dashboard Công ty — v20",
+    lifespan=lifespan,
+    docs_url=None,     # TẮT /docs
+)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.middleware("http")(auth_guard_middleware)
 
