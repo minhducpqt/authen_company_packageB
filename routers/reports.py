@@ -652,7 +652,6 @@ async def dossiers_paid_detail_export(
     filename = f"project_dossier_items_{project}.xlsx"
     return await _proxy_xlsx("/api/v1/reports/view/project-dossier-items", token, params, filename)
 
-
 @router.get("/reports/dossiers/paid/summary", response_class=HTMLResponse)
 async def dossiers_paid_summary_page(
     request: Request,
@@ -678,9 +677,15 @@ async def dossiers_paid_summary_page(
     st1 = st2 = None
 
     if selected_project:
-        params = {"project": selected_project}
-        st1, data1 = await _get_json("/api/v1/reports/dossiers/paid/summary-customer", token, params)
-        st2, data2 = await _get_json("/api/v1/reports/dossiers/paid/totals-by-type", token, params)
+        # ✅ bật expose_phone để Service A fill phone/email
+        params = {"project": selected_project, "expose_phone": "true"}
+        st1, data1 = await _get_json(
+            "/api/v1/reports/dossiers/paid/summary-customer", token, params
+        )
+        # totals-by-type không cần phone/email
+        st2, data2 = await _get_json(
+            "/api/v1/reports/dossiers/paid/totals-by-type", token, {"project": selected_project}
+        )
         if st1 == 200:
             data_summary_customer = data1
         if st2 == 200:
@@ -707,6 +712,7 @@ async def dossiers_paid_summary_page(
     )
 
 
+
 @router.get("/reports/dossiers/paid/summary/customer/export")
 async def dossiers_paid_summary_customer_export(
     request: Request,
@@ -716,9 +722,12 @@ async def dossiers_paid_summary_customer_export(
     if not token:
         return _unauth()
 
-    params = {"project": project}
+    # ✅ bật expose_phone cho export
+    params = {"project": project, "expose_phone": "true"}
     filename = f"dossier_summary_customer_{project}.xlsx"
-    return await _proxy_xlsx("/api/v1/reports/dossiers/paid/summary-customer", token, params, filename)
+    return await _proxy_xlsx(
+        "/api/v1/reports/dossiers/paid/summary-customer", token, params, filename
+    )
 
 
 @router.get("/reports/dossiers/paid/summary/types/export")

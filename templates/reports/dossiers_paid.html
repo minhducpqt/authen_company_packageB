@@ -100,19 +100,26 @@
         <tbody class="divide-y divide-slate-100">
         {% for r in rows %}
           <tr class="hover:bg-slate-50 transition">
-            <td class="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">{{ r.customer_full_name }}</td>
+            <td class="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">
+              {{ r.customer_full_name or r.full_name }}
+            </td>
             <td class="px-4 py-3 whitespace-nowrap">{{ r.cccd }}</td>
-            <td class="px-4 py-3 whitespace-nowrap">{{ r.phone }}</td>
-            <td class="px-4 py-3 whitespace-nowrap">{{ r.email or '-' }}</td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              {{ r.phone or r.customer_phone }}
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              {{ r.email or r.customer_email or '-' }}
+            </td>
             <td class="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{{ r.address or '-' }}</td>
             <td class="px-4 py-3 whitespace-nowrap">{{ r.order_code }}</td>
             <td class="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{{ r.order_created_at or '' }}</td>
             <td class="px-4 py-3 whitespace-nowrap">{{ r.dossier_type_name }}</td>
-            <td class="px-4 py-3 text-right whitespace-nowrap">{{ r.unit_price_vnd or '' }}</td>
+
+            <td class="px-4 py-3 text-right whitespace-nowrap" data-amount="{{ r.unit_price_vnd or 0 }}"></td>
             <td class="px-4 py-3 text-right whitespace-nowrap">{{ r.qty or '' }}</td>
-            <td class="px-4 py-3 text-right whitespace-nowrap">{{ r.line_total_vnd or '' }}</td>
+            <td class="px-4 py-3 text-right whitespace-nowrap" data-amount="{{ r.line_total_vnd or 0 }}"></td>
             <td class="px-4 py-3 text-right whitespace-nowrap">{{ r.total_dossier_qty_per_customer_project or '' }}</td>
-            <td class="px-4 py-3 text-right whitespace-nowrap">{{ r.total_dossier_amount_vnd_per_customer_project or '' }}</td>
+            <td class="px-4 py-3 text-right whitespace-nowrap" data-amount="{{ r.total_dossier_amount_vnd_per_customer_project or 0 }}"></td>
           </tr>
         {% endfor %}
         {% if rows|length == 0 %}
@@ -220,12 +227,18 @@
           <tbody class="divide-y divide-slate-100">
           {% for r in rows_cust %}
             <tr class="hover:bg-slate-50 transition">
-              <td class="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">{{ r.full_name }}</td>
+              <td class="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">
+                {{ r.full_name or r.customer_full_name }}
+              </td>
               <td class="px-4 py-3 whitespace-nowrap">{{ r.cccd }}</td>
-              <td class="px-4 py-3 whitespace-nowrap">{{ r.phone }}</td>
-              <td class="px-4 py-3 whitespace-nowrap">{{ r.email or '-' }}</td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                {{ r.phone or r.customer_phone }}
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                {{ r.email or r.customer_email or '-' }}
+              </td>
               <td class="px-4 py-3 text-right whitespace-nowrap">{{ r.total_qty or '' }}</td>
-              <td class="px-4 py-3 text-right whitespace-nowrap">{{ r.total_amount or '' }}</td>
+              <td class="px-4 py-3 text-right whitespace-nowrap" data-amount="{{ r.total_amount or 0 }}"></td>
               <td class="px-4 py-3 text-xs text-slate-500">
                 {{ r.type_breakdown or '' }}
               </td>
@@ -267,7 +280,7 @@
             <tr class="hover:bg-slate-50 transition">
               <td class="px-4 py-3 whitespace-nowrap">{{ r.dossier_label }}</td>
               <td class="px-4 py-3 text-right whitespace-nowrap">{{ r.total_qty or '' }}</td>
-              <td class="px-4 py-3 text-right whitespace-nowrap">{{ r.total_amount or '' }}</td>
+              <td class="px-4 py-3 text-right whitespace-nowrap" data-amount="{{ r.total_amount or 0 }}"></td>
             </tr>
           {% endfor %}
           {% if rows_type|length == 0 %}
@@ -289,4 +302,19 @@
   table th, table td { white-space: nowrap; }
   .cell-wrap { white-space: normal; }
 </style>
+
+<script>
+(function () {
+  function formatAmountCell(td) {
+    if (!td) return;
+    const raw = td.getAttribute('data-amount');
+    if (!raw) return;
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return;
+    td.textContent = n.toLocaleString('vi-VN', { maximumFractionDigits: 0 });
+  }
+
+  document.querySelectorAll('[data-amount]').forEach(formatAmountCell);
+})();
+</script>
 {% endblock %}
