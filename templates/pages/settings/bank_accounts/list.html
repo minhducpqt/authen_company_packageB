@@ -57,18 +57,16 @@
             <td class="px-5 py-3">
               <div class="flex items-center justify-end gap-2">
 
-                {# Nút Sửa — disabled #}
-                <span
-                  class="px-3 h-9 rounded-lg border border-slate-300 text-slate-400 text-sm cursor-not-allowed opacity-60 flex items-center"
-                  title="Đã khoá để tránh chỉnh sửa nhầm"
-                >
+                {# === Nút Sửa vẫn hoạt động bình thường === #}
+                <a href="/settings/bank-accounts/{{ r.id }}/edit"
+                   class="px-3 h-9 rounded-lg border border-slate-300 text-slate-700 text-sm hover:bg-slate-50">
                   Sửa
-                </span>
+                </a>
 
-                {# Nút Xoá — disabled #}
+                {# === Nút Xoá bị vô hiệu hoá hoàn toàn === #}
                 <span
                   class="px-3 h-9 rounded-lg bg-rose-300 text-white text-sm cursor-not-allowed opacity-60 flex items-center"
-                  title="Đã khoá để tránh xoá nhầm"
+                  title="Chức năng xoá bị khóa để tránh rủi ro"
                 >
                   Xoá
                 </span>

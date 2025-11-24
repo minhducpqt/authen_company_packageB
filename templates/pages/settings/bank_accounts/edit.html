@@ -19,38 +19,54 @@
           Ngân hàng <span class="text-rose-600">*</span>
         </label>
 
+        {# Luôn gửi bank_code lên server #}
         <input type="hidden" name="bank_code" id="bank_code"
                value="{{ (item.bank_code if item else '') or '' }}"/>
 
-        <!-- readonly “pill”; click để mở danh sách -->
-        <button id="bank_chosen"
-                type="button"
-                class="w-full h-12 px-4 rounded-xl border border-slate-300 bg-slate-50/60 text-left flex items-center gap-3 hover:bg-white focus:ring-2 focus:ring-indigo-200"
-                aria-haspopup="listbox" aria-expanded="false">
-          <i class="ri-bank-line text-slate-400 text-xl"></i>
-          <span id="bank_chosen_text" class="text-slate-600">
-            {% if selected_bank %}
-              {{ selected_bank.short_name or selected_bank.name or selected_bank.code }} — {{ selected_bank.name or '' }}{% if selected_bank.code %} — {{ selected_bank.code }}{% endif %}
-            {% else %}
-              Chọn ngân hàng…
-            {% endif %}
-          </span>
-        </button>
+        {% if mode == 'create' %}
+          {# --- CREATE: Cho phép chọn ngân hàng bằng dropdown như cũ --- #}
+          <!-- readonly “pill”; click để mở danh sách -->
+          <button id="bank_chosen"
+                  type="button"
+                  class="w-full h-12 px-4 rounded-xl border border-slate-300 bg-slate-50/60 text-left flex items-center gap-3 hover:bg-white focus:ring-2 focus:ring-indigo-200"
+                  aria-haspopup="listbox" aria-expanded="false">
+            <i class="ri-bank-line text-slate-400 text-xl"></i>
+            <span id="bank_chosen_text" class="text-slate-600">
+              {% if selected_bank %}
+                {{ selected_bank.short_name or selected_bank.name or selected_bank.code }} — {{ selected_bank.name or '' }}{% if selected_bank.code %} — {{ selected_bank.code }}{% endif %}
+              {% else %}
+                Chọn ngân hàng…
+              {% endif %}
+            </span>
+          </button>
 
-        <!-- dropdown -->
-        <div id="bank_dropdown" class="relative hidden">
-          <div class="absolute z-40 mt-2 w-full bg-white rounded-xl shadow-2xl border border-slate-200">
-            <div class="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
-              <i class="ri-search-line text-slate-400"></i>
-              <input id="bank_filter" type="text"
-                     class="w-full outline-none text-base placeholder:text-slate-400"
-                     placeholder="Tìm tên hoặc mã ngân hàng…">
+          <!-- dropdown -->
+          <div id="bank_dropdown" class="relative hidden">
+            <div class="absolute z-40 mt-2 w-full bg-white rounded-xl shadow-2xl border border-slate-200">
+              <div class="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
+                <i class="ri-search-line text-slate-400"></i>
+                <input id="bank_filter" type="text"
+                       class="w-full outline-none text-base placeholder:text-slate-400"
+                       placeholder="Tìm tên hoặc mã ngân hàng…">
+              </div>
+              <ul id="bank_list"
+                  role="listbox"
+                  class="max-h-80 overflow-auto py-1"></ul>
             </div>
-            <ul id="bank_list"
-                role="listbox"
-                class="max-h-80 overflow-auto py-1"></ul>
           </div>
-        </div>
+        {% else %}
+          {# --- EDIT: Không cho đổi ngân hàng, chỉ hiển thị readonly --- #}
+          <div class="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/70 flex items-center gap-3">
+            <i class="ri-bank-line text-slate-400 text-xl"></i>
+            <span class="text-slate-700">
+              {% if selected_bank %}
+                {{ selected_bank.short_name or selected_bank.name or selected_bank.code }} — {{ selected_bank.name or '' }}{% if selected_bank.code %} — {{ selected_bank.code }}{% endif %}
+              {% else %}
+                {{ item.bank_code or 'Không xác định' }}
+              {% endif %}
+            </span>
+          </div>
+        {% endif %}
       </div>
 
       {# ====== ACCOUNT NUMBER ====== #}
@@ -58,13 +74,26 @@
         <label class="block text-sm font-medium text-slate-700 mb-2">
           Số tài khoản <span class="text-rose-600">*</span>
         </label>
-        <input name="account_number"
-               value="{{ item.account_number if item else '' }}"
-               required
-               pattern="[0-9]{6,20}"
-               title="Chỉ số, 6–20 ký tự"
-               class="w-full h-12 rounded-xl border-2 border-slate-300 px-4 font-mono font-semibold text-slate-900 tracking-wide focus:outline-none focus:ring-2 focus:ring-indigo-200"
-               placeholder="Ví dụ: 0123456789">
+
+        {% if mode == 'create' %}
+          {# CREATE: cho nhập số tài khoản bình thường #}
+          <input name="account_number"
+                 value="{{ item.account_number if item else '' }}"
+                 required
+                 pattern="[0-9]{6,20}"
+                 title="Chỉ số, 6–20 ký tự"
+                 class="w-full h-12 rounded-xl border-2 border-slate-300 px-4 font-mono font-semibold text-slate-900 tracking-wide focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                 placeholder="Ví dụ: 0123456789">
+        {% else %}
+          {# EDIT: Khoá không cho sửa, nhưng vẫn gửi giá trị cũ bằng hidden input #}
+          <input
+            value="{{ item.account_number if item else '' }}"
+            disabled
+            class="w-full h-12 rounded-xl border-2 border-slate-200 px-4 font-mono font-semibold text-slate-500 tracking-wide bg-slate-50 cursor-not-allowed"
+          >
+          <input type="hidden" name="account_number"
+                 value="{{ item.account_number if item else '' }}">
+        {% endif %}
       </div>
 
       {# ====== ACCOUNT NAME ====== #}
@@ -112,6 +141,7 @@
 </form>
 
 {# =================== SCRIPT =================== #}
+{% if mode == 'create' %}
 <script>
   // Data passed from server (array of banks)
   const BANKS = {{ (banks or []) | tojson }};
@@ -270,5 +300,6 @@
     }
   })();
 </script>
+{% endif %}
 
 {% endblock %}
