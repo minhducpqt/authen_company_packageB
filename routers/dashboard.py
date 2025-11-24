@@ -39,59 +39,17 @@ async def _get_json(
 
 @router.get("/", response_class=HTMLResponse)
 async def home_redirect():
-    # Đưa user về dashboard nếu đã login; nếu chưa login thì middleware/route login sẽ xử lý.
-    return RedirectResponse(url="/dashboard", status_code=303)
+  """
+  Trang root của Service B: luôn đưa user về Dashboard mới (/reports).
+  Login xong nếu redirect về "/" thì sẽ tự sang /reports.
+  """
+  return RedirectResponse(url="/reports", status_code=303)
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
 async def dashboard_index(request: Request):
-    """
-    Trang dashboard admin — chỉ hiển thị nếu đã đăng nhập.
-    Template path: templates/pages/dashboard/index.html
-    """
-    token = get_access_token(request)
-    if not token:
-        # chuyển về trang login, quay lại /dashboard sau khi login xong
-        return RedirectResponse(url="/login?next=%2Fdashboard", status_code=303)
-
-    # Thử lấy 1 số dữ liệu tổng quan từ Service A (có cũng được, không có thì fallback)
-    # Ưu tiên endpoint mới nếu đã tạo; nếu 404 thì để số 0.
-    stats = {
-        "projects_active": 0,
-        "projects_total": 0,
-        "customers_total": 0,
-        "dossier_orders_total": 0,
-        "dossier_amount_vnd": 0,
-        "deposit_orders_total": 0,
-        "deposit_amount_vnd": 0,
-    }
-
-    # 1) Hồ sơ công ty (tên công ty để chào mừng)
-    st_cp, data_cp = await _get_json("/api/v1/company/profile", token)
-    company_name = ""
-    if st_cp == 200 and isinstance(data_cp, dict):
-        company_name = (data_cp.get("name") or data_cp.get("company_name") or "").strip()
-
-    # 2) Tổng quan nhanh (endpoint gợi ý; nếu bạn đã triển khai /api/v1/overview/admin/summary)
-    st_sm, data_sm = await _get_json("/api/v1/overview/admin/summary", token)
-    if st_sm == 200 and isinstance(data_sm, dict):
-        for k in stats.keys():
-            if k in data_sm and isinstance(data_sm[k], (int, float)):
-                stats[k] = data_sm[k]
-
-    # 3) Dự án (đếm nhanh nếu chưa có endpoint summary)
-    if stats["projects_total"] == 0:
-        st_prj, data_prj = await _get_json("/api/v1/projects?page=1&size=1", token)
-        if st_prj == 200 and isinstance(data_prj, dict):
-            # nhiều API trả về {items:[], total: N} — lấy total nếu có
-            total = data_prj.get("total") or data_prj.get("count")
-            if isinstance(total, int):
-                stats["projects_total"] = total
-
-    ctx = {
-        "request": request,
-        "title": "Bảng điều khiển",
-        "company_name": company_name,
-        "stats": stats,
-    }
-    return templates.TemplateResponse("pages/dashboard/index.html", ctx)
+  """
+  Giữ route /dashboard để tương thích ngược, nhưng chuyển hướng sang /reports.
+  Login cũ đang dùng next=/dashboard vẫn hoạt động, chỉ là bị chuyển sang /reports.
+  """
+  return RedirectResponse(url="/reports", status_code=303)
