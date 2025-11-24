@@ -56,18 +56,23 @@
             </td>
             <td class="px-5 py-3">
               <div class="flex items-center justify-end gap-2">
-                <a href="/settings/bank-accounts/{{ r.id }}/edit"
-                   class="px-3 h-9 rounded-lg border border-slate-300 text-slate-700 text-sm hover:bg-slate-50">
-                  Sửa
-                </a>
 
-                <form id="delete-form-{{ r.id }}" method="post" action="/settings/bank-accounts/{{ r.id }}/delete"></form>
-                <button
-                  class="px-3 h-9 rounded-lg bg-rose-600 text-white text-sm hover:bg-rose-700"
-                  data-confirm-click="Xoá tài khoản ngân hàng này? Thao tác không thể hoàn tác."
-                  data-target-form="delete-form-{{ r.id }}">
+                {# Nút Sửa — disabled #}
+                <span
+                  class="px-3 h-9 rounded-lg border border-slate-300 text-slate-400 text-sm cursor-not-allowed opacity-60 flex items-center"
+                  title="Đã khoá để tránh chỉnh sửa nhầm"
+                >
+                  Sửa
+                </span>
+
+                {# Nút Xoá — disabled #}
+                <span
+                  class="px-3 h-9 rounded-lg bg-rose-300 text-white text-sm cursor-not-allowed opacity-60 flex items-center"
+                  title="Đã khoá để tránh xoá nhầm"
+                >
                   Xoá
-                </button>
+                </span>
+
               </div>
             </td>
           </tr>
