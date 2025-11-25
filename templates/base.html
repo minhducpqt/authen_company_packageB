@@ -10,6 +10,8 @@
   <link rel="stylesheet" href="/static/style.css"/>
 </head>
 <body class="bg-slate-50">
+  {% set logged_in = is_logged_in(request) %}
+
   <!-- ===== Header ===== -->
   <div class="bg-indigo-700 text-white">
     <div class="max-w-screen-2xl mx-auto h-14 px-5 flex items-center justify-between">
@@ -27,7 +29,6 @@
         <i class="ri-settings-3-line cursor-pointer"></i>
         <i class="ri-notification-3-line cursor-pointer"></i>
 
-        {% set logged_in = is_logged_in(request) %}
         <div class="relative">
           <button
             onclick="toggleUserMenu()"
@@ -78,6 +79,7 @@
 
   <!-- ===== Layout ===== -->
   <div class="max-w-screen-2xl mx-auto px-5 py-5 flex gap-5">
+    {% if logged_in %}
     <aside class="w-64 bg-white rounded-xl border border-slate-200 h-[84vh] overflow-y-auto">
       <ul class="p-2">
 
@@ -177,6 +179,7 @@
         </li>
       </ul>
     </aside>
+    {% endif %}
 
     <main class="flex-1">
       <div class="mb-4">
