@@ -29,13 +29,10 @@
       border: 1px solid #000;
       padding: 2px 6px;
     }
-    .center {
-      text-align: center;
-    }
+    .center { text-align: center; }
     .mt-4 { margin-top: 4mm; }
     .mt-2 { margin-top: 2mm; }
     .mt-1 { margin-top: 1mm; }
-    .mb-2 { margin-bottom: 2mm; }
     .mb-4 { margin-bottom: 4mm; }
     .bold { font-weight: bold; }
     .underline { text-decoration: underline; }
@@ -51,9 +48,7 @@
       text-align: center;
     }
     @media print {
-      .page {
-        page-break-after: always;
-      }
+      .page { page-break-after: always; }
     }
   </style>
 </head>
@@ -65,10 +60,8 @@
   {% set flag_code = t.project_code ~ ' / ' ~ t.lot_code %}
 
   <div class="page">
-    <!-- Góc trái trên: mã nhận dạng nhanh -->
-    <div class="header-flag">
-      {{ flag_code }}
-    </div>
+    <!-- Flag -->
+    <div class="header-flag">{{ flag_code }}</div>
 
     <!-- Quốc hiệu -->
     <div class="center">
@@ -78,7 +71,7 @@
 
     <!-- Tiêu đề -->
     <div class="center mt-4">
-      <div class="bold" style="font-size: 16px; text-transform: uppercase;">
+      <div class="bold" style="font-size:16px; text-transform:uppercase;">
         PHIẾU TRẢ GIÁ
       </div>
     </div>
@@ -88,66 +81,53 @@
       Tài sản: Quyền sử dụng đất thuộc dự án
       "<span class="bold">{{ t.project_name }}</span>"
       — Lô đất: <span class="bold">{{ t.lot_code }}</span>
-      {% if t.lot_description %}
-        ({{ t.lot_description }})
-      {% endif %}
+      {% if t.lot_description %} ({{ t.lot_description }}) {% endif %}
       {% if t.area_m2 %}
         , diện tích khoảng <span class="bold">{{ "{:,.2f}".format(t.area_m2) }}</span> m².
       {% endif %}
     </div>
 
-    <div class="mt-2">
-      Kính gửi: Công ty Đấu giá Hợp danh Kinh Đô
-    </div>
+    <div class="mt-2">Kính gửi: Công ty Đấu giá Hợp danh Kinh Đô</div>
 
-    <!-- Khách hàng -->
+    <!-- Khách -->
     <div class="mt-2">
       Khách hàng tham gia đấu giá:
-      <span class="line" style="min-width: 70mm;">
-        {{ t.customer_full_name }}
-      </span>
+      <span class="line" style="min-width:70mm;">{{ t.customer_full_name }}</span>
     </div>
     <div class="mt-1">
       Số CCCD/Căn cước:
-      <span class="line" style="min-width: 50mm;">{{ t.cccd }}</span>
+      <span class="line" style="min-width:50mm;">{{ t.cccd }}</span>
     </div>
     <div class="mt-1">
       Địa chỉ:
-      <span class="line" style="min-width: 90mm;">
-        {{ t.address or '' }}
-      </span>
+      <span class="line" style="min-width:90mm;">{{ t.address or '' }}</span>
     </div>
     <div class="mt-1">
       Người được uỷ quyền (nếu có):
-      <span class="line" style="min-width: 70mm;"> </span>
+      <span class="line" style="min-width:70mm;"></span>
     </div>
     <div class="mt-1">
       Số CCCD:
-      <span class="line" style="min-width: 50mm;"> </span>
+      <span class="line" style="min-width:50mm;"></span>
     </div>
 
-    <!-- Đoạn cam kết -->
+    <!-- Cam kết -->
     <div class="mt-2 indent">
       Sau khi nghiên cứu kỹ hồ sơ mời tham gia đấu giá và xem tài sản đấu giá là
       “Quyền sử dụng đất nêu trên”, tôi quyết định trả giá như sau:
     </div>
 
-    <!-- Nội dung trả giá -->
-    <div class="mt-2 bold center">
-      NỘI DUNG TRẢ GIÁ
-    </div>
+    <div class="mt-2 bold center">NỘI DUNG TRẢ GIÁ</div>
 
     <div class="mt-2">
       Lô đất đăng ký đấu giá:
-      <span class="line" style="min-width: 50mm;">
-        {{ t.lot_code }}
-      </span>
+      <span class="line" style="min-width:50mm;">{{ t.lot_code }}</span>
     </div>
 
     {% if is_per_sqm %}
       <div class="mt-1">
         Giá khởi điểm (đồng/m²):
-        <span class="line" style="min-width: 40mm;">
+        <span class="line" style="min-width:40mm;">
           {% if t.starting_price_vnd is number %}{{ "{:,.0f}".format(t.starting_price_vnd) }}{% endif %}
         </span>
       </div>
@@ -156,13 +136,12 @@
       </div>
       <div class="mt-1">
         Tôi xin trả giá là:
-        <span class="line" style="min-width: 50mm;"> </span>
-        đồng/m²
+        <span class="line" style="min-width:50mm;"></span> đồng/m²
       </div>
     {% else %}
       <div class="mt-1">
         Giá khởi điểm (VNĐ/lô):
-        <span class="line" style="min-width: 40mm;">
+        <span class="line" style="min-width:40mm;">
           {% if t.starting_price_vnd is number %}{{ "{:,.0f}".format(t.starting_price_vnd) }}{% endif %}
         </span>
       </div>
@@ -171,8 +150,7 @@
       </div>
       <div class="mt-1">
         Tôi xin trả giá là:
-        <span class="line" style="min-width: 50mm;"> </span>
-        VNĐ/lô
+        <span class="line" style="min-width:50mm;"></span> VNĐ/lô
       </div>
     {% endif %}
 
@@ -192,35 +170,23 @@
       <span class="bold">Ghi chú:</span><br/>
       - Phiếu trả giá hợp lệ là phiếu có dấu treo của Công ty Đấu giá Hợp danh Kinh Đô;<br/>
       - Phiếu không bị rách, nát;<br/>
-      - Được điền đầy đủ các thông tin;<br/>
-      - Trường hợp sai lệch giữa giá trả bằng số với giá trả bằng chữ, thì sẽ lấy giá trả bằng chữ để xét giá.
+      - Được điền đầy đủ thông tin;<br/>
+      - Nếu sai lệch giữa giá bằng số và giá bằng chữ → lấy giá bằng chữ.
     </div>
 
-    <!-- Ngày, chữ ký -->
+    <!-- Ký tên -->
     <div class="signature">
-      {% set today = t.paid_at or None %}
-      {% if today %}
-        {# cho đơn giản, in luôn ngày thanh toán dạng dd/mm/yyyy #}
-        {% set y = today.year %}
-        {% set m = "%02d"|format(today.month) %}
-        {% set d = "%02d"|format(today.day) %}
-        {{ t.project_name or "..." }},
-        ngày {{ d }} tháng {{ m }} năm {{ y }}
-      {% else %}
-        ................................, ngày ...... tháng ...... năm ......
-      {% endif %}
-      <br/>
+      ................................, ngày ...... tháng ...... năm ......<br/>
       <span class="bold">Khách hàng tham gia đấu giá</span><br/>
       <span class="small">(Ký, ghi rõ họ tên)</span>
     </div>
+
   </div>
 {% endfor %}
 
 <script>
-  // tự động bật hộp thoại in khi mở trang
-  window.addEventListener("load", function () {
-    window.print();
-  });
+  window.addEventListener("load", () => window.print());
 </script>
+
 </body>
 </html>
