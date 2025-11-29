@@ -19,38 +19,55 @@
     </div>
   {% endif %}
 
-  <!-- Bộ lọc -->
-  <form method="get" action="/bid-tickets" class="mb-4 grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+  <!-- BỘ LỌC -->
+  <form
+    id="filtersForm"
+    method="get"
+    action="/bid-tickets"
+    class="mb-4 grid grid-cols-1 md:grid-cols-4 gap-3 items-end"
+  >
+    <!-- Dự án: dropdown active projects -->
     <div>
-      <label class="block text-xs font-medium text-slate-600 mb-1">Mã dự án</label>
-      <input
-        type="text"
-        name="project_code"
-        value="{{ filters.project_code }}"
-        placeholder="VD: KDO_DA_01"
+      <label class="block text-xs font-medium text-slate-600 mb-1">Dự án</label>
+      <select
+        id="projectSelect"
         class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-      />
+      >
+        <option value="">Tất cả dự án</option>
+      </select>
+      <!-- giữ giá trị để submit GET -->
+      <input type="hidden" name="project_code" id="projectCodeInput" value="{{ filters.project_code }}">
     </div>
+
+    <!-- Tìm khách -->
     <div>
-      <label class="block text-xs font-medium text-slate-600 mb-1">Tìm khách (tên/CCCD/ĐT)</label>
+      <label class="block text-xs font-medium text-slate-600 mb-1">
+        Tìm khách (tên/CCCD/ĐT)
+      </label>
       <input
         type="text"
+        id="customerSearch"
         name="customer_q"
         value="{{ filters.customer_q }}"
         placeholder="Nhập tên khách, CCCD, điện thoại"
         class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
       />
     </div>
+
+    <!-- Mã lô -->
     <div>
       <label class="block text-xs font-medium text-slate-600 mb-1">Mã lô</label>
       <input
         type="text"
+        id="lotCodeInput"
         name="lot_code"
         value="{{ filters.lot_code }}"
         placeholder="VD: L-A01"
         class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
       />
     </div>
+
+    <!-- Nút Lọc / Đặt lại (fallback) -->
     <div class="flex gap-2 justify-end">
       <button
         type="submit"
@@ -67,16 +84,10 @@
     </div>
   </form>
 
-  <!-- Tabs -->
+  <!-- TABS -->
   <div class="border-b border-slate-200 mb-4">
     <nav class="-mb-px flex gap-4 text-sm" aria-label="Tabs">
-      <button
-        type="button"
-        class="px-3 py-2 border-b-2 font-medium js-tab-btn"
-        data-tab="tab-lots"
-      >
-        Theo LÔ
-      </button>
+      <!-- Ưu tiên THEO KHÁCH -->
       <button
         type="button"
         class="px-3 py-2 border-b-2 font-medium js-tab-btn"
@@ -84,11 +95,118 @@
       >
         Theo KHÁCH
       </button>
+      <button
+        type="button"
+        class="px-3 py-2 border-b-2 font-medium js-tab-btn"
+        data-tab="tab-lots"
+      >
+        Theo LÔ
+      </button>
     </nav>
   </div>
 
-  <!-- TAB 1: THEO LÔ -->
-  <div id="tab-lots" class="tab-panel">
+  <!-- TAB 1: THEO KHÁCH -->
+  <div id="tab-customers" class="tab-panel">
+    <div class="mb-2 text-sm text-slate-500">
+      Tổng: {{ customers|length }} khách đủ điều kiện (có ít nhất 1 lô deposit đủ chuẩn).
+    </div>
+
+    <div class="space-y-3">
+      {% for c in customers %}
+        <div class="border border-slate-200 rounded-lg p-3">
+          <div class="flex items-center justify-between gap-3 mb-2">
+            <div>
+              <div class="font-semibold text-slate-800">
+                {{ c.customer_full_name }}
+                <span class="font-mono text-[11px] text-slate-500">({{ c.cccd }})</span>
+              </div>
+              <div class="text-[11px] text-slate-500">
+                {{ c.address or '' }} — {{ c.phone or '' }}
+              </div>
+              <div class="text-[11px] text-slate-500">
+                Dự án: <span class="font-mono">{{ c.project_code }}</span> — {{ c.project_name }}
+              </div>
+            </div>
+            <div class="flex flex-col items-end gap-1">
+              <div class="text-[11px] text-slate-500">
+                Số lô đủ ĐK: <span class="font-semibold">{{ c.lots|length }}</span>
+              </div>
+              <button
+                type="button"
+                class="px-3 py-1.5 rounded bg-emerald-600 text-white text-[11px] font-medium hover:bg-emerald-700"
+                onclick="openPrintAllForCustomer('{{ c.project_code }}', '{{ c.customer_id }}')"
+              >
+                <i class="ri-printer-line mr-1"></i>In {{ c.lots|length }} phiếu cho khách này
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto border border-slate-100 rounded">
+            <table class="min-w-full text-[11px]">
+              <thead class="bg-slate-50">
+                <tr class="text-left text-slate-600">
+                  <th class="px-2 py-1 border-b">Mã lô</th>
+                  <th class="px-2 py-1 border-b">Diện tích</th>
+                  <th class="px-2 py-1 border-b">Giá khởi điểm</th>
+                  <th class="px-2 py-1 border-b">Bước giá</th>
+                  <th class="px-2 py-1 border-b">Hình thức</th>
+                  <th class="px-2 py-1 border-b text-right">Tiền KH đã cọc</th>
+                  <th class="px-2 py-1 border-b text-right">Số KH nộp</th>
+                  <th class="px-2 py-1 border-b"></th>
+                </tr>
+              </thead>
+              <tbody>
+              {% for r in c.lots %}
+                <tr>
+                  <td class="px-2 py-1 border-b font-mono">{{ r.lot_code }}</td>
+                  <td class="px-2 py-1 border-b">
+                    {% if r.area_m2 is number %}{{ "{:,.2f}".format(r.area_m2) }}{% endif %}
+                  </td>
+                  <td class="px-2 py-1 border-b">
+                    {% if r.starting_price_vnd is number %}{{ "{:,.0f}".format(r.starting_price_vnd) }}{% endif %}
+                  </td>
+                  <td class="px-2 py-1 border-b">
+                    {% if r.bid_step_vnd is number %}{{ "{:,.0f}".format(r.bid_step_vnd) }}{% endif %}
+                  </td>
+                  <td class="px-2 py-1 border-b">
+                    {% if r.auction_mode == 'PER_SQM' %}
+                      Theo m²
+                    {% else %}
+                      Theo lô
+                    {% endif %}
+                  </td>
+                  <td class="px-2 py-1 border-b text-right">
+                    {% if r.deposit_amount is number %}{{ "{:,.0f}".format(r.deposit_amount) }}{% endif %}
+                  </td>
+                  <td class="px-2 py-1 border-b text-right">
+                    {{ r.deposit_customer_count }}
+                  </td>
+                  <td class="px-2 py-1 border-b text-right">
+                    <button
+                      type="button"
+                      class="px-2 py-1 rounded bg-sky-600 text-white text-[11px] hover:bg-sky-700"
+                      onclick="openPrintOne('{{ r.project_code }}', '{{ r.customer_id }}', '{{ r.lot_id }}')"
+                    >
+                      In phiếu
+                    </button>
+                  </td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {% endfor %}
+      {% if not customers or customers|length == 0 %}
+        <div class="p-4 text-center text-slate-500 text-sm border border-dashed border-slate-300 rounded-lg">
+          Chưa có khách hàng nào đủ điều kiện theo bộ lọc hiện tại.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- TAB 2: THEO LÔ -->
+  <div id="tab-lots" class="tab-panel hidden">
     <div class="flex items-center justify-between mb-2">
       <div class="text-sm text-slate-500">
         Tổng: {{ page.total }} dòng (chỉ hiển thị tối đa {{ page.size }})
@@ -188,111 +306,93 @@
       </table>
     </div>
   </div>
+</div>
 
-  <!-- TAB 2: THEO KHÁCH -->
-  <div id="tab-customers" class="tab-panel hidden">
-    <div class="mb-2 text-sm text-slate-500">
-      Tổng: {{ customers|length }} khách đủ điều kiện (có ít nhất 1 lô deposit đủ chuẩn).
-    </div>
-
-    <div class="space-y-3">
-      {% for c in customers %}
-        <div class="border border-slate-200 rounded-lg p-3">
-          <div class="flex items-center justify-between gap-3 mb-2">
-            <div>
-              <div class="font-semibold text-slate-800">
-                {{ c.customer_full_name }}
-                <span class="font-mono text-[11px] text-slate-500">({{ c.cccd }})</span>
-              </div>
-              <div class="text-[11px] text-slate-500">
-                {{ c.address or '' }} — {{ c.phone or '' }}
-              </div>
-              <div class="text-[11px] text-slate-500">
-                Dự án: <span class="font-mono">{{ c.project_code }}</span> — {{ c.project_name }}
-              </div>
-            </div>
-            <div class="flex flex-col items-end gap-1">
-              <div class="text-[11px] text-slate-500">
-                Số lô đủ ĐK: <span class="font-semibold">{{ c.lots|length }}</span>
-              </div>
-              <button
-                type="button"
-                class="px-3 py-1.5 rounded bg-emerald-600 text-white text-[11px] font-medium hover:bg-emerald-700"
-                onclick="openPrintAllForCustomer('{{ c.project_code }}', '{{ c.customer_id }}')"
-              >
-                <i class="ri-printer-line mr-1"></i>In {{ c.lots|length }} phiếu cho khách này
-              </button>
-            </div>
-          </div>
-
-          <div class="overflow-x-auto border border-slate-100 rounded">
-            <table class="min-w-full text-[11px]">
-              <thead class="bg-slate-50">
-                <tr class="text-left text-slate-600">
-                  <th class="px-2 py-1 border-b">Mã lô</th>
-                  <th class="px-2 py-1 border-b">Diện tích</th>
-                  <th class="px-2 py-1 border-b">Giá khởi điểm</th>
-                  <th class="px-2 py-1 border-b">Bước giá</th>
-                  <th class="px-2 py-1 border-b">Hình thức</th>
-                  <th class="px-2 py-1 border-b text-right">Tiền KH đã cọc</th>
-                  <th class="px-2 py-1 border-b text-right">Số KH nộp</th>
-                  <th class="px-2 py-1 border-b"></th>
-                </tr>
-              </thead>
-              <tbody>
-              {% for r in c.lots %}
-                <tr>
-                  <td class="px-2 py-1 border-b font-mono">{{ r.lot_code }}</td>
-                  <td class="px-2 py-1 border-b">
-                    {% if r.area_m2 is number %}{{ "{:,.2f}".format(r.area_m2) }}{% endif %}
-                  </td>
-                  <td class="px-2 py-1 border-b">
-                    {% if r.starting_price_vnd is number %}{{ "{:,.0f}".format(r.starting_price_vnd) }}{% endif %}
-                  </td>
-                  <td class="px-2 py-1 border-b">
-                    {% if r.bid_step_vnd is number %}{{ "{:,.0f}".format(r.bid_step_vnd) }}{% endif %}
-                  </td>
-                  <td class="px-2 py-1 border-b">
-                    {% if r.auction_mode == 'PER_SQM' %}
-                      Theo m²
-                    {% else %}
-                      Theo lô
-                    {% endif %}
-                  </td>
-                  <td class="px-2 py-1 border-b text-right">
-                    {% if r.deposit_amount is number %}{{ "{:,.0f}".format(r.deposit_amount) }}{% endif %}
-                  </td>
-                  <td class="px-2 py-1 border-b text-right">
-                    {{ r.deposit_customer_count }}
-                  </td>
-                  <td class="px-2 py-1 border-b text-right">
-                    <button
-                      type="button"
-                      class="px-2 py-1 rounded bg-sky-600 text-white text-[11px] hover:bg-sky-700"
-                      onclick="openPrintOne('{{ r.project_code }}', '{{ r.customer_id }}', '{{ r.lot_id }}')"
-                    >
-                      In phiếu
-                    </button>
-                  </td>
-                </tr>
-              {% endfor %}
-              </tbody>
-            </table>
-          </div>
+<!-- CUSTOM CONFIRM MODAL -->
+<div
+  id="confirmModal"
+  class="fixed inset-0 z-40 hidden items-center justify-center"
+>
+  <div class="absolute inset-0 bg-black/40"></div>
+  <div class="relative bg-white rounded-xl shadow-xl max-w-sm w-[320px] p-4">
+    <div class="flex items-start gap-3">
+      <div class="mt-1">
+        <i class="ri-question-line text-xl text-amber-500"></i>
+      </div>
+      <div class="flex-1">
+        <div id="confirmMessage" class="text-sm text-slate-800">
+          Bạn có chắc chắn?
         </div>
-      {% endfor %}
-      {% if not customers or customers|length == 0 %}
-        <div class="p-4 text-center text-slate-500 text-sm border border-dashed border-slate-300 rounded-lg">
-          Chưa có khách hàng nào đủ điều kiện theo bộ lọc hiện tại.
+        <div class="mt-4 flex justify-end gap-2">
+          <button
+            type="button"
+            id="confirmCancel"
+            class="px-3 py-1.5 rounded-lg border border-slate-300 text-sm text-slate-700 hover:bg-slate-50"
+          >
+            Hủy
+          </button>
+          <button
+            type="button"
+            id="confirmOk"
+            class="px-3 py-1.5 rounded-lg bg-indigo-600 text-sm text-white hover:bg-indigo-700"
+          >
+            Đồng ý
+          </button>
         </div>
-      {% endif %}
+      </div>
     </div>
   </div>
 </div>
 
-<!-- JS nhỏ -->
+<!-- JS -->
 <script>
-  // Tabs
+  // Debounce helper
+  let __debounceTimer;
+  function debounce(fn, ms) {
+    clearTimeout(__debounceTimer);
+    __debounceTimer = setTimeout(fn, ms);
+  }
+
+  // Custom confirm
+  let confirmCallback = null;
+  function showConfirm(message, onOk) {
+    const modal = document.getElementById("confirmModal");
+    const msgEl = document.getElementById("confirmMessage");
+    msgEl.textContent = message || "Bạn có chắc chắn?";
+    confirmCallback = typeof onOk === "function" ? onOk : null;
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+  }
+  function hideConfirm() {
+    const modal = document.getElementById("confirmModal");
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+    confirmCallback = null;
+  }
+  document.getElementById("confirmCancel").addEventListener("click", hideConfirm);
+  document.getElementById("confirmOk").addEventListener("click", function () {
+    const cb = confirmCallback;
+    hideConfirm();
+    if (cb) cb();
+  });
+  document.getElementById("confirmModal").addEventListener("click", function (e) {
+    if (e.target === this) hideConfirm();
+  });
+
+  // Helpers open print
+  function openPrintOne(projectCode, customerId, lotId) {
+    showConfirm("In 1 phiếu trả giá cho khách/lô này?", function () {
+      const url = `/bid-tickets/print?project_code=${encodeURIComponent(projectCode)}&customer_id=${customerId}&lot_id=${lotId}`;
+      window.open(url, "_blank");
+    });
+  }
+  function openPrintAllForCustomer(projectCode, customerId) {
+    showConfirm("In tất cả phiếu trả giá cho khách này?", function () {
+      const url = `/bid-tickets/print?project_code=${encodeURIComponent(projectCode)}&customer_id=${customerId}`;
+      window.open(url, "_blank");
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     const tabBtns = document.querySelectorAll(".js-tab-btn");
     const panels = document.querySelectorAll(".tab-panel");
@@ -311,9 +411,8 @@
       });
     }
 
-    // Default: theo lô
-    activateTab("tab-lots");
-
+    // Mặc định: Theo KHÁCH
+    activateTab("tab-customers");
     tabBtns.forEach(b => {
       b.addEventListener("click", () => activateTab(b.dataset.tab));
     });
@@ -327,40 +426,94 @@
       });
     }
 
-    // In các dòng đã chọn (tab Theo LÔ)
+    // In các dòng đã chọn (tab Theo LÔ) với custom confirm
     const btnPrintSelected = document.querySelector(".js-print-selected-lots");
     if (btnPrintSelected) {
       btnPrintSelected.addEventListener("click", function () {
         const checks = Array.from(document.querySelectorAll(".js-row-lot:checked"));
         if (!checks.length) {
-          alert("Vui lòng chọn ít nhất 1 dòng để in.");
+          showConfirm("Vui lòng chọn ít nhất 1 dòng để in.", function () {});
           return;
         }
 
-        if (!confirm(`In ${checks.length} phiếu trả giá?`)) return;
-
-        // Mở nhiều tab, mỗi dòng 1 phiếu
-        checks.forEach(chk => {
-          const pj = chk.dataset.project;
-          const cid = chk.dataset.customerId;
-          const lid = chk.dataset.lotId;
-          const url = `/bid-tickets/print?project_code=${encodeURIComponent(pj)}&customer_id=${cid}&lot_id=${lid}`;
-          window.open(url, "_blank");
+        showConfirm(`In ${checks.length} phiếu trả giá đã chọn?`, function () {
+          checks.forEach(chk => {
+            const pj = chk.dataset.project;
+            const cid = chk.dataset.customerId;
+            const lid = chk.dataset.lotId;
+            const url = `/bid-tickets/print?project_code=${encodeURIComponent(pj)}&customer_id=${cid}&lot_id=${lid}`;
+            window.open(url, "_blank");
+          });
         });
       });
     }
+
+    // ====== FILTERS: auto apply ======
+    const form = document.getElementById("filtersForm");
+    const projectSelect = document.getElementById("projectSelect");
+    const projectCodeInput = document.getElementById("projectCodeInput");
+    const customerSearch = document.getElementById("customerSearch");
+    const lotCodeInput = document.getElementById("lotCodeInput");
+
+    function submitWithCurrentFilters() {
+      const params = new URLSearchParams();
+      const pj = projectCodeInput.value.trim();
+      const q = customerSearch.value.trim();
+      const lot = lotCodeInput.value.trim();
+      if (pj) params.set("project_code", pj);
+      if (q) params.set("customer_q", q);
+      if (lot) params.set("lot_code", lot);
+      const qs = params.toString();
+      const url = qs ? `/bid-tickets?${qs}` : "/bid-tickets";
+      window.location.href = url;
+    }
+
+    // Auto search khi gõ tên/CCCD/ĐT (debounce)
+    customerSearch.addEventListener("input", function () {
+      debounce(submitWithCurrentFilters, 400);
+    });
+
+    // Project dropdown -> đổi hidden + apply ngay
+    projectSelect.addEventListener("change", function () {
+      projectCodeInput.value = projectSelect.value || "";
+      submitWithCurrentFilters();
+    });
+
+    // ====== Load danh sách dự án active cho dropdown ======
+    const ACTIVE_PROJ_URL = "/projects/options/active";
+    const currentProjectCode = projectCodeInput.value || "";
+
+    fetch(ACTIVE_PROJ_URL, { headers: { "X-Requested-With": "fetch" } })
+      .then(r => r.json())
+      .then(js => {
+        const list = js.data || js.items || [];
+        // reset options
+        projectSelect.innerHTML = '<option value="">Tất cả dự án</option>';
+        list.forEach(p => {
+          const code = p.project_code || p.code || "";
+          const name = p.name || code;
+          if (!code) return;
+          const opt = document.createElement("option");
+          opt.value = code;
+          opt.textContent = `${code} — ${name}`;
+          projectSelect.appendChild(opt);
+        });
+
+        if (currentProjectCode) {
+          projectSelect.value = currentProjectCode;
+        } else if (list.length === 1) {
+          const onlyCode = list[0].project_code || list[0].code || "";
+          if (onlyCode) {
+            projectSelect.value = onlyCode;
+            projectCodeInput.value = onlyCode;
+            // auto apply lần đầu
+            submitWithCurrentFilters();
+          }
+        }
+      })
+      .catch(() => {
+        // ignore silently
+      });
   });
-
-  function openPrintOne(projectCode, customerId, lotId) {
-    if (!confirm("In 1 phiếu trả giá cho khách/lô này?")) return;
-    const url = `/bid-tickets/print?project_code=${encodeURIComponent(projectCode)}&customer_id=${customerId}&lot_id=${lotId}`;
-    window.open(url, "_blank");
-  }
-
-  function openPrintAllForCustomer(projectCode, customerId) {
-    if (!confirm("In tất cả phiếu trả giá cho khách này?")) return;
-    const url = `/bid-tickets/print?project_code=${encodeURIComponent(projectCode)}&customer_id=${customerId}`;
-    window.open(url, "_blank");
-  }
 </script>
 {% endblock %}
