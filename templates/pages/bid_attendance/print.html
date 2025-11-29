@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <title>Danh sách điểm danh tham gia đấu giá</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 15mm 15mm 18mm 15mm;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #e5e7eb;
+      font-family: "Times New Roman", Times, serif;
+      font-size: 11.5pt;
+      color: #000;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 10px auto;
+      background: #fff;
+      box-shadow: 0 0 6px rgba(0,0,0,0.18);
+      box-sizing: border-box;
+      padding: 15mm 15mm 18mm 15mm;
+      position: relative;
+      page-break-after: always;
+    }
+
+    @media print {
+      html, body {
+        background: #ffffff;
+      }
+      .page {
+        margin: 0;
+        box-shadow: none;
+        page-break-after: always;
+      }
+    }
+
+    .center  { text-align: center; }
+    .bold    { font-weight: 700; }
+    .title   { font-size: 16pt; font-weight: 800; text-transform: uppercase; }
+    .gov     { font-size: 14pt; font-weight: 800; text-transform: uppercase; }
+    .mt-1    { margin-top: 3mm; }
+    .mt-2    { margin-top: 4mm; }
+    .mt-3    { margin-top: 6mm; }
+    .small   { font-size: 10.5pt; }
+
+    .divider {
+      text-align: center;
+      margin: 2mm 0 6mm;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 4mm;
+    }
+
+    th, td {
+      border: 1px solid #000;
+      padding: 3px 4px;
+      vertical-align: top;
+    }
+
+    th {
+      font-weight: 700;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    td {
+      font-size: 11pt;
+    }
+
+    .col-stt {
+      width: 14mm;
+      text-align: center;
+    }
+    .col-name {
+      width: 65mm;
+    }
+    .col-cccd {
+      width: 30mm;
+      text-align: center;
+      font-family: "Courier New", monospace;
+      font-size: 10.5pt;
+    }
+    .col-phone {
+      width: 28mm;
+      text-align: center;
+      font-family: "Courier New", monospace;
+      font-size: 10.5pt;
+    }
+    .col-lot-count {
+      width: 20mm;
+      text-align: center;
+    }
+    .col-sign {
+      width: 25mm;
+    }
+
+    .name-line {
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .addr-line {
+      font-size: 9.5pt;
+      color: #444;
+      margin-top: 1px;
+      line-height: 1.2;
+      word-break: break-word;
+    }
+
+    @media print {
+      thead { display: table-header-group; }
+      tfoot { display: table-footer-group; }
+      tr    { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- Quốc hiệu -->
+  <div class="center gov">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+  <div class="center bold">Độc lập – Tự do – Hạnh phúc</div>
+  <div class="divider">-----------------o0o-----------------</div>
+
+  <!-- Tiêu đề -->
+  <div class="center title">DANH SÁCH ĐIỂM DANH NGƯỜI THAM GIA ĐẤU GIÁ</div>
+
+  <!-- Bảng điểm danh -->
+  <table>
+    <thead>
+      <tr>
+        <th class="col-stt">STT</th>
+        <th class="col-name">Họ và tên / Địa chỉ</th>
+        <th class="col-cccd">CCCD</th>
+        <th class="col-phone">Số điện thoại</th>
+        <th class="col-lot-count">Số lô<br/>tham gia đấu</th>
+        <th class="col-sign">Ký nhận</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for c in customers %}
+      <tr>
+        <td class="col-stt">
+          {% if c.stt_padded %}
+            {{ c.stt_padded }}
+          {% elif c.stt %}
+            {{ "%03d"|format(c.stt) }}
+          {% else %}
+            {{ "%03d"|format(loop.index) }}
+          {% endif %}
+        </td>
+        <td class="col-name">
+          <div class="name-line">{{ c.customer_full_name }}</div>
+          {% if c.address %}
+            <div class="addr-line">{{ c.address }}</div>
+          {% endif %}
+        </td>
+        <td class="col-cccd">
+          {{ c.cccd }}
+        </td>
+        <td class="col-phone">
+          {{ c.phone }}
+        </td>
+        <td class="col-lot-count">
+          {{ c.customer_lot_count or 0 }}
+        </td>
+        <td class="col-sign"></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+</div>
+
+<script>
+  window.addEventListener("load", function () {
+    window.print();
+  });
+</script>
+
+</body>
+</html>

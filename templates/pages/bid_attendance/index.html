@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bg-white rounded-xl border border-slate-200 p-5">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-xl font-semibold text-slate-800">Danh sách điểm danh</h2>
+      <p class="text-slate-500 text-sm">
+        Chọn dự án và xem danh sách khách hàng đủ điều kiện tham gia đấu giá (đã đánh số thứ tự).
+      </p>
+    </div>
+    <a href="/projects" class="topbtn border border-slate-300 bg-white text-slate-700">
+      ← Quản lý dự án
+    </a>
+  </div>
+
+  {% if load_err %}
+    <div class="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-sm">
+      <i class="ri-error-warning-line mr-1"></i>{{ load_err }}
+    </div>
+  {% endif %}
+
+  <!-- BỘ LỌC -->
+  <form
+    id="filtersForm"
+    method="get"
+    action="/bid-attendance"
+    class="mb-4 grid grid-cols-1 md:grid-cols-4 gap-3 items-end"
+  >
+    <!-- Dự án: dropdown active projects -->
+    <div>
+      <label class="block text-xs font-medium text-slate-600 mb-1">Dự án</label>
+      <select
+        id="projectSelect"
+        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+      >
+        <option value="">Chọn dự án</option>
+      </select>
+      <!-- giữ giá trị để submit GET -->
+      <input type="hidden" name="project_code" id="projectCodeInput" value="{{ filters.project_code }}">
+    </div>
+
+    <!-- Tìm khách -->
+    <div>
+      <label class="block text-xs font-medium text-slate-600 mb-1">
+        Tìm khách (tên/CCCD/ĐT)
+      </label>
+      <input
+        type="text"
+        id="customerSearch"
+        name="customer_q"
+        value="{{ filters.customer_q }}"
+        placeholder="Nhập tên khách, CCCD, điện thoại"
+        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+      />
+    </div>
+
+    <!-- Spacer -->
+    <div class="hidden md:block"></div>
+
+    <!-- Nút Lọc / Đặt lại + In danh sách -->
+    <div class="flex flex-col gap-2 items-end">
+      <div class="flex gap-2">
+        <button
+          type="submit"
+          class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"
+        >
+          <i class="ri-search-line mr-1"></i>Lọc
+        </button>
+        <a
+          href="/bid-attendance"
+          class="px-4 py-2 rounded-lg border border-slate-300 text-sm text-slate-700 hover:bg-slate-50"
+        >
+          Đặt lại
+        </a>
+      </div>
+      <button
+        type="button"
+        class="mt-1 px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700"
+        onclick="printAttendanceList()"
+      >
+        <i class="ri-printer-line mr-1"></i>In danh sách điểm danh
+      </button>
+    </div>
+  </form>
+
+  <!-- BẢNG DANH SÁCH ĐIỂM DANH -->
+  <div class="flex items-center justify-between mb-2">
+    <div class="text-sm text-slate-500">
+      Tổng: {{ page.total }} khách đủ điều kiện (đã đánh số thứ tự theo dự án).
+    </div>
+  </div>
+
+  <div class="overflow-x-auto border border-slate-200 rounded-lg">
+    <table class="min-w-full text-xs">
+      <thead class="bg-slate-50">
+        <tr class="text-left text-slate-600">
+          <th class="px-2 py-2 border-b">STT</th>
+          <th class="px-2 py-2 border-b">Họ và tên</th>
+          <th class="px-2 py-2 border-b">CCCD</th>
+          <th class="px-2 py-2 border-b">Số điện thoại</th>
+          <th class="px-2 py-2 border-b">Địa chỉ</th>
+          <th class="px-2 py-2 border-b text-right">Số lô tham gia đấu</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for c in customers %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-2 py-1.5 border-b font-mono text-[11px]">
+            {{ c.stt_padded or c.stt or loop.index }}
+          </td>
+          <td class="px-2 py-1.5 border-b">
+            <div class="font-medium text-slate-800">
+              {{ c.customer_full_name }}
+            </div>
+            <div class="text-[10px] text-slate-500">
+              Dự án: <span class="font-mono">{{ c.project_code }}</span> — {{ c.project_name }}
+            </div>
+          </td>
+          <td class="px-2 py-1.5 border-b font-mono text-[11px]">
+            {{ c.cccd }}
+          </td>
+          <td class="px-2 py-1.5 border-b text-[11px]">
+            {{ c.phone }}
+          </td>
+          <td class="px-2 py-1.5 border-b text-[11px]">
+            {{ c.address }}
+          </td>
+          <td class="px-2 py-1.5 border-b text-right font-semibold">
+            {{ c.customer_lot_count or 0 }}
+          </td>
+        </tr>
+      {% endfor %}
+      {% if not customers or customers|length == 0 %}
+        <tr>
+          <td colspan="6" class="px-3 py-6 text-center text-slate-500">
+            Chưa có khách hàng nào phù hợp bộ lọc hiện tại.
+          </td>
+        </tr>
+      {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  // Debounce helper
+  let __debounceTimer;
+  function debounce(fn, ms) {
+    clearTimeout(__debounceTimer);
+    __debounceTimer = setTimeout(fn, ms);
+  }
+
+  // In danh sách điểm danh
+  function printAttendanceList() {
+    const projectCodeInput = document.getElementById("projectCodeInput");
+    const projectCode = (projectCodeInput && projectCodeInput.value || "").trim();
+
+    if (!projectCode) {
+      window.confirmModal({
+        title: "Thông báo",
+        message: "Vui lòng chọn một dự án trước khi in danh sách điểm danh."
+      });
+      return;
+    }
+
+    const url = `/bid-attendance/print?project_code=${encodeURIComponent(projectCode)}`;
+    window.open(url, "_blank");
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const projectSelect = document.getElementById("projectSelect");
+    const projectCodeInput = document.getElementById("projectCodeInput");
+    const customerSearch = document.getElementById("customerSearch");
+
+    function submitWithCurrentFilters() {
+      const params = new URLSearchParams();
+      const pj = projectCodeInput.value.trim();
+      const q = customerSearch.value.trim();
+      if (pj) params.set("project_code", pj);
+      if (q) params.set("customer_q", q);
+      const qs = params.toString();
+      const url = qs ? `/bid-attendance?${qs}` : "/bid-attendance";
+      window.location.href = url;
+    }
+
+    // Auto search khi gõ tên/CCCD/ĐT (debounce)
+    customerSearch.addEventListener("input", function () {
+      debounce(submitWithCurrentFilters, 400);
+    });
+
+    // Project dropdown -> đổi hidden + apply ngay
+    projectSelect.addEventListener("change", function () {
+      projectCodeInput.value = projectSelect.value || "";
+      submitWithCurrentFilters();
+    });
+
+    // ====== Load danh sách dự án active cho dropdown ======
+    const ACTIVE_PROJ_URL = "/projects/options/active";
+    const currentProjectCode = projectCodeInput.value || "";
+
+    fetch(ACTIVE_PROJ_URL, { headers: { "X-Requested-With": "fetch" } })
+      .then(r => r.json())
+      .then(js => {
+        const list = js.data || js.items || [];
+        projectSelect.innerHTML = '<option value="">Chọn dự án</option>';
+        list.forEach(p => {
+          const code = p.project_code || p.code || "";
+          const name = p.name || code;
+          if (!code) return;
+          const opt = document.createElement("option");
+          opt.value = code;
+          opt.textContent = `${code} — ${name}`;
+          projectSelect.appendChild(opt);
+        });
+
+        if (currentProjectCode) {
+          projectSelect.value = currentProjectCode;
+        } else if (list.length === 1) {
+          const onlyCode = list[0].project_code || list[0].code || "";
+          if (onlyCode) {
+            projectSelect.value = onlyCode;
+            projectCodeInput.value = onlyCode;
+            // Auto apply lần đầu nếu chỉ có 1 dự án active
+            submitWithCurrentFilters();
+          }
+        }
+      })
+      .catch(() => {
+        // ignore
+      });
+  });
+</script>
+{% endblock %}

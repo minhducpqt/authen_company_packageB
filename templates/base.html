@@ -144,9 +144,15 @@
         {# === 4. Văn bản pháp lý === #}
         <li class="side-title mt-4">4. Văn bản pháp lý</li>
         <li>
+          <a class="side-link {% if request.url.path.startswith('/bid-attendance') %}active{% endif %}"
+             href="/bid-attendance">
+            <i class="ri-user-follow-line"></i> 4.1 Danh sách điểm danh
+          </a>
+        </li>
+        <li>
           <a class="side-link {% if request.url.path.startswith('/bid-tickets') %}active{% endif %}"
              href="/bid-tickets">
-            <i class="ri-file-text-line"></i> 4.1 Phiếu trả giá
+            <i class="ri-file-text-line"></i> 4.2 Phiếu trả giá
           </a>
         </li>
 
