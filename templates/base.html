@@ -141,19 +141,12 @@
           </a>
         </li>
 
-        <li class="side-title mt-4">4. Gửi thông tin</li>
+        {# === 4. Văn bản pháp lý === #}
+        <li class="side-title mt-4">4. Văn bản pháp lý</li>
         <li>
-          <a class="side-link opacity-50 cursor-not-allowed pointer-events-none"
-             aria-disabled="true"
-             title="Tính năng đang phát triển">
-            <i class="ri-send-plane-line"></i> 4.1 Khách mua hồ sơ
-          </a>
-        </li>
-        <li>
-          <a class="side-link opacity-50 cursor-not-allowed pointer-events-none"
-             aria-disabled="true"
-             title="Tính năng đang phát triển">
-            <i class="ri-send-plane-2-line"></i> 4.2 Khách cọc
+          <a class="side-link {% if request.url.path.startswith('/bid-tickets') %}active{% endif %}"
+             href="/bid-tickets">
+            <i class="ri-file-text-line"></i> 4.1 Phiếu trả giá
           </a>
         </li>
 

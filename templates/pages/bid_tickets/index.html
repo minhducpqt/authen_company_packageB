@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bg-white rounded-xl border border-slate-200 p-5">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-xl font-semibold text-slate-800">Phiếu trả giá</h2>
+      <p class="text-slate-500 text-sm">
+        Quản lý và in phiếu trả giá cho khách hàng đủ điều kiện đấu giá.
+      </p>
+    </div>
+    <a href="/projects" class="topbtn border border-slate-300 bg-white text-slate-700">
+      ← Quản lý dự án
+    </a>
+  </div>
+
+  {% if load_err %}
+    <div class="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-sm">
+      <i class="ri-error-warning-line mr-1"></i>{{ load_err }}
+    </div>
+  {% endif %}
+
+  <!-- Bộ lọc -->
+  <form method="get" action="/bid-tickets" class="mb-4 grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+    <div>
+      <label class="block text-xs font-medium text-slate-600 mb-1">Mã dự án</label>
+      <input
+        type="text"
+        name="project_code"
+        value="{{ filters.project_code }}"
+        placeholder="VD: KDO_DA_01"
+        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+      />
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-slate-600 mb-1">Tìm khách (tên/CCCD/ĐT)</label>
+      <input
+        type="text"
+        name="customer_q"
+        value="{{ filters.customer_q }}"
+        placeholder="Nhập tên khách, CCCD, điện thoại"
+        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+      />
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-slate-600 mb-1">Mã lô</label>
+      <input
+        type="text"
+        name="lot_code"
+        value="{{ filters.lot_code }}"
+        placeholder="VD: L-A01"
+        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+      />
+    </div>
+    <div class="flex gap-2 justify-end">
+      <button
+        type="submit"
+        class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"
+      >
+        <i class="ri-search-line mr-1"></i>Lọc
+      </button>
+      <a
+        href="/bid-tickets"
+        class="px-4 py-2 rounded-lg border border-slate-300 text-sm text-slate-700 hover:bg-slate-50"
+      >
+        Đặt lại
+      </a>
+    </div>
+  </form>
+
+  <!-- Tabs -->
+  <div class="border-b border-slate-200 mb-4">
+    <nav class="-mb-px flex gap-4 text-sm" aria-label="Tabs">
+      <button
+        type="button"
+        class="px-3 py-2 border-b-2 font-medium js-tab-btn"
+        data-tab="tab-lots"
+      >
+        Theo LÔ
+      </button>
+      <button
+        type="button"
+        class="px-3 py-2 border-b-2 font-medium js-tab-btn"
+        data-tab="tab-customers"
+      >
+        Theo KHÁCH
+      </button>
+    </nav>
+  </div>
+
+  <!-- TAB 1: THEO LÔ -->
+  <div id="tab-lots" class="tab-panel">
+    <div class="flex items-center justify-between mb-2">
+      <div class="text-sm text-slate-500">
+        Tổng: {{ page.total }} dòng (chỉ hiển thị tối đa {{ page.size }})
+      </div>
+      <div class="flex gap-2">
+        <button
+          type="button"
+          class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700 js-print-selected-lots"
+        >
+          <i class="ri-printer-line mr-1"></i>In phiếu đã chọn
+        </button>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto border border-slate-200 rounded-lg">
+      <table class="min-w-full text-xs">
+        <thead class="bg-slate-50">
+          <tr class="text-left text-slate-600">
+            <th class="px-2 py-2 border-b">
+              <input type="checkbox" id="chk_all_lots" class="rounded border-slate-300" />
+            </th>
+            <th class="px-2 py-2 border-b">Khách hàng</th>
+            <th class="px-2 py-2 border-b">CCCD</th>
+            <th class="px-2 py-2 border-b">Mã lô</th>
+            <th class="px-2 py-2 border-b text-right">Diện tích</th>
+            <th class="px-2 py-2 border-b text-right">Giá khởi điểm</th>
+            <th class="px-2 py-2 border-b text-right">Bước giá</th>
+            <th class="px-2 py-2 border-b">Hình thức</th>
+            <th class="px-2 py-2 border-b text-right">Tiền cọc KH đã nộp</th>
+            <th class="px-2 py-2 border-b text-right">Số KH nộp</th>
+            <th class="px-2 py-2 border-b"></th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for r in rows %}
+          <tr class="hover:bg-slate-50">
+            <td class="px-2 py-1.5 border-b">
+              <input
+                type="checkbox"
+                class="rounded border-slate-300 js-row-lot"
+                data-project="{{ r.project_code }}"
+                data-customer-id="{{ r.customer_id }}"
+                data-lot-id="{{ r.lot_id }}"
+              />
+            </td>
+            <td class="px-2 py-1.5 border-b">
+              <div class="font-medium text-slate-800">{{ r.customer_full_name }}</div>
+              <div class="text-[10px] text-slate-500">{{ r.phone }}</div>
+            </td>
+            <td class="px-2 py-1.5 border-b font-mono text-[11px]">
+              {{ r.cccd }}
+            </td>
+            <td class="px-2 py-1.5 border-b font-mono text-[11px]">
+              {{ r.lot_code }}
+            </td>
+            <td class="px-2 py-1.5 border-b text-right">
+              {% if r.area_m2 is number %}{{ "{:,.2f}".format(r.area_m2) }}{% endif %}
+            </td>
+            <td class="px-2 py-1.5 border-b text-right">
+              {% if r.starting_price_vnd is number %}{{ "{:,.0f}".format(r.starting_price_vnd) }}{% endif %}
+            </td>
+            <td class="px-2 py-1.5 border-b text-right">
+              {% if r.bid_step_vnd is number %}{{ "{:,.0f}".format(r.bid_step_vnd) }}{% endif %}
+            </td>
+            <td class="px-2 py-1.5 border-b text-[11px]">
+              {% if r.auction_mode == 'PER_SQM' %}
+                Theo m²
+              {% else %}
+                Theo lô
+              {% endif %}
+            </td>
+            <td class="px-2 py-1.5 border-b text-right">
+              {% if r.deposit_amount is number %}{{ "{:,.0f}".format(r.deposit_amount) }}{% endif %}
+            </td>
+            <td class="px-2 py-1.5 border-b text-right">
+              {{ r.deposit_customer_count }}
+            </td>
+            <td class="px-2 py-1.5 border-b text-right">
+              <button
+                type="button"
+                class="px-2 py-1 rounded bg-sky-600 text-white text-[11px] hover:bg-sky-700"
+                onclick="openPrintOne('{{ r.project_code }}', '{{ r.customer_id }}', '{{ r.lot_id }}')"
+              >
+                In phiếu
+              </button>
+            </td>
+          </tr>
+        {% endfor %}
+        {% if not rows or rows|length == 0 %}
+          <tr>
+            <td colspan="11" class="px-3 py-6 text-center text-slate-500">
+              Chưa có bản ghi nào phù hợp bộ lọc.
+            </td>
+          </tr>
+        {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 2: THEO KHÁCH -->
+  <div id="tab-customers" class="tab-panel hidden">
+    <div class="mb-2 text-sm text-slate-500">
+      Tổng: {{ customers|length }} khách đủ điều kiện (có ít nhất 1 lô deposit đủ chuẩn).
+    </div>
+
+    <div class="space-y-3">
+      {% for c in customers %}
+        <div class="border border-slate-200 rounded-lg p-3">
+          <div class="flex items-center justify-between gap-3 mb-2">
+            <div>
+              <div class="font-semibold text-slate-800">
+                {{ c.customer_full_name }}
+                <span class="font-mono text-[11px] text-slate-500">({{ c.cccd }})</span>
+              </div>
+              <div class="text-[11px] text-slate-500">
+                {{ c.address or '' }} — {{ c.phone or '' }}
+              </div>
+              <div class="text-[11px] text-slate-500">
+                Dự án: <span class="font-mono">{{ c.project_code }}</span> — {{ c.project_name }}
+              </div>
+            </div>
+            <div class="flex flex-col items-end gap-1">
+              <div class="text-[11px] text-slate-500">
+                Số lô đủ ĐK: <span class="font-semibold">{{ c.lots|length }}</span>
+              </div>
+              <button
+                type="button"
+                class="px-3 py-1.5 rounded bg-emerald-600 text-white text-[11px] font-medium hover:bg-emerald-700"
+                onclick="openPrintAllForCustomer('{{ c.project_code }}', '{{ c.customer_id }}')"
+              >
+                <i class="ri-printer-line mr-1"></i>In {{ c.lots|length }} phiếu cho khách này
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto border border-slate-100 rounded">
+            <table class="min-w-full text-[11px]">
+              <thead class="bg-slate-50">
+                <tr class="text-left text-slate-600">
+                  <th class="px-2 py-1 border-b">Mã lô</th>
+                  <th class="px-2 py-1 border-b">Diện tích</th>
+                  <th class="px-2 py-1 border-b">Giá khởi điểm</th>
+                  <th class="px-2 py-1 border-b">Bước giá</th>
+                  <th class="px-2 py-1 border-b">Hình thức</th>
+                  <th class="px-2 py-1 border-b text-right">Tiền KH đã cọc</th>
+                  <th class="px-2 py-1 border-b text-right">Số KH nộp</th>
+                  <th class="px-2 py-1 border-b"></th>
+                </tr>
+              </thead>
+              <tbody>
+              {% for r in c.lots %}
+                <tr>
+                  <td class="px-2 py-1 border-b font-mono">{{ r.lot_code }}</td>
+                  <td class="px-2 py-1 border-b">
+                    {% if r.area_m2 is number %}{{ "{:,.2f}".format(r.area_m2) }}{% endif %}
+                  </td>
+                  <td class="px-2 py-1 border-b">
+                    {% if r.starting_price_vnd is number %}{{ "{:,.0f}".format(r.starting_price_vnd) }}{% endif %}
+                  </td>
+                  <td class="px-2 py-1 border-b">
+                    {% if r.bid_step_vnd is number %}{{ "{:,.0f}".format(r.bid_step_vnd) }}{% endif %}
+                  </td>
+                  <td class="px-2 py-1 border-b">
+                    {% if r.auction_mode == 'PER_SQM' %}
+                      Theo m²
+                    {% else %}
+                      Theo lô
+                    {% endif %}
+                  </td>
+                  <td class="px-2 py-1 border-b text-right">
+                    {% if r.deposit_amount is number %}{{ "{:,.0f}".format(r.deposit_amount) }}{% endif %}
+                  </td>
+                  <td class="px-2 py-1 border-b text-right">
+                    {{ r.deposit_customer_count }}
+                  </td>
+                  <td class="px-2 py-1 border-b text-right">
+                    <button
+                      type="button"
+                      class="px-2 py-1 rounded bg-sky-600 text-white text-[11px] hover:bg-sky-700"
+                      onclick="openPrintOne('{{ r.project_code }}', '{{ r.customer_id }}', '{{ r.lot_id }}')"
+                    >
+                      In phiếu
+                    </button>
+                  </td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {% endfor %}
+      {% if not customers or customers|length == 0 %}
+        <div class="p-4 text-center text-slate-500 text-sm border border-dashed border-slate-300 rounded-lg">
+          Chưa có khách hàng nào đủ điều kiện theo bộ lọc hiện tại.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- JS nhỏ -->
+<script>
+  // Tabs
+  document.addEventListener("DOMContentLoaded", function () {
+    const tabBtns = document.querySelectorAll(".js-tab-btn");
+    const panels = document.querySelectorAll(".tab-panel");
+
+    function activateTab(name) {
+      panels.forEach(p => {
+        if (p.id === name) p.classList.remove("hidden");
+        else p.classList.add("hidden");
+      });
+      tabBtns.forEach(b => {
+        const active = b.dataset.tab === name;
+        b.classList.toggle("border-b-indigo-600", active);
+        b.classList.toggle("text-indigo-700", active);
+        b.classList.toggle("border-b-transparent", !active);
+        b.classList.toggle("text-slate-500", !active);
+      });
+    }
+
+    // Default: theo lô
+    activateTab("tab-lots");
+
+    tabBtns.forEach(b => {
+      b.addEventListener("click", () => activateTab(b.dataset.tab));
+    });
+
+    // Chọn all rows tab "Theo LÔ"
+    const chkAll = document.getElementById("chk_all_lots");
+    if (chkAll) {
+      chkAll.addEventListener("change", function () {
+        const checks = document.querySelectorAll(".js-row-lot");
+        checks.forEach(c => { c.checked = chkAll.checked; });
+      });
+    }
+
+    // In các dòng đã chọn (tab Theo LÔ)
+    const btnPrintSelected = document.querySelector(".js-print-selected-lots");
+    if (btnPrintSelected) {
+      btnPrintSelected.addEventListener("click", function () {
+        const checks = Array.from(document.querySelectorAll(".js-row-lot:checked"));
+        if (!checks.length) {
+          alert("Vui lòng chọn ít nhất 1 dòng để in.");
+          return;
+        }
+
+        if (!confirm(`In ${checks.length} phiếu trả giá?`)) return;
+
+        // Mở nhiều tab, mỗi dòng 1 phiếu
+        checks.forEach(chk => {
+          const pj = chk.dataset.project;
+          const cid = chk.dataset.customerId;
+          const lid = chk.dataset.lotId;
+          const url = `/bid-tickets/print?project_code=${encodeURIComponent(pj)}&customer_id=${cid}&lot_id=${lid}`;
+          window.open(url, "_blank");
+        });
+      });
+    }
+  });
+
+  function openPrintOne(projectCode, customerId, lotId) {
+    if (!confirm("In 1 phiếu trả giá cho khách/lô này?")) return;
+    const url = `/bid-tickets/print?project_code=${encodeURIComponent(projectCode)}&customer_id=${customerId}&lot_id=${lotId}`;
+    window.open(url, "_blank");
+  }
+
+  function openPrintAllForCustomer(projectCode, customerId) {
+    if (!confirm("In tất cả phiếu trả giá cho khách này?")) return;
+    const url = `/bid-tickets/print?project_code=${encodeURIComponent(projectCode)}&customer_id=${customerId}`;
+    window.open(url, "_blank");
+  }
+</script>
+{% endblock %}
