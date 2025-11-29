@@ -118,19 +118,16 @@
   {% set unit_label = is_per_sqm and 'VND/m²' or 'VND/lô' %}
   {% set price_unit = unit_label %}
   {% set bid_unit = unit_label %}
-  {# S = tổng số lô đủ điều kiện của KH trong dự án (từ view v_report_bid_ticket_candidates) #}
+  {# số lô đủ điều kiện của khách trong dự án #}
   {% set qty_lots = t.customer_lot_count or 1 %}
+  {# Chuẩn hóa lot_code: CL03-11 → CL03.11 #}
+  {% set lot_short = (t.lot_code or '').replace('-', '.') %}
 
   <div class="page">
 
-    {# Chuẩn hóa lot_code: đổi CL03-11 → CL03.11 #}
-    {% set lot_short = (t.lot_code or '').replace('-', '.') %}
-
-    <!-- Mã nhận dạng nhỏ góc trái -->
+    <!-- Mã nhận dạng nhỏ góc trái: C-id - S-count - lot -->
     <div class="flag-box">
-      <div>
-        C{{ t.customer_id }}-S{{ qty_lots }}-{{ lot_short }}
-      </div>
+      C{{ t.customer_id }}-S{{ qty_lots }}-{{ lot_short }}
     </div>
 
     <!-- Quốc hiệu -->
@@ -157,7 +154,7 @@
     <!-- Kính gửi -->
     <div class="mt-2">
       <span class="bold">Kính gửi:</span>
-      Công ty Đấu giá Hợp danh Kinh Đô
+      {{ t.company_name or 'Công ty Đấu giá Hợp danh Kinh Đô' }}
     </div>
 
     <!-- Thông tin khách hàng -->
@@ -254,7 +251,7 @@
     <!-- Ghi chú -->
     <div class="mt-3 note">
       <span class="bold">Ghi chú:</span><br/>
-      - Phiếu trả giá hợp lệ là phiếu có dấu treo của Công ty Đấu giá Hợp danh Kinh Đô;<br/>
+      - Phiếu trả giá hợp lệ là phiếu có dấu treo của {{ t.company_name or 'Công ty Đấu giá Hợp danh Kinh Đô' }};<br/>
       - Phiếu không bị rách, nát;<br/>
       - Được điền đầy đủ các thông tin;<br/>
       - Trường hợp có sai lệch giữa giá trả bằng số với giá trả bằng chữ
@@ -272,7 +269,6 @@
 {% endfor %}
 
 <script>
-  // Tự động bật hộp thoại in khi mở trang
   window.addEventListener("load", function () {
     window.print();
   });
