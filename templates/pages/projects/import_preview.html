@@ -177,6 +177,7 @@
             <th class="px-3 py-2 border-b">description</th>
             <th class="px-3 py-2 border-b text-right">starting_price</th>
             <th class="px-3 py-2 border-b text-right">deposit_amount</th>
+            <th class="px-3 py-2 border-b text-right">bid_step_vnd</th>
             <th class="px-3 py-2 border-b text-right">area</th>
           </tr>
         </thead>
@@ -193,6 +194,9 @@
             </td>
             <td class="px-3 py-2 border-b text-right">
               {{ "{:,.0f}".format(l.deposit_amount) if l.deposit_amount is number else "" }}
+            </td>
+            <td class="px-3 py-2 border-b text-right">
+              {{ "{:,.0f}".format(l.bid_step_vnd) if l.bid_step_vnd is number else "" }}
             </td>
             <td class="px-3 py-2 border-b text-right">
               {{ "{:,.2f}".format(l.area) if l.area is number else "" }}

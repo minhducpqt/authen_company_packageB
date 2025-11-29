@@ -39,13 +39,17 @@
       <div class="text-slate-500 text-sm">Mã dự án</div>
       <div class="text-lg font-mono">{{ project.project_code }}</div>
     </div>
+
     <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
       <div class="text-slate-500 text-sm">Tên dự án</div>
       <div class="text-lg font-semibold">{{ project.name }}</div>
     </div>
+
+    <!-- Trạng thái + chế độ đấu giá -->
     <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
       <div class="text-slate-500 text-sm mb-1">Trạng thái</div>
       <div class="flex items-center justify-between gap-2">
+
         <div>
           {% set st = (project.status or '') %}
           <span class="inline-flex items-center px-2 py-1 rounded text-xs
@@ -57,7 +61,6 @@
           </span>
         </div>
 
-        <!-- Cách tính tiền: gọn, checkbox on/off -->
         <form method="post" action="/projects/{{ project.id }}/auction-mode"
               class="flex items-center gap-1 text-xs text-slate-600">
           <label class="inline-flex items-center gap-1 cursor-pointer">
@@ -67,12 +70,14 @@
               value="1"
               class="h-3 w-3 rounded border-slate-300 text-emerald-600 focus:ring-0"
               {% if is_per_sqm %}checked{% endif %}
-              onchange="this.form.submit()"
+              onchange="confirmAuctionMode(this)"
             >
             <span>Đấu theo <span class="font-semibold">m²</span></span>
           </label>
         </form>
+
       </div>
+
       <div class="mt-1 text-[11px] text-slate-500">
         Đang: <span class="font-semibold">
           {% if is_per_sqm %}TÍNH THEO M²{% else %}TÍNH THEO CẢ LÔ{% endif %}
@@ -84,13 +89,14 @@
       <div class="text-slate-500 text-sm mb-1">Vị trí</div>
       <div>{{ project.location or '—' }}</div>
     </div>
+
     <div class="md:col-span-3 p-4 rounded-lg bg-slate-50 border border-slate-200">
       <div class="text-slate-500 text-sm mb-1">Mô tả</div>
       <div class="whitespace-pre-wrap">{{ project.description or '—' }}</div>
     </div>
   </div>
 
-  <!-- Deadlines: bán hồ sơ & nhận tiền đặt trước -->
+  <!-- Deadlines -->
   <form method="post" action="/projects/{{ project.id }}/deadlines" class="mb-6">
     <div class="p-4 rounded-lg bg-indigo-50 border border-indigo-200">
       <div class="flex items-center justify-between mb-3">
@@ -107,13 +113,13 @@
       </p>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
         <!-- Hạn bán hồ sơ -->
         <div>
           <label class="block text-xs font-medium text-slate-600 mb-1">
             Hạn bán hồ sơ
           </label>
 
-          <!-- Nút hiển thị + click để mở picker -->
           <button
             type="button"
             id="dossier_deadline_at_display"
@@ -124,7 +130,6 @@
             —
           </button>
 
-          <!-- hidden gửi lên server (Service B map sang application_deadline_at) -->
           <input
             type="hidden"
             id="dossier_deadline_at"
@@ -166,14 +171,16 @@
             <span class="deadline-summary" data-field="deposit_deadline_at">—</span>
           </p>
         </div>
+
       </div>
     </div>
   </form>
 
-  <!-- Danh sách lô -->
+  <!-- DANH SÁCH LÔ -->
   <div class="flex items-center justify-between mb-2">
     <h3 class="font-semibold text-slate-800">Danh sách lô ({{ lots_page.total }})</h3>
   </div>
+
   <div class="overflow-x-auto border border-slate-200 rounded-lg">
     <table class="min-w-full text-sm">
       <thead class="bg-slate-50">
@@ -184,11 +191,12 @@
           <th class="px-3 py-2 border-b text-right">Diện tích</th>
           <th class="px-3 py-2 border-b text-right">Giá khởi điểm</th>
           <th class="px-3 py-2 border-b text-right">Tiền cọc</th>
+          <th class="px-3 py-2 border-b text-right">Bước giá (VND)</th>
           <th class="px-3 py-2 border-b">Trạng thái</th>
         </tr>
       </thead>
       <tbody>
-      {% for l in lots_page.data %}
+        {% for l in lots_page.data %}
         <tr>
           <td class="px-3 py-2 border-b">{{ loop.index }}</td>
           <td class="px-3 py-2 border-b font-mono">{{ l.lot_code }}</td>
@@ -202,6 +210,9 @@
           <td class="px-3 py-2 border-b text-right">
             {{ "{:,.0f}".format(l.deposit_amount) if l.deposit_amount is number else "" }}
           </td>
+          <td class="px-3 py-2 border-b text-right">
+            {{ "{:,.0f}".format(l.bid_step_vnd) if l.bid_step_vnd is number else "" }}
+          </td>
           <td class="px-3 py-2 border-b">
             {% set ls = (l.status or '') %}
             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs
@@ -213,12 +224,15 @@
             </span>
           </td>
         </tr>
-      {% endfor %}
-      {% if not lots_page.data or lots_page.data|length == 0 %}
+        {% endfor %}
+
+        {% if not lots_page.data %}
         <tr>
-          <td colspan="7" class="px-3 py-6 text-center text-slate-500">Chưa có lô nào trong dự án này.</td>
+          <td colspan="8" class="px-3 py-6 text-center text-slate-500">
+            Chưa có lô nào trong dự án này.
+          </td>
         </tr>
-      {% endif %}
+        {% endif %}
       </tbody>
     </table>
   </div>
@@ -226,16 +240,35 @@
   {% endif %}
 </div>
 
-<!-- Overlay picker chọn ngày giờ với nút Áp dụng -->
+<!-- Modal confirm đổi chế độ đấu giá -->
+<div id="auctionModeModal"
+     class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-xl p-5 w-80 shadow-xl">
+    <h3 class="font-semibold text-slate-800 mb-3">Xác nhận thay đổi chế độ đấu giá</h3>
+    <p class="text-sm text-slate-600 mb-5">
+      Bạn có chắc chắn muốn chuyển sang
+      <span id="auctionModeLabel" class="font-semibold text-slate-800"></span>?
+    </p>
+
+    <div class="flex justify-end gap-2">
+      <button type="button"
+              class="px-3 py-1.5 rounded bg-slate-200 text-slate-700"
+              onclick="closeAuctionModeModal()">Hủy</button>
+
+      <button type="button"
+              class="px-3 py-1.5 rounded bg-indigo-600 text-white"
+              onclick="applyAuctionMode()">Xác nhận</button>
+    </div>
+  </div>
+</div>
+
+<!-- Overlay chọn datetime -->
 <div id="dt_overlay" class="fixed inset-0 bg-black/40 flex items-center justify-center hidden z-50">
   <div class="bg-white rounded-xl p-5 w-80 shadow-xl">
     <h3 class="font-semibold text-slate-800 mb-3">Chọn ngày giờ</h3>
 
-    <input
-      id="dt_picker_input"
-      type="datetime-local"
-      class="w-full border border-slate-300 rounded-lg px-3 py-2 mb-4"
-    >
+    <input id="dt_picker_input" type="datetime-local"
+           class="w-full border border-slate-300 rounded-lg px-3 py-2 mb-4">
 
     <div class="flex justify-end gap-2">
       <button type="button"
@@ -249,15 +282,43 @@
 </div>
 
 <script>
+  /* -------------------------
+     CONFIRM THAY ĐỔI AUCTION MODE
+  ------------------------- */
+  let auctionModePending = null;
+
+  function confirmAuctionMode(checkbox) {
+    auctionModePending = checkbox;
+    const label = document.getElementById("auctionModeLabel");
+    label.textContent = checkbox.checked ? "TÍNH THEO M²" : "TÍNH THEO CẢ LÔ";
+    document.getElementById("auctionModeModal").classList.remove("hidden");
+  }
+
+  function closeAuctionModeModal() {
+    if (auctionModePending) {
+      auctionModePending.checked = !auctionModePending.checked;
+    }
+    auctionModePending = null;
+    document.getElementById("auctionModeModal").classList.add("hidden");
+  }
+
+  function applyAuctionMode() {
+    if (!auctionModePending) return;
+    auctionModePending.form.submit();
+    auctionModePending = null;
+    document.getElementById("auctionModeModal").classList.add("hidden");
+  }
+
+  /* -------------------------
+     DEADLINE PICKER
+  ------------------------- */
   let currentField = null;
 
-  // Parse chuỗi ISO DB/local sang các phần YYYY,MM,DD,HH,MM,SS (bỏ timezone, coi là giờ VN)
   function parseRaw(raw) {
     if (!raw) return null;
     let s = String(raw).trim();
     if (!s) return null;
 
-    // cắt timezone nếu có, ví dụ "+07:00" hoặc "Z"
     const tzPosPlus = s.indexOf("+", 10);
     const tzPosMinus = s.indexOf("-", 10);
     const tzPosZ = s.indexOf("Z");
@@ -267,9 +328,7 @@
     else if (tzPosMinus > 10) cut = s.slice(0, tzPosMinus);
     else if (tzPosZ > 0) cut = s.slice(0, tzPosZ);
 
-    // thay khoảng trắng bằng 'T' nếu có
     cut = cut.replace(" ", "T");
-
     const parts = cut.split("T");
     if (parts.length < 1) return null;
 
@@ -288,14 +347,12 @@
     return {year, month, day, hh, mm, ss};
   }
 
-  // Format hiển thị dd/mm/yyyy HH:MM:SS (giờ VN)
   function formatVN(raw) {
     const p = parseRaw(raw);
     if (!p) return "—";
     return `${p.day}/${p.month}/${p.year} ${p.hh}:${p.mm}:${p.ss} (giờ VN)`;
   }
 
-  // Convert raw -> giá trị cho datetime-local (YYYY-MM-DDTHH:MM)
   function toPickerValue(raw) {
     const p = parseRaw(raw);
     if (!p) return "";
@@ -303,7 +360,6 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    // Khởi tạo hiển thị nút & summary từ data-raw / hidden value
     document.querySelectorAll(".js-deadline-btn").forEach(function (btn) {
       const field = btn.getAttribute("data-field");
       const rawAttr = btn.getAttribute("data-raw") || "";
@@ -314,9 +370,7 @@
       btn.textContent = text;
 
       const summary = document.querySelector(`.deadline-summary[data-field="${field}"]`);
-      if (summary) {
-        summary.textContent = text;
-      }
+      if (summary) summary.textContent = text;
 
       btn.addEventListener("click", function () {
         openPicker(field);
@@ -328,8 +382,7 @@
     currentField = fieldName;
     const hiddenInput = document.getElementById(fieldName);
     const raw = hiddenInput ? hiddenInput.value : "";
-    const pickerVal = toPickerValue(raw);
-    document.getElementById("dt_picker_input").value = pickerVal;
+    document.getElementById("dt_picker_input").value = toPickerValue(raw);
     document.getElementById("dt_overlay").classList.remove("hidden");
   }
 
@@ -341,13 +394,14 @@
   function applyPicker() {
     if (!currentField) return;
 
-    const val = document.getElementById("dt_picker_input").value; // "YYYY-MM-DDTHH:MM"
+    const val = document.getElementById("dt_picker_input").value;
     const hiddenInput = document.getElementById(currentField);
     const btn = document.getElementById(currentField + "_display");
-    const summary = document.querySelector(`.deadline-summary[data-field="${currentField}"]`);
+    const summary = document.querySelector(
+      `.deadline-summary[data-field="${currentField}"]`
+    );
 
     if (val) {
-      // Lưu dưới dạng "YYYY-MM-DDTHH:MM" (Service A _parse_dt sẽ đọc được)
       if (hiddenInput) hiddenInput.value = val;
 
       const displayText = formatVN(val);
@@ -362,4 +416,5 @@
     closePicker();
   }
 </script>
+
 {% endblock %}
