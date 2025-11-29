@@ -122,12 +122,14 @@
   {% set qty_lots = t.customer_lot_count or 1 %}
   {# Chuẩn hóa lot_code: CL03-11 → CL03.11 #}
   {% set lot_short = (t.lot_code or '').replace('-', '.') %}
+  {# STT: ưu tiên stt_padded, fallback stt #}
+  {% set stt_code = t.stt_padded or (t.stt or '') %}
 
   <div class="page">
 
-    <!-- Mã nhận dạng nhỏ góc trái: C-id - S-count - lot -->
+    <!-- Mã nhận dạng nhỏ góc trái: STT - C - S - lot -->
     <div class="flag-box">
-      C{{ t.customer_id }}-S{{ qty_lots }}-{{ lot_short }}
+      {{ stt_code }}-C{{ t.customer_id }}-S{{ qty_lots }}-{{ lot_short }}
     </div>
 
     <!-- Quốc hiệu -->

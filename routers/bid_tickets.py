@@ -36,8 +36,8 @@ async def bid_tickets_page(
 ):
     """
     Màn hình quản lý/in phiếu trả giá.
-    - Tab 1: Theo LÔ (dữ liệu thô)
-    - Tab 2: Theo KHÁCH (group theo customer_id)
+    - Tab 1: Theo KHÁCH (group theo customer_id, có STT)
+    - Tab 2: Theo LÔ (dữ liệu thô từng lô)
     """
     token = get_access_token(request)
     me = await fetch_me(token)
@@ -93,11 +93,22 @@ async def bid_tickets_page(
                 ),
                 "project_code": r.get("project_code"),
                 "project_name": r.get("project_name"),
+                # STT theo dự án (do Service A tính)
+                "stt": r.get("stt"),
+                "stt_padded": r.get("stt_padded"),
                 "lots": [],
             }
         customers[cid]["lots"].append(r)
 
     customers_list = list(customers.values())
+
+    # Sort customers_list theo project_code, rồi STT
+    customers_list.sort(
+        key=lambda c: (
+            c.get("project_code") or "",
+            c.get("stt") or 10**9,
+        )
+    )
 
     return templates.TemplateResponse(
         "pages/bid_tickets/index.html",
