@@ -53,6 +53,7 @@ async def build_projects_lots_template(access: str, company_code: str) -> Stream
         "starting_price",
         "deposit_amount",
         "area",
+        "bid_step_vnd",   # ⭐ NEW: bước giá mỗi lô
     ]
 
     # ---- Dòng mẫu
@@ -78,6 +79,7 @@ async def build_projects_lots_template(access: str, company_code: str) -> Stream
                 "starting_price": 1_500_000_000,
                 "deposit_amount": 150_000_000,
                 "area": 80.0,
+                "bid_step_vnd": 50_000_000,  # ⭐ Ví dụ bước giá
             }
         ],
         columns=lot_cols,
@@ -162,8 +164,8 @@ async def build_projects_lots_template(access: str, company_code: str) -> Stream
         # Apply style cho lots
         format_sheet(
             ws_l,
-            widths=[14, 14, 20, 36, 16, 16, 12],
-            money_cols=[5, 6],
+            widths=[14, 14, 20, 36, 16, 16, 12, 16],  # ⭐ thêm width cho cột bid_step_vnd
+            money_cols=[5, 6, 8],                     # ⭐ starting_price, deposit_amount, bid_step_vnd
             area_cols=[7],
         )
 

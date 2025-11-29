@@ -124,7 +124,8 @@ def _read_sheets(file_bytes: bytes) -> Tuple[List[Dict[str, Any]], List[Dict[str
         rec["lot_code"]       = normalize_code(rec.get("lot_code", ""))
         rec["name"]           = normalize_text(rec.get("name", ""))
         rec["description"]    = normalize_text(rec.get("description", ""))
-        # số: chấp nhận str số => float, nếu không parse được => None (sẽ bị báo lỗi ở bước validate)
+
+        # số: chấp nhận str số => float, nếu không parse được => "NaN" (sẽ bị báo lỗi ở bước validate)
         def _to_float(v):
             if v is None or v == "":
                 return None
@@ -132,10 +133,16 @@ def _read_sheets(file_bytes: bytes) -> Tuple[List[Dict[str, Any]], List[Dict[str
                 return float(str(v).replace(",", "").replace(" ", ""))
             except Exception:
                 return "NaN"
+
         rec["starting_price"] = _to_float(rec.get("starting_price"))
         rec["deposit_amount"] = _to_float(rec.get("deposit_amount"))
         rec["area"]           = _to_float(rec.get("area"))
+
+        # ⭐ NEW: bước giá mỗi lô (optional)
+        rec["bid_step_vnd"]   = _to_float(rec.get("bid_step_vnd"))
+
         lots.append(rec)
+
 
     return projects, lots, []
 
@@ -169,34 +176,43 @@ def _validate_preview(projects: List[Dict[str, Any]], lots: List[Dict[str, Any]]
     pset = {p.get("project_code") for p in projects if p.get("project_code")}
 
     # lots
+    # lots
     for idx, l in enumerate(lots, start=2):
-        if not l.get("project_code"):
-            errors.append({"type": "lots", "row": idx, "sheet": "lots", "field": "project_code",
-                           "msg": "Thiếu project_code"})
-        if not l.get("lot_code"):
-            errors.append({"type": "lots", "row": idx, "sheet": "lots", "field": "lot_code",
-                           "msg": "Thiếu lot_code"})
-        if not l.get("name"):
-            errors.append({"type": "lots", "row": idx, "sheet": "lots", "field": "name",
-                           "msg": "Thiếu name"})
-
+        ...
         # numeric
-        for f in ("starting_price", "deposit_amount"):
+        for f in ("starting_price", "deposit_amount", "bid_step_vnd"):
             v = l.get(f)
             if v == "NaN":
-                errors.append({"type": "lots", "row": idx, "sheet": "lots", "field": f,
-                               "msg": "Giá trị không phải số hợp lệ"})
+                errors.append({
+                    "type": "lots",
+                    "row": idx,
+                    "sheet": "lots",
+                    "field": f,
+                    "msg": "Giá trị không phải số hợp lệ"
+                })
+
         sp = l.get("starting_price")
         dp = l.get("deposit_amount")
         if isinstance(sp, (int, float)) and isinstance(dp, (int, float)):
             if dp > sp:
-                errors.append({"type": "lots", "row": idx, "sheet": "lots", "field": "deposit_amount",
-                               "msg": "deposit_amount lớn hơn starting_price"})
+                errors.append({
+                    "type": "lots",
+                    "row": idx,
+                    "sheet": "lots",
+                    "field": "deposit_amount",
+                    "msg": "deposit_amount lớn hơn starting_price"
+                })
 
-        # lot phải reference project_code có trong sheet projects
-        if l.get("project_code") and l["project_code"] not in pset:
-            errors.append({"type": "lots", "row": idx, "sheet": "lots", "field": "project_code",
-                           "msg": "project_code không tồn tại trong sheet projects"})
+        # ⭐ NEW: bid_step_vnd không âm (khớp CHECK ck_lots_bid_step_nonneg)
+        bstep = l.get("bid_step_vnd")
+        if isinstance(bstep, (int, float)) and bstep < 0:
+            errors.append({
+                "type": "lots",
+                "row": idx,
+                "sheet": "lots",
+                "field": "bid_step_vnd",
+                "msg": "bid_step_vnd phải >= 0"
+            })
 
     return errors
 

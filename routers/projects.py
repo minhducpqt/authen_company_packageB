@@ -181,7 +181,6 @@ async def import_preview(request: Request, file: UploadFile = File(...)):
         },
     )
 
-
 @router.post("/import/apply", response_class=HTMLResponse)
 async def import_apply(
     request: Request,
@@ -273,6 +272,8 @@ async def import_apply(
                     "starting_price": l.get("starting_price"),
                     "deposit_amount": l.get("deposit_amount"),
                     "area": l.get("area"),
+                    # ⭐ NEW: bước giá mỗi lô (đọc từ file Excel)
+                    "bid_step_vnd": l.get("bid_step_vnd"),
                     "status": "AVAILABLE",
                 }
                 rl = await client.post(EP_CREATE_LOT, json=lot_body, headers=headers)
