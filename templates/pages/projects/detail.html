@@ -30,6 +30,9 @@
     </div>
   {% else %}
 
+  {% set auction_mode = (project.auction_mode or 'PER_LOT') %}
+  {% set is_per_sqm = (auction_mode == 'PER_SQM') %}
+
   <!-- Thông tin dự án -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
     <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
@@ -41,18 +44,42 @@
       <div class="text-lg font-semibold">{{ project.name }}</div>
     </div>
     <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
-      <div class="text-slate-500 text-sm">Trạng thái</div>
-      <div>
-        {% set st = (project.status or '') %}
-        <span class="inline-flex items-center px-2 py-1 rounded text-xs
-          {% if st=='ACTIVE' %} bg-emerald-100 text-emerald-700 border border-emerald-200
-          {% elif st=='INACTIVE' %} bg-amber-100 text-amber-700 border border-amber-200
-          {% elif st=='CLOSED' %} bg-slate-200 text-slate-700 border border-slate-300
-          {% else %} bg-slate-100 text-slate-600 border border-slate-200 {% endif %}">
-          {{ st or 'UNKNOWN' }}
+      <div class="text-slate-500 text-sm mb-1">Trạng thái</div>
+      <div class="flex items-center justify-between gap-2">
+        <div>
+          {% set st = (project.status or '') %}
+          <span class="inline-flex items-center px-2 py-1 rounded text-xs
+            {% if st=='ACTIVE' %} bg-emerald-100 text-emerald-700 border border-emerald-200
+            {% elif st=='INACTIVE' %} bg-amber-100 text-amber-700 border border-amber-200
+            {% elif st=='CLOSED' %} bg-slate-200 text-slate-700 border border-slate-300
+            {% else %} bg-slate-100 text-slate-600 border border-slate-200 {% endif %}">
+            {{ st or 'UNKNOWN' }}
+          </span>
+        </div>
+
+        <!-- Cách tính tiền: gọn, checkbox on/off -->
+        <form method="post" action="/projects/{{ project.id }}/auction-mode"
+              class="flex items-center gap-1 text-xs text-slate-600">
+          <label class="inline-flex items-center gap-1 cursor-pointer">
+            <input
+              type="checkbox"
+              name="auction_mode_per_sqm"
+              value="1"
+              class="h-3 w-3 rounded border-slate-300 text-emerald-600 focus:ring-0"
+              {% if is_per_sqm %}checked{% endif %}
+              onchange="this.form.submit()"
+            >
+            <span>Đấu theo <span class="font-semibold">m²</span></span>
+          </label>
+        </form>
+      </div>
+      <div class="mt-1 text-[11px] text-slate-500">
+        Đang: <span class="font-semibold">
+          {% if is_per_sqm %}TÍNH THEO M²{% else %}TÍNH THEO CẢ LÔ{% endif %}
         </span>
       </div>
     </div>
+
     <div class="md:col-span-3 p-4 rounded-lg bg-slate-50 border border-slate-200">
       <div class="text-slate-500 text-sm mb-1">Vị trí</div>
       <div>{{ project.location or '—' }}</div>

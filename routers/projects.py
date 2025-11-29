@@ -1,13 +1,23 @@
-# routers/projects.py
+# routers/projects.py (Service B)
 from __future__ import annotations
 
 import os
 import json
+import base64
 from typing import Optional
 from urllib.parse import urlencode, quote
 
 import httpx
-from fastapi import APIRouter, Request, Form, Query, Path, UploadFile, File
+from fastapi import (
+    APIRouter,
+    Request,
+    Form,
+    Query,
+    Path,
+    UploadFile,
+    File,
+    HTTPException,
+)
 from fastapi.responses import (
     HTMLResponse,
     RedirectResponse,
@@ -20,24 +30,32 @@ from utils.auth import get_access_token, fetch_me
 from utils.excel_templates import build_projects_lots_template
 from utils.excel_import import handle_import_preview  # chỉ dùng preview
 
+import json as pyjson  # cho decode JWT payload
+
 router = APIRouter(prefix="/projects", tags=["projects"])
 
 SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 
 # Endpoints Service A
-EP_LIST = "/api/v1/projects"
-EP_CREATE_PROJ = "/api/v1/projects"
-EP_DETAIL = "/api/v1/projects/{project_id}"
-EP_ENABLE = "/api/v1/projects/{project_id}/enable"
-EP_DISABLE = "/api/v1/projects/{project_id}/disable"
-EP_BYCODE_PROJ = "/api/v1/projects/by_code/{code}"
-EP_UPDATE_PROJ = "/api/v1/projects/{pid}"
-EP_EXPORT_XLSX = "/api/v1/projects/export_xlsx"
-EP_IMPORT_XLSX = "/api/v1/projects/import_xlsx"  # (nếu dùng Service A build)
-EP_CREATE_LOT = "/api/v1/lots"
-EP_DEADLINES = "/api/v1/projects/{project_id}/deadlines"
+EP_LIST            = "/api/v1/projects"
+EP_CREATE_PROJ     = "/api/v1/projects"
+EP_DETAIL          = "/api/v1/projects/{project_id}"
+EP_ENABLE          = "/api/v1/projects/{project_id}/enable"
+EP_DISABLE         = "/api/v1/projects/{project_id}/disable"
+EP_BYCODE_PROJ     = "/api/v1/projects/by_code/{code}"
+EP_UPDATE_PROJ     = "/api/v1/projects/{pid}"
+EP_EXPORT_XLSX     = "/api/v1/projects/export_xlsx"
+EP_IMPORT_XLSX     = "/api/v1/projects/import_xlsx"   # (nếu dùng Service A build)
+EP_CREATE_LOT      = "/api/v1/lots"
+EP_DEADLINES       = "/api/v1/projects/{project_id}/deadlines"
+EP_PUBLIC_PROJECTS = "/api/v1/projects/public"
+EP_COMPANY_PROFILE = "/api/v1/company/profile"
+EP_AUCTION_MODE    = "/api/v1/projects/{project_id}/auction_mode"  # <-- NEW
 
+
+# ==============================
 # helpers http
+# ==============================
 async def _get_json(client: httpx.AsyncClient, url: str, headers: dict):
     r = await client.get(url, headers=headers)
     try:
@@ -46,9 +64,7 @@ async def _get_json(client: httpx.AsyncClient, url: str, headers: dict):
         return r.status_code, None
 
 
-async def _post_json(
-    client: httpx.AsyncClient, url: str, headers: dict, payload: dict | None
-):
+async def _post_json(client: httpx.AsyncClient, url: str, headers: dict, payload: dict | None):
     r = await client.post(url, headers=headers, json=payload or {})
     try:
         return r.status_code, r.json()
@@ -56,29 +72,35 @@ async def _post_json(
         return r.status_code, None
 
 
-# --- auction_mode helpers ---
-ALLOWED_AUCTION_MODES = {"PER_SQM", "PER_LOT"}
+def _b64url_decode(data: str) -> bytes:
+    data += "=" * ((4 - len(data) % 4) % 4)
+    return base64.urlsafe_b64decode(data.encode("utf-8"))
 
 
-def _normalize_auction_mode(raw: str | None) -> str:
-    """
-    Chuẩn hóa auction_mode:
-    - None / ""          -> PER_LOT (mặc định)
-    - Các giá trị khác   -> upper + validate trong ALLOWED_AUCTION_MODES
-    """
-    v = (raw or "").strip().upper()
-    if not v:
-        return "PER_LOT"
-    if v not in ALLOWED_AUCTION_MODES:
-        # Nếu FE gửi linh tinh thì default về PER_LOT cho an toàn
-        return "PER_LOT"
-    return v
+def _company_from_jwt(token: str | None) -> str | None:
+    if not token or token.count(".") != 2:
+        return None
+    try:
+        payload_b = _b64url_decode(token.split(".")[1])
+        payload = pyjson.loads(payload_b.decode("utf-8"))
+        cc = payload.get("company_code") or payload.get("companyCode")
+        return (cc or "").strip() or None
+    except Exception:
+        return None
+
+
+def _auth_headers(request: Request) -> dict:
+    # Nếu bạn xác thực bằng cookie/bearer, bê nguyên header Authorization sang Service A
+    h: dict[str, str] = {}
+    auth = request.headers.get("Authorization")
+    if auth:
+        h["Authorization"] = auth
+    return h
 
 
 # =====================================================================
 # 1) TEMPLATE / EXPORT / IMPORT  --> đặt trước /{project_id}
 # =====================================================================
-
 
 @router.get("/template")
 async def download_template(request: Request):
@@ -96,9 +118,7 @@ async def download_template(request: Request):
 
 
 @router.get("/export")
-async def export_xlsx(
-    request: Request, q: str | None = None, status: str | None = "ACTIVE"
-):
+async def export_xlsx(request: Request, q: str | None = None, status: str | None = "ACTIVE"):
     token = get_access_token(request)
     if not token:
         return RedirectResponse(url="/login?next=/projects/export", status_code=303)
@@ -109,22 +129,12 @@ async def export_xlsx(
     if status and status != "ALL":
         params["status"] = status
 
-    async with httpx.AsyncClient(
-        base_url=SERVICE_A_BASE_URL, timeout=40.0
-    ) as client:
-        r = await client.get(
-            EP_EXPORT_XLSX,
-            params=params,
-            headers={"Authorization": f"Bearer {token}"},
-        )
+    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=40.0) as client:
+        r = await client.get(EP_EXPORT_XLSX, params=params, headers={"Authorization": f"Bearer {token}"})
     return StreamingResponse(
         iter([r.content]),
-        media_type=(
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        ),
-        headers={
-            "Content-Disposition": 'attachment; filename="projects_export.xlsx"'
-        },
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="projects_export.xlsx"'},
     )
 
 
@@ -154,12 +164,7 @@ async def import_preview(request: Request, file: UploadFile = File(...)):
         # Lỗi template / dữ liệu → quay về form và báo lỗi
         return templates.TemplateResponse(
             "pages/projects/import.html",
-            {
-                "request": request,
-                "title": "Nhập dự án từ Excel",
-                "me": me,
-                "err": preview.get("errors"),
-            },
+            {"request": request, "title": "Nhập dự án từ Excel", "me": me, "err": preview.get("errors")},
             status_code=400,
         )
 
@@ -199,45 +204,29 @@ async def import_apply(
     except Exception:
         return templates.TemplateResponse(
             "pages/projects/import.html",
-            {
-                "request": request,
-                "title": "Nhập dự án từ Excel",
-                "me": me,
-                "err": "Payload không hợp lệ.",
-            },
+            {"request": request, "title": "Nhập dự án từ Excel", "me": me, "err": "Payload không hợp lệ."},
             status_code=400,
         )
 
     projects = data.get("projects") or []
-    lots = data.get("lots") or []
+    lots     = data.get("lots") or []
     errors: list[str] = []
     created_codes: list[str] = []
     replaced_codes: list[str] = []
 
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "X-Company-Code": company_code,
-    }
+    headers = {"Authorization": f"Bearer {token}", "X-Company-Code": company_code}
 
-    async with httpx.AsyncClient(
-        base_url=SERVICE_A_BASE_URL, timeout=30.0
-    ) as client:
+    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=30.0) as client:
         # --- Ghi PROJECTS ---
         for p in projects:
             code = (p.get("project_code") or "").strip()
             name = (p.get("name") or "").strip()
-
-            # NEW: đọc auction_mode từ preview (nếu có)
-            raw_mode = p.get("auction_mode")
-            auction_mode = _normalize_auction_mode(raw_mode)
-
             body = {
                 "project_code": code,
                 "name": name,
                 "description": p.get("description") or None,
                 "location": p.get("location") or None,
                 "status": "INACTIVE",
-                "auction_mode": auction_mode,  # NEW
             }
             # Tạo
             r = await client.post(EP_CREATE_PROJ, json=body, headers=headers)
@@ -252,51 +241,28 @@ async def import_apply(
                         params={"company_code": company_code},
                     )
                     if r0.status_code != 200:
-                        errors.append(
-                            f"Dự án {code}: không tìm được id để ghi đè (HTTP {r0.status_code})."
-                        )
+                        errors.append(f"Dự án {code}: không tìm được id để ghi đè (HTTP {r0.status_code}).")
                         continue
                     pid = (r0.json() or {}).get("id")
                     if not isinstance(pid, int):
-                        errors.append(
-                            f"Dự án {code}: id không hợp lệ khi ghi đè."
-                        )
+                        errors.append(f"Dự án {code}: id không hợp lệ khi ghi đè.")
                         continue
-                    r1 = await client.put(
-                        EP_UPDATE_PROJ.format(pid=pid),
-                        json=body,
-                        headers=headers,
-                    )
+                    r1 = await client.put(EP_UPDATE_PROJ.format(pid=pid), json=body, headers=headers)
                     if r1.status_code == 200:
                         replaced_codes.append(code)
                     else:
-                        errors.append(
-                            f"Dự án {code}: ghi đè thất bại (HTTP {r1.status_code})."
-                        )
+                        errors.append(f"Dự án {code}: ghi đè thất bại (HTTP {r1.status_code}).")
                 else:
-                    errors.append(
-                        f"Dự án {code}: đã tồn tại, bật 'Ghi đè' để cập nhật."
-                    )
+                    errors.append(f"Dự án {code}: đã tồn tại, bật 'Ghi đè' để cập nhật.")
             else:
                 try:
-                    msg = (
-                        (r.json() or {}).get("detail")
-                        or (r.json() or {}).get("message")
-                        or ""
-                    )
+                    msg = (r.json() or {}).get("detail") or (r.json() or {}).get("message") or ""
                 except Exception:
                     msg = ""
-                errors.append(
-                    f"Dự án {code}: tạo thất bại (HTTP {r.status_code}) {msg}"
-                )
+                errors.append(f"Dự án {code}: tạo thất bại (HTTP {r.status_code}) {msg}")
 
             # --- Ghi LOTS cho project này ---
-            proj_lots = [
-                l
-                for l in lots
-                if (l.get("project_code") or "").strip().upper()
-                == code.upper()
-            ]
+            proj_lots = [l for l in lots if (l.get("project_code") or "").strip().upper() == code.upper()]
             for l in proj_lots:
                 lot_body = {
                     "company_code": company_code,
@@ -316,11 +282,7 @@ async def import_apply(
                     # Chưa có API update-by-code cho lot → BỎ QUA (không ghi đè)
                     continue
                 try:
-                    lmsg = (
-                        (rl.json() or {}).get("detail")
-                        or (rl.json() or {}).get("message")
-                        or ""
-                    )
+                    lmsg = (rl.json() or {}).get("detail") or (rl.json() or {}).get("message") or ""
                 except Exception:
                     lmsg = ""
                 errors.append(
@@ -348,7 +310,7 @@ async def import_apply(
             "title": "Xem trước import dự án",
             "me": me,
             "company_code": company_code,
-            "payload_json": payload,  # giữ để người dùng Apply lại nếu muốn
+            "payload_json": payload,           # giữ để người dùng Apply lại nếu muốn
             "preview": json.loads(payload),
             "err": errors,
         },
@@ -370,9 +332,7 @@ async def list_projects(
     token = get_access_token(request)
     me = await fetch_me(token)
     if not me:
-        return RedirectResponse(
-            url=f"/login?next={quote('/projects')}", status_code=303
-        )
+        return RedirectResponse(url=f"/login?next={quote('/projects')}", status_code=303)
 
     params = {"page": page, "size": size}
     if q:
@@ -384,13 +344,9 @@ async def list_projects(
     page_data = {"data": [], "page": page, "size": size, "total": 0}
 
     try:
-        async with httpx.AsyncClient(
-            base_url=SERVICE_A_BASE_URL, timeout=12.0
-        ) as client:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
             st, data = await _get_json(
-                client,
-                f"{EP_LIST}?{urlencode(params)}",
-                {"Authorization": f"Bearer {token}"},
+                client, f"{EP_LIST}?{urlencode(params)}", {"Authorization": f"Bearer {token}"}
             )
             if st == 200 and isinstance(data, dict):
                 page_data = {
@@ -425,23 +381,17 @@ async def project_detail(request: Request, project_id: int = Path(...)):
     token = get_access_token(request)
     me = await fetch_me(token)
     if not me:
-        return RedirectResponse(
-            url=f"/login?next={quote(f'/projects/{project_id}')}", status_code=303
-        )
+        return RedirectResponse(url=f"/login?next={quote(f'/projects/{project_id}')}", status_code=303)
 
     load_err = None
     project = None
     lots_page = {"data": [], "total": 0}
 
     try:
-        async with httpx.AsyncClient(
-            base_url=SERVICE_A_BASE_URL, timeout=12.0
-        ) as client:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
             # 1) Lấy project
             st, data = await _get_json(
-                client,
-                EP_DETAIL.format(project_id=project_id),
-                {"Authorization": f"Bearer {token}"},
+                client, EP_DETAIL.format(project_id=project_id), {"Authorization": f"Bearer {token}"}
             )
             if st == 200 and isinstance(data, dict):
                 project = data
@@ -452,9 +402,7 @@ async def project_detail(request: Request, project_id: int = Path(...)):
             if project and project.get("project_code"):
                 params = {"project_code": project["project_code"], "size": 1000}
                 lst_st, lst = await _get_json(
-                    client,
-                    f"/api/v1/lots?{urlencode(params)}",
-                    {"Authorization": f"Bearer {token}"},
+                    client, f"/api/v1/lots?{urlencode(params)}", {"Authorization": f"Bearer {token}"}
                 )
                 if lst_st == 200 and isinstance(lst, dict):
                     lots_page = {
@@ -504,31 +452,20 @@ async def create_submit(
     name: str = Form(...),
     description: str = Form(""),
     location: str = Form(""),
-    auction_mode: str = Form("PER_LOT"),  # NEW
 ):
     token = get_access_token(request)
     if not token:
         return RedirectResponse(url="/login?next=/projects/create", status_code=303)
-
-    auction_mode_value = _normalize_auction_mode(auction_mode)
 
     payload = {
         "project_code": (project_code or "").strip(),
         "name": (name or "").strip(),
         "description": (description or "").strip() or None,
         "location": (location or "").strip() or None,
-        "auction_mode": auction_mode_value,  # NEW
     }
 
-    async with httpx.AsyncClient(
-        base_url=SERVICE_A_BASE_URL, timeout=12.0
-    ) as client:
-        st, _ = await _post_json(
-            client,
-            EP_CREATE_PROJ,
-            {"Authorization": f"Bearer {token}"},
-            payload,
-        )
+    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
+        st, _ = await _post_json(client, EP_CREATE_PROJ, {"Authorization": f"Bearer {token}"}, payload)
 
     to = "/projects?msg=created" if st == 200 else "/projects?err=create_failed"
     return RedirectResponse(url=to, status_code=303)
@@ -546,9 +483,7 @@ async def toggle_project(
 ):
     token = get_access_token(request)
     if not token:
-        return RedirectResponse(
-            url=f"/login?next=/projects/{project_id}", status_code=303
-        )
+        return RedirectResponse(url=f"/login?next=/projects/{project_id}", status_code=303)
 
     action = (action or "").lower()
     ep = EP_ENABLE if action == "enable" else EP_DISABLE if action == "disable" else None
@@ -556,14 +491,9 @@ async def toggle_project(
         redir = next or "/projects"
         return RedirectResponse(url=f"{redir}?err=bad_action", status_code=303)
 
-    async with httpx.AsyncClient(
-        base_url=SERVICE_A_BASE_URL, timeout=10.0
-    ) as client:
+    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
         st, _ = await _post_json(
-            client,
-            ep.format(project_id=project_id),
-            {"Authorization": f"Bearer {token}"},
-            None,
+            client, ep.format(project_id=project_id), {"Authorization": f"Bearer {token}"}, None
         )
 
     redir = next or "/projects"
@@ -572,33 +502,8 @@ async def toggle_project(
 
 
 # =========================
-# X) DATA CHO DROPDOWN DỰ ÁN (ACTIVE, theo scope công ty)
+# 6) DATA CHO DROPDOWN DỰ ÁN (ACTIVE, theo scope công ty)
 # =========================
-import base64
-import json as pyjson
-
-EP_PUBLIC_PROJECTS = "/api/v1/projects/public"
-EP_COMPANY_PROFILE = "/api/v1/company/profile"
-
-
-def _b64url_decode(data: str) -> bytes:
-    # helper đọc payload JWT (không verify)
-    data += "=" * ((4 - len(data) % 4) % 4)
-    return base64.urlsafe_b64decode(data.encode("utf-8"))
-
-
-def _company_from_jwt(token: str | None) -> str | None:
-    if not token or token.count(".") != 2:
-        return None
-    try:
-        payload_b = _b64url_decode(token.split(".")[1])
-        payload = pyjson.loads(payload_b.decode("utf-8"))
-        cc = payload.get("company_code") or payload.get("companyCode")
-        return (cc or "").strip() or None
-    except Exception:
-        return None
-
-
 @router.get("/data", response_class=JSONResponse)
 async def projects_data(
     request: Request,
@@ -618,16 +523,10 @@ async def projects_data(
     # 2) /api/v1/company/profile (nếu cần)
     if not company_code:
         try:
-            async with httpx.AsyncClient(
-                base_url=SERVICE_A_BASE_URL, timeout=8.0
-            ) as client:
-                r_prof = await client.get(
-                    EP_COMPANY_PROFILE,
-                    headers={"Authorization": f"Bearer {token}"},
-                )
+            async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=8.0) as client:
+                r_prof = await client.get(EP_COMPANY_PROFILE, headers={"Authorization": f"Bearer {token}"})
             if r_prof.status_code == 200:
                 prof = r_prof.json() or {}
-                # thử vài key phổ biến
                 company_code = (
                     prof.get("company_code")
                     or (prof.get("company") or {}).get("company_code")
@@ -642,42 +541,28 @@ async def projects_data(
 
     if not company_code:
         return JSONResponse(
-            {
-                "error": "missing_company_code",
-                "message": "Không xác định được công ty từ token/scope.",
-            },
+            {"error": "missing_company_code", "message": "Không xác định được công ty từ token/scope."},
             status_code=400,
         )
 
     # 4) Gọi danh sách dự án PUBLIC theo company_code
-    params = [("company_code", company_code), ("page", page), ("size", size)]
+    params: list[tuple[str, str | int]] = [("company_code", company_code), ("page", page), ("size", size)]
     if status:
         params.append(("status", status))
     if q:
         params.append(("q", q))
 
     try:
-        async with httpx.AsyncClient(
-            base_url=SERVICE_A_BASE_URL, timeout=12.0
-        ) as client:
-            r = await client.get(
-                EP_PUBLIC_PROJECTS,
-                params=params,
-                headers={"Authorization": f"Bearer {token}"},
-            )
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
+            r = await client.get(EP_PUBLIC_PROJECTS, params=params, headers={"Authorization": f"Bearer {token}"})
         if r.status_code != 200:
-            # trả lỗi kèm chi tiết để dễ debug curl
             detail = None
             try:
                 detail = r.json()
             except Exception:
                 detail = (r.text or "")[:500]
             return JSONResponse(
-                {
-                    "error": "projects_fetch_failed",
-                    "status": r.status_code,
-                    "detail": detail,
-                },
+                {"error": "projects_fetch_failed", "status": r.status_code, "detail": detail},
                 status_code=502,
             )
 
@@ -690,18 +575,11 @@ async def projects_data(
         data = [pick(x) for x in items if x]
 
         return JSONResponse(
-            {
-                "data": data,
-                "page": raw.get("page", page),
-                "size": raw.get("size", size),
-                "total": raw.get("total", len(data)),
-            },
+            {"data": data, "page": raw.get("page", page), "size": raw.get("size", size), "total": raw.get("total", len(data))},
             status_code=200,
         )
     except Exception as e:
-        return JSONResponse(
-            {"error": "exception", "message": str(e)}, status_code=500
-        )
+        return JSONResponse({"error": "exception", "message": str(e)}, status_code=500)
 
 
 @router.get("/options/active", response_class=JSONResponse)
@@ -735,36 +613,27 @@ async def project_options_active(
         params["q"] = q
 
     try:
-        async with httpx.AsyncClient(
-            base_url=SERVICE_A_BASE_URL, timeout=12.0
-        ) as client:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
             r = await client.get(
-                "/api/v1/projects/public",
+                EP_PUBLIC_PROJECTS,
                 params=params,
                 headers={"Authorization": f"Bearer {token}"},
             )
     except Exception as e:
-        return JSONResponse(
-            {"error": "upstream_error", "msg": str(e)}, status_code=502
-        )
+        return JSONResponse({"error": "upstream_error", "msg": str(e)}, status_code=502)
 
     if r.status_code == 401:
         return JSONResponse({"error": "unauthorized"}, status_code=401)
     if r.status_code >= 500:
-        return JSONResponse(
-            {"error": "upstream_5xx", "msg": r.text[:300]}, status_code=502
-        )
+        return JSONResponse({"error": "upstream_5xx", "msg": r.text[:300]}, status_code=502)
     if r.status_code != 200:
-        return JSONResponse(
-            {"error": "upstream", "status": r.status_code}, status_code=502
-        )
+        return JSONResponse({"error": "upstream", "status": r.status_code}, status_code=502)
 
     js = r.json() or {}
-    items = js.get("data") or js.get("items") or js  # phòng khi service A trả mảng thẳng
+    items = js.get("data") or js.get("items") or js
     if not isinstance(items, list):
         items = []
 
-    # Chuẩn hóa trường cho dropdown
     data = []
     for p in items:
         code = (p or {}).get("project_code") or (p or {}).get("code")
@@ -775,22 +644,11 @@ async def project_options_active(
     return JSONResponse({"data": data}, status_code=200)
 
 
-# routers/projects.py (Service B) – bổ sung route options & deadlines
-from fastapi import HTTPException  # (Request đã import ở đầu)
-
-
-def _auth_headers(request: Request) -> dict:
-    # Nếu bạn xác thực bằng cookie/bearer, bê nguyên header Authorization sang A
-    h: dict[str, str] = {}
-    auth = request.headers.get("Authorization")
-    if auth:
-        h["Authorization"] = auth
-    return h
-
-
 @router.get("/api/projects/options")
 async def projects_options(
-    request: Request, status: str = "ACTIVE", company_code: str | None = None
+    request: Request,
+    status: str = "ACTIVE",
+    company_code: str | None = None,
 ):
     """
     Trả về options dự án cho FE: { options: [{project_code, name}] }
@@ -802,17 +660,14 @@ async def projects_options(
     if company_code:
         params["company_code"] = company_code
 
-    url = f"{SERVICE_A_BASE_URL}/api/v1/projects/public"
+    url = f"{SERVICE_A_BASE_URL}{EP_PUBLIC_PROJECTS}"
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             r = await client.get(url, params=params, headers=_auth_headers(request))
         if r.status_code != 200:
-            raise HTTPException(
-                status_code=502,
-                detail=f"Upstream A error {r.status_code}: {r.text}",
-            )
+            raise HTTPException(status_code=502, detail=f"Upstream A error {r.status_code}: {r.text}")
         data = r.json() or {}
-        items = data.get("items") or data.get("rows") or data.get("data") or []
+        items = data.get("data") or data.get("items") or data.get("rows") or []
         options = [
             {
                 "project_code": i.get("project_code") or i.get("code"),
@@ -823,17 +678,18 @@ async def projects_options(
         ]
         return {"options": options}
     except httpx.RequestError as e:
-        raise HTTPException(
-            status_code=502, detail=f"Cannot reach Service A: {e}"
-        ) from e
+        raise HTTPException(status_code=502, detail=f"Cannot reach Service A: {e}") from e
 
 
+# =========================
+# 7) DEADLINES (POST từ màn detail)
+# =========================
 @router.post("/{project_id}/deadlines")
 async def update_project_deadlines(
     request: Request,
     project_id: int = Path(...),
-    dossier_deadline_at: str = Form(""),  # FE: hạn bán hồ sơ
-    deposit_deadline_at: str = Form(""),  # FE: hạn nhận tiền đặt trước
+    dossier_deadline_at: str = Form(""),     # FE: hạn bán hồ sơ
+    deposit_deadline_at: str = Form(""),     # FE: hạn nhận tiền đặt trước
 ):
     """
     Cập nhật 2 deadline của dự án (Service B → Service A):
@@ -862,9 +718,7 @@ async def update_project_deadlines(
     print(payload)
 
     try:
-        async with httpx.AsyncClient(
-            base_url=SERVICE_A_BASE_URL, timeout=10.0
-        ) as client:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
             r = await client.put(
                 EP_DEADLINES.format(project_id=project_id),
                 json=payload,
@@ -893,5 +747,67 @@ async def update_project_deadlines(
 
     return RedirectResponse(
         url=f"/projects/{project_id}?msg=deadlines_updated",
+        status_code=303,
+    )
+
+
+# =========================
+# 8) AUCTION MODE (PER_LOT / PER_SQM)
+# =========================
+@router.post("/{project_id}/auction-mode")
+async def update_project_auction_mode(
+    request: Request,
+    project_id: int = Path(...),
+    auction_mode_per_sqm: bool = Form(False),
+):
+    """
+    Cập nhật cách tính tiền khi đấu giá cho dự án:
+    - checkbox OFF → auction_mode = 'PER_LOT'
+    - checkbox ON  → auction_mode = 'PER_SQM'
+    """
+
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(
+            url=f"/login?next=/projects/{project_id}",
+            status_code=303,
+        )
+
+    mode = "PER_SQM" if auction_mode_per_sqm else "PER_LOT"
+    payload = {"auction_mode": mode}
+
+    print("====== [DEBUG] SERVICE B → A AUCTION MODE PAYLOAD ======")
+    print("project_id =", project_id)
+    print("payload =", payload)
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            r = await client.put(
+                EP_AUCTION_MODE.format(project_id=project_id),
+                json=payload,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        if r.status_code != 200:
+            try:
+                detail = r.json()
+            except Exception:
+                detail = r.text
+
+            print("⚠️ AUCTION MODE UPDATE FAILED:", detail)
+            return RedirectResponse(
+                url=f"/projects/{project_id}?err=auction_mode_update_failed",
+                status_code=303,
+            )
+
+    except Exception as e:
+        print("🔥 EXCEPTION update_project_auction_mode:", e)
+        return RedirectResponse(
+            url=f"/projects/{project_id}?err=auction_mode_update_failed",
+            status_code=303,
+        )
+
+    return RedirectResponse(
+        url=f"/projects/{project_id}?msg=auction_mode_updated",
         status_code=303,
     )
