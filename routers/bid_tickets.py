@@ -17,7 +17,12 @@ router = APIRouter(prefix="/bid-tickets", tags=["bid_tickets"])
 SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 
 
-async def _get_json(client: httpx.AsyncClient, url: str, headers: dict, params: dict):
+async def _get_json(
+    client: httpx.AsyncClient,
+    url: str,
+    headers: dict,
+    params: dict,
+):
     r = await client.get(url, headers=headers, params=params)
     try:
         return r.status_code, r.json()
@@ -25,6 +30,9 @@ async def _get_json(client: httpx.AsyncClient, url: str, headers: dict, params: 
         return r.status_code, None
 
 
+# ======================================================================
+# PAGE: INDEX
+# ======================================================================
 @router.get("", response_class=HTMLResponse)
 async def bid_tickets_page(
     request: Request,
@@ -59,8 +67,8 @@ async def bid_tickets_page(
         params["customer_q"] = customer_q
 
     headers = {"Authorization": f"Bearer {token}"}
-    data = {"data": [], "page": page, "size": size, "total": 0}
-    load_err = None
+    data: Dict[str, Any] = {"data": [], "page": page, "size": size, "total": 0}
+    load_err: Optional[str] = None
 
     try:
         async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=20.0) as client:
@@ -93,7 +101,7 @@ async def bid_tickets_page(
                 ),
                 "project_code": r.get("project_code"),
                 "project_name": r.get("project_name"),
-                # STT theo dự án (do Service A tính)
+                # STT theo dự án (do Service A tính trong v_report_bid_customers)
                 "stt": r.get("stt"),
                 "stt_padded": r.get("stt_padded"),
                 "lots": [],
@@ -102,7 +110,7 @@ async def bid_tickets_page(
 
     customers_list = list(customers.values())
 
-    # Sort customers_list theo project_code, rồi STT
+    # Sort customers_list theo project_code, rồi STT (đảm bảo đúng thứ tự điểm danh)
     customers_list.sort(
         key=lambda c: (
             c.get("project_code") or "",
@@ -129,6 +137,9 @@ async def bid_tickets_page(
     )
 
 
+# ======================================================================
+# PRINT: 1 KH + 1 LÔ / N LÔ CỦA 1 KH
+# ======================================================================
 @router.get("/print", response_class=HTMLResponse)
 async def print_bid_tickets(
     request: Request,
@@ -168,7 +179,7 @@ async def print_bid_tickets(
                     status_code=500,
                 )
             js = r.json() or {}
-            rows = [js.get("data") or {}]
+            rows: List[Dict[str, Any]] = [js.get("data") or {}]
         except Exception as e:
             return HTMLResponse(f"<h1>Lỗi</h1><p>{e}</p>", status_code=500)
     else:
@@ -195,11 +206,88 @@ async def print_bid_tickets(
     if not rows:
         return HTMLResponse("<h1>Không có dữ liệu phiếu để in.</h1>", status_code=404)
 
+    # Service A đã sort theo project_code, stt, customer_full_name, lot_code
+    # ở đây vẫn có thể đảm bảo lại thứ tự theo lot_code cho 1 khách
+    rows.sort(
+        key=lambda t: (
+            t.get("stt") or 10**9,
+            t.get("customer_id") or 10**9,
+            t.get("lot_code") or "",
+        )
+    )
+
     return templates.TemplateResponse(
         "pages/bid_tickets/print.html",
         {
             "request": request,
             "me": me,
             "tickets": rows,  # mỗi phần tử = 1 phiếu
+        },
+    )
+
+
+# ======================================================================
+# PRINT-ALL: TOÀN BỘ KHÁCH / LÔ TRONG 1 DỰ ÁN (1 TAB, N TRANG)
+# ======================================================================
+@router.get("/print-all", response_class=HTMLResponse)
+async def print_all_bid_tickets(
+    request: Request,
+    project_code: str = Query(...),
+):
+    """
+    In tất cả phiếu trả giá của TẤT CẢ khách đủ điều kiện trong 1 dự án.
+    - Lấy từ Service A: /api/v1/report/bid_tickets?project_code=...&page=1&size=5000
+    - Sort theo STT (điểm danh) rồi theo mã lô để in đúng thứ tự.
+    - Render chung bằng template print.html (mỗi phiếu = 1 trang A4).
+    """
+    token = get_access_token(request)
+    me = await fetch_me(token)
+    if not me:
+        # quay lại màn hình login, giữ next để quay lại trang list
+        return RedirectResponse(
+            url=f"/login?next={quote('/bid-tickets')}",
+            status_code=303,
+        )
+
+    headers = {"Authorization": f"Bearer {token}"}
+    params = {
+        "project_code": project_code,
+        "page": 1,
+        "size": 5000,  # đủ lớn cho 1 dự án
+    }
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=30.0) as client:
+            r = await client.get("/api/v1/report/bid_tickets", headers=headers, params=params)
+        if r.status_code != 200:
+            return HTMLResponse(
+                f"<h1>Lỗi</h1><p>Không lấy được dữ liệu phiếu (HTTP {r.status_code}).</p>",
+                status_code=500,
+            )
+        js = r.json() or {}
+        rows: List[Dict[str, Any]] = js.get("data") or []
+    except Exception as e:
+        return HTMLResponse(f"<h1>Lỗi</h1><p>{e}</p>", status_code=500)
+
+    if not rows:
+        return HTMLResponse("<h1>Không có phiếu nào trong dự án này để in.</h1>", status_code=404)
+
+    # Đảm bảo thứ tự in:
+    #  - Theo STT (điểm danh) của khách trong dự án
+    #  - Rồi theo mã lô (để các lô của 1 khách đi liền nhau, có thứ tự dễ kiểm)
+    rows.sort(
+        key=lambda t: (
+            t.get("stt") or 10**9,
+            t.get("customer_id") or 10**9,
+            t.get("lot_code") or "",
+        )
+    )
+
+    return templates.TemplateResponse(
+        "pages/bid_tickets/print.html",
+        {
+            "request": request,
+            "me": me,
+            "tickets": rows,
         },
     )

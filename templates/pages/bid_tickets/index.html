@@ -61,8 +61,7 @@
         type="text"
         id="lotCodeInput"
         name="lot_code"
-        value="{{ filters.lot_code }}
-        "
+        value="{{ filters.lot_code }}"
         placeholder="VD: L-A01"
         class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
       />
@@ -108,14 +107,14 @@
 
   <!-- TAB 1: THEO KHÁCH -->
   <div id="tab-customers" class="tab-panel">
-    <div class="mb-3 flex items-center justify-between">
+    <div class="flex items-center justify-between mb-2">
       <div class="text-sm text-slate-500">
         Tổng: {{ customers|length }} khách đủ điều kiện (có ít nhất 1 lô deposit đủ chuẩn).
       </div>
       <div class="flex gap-2">
         <button
           type="button"
-          class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700"
+          class="px-3 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-medium hover:bg-amber-700"
           onclick="openPrintAllForProject()"
         >
           <i class="ri-printer-line mr-1"></i>In tất cả phiếu trong dự án
@@ -126,16 +125,15 @@
     <div class="space-y-3">
       {% for c in customers %}
         <div
-          class="border border-slate-200 rounded-lg p-3"
+          class="border border-slate-200 rounded-lg p-3 js-customer-card"
           data-customer-id="{{ c.customer_id }}"
-          data-project-code="{{ c.project_code }}"
+          data-project="{{ c.project_code }}"
         >
           <div class="flex items-center justify-between gap-3 mb-2">
             <div>
               <div class="font-semibold text-slate-800">
-                <!-- STT trước tên -->
-                <span class="inline-block font-mono text-[11px] text-slate-500 mr-2">
-                  {{ c.stt_padded or c.stt or "" }}
+                <span class="inline-flex items-center justify-center mr-2 px-2 py-0.5 rounded-full bg-slate-100 text-[11px] font-mono text-slate-700">
+                  {{ c.stt_padded or c.stt or loop.index }}
                 </span>
                 {{ c.customer_full_name }}
                 <span class="font-mono text-[11px] text-slate-500">({{ c.cccd }})</span>
@@ -406,38 +404,29 @@
       window.open(url, "_blank");
     });
   }
+
   function openPrintAllForCustomer(projectCode, customerId) {
     showConfirm("In tất cả phiếu trả giá cho khách này?", function () {
       const url = `/bid-tickets/print?project_code=${encodeURIComponent(projectCode)}&customer_id=${customerId}`;
       window.open(url, "_blank");
     });
   }
-  // In tất cả phiếu của TẤT CẢ khách trong dự án đã chọn
+
+  // ✅ CÁCH 2: In tất cả phiếu cho toàn bộ khách trong dự án đang chọn
+  // -> chỉ redirect sang /bid-tickets/print-all?project_code=...
   function openPrintAllForProject() {
-    const projectCode = (document.getElementById("projectCodeInput").value || "").trim();
+    const projectCodeInput = document.getElementById("projectCodeInput");
+    const projectCode = (projectCodeInput && projectCodeInput.value || "").trim();
+
     if (!projectCode) {
-      showConfirm("Vui lòng chọn dự án trước khi in tất cả phiếu.", function () {});
-      return;
-    }
-    const cards = Array.from(
-      document.querySelectorAll('[data-customer-id][data-project-code]')
-    ).filter(el => (el.dataset.projectCode || "") === projectCode);
-
-    if (!cards.length) {
-      showConfirm("Không có khách hàng nào đủ điều kiện trong dự án này để in.", function () {});
+      showConfirm("Vui lòng chọn một dự án trước khi in tất cả phiếu.", function () {});
       return;
     }
 
-    showConfirm(
-      `In tất cả phiếu trả giá cho ${cards.length} khách trong dự án ${projectCode}?`,
-      function () {
-        cards.forEach(el => {
-          const cid = el.dataset.customerId;
-          const url = `/bid-tickets/print?project_code=${encodeURIComponent(projectCode)}&customer_id=${cid}`;
-          window.open(url, "_blank");
-        });
-      }
-    );
+    showConfirm(`In tất cả phiếu trả giá cho dự án ${projectCode}?`, function () {
+      const url = `/bid-tickets/print-all?project_code=${encodeURIComponent(projectCode)}`;
+      window.location.href = url;
+    });
   }
 
   document.addEventListener("DOMContentLoaded", function () {
@@ -496,14 +485,15 @@
     }
 
     // ====== FILTERS: auto apply ======
+    const form = document.getElementById("filtersForm");
     const projectSelect = document.getElementById("projectSelect");
-    const projectCodeInput = document.getElementById("projectCodeInput");
+    const projectCodeInput2 = document.getElementById("projectCodeInput");
     const customerSearch = document.getElementById("customerSearch");
     const lotCodeInput = document.getElementById("lotCodeInput");
 
     function submitWithCurrentFilters() {
       const params = new URLSearchParams();
-      const pj = projectCodeInput.value.trim();
+      const pj = projectCodeInput2.value.trim();
       const q = customerSearch.value.trim();
       const lot = lotCodeInput.value.trim();
       if (pj) params.set("project_code", pj);
@@ -521,13 +511,13 @@
 
     // Project dropdown -> đổi hidden + apply ngay
     projectSelect.addEventListener("change", function () {
-      projectCodeInput.value = projectSelect.value || "";
+      projectCodeInput2.value = projectSelect.value || "";
       submitWithCurrentFilters();
     });
 
     // ====== Load danh sách dự án active cho dropdown ======
     const ACTIVE_PROJ_URL = "/projects/options/active";
-    const currentProjectCode = projectCodeInput.value || "";
+    const currentProjectCode = projectCodeInput2.value || "";
 
     fetch(ACTIVE_PROJ_URL, { headers: { "X-Requested-With": "fetch" } })
       .then(r => r.json())
@@ -551,7 +541,7 @@
           const onlyCode = list[0].project_code || list[0].code || "";
           if (onlyCode) {
             projectSelect.value = onlyCode;
-            projectCodeInput.value = onlyCode;
+            projectCodeInput2.value = onlyCode;
             // auto apply lần đầu
             submitWithCurrentFilters();
           }
