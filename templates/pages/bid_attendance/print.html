@@ -31,29 +31,14 @@
     }
 
     @media print {
-      html, body {
-        background: #ffffff;
-      }
-      .page {
-        margin: 0;
-        box-shadow: none;
-        page-break-after: always;
-      }
+      html, body { background: #fff; }
+      .page { margin: 0; box-shadow: none; page-break-after: always; }
     }
 
     .center  { text-align: center; }
     .bold    { font-weight: 700; }
     .title   { font-size: 16pt; font-weight: 800; text-transform: uppercase; }
     .gov     { font-size: 14pt; font-weight: 800; text-transform: uppercase; }
-    .mt-1    { margin-top: 3mm; }
-    .mt-2    { margin-top: 4mm; }
-    .mt-3    { margin-top: 6mm; }
-    .small   { font-size: 10.5pt; }
-
-    .divider {
-      text-align: center;
-      margin: 2mm 0 6mm;
-    }
 
     table {
       width: 100%;
@@ -77,6 +62,14 @@
       font-size: 11pt;
     }
 
+    /* Các row cao đều nhau */
+    tbody tr {
+      height: 18mm;          /* chỉnh nếu muốn thấp/cao hơn */
+    }
+    tbody td {
+      overflow: hidden;      /* không cho nội dung tràn ra ngoài ô */
+    }
+
     .col-stt {
       width: 14mm;
       text-align: center;
@@ -97,23 +90,32 @@
       font-size: 10.5pt;
     }
     .col-lot-count {
-      width: 20mm;
+      width: 12mm;    /* cột SL nhỏ */
       text-align: center;
     }
     .col-sign {
-      width: 25mm;
+      width: 50mm;    /* cột ký nhận rộng để ký + ghi họ tên */
     }
 
     .name-line {
       font-weight: 700;
       text-transform: uppercase;
+      line-height: 1.2;
     }
+
+    /* Địa chỉ: tối đa 2 dòng, nếu dài thì "…" */
     .addr-line {
       font-size: 9.5pt;
       color: #444;
       margin-top: 1px;
       line-height: 1.2;
       word-break: break-word;
+
+      display: -webkit-box;
+      -webkit-line-clamp: 2;        /* tối đa 2 dòng */
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     @media print {
@@ -130,7 +132,7 @@
   <!-- Quốc hiệu -->
   <div class="center gov">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
   <div class="center bold">Độc lập – Tự do – Hạnh phúc</div>
-  <div class="divider">-----------------o0o-----------------</div>
+  <div class="center" style="margin: 3mm 0 6mm;">-----------------o0o-----------------</div>
 
   <!-- Tiêu đề -->
   <div class="center title">DANH SÁCH ĐIỂM DANH NGƯỜI THAM GIA ĐẤU GIÁ</div>
@@ -142,8 +144,8 @@
         <th class="col-stt">STT</th>
         <th class="col-name">Họ và tên / Địa chỉ</th>
         <th class="col-cccd">CCCD</th>
-        <th class="col-phone">Số điện thoại</th>
-        <th class="col-lot-count">Số lô<br/>tham gia đấu</th>
+        <th class="col-phone">SĐT</th>
+        <th class="col-lot-count">SL</th>
         <th class="col-sign">Ký nhận</th>
       </tr>
     </thead>
