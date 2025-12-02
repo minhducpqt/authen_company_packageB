@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="/static/style.css"/>
 </head>
 <body class="bg-slate-50">
-  {# Vẫn set logged_in nếu chỗ khác còn dùng, nhưng KHÔNG dùng để ẩn sidebar nữa #}
+  {# Vẫn giữ để nơi khác dùng nếu cần, nhưng KHÔNG dùng để ẩn sidebar nữa #}
   {% set logged_in = is_logged_in(request) %}
 
   <!-- ===== Header ===== -->
@@ -80,7 +80,9 @@
 
   <!-- ===== Layout ===== -->
   <div class="max-w-screen-2xl mx-auto px-5 py-5 flex gap-5">
-    {# LUÔN hiển thị sidebar cho mọi trang dùng base này #}
+
+    {# 👉 Chỉ ẩn sidebar ở trang /login. Còn lại (tức là trang admin) thì luôn hiển thị. #}
+    {% if not request.url.path.startswith('/login') %}
     <aside class="w-64 bg-white rounded-xl border border-slate-200 h-[84vh] overflow-y-auto">
       <ul class="p-2">
 
@@ -179,6 +181,7 @@
         </li>
       </ul>
     </aside>
+    {% endif %}
 
     <main class="flex-1">
       <div class="mb-4">
