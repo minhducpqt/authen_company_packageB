@@ -145,11 +145,34 @@ async def _load_projects(token: str, project_param: Optional[str]) -> tuple[list
 @router.get("/reports", response_class=HTMLResponse)
 async def reports_home(request: Request):
     _log(f"REQ /reports url={request.url}")
+
+    # 1. Lấy access token từ cookie
     token = get_access_token(request)
     if not token:
         _log("AUTH missing → redirect /login")
-        return RedirectResponse(url="/login?next=%2Freports", status_code=303)
+        return RedirectResponse(
+            url="/login?next=%2Freports",
+            status_code=303,
+        )
 
+    # 2. Gọi Service A để xác thực token (giống trang /)
+    try:
+        status_me, me = await fetch_me(token)
+    except Exception as e:
+        _log(f"/reports: fetch_me error={e}")
+        return RedirectResponse(
+            url="/login?next=%2Freports",
+            status_code=303,
+        )
+
+    if status_me != 200:
+        _log(f"/reports: auth invalid (status={status_me}) → redirect /login")
+        return RedirectResponse(
+            url="/login?next=%2Freports",
+            status_code=303,
+        )
+
+    # 3. Load danh sách dự án ACTIVE
     projects: list[dict] = []
     try:
         st, pj = await _get_json(
@@ -162,12 +185,14 @@ async def reports_home(request: Request):
     except Exception as e:
         _log(f"reports_home: load projects error={e}")
 
+    # 4. Render template
     return templates.TemplateResponse(
         "reports/index.html",
         {
             "request": request,
             "title": "Báo cáo thống kê",
             "projects": projects,
+            "me": me,  # nếu base.html / header có dùng thông tin user
         },
     )
 
