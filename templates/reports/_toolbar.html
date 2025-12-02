@@ -1,67 +1,45 @@
 {# templates/reports/_toolbar.html — FINAL FIX #}
 
-<div class="mb-4 bg-white border rounded-xl p-4 shadow-sm">
-  <form id="filtersForm"
-        class="flex flex-col md:flex-row gap-3 items-start md:items-end"
-        action="" method="get">
-
-    <!-- Chọn dự án -->
-    <div class="flex-1 min-w-[220px]">
-      <label class="block text-xs text-slate-500 mb-1 font-semibold">Dự án</label>
-      <select id="projectSelect" name="project"
-              class="w-full rounded-lg border-slate-300 focus:ring-2 focus:ring-indigo-500">
-        <option value="">— Tất cả dự án —</option>
-      </select>
-    </div>
-
-    <!-- Ô tìm kiếm -->
-    <div class="flex-1 min-w-[220px]">
-      <label class="block text-xs text-slate-500 mb-1 font-semibold">Tìm kiếm</label>
-      <input id="qInput" name="q" type="text"
-             placeholder="Tên, CCCD, SĐT, mã lô..."
-             class="w-full rounded-lg border-slate-300 focus:ring-2 focus:ring-indigo-500"
-             value="{{ init_q or '' }}">
-    </div>
-
-    <!-- Nút Export -->
-    <div class="flex flex-wrap items-center gap-2">
-      <button type="button" id="btnExportXlsx"
-              class="px-3 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50">
-        Export XLSX
-      </button>
-    </div>
-  </form>
-</div>
-
 <script>
 (function () {
+
+  // ⛔ KHÓA TOOLBAR trên trang /reports
+  const path = window.location.pathname;
+  if (path === "/reports") {
+    // Không chạy bất kỳ logic filter/redirect nào ở trang tổng quan
+    return;
+  }
+
+  // ===============================
+  // === PHẦN BÊN DƯỚI Y NGUYÊN ===
+  // ===============================
+
   const initProject = "{{ init_project_code or '' }}";
   const initQ = "{{ init_q or '' }}";
   const selectEl = document.getElementById('projectSelect');
   const qEl = document.getElementById('qInput');
-
   const getUrl = () => new URL(window.location.href);
 
   function applyFilters(next = {}) {
     const project = (next.project ?? selectEl.value ?? '').trim();
     const q = (next.q ?? qEl.value ?? '').trim();
 
+    // nếu chưa có project → không reload
     if (!project) return;
 
     const u = getUrl();
     project ? u.searchParams.set('project', project) : u.searchParams.delete('project');
     q ? u.searchParams.set('q', q) : u.searchParams.delete('q');
 
-    if (u.toString() !== window.location.href)
+    if (u.toString() !== window.location.href) {
       window.location.replace(u.toString());
+    }
   }
 
+  // debounce
   const debounce = (fn, d) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), d); }; };
 
-
-  // =============================
-  // LOAD PROJECT OPTIONS
-  // =============================
+  // Load project options
   fetch('/projects/options/active', { credentials: 'same-origin' })
     .then(r => r.ok ? r.json() : Promise.reject(r))
     .then(({ data }) => {
@@ -71,71 +49,75 @@
       for (const o of opts) {
         const code = o.project_code || o.code || o.id;
         if (!code) continue;
-
         const op = document.createElement('option');
         op.value = code;
         op.textContent = `${code} — ${o.name || ''}`;
         selectEl.appendChild(op);
-
         if (!firstActive) firstActive = code;
       }
 
       const urlProject = getUrl().searchParams.get('project');
-
       if (urlProject) selectEl.value = urlProject;
       else if (initProject) selectEl.value = initProject;
-
-      // ============================================
-      // FIX QUAN TRỌNG — TRÁNH AUTO-REDIRECT /reports
-      // ============================================
-      const isReportDashboard =
-        window.location.pathname === '/reports' ||
-        window.location.pathname === '/reports/';
-
-      if (!isReportDashboard && firstActive && !urlProject && !initProject) {
-        // Chỉ auto-set project ở các trang report con
+      else if (firstActive) {
+        // Chỉ auto-apply ở trang con, không ở /reports
         setTimeout(() => applyFilters({ project: firstActive, q: initQ }), 200);
       }
     })
     .catch(e => console.warn('Project options load error:', e));
 
-
-  // =============================
-  // AUTO FILTER
-  // =============================
+  // event filters
   selectEl.addEventListener('change', () => applyFilters());
-
   const debouncedApply = debounce(() => applyFilters(), 500);
   qEl.addEventListener('input', debouncedApply);
-
   qEl.addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      applyFilters();
-    }
+    if (e.key === 'Enter') { e.preventDefault(); applyFilters(); }
   });
 
-
-  // =============================
-  // EXPORT XLSX
-  // =============================
+  // export
   document.getElementById('btnExportXlsx').addEventListener('click', () => {
     const project = (selectEl.value || '').trim();
-    if (!project) {
-      alert('Vui lòng chọn dự án trước khi export.');
-      return;
-    }
+    if (!project) { alert('Vui lòng chọn dự án trước khi export.'); return; }
 
     const u = new URL('/reports/export', window.location.origin);
     u.searchParams.set('kind', "{{ export_kind }}");
-    u.searchParams.set('project', project);
-
     const q = (qEl.value || '').trim();
+    u.searchParams.set('project', project);
     if (q) u.searchParams.set('q', q);
-
     u.searchParams.set('fmt', 'xlsx');
     window.location.href = u.toString();
   });
 
 })();
 </script>
+
+{# === UI toolbar bên trên luôn giữ nguyên, không cần sửa === #}
+
+<div class="mb-4 bg-white border rounded-xl p-4 shadow-sm">
+  <form id="filtersForm"
+        class="flex flex-col md:flex-row gap-3 items-start md:items-end"
+        action="" method="get">
+    <div class="flex-1 min-w-[220px]">
+      <label class="block text-xs text-slate-500 mb-1 font-semibold">Dự án</label>
+      <select id="projectSelect" name="project"
+              class="w-full rounded-lg border-slate-300 focus:ring-2 focus:ring-indigo-500">
+        <option value="">— Tất cả dự án —</option>
+      </select>
+    </div>
+
+    <div class="flex-1 min-w-[220px]">
+      <label class="block text-xs text-slate-500 mb-1 font-semibold">Tìm kiếm</label>
+      <input id="qInput" name="q" type="text"
+             placeholder="Tên, CCCD, SĐT, mã lô..."
+             class="w-full rounded-lg border-slate-300 focus:ring-2 focus:ring-indigo-500"
+             value="{{ init_q or '' }}">
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2">
+      <button type="button" id="btnExportXlsx"
+              class="px-3 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50">
+        Export XLSX
+      </button>
+    </div>
+  </form>
+</div>
