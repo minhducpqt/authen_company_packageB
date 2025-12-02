@@ -121,74 +121,82 @@
   </a>
 </div>
 
+{# ===== DỰ ÁN ĐANG HOẠT ĐỘNG (CARD VIEW) ===== #}
 <div class="bg-white border rounded-2xl shadow-sm p-4">
-  <div class="flex items-center justify-between mb-3">
+  <div class="flex items-center justify-between mb-4">
     <div>
       <div class="text-sm font-semibold text-slate-900 flex items-center gap-2">
         <i class="ri-community-line text-sky-500"></i>
         Dự án đang hoạt động
       </div>
       <p class="text-xs text-slate-500 mt-1">
-        Danh sách các dự án ACTIVE hiện tại.
+        Danh sách các dự án ACTIVE hiện tại. Mỗi dự án hiển thị mã, tên rút gọn, vị trí và lối tắt báo cáo.
       </p>
     </div>
   </div>
 
-  <div class="overflow-auto max-h-[70vh]">
-    <table class="min-w-full text-sm text-slate-700">
-      <thead class="bg-slate-50 text-slate-500 border-b">
-        <tr>
-          <th class="px-3 py-2 text-left font-semibold">Mã dự án</th>
-          <th class="px-3 py-2 text-left font-semibold">Tên dự án</th>
-          <th class="px-3 py-2 text-left font-semibold">Vị trí</th>
-          <th class="px-3 py-2 text-left font-semibold">Loại sản phẩm</th>
-          <th class="px-3 py-2 text-left font-semibold">Truy cập nhanh</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-100">
-        {% for p in projects or [] %}
-          {% set code = p.project_code or p.code %}
-          <tr class="hover:bg-slate-50 transition">
-            <td class="px-3 py-2 font-semibold text-slate-900 whitespace-nowrap">{{ code }}</td>
-            <td class="px-3 py-2 whitespace-nowrap">{{ p.name }}</td>
-            <td class="px-3 py-2 text-xs text-slate-500 whitespace-nowrap">{{ p.location or '-' }}</td>
-            <td class="px-3 py-2 text-xs uppercase tracking-wide text-slate-500 whitespace-nowrap">
-              {{ p.product_type or '-' }}
-            </td>
-            <td class="px-3 py-2">
-              <div class="flex flex-wrap items-center gap-2 text-xs">
-                <a href="/reports/lots/eligible?project={{ code }}" class="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800">
-                  <i class="ri-checkbox-circle-line"></i> Lô đủ
-                </a>
-                <span class="text-slate-300">|</span>
-                <a href="/reports/lots/ineligible?project={{ code }}" class="inline-flex items-center gap-1 text-rose-600 hover:text-rose-800">
-                  <i class="ri-alert-line"></i> Lô không đủ
-                </a>
-                <span class="text-slate-300">|</span>
-                <a href="/reports/lots/deposit-stats?project={{ code }}" class="inline-flex items-center gap-1 text-sky-600 hover:text-sky-800">
-                  <i class="ri-funds-line"></i> Tiền đặt
-                </a>
-                <span class="text-slate-300">|</span>
-                <a href="/reports/customers/eligible-lots?project={{ code }}" class="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-800">
-                  <i class="ri-user-star-line"></i> KH đủ
-                </a>
-                <span class="text-slate-300">|</span>
-                <a href="/reports/dossiers/paid/detail?project={{ code }}" class="inline-flex items-center gap-1 text-amber-600 hover:text-amber-800">
-                  <i class="ri-file-list-3-line"></i> Hồ sơ
-                </a>
+  {% set projects_list = projects or [] %}
+  {% if projects_list|length == 0 %}
+    <div class="py-6 text-center text-slate-400 text-sm">
+      Chưa có dự án ACTIVE nào hoặc không tải được danh sách dự án.
+    </div>
+  {% else %}
+    <div class="space-y-3">
+      {% for p in projects_list %}
+        {% set code = p.project_code or p.code %}
+        <div class="border border-slate-100 rounded-2xl px-4 py-3 bg-slate-50/60 hover:bg-slate-50 transition">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700">
+                  {{ code }}
+                </span>
+                <span class="text-[11px] uppercase tracking-wide text-slate-400">
+                  {{ p.product_type or 'LAND' }}
+                </span>
               </div>
-            </td>
-          </tr>
-        {% endfor %}
-        {% if (projects or [])|length == 0 %}
-          <tr>
-            <td colspan="5" class="px-3 py-4 text-center text-slate-400 text-sm">
-              Chưa có dự án ACTIVE nào hoặc không tải được danh sách dự án.
-            </td>
-          </tr>
-        {% endif %}
-      </tbody>
-    </table>
-  </div>
+              <div class="text-sm font-semibold text-slate-900 leading-snug break-words">
+                {{ p.name }}
+              </div>
+              <div class="mt-1 text-xs text-slate-500 flex items-center gap-1">
+                <i class="ri-map-pin-line"></i>
+                <span class="truncate md:whitespace-normal">
+                  {{ p.location or '-' }}
+                </span>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 text-xs md:justify-end">
+              <a href="/reports/lots/eligible?project={{ code }}"
+                 class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100">
+                <i class="ri-checkbox-circle-line"></i>
+                <span>Lô đủ</span>
+              </a>
+              <a href="/reports/lots/ineligible?project={{ code }}"
+                 class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-rose-50 text-rose-700 hover:bg-rose-100">
+                <i class="ri-alert-line"></i>
+                <span>Lô không đủ</span>
+              </a>
+              <a href="/reports/lots/deposit-stats?project={{ code }}"
+                 class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-sky-50 text-sky-700 hover:bg-sky-100">
+                <i class="ri-funds-line"></i>
+                <span>Tiền đặt</span>
+              </a>
+              <a href="/reports/customers/eligible-lots?project={{ code }}"
+                 class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100">
+                <i class="ri-user-star-line"></i>
+                <span>KH đủ</span>
+              </a>
+              <a href="/reports/dossiers/paid/detail?project={{ code }}"
+                 class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-50 text-amber-700 hover:bg-amber-100">
+                <i class="ri-file-list-3-line"></i>
+                <span>Hồ sơ</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
 </div>
 {% endblock %}
