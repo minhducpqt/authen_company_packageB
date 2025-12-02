@@ -141,7 +141,6 @@ async def _load_projects(token: str, project_param: Optional[str]) -> tuple[list
 # ============================================================
 # 5.0 Tổng quan
 # ============================================================
-
 @router.get("/reports", response_class=HTMLResponse)
 async def reports_home(request: Request):
     _log(f"REQ /reports url={request.url}")
@@ -155,44 +154,26 @@ async def reports_home(request: Request):
             status_code=303,
         )
 
-    # 2. Gọi Service A để xác thực token (giống trang /)
-    try:
-        status_me, me = await fetch_me(token)
-    except Exception as e:
-        _log(f"/reports: fetch_me error={e}")
-        return RedirectResponse(
-            url="/login?next=%2Freports",
-            status_code=303,
-        )
-
-    if status_me != 200:
-        _log(f"/reports: auth invalid (status={status_me}) → redirect /login")
-        return RedirectResponse(
-            url="/login?next=%2Freports",
-            status_code=303,
-        )
-
-    # 3. Load danh sách dự án ACTIVE
+    # 2. Load danh sách dự án ACTIVE
     projects: list[dict] = []
     try:
-        st, pj = await _get_json(
+        status, data = await _get_json(
             "/api/v1/projects",
             token,
             {"status": "ACTIVE", "size": 1000},
         )
-        if st == 200 and isinstance(pj, dict):
-            projects = pj.get("data") or pj.get("items") or []
+        if status == 200 and isinstance(data, dict):
+            projects = data.get("data") or data.get("items") or []
     except Exception as e:
-        _log(f"reports_home: load projects error={e}")
+        _log(f"reports_home: load projects error={e!r}")
 
-    # 4. Render template
+    # 3. Render template
     return templates.TemplateResponse(
         "reports/index.html",
         {
             "request": request,
             "title": "Báo cáo thống kê",
             "projects": projects,
-            "me": me,  # nếu base.html / header có dùng thông tin user
         },
     )
 
