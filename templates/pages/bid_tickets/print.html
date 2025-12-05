@@ -90,15 +90,22 @@
       width: 4mm;
     }
 
-    /* Dòng chấm để người dùng điền */
+    /* Dòng chấm viết tay */
     .dotline {
       display: inline-block;
       border-bottom: 0.6pt dotted #888;
       min-width: 45mm;
-      line-height: 1.2;
+      line-height: 1.6; /* giãn cao hơn một chút */
     }
     .dotline.long {
       min-width: 120mm;
+    }
+
+    /* Giãn khoảng cách giữa 2 dòng Bằng chữ */
+    .textline-block {
+      margin-top: 4mm;
+      margin-bottom: 5mm;
+      line-height: 1.8;
     }
 
     .signature-block {
@@ -118,29 +125,22 @@
   {% set unit_label = is_per_sqm and 'VND/m²' or 'VND/lô' %}
   {% set price_unit = unit_label %}
   {% set bid_unit = unit_label %}
-  {# số lô đủ điều kiện của khách trong dự án #}
   {% set qty_lots = t.customer_lot_count or 1 %}
-  {# Chuẩn hóa lot_code: CL03-11 → CL03.11 #}
   {% set lot_short = (t.lot_code or '').replace('-', '.') %}
-  {# STT: ưu tiên stt_padded, fallback stt #}
   {% set stt_code = t.stt_padded or (t.stt or '') %}
 
   <div class="page">
 
-    <!-- Mã nhận dạng nhỏ góc trái: STT - C - S - lot -->
     <div class="flag-box">
       {{ stt_code }}-C{{ t.customer_id }}-S{{ qty_lots }}-{{ lot_short }}
     </div>
 
-    <!-- Quốc hiệu -->
     <div class="center gov">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
     <div class="center bold">Độc lập – Tự do – Hạnh phúc</div>
     <div class="divider">-----------------o0o-----------------</div>
 
-    <!-- Tiêu đề -->
     <div class="center title">PHIẾU TRẢ GIÁ</div>
 
-    <!-- Tài sản đấu giá -->
     <div class="mt-3">
       <span class="bold">Tài sản đấu giá:</span>
       Quyền sử dụng đất thuộc dự án
@@ -153,79 +153,63 @@
       {% endif %}
     </div>
 
-    <!-- Kính gửi -->
     <div class="mt-2">
       <span class="bold">Kính gửi:</span>
       {{ t.company_name or 'Công ty Đấu giá Hợp danh Kinh Đô' }}
     </div>
 
-    <!-- Thông tin khách hàng -->
     <table class="info-table mt-2">
-      <tr>
-        <td class="info-label">Khách hàng tham gia ĐG</td>
-        <td class="info-sep">:</td>
-        <td>{{ t.customer_full_name or '' }}</td>
-      </tr>
-      <tr>
-        <td class="info-label">CCCD/Căn cước</td>
-        <td class="info-sep">:</td>
-        <td>{{ t.cccd or '' }}</td>
-      </tr>
-      <tr>
-        <td class="info-label">Địa chỉ</td>
-        <td class="info-sep">:</td>
-        <td>{{ t.address or '' }}</td>
-      </tr>
-      <tr>
-        <td class="info-label">Số điện thoại</td>
-        <td class="info-sep">:</td>
-        <td>{{ t.phone or '' }}</td>
-      </tr>
-      <tr>
-        <td class="info-label">Người được uỷ quyền<br/>(nếu có)</td>
-        <td class="info-sep">:</td>
-        <td><span class="dotline long">&nbsp;</span></td>
-      </tr>
-      <tr>
-        <td class="info-label">CCCD người uỷ quyền</td>
-        <td class="info-sep">:</td>
-        <td><span class="dotline long">&nbsp;</span></td>
-      </tr>
+      <tr><td class="info-label">Khách hàng tham gia ĐG</td><td class="info-sep">:</td><td>{{ t.customer_full_name }}</td></tr>
+      <tr><td class="info-label">CCCD/Căn cước</td><td class="info-sep">:</td><td>{{ t.cccd }}</td></tr>
+      <tr><td class="info-label">Địa chỉ</td><td class="info-sep">:</td><td>{{ t.address }}</td></tr>
+      <tr><td class="info-label">Số điện thoại</td><td class="info-sep">:</td><td>{{ t.phone }}</td></tr>
+      <tr><td class="info-label">Người được uỷ quyền<br/>(nếu có)</td><td class="info-sep">:</td><td><span class="dotline long">&nbsp;</span></td></tr>
+      <tr><td class="info-label">CCCD người uỷ quyền</td><td class="info-sep">:</td><td><span class="dotline long">&nbsp;</span></td></tr>
     </table>
 
-    <!-- Đoạn cam kết đầu -->
     <div class="mt-2 small" style="text-align: justify;">
       Sau khi nghiên cứu kỹ hồ sơ mời tham gia đấu giá và xem tài sản đấu giá nêu trên,
       tôi quyết định trả giá như sau:
     </div>
 
-    <!-- NỘI DUNG TRẢ GIÁ -->
     <div class="center bold mt-3">NỘI DUNG TRẢ GIÁ</div>
 
     <table class="info-table mt-1">
       <tr>
-        <td class="info-label">Lô đất đăng ký ĐG</td>
-        <td class="info-sep">:</td>
+        <td class="info-label">Lô đất đăng ký ĐG</td><td class="info-sep">:</td>
         <td class="bold">{{ t.lot_code }}</td>
       </tr>
+
       <tr>
         <td class="info-label">Giá khởi điểm ({{ price_unit }})</td>
         <td class="info-sep">:</td>
         <td>
-          {% if t.starting_price_vnd is number %}
+          {% if is_per_sqm and t.starting_price_vnd is number %}
+            {% if t.area_m2 is number and t.area_m2 > 0 %}
+              {% set unit_price = ((t.starting_price_vnd|float) / (t.area_m2|float))|int %}
+              {{ "{:,.0f}".format(unit_price) }}
+            {% else %}0{% endif %}
+          {% else %}
             {{ "{:,.0f}".format(t.starting_price_vnd|float) }}
           {% endif %}
         </td>
       </tr>
+
       <tr>
         <td class="info-label">Bước giá ({{ bid_unit }})</td>
         <td class="info-sep">:</td>
         <td>
-          {% if t.bid_step_vnd is number %}
+          {% if is_per_sqm and t.bid_step_vnd is number %}
+            {% if t.area_m2 is number and t.area_m2 > 0 %}
+              {% set unit_step = ((t.bid_step_vnd|float) / (t.area_m2|float))|int %}
+              {{ "{:,.0f}".format(unit_step) }}
+            {% else %}0{% endif %}
+          {% else %}
             {{ "{:,.0f}".format(t.bid_step_vnd|float) }}
           {% endif %}
         </td>
       </tr>
+
       <tr>
         <td class="info-label">Tôi xin trả giá là</td>
         <td class="info-sep">:</td>
@@ -236,31 +220,29 @@
       </tr>
     </table>
 
-    <div class="mt-1 small">
+    <!-- GIÃN DÒNG Ở ĐÂY -->
+    <div class="small textline-block">
       Bằng chữ:
       <span class="dotline long">&nbsp;</span>
     </div>
-    <div class="small">
+
+    <div class="small textline-block">
       <span class="dotline long">&nbsp;</span> đồng.
     </div>
 
-    <!-- Cam kết -->
     <div class="mt-3 small" style="text-align: justify;">
       Tôi cam kết hoàn toàn chịu trách nhiệm về mức giá đã trả trên Phiếu trả giá này
       và thực hiện nghiêm túc Quy chế đấu giá tài sản cùng các quy định pháp luật có liên quan.
     </div>
 
-    <!-- Ghi chú -->
     <div class="mt-3 note">
       <span class="bold">Ghi chú:</span><br/>
       - Phiếu trả giá hợp lệ là phiếu được phát hành bởi {{ t.company_name or 'Công ty Đấu giá Hợp danh Kinh Đô' }};<br/>
       - Phiếu không bị rách, nát;<br/>
       - Được điền đầy đủ các thông tin;<br/>
-      - Trường hợp có sai lệch giữa giá trả bằng số với giá trả bằng chữ
-        thì lấy giá trả bằng chữ để xét giá.
+      - Nếu sai lệch giữa giá bằng số và bằng chữ → lấy giá bằng chữ.
     </div>
 
-    <!-- Chữ ký -->
     <div class="signature-block">
       ................................, ngày ...... tháng ...... năm ......<br/><br/>
       <span class="bold">Khách hàng tham gia đấu giá</span><br/>
@@ -275,5 +257,6 @@
     window.print();
   });
 </script>
+
 </body>
 </html>
