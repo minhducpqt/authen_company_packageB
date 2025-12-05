@@ -188,8 +188,10 @@
             {% if t.area_m2 is number and t.area_m2 > 0 %}
               {% set unit_price = ((t.starting_price_vnd|float) / (t.area_m2|float))|int %}
               {{ "{:,.0f}".format(unit_price) }}
-            {% else %}0{% endif %}
-          {% else %}
+            {% else %}
+              0
+            {% endif %}
+          {% elif t.starting_price_vnd is number %}
             {{ "{:,.0f}".format(t.starting_price_vnd|float) }}
           {% endif %}
         </td>
@@ -199,12 +201,7 @@
         <td class="info-label">Bước giá ({{ bid_unit }})</td>
         <td class="info-sep">:</td>
         <td>
-          {% if is_per_sqm and t.bid_step_vnd is number %}
-            {% if t.area_m2 is number and t.area_m2 > 0 %}
-              {% set unit_step = ((t.bid_step_vnd|float) / (t.area_m2|float))|int %}
-              {{ "{:,.0f}".format(unit_step) }}
-            {% else %}0{% endif %}
-          {% else %}
+          {% if t.bid_step_vnd is number %}
             {{ "{:,.0f}".format(t.bid_step_vnd|float) }}
           {% endif %}
         </td>
