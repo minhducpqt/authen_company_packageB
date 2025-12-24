@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="bg-white border border-slate-200 rounded-2xl p-5">
+
+  <!-- HEADER -->
+  <div class="flex items-start justify-between gap-4 flex-wrap">
+    <div>
+      <h2 class="text-lg font-semibold text-slate-800">4.1 Giấy tờ phải nộp</h2>
+      <p class="text-sm text-slate-500 mt-1">
+        Danh sách khách theo dự án — xem trạng thái hồ sơ &amp; gửi lại link đăng ký.
+      </p>
+    </div>
+    <div class="text-sm text-slate-500">
+      Tổng: <span id="totalText" class="font-semibold text-slate-700">0</span>
+    </div>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="mt-5 grid grid-cols-1 md:grid-cols-12 gap-3">
+
+    <div class="md:col-span-3">
+      <label class="text-xs font-semibold text-slate-600">Dự án</label>
+      <select id="projectSelect"
+              class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 bg-white">
+        <option value="">— Chọn dự án —</option>
+        {% for p in projects %}
+          <option value="{{ p.id }}" {% if project_id == p.id %}selected{% endif %}>
+            {{ p.project_code }} — {{ p.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="md:col-span-3">
+      <label class="text-xs font-semibold text-slate-600">Trạng thái hồ sơ</label>
+      <select id="docStatusSelect"
+              class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 bg-white">
+        <option value="ALL">Tất cả</option>
+        <option value="MISSING">Thiếu</option>
+        <option value="MISSING_ALL">Thiếu hoàn toàn</option>
+        <option value="MISSING_PART">Thiếu một phần</option>
+        <option value="COMPLETE">Đã đủ</option>
+      </select>
+    </div>
+
+    <div class="md:col-span-3">
+      <label class="text-xs font-semibold text-slate-600">Tìm kiếm</label>
+      <input id="qInput"
+             placeholder="Tên / CCCD…"
+             class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"/>
+      <div class="text-[11px] text-slate-400 mt-1">
+        * Hiện tìm theo Tên hoặc CCCD (SĐT/Email không filter ở server).
+      </div>
+    </div>
+
+    <div class="md:col-span-3">
+      <label class="text-xs font-semibold text-slate-600">Sắp xếp</label>
+      <select id="sortSelect"
+              class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 bg-white">
+        <option value="-last_deposit_paid_at">Mới cọc gần nhất</option>
+        <option value="-last_dossier_paid_at">Mới mua HS gần nhất</option>
+        <option value="customer_full_name">Tên A→Z</option>
+      </select>
+    </div>
+
+    <div class="md:col-span-12 flex justify-between items-center mt-1">
+      <button id="btnReset"
+              class="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50">
+        Reset
+      </button>
+
+      <div class="flex gap-2 items-center text-sm text-slate-500">
+        <button id="btnPrev"
+                class="px-3 py-2 rounded-xl border hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none"
+                disabled>Trước</button>
+        <span>Trang <b id="pageText">1</b></span>
+        <button id="btnNext"
+                class="px-3 py-2 rounded-xl border hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none"
+                disabled>Sau</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="mt-5 overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead>
+        <tr class="border-b text-slate-500">
+          <th class="py-3 pr-4">Khách hàng</th>
+          <th class="py-3 pr-4">CCCD</th>
+          <th class="py-3 pr-4">SĐT</th>
+          <th class="py-3 pr-4">Email</th>
+          <th class="py-3 pr-4">Hồ sơ</th>
+          <th class="py-3 pr-4">Nộp gần nhất</th>
+          <th class="py-3 pr-4">Link</th>
+          <th class="py-3 pr-4 text-right"></th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr>
+          <td colspan="8" class="py-10 text-center text-slate-400">
+            Chọn dự án để xem dữ liệu
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"
+     class="fixed bottom-6 right-6 z-[9999] hidden items-center gap-2
+            bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg text-sm">
+  <i class="ri-checkbox-circle-line text-emerald-400 text-lg"></i>
+  <span id="toastText">Đã copy</span>
+</div>
+
+<script>
+const DATA_URL = "/_admin/customer-documents/data";
+const DETAIL_URL = "/_admin/customer-documents/detail";
+const ORIGIN_BASE = "https://khachhang.daugiathongminh.vn";
+const FALLBACK_PUBLIC_BASE = "https://khachhang.daugiathongminh.vn/public/registration/";
+
+let STATE = { page: 1, size: 200, has_more: false };
+
+const esc = (s) => (s ?? "").toString()
+  .replace(/&/g,"&amp;")
+  .replace(/</g,"&lt;")
+  .replace(/>/g,"&gt;")
+  .replace(/"/g,"&quot;")
+  .replace(/'/g,"&#039;");
+
+function debounce(fn, t=400){
+  let x;
+  return (...a)=>{ clearTimeout(x); x=setTimeout(()=>fn(...a), t); }
+}
+
+function showToast(msg="Đã copy"){
+  const el = document.getElementById("toast");
+  const txt = document.getElementById("toastText");
+  txt.textContent = msg;
+  el.classList.remove("hidden");
+  el.classList.add("flex");
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(()=>{
+    el.classList.add("hidden");
+    el.classList.remove("flex");
+  }, 1800);
+}
+
+/**
+ * Format time → dd/mm/yyyy HH:MM:SS
+ * Hỗ trợ:
+ * - "YYYY-MM-DD HH:MM:SS"
+ * - ISO "YYYY-MM-DDTHH:MM:SS..."
+ */
+function fmtDateTime(v){
+  if(!v) return "—";
+  const s = String(v).trim();
+  if(!s) return "—";
+
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
+  if(m){
+    const [_, yy, mm, dd, HH, MI, SS] = m;
+    return `${dd}/${mm}/${yy} ${HH}:${MI}:${SS}`;
+  }
+
+  const d = new Date(s);
+  if(!isNaN(d.getTime())){
+    const pad = (n)=> String(n).padStart(2,"0");
+    const dd = pad(d.getDate());
+    const mm = pad(d.getMonth()+1);
+    const yy = d.getFullYear();
+    const HH = pad(d.getHours());
+    const MI = pad(d.getMinutes());
+    const SS = pad(d.getSeconds());
+    return `${dd}/${mm}/${yy} ${HH}:${MI}:${SS}`;
+  }
+
+  return esc(s);
+}
+
+/**
+ * Trạng thái hồ sơ (B):
+ * - COMPLETE: docs_completed_3 true OR đủ 3 doc_*_at
+ * - MISSING_ALL: 3 doc_*_at đều null
+ * - MISSING_PART: còn lại
+ */
+function computeDocState(r){
+  const front = !!r.doc_cccd_front_at;
+  const back  = !!r.doc_cccd_back_at;
+  const form  = !!r.doc_reg_form_at;
+
+  if (r.docs_completed_3 === true) return "COMPLETE";
+  if (!front && !back && !form) return "MISSING_ALL";
+  if (front && back && form) return "COMPLETE";
+  return "MISSING_PART";
+}
+
+function badge(kind){
+  if(kind==="COMPLETE"){
+    return `<span class="px-2 py-1 rounded-full text-xs bg-emerald-50 text-emerald-700 border border-emerald-200">Đã đủ</span>`;
+  }
+  if(kind==="MISSING_ALL"){
+    return `<span class="px-2 py-1 rounded-full text-xs bg-rose-50 text-rose-700 border border-rose-200">Thiếu hoàn toàn</span>`;
+  }
+  return `<span class="px-2 py-1 rounded-full text-xs bg-amber-50 text-amber-800 border border-amber-200">Thiếu một phần</span>`;
+}
+
+function matchFilter(kind, want){
+  if(want==="ALL") return true;
+  if(want==="MISSING") return kind === "MISSING_ALL" || kind === "MISSING_PART";
+  return kind === want;
+}
+
+function buildRegistrationUrl(r){
+  if (r.registration_path) return ORIGIN_BASE + r.registration_path;
+  if (r.registration_token) return FALLBACK_PUBLIC_BASE + r.registration_token;
+  return "";
+}
+
+function buildDetailUrl(projectId, customerId){
+  const qs = new URLSearchParams({ project: String(projectId), customer_id: String(customerId) });
+  return `${DETAIL_URL}?${qs.toString()}`;
+}
+
+async function copyToClipboard(text){
+  if(!text) return false;
+
+  try{
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  }catch(e){}
+
+  try{
+    const tmp = document.createElement("textarea");
+    tmp.value = text;
+    tmp.style.position = "fixed";
+    tmp.style.left = "-9999px";
+    tmp.style.top = "-9999px";
+    document.body.appendChild(tmp);
+    tmp.focus();
+    tmp.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(tmp);
+    return !!ok;
+  }catch(e){}
+
+  return false;
+}
+
+async function fetchData(reset=false){
+  if(reset) STATE.page = 1;
+
+  const pid = document.getElementById("projectSelect").value;
+  if(!pid) return;
+
+  const qs = new URLSearchParams({
+    project: pid,
+    page: String(STATE.page),
+    size: String(STATE.size),
+    sort: document.getElementById("sortSelect").value,
+
+    // Server chỉ hiểu ALL|COMPLETE|MISSING, còn MISSING_ALL/PART filter ở client
+    doc_status: "ALL",
+
+    // nếu role không có PII_READ thì Service A tự trả null, mình vẫn gửi true để tiện cho staff/admin
+    expose_phone: "true",
+
+    // ✅ NEW: lấy URL giấy tờ
+    expose_docs: "true",
+  });
+
+  const q = document.getElementById("qInput").value.trim();
+  if(q) qs.set("q", q);
+
+  const tbody = document.getElementById("tbody");
+  tbody.innerHTML = `<tr><td colspan="8" class="py-10 text-center text-slate-400">Đang tải dữ liệu…</td></tr>`;
+
+  let js;
+  try{
+    const r = await fetch(DATA_URL + "?" + qs.toString(), { headers: { "Accept":"application/json" } });
+    js = await r.json();
+  }catch(e){
+    tbody.innerHTML = `<tr><td colspan="8" class="py-10 text-center text-rose-600">Lỗi tải dữ liệu.</td></tr>`;
+    return;
+  }
+
+  STATE.has_more = !!js.has_more;
+  document.getElementById("pageText").textContent = String(STATE.page);
+  document.getElementById("totalText").textContent = String(js.total || 0);
+
+  btnPrev.disabled = STATE.page <= 1;
+  btnNext.disabled = !STATE.has_more;
+
+  const want = document.getElementById("docStatusSelect").value;
+  const items = Array.isArray(js.items) ? js.items : [];
+  const rows = items.filter(r => matchFilter(computeDocState(r), want));
+
+  tbody.innerHTML = rows.map(r=>{
+    const state = computeDocState(r);
+    const regUrl = buildRegistrationUrl(r);
+    const lastSubmit = fmtDateTime(r.docs_last_submitted_at);
+
+    let linkHtml = "—";
+    if (regUrl){
+      linkHtml = `
+        <button type="button"
+                class="inline-flex items-center gap-1 text-indigo-600 underline text-xs hover:text-indigo-800"
+                data-copy="${esc(regUrl)}">
+          <i class="ri-file-copy-line"></i><span>Copy link</span>
+        </button>`;
+    }
+
+    const detailUrl = buildDetailUrl(pid, r.customer_id);
+
+    return `
+      <tr class="border-b">
+        <td class="py-3 pr-4 font-semibold">${esc(r.customer_full_name) || "—"}</td>
+        <td class="py-3 pr-4 font-mono text-xs">${esc(r.customer_cccd) || "—"}</td>
+        <td class="py-3 pr-4">${esc(r.customer_phone) || "—"}</td>
+        <td class="py-3 pr-4">${esc(r.customer_email) || "—"}</td>
+        <td class="py-3 pr-4">${badge(state)}</td>
+        <td class="py-3 pr-4 text-xs text-slate-600 whitespace-nowrap">${esc(lastSubmit)}</td>
+        <td class="py-3 pr-4">${linkHtml}</td>
+        <td class="py-3 pr-4 text-right">
+          <a href="${esc(detailUrl)}"
+             class="inline-flex items-center gap-1 text-slate-500 hover:text-indigo-600"
+             title="Chi tiết">
+            <i class="ri-arrow-right-line text-lg"></i>
+          </a>
+        </td>
+      </tr>`;
+  }).join("") || `<tr><td colspan="8" class="py-10 text-center text-slate-400">Không có dữ liệu</td></tr>`;
+
+  // bind copy buttons
+  document.querySelectorAll("[data-copy]").forEach(btn=>{
+    btn.addEventListener("click", async ()=>{
+      const url = btn.getAttribute("data-copy") || "";
+      if(!url) return;
+
+      const ok = await copyToClipboard(url);
+      if(ok){
+        showToast("Đã copy link đăng ký");
+      }else{
+        prompt("Copy link:", url);
+      }
+    });
+  });
+}
+
+// ===== AUTO FILTER =====
+const auto = debounce(()=>fetchData(true), 450);
+
+["projectSelect","docStatusSelect","sortSelect"].forEach(id=>{
+  document.getElementById(id).addEventListener("change", ()=>fetchData(true));
+});
+qInput.addEventListener("input", auto);
+
+btnReset.onclick = ()=>{
+  qInput.value = "";
+  docStatusSelect.value = "ALL";
+  sortSelect.value = "-last_deposit_paid_at";
+  fetchData(true);
+};
+
+btnPrev.onclick = ()=>{ if(STATE.page > 1){ STATE.page--; fetchData(false); } };
+btnNext.onclick = ()=>{ if(STATE.has_more){ STATE.page++; fetchData(false); } };
+
+// Auto-load if server pre-selected project_id
+{% if project_id %}
+fetchData(true);
+{% endif %}
+</script>
+{% endblock %}

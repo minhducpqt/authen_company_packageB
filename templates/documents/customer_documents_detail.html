@@ -1,0 +1,534 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="bg-white border border-slate-200 rounded-2xl p-5">
+
+  <!-- Header -->
+  <div class="flex items-start justify-between gap-3 flex-wrap">
+    <div>
+      <div class="flex items-center gap-2 flex-wrap">
+        <a href="{{ back_url }}" class="text-slate-500 hover:text-indigo-600 inline-flex items-center gap-1">
+          <i class="ri-arrow-left-line"></i><span>Quay lại</span>
+        </a>
+        <span class="text-slate-300">/</span>
+        <h2 class="text-lg font-semibold text-slate-800">4.1 Chi tiết giấy tờ</h2>
+      </div>
+      <p class="text-sm text-slate-500 mt-1">
+        Xem tình trạng CCCD &amp; Phiếu đăng ký đã ký — mở/preview và copy link.
+      </p>
+    </div>
+
+    <div class="flex gap-2 items-center">
+      <select id="projectSelect"
+              class="rounded-xl border border-slate-200 px-3 py-2 bg-white text-sm">
+        {% for p in projects %}
+          <option value="{{ p.id }}" {% if project_id == p.id %}selected{% endif %}>
+            {{ p.project_code }} — {{ p.name }}
+          </option>
+        {% endfor %}
+      </select>
+      <button id="btnReload"
+              class="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm">
+        Tải lại
+      </button>
+    </div>
+  </div>
+
+  <!-- Content grid -->
+  <div class="mt-5 grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+    <!-- LEFT -->
+    <div class="lg:col-span-5">
+      <div class="border border-slate-200 rounded-2xl p-4">
+        <div class="flex items-center justify-between">
+          <h3 class="font-semibold text-slate-800">Thông tin khách</h3>
+          <span id="docBadge" class="text-xs px-2 py-1 rounded-full border">—</span>
+        </div>
+
+        <div class="mt-3 space-y-2 text-sm">
+          <div class="flex justify-between gap-3">
+            <span class="text-slate-500">Họ tên</span>
+            <span id="cName" class="font-semibold text-slate-800 text-right">—</span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="text-slate-500">CCCD</span>
+            <span id="cCCCD" class="font-mono text-slate-800 text-right">—</span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="text-slate-500">SĐT</span>
+            <span id="cPhone" class="text-slate-800 text-right">—</span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="text-slate-500">Email</span>
+            <span id="cEmail" class="text-slate-800 text-right break-all">—</span>
+          </div>
+          <div class="flex justify-between gap-3">
+            <span class="text-slate-500">Ngày sinh</span>
+            <span id="cDob" class="text-slate-800 text-right">—</span>
+          </div>
+        </div>
+
+        <hr class="my-4"/>
+
+        <h3 class="font-semibold text-slate-800">Tổng hợp thanh toán</h3>
+        <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
+          <div class="border border-slate-200 rounded-xl p-3">
+            <div class="text-slate-500">Đã cọc</div>
+            <div class="mt-1 font-semibold text-slate-800">
+              <span id="depCount">0</span> lô
+            </div>
+            <div class="mt-1 text-xs text-slate-500">
+              Tổng: <span id="depTotal">—</span>
+            </div>
+            <div class="mt-1 text-xs text-slate-500">
+              Gần nhất: <span id="depLast">—</span>
+            </div>
+          </div>
+
+          <div class="border border-slate-200 rounded-xl p-3">
+            <div class="text-slate-500">Mua hồ sơ</div>
+            <div class="mt-1 font-semibold text-slate-800">
+              <span id="dosTotal">—</span>
+            </div>
+            <div class="mt-1 text-xs text-slate-500">
+              Gần nhất: <span id="dosLast">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <h3 class="font-semibold text-slate-800">Link đăng ký (private)</h3>
+          <div class="mt-2 flex gap-2">
+            <input id="regLink"
+                   class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                   readonly value=""/>
+            <button id="btnCopyReg"
+                    class="px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm">
+              Copy
+            </button>
+          </div>
+          <div class="mt-2 text-xs text-slate-500">
+            Tạo lúc: <span id="regCreated">—</span> · Trạng thái: <span id="regStatus">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="lg:col-span-7 space-y-4">
+
+      <div class="border border-slate-200 rounded-2xl p-4">
+        <h3 class="font-semibold text-slate-800">Giấy tờ</h3>
+        <p class="text-sm text-slate-500 mt-1">Preview ảnh/PDF; nếu CDN chặn nhúng thì vẫn có nút mở.</p>
+
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+
+          <!-- CCCD FRONT -->
+          <div class="border border-slate-200 rounded-2xl overflow-hidden">
+            <div class="p-3 flex items-center justify-between">
+              <div>
+                <div class="font-semibold text-slate-800 text-sm">CCCD mặt trước</div>
+                <div class="text-xs text-slate-500">Upload: <span id="frontAt">—</span></div>
+              </div>
+              <span id="frontState" class="text-xs px-2 py-1 rounded-full border">—</span>
+            </div>
+            <div id="frontPreview" class="bg-slate-50 h-56 flex items-center justify-center text-slate-400 text-sm">
+              Chưa có
+            </div>
+            <div class="p-3 flex gap-2">
+              <button class="btnOpen px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm w-full"
+                      data-open="front">Mở</button>
+              <button class="btnCopy px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm"
+                      data-copy="front">Copy</button>
+            </div>
+          </div>
+
+          <!-- CCCD BACK -->
+          <div class="border border-slate-200 rounded-2xl overflow-hidden">
+            <div class="p-3 flex items-center justify-between">
+              <div>
+                <div class="font-semibold text-slate-800 text-sm">CCCD mặt sau</div>
+                <div class="text-xs text-slate-500">Upload: <span id="backAt">—</span></div>
+              </div>
+              <span id="backState" class="text-xs px-2 py-1 rounded-full border">—</span>
+            </div>
+            <div id="backPreview" class="bg-slate-50 h-56 flex items-center justify-center text-slate-400 text-sm">
+              Chưa có
+            </div>
+            <div class="p-3 flex gap-2">
+              <button class="btnOpen px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm w-full"
+                      data-open="back">Mở</button>
+              <button class="btnCopy px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm"
+                      data-copy="back">Copy</button>
+            </div>
+          </div>
+
+          <!-- SIGNED FORM -->
+          <div class="border border-slate-200 rounded-2xl overflow-hidden">
+            <div class="p-3 flex items-center justify-between">
+              <div>
+                <div class="font-semibold text-slate-800 text-sm">Phiếu ĐK đã ký</div>
+                <div class="text-xs text-slate-500">Upload: <span id="formAt">—</span></div>
+              </div>
+              <span id="formState" class="text-xs px-2 py-1 rounded-full border">—</span>
+            </div>
+            <div id="formPreview" class="bg-slate-50 h-56 flex items-center justify-center text-slate-400 text-sm">
+              Chưa có
+            </div>
+            <div class="p-3 flex gap-2">
+              <button class="btnOpen px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm w-full"
+                      data-open="form">Mở</button>
+              <button class="btnCopy px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm"
+                      data-copy="form">Copy</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Deposit lots -->
+      <div class="border border-slate-200 rounded-2xl p-4">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <h3 class="font-semibold text-slate-800">Danh sách lô đã cọc (PAID)</h3>
+          <div class="text-sm text-slate-500">
+            Tổng: <span id="lotsTotal" class="font-semibold text-slate-700">0</span>
+          </div>
+        </div>
+
+        <div class="mt-3 overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead>
+              <tr class="border-b text-slate-500">
+                <th class="py-2 pr-3">Lô</th>
+                <th class="py-2 pr-3">Giá khởi điểm</th>
+                <th class="py-2 pr-3">Tiền cọc</th>
+                <th class="py-2 pr-3">Đã nộp</th>
+                <th class="py-2 pr-3">Ngày nộp</th>
+              </tr>
+            </thead>
+            <tbody id="lotsTbody">
+              <tr><td colspan="5" class="py-8 text-center text-slate-400">Đang tải…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"
+     class="fixed bottom-6 right-6 z-[9999] hidden items-center gap-2
+            bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg text-sm">
+  <i class="ri-checkbox-circle-line text-emerald-400 text-lg"></i>
+  <span id="toastText">Đã copy</span>
+</div>
+
+<script>
+const DATA_URL = "{{ data_url }}";
+const BASE_PATH = "{{ base_path }}";
+const ORIGIN_BASE = "https://khachhang.daugiathongminh.vn";
+const FALLBACK_PUBLIC_BASE = "https://khachhang.daugiathongminh.vn/public/registration/";
+
+const CUSTOMER_ID = {{ customer_id }};
+let PROJECT_ID = {{ project_id }};
+
+const esc = (s) => (s ?? "").toString()
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+  .replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+
+function showToast(msg="Đã copy"){
+  const el = document.getElementById("toast");
+  const txt = document.getElementById("toastText");
+  txt.textContent = msg;
+  el.classList.remove("hidden");
+  el.classList.add("flex");
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(()=>{
+    el.classList.add("hidden");
+    el.classList.remove("flex");
+  }, 1800);
+}
+
+async function copyToClipboard(text){
+  if(!text) return false;
+  try{
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  }catch(e){}
+  try{
+    const tmp = document.createElement("textarea");
+    tmp.value = text;
+    tmp.style.position = "fixed";
+    tmp.style.left = "-9999px";
+    tmp.style.top = "-9999px";
+    document.body.appendChild(tmp);
+    tmp.focus();
+    tmp.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(tmp);
+    return !!ok;
+  }catch(e){}
+  return false;
+}
+
+function fmtMoney(v){
+  if(v === null || v === undefined) return "—";
+  const n = Number(v);
+  if(Number.isFinite(n)) return n.toLocaleString("vi-VN");
+  return String(v);
+}
+
+function fmtDateTime(v){
+  if(!v) return "—";
+  const s = String(v).trim();
+  if(!s) return "—";
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
+  if(m){
+    const [_, yy, mm, dd, HH, MI, SS] = m;
+    return `${dd}/${mm}/${yy} ${HH}:${MI}:${SS}`;
+  }
+  const d = new Date(s);
+  if(!isNaN(d.getTime())){
+    const pad = (n)=> String(n).padStart(2,"0");
+    return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }
+  return esc(s);
+}
+
+function badgeForComplete(isComplete){
+  if(isComplete){
+    return `<span class="text-xs px-2 py-1 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700">Đã đủ</span>`;
+  }
+  return `<span class="text-xs px-2 py-1 rounded-full border border-amber-200 bg-amber-50 text-amber-800">Thiếu</span>`;
+}
+
+function statePill(ok){
+  if(ok){
+    return `<span class="text-xs px-2 py-1 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700">OK</span>`;
+  }
+  return `<span class="text-xs px-2 py-1 rounded-full border border-rose-200 bg-rose-50 text-rose-700">Thiếu</span>`;
+}
+
+function buildRegistrationUrl(r){
+  if (r.registration_path) return ORIGIN_BASE + r.registration_path;
+  if (r.registration_token) return FALLBACK_PUBLIC_BASE + r.registration_token;
+  return "";
+}
+
+/* =========================
+   NEW: Guess file kind by MIME OR URL EXT
+   ========================= */
+function _stripQuery(url){
+  try{
+    return (url || "").split("#")[0].split("?")[0];
+  }catch(e){
+    return url || "";
+  }
+}
+function _extFromUrl(url){
+  const u = _stripQuery(url);
+  const m = u.match(/\.([a-zA-Z0-9]{2,5})$/);
+  return (m && m[1]) ? m[1].toLowerCase() : "";
+}
+function guessKind(mime, url){
+  const m = (mime || "").toLowerCase().trim();
+  if(m.includes("pdf")) return "pdf";
+  if(m.startsWith("image/")) return "image";
+
+  // fallback by extension
+  const ext = _extFromUrl(url);
+  if(["jpg","jpeg","png","webp","gif","bmp"].includes(ext)) return "image";
+  if(ext === "pdf") return "pdf";
+  return "other";
+}
+
+/* =========================
+   NEW: Preview with graceful fallback
+   - image: <img> (onerror fallback)
+   - pdf: <iframe> (if blocked, show message + open link)
+   ========================= */
+function renderPreview(containerId, url, mime){
+  const box = document.getElementById(containerId);
+  if(!url){
+    box.innerHTML = `<div class="text-slate-400 text-sm">Chưa có</div>`;
+    return;
+  }
+  const kind = guessKind(mime, url);
+  const safeUrl = esc(url);
+
+  if(kind === "image"){
+    box.innerHTML = `
+      <div class="w-full h-56 bg-white flex items-center justify-center">
+        <img src="${safeUrl}"
+             class="w-full h-56 object-contain"
+             alt="preview"
+             onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=&quot;text-xs text-slate-600 p-3 text-center&quot;>Không preview được ảnh (CDN chặn hoặc link hết hạn).<br/><a class=&quot;text-indigo-600 underline&quot; href=&quot;${safeUrl}&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Mở file</a></div>';" />
+      </div>`;
+    return;
+  }
+
+  if(kind === "pdf"){
+    // iframe đôi khi bị chặn (X-Frame-Options / CSP). Vẫn hiển thị open link.
+    box.innerHTML = `
+      <div class="w-full h-56 bg-white">
+        <iframe src="${safeUrl}"
+                class="w-full h-56"
+                title="pdf preview"></iframe>
+      </div>
+      <div class="px-3 pb-3 -mt-1 text-center text-xs text-slate-600">
+        Nếu không hiển thị PDF, bấm
+        <a class="text-indigo-600 underline" href="${safeUrl}" target="_blank" rel="noopener">Mở file</a>
+      </div>`;
+    return;
+  }
+
+  box.innerHTML = `
+    <div class="p-3 text-xs text-slate-600 text-center">
+      File: ${esc(mime || _extFromUrl(url) || "unknown")}<br/>
+      <a class="text-indigo-600 underline" href="${safeUrl}" target="_blank" rel="noopener">Mở file</a>
+    </div>`;
+}
+
+function setDocBlock(prefix, ok, url, mime, at){
+  document.getElementById(prefix + "State").innerHTML = statePill(ok);
+  document.getElementById(prefix + "At").textContent = fmtDateTime(at);
+  renderPreview(prefix + "Preview", url, mime);
+}
+
+function setRegLink(url){
+  document.getElementById("regLink").value = url || "";
+}
+
+async function loadDetail(){
+  const qs = new URLSearchParams({
+    project: String(PROJECT_ID),
+    customer_id: String(CUSTOMER_ID),
+    expose_phone: "true",
+    expose_docs: "true",
+    lots_page: "1",
+    lots_size: "200",
+    lots_sort: "-deposit_paid_at"
+  });
+
+  let js;
+  try{
+    const r = await fetch(DATA_URL + "?" + qs.toString(), { headers: { "Accept":"application/json" } });
+    js = await r.json();
+  }catch(e){
+    alert("Lỗi tải dữ liệu detail");
+    return;
+  }
+
+  const d = js.detail || {};
+  const lots = (js.deposit_lots || {});
+  const items = Array.isArray(lots.items) ? lots.items : [];
+
+  // customer
+  document.getElementById("cName").textContent = d.customer_full_name || "—";
+  document.getElementById("cCCCD").textContent = d.customer_cccd || "—";
+  document.getElementById("cPhone").textContent = d.customer_phone || "—";
+  document.getElementById("cEmail").textContent = d.customer_email || "—";
+  document.getElementById("cDob").textContent = d.customer_dob || "—";
+
+  // summary
+  document.getElementById("depCount").textContent = String(d.deposit_lot_count_paid || 0);
+  document.getElementById("depTotal").textContent = fmtMoney(d.total_deposit_vnd_paid);
+  document.getElementById("depLast").textContent = fmtDateTime(d.last_deposit_paid_at);
+  document.getElementById("dosTotal").textContent = fmtMoney(d.total_dossier_vnd_paid);
+  document.getElementById("dosLast").textContent = fmtDateTime(d.last_dossier_paid_at);
+
+  // doc badge
+  const isComplete = !!d.docs_completed_3 || !!d.is_complete;
+  document.getElementById("docBadge").innerHTML = badgeForComplete(isComplete);
+
+  // registration
+  const regUrl = buildRegistrationUrl(d);
+  setRegLink(regUrl);
+  document.getElementById("regCreated").textContent = fmtDateTime(d.registration_created_at);
+  document.getElementById("regStatus").textContent = d.registration_status || "—";
+
+  // docs: prefer new view columns
+  const frontUrl  = d.cccd_front_url  || d.doc_cccd_front_url || null;
+  const backUrl   = d.cccd_back_url   || d.doc_cccd_back_url  || null;
+  const formUrl   = d.signed_form_url || d.doc_reg_form_url   || null;
+
+  const frontMime = d.cccd_front_mime_type  || null;
+  const backMime  = d.cccd_back_mime_type   || null;
+  const formMime  = d.signed_form_mime_type || null;
+
+  const frontAt = d.cccd_front_uploaded_at  || d.doc_cccd_front_at || null;
+  const backAt  = d.cccd_back_uploaded_at   || d.doc_cccd_back_at  || null;
+  const formAt  = d.signed_form_uploaded_at || d.doc_reg_form_at   || null;
+
+  setDocBlock("front", !!frontUrl, frontUrl, frontMime, frontAt);
+  setDocBlock("back",  !!backUrl,  backUrl,  backMime,  backAt);
+  setDocBlock("form",  !!formUrl,  formUrl,  formMime,  formAt);
+
+  window.__DOC_URLS = { front: frontUrl, back: backUrl, form: formUrl };
+
+  // lots
+  document.getElementById("lotsTotal").textContent = String(lots.total || items.length || 0);
+
+  const tbody = document.getElementById("lotsTbody");
+  if(!items.length){
+    tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-400">Chưa có lô cọc</td></tr>`;
+  }else{
+    tbody.innerHTML = items.map(r=>{
+      return `
+        <tr class="border-b">
+          <td class="py-2 pr-3 font-semibold">${esc(r.lot_code || "—")}</td>
+          <td class="py-2 pr-3">${esc(fmtMoney(r.starting_price_vnd))}</td>
+          <td class="py-2 pr-3">${esc(fmtMoney(r.deposit_vnd))}</td>
+          <td class="py-2 pr-3">${esc(fmtMoney(r.deposit_amount_vnd))}</td>
+          <td class="py-2 pr-3 text-xs text-slate-600 whitespace-nowrap">${esc(fmtDateTime(r.deposit_paid_at))}</td>
+        </tr>
+      `;
+    }).join("");
+  }
+}
+
+document.getElementById("btnReload").addEventListener("click", ()=>loadDetail());
+
+document.getElementById("projectSelect").addEventListener("change", (e)=>{
+  const v = e.target.value;
+  if(!v) return;
+  PROJECT_ID = Number(v);
+  const qs = new URLSearchParams({ project: String(PROJECT_ID), customer_id: String(CUSTOMER_ID) });
+  window.location.href = `${BASE_PATH}/detail?${qs.toString()}`;
+});
+
+document.getElementById("btnCopyReg").addEventListener("click", async ()=>{
+  const v = document.getElementById("regLink").value || "";
+  if(!v) return;
+  const ok = await copyToClipboard(v);
+  if(ok) showToast("Đã copy link đăng ký");
+  else prompt("Copy link:", v);
+});
+
+document.querySelectorAll(".btnOpen").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    const k = btn.getAttribute("data-open");
+    const url = (window.__DOC_URLS || {})[k];
+    if(!url) return;
+    window.open(url, "_blank", "noopener");
+  });
+});
+document.querySelectorAll(".btnCopy").forEach(btn=>{
+  btn.addEventListener("click", async ()=>{
+    const k = btn.getAttribute("data-copy");
+    const url = (window.__DOC_URLS || {})[k];
+    if(!url) return;
+    const ok = await copyToClipboard(url);
+    if(ok) showToast("Đã copy link tài liệu");
+    else prompt("Copy link:", url);
+  });
+});
+
+loadDetail();
+</script>
+{% endblock %}

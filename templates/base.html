@@ -103,15 +103,9 @@
           </a>
         </li>
         <li>
-          <a class="side-link {% if request.url.path.startswith('/customers') %}active{% endif %}"
-             href="/customers">
-            <i class="ri-team-line"></i> 1.2 Khách hàng
-          </a>
-        </li>
-        <li>
           <a class="side-link {% if request.url.path.startswith('/projects/payment-accounts') %}active{% endif %}"
              href="/projects/payment-accounts">
-            <i class="ri-cash-line"></i> 1.3 Cấu hình nhận tiền
+            <i class="ri-cash-line"></i> 1.2 Cấu hình nhận tiền
           </a>
         </li>
 
@@ -137,36 +131,54 @@
 
         <li class="side-title mt-4">3. Quản lý dòng tiền</li>
         <li>
-          <a class="side-link" href="/giao-dich-ngan-hang">
+          <a class="side-link {% if request.url.path.startswith('/giao-dich-ngan-hang') %}active{% endif %}"
+             href="/giao-dich-ngan-hang">
             <i class="ri-bank-card-line"></i> 3.1 Giao dịch ngân hàng
           </a>
         </li>
 
-        <li class="side-title mt-4">4. Văn bản pháp lý</li>
+        {# ===== NEW: 4. KHÁCH HÀNG ===== #}
+        <li class="side-title mt-4">4. Khách hàng</li>
+        <li>
+          <a class="side-link {% if request.url.path.startswith('/customers') and not request.url.path.startswith('/customers/documents') %}active{% endif %}"
+             href="/customers">
+            <i class="ri-team-line"></i> 4.0 Danh sách khách hàng
+          </a>
+        </li>
+        <li>
+            <a class="side-link {% if request.url.path.startswith('/_admin/customer-documents') %}active{% endif %}"
+               href="/_admin/customer-documents">
+              <i class="ri-file-shield-2-line"></i> 4.1 Giấy tờ phải nộp
+            </a>
+        </li>
+
+        {# ===== OLD 4 -> NEW 5: VĂN BẢN PHÁP LÝ ===== #}
+        <li class="side-title mt-4">5. Văn bản pháp lý</li>
         <li>
           <a class="side-link {% if request.url.path.startswith('/bid-attendance') %}active{% endif %}"
              href="/bid-attendance">
-            <i class="ri-user-follow-line"></i> 4.1 Danh sách điểm danh
+            <i class="ri-user-follow-line"></i> 5.1 Danh sách điểm danh
           </a>
         </li>
         <li>
           <a class="side-link {% if request.url.path.startswith('/bid-tickets') %}active{% endif %}"
              href="/bid-tickets">
-            <i class="ri-file-text-line"></i> 4.2 Phiếu trả giá
+            <i class="ri-file-text-line"></i> 5.2 Phiếu trả giá
           </a>
         </li>
 
-        <li class="side-title mt-4">5. Thiết lập</li>
+        {# ===== OLD 5 -> NEW 6: THIẾT LẬP ===== #}
+        <li class="side-title mt-4">6. Thiết lập</li>
         <li>
           <a class="side-link {% if request.url.path.startswith('/settings/company') %}active{% endif %}"
              href="/settings/company">
-            <i class="ri-building-4-line"></i> 5.1 Thông tin công ty
+            <i class="ri-building-4-line"></i> 6.1 Thông tin công ty
           </a>
         </li>
         <li>
           <a class="side-link {% if request.url.path.startswith('/settings/bank-accounts') %}active{% endif %}"
              href="/settings/bank-accounts">
-            <i class="ri-bank-line"></i> 5.2 Tài khoản ngân hàng
+            <i class="ri-bank-line"></i> 6.2 Tài khoản ngân hàng
           </a>
         </li>
         <li>
