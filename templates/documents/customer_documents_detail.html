@@ -2,209 +2,166 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
-<div class="bg-white border border-slate-200 rounded-2xl p-5">
+<style>
+  /* --- light utility helpers (không phụ thuộc tailwind) --- */
+  .card { background:#fff; border:1px solid #e2e8f0; border-radius:16px; }
+  .card-h { padding:14px 16px; border-bottom:1px solid #eef2f7; }
+  .card-b { padding:16px; }
+  .muted { color:#64748b; }
+  .kpi { border:1px solid #e2e8f0; border-radius:14px; padding:12px; }
+  .chip { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; font-size:12px; border:1px solid #e2e8f0; background:#fff; }
+  .chip-ok { border-color:#bbf7d0; background:#f0fdf4; color:#166534; }
+  .chip-warn { border-color:#fde68a; background:#fffbeb; color:#92400e; }
+  .chip-bad { border-color:#fecaca; background:#fff1f2; color:#9f1239; }
 
-  <!-- Header -->
+  .doc-mini { border:1px solid #e2e8f0; border-radius:14px; overflow:hidden; background:#fff; cursor:pointer; }
+  .doc-mini.active { outline:2px solid #6366f1; outline-offset:2px; }
+  .doc-mini .top { padding:10px 12px; display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+  .doc-mini .name { font-weight:700; color:#0f172a; font-size:13px; line-height:1.2; }
+  .doc-mini .sub { font-size:12px; color:#64748b; margin-top:3px; }
+  .doc-mini .thumb { background:#f8fafc; height:110px; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:12px; }
+  .doc-mini img { width:100%; height:110px; object-fit:cover; display:block; }
+  .doc-mini iframe { width:100%; height:110px; border:0; background:#fff; }
+
+  /* Thumbnail chỉ preview — không cho tương tác để click luôn select được */
+  .doc-mini .thumb,
+  .doc-mini .thumb *{
+    pointer-events: none !important;
+    user-select: none;
+  }
+
+  /* nếu có iframe/pdf */
+  .doc-mini iframe{
+    pointer-events: none !important;
+  }
+
+  /* (tuỳ chọn) cho cảm giác click rõ hơn */
+  .doc-mini{
+    cursor: pointer;
+  }
+  .doc-mini:active{
+    transform: scale(0.997);
+  }
+
+  .preview-wrap { background:#0b1220; border-radius:16px; overflow:hidden; border:1px solid #1f2a44; }
+  .preview-inner { background:#0b1220; height:460px; display:flex; align-items:center; justify-content:center; }
+  .preview-inner img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
+  .preview-inner iframe { width:100%; height:460px; border:0; background:#fff; }
+  .preview-empty { color:#94a3b8; font-size:14px; padding:22px; text-align:center; }
+
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px;
+         padding:10px 14px; border-radius:12px; border:1px solid #e2e8f0; background:#fff; cursor:pointer; }
+  .btn:hover { background:#f8fafc; }
+  .btn-primary { border-color:#c7d2fe; background:#eef2ff; color:#3730a3; }
+  .btn-primary:hover { background:#e0e7ff; }
+  .btn-danger { border-color:#fecaca; background:#fff1f2; color:#9f1239; }
+  .btn:disabled { opacity:.45; cursor:not-allowed; }
+
+  .grid2 { display:grid; grid-template-columns: 380px 1fr; gap:16px; }
+  @media (max-width: 1024px){ .grid2 { grid-template-columns: 1fr; } .preview-inner{height:360px} .preview-inner iframe{height:360px} }
+
+  /* modal */
+  .backdrop { position:fixed; inset:0; background:rgba(2,6,23,.6); display:none; align-items:center; justify-content:center; z-index:9999; }
+  .backdrop.show { display:flex; }
+  .modal { width:min(980px, 92vw); background:#fff; border-radius:18px; overflow:hidden; border:1px solid #e2e8f0; box-shadow:0 16px 50px rgba(2,6,23,.25); }
+  .modal-h { padding:12px 14px; display:flex; align-items:center; justify-content:space-between; gap:10px; border-bottom:1px solid #eef2f7; }
+  .modal-b { padding:0; background:#0b1220; }
+  .modal-view { height:min(74vh, 720px); display:flex; align-items:center; justify-content:center; }
+  .modal-view img { max-width:100%; max-height:100%; object-fit:contain; }
+  .modal-view iframe { width:100%; height:min(74vh, 720px); border:0; background:#fff; }
+
+  /* toast */
+  #toast { position:fixed; right:18px; bottom:18px; z-index:10000; display:none; align-items:center; gap:10px;
+           background:#0f172a; color:#fff; padding:10px 12px; border-radius:14px; box-shadow:0 10px 28px rgba(2,6,23,.25); font-size:13px; }
+  #toast.show{ display:flex; }
+</style>
+
+<div class="card" style="padding:16px;">
+  <!-- top bar -->
   <div class="flex items-start justify-between gap-3 flex-wrap">
     <div>
       <div class="flex items-center gap-2 flex-wrap">
-        <a href="{{ back_url }}" class="text-slate-500 hover:text-indigo-600 inline-flex items-center gap-1">
+        <a href="{{ back_url }}" class="muted hover:text-indigo-600 inline-flex items-center gap-1" style="text-decoration:none;">
           <i class="ri-arrow-left-line"></i><span>Quay lại</span>
         </a>
-        <span class="text-slate-300">/</span>
-        <h2 class="text-lg font-semibold text-slate-800">4.1 Chi tiết giấy tờ</h2>
+        <span class="muted">/</span>
+        <div class="text-lg font-semibold text-slate-800">4.1 Chi tiết giấy tờ</div>
       </div>
-      <p class="text-sm text-slate-500 mt-1">
-        Xem tình trạng CCCD &amp; Phiếu đăng ký đã ký — mở/preview và copy link.
-      </p>
+      <div class="muted text-sm mt-1">Xem nhanh trạng thái + mở/preview + copy link.</div>
     </div>
 
     <div class="flex gap-2 items-center">
-      <select id="projectSelect"
-              class="rounded-xl border border-slate-200 px-3 py-2 bg-white text-sm">
+      <select id="projectSelect" class="rounded-xl border border-slate-200 px-3 py-2 bg-white text-sm">
         {% for p in projects %}
           <option value="{{ p.id }}" {% if project_id == p.id %}selected{% endif %}>
             {{ p.project_code }} — {{ p.name }}
           </option>
         {% endfor %}
       </select>
-      <button id="btnReload"
-              class="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm">
-        Tải lại
-      </button>
+      <button id="btnReload" class="btn"><i class="ri-refresh-line"></i> Tải lại</button>
     </div>
   </div>
 
-  <!-- Content grid -->
-  <div class="mt-5 grid grid-cols-1 lg:grid-cols-12 gap-4">
+  <div class="mt-4 grid2">
 
-    <!-- LEFT -->
-    <div class="lg:col-span-5">
-      <div class="border border-slate-200 rounded-2xl p-4">
-        <div class="flex items-center justify-between">
-          <h3 class="font-semibold text-slate-800">Thông tin khách</h3>
-          <span id="docBadge" class="text-xs px-2 py-1 rounded-full border">—</span>
+    <!-- LEFT SUMMARY -->
+    <div class="space-y-4">
+      <div class="card">
+        <div class="card-h flex items-center justify-between">
+          <div class="font-semibold text-slate-800">Tóm tắt khách</div>
+          <span id="docBadge" class="chip">—</span>
         </div>
+        <div class="card-b text-sm">
+          <div class="space-y-2">
+            <div class="flex justify-between gap-3"><span class="muted">Họ tên</span><span id="cName" class="font-semibold text-slate-900 text-right">—</span></div>
+            <div class="flex justify-between gap-3"><span class="muted">CCCD</span><span id="cCCCD" class="font-mono text-right">—</span></div>
+            <div class="flex justify-between gap-3"><span class="muted">SĐT</span><span id="cPhone" class="text-right">—</span></div>
+            <div class="flex justify-between gap-3"><span class="muted">Email</span><span id="cEmail" class="text-right break-all">—</span></div>
+            <div class="flex justify-between gap-3"><span class="muted">Ngày sinh</span><span id="cDob" class="text-right">—</span></div>
+          </div>
 
-        <div class="mt-3 space-y-2 text-sm">
-          <div class="flex justify-between gap-3">
-            <span class="text-slate-500">Họ tên</span>
-            <span id="cName" class="font-semibold text-slate-800 text-right">—</span>
-          </div>
-          <div class="flex justify-between gap-3">
-            <span class="text-slate-500">CCCD</span>
-            <span id="cCCCD" class="font-mono text-slate-800 text-right">—</span>
-          </div>
-          <div class="flex justify-between gap-3">
-            <span class="text-slate-500">SĐT</span>
-            <span id="cPhone" class="text-slate-800 text-right">—</span>
-          </div>
-          <div class="flex justify-between gap-3">
-            <span class="text-slate-500">Email</span>
-            <span id="cEmail" class="text-slate-800 text-right break-all">—</span>
-          </div>
-          <div class="flex justify-between gap-3">
-            <span class="text-slate-500">Ngày sinh</span>
-            <span id="cDob" class="text-slate-800 text-right">—</span>
-          </div>
-        </div>
-
-        <hr class="my-4"/>
-
-        <h3 class="font-semibold text-slate-800">Tổng hợp thanh toán</h3>
-        <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
-          <div class="border border-slate-200 rounded-xl p-3">
-            <div class="text-slate-500">Đã cọc</div>
-            <div class="mt-1 font-semibold text-slate-800">
-              <span id="depCount">0</span> lô
+          <div class="mt-4 grid grid-cols-2 gap-3">
+            <div class="kpi">
+              <div class="muted text-xs">Cọc (PAID)</div>
+              <div class="mt-1 text-lg font-semibold text-slate-900"><span id="depCount">0</span> lô</div>
+              <div class="mt-1 text-xs muted">Tổng: <span id="depTotal">—</span></div>
+              <div class="mt-1 text-xs muted">Gần nhất: <span id="depLast">—</span></div>
             </div>
-            <div class="mt-1 text-xs text-slate-500">
-              Tổng: <span id="depTotal">—</span>
-            </div>
-            <div class="mt-1 text-xs text-slate-500">
-              Gần nhất: <span id="depLast">—</span>
+            <div class="kpi">
+              <div class="muted text-xs">Mua hồ sơ (PAID)</div>
+              <div class="mt-1 text-lg font-semibold text-slate-900"><span id="dosTotal">—</span></div>
+              <div class="mt-1 text-xs muted">Gần nhất: <span id="dosLast">—</span></div>
             </div>
           </div>
 
-          <div class="border border-slate-200 rounded-xl p-3">
-            <div class="text-slate-500">Mua hồ sơ</div>
-            <div class="mt-1 font-semibold text-slate-800">
-              <span id="dosTotal">—</span>
+          <div class="mt-4">
+            <div class="font-semibold text-slate-800">Link đăng ký (private)</div>
+            <div class="mt-2 flex gap-2">
+              <input id="regLink" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" readonly />
+              <button id="btnCopyReg" class="btn btn-primary"><i class="ri-file-copy-line"></i> Copy</button>
             </div>
-            <div class="mt-1 text-xs text-slate-500">
-              Gần nhất: <span id="dosLast">—</span>
+            <div class="mt-2 text-xs muted">
+              Tạo lúc: <span id="regCreated">—</span> · Trạng thái: <span id="regStatus">—</span>
             </div>
-          </div>
-        </div>
-
-        <div class="mt-4">
-          <h3 class="font-semibold text-slate-800">Link đăng ký (private)</h3>
-          <div class="mt-2 flex gap-2">
-            <input id="regLink"
-                   class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                   readonly value=""/>
-            <button id="btnCopyReg"
-                    class="px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm">
-              Copy
-            </button>
-          </div>
-          <div class="mt-2 text-xs text-slate-500">
-            Tạo lúc: <span id="regCreated">—</span> · Trạng thái: <span id="regStatus">—</span>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- RIGHT -->
-    <div class="lg:col-span-7 space-y-4">
-
-      <div class="border border-slate-200 rounded-2xl p-4">
-        <h3 class="font-semibold text-slate-800">Giấy tờ</h3>
-        <p class="text-sm text-slate-500 mt-1">Preview ảnh/PDF; nếu CDN chặn nhúng thì vẫn có nút mở.</p>
-
-        <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-
-          <!-- CCCD FRONT -->
-          <div class="border border-slate-200 rounded-2xl overflow-hidden">
-            <div class="p-3 flex items-center justify-between">
-              <div>
-                <div class="font-semibold text-slate-800 text-sm">CCCD mặt trước</div>
-                <div class="text-xs text-slate-500">Upload: <span id="frontAt">—</span></div>
-              </div>
-              <span id="frontState" class="text-xs px-2 py-1 rounded-full border">—</span>
-            </div>
-            <div id="frontPreview" class="bg-slate-50 h-56 flex items-center justify-center text-slate-400 text-sm">
-              Chưa có
-            </div>
-            <div class="p-3 flex gap-2">
-              <button class="btnOpen px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm w-full"
-                      data-open="front">Mở</button>
-              <button class="btnCopy px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm"
-                      data-copy="front">Copy</button>
-            </div>
-          </div>
-
-          <!-- CCCD BACK -->
-          <div class="border border-slate-200 rounded-2xl overflow-hidden">
-            <div class="p-3 flex items-center justify-between">
-              <div>
-                <div class="font-semibold text-slate-800 text-sm">CCCD mặt sau</div>
-                <div class="text-xs text-slate-500">Upload: <span id="backAt">—</span></div>
-              </div>
-              <span id="backState" class="text-xs px-2 py-1 rounded-full border">—</span>
-            </div>
-            <div id="backPreview" class="bg-slate-50 h-56 flex items-center justify-center text-slate-400 text-sm">
-              Chưa có
-            </div>
-            <div class="p-3 flex gap-2">
-              <button class="btnOpen px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm w-full"
-                      data-open="back">Mở</button>
-              <button class="btnCopy px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm"
-                      data-copy="back">Copy</button>
-            </div>
-          </div>
-
-          <!-- SIGNED FORM -->
-          <div class="border border-slate-200 rounded-2xl overflow-hidden">
-            <div class="p-3 flex items-center justify-between">
-              <div>
-                <div class="font-semibold text-slate-800 text-sm">Phiếu ĐK đã ký</div>
-                <div class="text-xs text-slate-500">Upload: <span id="formAt">—</span></div>
-              </div>
-              <span id="formState" class="text-xs px-2 py-1 rounded-full border">—</span>
-            </div>
-            <div id="formPreview" class="bg-slate-50 h-56 flex items-center justify-center text-slate-400 text-sm">
-              Chưa có
-            </div>
-            <div class="p-3 flex gap-2">
-              <button class="btnOpen px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm w-full"
-                      data-open="form">Mở</button>
-              <button class="btnCopy px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm"
-                      data-copy="form">Copy</button>
-            </div>
-          </div>
-
+      <!-- LOTS TABLE -->
+      <div class="card">
+        <div class="card-h flex items-center justify-between">
+          <div class="font-semibold text-slate-800">Lô đã cọc (PAID)</div>
+          <div class="muted text-sm">Tổng: <b id="lotsTotal">0</b></div>
         </div>
-      </div>
-
-      <!-- Deposit lots -->
-      <div class="border border-slate-200 rounded-2xl p-4">
-        <div class="flex items-center justify-between gap-3 flex-wrap">
-          <h3 class="font-semibold text-slate-800">Danh sách lô đã cọc (PAID)</h3>
-          <div class="text-sm text-slate-500">
-            Tổng: <span id="lotsTotal" class="font-semibold text-slate-700">0</span>
-          </div>
-        </div>
-
-        <div class="mt-3 overflow-x-auto">
+        <div class="card-b overflow-x-auto">
           <table class="min-w-full text-sm">
             <thead>
               <tr class="border-b text-slate-500">
-                <th class="py-2 pr-3">Lô</th>
-                <th class="py-2 pr-3">Giá khởi điểm</th>
-                <th class="py-2 pr-3">Tiền cọc</th>
-                <th class="py-2 pr-3">Đã nộp</th>
-                <th class="py-2 pr-3">Ngày nộp</th>
+                <th class="py-2 pr-3 text-left">Lô</th>
+                <th class="py-2 pr-3 text-left">Giá</th>
+                <th class="py-2 pr-3 text-left">Cọc</th>
+                <th class="py-2 pr-3 text-left">Đã nộp</th>
+                <th class="py-2 pr-3 text-left">Ngày nộp</th>
               </tr>
             </thead>
             <tbody id="lotsTbody">
@@ -213,25 +170,109 @@
           </table>
         </div>
       </div>
+    </div>
 
+    <!-- RIGHT DOCS -->
+    <div class="space-y-4">
+      <div class="card">
+        <div class="card-h flex items-center justify-between">
+          <div>
+            <div class="font-semibold text-slate-800">Giấy tờ</div>
+            <div class="muted text-sm mt-1">Chọn 1 giấy tờ để xem lớn. PDF nếu bị chặn nhúng vẫn có nút mở.</div>
+          </div>
+          <div class="flex gap-2">
+            <button id="btnOpenDoc" class="btn btn-primary" disabled><i class="ri-external-link-line"></i> Mở</button>
+            <button id="btnCopyDoc" class="btn" disabled><i class="ri-file-copy-line"></i> Copy link</button>
+            <button id="btnZoom" class="btn" disabled><i class="ri-zoom-in-line"></i> Xem lớn</button>
+          </div>
+        </div>
+
+        <div class="card-b">
+          <!-- mini cards row -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div id="mini-front" class="doc-mini">
+              <div class="top">
+                <div>
+                  <div class="name">CCCD mặt trước</div>
+                  <div class="sub">Upload: <span id="frontAt">—</span></div>
+                </div>
+                <span id="frontState" class="chip">—</span>
+              </div>
+              <div id="frontThumb" class="thumb">Chưa có</div>
+            </div>
+
+            <div id="mini-back" class="doc-mini">
+              <div class="top">
+                <div>
+                  <div class="name">CCCD mặt sau</div>
+                  <div class="sub">Upload: <span id="backAt">—</span></div>
+                </div>
+                <span id="backState" class="chip">—</span>
+              </div>
+              <div id="backThumb" class="thumb">Chưa có</div>
+            </div>
+
+            <div id="mini-form" class="doc-mini">
+              <div class="top">
+                <div>
+                  <div class="name">Phiếu ĐK đã ký</div>
+                  <div class="sub">Upload: <span id="formAt">—</span></div>
+                </div>
+                <span id="formState" class="chip">—</span>
+              </div>
+              <div id="formThumb" class="thumb">Chưa có</div>
+            </div>
+          </div>
+
+          <!-- big preview -->
+          <div class="mt-4 preview-wrap">
+            <div id="bigPreview" class="preview-inner">
+              <div class="preview-empty">Chọn giấy tờ để xem preview</div>
+            </div>
+          </div>
+
+          <div class="mt-3 flex items-center justify-between gap-3 flex-wrap">
+            <div class="muted text-sm">
+              Đang chọn: <b id="selectedLabel">—</b>
+              <span class="muted"> · </span>
+              Loại: <span id="selectedType">—</span>
+            </div>
+            <div class="muted text-xs">
+              Nếu iframe PDF bị chặn (CSP/X-Frame-Options), hãy dùng nút <b>Mở</b>.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal viewer -->
+<div id="viewer" class="backdrop" aria-hidden="true" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-h">
+      <div class="text-sm font-semibold text-slate-800" id="viewerTitle">Xem giấy tờ</div>
+      <div class="flex gap-2 items-center">
+        <button id="viewerOpen" class="btn btn-primary"><i class="ri-external-link-line"></i> Mở</button>
+        <button id="viewerCopy" class="btn"><i class="ri-file-copy-line"></i> Copy</button>
+        <button id="viewerClose" class="btn btn-danger"><i class="ri-close-line"></i> Đóng</button>
+      </div>
+    </div>
+    <div class="modal-b">
+      <div id="viewerBody" class="modal-view"></div>
     </div>
   </div>
 </div>
 
 <!-- Toast -->
-<div id="toast"
-     class="fixed bottom-6 right-6 z-[9999] hidden items-center gap-2
-            bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg text-sm">
-  <i class="ri-checkbox-circle-line text-emerald-400 text-lg"></i>
-  <span id="toastText">Đã copy</span>
-</div>
+<div id="toast"><i class="ri-checkbox-circle-line" style="color:#34d399;font-size:18px;"></i><span id="toastText">Đã copy</span></div>
 
 <script>
 const DATA_URL = "{{ data_url }}";
 const BASE_PATH = "{{ base_path }}";
 const ORIGIN_BASE = "https://khachhang.daugiathongminh.vn";
 const FALLBACK_PUBLIC_BASE = "https://khachhang.daugiathongminh.vn/public/registration/";
-
 const CUSTOMER_ID = {{ customer_id }};
 let PROJECT_ID = {{ project_id }};
 
@@ -240,16 +281,11 @@ const esc = (s) => (s ?? "").toString()
   .replace(/"/g,"&quot;").replace(/'/g,"&#039;");
 
 function showToast(msg="Đã copy"){
-  const el = document.getElementById("toast");
-  const txt = document.getElementById("toastText");
-  txt.textContent = msg;
-  el.classList.remove("hidden");
-  el.classList.add("flex");
-  clearTimeout(window.__toastTimer);
-  window.__toastTimer = setTimeout(()=>{
-    el.classList.add("hidden");
-    el.classList.remove("flex");
-  }, 1800);
+  const t = document.getElementById("toast");
+  document.getElementById("toastText").textContent = msg;
+  t.classList.add("show");
+  clearTimeout(window.__t);
+  window.__t = setTimeout(()=>t.classList.remove("show"), 1600);
 }
 
 async function copyToClipboard(text){
@@ -267,8 +303,7 @@ async function copyToClipboard(text){
     tmp.style.left = "-9999px";
     tmp.style.top = "-9999px";
     document.body.appendChild(tmp);
-    tmp.focus();
-    tmp.select();
+    tmp.focus(); tmp.select();
     const ok = document.execCommand("copy");
     document.body.removeChild(tmp);
     return !!ok;
@@ -282,7 +317,6 @@ function fmtMoney(v){
   if(Number.isFinite(n)) return n.toLocaleString("vi-VN");
   return String(v);
 }
-
 function fmtDateTime(v){
   if(!v) return "—";
   const s = String(v).trim();
@@ -297,21 +331,7 @@ function fmtDateTime(v){
     const pad = (n)=> String(n).padStart(2,"0");
     return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   }
-  return esc(s);
-}
-
-function badgeForComplete(isComplete){
-  if(isComplete){
-    return `<span class="text-xs px-2 py-1 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700">Đã đủ</span>`;
-  }
-  return `<span class="text-xs px-2 py-1 rounded-full border border-amber-200 bg-amber-50 text-amber-800">Thiếu</span>`;
-}
-
-function statePill(ok){
-  if(ok){
-    return `<span class="text-xs px-2 py-1 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700">OK</span>`;
-  }
-  return `<span class="text-xs px-2 py-1 rounded-full border border-rose-200 bg-rose-50 text-rose-700">Thiếu</span>`;
+  return s;
 }
 
 function buildRegistrationUrl(r){
@@ -320,16 +340,17 @@ function buildRegistrationUrl(r){
   return "";
 }
 
-/* =========================
-   NEW: Guess file kind by MIME OR URL EXT
-   ========================= */
-function _stripQuery(url){
-  try{
-    return (url || "").split("#")[0].split("?")[0];
-  }catch(e){
-    return url || "";
-  }
+function chipStatus(ok){
+  if(ok) return `<span class="chip chip-ok">OK</span>`;
+  return `<span class="chip chip-bad">Thiếu</span>`;
 }
+function chipComplete(isComplete){
+  if(isComplete) return `<span class="chip chip-ok">Đã đủ</span>`;
+  return `<span class="chip chip-warn">Thiếu giấy tờ</span>`;
+}
+
+/* guess kind */
+function _stripQuery(url){ try{ return (url||"").split("#")[0].split("?")[0]; }catch(e){ return url||""; } }
 function _extFromUrl(url){
   const u = _stripQuery(url);
   const m = u.match(/\.([a-zA-Z0-9]{2,5})$/);
@@ -339,71 +360,113 @@ function guessKind(mime, url){
   const m = (mime || "").toLowerCase().trim();
   if(m.includes("pdf")) return "pdf";
   if(m.startsWith("image/")) return "image";
-
-  // fallback by extension
   const ext = _extFromUrl(url);
   if(["jpg","jpeg","png","webp","gif","bmp"].includes(ext)) return "image";
   if(ext === "pdf") return "pdf";
   return "other";
 }
 
-/* =========================
-   NEW: Preview with graceful fallback
-   - image: <img> (onerror fallback)
-   - pdf: <iframe> (if blocked, show message + open link)
-   ========================= */
-function renderPreview(containerId, url, mime){
-  const box = document.getElementById(containerId);
+/* global state */
+let DOCS = {
+  front: { label:"CCCD mặt trước", url:null, mime:null, at:null },
+  back:  { label:"CCCD mặt sau", url:null, mime:null, at:null },
+  form:  { label:"Phiếu ĐK đã ký", url:null, mime:null, at:null },
+};
+let SELECTED = "front";
+
+function setMini(id, ok, at, url, mime){
+  document.getElementById(id+"At").textContent = fmtDateTime(at);
+  document.getElementById(id+"State").innerHTML = ok ? `<span class="chip chip-ok">OK</span>` : `<span class="chip chip-bad">Thiếu</span>`;
+
+  const thumb = document.getElementById(id+"Thumb");
   if(!url){
-    box.innerHTML = `<div class="text-slate-400 text-sm">Chưa có</div>`;
+    thumb.innerHTML = "Chưa có";
+    return;
+  }
+
+  const kind = guessKind(mime, url);
+  const safe = esc(url);
+
+  if(kind==="image"){
+    thumb.innerHTML = `<img src="${safe}" alt="thumb" onerror="this.remove(); this.parentElement.textContent='Không tải được ảnh';" />`;
+    return;
+  }
+  if(kind==="pdf"){
+    thumb.innerHTML = `<iframe src="${safe}" title="pdf thumb"></iframe>`;
+    return;
+  }
+  thumb.innerHTML = `<div class="muted">Có file</div>`;
+}
+
+function markActive(){
+  ["front","back","form"].forEach(k=>{
+    document.getElementById("mini-"+k).classList.toggle("active", k===SELECTED);
+  });
+
+  const d = DOCS[SELECTED];
+  document.getElementById("selectedLabel").textContent = d.label;
+  document.getElementById("selectedType").textContent = d.url ? guessKind(d.mime, d.url).toUpperCase() : "—";
+
+  const has = !!d.url;
+  document.getElementById("btnOpenDoc").disabled = !has;
+  document.getElementById("btnCopyDoc").disabled = !has;
+  document.getElementById("btnZoom").disabled = !has;
+
+  renderBigPreview(d.url, d.mime);
+}
+
+function renderBigPreview(url, mime){
+  const box = document.getElementById("bigPreview");
+  if(!url){
+    box.innerHTML = `<div class="preview-empty">Chưa có file</div>`;
     return;
   }
   const kind = guessKind(mime, url);
-  const safeUrl = esc(url);
+  const safe = esc(url);
 
-  if(kind === "image"){
-    box.innerHTML = `
-      <div class="w-full h-56 bg-white flex items-center justify-center">
-        <img src="${safeUrl}"
-             class="w-full h-56 object-contain"
-             alt="preview"
-             onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=&quot;text-xs text-slate-600 p-3 text-center&quot;>Không preview được ảnh (CDN chặn hoặc link hết hạn).<br/><a class=&quot;text-indigo-600 underline&quot; href=&quot;${safeUrl}&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Mở file</a></div>';" />
-      </div>`;
+  if(kind==="image"){
+    box.innerHTML = `<img src="${safe}" alt="preview" onerror="this.remove(); document.getElementById('bigPreview').innerHTML='<div class=&quot;preview-empty&quot;>Không preview được ảnh. Hãy bấm Mở.</div>';" />`;
     return;
   }
-
-  if(kind === "pdf"){
-    // iframe đôi khi bị chặn (X-Frame-Options / CSP). Vẫn hiển thị open link.
-    box.innerHTML = `
-      <div class="w-full h-56 bg-white">
-        <iframe src="${safeUrl}"
-                class="w-full h-56"
-                title="pdf preview"></iframe>
-      </div>
-      <div class="px-3 pb-3 -mt-1 text-center text-xs text-slate-600">
-        Nếu không hiển thị PDF, bấm
-        <a class="text-indigo-600 underline" href="${safeUrl}" target="_blank" rel="noopener">Mở file</a>
-      </div>`;
+  if(kind==="pdf"){
+    box.innerHTML = `<iframe src="${safe}" title="pdf preview"></iframe>`;
     return;
   }
-
-  box.innerHTML = `
-    <div class="p-3 text-xs text-slate-600 text-center">
-      File: ${esc(mime || _extFromUrl(url) || "unknown")}<br/>
-      <a class="text-indigo-600 underline" href="${safeUrl}" target="_blank" rel="noopener">Mở file</a>
-    </div>`;
+  box.innerHTML = `<div class="preview-empty">Không hỗ trợ preview. Hãy bấm Mở.</div>`;
 }
 
-function setDocBlock(prefix, ok, url, mime, at){
-  document.getElementById(prefix + "State").innerHTML = statePill(ok);
-  document.getElementById(prefix + "At").textContent = fmtDateTime(at);
-  renderPreview(prefix + "Preview", url, mime);
+/* modal viewer */
+function openViewer(){
+  const d = DOCS[SELECTED];
+  if(!d.url) return;
+
+  document.getElementById("viewerTitle").textContent = d.label;
+  document.getElementById("viewer").classList.add("show");
+
+  const body = document.getElementById("viewerBody");
+  const kind = guessKind(d.mime, d.url);
+  const safe = esc(d.url);
+
+  if(kind==="image"){
+    body.innerHTML = `<img src="${safe}" alt="viewer" />`;
+  }else if(kind==="pdf"){
+    body.innerHTML = `<iframe src="${safe}" title="viewer pdf"></iframe>`;
+  }else{
+    body.innerHTML = `<div class="preview-empty" style="color:#cbd5e1;">Không hỗ trợ preview. Bấm Mở để xem.</div>`;
+  }
+
+  document.getElementById("viewerOpen").onclick = ()=>window.open(d.url, "_blank", "noopener");
+  document.getElementById("viewerCopy").onclick = async ()=>{
+    const ok = await copyToClipboard(d.url);
+    if(ok) showToast("Đã copy link tài liệu");
+  };
+}
+function closeViewer(){
+  document.getElementById("viewer").classList.remove("show");
+  document.getElementById("viewerBody").innerHTML = "";
 }
 
-function setRegLink(url){
-  document.getElementById("regLink").value = url || "";
-}
-
+/* load data */
 async function loadDetail(){
   const qs = new URLSearchParams({
     project: String(PROJECT_ID),
@@ -420,7 +483,7 @@ async function loadDetail(){
     const r = await fetch(DATA_URL + "?" + qs.toString(), { headers: { "Accept":"application/json" } });
     js = await r.json();
   }catch(e){
-    alert("Lỗi tải dữ liệu detail");
+    showToast("Lỗi tải dữ liệu");
     return;
   }
 
@@ -442,57 +505,62 @@ async function loadDetail(){
   document.getElementById("dosTotal").textContent = fmtMoney(d.total_dossier_vnd_paid);
   document.getElementById("dosLast").textContent = fmtDateTime(d.last_dossier_paid_at);
 
-  // doc badge
+  // completion
   const isComplete = !!d.docs_completed_3 || !!d.is_complete;
-  document.getElementById("docBadge").innerHTML = badgeForComplete(isComplete);
+  document.getElementById("docBadge").innerHTML = chipComplete(isComplete);
 
   // registration
   const regUrl = buildRegistrationUrl(d);
-  setRegLink(regUrl);
+  document.getElementById("regLink").value = regUrl || "";
   document.getElementById("regCreated").textContent = fmtDateTime(d.registration_created_at);
   document.getElementById("regStatus").textContent = d.registration_status || "—";
 
-  // docs: prefer new view columns
-  const frontUrl  = d.cccd_front_url  || d.doc_cccd_front_url || null;
-  const backUrl   = d.cccd_back_url   || d.doc_cccd_back_url  || null;
-  const formUrl   = d.signed_form_url || d.doc_reg_form_url   || null;
+  // docs (ưu tiên cột mới trong view)
+  DOCS.front.url  = d.cccd_front_url  || d.doc_cccd_front_url || null;
+  DOCS.back.url   = d.cccd_back_url   || d.doc_cccd_back_url  || null;
+  DOCS.form.url   = d.signed_form_url || d.doc_reg_form_url   || null;
 
-  const frontMime = d.cccd_front_mime_type  || null;
-  const backMime  = d.cccd_back_mime_type   || null;
-  const formMime  = d.signed_form_mime_type || null;
+  DOCS.front.mime = d.cccd_front_mime_type  || null;
+  DOCS.back.mime  = d.cccd_back_mime_type   || null;
+  DOCS.form.mime  = d.signed_form_mime_type || null;
 
-  const frontAt = d.cccd_front_uploaded_at  || d.doc_cccd_front_at || null;
-  const backAt  = d.cccd_back_uploaded_at   || d.doc_cccd_back_at  || null;
-  const formAt  = d.signed_form_uploaded_at || d.doc_reg_form_at   || null;
+  DOCS.front.at   = d.cccd_front_uploaded_at  || d.doc_cccd_front_at || null;
+  DOCS.back.at    = d.cccd_back_uploaded_at   || d.doc_cccd_back_at  || null;
+  DOCS.form.at    = d.signed_form_uploaded_at || d.doc_reg_form_at   || null;
 
-  setDocBlock("front", !!frontUrl, frontUrl, frontMime, frontAt);
-  setDocBlock("back",  !!backUrl,  backUrl,  backMime,  backAt);
-  setDocBlock("form",  !!formUrl,  formUrl,  formMime,  formAt);
-
-  window.__DOC_URLS = { front: frontUrl, back: backUrl, form: formUrl };
+  // mini cards
+  setMini("front", !!DOCS.front.url, DOCS.front.at, DOCS.front.url, DOCS.front.mime);
+  setMini("back",  !!DOCS.back.url,  DOCS.back.at,  DOCS.back.url,  DOCS.back.mime);
+  setMini("form",  !!DOCS.form.url,  DOCS.form.at,  DOCS.form.url,  DOCS.form.mime);
 
   // lots
   document.getElementById("lotsTotal").textContent = String(lots.total || items.length || 0);
-
   const tbody = document.getElementById("lotsTbody");
   if(!items.length){
     tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-400">Chưa có lô cọc</td></tr>`;
   }else{
-    tbody.innerHTML = items.map(r=>{
-      return `
-        <tr class="border-b">
-          <td class="py-2 pr-3 font-semibold">${esc(r.lot_code || "—")}</td>
-          <td class="py-2 pr-3">${esc(fmtMoney(r.starting_price_vnd))}</td>
-          <td class="py-2 pr-3">${esc(fmtMoney(r.deposit_vnd))}</td>
-          <td class="py-2 pr-3">${esc(fmtMoney(r.deposit_amount_vnd))}</td>
-          <td class="py-2 pr-3 text-xs text-slate-600 whitespace-nowrap">${esc(fmtDateTime(r.deposit_paid_at))}</td>
-        </tr>
-      `;
-    }).join("");
+    tbody.innerHTML = items.map(r=>`
+      <tr class="border-b">
+        <td class="py-2 pr-3 font-semibold">${esc(r.lot_code || "—")}</td>
+        <td class="py-2 pr-3">${esc(fmtMoney(r.starting_price_vnd))}</td>
+        <td class="py-2 pr-3">${esc(fmtMoney(r.deposit_vnd))}</td>
+        <td class="py-2 pr-3">${esc(fmtMoney(r.deposit_amount_vnd))}</td>
+        <td class="py-2 pr-3 text-xs text-slate-600 whitespace-nowrap">${esc(fmtDateTime(r.deposit_paid_at))}</td>
+      </tr>
+    `).join("");
   }
+
+  // default selected: ưu tiên cái nào có file
+  if(DOCS.front.url) SELECTED = "front";
+  else if(DOCS.back.url) SELECTED = "back";
+  else if(DOCS.form.url) SELECTED = "form";
+  else SELECTED = "front";
+
+  markActive();
 }
 
-document.getElementById("btnReload").addEventListener("click", ()=>loadDetail());
+/* events */
+document.getElementById("btnReload").addEventListener("click", loadDetail);
 
 document.getElementById("projectSelect").addEventListener("change", (e)=>{
   const v = e.target.value;
@@ -507,26 +575,30 @@ document.getElementById("btnCopyReg").addEventListener("click", async ()=>{
   if(!v) return;
   const ok = await copyToClipboard(v);
   if(ok) showToast("Đã copy link đăng ký");
-  else prompt("Copy link:", v);
 });
 
-document.querySelectorAll(".btnOpen").forEach(btn=>{
-  btn.addEventListener("click", ()=>{
-    const k = btn.getAttribute("data-open");
-    const url = (window.__DOC_URLS || {})[k];
-    if(!url) return;
-    window.open(url, "_blank", "noopener");
-  });
+document.getElementById("btnOpenDoc").addEventListener("click", ()=>{
+  const d = DOCS[SELECTED];
+  if(d.url) window.open(d.url, "_blank", "noopener");
 });
-document.querySelectorAll(".btnCopy").forEach(btn=>{
-  btn.addEventListener("click", async ()=>{
-    const k = btn.getAttribute("data-copy");
-    const url = (window.__DOC_URLS || {})[k];
-    if(!url) return;
-    const ok = await copyToClipboard(url);
-    if(ok) showToast("Đã copy link tài liệu");
-    else prompt("Copy link:", url);
-  });
+document.getElementById("btnCopyDoc").addEventListener("click", async ()=>{
+  const d = DOCS[SELECTED];
+  if(!d.url) return;
+  const ok = await copyToClipboard(d.url);
+  if(ok) showToast("Đã copy link tài liệu");
+});
+document.getElementById("btnZoom").addEventListener("click", openViewer);
+
+document.getElementById("mini-front").addEventListener("click", ()=>{ SELECTED="front"; markActive(); });
+document.getElementById("mini-back").addEventListener("click", ()=>{ SELECTED="back"; markActive(); });
+document.getElementById("mini-form").addEventListener("click", ()=>{ SELECTED="form"; markActive(); });
+
+document.getElementById("viewerClose").addEventListener("click", closeViewer);
+document.getElementById("viewer").addEventListener("click", (e)=>{
+  if(e.target && e.target.id === "viewer") closeViewer();
+});
+document.addEventListener("keydown", (e)=>{
+  if(e.key === "Escape") closeViewer();
 });
 
 loadDetail();
