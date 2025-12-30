@@ -240,9 +240,16 @@ async def announcements_delete(
     if not token:
         return JSONResponse({"error": "unauthorized"}, status_code=401)
 
-    # Service A: DELETE /api/v1/announcements/{id} (soft delete -> ARCHIVED)
+    # Soft delete = set status ARCHIVED (an toàn, chắc chắn hoạt động nếu Service A có PUT update)
+    payload = {"status": "ARCHIVED"}
+
     async with httpx.AsyncClient() as client:
-        r = await _api_delete(client, f"/api/v1/announcements/{announcement_id}", token)
+        r = await _api_put_json(
+            client,
+            f"/api/v1/announcements/{announcement_id}",
+            token,
+            payload,
+        )
 
     if r.status_code == 401:
         return JSONResponse({"error": "unauthorized"}, status_code=401)
@@ -254,7 +261,7 @@ async def announcements_delete(
             body = {"detail": r.text[:400]}
         return JSONResponse(body, status_code=r.status_code)
 
-    # Thường Service A trả {"ok": True} hoặc {"ok":True,"data":...}
+    # Trả ok
     try:
         body = r.json()
     except Exception:
