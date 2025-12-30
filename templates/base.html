@@ -83,7 +83,7 @@
 
     {# Ẩn sidebar riêng trang /login, còn lại luôn hiển thị #}
     {% if not request.url.path.startswith('/login') %}
-    <aside class="app-sidebar w-64 bg-white rounded-xl border border-slate-200 h-[84vh] overflow-y-auto">
+    <aside id="appSidebarScroll" class="app-sidebar w-64 bg-white rounded-xl border border-slate-200 h-[84vh] overflow-y-auto">
       <ul class="p-2">
 
         {# === DASHBOARD TRÊN CÙNG === #}
@@ -281,6 +281,48 @@
         });
       });
     })();
+  </script>
+
+  <!-- ===== Sidebar scroll persist (FIX) ===== -->
+  <script>
+  (function () {
+    var el = document.getElementById("appSidebarScroll");
+    if (!el) return;
+
+    var project = (new URLSearchParams(location.search)).get("project_code") || "";
+    var key = "ADMIN_SIDEBAR_SCROLL:" + project;
+
+    function restore() {
+      try {
+        var v = sessionStorage.getItem(key);
+        if (v != null) {
+          var n = parseInt(v, 10);
+          if (!isNaN(n)) el.scrollTop = n;
+        }
+      } catch (e) {}
+    }
+
+    if (history.scrollRestoration) history.scrollRestoration = "manual";
+
+    document.addEventListener("DOMContentLoaded", function () {
+      restore();
+      requestAnimationFrame(restore);
+      setTimeout(restore, 60);
+    });
+
+    var t = null;
+    el.addEventListener("scroll", function () {
+      if (t) return;
+      t = setTimeout(function () {
+        try { sessionStorage.setItem(key, String(el.scrollTop || 0)); } catch (e) {}
+        t = null;
+      }, 120);
+    }, { passive: true });
+
+    window.addEventListener("beforeunload", function () {
+      try { sessionStorage.setItem(key, String(el.scrollTop || 0)); } catch (e) {}
+    });
+  })();
   </script>
 
   <!-- Force layout for sidebar + main, tránh bị CSS cũ phá -->
