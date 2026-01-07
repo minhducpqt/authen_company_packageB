@@ -369,6 +369,21 @@
     });
   }
 
+  // ✅ FIX: bind click cho pagination SSR ban đầu (page 1 2 3 ... render sẵn)
+  function bindInitialPagination() {
+    if (!pagination) return;
+    pagination.querySelectorAll('.page-link').forEach(a => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        const p = parseInt(a.getAttribute('data-page'), 10);
+        if (Number.isFinite(p)) {
+          state.page = p;
+          fetchData();
+        }
+      });
+    });
+  }
+
   // Lắng nghe thay đổi bộ lọc (auto update)
   const onQuickChange = debounce(() => fetchData({ resetPage: true }), 300);
 
@@ -428,6 +443,10 @@
 
   applyInitialTimeFormat();
   applyInitialMoneyFormat();
+
+  // ✅ FIX: gọi bind cho pagination SSR ban đầu
+  bindInitialPagination();
+
   // Trang đã SSR sẵn; không auto fetch lại khi load.
 })();
 </script>
