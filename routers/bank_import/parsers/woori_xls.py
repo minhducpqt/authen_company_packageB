@@ -33,6 +33,7 @@ class WooriXlsParser:
     BANK_CODE = "WOORI"
 
     WOORI_HEADER_KEYS = {
+        # English (đang có)
         "transaction time and date": "txn_time",
         "currency": "currency",
         "amount withdrawn": "debit",
@@ -41,6 +42,16 @@ class WooriXlsParser:
         "status": "status",
         "remarks": "remarks",
         "summary": "summary",
+
+        # Korean (thêm mới)
+        "거래일시": "txn_time",
+        "통화": "currency",
+        "찾으신금액": "debit",
+        "맡기신금액": "credit",
+        "거래후잔액": "balance_after",
+        "상태": "status",
+        "비고": "remarks",
+        "적요": "summary",
     }
 
     # ---------- helpers ----------
@@ -76,12 +87,20 @@ class WooriXlsParser:
         return s
 
     def _detect_header_row(self, df: pd.DataFrame) -> int:
-        """Tìm dòng chứa header thật của Woori."""
+        """Tìm dòng chứa header thật của Woori (EN/KR)."""
         for i in range(min(50, len(df))):
             row_vals = [self._norm_text(v).lower() for v in df.iloc[i].tolist()]
             row_join = " | ".join(row_vals)
+
+            # EN
             if "transaction time and date" in row_join:
                 return i
+
+            # KR
+            # (chỉ cần "거래일시" là đủ đúng với file bạn đưa)
+            if "거래일시" in row_join:
+                return i
+
         return 0
 
     def _build_named_df(self, df_raw: pd.DataFrame, header_row: int) -> pd.DataFrame:
