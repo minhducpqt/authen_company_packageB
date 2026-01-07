@@ -40,7 +40,7 @@ async def bid_tickets_page(
     customer_q: Optional[str] = Query(None, description="Tên khách / CCCD / điện thoại"),
     lot_code: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
-    size: int = Query(200, ge=1, le=1000),
+    size: int = Query(10000, ge=1, le=10000),
 ):
     """
     Màn hình quản lý/in phiếu trả giá.
@@ -236,7 +236,7 @@ async def print_all_bid_tickets(
 ):
     """
     In tất cả phiếu trả giá của TẤT CẢ khách đủ điều kiện trong 1 dự án.
-    - Lấy từ Service A: /api/v1/report/bid_tickets?project_code=...&page=1&size=5000
+    - Lấy từ Service A: /api/v1/report/bid_tickets?project_code=...&page=1&size=10000
     - Sort theo STT (điểm danh) rồi theo mã lô để in đúng thứ tự.
     - Render chung bằng template print.html (mỗi phiếu = 1 trang A4).
     """
@@ -253,7 +253,7 @@ async def print_all_bid_tickets(
     params = {
         "project_code": project_code,
         "page": 1,
-        "size": 5000,  # đủ lớn cho 1 dự án
+        "size": 10000,  # đủ lớn cho 1 dự án
     }
 
     try:
