@@ -34,6 +34,7 @@ from routers import bid_tickets as bid_tickets_router
 from routers import bid_attendance as bid_attendance_router  # <-- NEW
 from routers.customer_documents import router as customer_documents_router
 from routers.announcements import router as announcements_router
+from routers.auction_results import router as auction_results_router
 
 
 def _dump_bank_routes(app: FastAPI) -> None:
@@ -89,6 +90,7 @@ app.include_router(bid_tickets_router.router)
 app.include_router(bid_attendance_router.router)
 app.include_router(customer_documents_router)
 app.include_router(announcements_router)
+app.include_router(auction_results_router)
 
 @app.get("/healthz")
 def healthz():

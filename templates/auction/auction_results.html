@@ -1,0 +1,749 @@
+{# templates/auction/auction_results.html #}
+{% extends "base.html" %}
+{% block title %}Trúng đấu giá{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <h1 class="text-2xl font-semibold text-slate-900 flex items-center gap-2">
+    <i class="ri-auction-line text-emerald-600 text-3xl"></i>
+    Kết quả trúng đấu giá
+  </h1>
+  <p class="text-slate-500 text-sm mt-1">
+    Chọn dự án → xem lô, chọn khách đủ điều kiện và nhập <span class="font-semibold text-slate-800">giá trúng</span>.
+  </p>
+</div>
+
+<form method="get" class="bg-white border rounded-2xl shadow-sm p-4 mb-4 flex flex-wrap gap-4 items-end">
+  <div class="flex flex-col">
+    <label class="text-xs font-semibold text-slate-500 mb-1">Dự án</label>
+    <select name="project" class="h-10 rounded-xl border px-3 text-sm min-w-[220px]">
+      <option value="">— Chọn dự án —</option>
+      {% for p in projects or [] %}
+        {% set code = (p.project_code or p.code) %}
+        <option value="{{ code }}" {% if code == project %}selected{% endif %}>
+          {{ code }} — {{ p.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="flex flex-col">
+    <label class="text-xs font-semibold text-slate-500 mb-1">Tìm lô</label>
+    <input
+      type="text"
+      name="q"
+      value="{{ q }}"
+      class="h-10 rounded-xl border px-3 text-sm min-w-[180px]"
+      placeholder="Mã lô hoặc tên lô..."
+    >
+  </div>
+
+  <div class="flex flex-col">
+    <label class="text-xs font-semibold text-slate-500 mb-1">Trạng thái kết quả</label>
+    <select name="result_status" class="h-10 rounded-xl border px-3 text-sm min-w-[160px]">
+      {% set rs = (result_status or '') %}
+      <option value="" {% if rs=='' %}selected{% endif %}>— Tất cả —</option>
+      <option value="EMPTY" {% if rs=='EMPTY' %}selected{% endif %}>Chưa nhập (EMPTY)</option>
+      <option value="WON" {% if rs=='WON' %}selected{% endif %}>Trúng (WON)</option>
+      <option value="NO_SALE" {% if rs=='NO_SALE' %}selected{% endif %}>Không bán (NO_SALE)</option>
+      <option value="CANCELED" {% if rs=='CANCELED' %}selected{% endif %}>Hủy (CANCELED)</option>
+    </select>
+  </div>
+
+  <div class="flex flex-col">
+    <label class="text-xs font-semibold text-slate-500 mb-1">Số dòng / trang</label>
+    <input
+      type="number"
+      name="size"
+      value="{{ size or 200 }}"
+      class="h-10 rounded-xl border px-3 text-sm w-28"
+      min="1"
+      max="500"
+    >
+  </div>
+
+  <div class="flex items-center gap-3 ml-auto">
+    <button
+      type="submit"
+      class="h-10 px-4 rounded-xl bg-emerald-600 text-white text-sm font-medium shadow-sm hover:bg-emerald-700"
+    >Áp dụng</button>
+
+    {% if project_id %}
+      <button
+        type="button"
+        id="btnBulkSave"
+        class="h-10 px-4 rounded-xl border border-slate-300 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 inline-flex items-center gap-2"
+        title="Chỉ dùng nếu bạn sửa nhiều dòng rồi bấm lưu tất cả"
+      >
+        <i class="ri-save-3-line"></i> Lưu tất cả
+      </button>
+    {% endif %}
+  </div>
+</form>
+
+{% if error %}
+  <div class="mb-4 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl p-3 text-sm">
+    <div class="font-semibold">Lỗi gọi Service A</div>
+    <div class="mt-1">status={{ error.status }} | {{ (error.body or {}).get('detail') or error.body }}</div>
+  </div>
+{% endif %}
+
+{% set rows = (data or {}).get('data') or [] %}
+{% set total = (data or {}).get('total') or (rows|length) %}
+
+<div class="mb-3 text-sm text-slate-600">
+  {% if project_id %}
+    <span class="font-semibold text-slate-900">{{ total }}</span> lô được tìm thấy.
+  {% else %}
+    Chọn dự án và bấm "Áp dụng" để xem dữ liệu.
+  {% endif %}
+</div>
+
+<div class="bg-white border rounded-2xl shadow-sm overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm text-slate-700">
+      <thead class="bg-slate-50 text-slate-500 border-b">
+        <tr>
+          <th class="px-4 py-2 text-left font-semibold">Mã lô</th>
+          <th class="px-4 py-2 text-left font-semibold">Tên/Mô tả</th>
+          <th class="px-4 py-2 text-right font-semibold">Giá khởi điểm</th>
+          <th class="px-4 py-2 text-right font-semibold">Tiền đặt trước</th>
+          <th class="px-4 py-2 text-center font-semibold">Kết quả</th>
+          <th class="px-4 py-2 text-left font-semibold">Khách trúng</th>
+          <th class="px-4 py-2 text-right font-semibold">Giá trúng</th>
+          <th class="px-4 py-2 text-left font-semibold">Chốt bởi</th>
+          <th class="px-4 py-2 text-left font-semibold">Chốt lúc</th>
+          <th class="px-4 py-2 text-right font-semibold">Hành động</th>
+        </tr>
+      </thead>
+
+      <tbody class="divide-y divide-slate-100" id="lotsTbody">
+      {% for r in rows %}
+        <tr class="hover:bg-slate-50 transition"
+            data-lot-code="{{ r.lot_code }}"
+            data-lot-name="{{ r.lot_name or '' }}"
+            data-starting-price="{{ r.starting_price_vnd or '' }}"
+            data-deposit="{{ r.deposit_vnd or '' }}"
+            data-result-status="{{ r.result_status or '' }}"
+            data-winner-id="{{ r.winner_customer_id or '' }}"
+            data-winner-name="{{ r.winner_name or '' }}"
+            data-winner-cccd="{{ r.winner_cccd or '' }}"
+            data-winning-price="{{ r.winning_price_vnd or '' }}"
+            data-finalized-by="{{ r.finalized_by or '' }}"
+            data-finalized-at="{{ r.finalized_at or '' }}"
+        >
+          <td class="px-4 py-3 font-semibold text-slate-900 whitespace-nowrap">{{ r.lot_code }}</td>
+
+          <td class="px-4 py-3 text-xs cell-wrap text-slate-700">
+            <div class="font-semibold text-slate-900 text-sm">{{ r.lot_name or '-' }}</div>
+          </td>
+
+          <td class="px-4 py-3 text-right whitespace-nowrap">
+            <span class="money" data-value="{{ r.starting_price_vnd or '' }}">—</span>
+          </td>
+
+          <td class="px-4 py-3 text-right whitespace-nowrap">
+            <span class="money" data-value="{{ r.deposit_vnd or '' }}">—</span>
+          </td>
+
+          <td class="px-4 py-3 text-center whitespace-nowrap">
+            {% set st = (r.result_status or '') %}
+            {% if not st %}
+              <span class="px-2 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">EMPTY</span>
+            {% elif st == 'WON' %}
+              <span class="px-2 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">WON</span>
+            {% elif st == 'NO_SALE' %}
+              <span class="px-2 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">NO_SALE</span>
+            {% else %}
+              <span class="px-2 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-700">CANCELED</span>
+            {% endif %}
+          </td>
+
+          <td class="px-4 py-3 text-sm">
+            {% if r.winner_name %}
+              <div class="font-semibold text-slate-900">{{ r.winner_name }}</div>
+              <div class="text-xs text-slate-500">{{ r.winner_cccd or '' }}</div>
+            {% else %}
+              <span class="text-slate-400">—</span>
+            {% endif %}
+          </td>
+
+          <td class="px-4 py-3 text-right whitespace-nowrap">
+            {% if r.winning_price_vnd %}
+              <span class="money font-semibold text-slate-900" data-value="{{ r.winning_price_vnd }}">—</span>
+            {% else %}
+              <span class="text-slate-400">—</span>
+            {% endif %}
+          </td>
+
+          <td class="px-4 py-3 text-xs text-slate-600 whitespace-nowrap">{{ r.finalized_by or '' }}</td>
+          <td class="px-4 py-3 text-xs text-slate-600 whitespace-nowrap">
+            <span class="dt" data-iso="{{ r.finalized_at or '' }}">{{ r.finalized_at or '' }}</span>
+          </td>
+
+          <td class="px-4 py-3 text-right whitespace-nowrap">
+            <button type="button"
+              class="h-9 px-3 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"
+              onclick="openResultModal(this)"
+            >
+              Nhập kết quả
+            </button>
+          </td>
+        </tr>
+      {% endfor %}
+
+      {% if rows|length == 0 %}
+        <tr>
+          <td colspan="10" class="px-4 py-6 text-center text-slate-400">
+            {% if project_id %}
+              Không có lô phù hợp bộ lọc hiện tại.
+            {% else %}
+              Chọn dự án và bấm "Áp dụng" để xem dữ liệu.
+            {% endif %}
+          </td>
+        </tr>
+      {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<style>
+  table th, table td { white-space: nowrap; }
+  .cell-wrap { white-space: normal; }
+
+  /* modal */
+  .modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+  .modal{background:#fff;border:1px solid #e5e7eb;border-radius:18px;max-width:760px;width:100%;box-shadow:0 20px 60px rgba(15,23,42,.25);overflow:hidden}
+  .modal-h{padding:14px 16px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between}
+  .modal-b{padding:16px}
+  .modal-f{padding:14px 16px;border-top:1px solid #e5e7eb;display:flex;gap:10px;justify-content:flex-end}
+  .toast{position:fixed;right:16px;bottom:16px;z-index:60;display:none}
+
+  /* autocomplete */
+  .ac-wrap{position:relative}
+  .ac-panel{
+    position:absolute; left:0; right:0; top:100%;
+    margin-top:6px;
+    background:#fff;
+    border:1px solid #e5e7eb;
+    border-radius:14px;
+    box-shadow:0 16px 40px rgba(15,23,42,.12);
+    max-height: 280px;
+    overflow:auto;
+    display:none;
+    z-index: 80;
+  }
+  .ac-item{padding:10px 12px; cursor:pointer; font-size:13px; line-height:1.2}
+  .ac-item:hover{background:#f1f5f9}
+  .ac-empty{padding:10px 12px; color:#94a3b8; font-size:13px}
+  .ac-meta{color:#64748b; font-size:12px; margin-top:2px}
+</style>
+
+<!-- Modal -->
+<div id="resultModal" class="modal-backdrop" onclick="backdropClose(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-h">
+      <div>
+        <div class="text-sm text-slate-500">Nhập kết quả</div>
+        <div class="text-lg font-bold text-slate-900" id="mLotTitle">—</div>
+      </div>
+      <button class="h-9 w-9 rounded-xl border border-slate-200 hover:bg-slate-50" onclick="closeResultModal()">
+        <i class="ri-close-line text-xl text-slate-700"></i>
+      </button>
+    </div>
+
+    <div class="modal-b">
+      <div class="grid grid-cols-12 gap-3">
+        <div class="col-span-12 md:col-span-6">
+          <label class="text-xs font-semibold text-slate-500">Trạng thái</label>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <label class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer">
+              <input type="radio" name="mStatus" value="WON" checked onchange="renderStatusFields()">
+              <span class="text-sm font-semibold text-emerald-700">WON</span>
+            </label>
+            <label class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer">
+              <input type="radio" name="mStatus" value="NO_SALE" onchange="renderStatusFields()">
+              <span class="text-sm font-semibold text-amber-700">NO_SALE</span>
+            </label>
+            <label class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer">
+              <input type="radio" name="mStatus" value="CANCELED" onchange="renderStatusFields()">
+              <span class="text-sm font-semibold text-rose-700">CANCELED</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="col-span-12 md:col-span-6">
+          <label class="text-xs font-semibold text-slate-500">Ghi chú (optional)</label>
+          <input id="mNote" class="mt-2 h-10 w-full rounded-xl border px-3 text-sm" placeholder="VD: Trả chậm 1 phiên...">
+        </div>
+
+        <div id="wonFields" class="col-span-12 grid grid-cols-12 gap-3 mt-1">
+          <div class="col-span-12 md:col-span-7">
+            <label class="text-xs font-semibold text-slate-500">Chọn khách đủ điều kiện</label>
+
+            <!-- Autocomplete input -->
+            <div class="ac-wrap">
+              <input id="mCustomerInput" class="mt-2 h-10 w-full rounded-xl border px-3 text-sm"
+                     placeholder="Gõ tên / CCCD / SĐT..."
+                     autocomplete="off"
+                     onfocus="openCustomerDropdown()"
+                     oninput="onCustomerTyping()"
+                     onkeydown="onCustomerKeydown(event)">
+              <input type="hidden" id="mCustomerId">
+              <div id="acPanel" class="ac-panel"></div>
+            </div>
+
+            <div class="text-xs text-slate-500 mt-1" id="mCustomerHint"></div>
+          </div>
+
+          <div class="col-span-12 md:col-span-5">
+            <label class="text-xs font-semibold text-slate-500">Giá trúng (VND)</label>
+            <input id="mPrice" type="text" inputmode="numeric"
+                   class="mt-2 h-10 w-full rounded-xl border px-3 text-sm"
+                   placeholder="VD: 12.345.000.000" oninput="formatMoneyInput(this)">
+            <div class="text-xs text-slate-500 mt-1">Chỉ nhận số nguyên VND (không có phần thập phân).</div>
+          </div>
+        </div>
+
+        <div class="col-span-12">
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-600">
+            <div class="flex flex-wrap gap-3">
+              <div><span class="font-semibold text-slate-800">Mã lô:</span> <span id="mLotCode">—</span></div>
+              <div><span class="font-semibold text-slate-800">Giá khởi điểm:</span> <span id="mStartingPrice">—</span></div>
+              <div><span class="font-semibold text-slate-800">Tiền đặt trước:</span> <span id="mDeposit">—</span></div>
+            </div>
+            <input type="hidden" id="mStartingRaw">
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="modal-f">
+      <button class="h-10 px-4 rounded-xl border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              onclick="closeResultModal()">Đóng</button>
+      <button id="mSaveBtn" class="h-10 px-4 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700"
+              onclick="saveResult()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast">
+  <div class="bg-slate-900 text-white text-sm px-4 py-3 rounded-xl shadow-lg" id="toastMsg">OK</div>
+</div>
+
+<script>
+  const PROJECT_ID = {{ project_id or 'null' }};
+  let CURRENT_ROW = null;
+  let ELIGIBLE_CUSTOMERS = [];
+  let AC_OPEN = false;
+  let AC_ACTIVE_INDEX = -1;
+
+  function toast(msg){
+    const t = document.getElementById('toast');
+    const m = document.getElementById('toastMsg');
+    m.textContent = msg;
+    t.style.display = 'block';
+    setTimeout(()=> t.style.display='none', 2200);
+  }
+
+  function backdropClose(e){
+    if(e.target && e.target.id === 'resultModal') closeResultModal();
+  }
+
+  function onlyDigits(s){ return (s||'').replace(/[^\d]/g,''); }
+
+  // ✅ format số nguyên VND, không thập phân (tôn trọng data A: chỉ hiển thị)
+  function formatVNDInt(n){
+    try{
+      if(n === null || n === undefined) return '';
+      const d = onlyDigits(String(n));
+      if(!d) return '';
+      // chỉ lấy phần nguyên, bỏ mọi ký tự khác
+      return Number(d).toLocaleString('vi-VN', { maximumFractionDigits: 0 });
+    }catch(e){
+      return '';
+    }
+  }
+
+  function parseMoneyVNDInt(s){
+    const d = onlyDigits(s);
+    if(!d) return null;
+    const n = Number(d);
+    if(!Number.isFinite(n) || n <= 0) return null;
+    return Math.trunc(n);
+  }
+
+  function formatMoneyInput(el){
+    const d = onlyDigits(el.value);
+    el.value = d ? Number(d).toLocaleString('vi-VN', { maximumFractionDigits: 0 }) : '';
+  }
+
+  // ✅ format các cột tiền trên table
+  function formatAllMoneyCells(){
+    document.querySelectorAll('.money').forEach(el=>{
+      const v = el.getAttribute('data-value');
+      const f = formatVNDInt(v);
+      el.textContent = f || '—';
+    });
+  }
+
+  // ✅ format datetime ISO -> dd/mm/yyyy HH:MM:SS (giờ VN theo offset trong chuỗi)
+  function pad2(n){ return String(n).padStart(2,'0'); }
+  function formatISOToVN(iso){
+    if(!iso) return '';
+    // JS Date parse được ISO có offset +07:00 -> đúng giờ VN
+    const d = new Date(iso);
+    if(!isFinite(d.getTime())) return iso;
+
+    const dd = pad2(d.getDate());
+    const mm = pad2(d.getMonth()+1);
+    const yyyy = d.getFullYear();
+    const HH = pad2(d.getHours());
+    const MM = pad2(d.getMinutes());
+    const SS = pad2(d.getSeconds());
+    return `${dd}/${mm}/${yyyy} ${HH}:${MM}:${SS}`;
+  }
+  function formatAllDateCells(){
+    document.querySelectorAll('.dt').forEach(el=>{
+      const iso = el.getAttribute('data-iso') || '';
+      el.textContent = iso ? formatISOToVN(iso) : '';
+    });
+  }
+
+  formatAllMoneyCells();
+  formatAllDateCells();
+
+  function openResultModal(btn){
+    const tr = btn.closest('tr');
+    CURRENT_ROW = tr;
+
+    const lotCode = tr.dataset.lotCode || '';
+    const lotName = tr.dataset.lotName || '';
+    const startingPrice = tr.dataset.startingPrice || '';
+    const deposit = tr.dataset.deposit || '';
+    const rs = (tr.dataset.resultStatus || '').toUpperCase();
+    const winnerId = tr.dataset.winnerId || '';
+    const winnerName = tr.dataset.winnerName || '';
+    const winnerCccd = tr.dataset.winnerCccd || '';
+    const winningPrice = tr.dataset.winningPrice || '';
+
+    document.getElementById('mLotTitle').textContent = `${lotCode} — ${lotName || '-'}`;
+    document.getElementById('mLotCode').textContent = lotCode || '—';
+    document.getElementById('mStartingPrice').textContent = formatVNDInt(startingPrice) || '—';
+    document.getElementById('mDeposit').textContent = formatVNDInt(deposit) || '—';
+    document.getElementById('mStartingRaw').value = String(startingPrice || '');
+    document.getElementById('mNote').value = '';
+
+    // status set
+    const radios = document.querySelectorAll('input[name="mStatus"]');
+    let set = false;
+    radios.forEach(r=>{
+      if(rs && r.value === rs){ r.checked=true; set=true; }
+    });
+    if(!set){
+      radios.forEach(r=> r.checked = (r.value === 'WON'));
+    }
+
+    // fill price if exists
+    document.getElementById('mPrice').value = winningPrice ? formatVNDInt(winningPrice) : '';
+
+    // set current winner to input (label), but must still choose from dropdown to set id reliably
+    const label = (winnerName ? `${winnerName}${winnerCccd ? ' — ' + winnerCccd : ''}` : '');
+    document.getElementById('mCustomerInput').value = label || '';
+    document.getElementById('mCustomerId').value = winnerId || '';
+
+    document.getElementById('mCustomerHint').textContent = '';
+    document.getElementById('resultModal').style.display='flex';
+
+    ELIGIBLE_CUSTOMERS = [];
+    closeCustomerDropdown();
+
+    renderStatusFields();
+
+    if(getStatus() === 'WON'){
+      loadEligibleCustomers(PROJECT_ID, lotCode, winnerId);
+    }
+  }
+
+  function closeResultModal(){
+    document.getElementById('resultModal').style.display='none';
+    CURRENT_ROW = null;
+    ELIGIBLE_CUSTOMERS = [];
+    closeCustomerDropdown();
+    AC_ACTIVE_INDEX = -1;
+  }
+
+  function getStatus(){
+    const r = document.querySelector('input[name="mStatus"]:checked');
+    return r ? r.value : 'WON';
+  }
+
+  function renderStatusFields(){
+    const status = getStatus();
+    const won = document.getElementById('wonFields');
+    if(status === 'WON'){
+      won.style.display = '';
+    }else{
+      won.style.display = 'none';
+      closeCustomerDropdown();
+    }
+  }
+
+  async function loadEligibleCustomers(projectId, lotCode, selectedId){
+    document.getElementById('mCustomerHint').textContent = 'Đang tải danh sách khách...';
+    try{
+      const r = await fetch(
+        `/auction/results/api/projects/${projectId}/lots/${encodeURIComponent(lotCode)}/eligible-customers?limit=2000`,
+        { headers: { "Accept": "application/json" } }
+      );
+      const js = await r.json();
+      if(!r.ok){
+        toast("Lỗi tải danh sách khách");
+        document.getElementById('mCustomerHint').textContent = 'Lỗi tải danh sách.';
+        return;
+      }
+
+      ELIGIBLE_CUSTOMERS = (js.data || []).map(x => ({
+        customer_id: x.customer_id ?? x.id ?? x.customerId,
+        full_name: x.full_name || x.customer_full_name || '',
+        cccd: x.cccd || '',
+        phone: x.phone || '',
+        deposit_paid: x.deposit_paid === true,
+        registered_at: x.registered_at || ''
+      })).filter(x => x.customer_id);
+
+      document.getElementById('mCustomerHint').textContent =
+        `Có ${ELIGIBLE_CUSTOMERS.length} khách đủ điều kiện cho lô này.`;
+
+      // nếu selectedId mà không nằm trong list, vẫn cho giữ value nhưng validate khi lưu sẽ yêu cầu chọn (id phải có)
+      if(selectedId){
+        const ok = ELIGIBLE_CUSTOMERS.some(x => String(x.customer_id) === String(selectedId));
+        if(!ok){
+          // vẫn giữ id cũ, nhưng user nên chọn lại
+        }
+      }
+
+      // nếu đang focus thì render dropdown theo từ khoá hiện tại
+      const inp = document.getElementById('mCustomerInput');
+      if(document.activeElement === inp){
+        openCustomerDropdown();
+        onCustomerTyping();
+      }
+
+    }catch(e){
+      console.error(e);
+      toast("Lỗi kết nối khi tải khách");
+      document.getElementById('mCustomerHint').textContent = 'Lỗi kết nối.';
+    }
+  }
+
+  function customerLabel(x){
+    const pieces = [];
+    if(x.full_name) pieces.push(x.full_name);
+    if(x.cccd) pieces.push(x.cccd);
+    if(x.phone) pieces.push(x.phone);
+    return pieces.join(" — ");
+  }
+
+  /* ========= AUTOCOMPLETE UX ========= */
+
+  function openCustomerDropdown(){
+    if(getStatus() !== 'WON') return;
+    const panel = document.getElementById('acPanel');
+    panel.style.display = 'block';
+    AC_OPEN = true;
+    AC_ACTIVE_INDEX = -1;
+    // render ngay nếu có data
+    onCustomerTyping();
+  }
+
+  function closeCustomerDropdown(){
+    const panel = document.getElementById('acPanel');
+    panel.style.display = 'none';
+    AC_OPEN = false;
+    AC_ACTIVE_INDEX = -1;
+  }
+
+  // click outside → hide
+  document.addEventListener('mousedown', (e)=>{
+    const wrap = document.querySelector('.ac-wrap');
+    if(!wrap) return;
+    if(!wrap.contains(e.target)){
+      closeCustomerDropdown();
+    noteResetIfUserDidNotPick();
+    }
+  });
+
+  // nếu user gõ lại sau khi đã chọn -> reset hidden id để bắt buộc chọn lại
+  function noteResetIfUserDidNotPick(){
+    const inp = document.getElementById('mCustomerInput');
+    const hid = document.getElementById('mCustomerId');
+    // nếu input không đúng label của id đã chọn, coi như chưa chọn
+    if(hid.value){
+      const picked = ELIGIBLE_CUSTOMERS.find(x => String(x.customer_id) === String(hid.value));
+      const lbl = picked ? customerLabel(picked) : '';
+      if(lbl && inp.value.trim() !== lbl.trim()){
+        hid.value = '';
+      }
+    }
+  }
+
+  function renderCustomerPanel(list){
+    const panel = document.getElementById('acPanel');
+    if(!AC_OPEN) return;
+
+    if(!ELIGIBLE_CUSTOMERS.length){
+      panel.innerHTML = `<div class="ac-empty">Danh sách đang tải hoặc không có dữ liệu.</div>`;
+      return;
+    }
+
+    if(!list.length){
+      panel.innerHTML = `<div class="ac-empty">Không có kết quả.</div>`;
+      return;
+    }
+
+    panel.innerHTML = list.map((x, idx)=>{
+      const safe = (s)=> (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const label = safe(customerLabel(x));
+      const metaParts = [];
+      if(x.deposit_paid) metaParts.push('✓ đã đặt');
+      if(x.registered_at) metaParts.push(formatISOToVN(x.registered_at));
+      const meta = safe(metaParts.join(' • '));
+      const activeClass = (idx === AC_ACTIVE_INDEX) ? 'style="background:#f1f5f9"' : '';
+      return `
+        <div class="ac-item" ${activeClass} data-idx="${idx}" onclick="pickCustomerByIndex(${idx})">
+          <div class="font-semibold text-slate-900">${label || ('KH#' + x.customer_id)}</div>
+          ${meta ? `<div class="ac-meta">${meta}</div>` : ``}
+        </div>
+      `;
+    }).join('');
+  }
+
+  function filteredCustomers(){
+    const kw = (document.getElementById('mCustomerInput').value || '').trim().toLowerCase();
+    if(!kw) return ELIGIBLE_CUSTOMERS.slice(0, 200); // tránh render quá nặng
+    const f = ELIGIBLE_CUSTOMERS.filter(x => (customerLabel(x)||'').toLowerCase().includes(kw));
+    return f.slice(0, 200);
+  }
+
+  function onCustomerTyping(){
+    noteResetIfUserDidNotPick();
+    if(!AC_OPEN) return;
+    const list = filteredCustomers();
+    AC_ACTIVE_INDEX = list.length ? 0 : -1;
+    renderCustomerPanel(list);
+  }
+
+  function pickCustomerByIndex(i){
+    const list = filteredCustomers();
+    const x = list[i];
+    if(!x) return;
+    document.getElementById('mCustomerInput').value = customerLabel(x);
+    document.getElementById('mCustomerId').value = String(x.customer_id);
+    closeCustomerDropdown();
+  }
+
+  function onCustomerKeydown(e){
+    if(!AC_OPEN) return;
+    const list = filteredCustomers();
+    if(!list.length) return;
+
+    if(e.key === 'ArrowDown'){
+      e.preventDefault();
+      AC_ACTIVE_INDEX = Math.min(list.length - 1, AC_ACTIVE_INDEX + 1);
+      renderCustomerPanel(list);
+      scrollActiveIntoView();
+    }else if(e.key === 'ArrowUp'){
+      e.preventDefault();
+      AC_ACTIVE_INDEX = Math.max(0, AC_ACTIVE_INDEX - 1);
+      renderCustomerPanel(list);
+      scrollActiveIntoView();
+    }else if(e.key === 'Enter'){
+      e.preventDefault();
+      pickCustomerByIndex(Math.max(0, AC_ACTIVE_INDEX));
+    }else if(e.key === 'Escape'){
+      e.preventDefault();
+      closeCustomerDropdown();
+    }
+  }
+
+  function scrollActiveIntoView(){
+    const panel = document.getElementById('acPanel');
+    const el = panel.querySelector(`.ac-item[data-idx="${AC_ACTIVE_INDEX}"]`);
+    if(el) el.scrollIntoView({ block: 'nearest' });
+  }
+
+  /* ========= SAVE ========= */
+
+  async function saveResult(){
+    if(!CURRENT_ROW) return;
+
+    const lotCode = CURRENT_ROW.dataset.lotCode;
+    const status = getStatus();
+    const note = (document.getElementById('mNote').value || '').trim();
+    const actor = "admin";
+
+    let payload = { result_status: status, note: note || null, actor };
+
+    if(status === 'WON'){
+      const winnerId = document.getElementById('mCustomerId').value;
+      const price = parseMoneyVNDInt(document.getElementById('mPrice').value);
+      const startingRaw = CURRENT_ROW.dataset.startingPrice || document.getElementById('mStartingRaw').value || '';
+      const starting = parseMoneyVNDInt(String(startingRaw));
+
+      if(!winnerId){
+        toast("Bạn chưa chọn khách trúng (hãy chọn từ danh sách gợi ý)");
+        openCustomerDropdown();
+        return;
+      }
+      if(!price){
+        toast("Giá trúng không hợp lệ");
+        return;
+      }
+      if(starting && price < starting){
+        toast("Giá trúng không được thấp hơn giá khởi điểm");
+        return;
+      }
+
+      payload.winner_customer_id = Number(winnerId);
+      payload.winning_price_vnd = price;
+    }
+
+    const btn = document.getElementById('mSaveBtn');
+    btn.disabled = true;
+    btn.textContent = "Đang lưu...";
+
+    try{
+      const r = await fetch(`/auction/results/api/projects/${PROJECT_ID}/lots/${encodeURIComponent(lotCode)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const js = await r.json();
+      if(!r.ok || !js.ok){
+        console.error(js);
+        toast("Lưu thất bại (xem log)");
+        return;
+      }
+
+      toast("Đã lưu kết quả");
+      closeResultModal();
+      window.location.reload();
+
+    }catch(e){
+      console.error(e);
+      toast("Lỗi kết nối khi lưu");
+    }finally{
+      btn.disabled = false;
+      btn.textContent = "Lưu";
+    }
+  }
+
+  document.getElementById('btnBulkSave')?.addEventListener('click', async ()=>{
+    toast("Trang này đang lưu theo từng lô. (Bulk API có sẵn nếu bạn muốn nâng cấp.)");
+  });
+</script>
+{% endblock %}
