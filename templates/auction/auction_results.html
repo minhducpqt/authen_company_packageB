@@ -353,28 +353,55 @@
     if(e.target && e.target.id === 'resultModal') closeResultModal();
   }
 
-  function onlyDigits(s){ return (s||'').replace(/[^\d]/g,''); }
+  // ===== MONEY (HIỂN THỊ THUẦN, TÔN TRỌNG DATA A) =====
 
-  // ✅ format số nguyên VND, không thập phân (tôn trọng data A: chỉ hiển thị)
-  function formatVNDInt(n){
-    try{
-      if(n === null || n === undefined) return '';
-      const d = onlyDigits(String(n));
-      if(!d) return '';
-      // chỉ lấy phần nguyên, bỏ mọi ký tự khác
-      return Number(d).toLocaleString('vi-VN', { maximumFractionDigits: 0 });
-    }catch(e){
-      return '';
+  // lấy phần nguyên, KHÔNG nuốt ".0"
+  function toVndIntegerString(v){
+    if(v === null || v === undefined) return '';
+
+    // number -> lấy phần nguyên
+    if(typeof v === 'number'){
+      if(!Number.isFinite(v)) return '';
+      return String(Math.trunc(v));
     }
+
+    let s = String(v).trim();
+    if(!s) return '';
+
+    // case: "2039460000.0", "2039460000.00"
+    if(/^\d+(\.\d+)?$/.test(s)){
+      const n = Number(s);
+      if(Number.isFinite(n)) return String(Math.trunc(n));
+    }
+
+    // case: "2.039.460.000"
+    if(s.includes('.')){
+      const d = s.replace(/[^\d]/g,'');
+      return d || '';
+    }
+
+    return s.replace(/[^\d]/g,'');
+  }
+
+  function formatVNDInt(v){
+    const d = toVndIntegerString(v);
+    if(!d) return '';
+    return Number(d).toLocaleString('vi-VN', { maximumFractionDigits: 0 });
   }
 
   function parseMoneyVNDInt(s){
-    const d = onlyDigits(s);
+    const d = toVndIntegerString(s);
     if(!d) return null;
     const n = Number(d);
     if(!Number.isFinite(n) || n <= 0) return null;
     return Math.trunc(n);
   }
+
+  function formatMoneyInput(el){
+    const d = toVndIntegerString(el.value);
+    el.value = d ? Number(d).toLocaleString('vi-VN', { maximumFractionDigits: 0 }) : '';
+  }
+
 
   function formatMoneyInput(el){
     const d = onlyDigits(el.value);
