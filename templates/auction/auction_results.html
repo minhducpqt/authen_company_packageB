@@ -127,6 +127,7 @@
             data-winning-price="{{ r.winning_price_vnd or '' }}"
             data-finalized-by="{{ r.finalized_by or '' }}"
             data-finalized-at="{{ r.finalized_at or '' }}"
+            data-note="{{ r.note or '' }}"
         >
           <td class="px-4 py-3 font-semibold text-slate-900 whitespace-nowrap">{{ r.lot_code }}</td>
 
@@ -208,7 +209,6 @@
   table th, table td { white-space: nowrap; }
   .cell-wrap { white-space: normal; }
 
-  /* modal */
   .modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
   .modal{background:#fff;border:1px solid #e5e7eb;border-radius:18px;max-width:760px;width:100%;box-shadow:0 20px 60px rgba(15,23,42,.25);overflow:hidden}
   .modal-h{padding:14px 16px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between}
@@ -216,7 +216,6 @@
   .modal-f{padding:14px 16px;border-top:1px solid #e5e7eb;display:flex;gap:10px;justify-content:flex-end}
   .toast{position:fixed;right:16px;bottom:16px;z-index:60;display:none}
 
-  /* autocomplete */
   .ac-wrap{position:relative}
   .ac-panel{
     position:absolute; left:0; right:0; top:100%;
@@ -255,15 +254,15 @@
           <label class="text-xs font-semibold text-slate-500">Trạng thái</label>
           <div class="mt-2 flex flex-wrap gap-2">
             <label class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer">
-              <input type="radio" name="mStatus" value="WON" checked onchange="renderStatusFields()">
+              <input type="radio" name="mStatus" value="WON" checked onchange="renderStatusFields(true)">
               <span class="text-sm font-semibold text-emerald-700">WON</span>
             </label>
             <label class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer">
-              <input type="radio" name="mStatus" value="NO_SALE" onchange="renderStatusFields()">
+              <input type="radio" name="mStatus" value="NO_SALE" onchange="renderStatusFields(true)">
               <span class="text-sm font-semibold text-amber-700">NO_SALE</span>
             </label>
             <label class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer">
-              <input type="radio" name="mStatus" value="CANCELED" onchange="renderStatusFields()">
+              <input type="radio" name="mStatus" value="CANCELED" onchange="renderStatusFields(true)">
               <span class="text-sm font-semibold text-rose-700">CANCELED</span>
             </label>
           </div>
@@ -283,7 +282,7 @@
                      placeholder="Gõ tên / CCCD / SĐT..."
                      autocomplete="off"
                      onfocus="openCustomerDropdown()"
-                     oninput="onCustomerTyping()"
+                     oninput="onCustomerInputChanged()"
                      onkeydown="onCustomerKeydown(event)">
               <input type="hidden" id="mCustomerId">
               <div id="acPanel" class="ac-panel"></div>
@@ -296,7 +295,7 @@
             <label class="text-xs font-semibold text-slate-500">Giá trúng (VND)</label>
             <input id="mPrice" type="text" inputmode="numeric"
                    class="mt-2 h-10 w-full rounded-xl border px-3 text-sm"
-                   placeholder="VD: 12.345.000.000" oninput="formatMoneyInput(this)">
+                   placeholder="VD: 12.345.000.000">
             <div class="text-xs text-slate-500 mt-1">Chỉ nhận số nguyên VND (không có phần thập phân).</div>
           </div>
         </div>
@@ -332,7 +331,7 @@
 <script>
   const PROJECT_ID = {{ project_id or 'null' }};
 
-  // ===== FILTERS (AUTO APPLY + RESET) =====
+  // ===== FILTERS =====
   const DEFAULT_SIZE = 200;
 
   function debounce(fn, wait){
@@ -343,9 +342,7 @@
     };
   }
 
-  function currentUrl(){
-    return new URL(window.location.href);
-  }
+  function currentUrl(){ return new URL(window.location.href); }
 
   function applyFilters(pushHistory=true){
     const u = currentUrl();
@@ -355,7 +352,6 @@
     const rs = (document.getElementById('fStatus')?.value || '').trim();
     const size = (document.getElementById('fSize')?.value || '').trim();
 
-    // reset page về 1 khi filter thay đổi
     u.searchParams.set('page', '1');
 
     if(project) u.searchParams.set('project', project); else u.searchParams.delete('project');
@@ -366,14 +362,10 @@
     if(sizeNum && sizeNum !== DEFAULT_SIZE) u.searchParams.set('size', String(sizeNum));
     else u.searchParams.delete('size');
 
-    // tránh reload vô hạn khi url không đổi
     if(u.toString() === window.location.href) return;
 
-    if(pushHistory){
-      window.location.assign(u.toString());
-    }else{
-      window.location.replace(u.toString());
-    }
+    if(pushHistory) window.location.assign(u.toString());
+    else window.location.replace(u.toString());
   }
 
   const applyFiltersDebounced = debounce(()=> applyFilters(true), 350);
@@ -395,8 +387,9 @@
 
   // ===== MODAL / DATA =====
   let CURRENT_ROW = null;
+  let CURRENT_LOT_CODE = '';
   let ELIGIBLE_CUSTOMERS = [];
-
+  let ELIGIBLE_LOADED_FOR_LOT = ''; // lot_code đã load
   let AC_OPEN = false;
   let AC_ACTIVE_INDEX = -1;
   let CUSTOMER_TOUCHED = false;
@@ -413,84 +406,76 @@
     if(e.target && e.target.id === 'resultModal') closeResultModal();
   }
 
-  // ===== MONEY (HIỂN THỊ THUẦN, TÔN TRỌNG DATA A) =====
-  function toVndIntegerString(v){
-    if(v === null || v === undefined) return '';
-
-    if(typeof v === 'number'){
-      if(!Number.isFinite(v)) return '';
-      return String(Math.trunc(v));
-    }
-
-    let s = String(v).trim();
-    if(!s) return '';
-
-    // "2039460000.0"
-    if(/^\d+(\.\d+)?$/.test(s)){
-      const n = Number(s);
-      if(Number.isFinite(n)) return String(Math.trunc(n));
-    }
-
-    // "2.039.460.000" / "2,039,460,000"
-    return s.replace(/[^\d]/g,'') || '';
+  // ===== MONEY HELPERS (STRING-SAFE, KHÔNG DÙNG Number ĐỂ FORMAT) =====
+  function digitsOnly(v){
+    return String(v ?? '').replace(/[^\d]/g,'');
   }
 
-  function formatVNDInt(v){
-    const d = toVndIntegerString(v);
+  function groupVi(d){
+    d = digitsOnly(d);
     if(!d) return '';
-    return Number(d).toLocaleString('vi-VN', { maximumFractionDigits: 0 });
+    // bỏ leading zeros kiểu "00012" -> "12" nhưng vẫn cho "0"
+    d = d.replace(/^0+(?=\d)/,'');
+    let out = '';
+    let cnt = 0;
+    for(let i=d.length-1;i>=0;i--){
+      out = d[i] + out;
+      cnt++;
+      if(cnt % 3 === 0 && i !== 0) out = '.' + out;
+    }
+    return out;
   }
 
   function parseMoneyVNDInt(s){
-    const d = toVndIntegerString(s);
+    const d = digitsOnly(s);
     if(!d) return null;
+    // cho phép 0? business yêu cầu >0 khi WON
     const n = Number(d);
     if(!Number.isFinite(n) || n <= 0) return null;
+    // nếu quá lớn vượt safe int, vẫn trả string digits để gửi đi
+    if(d.length >= 16) return d; // ~ >= 10^15
     return Math.trunc(n);
   }
 
+  // caret-stable formatter
   function formatMoneyInput(el){
-  // giữ caret ổn định khi format bằng dấu phân cách
-  const raw = String(el.value ?? '');
-  const start = el.selectionStart ?? raw.length;
+    const raw = String(el.value ?? '');
+    const start = el.selectionStart ?? raw.length;
 
-  // đếm số chữ số nằm TRƯỚC caret (trên chuỗi raw hiện tại)
-  const digitsBeforeCaret = raw.slice(0, start).replace(/\D/g, '').length;
+    const digitsBeforeCaret = raw.slice(0, start).replace(/\D/g, '').length;
+    const digits = raw.replace(/\D/g, '');
 
-  // lấy digits thuần
-  const digits = raw.replace(/\D/g, '');
-  if(!digits){
-    el.value = '';
-    return;
-  }
-
-  // format theo vi-VN (dấu .)
-  const formatted = Number(digits).toLocaleString('vi-VN', { maximumFractionDigits: 0 });
-  el.value = formatted;
-
-  // tìm vị trí caret mới: đi qua formatted và đếm đủ digitsBeforeCaret chữ số
-  let pos = 0;
-  let seen = 0;
-
-  while(pos < formatted.length){
-    if(formatted.charCodeAt(pos) >= 48 && formatted.charCodeAt(pos) <= 57){ // '0'..'9'
-      seen++;
-      if(seen >= digitsBeforeCaret){
-        pos++; // đặt caret sau chữ số đó
-        break;
-      }
+    if(!digits){
+      el.value = '';
+      return;
     }
-    pos++;
+
+    const formatted = groupVi(digits);
+    el.value = formatted;
+
+    // đặt caret: đi qua formatted đếm đủ digitsBeforeCaret chữ số
+    let pos = 0;
+    let seen = 0;
+    while(pos < formatted.length){
+      const ch = formatted.charCodeAt(pos);
+      if(ch >= 48 && ch <= 57){
+        seen++;
+        if(seen >= digitsBeforeCaret){
+          pos++;
+          break;
+        }
+      }
+      pos++;
+    }
+    if(digitsBeforeCaret === 0) pos = 0;
+    if(pos > formatted.length) pos = formatted.length;
+
+    try{ el.setSelectionRange(pos, pos); }catch(_){}
   }
 
-  // nếu caret ở cuối (xoá hết / thêm cuối)
-  if(digitsBeforeCaret === 0) pos = 0;
-  if(pos > formatted.length) pos = formatted.length;
-
-  // setSelectionRange đôi khi lỗi nếu input chưa focus → bọc try/catch
-  try{
-    el.setSelectionRange(pos, pos);
-  }catch(_){}
+  function formatVNDInt(v){
+    const d = digitsOnly(v);
+    return d ? groupVi(d) : '';
   }
 
   function formatAllMoneyCells(){
@@ -500,18 +485,21 @@
       el.textContent = f || '—';
     });
   }
-  // giúp backspace/delete không bị "dính" dấu chấm khi đang format
+
+  // Backspace/Delete mượt nếu đứng cạnh dấu '.'
   document.getElementById('mPrice')?.addEventListener('keydown', (e)=>{
     if(e.key !== 'Backspace' && e.key !== 'Delete') return;
     const el = e.target;
     const v = el.value || '';
     const p = el.selectionStart ?? 0;
-
-    // nếu đang đứng ngay sau dấu '.' thì lùi 1 ký tự để xoá số cho mượt
     if(p > 0 && v[p-1] === '.'){
       e.preventDefault();
       try{ el.setSelectionRange(p-1, p-1); }catch(_){}
     }
+  });
+
+  document.getElementById('mPrice')?.addEventListener('input', (e)=>{
+    formatMoneyInput(e.target);
   });
 
   // ===== DATETIME =====
@@ -539,6 +527,11 @@
   formatAllMoneyCells();
   formatAllDateCells();
 
+  function getStatus(){
+    const r = document.querySelector('input[name="mStatus"]:checked');
+    return r ? r.value : 'WON';
+  }
+
   function openResultModal(btn){
     const tr = btn.closest('tr');
     CURRENT_ROW = tr;
@@ -552,14 +545,20 @@
     const winnerName = tr.dataset.winnerName || '';
     const winnerCccd = tr.dataset.winnerCccd || '';
     const winningPrice = tr.dataset.winningPrice || '';
+    const note = tr.dataset.note || '';
+
+    CURRENT_LOT_CODE = lotCode;
 
     document.getElementById('mLotTitle').textContent = `${lotCode} — ${lotName || '-'}`;
     document.getElementById('mLotCode').textContent = lotCode || '—';
     document.getElementById('mStartingPrice').textContent = formatVNDInt(startingPrice) || '—';
     document.getElementById('mDeposit').textContent = formatVNDInt(deposit) || '—';
     document.getElementById('mStartingRaw').value = String(startingPrice || '');
-    document.getElementById('mNote').value = '';
 
+    // ✅ FIX NOTE LOAD
+    document.getElementById('mNote').value = note || '';
+
+    // set status radios
     const radios = document.querySelectorAll('input[name="mStatus"]');
     let set = false;
     radios.forEach(r=>{
@@ -569,60 +568,82 @@
       radios.forEach(r=> r.checked = (r.value === 'WON'));
     }
 
-    document.getElementById('mPrice').value = winningPrice ? formatVNDInt(winningPrice) : '';
+    // price
+    document.getElementById('mPrice').value = winningPrice ? groupVi(digitsOnly(winningPrice)) : '';
 
-    // ✅ giữ winner id khi chỉ sửa giá
+    // winner
     CUSTOMER_TOUCHED = false;
     const label = (winnerName ? `${winnerName}${winnerCccd ? ' — ' + winnerCccd : ''}` : '');
     document.getElementById('mCustomerInput').value = label || '';
     document.getElementById('mCustomerId').value = winnerId || '';
-
     document.getElementById('mCustomerHint').textContent = '';
+
     document.getElementById('resultModal').style.display='flex';
 
-    ELIGIBLE_CUSTOMERS = [];
+    // IMPORTANT: không xoá cache vô cớ, chỉ reset dropdown state
     closeCustomerDropdown();
+    AC_ACTIVE_INDEX = -1;
 
-    renderStatusFields();
+    // render fields + nếu WON thì load eligible (luôn allow edit lại)
+    renderStatusFields(false);
 
     if(getStatus() === 'WON'){
-      loadEligibleCustomers(PROJECT_ID, lotCode, winnerId);
+      ensureEligibleLoadedForCurrentLot(true);
     }
   }
 
   function closeResultModal(){
     document.getElementById('resultModal').style.display='none';
     CURRENT_ROW = null;
-    ELIGIBLE_CUSTOMERS = [];
+    CURRENT_LOT_CODE = '';
     closeCustomerDropdown();
     AC_ACTIVE_INDEX = -1;
     CUSTOMER_TOUCHED = false;
+    // giữ ELIGIBLE_CUSTOMERS/cache để quay lại mở lại modal nhanh (ok)
   }
 
-  function getStatus(){
-    const r = document.querySelector('input[name="mStatus"]:checked');
-    return r ? r.value : 'WON';
-  }
-
-  function renderStatusFields(){
+  // when status changes
+  function renderStatusFields(fromUserChange){
     const status = getStatus();
     const won = document.getElementById('wonFields');
+
     if(status === 'WON'){
       won.style.display = '';
+      // ✅ nếu user vừa đổi về WON thì refetch để chắc chắn có list
+      if(fromUserChange){
+        ensureEligibleLoadedForCurrentLot(true);
+        // nếu trước đó chọn NO_SALE/CANCELED, user có thể muốn chọn lại -> mở dropdown khi focus
+        // không tự clear winnerId; để admin sửa “thoải mái”
+      }
     }else{
       won.style.display = 'none';
       closeCustomerDropdown();
+      // ✅ KHÔNG xoá ELIGIBLE_CUSTOMERS, KHÔNG reset id ở đây
+      // vì admin có thể đổi qua lại và muốn giữ lại thông tin cũ nếu quay về WON.
     }
+  }
+
+  async function ensureEligibleLoadedForCurrentLot(force){
+    if(!CURRENT_LOT_CODE) return;
+
+    // nếu đã load cho lot này và không force thì thôi
+    if(!force && ELIGIBLE_LOADED_FOR_LOT === CURRENT_LOT_CODE && ELIGIBLE_CUSTOMERS.length){
+      document.getElementById('mCustomerHint').textContent = `Có ${ELIGIBLE_CUSTOMERS.length} khách cho lô này.`;
+      return;
+    }
+
+    const selectedId = document.getElementById('mCustomerId').value || '';
+    await loadEligibleCustomers(PROJECT_ID, CURRENT_LOT_CODE, selectedId);
   }
 
   async function loadEligibleCustomers(projectId, lotCode, selectedId){
     document.getElementById('mCustomerHint').textContent = 'Đang tải danh sách khách...';
     try{
-      const r = await fetch(
-        `/auction/results/api/projects/${projectId}/lots/${encodeURIComponent(lotCode)}/eligible-customers?limit=2000`,
-        { headers: { "Accept": "application/json" } }
-      );
+      // ✅ include_unpaid=true để admin edit thoải mái
+      const url = `/auction/results/api/projects/${projectId}/lots/${encodeURIComponent(lotCode)}/eligible-customers?limit=2000&include_unpaid=true`;
+      const r = await fetch(url, { headers: { "Accept": "application/json" } });
       const js = await r.json();
+
       if(!r.ok){
         toast("Lỗi tải danh sách khách");
         document.getElementById('mCustomerHint').textContent = 'Lỗi tải danh sách.';
@@ -634,14 +655,16 @@
         full_name: x.full_name || x.customer_full_name || '',
         cccd: x.cccd || '',
         phone: x.phone || '',
-        deposit_paid: x.deposit_paid === true,
-        registered_at: x.registered_at || ''
+        deposit_paid: x.deposit_paid === true || x.status === 'PAID',
+        registered_at: x.registered_at || x.paid_at || ''
       })).filter(x => x.customer_id);
 
-      document.getElementById('mCustomerHint').textContent =
-        `Có ${ELIGIBLE_CUSTOMERS.length} khách đủ điều kiện cho lô này.`;
+      ELIGIBLE_LOADED_FOR_LOT = lotCode;
 
-      // ✅ đồng bộ label theo list để tránh mismatch, vẫn giữ id
+      document.getElementById('mCustomerHint').textContent =
+        `Có ${ELIGIBLE_CUSTOMERS.length} khách cho lô này.`;
+
+      // sync selected label by id if exists
       if(selectedId){
         const picked = ELIGIBLE_CUSTOMERS.find(x => String(x.customer_id) === String(selectedId));
         if(picked){
@@ -651,10 +674,11 @@
         }
       }
 
+      // nếu đang focus input thì render panel
       const inp = document.getElementById('mCustomerInput');
       if(document.activeElement === inp){
         openCustomerDropdown();
-        onCustomerTyping();
+        renderCustomerPanel(filteredCustomers(false));
       }
     }catch(e){
       console.error(e);
@@ -678,9 +702,8 @@
     const panel = document.getElementById('acPanel');
     panel.style.display = 'block';
     AC_OPEN = true;
-    AC_ACTIVE_INDEX = -1;
-    // render ngay nếu có data
-    onCustomerTyping();
+    // không auto set touched ở đây
+    renderCustomerPanel(filteredCustomers(false));
   }
 
   function closeCustomerDropdown(){
@@ -700,7 +723,7 @@
     }
   });
 
-  // ✅ chỉ reset id nếu user thực sự gõ sửa (không reset khi chỉ mở modal + sửa giá)
+  // chỉ reset id nếu user thực sự gõ sửa
   function noteResetIfUserDidNotPick(){
     if(!CUSTOMER_TOUCHED) return;
 
@@ -747,24 +770,24 @@
     }).join('');
   }
 
-  function filteredCustomers(){
-    const kw = (document.getElementById('mCustomerInput').value || '').trim().toLowerCase();
+  function filteredCustomers(useCurrentText=true){
+    const kw = useCurrentText ? (document.getElementById('mCustomerInput').value || '').trim().toLowerCase() : '';
     if(!kw) return ELIGIBLE_CUSTOMERS.slice(0, 200);
     const f = ELIGIBLE_CUSTOMERS.filter(x => (customerLabel(x)||'').toLowerCase().includes(kw));
     return f.slice(0, 200);
   }
 
-  function onCustomerTyping(){
+  function onCustomerInputChanged(){
     CUSTOMER_TOUCHED = true;
     noteResetIfUserDidNotPick();
-    if(!AC_OPEN) return;
-    const list = filteredCustomers();
+    if(!AC_OPEN) openCustomerDropdown();
+    const list = filteredCustomers(true);
     AC_ACTIVE_INDEX = list.length ? 0 : -1;
     renderCustomerPanel(list);
   }
 
   function pickCustomerByIndex(i){
-    const list = filteredCustomers();
+    const list = filteredCustomers(true);
     const x = list[i];
     if(!x) return;
     document.getElementById('mCustomerInput').value = customerLabel(x);
@@ -775,7 +798,7 @@
 
   function onCustomerKeydown(e){
     if(!AC_OPEN) return;
-    const list = filteredCustomers();
+    const list = filteredCustomers(true);
     if(!list.length) return;
 
     if(e.key === 'ArrowDown'){
@@ -811,30 +834,30 @@
     const lotCode = CURRENT_ROW.dataset.lotCode;
     const status = getStatus();
     const note = (document.getElementById('mNote').value || '').trim();
-    const actor = "admin";
 
-    let payload = { result_status: status, note: note || null, actor };
+    // ✅ actor bỏ trong payload theo “chốt”: A tự lấy từ auth context
+    // nên B không gửi actor nữa.
+    let payload = { result_status: status, note: note || null };
 
     if(status === 'WON'){
       const winnerId = document.getElementById('mCustomerId').value;
-      const price = parseMoneyVNDInt(document.getElementById('mPrice').value);
-      const startingRaw = CURRENT_ROW.dataset.startingPrice || document.getElementById('mStartingRaw').value || '';
-      const starting = parseMoneyVNDInt(String(startingRaw));
+      const priceParsed = parseMoneyVNDInt(document.getElementById('mPrice').value);
 
       if(!winnerId){
         toast("Bạn chưa chọn khách trúng (hãy chọn từ danh sách gợi ý)");
-        // chỉ mở dropdown nếu đang focus
         document.getElementById('mCustomerInput')?.focus();
         openCustomerDropdown();
         return;
       }
-      if(!price){
+      if(!priceParsed){
         toast("Giá trúng không hợp lệ");
         return;
       }
 
       payload.winner_customer_id = Number(winnerId);
-      payload.winning_price_vnd = price;
+      payload.winning_price_vnd = priceParsed; // number hoặc string digits (nếu quá lớn)
+    }else{
+      // rs != WON -> A sẽ tự set winner/price = null
     }
 
     const btn = document.getElementById('mSaveBtn');
