@@ -13,10 +13,10 @@
   </p>
 </div>
 
-<form method="get" class="bg-white border rounded-2xl shadow-sm p-4 mb-4 flex flex-wrap gap-4 items-end">
+<form id="filtersForm" method="get" class="bg-white border rounded-2xl shadow-sm p-4 mb-4 flex flex-wrap gap-4 items-end" onsubmit="return false;">
   <div class="flex flex-col">
     <label class="text-xs font-semibold text-slate-500 mb-1">Dự án</label>
-    <select name="project" class="h-10 rounded-xl border px-3 text-sm min-w-[220px]">
+    <select id="fProject" name="project" class="h-10 rounded-xl border px-3 text-sm min-w-[220px]">
       <option value="">— Chọn dự án —</option>
       {% for p in projects or [] %}
         {% set code = (p.project_code or p.code) %}
@@ -30,17 +30,19 @@
   <div class="flex flex-col">
     <label class="text-xs font-semibold text-slate-500 mb-1">Tìm lô</label>
     <input
+      id="fQ"
       type="text"
       name="q"
       value="{{ q }}"
       class="h-10 rounded-xl border px-3 text-sm min-w-[180px]"
       placeholder="Mã lô hoặc tên lô..."
+      autocomplete="off"
     >
   </div>
 
   <div class="flex flex-col">
     <label class="text-xs font-semibold text-slate-500 mb-1">Trạng thái kết quả</label>
-    <select name="result_status" class="h-10 rounded-xl border px-3 text-sm min-w-[160px]">
+    <select id="fStatus" name="result_status" class="h-10 rounded-xl border px-3 text-sm min-w-[160px]">
       {% set rs = (result_status or '') %}
       <option value="" {% if rs=='' %}selected{% endif %}>— Tất cả —</option>
       <option value="EMPTY" {% if rs=='EMPTY' %}selected{% endif %}>Chưa nhập (EMPTY)</option>
@@ -53,6 +55,7 @@
   <div class="flex flex-col">
     <label class="text-xs font-semibold text-slate-500 mb-1">Số dòng / trang</label>
     <input
+      id="fSize"
       type="number"
       name="size"
       value="{{ size or 200 }}"
@@ -64,20 +67,13 @@
 
   <div class="flex items-center gap-3 ml-auto">
     <button
-      type="submit"
-      class="h-10 px-4 rounded-xl bg-emerald-600 text-white text-sm font-medium shadow-sm hover:bg-emerald-700"
-    >Áp dụng</button>
-
-    {% if project_id %}
-      <button
-        type="button"
-        id="btnBulkSave"
-        class="h-10 px-4 rounded-xl border border-slate-300 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 inline-flex items-center gap-2"
-        title="Chỉ dùng nếu bạn sửa nhiều dòng rồi bấm lưu tất cả"
-      >
-        <i class="ri-save-3-line"></i> Lưu tất cả
-      </button>
-    {% endif %}
+      type="button"
+      id="btnResetFilters"
+      class="h-10 px-4 rounded-xl border border-slate-300 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 inline-flex items-center gap-2"
+      title="Đưa bộ lọc về mặc định"
+    >
+      <i class="ri-refresh-line"></i> Reset
+    </button>
   </div>
 </form>
 
@@ -95,7 +91,7 @@
   {% if project_id %}
     <span class="font-semibold text-slate-900">{{ total }}</span> lô được tìm thấy.
   {% else %}
-    Chọn dự án và bấm "Áp dụng" để xem dữ liệu.
+    Chọn dự án để xem dữ liệu.
   {% endif %}
 </div>
 
@@ -198,7 +194,7 @@
             {% if project_id %}
               Không có lô phù hợp bộ lọc hiện tại.
             {% else %}
-              Chọn dự án và bấm "Áp dụng" để xem dữ liệu.
+              Chọn dự án để xem dữ liệu.
             {% endif %}
           </td>
         </tr>
@@ -282,7 +278,6 @@
           <div class="col-span-12 md:col-span-7">
             <label class="text-xs font-semibold text-slate-500">Chọn khách đủ điều kiện</label>
 
-            <!-- Autocomplete input -->
             <div class="ac-wrap">
               <input id="mCustomerInput" class="mt-2 h-10 w-full rounded-xl border px-3 text-sm"
                      placeholder="Gõ tên / CCCD / SĐT..."
@@ -336,10 +331,75 @@
 
 <script>
   const PROJECT_ID = {{ project_id or 'null' }};
+
+  // ===== FILTERS (AUTO APPLY + RESET) =====
+  const DEFAULT_SIZE = 200;
+
+  function debounce(fn, wait){
+    let t = null;
+    return (...args)=>{
+      clearTimeout(t);
+      t = setTimeout(()=> fn(...args), wait);
+    };
+  }
+
+  function currentUrl(){
+    return new URL(window.location.href);
+  }
+
+  function applyFilters(pushHistory=true){
+    const u = currentUrl();
+
+    const project = (document.getElementById('fProject')?.value || '').trim();
+    const q = (document.getElementById('fQ')?.value || '').trim();
+    const rs = (document.getElementById('fStatus')?.value || '').trim();
+    const size = (document.getElementById('fSize')?.value || '').trim();
+
+    // reset page về 1 khi filter thay đổi
+    u.searchParams.set('page', '1');
+
+    if(project) u.searchParams.set('project', project); else u.searchParams.delete('project');
+    if(q) u.searchParams.set('q', q); else u.searchParams.delete('q');
+    if(rs) u.searchParams.set('result_status', rs); else u.searchParams.delete('result_status');
+
+    const sizeNum = Number(size || DEFAULT_SIZE);
+    if(sizeNum && sizeNum !== DEFAULT_SIZE) u.searchParams.set('size', String(sizeNum));
+    else u.searchParams.delete('size');
+
+    // tránh reload vô hạn khi url không đổi
+    if(u.toString() === window.location.href) return;
+
+    if(pushHistory){
+      window.location.assign(u.toString());
+    }else{
+      window.location.replace(u.toString());
+    }
+  }
+
+  const applyFiltersDebounced = debounce(()=> applyFilters(true), 350);
+
+  document.getElementById('fProject')?.addEventListener('change', ()=> applyFilters(true));
+  document.getElementById('fStatus')?.addEventListener('change', ()=> applyFilters(true));
+  document.getElementById('fSize')?.addEventListener('change', ()=> applyFilters(true));
+  document.getElementById('fQ')?.addEventListener('input', ()=> applyFiltersDebounced());
+
+  document.getElementById('btnResetFilters')?.addEventListener('click', ()=>{
+    const u = currentUrl();
+    u.searchParams.delete('project');
+    u.searchParams.delete('q');
+    u.searchParams.delete('result_status');
+    u.searchParams.delete('size');
+    u.searchParams.delete('page');
+    window.location.assign(u.toString());
+  });
+
+  // ===== MODAL / DATA =====
   let CURRENT_ROW = null;
   let ELIGIBLE_CUSTOMERS = [];
+
   let AC_OPEN = false;
   let AC_ACTIVE_INDEX = -1;
+  let CUSTOMER_TOUCHED = false;
 
   function toast(msg){
     const t = document.getElementById('toast');
@@ -354,12 +414,9 @@
   }
 
   // ===== MONEY (HIỂN THỊ THUẦN, TÔN TRỌNG DATA A) =====
-
-  // lấy phần nguyên, KHÔNG nuốt ".0"
   function toVndIntegerString(v){
     if(v === null || v === undefined) return '';
 
-    // number -> lấy phần nguyên
     if(typeof v === 'number'){
       if(!Number.isFinite(v)) return '';
       return String(Math.trunc(v));
@@ -368,19 +425,14 @@
     let s = String(v).trim();
     if(!s) return '';
 
-    // case: "2039460000.0", "2039460000.00"
+    // "2039460000.0"
     if(/^\d+(\.\d+)?$/.test(s)){
       const n = Number(s);
       if(Number.isFinite(n)) return String(Math.trunc(n));
     }
 
-    // case: "2.039.460.000"
-    if(s.includes('.')){
-      const d = s.replace(/[^\d]/g,'');
-      return d || '';
-    }
-
-    return s.replace(/[^\d]/g,'');
+    // "2.039.460.000" / "2,039,460,000"
+    return s.replace(/[^\d]/g,'') || '';
   }
 
   function formatVNDInt(v){
@@ -398,17 +450,49 @@
   }
 
   function formatMoneyInput(el){
-    const d = toVndIntegerString(el.value);
-    el.value = d ? Number(d).toLocaleString('vi-VN', { maximumFractionDigits: 0 }) : '';
+  // giữ caret ổn định khi format bằng dấu phân cách
+  const raw = String(el.value ?? '');
+  const start = el.selectionStart ?? raw.length;
+
+  // đếm số chữ số nằm TRƯỚC caret (trên chuỗi raw hiện tại)
+  const digitsBeforeCaret = raw.slice(0, start).replace(/\D/g, '').length;
+
+  // lấy digits thuần
+  const digits = raw.replace(/\D/g, '');
+  if(!digits){
+    el.value = '';
+    return;
   }
 
+  // format theo vi-VN (dấu .)
+  const formatted = Number(digits).toLocaleString('vi-VN', { maximumFractionDigits: 0 });
+  el.value = formatted;
 
-  function formatMoneyInput(el){
-    const d = onlyDigits(el.value);
-    el.value = d ? Number(d).toLocaleString('vi-VN', { maximumFractionDigits: 0 }) : '';
+  // tìm vị trí caret mới: đi qua formatted và đếm đủ digitsBeforeCaret chữ số
+  let pos = 0;
+  let seen = 0;
+
+  while(pos < formatted.length){
+    if(formatted.charCodeAt(pos) >= 48 && formatted.charCodeAt(pos) <= 57){ // '0'..'9'
+      seen++;
+      if(seen >= digitsBeforeCaret){
+        pos++; // đặt caret sau chữ số đó
+        break;
+      }
+    }
+    pos++;
   }
 
-  // ✅ format các cột tiền trên table
+  // nếu caret ở cuối (xoá hết / thêm cuối)
+  if(digitsBeforeCaret === 0) pos = 0;
+  if(pos > formatted.length) pos = formatted.length;
+
+  // setSelectionRange đôi khi lỗi nếu input chưa focus → bọc try/catch
+  try{
+    el.setSelectionRange(pos, pos);
+  }catch(_){}
+  }
+
   function formatAllMoneyCells(){
     document.querySelectorAll('.money').forEach(el=>{
       const v = el.getAttribute('data-value');
@@ -416,12 +500,24 @@
       el.textContent = f || '—';
     });
   }
+  // giúp backspace/delete không bị "dính" dấu chấm khi đang format
+  document.getElementById('mPrice')?.addEventListener('keydown', (e)=>{
+    if(e.key !== 'Backspace' && e.key !== 'Delete') return;
+    const el = e.target;
+    const v = el.value || '';
+    const p = el.selectionStart ?? 0;
 
-  // ✅ format datetime ISO -> dd/mm/yyyy HH:MM:SS (giờ VN theo offset trong chuỗi)
+    // nếu đang đứng ngay sau dấu '.' thì lùi 1 ký tự để xoá số cho mượt
+    if(p > 0 && v[p-1] === '.'){
+      e.preventDefault();
+      try{ el.setSelectionRange(p-1, p-1); }catch(_){}
+    }
+  });
+
+  // ===== DATETIME =====
   function pad2(n){ return String(n).padStart(2,'0'); }
   function formatISOToVN(iso){
     if(!iso) return '';
-    // JS Date parse được ISO có offset +07:00 -> đúng giờ VN
     const d = new Date(iso);
     if(!isFinite(d.getTime())) return iso;
 
@@ -464,7 +560,6 @@
     document.getElementById('mStartingRaw').value = String(startingPrice || '');
     document.getElementById('mNote').value = '';
 
-    // status set
     const radios = document.querySelectorAll('input[name="mStatus"]');
     let set = false;
     radios.forEach(r=>{
@@ -474,10 +569,10 @@
       radios.forEach(r=> r.checked = (r.value === 'WON'));
     }
 
-    // fill price if exists
     document.getElementById('mPrice').value = winningPrice ? formatVNDInt(winningPrice) : '';
 
-    // set current winner to input (label), but must still choose from dropdown to set id reliably
+    // ✅ giữ winner id khi chỉ sửa giá
+    CUSTOMER_TOUCHED = false;
     const label = (winnerName ? `${winnerName}${winnerCccd ? ' — ' + winnerCccd : ''}` : '');
     document.getElementById('mCustomerInput').value = label || '';
     document.getElementById('mCustomerId').value = winnerId || '';
@@ -501,6 +596,7 @@
     ELIGIBLE_CUSTOMERS = [];
     closeCustomerDropdown();
     AC_ACTIVE_INDEX = -1;
+    CUSTOMER_TOUCHED = false;
   }
 
   function getStatus(){
@@ -545,21 +641,21 @@
       document.getElementById('mCustomerHint').textContent =
         `Có ${ELIGIBLE_CUSTOMERS.length} khách đủ điều kiện cho lô này.`;
 
-      // nếu selectedId mà không nằm trong list, vẫn cho giữ value nhưng validate khi lưu sẽ yêu cầu chọn (id phải có)
+      // ✅ đồng bộ label theo list để tránh mismatch, vẫn giữ id
       if(selectedId){
-        const ok = ELIGIBLE_CUSTOMERS.some(x => String(x.customer_id) === String(selectedId));
-        if(!ok){
-          // vẫn giữ id cũ, nhưng user nên chọn lại
+        const picked = ELIGIBLE_CUSTOMERS.find(x => String(x.customer_id) === String(selectedId));
+        if(picked){
+          document.getElementById('mCustomerInput').value = customerLabel(picked);
+          document.getElementById('mCustomerId').value = String(picked.customer_id);
+          CUSTOMER_TOUCHED = false;
         }
       }
 
-      // nếu đang focus thì render dropdown theo từ khoá hiện tại
       const inp = document.getElementById('mCustomerInput');
       if(document.activeElement === inp){
         openCustomerDropdown();
         onCustomerTyping();
       }
-
     }catch(e){
       console.error(e);
       toast("Lỗi kết nối khi tải khách");
@@ -600,15 +696,17 @@
     if(!wrap) return;
     if(!wrap.contains(e.target)){
       closeCustomerDropdown();
-    noteResetIfUserDidNotPick();
+      noteResetIfUserDidNotPick();
     }
   });
 
-  // nếu user gõ lại sau khi đã chọn -> reset hidden id để bắt buộc chọn lại
+  // ✅ chỉ reset id nếu user thực sự gõ sửa (không reset khi chỉ mở modal + sửa giá)
   function noteResetIfUserDidNotPick(){
+    if(!CUSTOMER_TOUCHED) return;
+
     const inp = document.getElementById('mCustomerInput');
     const hid = document.getElementById('mCustomerId');
-    // nếu input không đúng label của id đã chọn, coi như chưa chọn
+
     if(hid.value){
       const picked = ELIGIBLE_CUSTOMERS.find(x => String(x.customer_id) === String(hid.value));
       const lbl = picked ? customerLabel(picked) : '';
@@ -651,12 +749,13 @@
 
   function filteredCustomers(){
     const kw = (document.getElementById('mCustomerInput').value || '').trim().toLowerCase();
-    if(!kw) return ELIGIBLE_CUSTOMERS.slice(0, 200); // tránh render quá nặng
+    if(!kw) return ELIGIBLE_CUSTOMERS.slice(0, 200);
     const f = ELIGIBLE_CUSTOMERS.filter(x => (customerLabel(x)||'').toLowerCase().includes(kw));
     return f.slice(0, 200);
   }
 
   function onCustomerTyping(){
+    CUSTOMER_TOUCHED = true;
     noteResetIfUserDidNotPick();
     if(!AC_OPEN) return;
     const list = filteredCustomers();
@@ -670,6 +769,7 @@
     if(!x) return;
     document.getElementById('mCustomerInput').value = customerLabel(x);
     document.getElementById('mCustomerId').value = String(x.customer_id);
+    CUSTOMER_TOUCHED = false;
     closeCustomerDropdown();
   }
 
@@ -723,6 +823,8 @@
 
       if(!winnerId){
         toast("Bạn chưa chọn khách trúng (hãy chọn từ danh sách gợi ý)");
+        // chỉ mở dropdown nếu đang focus
+        document.getElementById('mCustomerInput')?.focus();
         openCustomerDropdown();
         return;
       }
@@ -759,7 +861,6 @@
       toast("Đã lưu kết quả");
       closeResultModal();
       window.location.reload();
-
     }catch(e){
       console.error(e);
       toast("Lỗi kết nối khi lưu");
@@ -768,9 +869,5 @@
       btn.textContent = "Lưu";
     }
   }
-
-  document.getElementById('btnBulkSave')?.addEventListener('click', async ()=>{
-    toast("Trang này đang lưu theo từng lô. (Bulk API có sẵn nếu bạn muốn nâng cấp.)");
-  });
 </script>
 {% endblock %}
