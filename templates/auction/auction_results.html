@@ -271,7 +271,7 @@
 
         <div class="col-span-12 md:col-span-6">
           <label class="text-xs font-semibold text-slate-500">Ghi chú (optional)</label>
-          <input id="mNote" class="mt-2 h-10 w-full rounded-xl border px-3 text-sm" placeholder="VD: Trả chậm 1 phiên...">
+          <input id="mNote" class="mt-2 h-10 w-full rounded-xl border px-3 text-sm" placeholder="VD: Điều chỉnh giá trúng vì kiểm phiếu nhầm ...">
         </div>
 
         <div id="wonFields" class="col-span-12 grid grid-cols-12 gap-3 mt-1">
@@ -830,10 +830,6 @@
       }
       if(!price){
         toast("Giá trúng không hợp lệ");
-        return;
-      }
-      if(starting && price < starting){
-        toast("Giá trúng không được thấp hơn giá khởi điểm");
         return;
       }
 
