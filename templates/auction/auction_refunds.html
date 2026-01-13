@@ -5,12 +5,23 @@
 <div class="mb-6">
   <h1 class="text-2xl font-semibold text-slate-900 flex items-center gap-2">
     <i class="ri-refund-2-line text-indigo-600 text-3xl"></i>
-    Hoàn tiền đặt trước (Refund)
+    5.4 Hoàn tiền đặt trước
   </h1>
   <p class="text-slate-500 text-sm mt-1">
-    Điều kiện: <b>DEPOSIT</b> đã nhận tiền <b>paid_vnd &gt; 0</b> → loại trừ khách <b>đã trúng đấu giá</b>.
+    Nguồn dữ liệu: <b>v20.deposit_refund_candidates</b> (snapshot theo DỰ ÁN) — loại trừ <b>khách trúng</b>.
   </p>
 </div>
+
+{% if error %}
+  <div class="mb-4 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl p-3 text-sm">
+    <div class="font-semibold">Lỗi gọi Service A</div>
+    <div class="mt-1">status={{ error.status }} | {{ (error.body or {}).get('detail') or error.body }}</div>
+  </div>
+{% endif %}
+
+{% set rows = (data or {}).get('data') or [] %}
+{% set total = (data or {}).get('total') or (rows|length) %}
+{% set total_amount_vnd = (data or {}).get('total_amount_vnd') or 0 %}
 
 <form id="filtersForm" method="get"
       class="bg-white border rounded-2xl shadow-sm p-4 mb-4 flex flex-wrap gap-4 items-end"
@@ -18,7 +29,7 @@
 
   <div class="flex flex-col">
     <label class="text-xs font-semibold text-slate-500 mb-1">Dự án</label>
-    <select id="fProject" name="project" class="h-10 rounded-xl border px-3 text-sm min-w-[240px]">
+    <select id="fProject" name="project" class="h-10 rounded-xl border px-3 text-sm min-w-[320px]">
       <option value="">— Chọn dự án —</option>
       {% for p in projects or [] %}
         {% set code = (p.project_code or p.code) %}
@@ -30,48 +41,49 @@
   </div>
 
   <div class="flex flex-col">
+    <label class="text-xs font-semibold text-slate-500 mb-1">Loại danh sách</label>
+    <select id="fEligible" name="eligible" class="h-10 rounded-xl border px-3 text-sm w-52">
+      <option value="ELIGIBLE" {% if eligible == 'ELIGIBLE' or not eligible %}selected{% endif %}>Phải hoàn</option>
+      <option value="EXCLUDED" {% if eligible == 'EXCLUDED' %}selected{% endif %}>Bị loại (khách trúng)</option>
+      <option value="ALL" {% if eligible == 'ALL' %}selected{% endif %}>Tất cả</option>
+    </select>
+  </div>
+
+  <div class="flex flex-col">
     <label class="text-xs font-semibold text-slate-500 mb-1">Tìm kiếm</label>
     <input id="fQ" type="text" name="q" value="{{ q }}"
-           class="h-10 rounded-xl border px-3 text-sm min-w-[240px]"
-           placeholder="DEP..., CCCD, tên khách, mã lô...">
+           class="h-10 rounded-xl border px-3 text-sm min-w-[300px]"
+           placeholder="CCCD, tên khách, SĐT, mã lô, STK...">
   </div>
 
   <div class="flex flex-col">
     <label class="text-xs font-semibold text-slate-500 mb-1">Số dòng / trang</label>
-    <input id="fSize" type="number" name="size" value="{{ size or 200 }}"
-           class="h-10 rounded-xl border px-3 text-sm w-28" min="1" max="2000">
+    <input id="fSize" type="number" name="size" value="{{ size or 500 }}"
+           class="h-10 rounded-xl border px-3 text-sm w-28" min="1" max="5000">
   </div>
 
-  <div class="flex items-center gap-3 ml-auto">
+  <div class="flex items-center gap-3 ml-auto flex-wrap justify-end">
     <button type="button" id="btnResetFilters"
             class="h-10 px-4 rounded-xl border border-slate-300 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 inline-flex items-center gap-2">
       <i class="ri-refresh-line"></i> Reset
     </button>
 
-    <!-- ✅ REBUILD BUTTON -->
-    <form id="rebuildForm" method="post" action="/auction/refunds/rebuild" data-confirm="Rebuild lại bảng refund? (có thể mất vài giây)">
-      <input type="hidden" name="project_id" id="rebuildProjectId" value="{{ project_id or '' }}">
-      <button type="submit"
-              class="h-10 px-4 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 inline-flex items-center gap-2">
-        <i class="ri-hammer-line"></i> Rebuild refund
-      </button>
-    </form>
+    <a id="btnExportXlsx"
+       href="{% if project_id %}/auction/refunds/export.xlsx?project_id={{ project_id }}&eligible={{ eligible or 'ELIGIBLE' }}{% else %}#{% endif %}"
+       class="h-10 px-4 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 inline-flex items-center gap-2 {% if not project_id %}opacity-40 pointer-events-none{% endif %}">
+      <i class="ri-file-excel-2-line"></i> Download XLSX
+    </a>
   </div>
 </form>
 
-{% if error %}
-  <div class="mb-4 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl p-3 text-sm">
-    <div class="font-semibold">Lỗi gọi Service A</div>
-    <div class="mt-1">status={{ error.status }} | {{ (error.body or {}).get('detail') or error.body }}</div>
-  </div>
-{% endif %}
-
-{% set rows = (data or {}).get('data') or [] %}
-{% set total = (data or {}).get('total') or (rows|length) %}
-
-<div class="mb-3 text-sm text-slate-600">
+<!-- ✅ Summary row -->
+<div class="mb-3 text-sm text-slate-600 flex flex-wrap items-center gap-3">
   {% if project_id %}
-    <span class="font-semibold text-slate-900">{{ total }}</span> giao dịch hoàn tiền.
+    <div>
+      <span class="font-semibold text-slate-900">{{ total }}</span> dòng —
+      <span class="font-semibold text-slate-900 money" data-value="{{ total_amount_vnd }}">—</span> VND
+      <span class="text-slate-400">({{ eligible or 'ELIGIBLE' }})</span>
+    </div>
   {% else %}
     Chọn dự án để xem dữ liệu.
   {% endif %}
@@ -82,31 +94,50 @@
     <table class="min-w-full text-sm text-slate-700">
       <thead class="bg-slate-50 text-slate-500 border-b">
         <tr>
-          <th class="px-4 py-2 text-left font-semibold">Order</th>
-          <th class="px-4 py-2 text-left font-semibold">Khách</th>
+          <th class="px-4 py-2 text-left font-semibold">Họ tên</th>
           <th class="px-4 py-2 text-left font-semibold">CCCD</th>
+          <th class="px-4 py-2 text-left font-semibold">SĐT</th>
           <th class="px-4 py-2 text-left font-semibold">Lô</th>
           <th class="px-4 py-2 text-right font-semibold">Số tiền hoàn</th>
-          <th class="px-4 py-2 text-left font-semibold">Nội dung CK (chuẩn hóa)</th>
+          <th class="px-4 py-2 text-left font-semibold">Tài khoản nhận</th>
+          <th class="px-4 py-2 text-left font-semibold">Nội dung CK (chuẩn)</th>
         </tr>
       </thead>
+
       <tbody class="divide-y divide-slate-100">
       {% for r in rows %}
         <tr class="hover:bg-slate-50">
-          <td class="px-4 py-3 font-semibold text-slate-900 whitespace-nowrap">
-            {{ r.order_code or ('#' ~ r.order_id) }}
-          </td>
           <td class="px-4 py-3">
             <div class="font-semibold text-slate-900">{{ r.customer_name or '-' }}</div>
           </td>
-          <td class="px-4 py-3 text-slate-600 whitespace-nowrap">{{ r.cccd or '' }}</td>
-          <td class="px-4 py-3 text-slate-600">{{ r.lot_codes or '' }}</td>
-          <td class="px-4 py-3 text-right whitespace-nowrap">
-            <span class="money" data-value="{{ r.paid_vnd or 0 }}">—</span>
+
+          <td class="px-4 py-3 text-slate-600 whitespace-nowrap">{{ r.customer_cccd or '' }}</td>
+
+          <td class="px-4 py-3 text-slate-600 whitespace-nowrap">
+            {{ r.customer_phone or r.phone or '-' }}
           </td>
+
+          <td class="px-4 py-3 text-slate-600 whitespace-nowrap">{{ r.lot_code or '' }}</td>
+
+          <td class="px-4 py-3 text-right whitespace-nowrap">
+            <!-- ưu tiên refund_amount_vnd / paid_vnd; formatter JS sẽ xử lý đúng cả "108000000.0" -->
+            <span class="money" data-value="{{ r.refund_amount_vnd if r.refund_amount_vnd is not none else (r.paid_vnd if r.paid_vnd is not none else 0) }}">—</span>
+          </td>
+
+          <td class="px-4 py-3 text-slate-700">
+            {% if r.account_number or r.bank_code %}
+              <div class="text-xs">
+                <div class="font-semibold">{{ r.bank_code or '' }} — {{ r.account_number or '' }}</div>
+                <div class="text-slate-600">{{ r.account_name or '' }}</div>
+              </div>
+            {% else %}
+              <span class="text-slate-400 text-xs">Chưa có TK hoàn</span>
+            {% endif %}
+          </td>
+
           <td class="px-4 py-3 text-xs text-slate-700">
             <div class="font-mono bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
-              {{ r.content_norm or '' }}
+              {{ r.content or '' }}
             </div>
           </td>
         </tr>
@@ -114,9 +145,9 @@
 
       {% if rows|length == 0 %}
         <tr>
-          <td colspan="6" class="px-4 py-6 text-center text-slate-400">
+          <td colspan="7" class="px-4 py-6 text-center text-slate-400">
             {% if project_id %}
-              Không có dữ liệu hoàn theo bộ lọc hiện tại.
+              Không có dữ liệu theo bộ lọc hiện tại.
             {% else %}
               Chọn dự án để xem dữ liệu.
             {% endif %}
@@ -129,8 +160,7 @@
 </div>
 
 <script>
-  // ===== FILTERS giống 5.3 =====
-  const DEFAULT_SIZE = 200;
+  const DEFAULT_SIZE = 500; // default 500
 
   function debounce(fn, wait){
     let t = null;
@@ -146,12 +176,18 @@
     const u = currentUrl();
 
     const project = (document.getElementById('fProject')?.value || '').trim();
+    const eligible = (document.getElementById('fEligible')?.value || 'ELIGIBLE').trim();
     const q = (document.getElementById('fQ')?.value || '').trim();
     const size = (document.getElementById('fSize')?.value || '').trim();
 
     u.searchParams.set('page','1');
 
     if(project) u.searchParams.set('project', project); else u.searchParams.delete('project');
+
+    // keep eligible param only if not default
+    if(eligible && eligible !== 'ELIGIBLE') u.searchParams.set('eligible', eligible);
+    else u.searchParams.delete('eligible');
+
     if(q) u.searchParams.set('q', q); else u.searchParams.delete('q');
 
     const sizeNum = Number(size || DEFAULT_SIZE);
@@ -165,38 +201,34 @@
   const applyFiltersDebounced = debounce(()=> applyFilters(true), 300);
 
   document.getElementById('fProject')?.addEventListener('change', ()=> applyFilters(true));
+  document.getElementById('fEligible')?.addEventListener('change', ()=> applyFilters(true));
   document.getElementById('fSize')?.addEventListener('change', ()=> applyFilters(true));
   document.getElementById('fQ')?.addEventListener('input', ()=> applyFiltersDebounced());
 
   document.getElementById('btnResetFilters')?.addEventListener('click', ()=>{
+    // Reset must default to "Phải hoàn" (ELIGIBLE)
     const u = currentUrl();
     u.searchParams.delete('project');
+    u.searchParams.delete('eligible');
     u.searchParams.delete('q');
     u.searchParams.delete('size');
     u.searchParams.delete('page');
     window.location.assign(u.toString());
   });
 
-  // set rebuild hidden project_id
-  document.getElementById('rebuildProjectId').value = "{{ project_id or '' }}";
-
-  // money format (quick)
-  function digitsOnly(v){ return String(v ?? '').replace(/[^\d]/g,''); }
-  function groupVi(d){
-    d = digitsOnly(d);
-    if(!d) return '';
-    d = d.replace(/^0+(?=\d)/,'');
-    let out = '', cnt = 0;
-    for(let i=d.length-1;i>=0;i--){
-      out = d[i] + out;
-      cnt++;
-      if(cnt % 3 === 0 && i !== 0) out = '.' + out;
-    }
-    return out;
+  // ✅ Money format (fix x10 bug caused by "108000000.0" -> digits-only)
+  function formatVND(value){
+    if (value === null || value === undefined || value === '') return '—';
+    const s = String(value).trim();
+    const n = Number(s.replace(/,/g,''));
+    if (!Number.isFinite(n)) return '—';
+    const v = Math.round(n);
+    return v.toLocaleString('vi-VN');
   }
+
   document.querySelectorAll('.money').forEach(el=>{
-    const v = el.getAttribute('data-value') || '';
-    el.textContent = groupVi(v) || '—';
+    const v = el.getAttribute('data-value');
+    el.textContent = formatVND(v);
   });
 </script>
 {% endblock %}
