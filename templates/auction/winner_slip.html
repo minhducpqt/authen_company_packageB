@@ -1,95 +1,297 @@
-{% extends "base.html" %}
-{% block title %}Phiếu trúng đấu giá{% endblock %}
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Giấy xác nhận trúng đấu giá</title>
+  <style>
+    @page { size: A4; margin: 16mm 16mm 14mm 16mm; }
 
-{% block content %}
-<style>
-  @media print{
-    .no-print{ display:none !important; }
-    body{ background:#fff !important; }
-  }
-</style>
+    html, body { height: 100%; }
+    body{
+      margin:0;
+      background:#f3f4f6;
+      color:#111827;
+      font-family:"Times New Roman", Times, serif;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
 
-<div class="no-print mb-4 flex items-center justify-between">
-  <div>
-    <h1 class="text-xl font-semibold text-slate-900">Phiếu trúng đấu giá</h1>
-    <p class="text-sm text-slate-500">
-      {{ project.company_name or project.company_code }} — {{ project.project_code }}
-    </p>
-  </div>
-  <div class="flex gap-2">
-    <a href="javascript:window.print()" class="topbtn bg-indigo-600 text-white">In</a>
-    <button class="topbtn border border-slate-300 bg-white" onclick="history.back()">← Quay lại</button>
-  </div>
-</div>
+    .sheet{
+      width:210mm;
+      min-height:297mm;
+      margin:10px auto;
+      background:#fff;
+      box-shadow:0 10px 28px rgba(0,0,0,.12);
+      border-radius:10px;
+      overflow:hidden;
+    }
+    .page{ padding:16mm 16mm 14mm 16mm; }
 
-<div class="bg-white rounded-xl border border-slate-200 p-6">
-  <div class="flex items-start justify-between gap-4">
-    <div>
-      <div class="text-sm text-slate-500">Dự án</div>
-      <div class="font-semibold text-slate-900">{{ project.name }}</div>
-      <div class="text-sm text-slate-600 font-mono">{{ project.project_code }}</div>
+    @media print{
+      body{ background:#fff; }
+      .sheet{ width:auto; min-height:auto; margin:0; box-shadow:none; border-radius:0; }
+      .page{ padding:0; }
+    }
+
+    .center{ text-align:center; }
+
+    /* chữ vừa mắt + chắc chắn fit 1 trang */
+    .h1{ margin:0; font-size:17px; font-weight:800; letter-spacing:.2px; }
+    .h2{ margin:4px 0 0; font-size:15px; font-weight:700; }
+    .date-line{ margin:10px 0 8px; font-size:15px; font-style:italic; }
+    .doc-title{ margin:8px 0 4px; font-size:19px; font-weight:800; letter-spacing:.2px; }
+    .project-name{ margin:0 0 4px; font-size:15px; font-style:italic; }
+    .lot-line{ margin:4px 0 10px; font-size:22px; font-weight:800; }
+
+    .para{
+      margin:8px 0 10px;
+      font-size:15px;
+      line-height:1.32;
+      text-align:justify;
+    }
+
+    .kv{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:4px;
+      font-size:15px;
+      line-height:1.32;
+    }
+    .kv td{ padding:3px 0; vertical-align:top; }
+    .kv td.label{ width:46%; padding-right:10px; }
+    .kv td.value{ width:54%; font-weight:800; }
+    .subnote{
+      margin-top:2px;
+      font-size:13px;
+      font-weight:600;
+      font-style:italic;
+      opacity:.9;
+    }
+
+    .by-text{
+      margin-top:8px;
+      font-size:15px;
+      font-style:italic;
+      line-height:1.32;
+    }
+    .dots{
+      display:inline-block;
+      border-bottom:1px dotted #111827;
+      min-width: 120mm;
+      transform: translateY(-2px);
+    }
+    .byval{ font-style:italic; font-weight:700; }
+
+    .bullets{
+      margin:10px 0 0;
+      padding-left:18px;
+      font-size:15px;
+      font-style:italic;
+      line-height:1.38;
+    }
+    .bullets li{ margin:8px 0; }
+
+    .sign{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:18px;
+      align-items:start;
+    }
+    .sign .box{
+      text-align:center;
+      font-size:15px;
+      font-weight:800;
+      line-height:1.25;
+    }
+    .sign .hint{
+      margin-top:6px;
+      font-size:13px;
+      font-weight:500;
+      font-style:italic;
+    }
+    .sign .spacer{ height:58px; }
+    .sign .line{
+      margin-top:8px;
+      font-size:14px;
+      font-weight:700;
+    }
+
+    .keep{ break-inside: avoid; page-break-inside: avoid; }
+    .nowrap{ white-space:nowrap; }
+  </style>
+</head>
+
+<body>
+{% set p = (project or data.get('project') or {}) %}
+{% set w = (winner or data.get('winner') or {}) %}
+{% set lot = (w.get('lot') or {}) %}
+{% set cust = (w.get('customer') or {}) %}
+{% set cfg = (p.get('auction_cfg') or {}) %}
+
+{# ---------- helpers ---------- #}
+{# ✅ FIX: Jinja không tích lũy biến string trong loop như Python -> dùng namespace để cộng dồn #}
+{% macro numfmt(n) -%}
+  {%- set nn = (n or 0) | int -%}
+  {%- set s = nn | string -%}
+  {%- set ns = namespace(out='') -%}
+  {%- for ch in s|reverse -%}
+    {%- if loop.index0 != 0 and (loop.index0 % 3) == 0 -%}
+      {%- set ns.out = ns.out + '.' -%}
+    {%- endif -%}
+    {%- set ns.out = ns.out + ch -%}
+  {%- endfor -%}
+  {{- ns.out|reverse -}}
+{%- endmacro %}
+
+{% macro iso_ddmmyyyy(iso) -%}
+  {%- set d = (iso|string)[:10] -%}
+  {%- if d and (d|length)==10 and ('-' in d) -%}
+    {%- set y = d[0:4] -%}
+    {%- set m = d[5:7] -%}
+    {%- set day = d[8:10] -%}
+    {{- day }}||{{- m }}||{{- y -}}
+  {%- else -%}
+    |||
+  {%- endif -%}
+{%- endmacro %}
+
+{# extras fields (chuẩn theo A mới) #}
+{% set venue = (cfg.get('venue') or '') %}
+{% set province_city = (cfg.get('province_city') or '') %}
+{% set _d = iso_ddmmyyyy(cfg.get('auction_at')) %}
+{% set _parts = (_d|string).split('||') %}
+{% set dd = (_parts[0] if _parts|length>0 else '') %}
+{% set mm = (_parts[1] if _parts|length>1 else '') %}
+{% set yyyy = (_parts[2] if _parts|length>2 else '') %}
+
+{# mode #}
+{% set is_per_sqm = (p.get('is_per_sqm') is not none and p.get('is_per_sqm')) or ((p.get('auction_mode') or '') == 'PER_SQM') %}
+
+{# NEW price fields from A #}
+{% set start_total = (lot.get('starting_price_total_vnd') or 0) %}
+{% set start_per = (lot.get('starting_price_per_sqm_vnd') or 0) %}
+{% set win_total = (w.get('winning_price_total_vnd') or 0) %}
+{% set win_per = (w.get('winning_price_per_sqm_vnd') or 0) %}
+
+{# NEW text fields from A (B chỉ fill) #}
+{% set win_text_total = (w.get('winning_price_total_text') or '') %}
+{% set win_text_per = (w.get('winning_price_per_sqm_text') or '') %}
+{% set win_text = (win_text_per if is_per_sqm else win_text_total) %}
+
+<div class="sheet">
+  <div class="page">
+
+    <div class="center keep">
+      <h1 class="h1">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</h1>
+      <div class="h2">Độc lập – Tự do – Hạnh phúc</div>
+
+      <div class="date-line">
+        {{ province_city }}{% if province_city %},{% endif %}
+        ngày {{ dd }} tháng {{ mm }} năm {{ yyyy }}
+      </div>
+
+      <div class="doc-title">GIẤY XÁC NHẬN TRÚNG ĐẤU GIÁ</div>
+      <div class="project-name">{{ p.get('name') or '' }}</div>
+
+      <div class="lot-line">
+        Lô đất: {{ lot.get('lot_code') or '' }}
+      </div>
     </div>
-    <div class="text-right">
-      <div class="text-sm text-slate-500">Lô</div>
-      <div class="font-semibold text-slate-900 font-mono">
-        {{ winner.lot.lot_code if winner and winner.lot else "" }}
-      </div>
-      <div class="text-sm text-slate-600">
-        {{ winner.lot.lot_name if winner and winner.lot else "" }}
-      </div>
-    </div>
-  </div>
 
-  <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
-      <div class="text-sm text-slate-500 mb-1">Người trúng</div>
-      <div class="font-semibold text-slate-900">{{ winner.customer.name }}</div>
-      <div class="text-sm text-slate-600">CCCD: <span class="font-mono">{{ winner.customer.cccd }}</span></div>
-      <div class="text-sm text-slate-600">SĐT: <span class="font-mono">{{ winner.customer.phone }}</span></div>
-      <div class="text-sm text-slate-600">ĐC: {{ winner.customer.address }}</div>
+    <div class="para keep">
+      Theo Biên bản đấu giá tài sản được lập ngày {{ dd }} tháng {{ mm }} năm {{ yyyy }}
+      tại {{ venue }}, như sau:
     </div>
 
-    <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
-      <div class="text-sm text-slate-500 mb-1">Giá trúng</div>
-      <div class="text-2xl font-semibold text-slate-900">
-        {{ "{:,.0f}".format(winner.winning_price_vnd) if winner.winning_price_vnd is number else winner.winning_price_vnd }}
-        <span class="text-base font-normal text-slate-500">VND</span>
-      </div>
+    <table class="kv keep" role="presentation">
+      <tr>
+        <td class="label">Họ và tên người trúng đấu giá:</td>
+        <td class="value">{{ cust.get('name') or '' }}</td>
+      </tr>
+      <tr>
+        <td class="label">CCCD số:</td>
+        <td class="value">{{ cust.get('cccd') or '' }}</td>
+      </tr>
+      <tr>
+        <td class="label">Địa chỉ:</td>
+        <td class="value">{{ cust.get('address') or '' }}</td>
+      </tr>
+      <tr>
+        <td class="label">Số điện thoại:</td>
+        <td class="value">{{ cust.get('phone') or '' }}</td>
+      </tr>
 
-      <div class="mt-2 text-sm text-slate-600">
-        Tiền cọc: <span class="font-mono">
-          {{ "{:,.0f}".format(winner.lot.deposit_vnd) if winner.lot.deposit_vnd is number else (winner.lot.deposit_vnd or "") }}
-        </span>
-      </div>
+      {# ===== GIÁ KHỞI ĐIỂM ===== #}
+      <tr>
+        <td class="label"><strong>Giá khởi điểm:</strong></td>
+        <td class="value">
+          {% if is_per_sqm %}
+            {{ numfmt(start_per) }} <span class="nowrap">đồng/m²</span>
+            <div class="subnote">({{ numfmt(start_total) }} đồng/lô)</div>
+          {% else %}
+            {{ numfmt(start_total) }} <span class="nowrap">đồng/lô</span>
+          {% endif %}
+        </td>
+      </tr>
 
-      {% if winner.is_lucky_draw %}
-      <div class="mt-2 inline-flex items-center px-2 py-1 rounded text-xs bg-amber-100 text-amber-800 border border-amber-200">
-        Bốc thăm
-      </div>
+      {# ===== GIÁ TRÚNG ===== #}
+      <tr>
+        <td class="label"><strong>Giá trúng đấu giá:</strong></td>
+        <td class="value">
+          {% if is_per_sqm %}
+            {{ numfmt(win_per) }} <span class="nowrap">đồng/m²</span>
+            <div class="subnote">({{ numfmt(win_total) }} đồng/lô)</div>
+          {% else %}
+            {{ numfmt(win_total) }} <span class="nowrap">đồng/lô</span>
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+
+    <div class="by-text keep">
+      (Bằng chữ:
+      {% if win_text %}
+        <span class="byval">{{ win_text }}</span>
+      {% else %}
+        <span class="dots">&nbsp;</span>
       {% endif %}
+      )
     </div>
-  </div>
 
-  <div class="mt-5 p-4 rounded-lg border border-slate-200">
-    <div class="text-sm text-slate-500 mb-2">Thông tin phiên / quyết định</div>
+    <ul class="bullets keep">
+      <li>
+        Giấy xác nhận này là cơ sở để người trúng đấu giá liên hệ với người có tài sản đấu giá để nộp
+        tiền trúng đấu giá và thực hiện các thủ tục có liên quan theo quy định của pháp luật.
+      </li>
+      <li>
+        Giấy xác nhận này không có giá trị để mua bán, cầm cố, thế chấp, tặng cho hoặc sử dụng trái pháp luật.
+      </li>
+      <li>
+        Người trúng đấu giá giữ 01 (một) bản chính để làm các thủ tục theo quy định của pháp luật.
+      </li>
+    </ul>
 
-    {% set cfg = project.auction_cfg or {} %}
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-      <div><span class="text-slate-500">Số QĐ:</span> <span class="font-mono">{{ cfg.decision_no or "—" }}</span></div>
-      <div><span class="text-slate-500">Ngày QĐ:</span> <span class="font-mono">{{ cfg.decision_date or "—" }}</span></div>
-      <div class="md:col-span-2"><span class="text-slate-500">Địa điểm:</span> {{ cfg.auction_location or cfg.auction_address or project.location or "—" }}</div>
-      <div class="md:col-span-2"><span class="text-slate-500">Thời gian:</span> <span class="font-mono">{{ cfg.auction_at or (cfg.auction_date ~ " " ~ cfg.auction_time) or "—" }}</span></div>
+    <div class="sign keep">
+      <div class="box">
+        NGƯỜI TRÚNG ĐẤU GIÁ
+        <div class="hint">(Ký, ghi rõ họ tên)</div>
+        <div class="spacer"></div>
+        <div class="line">...........................................</div>
+      </div>
+
+      <div class="box">
+        CÔNG TY ĐẤU GIÁ HỢP DANH KINH ĐÔ<br/>
+        Đấu giá viên
+        <div class="hint">(Ký, ghi rõ họ tên)</div>
+        <div class="spacer"></div>
+        <div class="line">...........................................</div>
+      </div>
     </div>
-  </div>
 
-  {% if winner.note %}
-  <div class="mt-5 text-sm text-slate-600 whitespace-pre-wrap">
-    <span class="text-slate-500">Ghi chú:</span> {{ winner.note }}
-  </div>
-  {% endif %}
-
-  <div class="mt-6 text-xs text-slate-400">
-    Finalized: {{ winner.finalized_by or "—" }} • {{ winner.finalized_at or "—" }}
   </div>
 </div>
-{% endblock %}
+
+</body>
+</html>
