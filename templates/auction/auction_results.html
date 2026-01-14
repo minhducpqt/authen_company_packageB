@@ -66,6 +66,18 @@
   </div>
 
   <div class="flex items-center gap-3 ml-auto">
+    {# ✅ NEW: Export button (chỉ khi đã chọn dự án) #}
+    {% if project_id and project_obj %}
+      {% set pcode = (project_obj.project_code or project_obj.code or project) %}
+      <a
+        href="/auction/results/export?project_id={{ project_id }}&project_code={{ pcode }}"
+        class="h-10 px-4 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 inline-flex items-center gap-2"
+        title="Xuất Excel danh sách lô trúng (WON)"
+      >
+        <i class="ri-file-excel-2-line"></i> Export XLSX
+      </a>
+    {% endif %}
+
     <button
       type="button"
       id="btnResetFilters"
@@ -128,6 +140,7 @@
             data-finalized-by="{{ r.finalized_by or '' }}"
             data-finalized-at="{{ r.finalized_at or '' }}"
             data-note="{{ r.note or '' }}"
+            data-is-lucky-draw="{{ 1 if r.is_lucky_draw else 0 }}"
         >
           <td class="px-4 py-3 font-semibold text-slate-900 whitespace-nowrap">{{ r.lot_code }}</td>
 
@@ -214,11 +227,11 @@
     background:#fff;border:1px solid #e5e7eb;border-radius:18px;
     max-width:760px;width:100%;
     box-shadow:0 20px 60px rgba(15,23,42,.25);
-    overflow:visible;           /* ✅ FIX: không cắt dropdown */
-    position:relative;          /* ✅ FIX: làm mốc cho z-index/absolute */
+    overflow:visible;
+    position:relative;
   }
   .modal-h{padding:14px 16px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between}
-  .modal-b{padding:16px; overflow:visible;}  /* ✅ FIX: an toàn */
+  .modal-b{padding:16px; overflow:visible;}
   .modal-f{padding:14px 16px;border-top:1px solid #e5e7eb;display:flex;gap:10px;justify-content:flex-end}
   .toast{position:fixed;right:16px;bottom:16px;z-index:60;display:none}
 
@@ -233,7 +246,7 @@
     max-height: 280px;
     overflow:auto;
     display:none;
-    z-index: 120;               /* ✅ FIX: tránh bị footer/khối khác đè */
+    z-index: 120;
   }
   .ac-item{padding:10px 12px; cursor:pointer; font-size:13px; line-height:1.2}
   .ac-item:hover{background:#f1f5f9}
@@ -303,6 +316,17 @@
                    class="mt-2 h-10 w-full rounded-xl border px-3 text-sm"
                    placeholder="VD: 12.345.000.000">
             <div class="text-xs text-slate-500 mt-1">Chỉ nhận số nguyên VND (không có phần thập phân).</div>
+          </div>
+
+          {# ✅ NEW: checkbox bốc thăm #}
+          <div class="col-span-12">
+            <label class="inline-flex items-center gap-2 mt-1 cursor-pointer select-none">
+              <input id="mLuckyDraw" type="checkbox" class="h-4 w-4 rounded border-slate-300">
+              <span class="text-sm text-slate-700">
+                Trúng theo hình thức <span class="font-semibold">Bốc thăm</span>
+              </span>
+            </label>
+            <div class="text-xs text-slate-500 mt-1">Mặc định không tích. Chỉ tích khi lô trúng là bốc thăm.</div>
           </div>
         </div>
 
@@ -416,29 +440,20 @@
   function digitsOnly(v){
     let s = String(v ?? '').trim();
     if(!s) return '';
-
-    // bỏ khoảng trắng + dấu phẩy ngăn cách nghìn kiểu "10,000.0"
     s = s.replace(/,/g, '');
-
-    // Nếu đúng kiểu thập phân của backend: 12345.0 / 12345.00 -> lấy phần nguyên
-    // (VND chỉ nhận số nguyên)
     const m = s.match(/^(\d+)\.(\d+)$/);
     if(m){
       const intPart = m[1];
       const fracPart = m[2];
-      // chỉ chấp nhận phần thập phân toàn 0, còn lại thì vẫn lấy phần nguyên (hoặc bạn có thể return '' để báo lỗi)
       if(/^0+$/.test(fracPart)) return intPart;
-      return intPart; // hoặc: return '' để ép người dùng/BE sửa
+      return intPart;
     }
-
-    // fallback: lấy digits như cũ
     return s.replace(/[^\d]/g,'');
   }
 
   function groupVi(d){
     d = digitsOnly(d);
     if(!d) return '';
-    // bỏ leading zeros kiểu "00012" -> "12" nhưng vẫn cho "0"
     d = d.replace(/^0+(?=\d)/,'');
     let out = '';
     let cnt = 0;
@@ -453,15 +468,12 @@
   function parseMoneyVNDInt(s){
     const d = digitsOnly(s);
     if(!d) return null;
-    // cho phép 0? business yêu cầu >0 khi WON
     const n = Number(d);
     if(!Number.isFinite(n) || n <= 0) return null;
-    // nếu quá lớn vượt safe int, vẫn trả string digits để gửi đi
-    if(d.length >= 16) return d; // ~ >= 10^15
+    if(d.length >= 16) return d;
     return Math.trunc(n);
   }
 
-  // caret-stable formatter
   function formatMoneyInput(el){
     const raw = String(el.value ?? '');
     const start = el.selectionStart ?? raw.length;
@@ -477,7 +489,6 @@
     const formatted = groupVi(digits);
     el.value = formatted;
 
-    // đặt caret: đi qua formatted đếm đủ digitsBeforeCaret chữ số
     let pos = 0;
     let seen = 0;
     while(pos < formatted.length){
@@ -510,7 +521,6 @@
     });
   }
 
-  // Backspace/Delete mượt nếu đứng cạnh dấu '.'
   document.getElementById('mPrice')?.addEventListener('keydown', (e)=>{
     if(e.key !== 'Backspace' && e.key !== 'Delete') return;
     const el = e.target;
@@ -570,6 +580,7 @@
     const winnerCccd = tr.dataset.winnerCccd || '';
     const winningPrice = tr.dataset.winningPrice || '';
     const note = tr.dataset.note || '';
+    const lucky = tr.dataset.isLuckyDraw || '0';
 
     CURRENT_LOT_CODE = lotCode;
 
@@ -579,10 +590,11 @@
     document.getElementById('mDeposit').textContent = formatVNDInt(deposit) || '—';
     document.getElementById('mStartingRaw').value = String(startingPrice || '');
 
-    // ✅ FIX NOTE LOAD
     document.getElementById('mNote').value = note || '';
 
-    // set status radios
+    // ✅ NEW: set checkbox bốc thăm (mặc định false nếu không có)
+    document.getElementById('mLuckyDraw').checked = (String(lucky) === '1' || String(lucky).toLowerCase() === 'true');
+
     const radios = document.querySelectorAll('input[name="mStatus"]');
     let set = false;
     radios.forEach(r=>{
@@ -592,10 +604,8 @@
       radios.forEach(r=> r.checked = (r.value === 'WON'));
     }
 
-    // price
     document.getElementById('mPrice').value = winningPrice ? groupVi(digitsOnly(winningPrice)) : '';
 
-    // winner
     CUSTOMER_TOUCHED = false;
     const label = (winnerName ? `${winnerName}${winnerCccd ? ' — ' + winnerCccd : ''}` : '');
     document.getElementById('mCustomerInput').value = label || '';
@@ -604,11 +614,9 @@
 
     document.getElementById('resultModal').style.display='flex';
 
-    // IMPORTANT: không xoá cache vô cớ, chỉ reset dropdown state
     closeCustomerDropdown();
     AC_ACTIVE_INDEX = -1;
 
-    // render fields + nếu WON thì load eligible (luôn allow edit lại)
     renderStatusFields(false);
 
     if(getStatus() === 'WON'){
@@ -623,34 +631,26 @@
     closeCustomerDropdown();
     AC_ACTIVE_INDEX = -1;
     CUSTOMER_TOUCHED = false;
-    // giữ ELIGIBLE_CUSTOMERS/cache để quay lại mở lại modal nhanh (ok)
   }
 
-  // when status changes
   function renderStatusFields(fromUserChange){
     const status = getStatus();
     const won = document.getElementById('wonFields');
 
     if(status === 'WON'){
       won.style.display = '';
-      // ✅ nếu user vừa đổi về WON thì refetch để chắc chắn có list
       if(fromUserChange){
         ensureEligibleLoadedForCurrentLot(true);
-        // nếu trước đó chọn NO_SALE/CANCELED, user có thể muốn chọn lại -> mở dropdown khi focus
-        // không tự clear winnerId; để admin sửa “thoải mái”
       }
     }else{
       won.style.display = 'none';
       closeCustomerDropdown();
-      // ✅ KHÔNG xoá ELIGIBLE_CUSTOMERS, KHÔNG reset id ở đây
-      // vì admin có thể đổi qua lại và muốn giữ lại thông tin cũ nếu quay về WON.
     }
   }
 
   async function ensureEligibleLoadedForCurrentLot(force){
     if(!CURRENT_LOT_CODE) return;
 
-    // nếu đã load cho lot này và không force thì thôi
     if(!force && ELIGIBLE_LOADED_FOR_LOT === CURRENT_LOT_CODE && ELIGIBLE_CUSTOMERS.length){
       document.getElementById('mCustomerHint').textContent = `Có ${ELIGIBLE_CUSTOMERS.length} khách cho lô này.`;
       return;
@@ -663,7 +663,6 @@
   async function loadEligibleCustomers(projectId, lotCode, selectedId){
     document.getElementById('mCustomerHint').textContent = 'Đang tải danh sách khách...';
     try{
-      // ✅ include_unpaid=true để admin edit thoải mái
       const url = `/auction/results/api/projects/${projectId}/lots/${encodeURIComponent(lotCode)}/eligible-customers?limit=2000&include_unpaid=true`;
       const r = await fetch(url, { headers: { "Accept": "application/json" } });
       const js = await r.json();
@@ -688,7 +687,6 @@
       document.getElementById('mCustomerHint').textContent =
         `Có ${ELIGIBLE_CUSTOMERS.length} khách cho lô này.`;
 
-      // sync selected label by id if exists
       if(selectedId){
         const picked = ELIGIBLE_CUSTOMERS.find(x => String(x.customer_id) === String(selectedId));
         if(picked){
@@ -698,7 +696,6 @@
         }
       }
 
-      // nếu đang focus input thì render panel
       const inp = document.getElementById('mCustomerInput');
       if(document.activeElement === inp){
         openCustomerDropdown();
@@ -719,14 +716,11 @@
     return pieces.join(" — ");
   }
 
-  /* ========= AUTOCOMPLETE UX ========= */
-
   function openCustomerDropdown(){
     if(getStatus() !== 'WON') return;
     const panel = document.getElementById('acPanel');
     panel.style.display = 'block';
     AC_OPEN = true;
-    // không auto set touched ở đây
     renderCustomerPanel(filteredCustomers(false));
   }
 
@@ -737,7 +731,6 @@
     AC_ACTIVE_INDEX = -1;
   }
 
-  // click outside → hide
   document.addEventListener('mousedown', (e)=>{
     const wrap = document.querySelector('.ac-wrap');
     if(!wrap) return;
@@ -747,7 +740,6 @@
     }
   });
 
-  // chỉ reset id nếu user thực sự gõ sửa
   function noteResetIfUserDidNotPick(){
     if(!CUSTOMER_TOUCHED) return;
 
@@ -850,8 +842,6 @@
     if(el) el.scrollIntoView({ block: 'nearest' });
   }
 
-  /* ========= SAVE ========= */
-
   async function saveResult(){
     if(!CURRENT_ROW) return;
 
@@ -859,9 +849,10 @@
     const status = getStatus();
     const note = (document.getElementById('mNote').value || '').trim();
 
-    // ✅ actor bỏ trong payload theo “chốt”: A tự lấy từ auth context
-    // nên B không gửi actor nữa.
-    let payload = { result_status: status, note: note || null };
+    // ✅ NEW: lấy checkbox bốc thăm
+    const isLuckyDraw = document.getElementById('mLuckyDraw')?.checked === true;
+
+    let payload = { result_status: status, note: note || null, is_lucky_draw: isLuckyDraw };
 
     if(status === 'WON'){
       const winnerId = document.getElementById('mCustomerId').value;
@@ -879,9 +870,7 @@
       }
 
       payload.winner_customer_id = Number(winnerId);
-      payload.winning_price_vnd = priceParsed; // number hoặc string digits (nếu quá lớn)
-    }else{
-      // rs != WON -> A sẽ tự set winner/price = null
+      payload.winning_price_vnd = priceParsed;
     }
 
     const btn = document.getElementById('mSaveBtn');

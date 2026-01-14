@@ -6,7 +6,7 @@ from typing import Optional, Dict, Any, List, Tuple
 
 import httpx
 from fastapi import APIRouter, Request, Query, Path, Body
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
 from utils.templates import templates
 from utils.auth import get_access_token
@@ -23,13 +23,18 @@ def _log(msg: str):
 def _preview_body(data: Any, limit: int = 300) -> str:
     try:
         import json
+
         s = json.dumps(data, ensure_ascii=False)
     except Exception:
         s = str(data)
     return s if len(s) <= limit else s[:limit] + "...(truncated)"
 
 
-async def _get_json(path: str, token: str, params: Dict[str, Any] | List[Tuple[str, Any]] | None = None):
+async def _get_json(
+    path: str,
+    token: str,
+    params: Dict[str, Any] | List[Tuple[str, Any]] | None = None,
+):
     url = f"{SERVICE_A_BASE_URL}{path}"
     headers = {"Authorization": f"Bearer {token}"}
     _log(f"→ GET {url} params={params or {}}")
@@ -83,6 +88,42 @@ async def _post_json(path: str, token: str, payload: Dict[str, Any]):
         return r.status_code, {"detail": (r.text or "")[:500]}
 
 
+async def _get_bytes(
+    path: str,
+    token: str,
+    params: Dict[str, Any] | List[Tuple[str, Any]] | None = None,
+):
+    """
+    GET binary from Service A (e.g., xlsx export).
+    Return: (status_code, content_bytes, headers_dict_or_err_json)
+    """
+    url = f"{SERVICE_A_BASE_URL}{path}"
+    headers = {"Authorization": f"Bearer {token}"}
+    _log(f"→ GET(BYTES) {url} params={params or {}}")
+
+    async with httpx.AsyncClient(timeout=180.0) as c:
+        try:
+            r = await c.get(url, headers=headers, params=params or {})
+        except Exception as e:
+            _log(f"← EXC {url} error={e}")
+            return 599, b"", {"detail": str(e)}
+
+    if r.status_code != 200:
+        # try parse json error
+        try:
+            js = r.json()
+            _log(f"← {r.status_code} {url} json={_preview_body(js)}")
+            return r.status_code, b"", js
+        except Exception:
+            body = (r.text or "")[:500]
+            return r.status_code, b"", {"detail": body}
+
+    # ok
+    content = r.content or b""
+    _log(f"← 200 {url} bytes={len(content)}")
+    return 200, content, dict(r.headers)
+
+
 def _unauth_json():
     return JSONResponse({"error": "unauthorized"}, status_code=401)
 
@@ -121,6 +162,26 @@ def _project_id_of(p: Optional[dict]) -> Optional[int]:
             except Exception:
                 pass
     return None
+
+
+def _safe_filename(s: str) -> str:
+    """
+    Tối giản cho Content-Disposition. (Không phụ thuộc unidecode)
+    """
+    s = (s or "").strip()
+    if not s:
+        return "export.xlsx"
+    keep = []
+    for ch in s:
+        if ch.isalnum() or ch in ("-", "_", ".", " "):
+            keep.append(ch)
+        else:
+            keep.append("_")
+    out = "".join(keep).strip().replace("  ", " ")
+    out = out.replace(" ", "_")
+    if not out.lower().endswith(".xlsx"):
+        out += ".xlsx"
+    return out
 
 
 # =========================
@@ -275,3 +336,36 @@ async def api_eligible_lots(
 
     st, js = await _get_json(f"/api/v1/auction-results/projects/{project_id}/eligible-lots", token, params)
     return JSONResponse(js, status_code=200 if st == 200 else 502)
+
+
+# =========================
+# EXPORT XLSX (proxy to Service A)
+# =========================
+@router.get("/auction/results/export")
+async def export_auction_results_xlsx(
+    request: Request,
+    project_id: int = Query(..., ge=1),
+    project_code: Optional[str] = Query(None),
+):
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(url="/login?next=%2Fauction%2Fresults", status_code=303)
+
+    # ✅ Gọi đúng endpoint hiện có bên Service A
+    st, content, meta = await _get_bytes(
+        f"/api/v1/auction-results/projects/{project_id}/export-winners-xlsx",
+        token,
+        None,
+    )
+    if st != 200:
+        return JSONResponse({"error": "export_failed", "detail": meta}, status_code=502)
+
+    pcode = (project_code or "").strip().upper() or f"PROJECT_{project_id}"
+    filename = _safe_filename(f"ket_qua_trung_dau_gia_{pcode}.xlsx")
+
+    headers = {
+        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Disposition": f'attachment; filename="{filename}"',
+        "Cache-Control": "no-store",
+    }
+    return Response(content=content, media_type=headers["Content-Type"], headers=headers)
