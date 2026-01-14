@@ -210,9 +210,15 @@
   .cell-wrap { white-space: normal; }
 
   .modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
-  .modal{background:#fff;border:1px solid #e5e7eb;border-radius:18px;max-width:760px;width:100%;box-shadow:0 20px 60px rgba(15,23,42,.25);overflow:hidden}
+  .modal{
+    background:#fff;border:1px solid #e5e7eb;border-radius:18px;
+    max-width:760px;width:100%;
+    box-shadow:0 20px 60px rgba(15,23,42,.25);
+    overflow:visible;           /* ✅ FIX: không cắt dropdown */
+    position:relative;          /* ✅ FIX: làm mốc cho z-index/absolute */
+  }
   .modal-h{padding:14px 16px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between}
-  .modal-b{padding:16px}
+  .modal-b{padding:16px; overflow:visible;}  /* ✅ FIX: an toàn */
   .modal-f{padding:14px 16px;border-top:1px solid #e5e7eb;display:flex;gap:10px;justify-content:flex-end}
   .toast{position:fixed;right:16px;bottom:16px;z-index:60;display:none}
 
@@ -227,7 +233,7 @@
     max-height: 280px;
     overflow:auto;
     display:none;
-    z-index: 80;
+    z-index: 120;               /* ✅ FIX: tránh bị footer/khối khác đè */
   }
   .ac-item{padding:10px 12px; cursor:pointer; font-size:13px; line-height:1.2}
   .ac-item:hover{background:#f1f5f9}
