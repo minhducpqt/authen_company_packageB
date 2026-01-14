@@ -141,7 +141,6 @@
 {% set cfg = (p.get('auction_cfg') or {}) %}
 
 {# ---------- helpers ---------- #}
-{# ✅ FIX: Jinja không tích lũy biến string trong loop như Python -> dùng namespace để cộng dồn #}
 {% macro numfmt(n) -%}
   {%- set nn = (n or 0) | int -%}
   {%- set s = nn | string -%}
@@ -167,7 +166,6 @@
   {%- endif -%}
 {%- endmacro %}
 
-{# ✅ format diện tích 2 chữ số thập phân #}
 {% macro areafmt(a) -%}
   {%- set aa = (a or 0) | float -%}
   {{- "%.2f"|format(aa) -}}
@@ -177,8 +175,8 @@
 {% set venue = (cfg.get('venue') or '') %}
 {% set province_city = (cfg.get('province_city') or '') %}
 
-{# ✅ nếu auction_at rỗng -> lấy ngày hiện tại #}
-{% set _auction_at = (cfg.get('auction_at') or now()) %}
+{# ✅ FIX: Jinja env không có now() -> fallback: auction_at -> finalized_at -> '' #}
+{% set _auction_at = (cfg.get('auction_at') or w.get('finalized_at') or '') %}
 {% set _d = iso_ddmmyyyy(_auction_at) %}
 {% set _parts = (_d|string).split('||') %}
 {% set dd = (_parts[0] if _parts|length>0 else '') %}
@@ -253,16 +251,14 @@
 
       <tr>
         <td class="label">Diện tích lô đất:</td>
-        <td class="value">{{ areafmt(lot.get('area`x')) }} <span class="nowrap">m²</span></td>
+        <td class="value">{{ areafmt(lot.get('area')) }} <span class="nowrap">m²</span></td>
       </tr>
 
-      {# ✅ NEW: hình thức trả giá #}
       <tr>
         <td class="label">Hình thức đấu giá:</td>
         <td class="value">{{ auction_mode_text }}</td>
       </tr>
 
-      {# ===== GIÁ KHỞI ĐIỂM ===== #}
       <tr>
         <td class="label"><strong>Giá khởi điểm:</strong></td>
         <td class="value">
@@ -275,7 +271,6 @@
         </td>
       </tr>
 
-      {# ===== GIÁ TRÚNG ===== #}
       <tr>
         <td class="label"><strong>Giá trúng đấu giá:</strong></td>
         <td class="value">

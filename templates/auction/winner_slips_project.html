@@ -174,8 +174,9 @@
 {% set venue = (cfg.get('venue') or '') %}
 {% set province_city = (cfg.get('province_city') or '') %}
 
-{# ✅ nếu auction_at rỗng -> lấy ngày hiện tại #}
-{% set _auction_at = (cfg.get('auction_at') or now()) %}
+{# ✅ FIX: Jinja env không có now() -> fallback auction_at -> items[0].finalized_at -> '' #}
+{% set _fallback_finalized = ((items[0].get('finalized_at')) if items and (items[0] is mapping) else '') %}
+{% set _auction_at = (cfg.get('auction_at') or _fallback_finalized or '') %}
 {% set _d = iso_ddmmyyyy(_auction_at) %}
 {% set _parts = (_d|string).split('||') %}
 {% set dd = (_parts[0] if _parts|length>0 else '') %}
