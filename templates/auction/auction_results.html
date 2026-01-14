@@ -35,7 +35,7 @@
       name="q"
       value="{{ q }}"
       class="h-10 rounded-xl border px-3 text-sm min-w-[180px]"
-      placeholder="Mã lô hoặc tên lô..."
+      placeholder="Mã lô hoặc mô tả..."
       autocomplete="off"
     >
   </div>
@@ -66,7 +66,7 @@
   </div>
 
   <div class="flex items-center gap-3 ml-auto">
-    {# ✅ NEW: Export button (chỉ khi đã chọn dự án) #}
+    {# Export button (chỉ khi đã chọn dự án) #}
     {% if project_id and project_obj %}
       {% set pcode = (project_obj.project_code or project_obj.code or project) %}
       <a
@@ -113,15 +113,21 @@
       <thead class="bg-slate-50 text-slate-500 border-b">
         <tr>
           <th class="px-4 py-2 text-left font-semibold">Mã lô</th>
-          <th class="px-4 py-2 text-left font-semibold">Tên/Mô tả</th>
+          <th class="px-4 py-2 text-left font-semibold w-[260px]">Mô tả</th>
           <th class="px-4 py-2 text-right font-semibold">Giá khởi điểm</th>
           <th class="px-4 py-2 text-right font-semibold">Tiền đặt trước</th>
           <th class="px-4 py-2 text-center font-semibold">Kết quả</th>
           <th class="px-4 py-2 text-left font-semibold">Khách trúng</th>
           <th class="px-4 py-2 text-right font-semibold">Giá trúng</th>
-          <th class="px-4 py-2 text-left font-semibold">Chốt bởi</th>
-          <th class="px-4 py-2 text-left font-semibold">Chốt lúc</th>
-          <th class="px-4 py-2 text-right font-semibold">Hành động</th>
+
+          {# gộp chốt lúc vào đây #}
+          <th class="px-4 py-2 text-left font-semibold">Chốt</th>
+
+          {# icon-only in phiếu #}
+          <th class="px-3 py-2 text-center font-semibold w-[44px]" title="In phiếu">In</th>
+
+          {# sticky để luôn thấy nhập kết quả #}
+          <th class="px-4 py-2 text-right font-semibold sticky-col">Hành động</th>
         </tr>
       </thead>
 
@@ -144,8 +150,10 @@
         >
           <td class="px-4 py-3 font-semibold text-slate-900 whitespace-nowrap">{{ r.lot_code }}</td>
 
-          <td class="px-4 py-3 text-xs cell-wrap text-slate-700">
-            <div class="font-semibold text-slate-900 text-sm">{{ r.lot_name or '-' }}</div>
+          {# Mô tả hẹp + tooltip #}
+          <td class="px-4 py-3 text-xs text-slate-700 cell-wrap w-[260px] max-w-[260px]">
+            {% set desc = (r.lot_name or '-') %}
+            <div class="font-semibold text-slate-900 text-sm truncate" title="{{ desc }}">{{ desc }}</div>
           </td>
 
           <td class="px-4 py-3 text-right whitespace-nowrap">
@@ -186,12 +194,37 @@
             {% endif %}
           </td>
 
-          <td class="px-4 py-3 text-xs text-slate-600 whitespace-nowrap">{{ r.finalized_by or '' }}</td>
+          {# Chốt: dòng 1 user, dòng 2 time #}
           <td class="px-4 py-3 text-xs text-slate-600 whitespace-nowrap">
-            <span class="dt" data-iso="{{ r.finalized_at or '' }}">{{ r.finalized_at or '' }}</span>
+            {% if r.finalized_by %}
+              <div class="font-semibold text-slate-900">{{ r.finalized_by }}</div>
+              <div class="text-slate-500">
+                <span class="dt" data-iso="{{ r.finalized_at or '' }}">{{ r.finalized_at or '' }}</span>
+              </div>
+            {% else %}
+              <span class="text-slate-400">—</span>
+            {% endif %}
           </td>
 
-          <td class="px-4 py-3 text-right whitespace-nowrap">
+          {# In phiếu: icon-only, chỉ enable khi WON #}
+          <td class="px-3 py-3 text-center whitespace-nowrap">
+            {% if (r.result_status or '') == 'WON' %}
+              <button type="button"
+                class="h-9 w-9 inline-flex items-center justify-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700"
+                title="Xem & in phiếu"
+                onclick="openPrintModal(this)"
+              >
+                <i class="ri-printer-line text-lg"></i>
+              </button>
+            {% else %}
+              <span class="text-slate-300" title="Chỉ in khi trạng thái WON">
+                <i class="ri-printer-line text-lg"></i>
+              </span>
+            {% endif %}
+          </td>
+
+          {# Sticky action #}
+          <td class="px-4 py-3 text-right whitespace-nowrap sticky-col">
             <button type="button"
               class="h-9 px-3 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"
               onclick="openResultModal(this)"
@@ -204,7 +237,7 @@
 
       {% if rows|length == 0 %}
         <tr>
-          <td colspan="10" class="px-4 py-6 text-center text-slate-400">
+          <td colspan="9" class="px-4 py-6 text-center text-slate-400">
             {% if project_id %}
               Không có lô phù hợp bộ lọc hiện tại.
             {% else %}
@@ -221,6 +254,17 @@
 <style>
   table th, table td { white-space: nowrap; }
   .cell-wrap { white-space: normal; }
+
+  /* Sticky column (right) để không phải scroll ngang mới thấy nút */
+  .sticky-col{
+    position: sticky;
+    right: 0;
+    background: #fff;
+    box-shadow: -12px 0 16px rgba(15,23,42,.06);
+  }
+  thead .sticky-col{
+    background: #f8fafc;
+  }
 
   .modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
   .modal{
@@ -252,9 +296,22 @@
   .ac-item:hover{background:#f1f5f9}
   .ac-empty{padding:10px 12px; color:#94a3b8; font-size:13px}
   .ac-meta{color:#64748b; font-size:12px; margin-top:2px}
+
+  /* Print modal */
+  .print-modal{
+    max-width: 980px;
+    width: 100%;
+  }
+  .print-frame{
+    width: 100%;
+    height: min(72vh, 760px);
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    background: #fff;
+  }
 </style>
 
-<!-- Modal -->
+<!-- ===== Modal nhập kết quả (GIỮ NGUYÊN logic cũ) ===== -->
 <div id="resultModal" class="modal-backdrop" onclick="backdropClose(event)">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-h">
@@ -318,7 +375,6 @@
             <div class="text-xs text-slate-500 mt-1">Chỉ nhận số nguyên VND (không có phần thập phân).</div>
           </div>
 
-          {# ✅ NEW: checkbox bốc thăm #}
           <div class="col-span-12">
             <label class="inline-flex items-center gap-2 mt-1 cursor-pointer select-none">
               <input id="mLuckyDraw" type="checkbox" class="h-4 w-4 rounded border-slate-300">
@@ -349,6 +405,37 @@
               onclick="closeResultModal()">Đóng</button>
       <button id="mSaveBtn" class="h-10 px-4 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700"
               onclick="saveResult()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Print Preview Modal (NEW) ===== -->
+<div id="printModal" class="modal-backdrop" onclick="printBackdropClose(event)">
+  <div class="modal print-modal" onclick="event.stopPropagation()">
+    <div class="modal-h">
+      <div>
+        <div class="text-sm text-slate-500">In phiếu</div>
+        <div class="text-lg font-bold text-slate-900" id="pTitle">—</div>
+      </div>
+      <button class="h-9 w-9 rounded-xl border border-slate-200 hover:bg-slate-50" onclick="closePrintModal()">
+        <i class="ri-close-line text-xl text-slate-700"></i>
+      </button>
+    </div>
+
+    <div class="modal-b">
+      <iframe id="printFrame" class="print-frame" src="about:blank"></iframe>
+      <div class="text-xs text-slate-500 mt-2">
+        Mẹo: nếu bạn muốn “in thẳng”, bấm nút In bên dưới. (Popup vẫn giữ bạn ở trang này.)
+      </div>
+    </div>
+
+    <div class="modal-f">
+      <button class="h-10 px-4 rounded-xl border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              onclick="closePrintModal()">Đóng</button>
+      <button class="h-10 px-4 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"
+              onclick="printCurrentFrame()">
+        <i class="ri-printer-line"></i> In
+      </button>
     </div>
   </div>
 </div>
@@ -419,13 +506,14 @@
   let CURRENT_ROW = null;
   let CURRENT_LOT_CODE = '';
   let ELIGIBLE_CUSTOMERS = [];
-  let ELIGIBLE_LOADED_FOR_LOT = ''; // lot_code đã load
+  let ELIGIBLE_LOADED_FOR_LOT = '';
   let AC_OPEN = false;
   let AC_ACTIVE_INDEX = -1;
   let CUSTOMER_TOUCHED = false;
-
-  // ✅ FIX: lưu danh sách đang render để pick đúng (tránh lệch filtered true/false)
   let AC_LAST_LIST = [];
+
+  // Print modal state
+  let PRINT_ROW = null;
 
   function toast(msg){
     const t = document.getElementById('toast');
@@ -439,7 +527,11 @@
     if(e.target && e.target.id === 'resultModal') closeResultModal();
   }
 
-  // ===== MONEY HELPERS (STRING-SAFE, KHÔNG DÙNG Number ĐỂ FORMAT) =====
+  function printBackdropClose(e){
+    if(e.target && e.target.id === 'printModal') closePrintModal();
+  }
+
+  // ===== MONEY HELPERS =====
   function digitsOnly(v){
     let s = String(v ?? '').trim();
     if(!s) return '';
@@ -594,8 +686,6 @@
     document.getElementById('mStartingRaw').value = String(startingPrice || '');
 
     document.getElementById('mNote').value = note || '';
-
-    // ✅ NEW: set checkbox bốc thăm (mặc định false nếu không có)
     document.getElementById('mLuckyDraw').checked = (String(lucky) === '1' || String(lucky).toLowerCase() === 'true');
 
     const radios = document.querySelectorAll('input[name="mStatus"]');
@@ -765,7 +855,6 @@
     const panel = document.getElementById('acPanel');
     if(!AC_OPEN) return;
 
-    // ✅ FIX: nhớ list đang render để pick theo đúng list đó
     AC_LAST_LIST = Array.isArray(list) ? list : [];
 
     if(!ELIGIBLE_CUSTOMERS.length){
@@ -812,7 +901,6 @@
   }
 
   function pickCustomerByIndex(i){
-    // ✅ FIX: pick theo list đang hiển thị (tránh mismatch filtered true/false)
     const list = (Array.isArray(AC_LAST_LIST) && AC_LAST_LIST.length)
       ? AC_LAST_LIST
       : filteredCustomers(true);
@@ -865,8 +953,6 @@
     const lotCode = CURRENT_ROW.dataset.lotCode;
     const status = getStatus();
     const note = (document.getElementById('mNote').value || '').trim();
-
-    // ✅ NEW: lấy checkbox bốc thăm
     const isLuckyDraw = document.getElementById('mLuckyDraw')?.checked === true;
 
     let payload = { result_status: status, note: note || null, is_lucky_draw: isLuckyDraw };
@@ -918,7 +1004,8 @@
       btn.textContent = "Lưu";
     }
   }
-    (function bindDropdownScrollLock(){
+
+  (function bindDropdownScrollLock(){
     const panel = document.getElementById('acPanel');
     if(!panel) return;
 
@@ -929,11 +1016,53 @@
       const atTop = panel.scrollTop <= 0;
       const atBottom = panel.scrollTop + panel.clientHeight >= panel.scrollHeight - 1;
 
-      // nếu đang ở biên mà còn kéo tiếp => chặn để không scroll body
       if((delta < 0 && atTop) || (delta > 0 && atBottom)){
         e.preventDefault();
       }
     }, { passive: false });
   })();
+
+  // ===== PRINT MODAL (NEW) =====
+  function printUrlForLot(projectId, lotCode){
+    // URL alias bạn đang dùng: /auction/results/print?project_id=...&lot_code=...
+    const u = new URL(window.location.origin + "/auction/results/print");
+    u.searchParams.set("project_id", String(projectId));
+    u.searchParams.set("lot_code", String(lotCode));
+    return u.toString();
+  }
+
+  function openPrintModal(btn){
+    const tr = btn.closest('tr');
+    PRINT_ROW = tr;
+
+    const lotCode = tr.dataset.lotCode || '';
+    const lotName = tr.dataset.lotName || '';
+    const title = `${lotCode} — ${lotName || '-'}`;
+
+    document.getElementById('pTitle').textContent = title;
+
+    const frame = document.getElementById('printFrame');
+    frame.src = printUrlForLot(PROJECT_ID, lotCode);
+
+    document.getElementById('printModal').style.display = 'flex';
+  }
+
+  function closePrintModal(){
+    document.getElementById('printModal').style.display = 'none';
+    const frame = document.getElementById('printFrame');
+    frame.src = "about:blank";
+    PRINT_ROW = null;
+  }
+
+  function printCurrentFrame(){
+    const frame = document.getElementById('printFrame');
+    try{
+      frame.contentWindow.focus();
+      frame.contentWindow.print();
+    }catch(e){
+      console.error(e);
+      toast("Không thể gọi in (trình duyệt chặn).");
+    }
+  }
 </script>
 {% endblock %}

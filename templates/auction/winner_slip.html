@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Phiếu trúng đấu giá{% endblock %}
+
+{% block content %}
+<style>
+  @media print{
+    .no-print{ display:none !important; }
+    body{ background:#fff !important; }
+  }
+</style>
+
+<div class="no-print mb-4 flex items-center justify-between">
+  <div>
+    <h1 class="text-xl font-semibold text-slate-900">Phiếu trúng đấu giá</h1>
+    <p class="text-sm text-slate-500">
+      {{ project.company_name or project.company_code }} — {{ project.project_code }}
+    </p>
+  </div>
+  <div class="flex gap-2">
+    <a href="javascript:window.print()" class="topbtn bg-indigo-600 text-white">In</a>
+    <button class="topbtn border border-slate-300 bg-white" onclick="history.back()">← Quay lại</button>
+  </div>
+</div>
+
+<div class="bg-white rounded-xl border border-slate-200 p-6">
+  <div class="flex items-start justify-between gap-4">
+    <div>
+      <div class="text-sm text-slate-500">Dự án</div>
+      <div class="font-semibold text-slate-900">{{ project.name }}</div>
+      <div class="text-sm text-slate-600 font-mono">{{ project.project_code }}</div>
+    </div>
+    <div class="text-right">
+      <div class="text-sm text-slate-500">Lô</div>
+      <div class="font-semibold text-slate-900 font-mono">
+        {{ winner.lot.lot_code if winner and winner.lot else "" }}
+      </div>
+      <div class="text-sm text-slate-600">
+        {{ winner.lot.lot_name if winner and winner.lot else "" }}
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
+      <div class="text-sm text-slate-500 mb-1">Người trúng</div>
+      <div class="font-semibold text-slate-900">{{ winner.customer.name }}</div>
+      <div class="text-sm text-slate-600">CCCD: <span class="font-mono">{{ winner.customer.cccd }}</span></div>
+      <div class="text-sm text-slate-600">SĐT: <span class="font-mono">{{ winner.customer.phone }}</span></div>
+      <div class="text-sm text-slate-600">ĐC: {{ winner.customer.address }}</div>
+    </div>
+
+    <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
+      <div class="text-sm text-slate-500 mb-1">Giá trúng</div>
+      <div class="text-2xl font-semibold text-slate-900">
+        {{ "{:,.0f}".format(winner.winning_price_vnd) if winner.winning_price_vnd is number else winner.winning_price_vnd }}
+        <span class="text-base font-normal text-slate-500">VND</span>
+      </div>
+
+      <div class="mt-2 text-sm text-slate-600">
+        Tiền cọc: <span class="font-mono">
+          {{ "{:,.0f}".format(winner.lot.deposit_vnd) if winner.lot.deposit_vnd is number else (winner.lot.deposit_vnd or "") }}
+        </span>
+      </div>
+
+      {% if winner.is_lucky_draw %}
+      <div class="mt-2 inline-flex items-center px-2 py-1 rounded text-xs bg-amber-100 text-amber-800 border border-amber-200">
+        Bốc thăm
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="mt-5 p-4 rounded-lg border border-slate-200">
+    <div class="text-sm text-slate-500 mb-2">Thông tin phiên / quyết định</div>
+
+    {% set cfg = project.auction_cfg or {} %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+      <div><span class="text-slate-500">Số QĐ:</span> <span class="font-mono">{{ cfg.decision_no or "—" }}</span></div>
+      <div><span class="text-slate-500">Ngày QĐ:</span> <span class="font-mono">{{ cfg.decision_date or "—" }}</span></div>
+      <div class="md:col-span-2"><span class="text-slate-500">Địa điểm:</span> {{ cfg.auction_location or cfg.auction_address or project.location or "—" }}</div>
+      <div class="md:col-span-2"><span class="text-slate-500">Thời gian:</span> <span class="font-mono">{{ cfg.auction_at or (cfg.auction_date ~ " " ~ cfg.auction_time) or "—" }}</span></div>
+    </div>
+  </div>
+
+  {% if winner.note %}
+  <div class="mt-5 text-sm text-slate-600 whitespace-pre-wrap">
+    <span class="text-slate-500">Ghi chú:</span> {{ winner.note }}
+  </div>
+  {% endif %}
+
+  <div class="mt-6 text-xs text-slate-400">
+    Finalized: {{ winner.finalized_by or "—" }} • {{ winner.finalized_at or "—" }}
+  </div>
+</div>
+{% endblock %}
