@@ -408,7 +408,25 @@
 
   // ===== MONEY HELPERS (STRING-SAFE, KHÔNG DÙNG Number ĐỂ FORMAT) =====
   function digitsOnly(v){
-    return String(v ?? '').replace(/[^\d]/g,'');
+    let s = String(v ?? '').trim();
+    if(!s) return '';
+
+    // bỏ khoảng trắng + dấu phẩy ngăn cách nghìn kiểu "10,000.0"
+    s = s.replace(/,/g, '');
+
+    // Nếu đúng kiểu thập phân của backend: 12345.0 / 12345.00 -> lấy phần nguyên
+    // (VND chỉ nhận số nguyên)
+    const m = s.match(/^(\d+)\.(\d+)$/);
+    if(m){
+      const intPart = m[1];
+      const fracPart = m[2];
+      // chỉ chấp nhận phần thập phân toàn 0, còn lại thì vẫn lấy phần nguyên (hoặc bạn có thể return '' để báo lỗi)
+      if(/^0+$/.test(fracPart)) return intPart;
+      return intPart; // hoặc: return '' để ép người dùng/BE sửa
+    }
+
+    // fallback: lấy digits như cũ
+    return s.replace(/[^\d]/g,'');
   }
 
   function groupVi(d){
