@@ -424,6 +424,9 @@
   let AC_ACTIVE_INDEX = -1;
   let CUSTOMER_TOUCHED = false;
 
+  // ✅ FIX: lưu danh sách đang render để pick đúng (tránh lệch filtered true/false)
+  let AC_LAST_LIST = [];
+
   function toast(msg){
     const t = document.getElementById('toast');
     const m = document.getElementById('toastMsg');
@@ -616,6 +619,7 @@
 
     closeCustomerDropdown();
     AC_ACTIVE_INDEX = -1;
+    AC_LAST_LIST = [];
 
     renderStatusFields(false);
 
@@ -631,6 +635,7 @@
     closeCustomerDropdown();
     AC_ACTIVE_INDEX = -1;
     CUSTOMER_TOUCHED = false;
+    AC_LAST_LIST = [];
   }
 
   function renderStatusFields(fromUserChange){
@@ -729,6 +734,7 @@
     panel.style.display = 'none';
     AC_OPEN = false;
     AC_ACTIVE_INDEX = -1;
+    AC_LAST_LIST = [];
   }
 
   document.addEventListener('mousedown', (e)=>{
@@ -758,6 +764,9 @@
   function renderCustomerPanel(list){
     const panel = document.getElementById('acPanel');
     if(!AC_OPEN) return;
+
+    // ✅ FIX: nhớ list đang render để pick theo đúng list đó
+    AC_LAST_LIST = Array.isArray(list) ? list : [];
 
     if(!ELIGIBLE_CUSTOMERS.length){
       panel.innerHTML = `<div class="ac-empty">Danh sách đang tải hoặc không có dữ liệu.</div>`;
@@ -803,7 +812,11 @@
   }
 
   function pickCustomerByIndex(i){
-    const list = filteredCustomers(true);
+    // ✅ FIX: pick theo list đang hiển thị (tránh mismatch filtered true/false)
+    const list = (Array.isArray(AC_LAST_LIST) && AC_LAST_LIST.length)
+      ? AC_LAST_LIST
+      : filteredCustomers(true);
+
     const x = list[i];
     if(!x) return;
     document.getElementById('mCustomerInput').value = customerLabel(x);
@@ -814,7 +827,11 @@
 
   function onCustomerKeydown(e){
     if(!AC_OPEN) return;
-    const list = filteredCustomers(true);
+
+    const list = (Array.isArray(AC_LAST_LIST) && AC_LAST_LIST.length)
+      ? AC_LAST_LIST
+      : filteredCustomers(true);
+
     if(!list.length) return;
 
     if(e.key === 'ArrowDown'){
@@ -901,5 +918,22 @@
       btn.textContent = "Lưu";
     }
   }
+    (function bindDropdownScrollLock(){
+    const panel = document.getElementById('acPanel');
+    if(!panel) return;
+
+    panel.addEventListener('wheel', (e)=>{
+      if(!AC_OPEN) return;
+
+      const delta = e.deltaY || 0;
+      const atTop = panel.scrollTop <= 0;
+      const atBottom = panel.scrollTop + panel.clientHeight >= panel.scrollHeight - 1;
+
+      // nếu đang ở biên mà còn kéo tiếp => chặn để không scroll body
+      if((delta < 0 && atTop) || (delta > 0 && atBottom)){
+        e.preventDefault();
+      }
+    }, { passive: false });
+  })();
 </script>
 {% endblock %}
