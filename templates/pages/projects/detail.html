@@ -176,6 +176,95 @@
     </div>
   </form>
 
+  <!-- Auction config -->
+  <form method="post" action="/projects/{{ project.id }}/auction-config" class="mb-6">
+    <div class="p-4 rounded-lg bg-indigo-50 border border-indigo-200">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-semibold text-slate-800">Thông tin phiên đấu giá</h3>
+        <button
+          type="submit"
+          class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700">
+          <i class="ri-save-3-line mr-1"></i> Lưu phiên đấu giá
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-500 mb-3">
+        Dùng để in phiếu trúng đấu giá. Ngày giờ theo UTC+7 dạng <code>dd/mm/yyyy HH:MM:SS</code>.
+      </p>
+
+      {% set ac = auction_cfg or {} %}
+      {% set ac_at = ac.auction_at or '' %}
+      {% set ac_pc = ac.province_city or '' %}
+      {% set ac_venue = ac.venue or '' %}
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+        <!-- Ngày đấu giá -->
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">
+            Ngày đấu giá
+          </label>
+
+          <button
+            type="button"
+            id="auction_at_display"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white text-left hover:border-indigo-500 hover:ring-2 hover:ring-indigo-200 transition js-deadline-btn"
+            data-field="auction_at"
+            data-raw="{{ ac_at }}"
+          >
+            —
+          </button>
+
+          <input
+            type="hidden"
+            id="auction_at"
+            name="auction_at"
+            value="{{ ac_at }}"
+          >
+
+          <p class="mt-1 text-xs text-slate-500">
+            Giá trị hiện tại:
+            <span class="deadline-summary" data-field="auction_at">—</span>
+          </p>
+        </div>
+
+        <!-- Tỉnh/Thành tổ chức -->
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">
+            Tỉnh/Thành tổ chức
+          </label>
+          <input
+            type="text"
+            name="province_city"
+            value="{{ ac_pc }}"
+            placeholder="Ví dụ: Hà Nội / Ninh Bình"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition"
+          >
+          <p class="mt-1 text-xs text-slate-500">
+            Dùng để in dòng: <span class="font-semibold">“Tỉnh/TP, ngày …”</span>
+          </p>
+        </div>
+
+        <!-- Địa điểm đấu giá -->
+        <div class="md:col-span-2">
+          <label class="block text-xs font-medium text-slate-600 mb-1">
+            Địa điểm đấu giá (cụ thể)
+          </label>
+          <textarea
+            name="venue"
+            rows="3"
+            placeholder="Ví dụ: Hội trường UBND xã..., huyện..., tỉnh..."
+            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition whitespace-pre-wrap"
+          >{{ ac_venue }}</textarea>
+          <p class="mt-1 text-xs text-slate-500">
+            Dùng để in câu “tại: …”. Có thể ghi dài.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </form>
+
   <!-- DANH SÁCH LÔ -->
   <div class="flex items-center justify-between mb-2">
     <h3 class="font-semibold text-slate-800">Danh sách lô ({{ lots_page.total }})</h3>
@@ -310,7 +399,7 @@
   }
 
   /* -------------------------
-     DEADLINE PICKER
+     DEADLINE PICKER (dùng chung cho deadline + auction_at)
   ------------------------- */
   let currentField = null;
 

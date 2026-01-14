@@ -51,6 +51,7 @@ EP_DEADLINES       = "/api/v1/projects/{project_id}/deadlines"
 EP_PUBLIC_PROJECTS = "/api/v1/projects/public"
 EP_COMPANY_PROFILE = "/api/v1/company/profile"
 EP_AUCTION_MODE    = "/api/v1/projects/{project_id}/auction_mode"  # <-- NEW
+EP_AUCTION_CONFIG  = "/api/v1/projects/{project_id}/auction_config"   # <-- NEW
 
 
 # ==============================
@@ -388,22 +389,41 @@ async def project_detail(request: Request, project_id: int = Path(...)):
     project = None
     lots_page = {"data": [], "total": 0}
 
+    # NEW: auction config (extras.auction) từ Service A
+    auction_cfg = None
+
     try:
         async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
             # 1) Lấy project
             st, data = await _get_json(
-                client, EP_DETAIL.format(project_id=project_id), {"Authorization": f"Bearer {token}"}
+                client,
+                EP_DETAIL.format(project_id=project_id),
+                {"Authorization": f"Bearer {token}"},
             )
             if st == 200 and isinstance(data, dict):
                 project = data
             else:
                 load_err = f"Không tải được dự án (HTTP {st})."
 
+            # 1b) Lấy auction_config (extras.auction)
+            if project:
+                cfg_st, cfg = await _get_json(
+                    client,
+                    EP_AUCTION_CONFIG.format(project_id=project_id),
+                    {"Authorization": f"Bearer {token}"},
+                )
+                if cfg_st == 200 and isinstance(cfg, dict):
+                    auction_cfg = cfg.get("auction") or {}
+                else:
+                    auction_cfg = None
+
             # 2) Nếu có project_code thì lấy danh sách lô theo project_code
             if project and project.get("project_code"):
                 params = {"project_code": project["project_code"], "size": 1000}
                 lst_st, lst = await _get_json(
-                    client, f"/api/v1/lots?{urlencode(params)}", {"Authorization": f"Bearer {token}"}
+                    client,
+                    f"/api/v1/lots?{urlencode(params)}",
+                    {"Authorization": f"Bearer {token}"},
                 )
                 if lst_st == 200 and isinstance(lst, dict):
                     lots_page = {
@@ -426,10 +446,10 @@ async def project_detail(request: Request, project_id: int = Path(...)):
             "me": me,
             "project": project,
             "lots_page": lots_page,
+            "auction_cfg": auction_cfg,  # NEW
             "load_err": load_err,
         },
     )
-
 
 # =========================
 # 4) CREATE (form + submit)
@@ -810,5 +830,92 @@ async def update_project_auction_mode(
 
     return RedirectResponse(
         url=f"/projects/{project_id}?msg=auction_mode_updated",
+        status_code=303,
+    )
+
+# =========================
+# 9) AUCTION CONFIG (Ngày đấu / Tỉnh thành / Địa điểm)
+# =========================
+@router.post("/{project_id}/auction-config")
+async def update_project_auction_config(
+    request: Request,
+    project_id: int = Path(...),
+    auction_at: str = Form(""),        # dd/mm/yyyy HH:MM:SS (giờ VN) hoặc ISO (tuỳ FE)
+    province_city: str = Form(""),
+    venue: str = Form(""),
+):
+    """
+    Cập nhật thông tin phiên đấu giá (lưu vào projects.extras.auction) thông qua Service A:
+    PUT /api/v1/projects/{project_id}/auction_config
+
+    Service A expects ISO datetime string or null for auction_at.
+    Ở FE bạn đang nhập dd/mm/yyyy HH:MM:SS giống deadlines, nên ở đây:
+    - nếu value rỗng -> None
+    - nếu value đã là ISO -> gửi luôn
+    - nếu là dd/mm/yyyy HH:MM:SS -> convert sang ISO +07:00
+    """
+
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(url=f"/login?next=/projects/{project_id}", status_code=303)
+
+    def _to_iso_vn(s: str | None) -> str | None:
+        s = (s or "").strip()
+        if not s:
+            return None
+
+        # nếu đã là ISO (có T) thì giữ nguyên
+        if "T" in s:
+            return s
+
+        # parse dd/mm/yyyy HH:MM:SS
+        # ví dụ: 27/01/2026 17:00:00
+        try:
+            import datetime as _dt
+            dt = _dt.datetime.strptime(s, "%d/%m/%Y %H:%M:%S")
+            # gắn offset +07:00 thành ISO
+            return dt.replace(tzinfo=_dt.timezone(_dt.timedelta(hours=7))).isoformat()
+        except Exception:
+            # nếu sai format thì gửi nguyên để A báo lỗi (đỡ silent)
+            return s
+
+    payload = {
+        "auction_at": _to_iso_vn(auction_at),
+        "province_city": (province_city or "").strip() or None,
+        "venue": (venue or "").strip() or None,
+    }
+
+    print("====== [DEBUG] SERVICE B → A AUCTION CONFIG PAYLOAD ======")
+    print("project_id =", project_id)
+    print("payload =", payload)
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            r = await client.put(
+                EP_AUCTION_CONFIG.format(project_id=project_id),
+                json=payload,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        if r.status_code != 200:
+            try:
+                detail = r.json()
+            except Exception:
+                detail = r.text
+            print("⚠️ AUCTION CONFIG UPDATE FAILED:", detail)
+            return RedirectResponse(
+                url=f"/projects/{project_id}?err=auction_config_update_failed",
+                status_code=303,
+            )
+
+    except Exception as e:
+        print("🔥 EXCEPTION update_project_auction_config:", e)
+        return RedirectResponse(
+            url=f"/projects/{project_id}?err=auction_config_update_failed",
+            status_code=303,
+        )
+
+    return RedirectResponse(
+        url=f"/projects/{project_id}?msg=auction_config_updated",
         status_code=303,
     )
