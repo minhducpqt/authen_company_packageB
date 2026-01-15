@@ -1,0 +1,362 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bg-white rounded-xl border border-slate-200 p-5">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-xl font-semibold text-slate-800">Chi tiết điểm danh</h2>
+      <p class="text-slate-500 text-sm">
+        Xem chi tiết khách theo dự án. Thao tác “Loại” là hiếm gặp và yêu cầu nhập lý do.
+      </p>
+    </div>
+    <div class="flex items-center gap-2">
+      <a
+        href="/bid-attendance?project_code={{ project_code }}"
+        class="topbtn border border-slate-300 bg-white text-slate-700"
+      >
+        ← Quay lại danh sách
+      </a>
+      <a href="/projects" class="topbtn border border-slate-300 bg-white text-slate-700">
+        Quản lý dự án
+      </a>
+    </div>
+  </div>
+
+  {% if err %}
+    <div class="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+      <i class="ri-alert-line mr-1"></i>{{ err }}
+    </div>
+  {% endif %}
+
+  {% if load_err %}
+    <div class="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-sm">
+      <i class="ri-error-warning-line mr-1"></i>{{ load_err }}
+    </div>
+  {% endif %}
+
+  <!-- SUMMARY CARD -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <!-- Left: customer -->
+    <div class="lg:col-span-2 border border-slate-200 rounded-xl p-4">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <div class="text-xs text-slate-500">Khách hàng</div>
+          <div class="text-lg font-semibold text-slate-900">
+            {{ customer.customer_full_name or "—" }}
+          </div>
+          <div class="mt-1 text-sm text-slate-600 flex flex-wrap gap-x-4 gap-y-1">
+            <div><span class="text-slate-500">CCCD:</span> <span class="font-mono">{{ customer.cccd or "—" }}</span></div>
+            <div><span class="text-slate-500">SĐT:</span> <span class="font-mono">{{ customer.phone or "—" }}</span></div>
+            <div><span class="text-slate-500">Email:</span> <span class="font-mono">{{ customer.email or "—" }}</span></div>
+          </div>
+          <div class="mt-2 text-sm text-slate-600">
+            <span class="text-slate-500">Địa chỉ:</span> {{ customer.address or "—" }}
+          </div>
+        </div>
+
+        <!-- Badge -->
+        <div class="shrink-0">
+          {% if exclusion %}
+            <div class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
+              <i class="ri-forbid-2-line"></i> ĐÃ BỊ LOẠI
+            </div>
+          {% else %}
+            <div class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
+              <i class="ri-checkbox-circle-line"></i> ĐỦ ĐIỀU KIỆN
+            </div>
+          {% endif %}
+          <div class="mt-1 text-[11px] text-slate-500 text-right">
+            STT: <span class="font-mono">{{ customer.stt_padded or customer.stt or "—" }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- project -->
+      <div class="mt-4 border-t border-slate-200 pt-3 text-sm text-slate-600">
+        <div class="flex flex-wrap gap-x-6 gap-y-1">
+          <div>
+            <span class="text-slate-500">Dự án:</span>
+            <span class="font-mono">{{ customer.project_code or project_code }}</span>
+            — {{ customer.project_name or "—" }}
+          </div>
+          <div>
+            <span class="text-slate-500">Số lô tham gia đấu:</span>
+            <span class="font-semibold">{{ customer.customer_lot_count or (lots|length) or 0 }}</span>
+          </div>
+        </div>
+
+        {% if exclusion %}
+          <div class="mt-3 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-sm">
+            <div class="font-semibold flex items-center gap-2">
+              <i class="ri-information-line"></i>
+              Thông tin loại (thủ công)
+            </div>
+            <div class="mt-1 text-[13px] leading-6">
+              <div>
+                <span class="text-rose-700">Lý do:</span>
+                <span class="font-medium">{{ exclusion.reason or "—" }}</span>
+              </div>
+              <div class="text-rose-700/90 text-[12px]">
+                Người thao tác:
+                <span class="font-mono">{{ exclusion.created_by or exclusion.updated_by or "—" }}</span>
+                · Lúc:
+                <span class="font-mono">{{ exclusion.created_at or exclusion.updated_at or "—" }}</span>
+              </div>
+              <div class="mt-1 text-[12px] text-rose-700/80">
+                Ghi chú: thao tác này không thay đổi dữ liệu thanh toán, chỉ loại khỏi danh sách điểm danh thực tế.
+              </div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Right: actions -->
+    <div class="border border-slate-200 rounded-xl p-4">
+      <div class="text-sm font-semibold text-slate-800 mb-2">Thao tác</div>
+
+      {% if exclusion %}
+        <button
+          type="button"
+          class="w-full px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 inline-flex items-center justify-center gap-2"
+          onclick="openClearModal()"
+        >
+          <i class="ri-refresh-line"></i> Gỡ loại (đưa trở lại danh sách)
+        </button>
+        <div class="mt-2 text-xs text-slate-500">
+          Gỡ loại để khách quay lại danh sách điểm danh theo dự án.
+        </div>
+      {% else %}
+        <button
+          type="button"
+          class="w-full px-4 py-2 rounded-lg bg-rose-600 text-white text-sm font-medium hover:bg-rose-700 inline-flex items-center justify-center gap-2"
+          onclick="openExcludeModal()"
+        >
+          <i class="ri-forbid-2-line"></i> Loại khách khỏi danh sách
+        </button>
+        <div class="mt-2 text-xs text-slate-500">
+          Thao tác hiếm gặp. Vui lòng kiểm tra kỹ và nhập lý do.
+        </div>
+      {% endif %}
+
+      <div class="mt-4 border-t border-slate-200 pt-3">
+        <a
+          href="/bid-attendance?project_code={{ project_code }}"
+          class="w-full px-4 py-2 rounded-lg border border-slate-300 text-slate-700 text-sm hover:bg-slate-50 inline-flex items-center justify-center gap-2"
+        >
+          <i class="ri-list-check-2"></i> Về danh sách điểm danh
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOTS TABLE -->
+  <div class="mt-4 border border-slate-200 rounded-xl">
+    <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+      <div>
+        <div class="text-sm font-semibold text-slate-800">Các lô khách tham gia</div>
+        <div class="text-xs text-slate-500">Danh sách lấy từ dữ liệu đủ điều kiện (tự động).</div>
+      </div>
+      <div class="text-xs text-slate-500">
+        Tổng: <span class="font-semibold text-slate-700">{{ lots|length }}</span> lô
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-xs">
+        <thead class="bg-slate-50">
+          <tr class="text-left text-slate-600">
+            <th class="px-3 py-2 border-b">Mã lô</th>
+            <th class="px-3 py-2 border-b">Mô tả</th>
+            <th class="px-3 py-2 border-b text-right">Diện tích</th>
+            <th class="px-3 py-2 border-b text-right">Tiền đặt trước</th>
+            <th class="px-3 py-2 border-b text-right">Giá khởi điểm</th>
+            <th class="px-3 py-2 border-b">Mã đơn</th>
+            <th class="px-3 py-2 border-b">Thanh toán</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in lots %}
+            <tr class="hover:bg-slate-50">
+              <td class="px-3 py-2 border-b font-mono text-[11px]">{{ r.lot_code or "—" }}</td>
+              <td class="px-3 py-2 border-b text-[11px]">{{ r.lot_description or "—" }}</td>
+              <td class="px-3 py-2 border-b text-right font-mono text-[11px]">
+                {% if r.area_m2 is not none %}{{ r.area_m2 }}{% else %}—{% endif %}
+              </td>
+              <td class="px-3 py-2 border-b text-right font-mono text-[11px]">
+                {% if r.deposit_amount_vnd is not none %}{{ "{:,.0f}".format(r.deposit_amount_vnd) }}{% else %}—{% endif %}
+              </td>
+              <td class="px-3 py-2 border-b text-right font-mono text-[11px]">
+                {% if r.starting_price_vnd is not none %}{{ "{:,.0f}".format(r.starting_price_vnd) }}{% else %}—{% endif %}
+              </td>
+              <td class="px-3 py-2 border-b font-mono text-[11px]">{{ r.order_code or "—" }}</td>
+              <td class="px-3 py-2 border-b text-[11px]">
+                {% if r.paid_at %}
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-semibold">
+                    <i class="ri-checkbox-circle-line"></i> PAID
+                  </span>
+                  <span class="ml-2 font-mono text-[10px] text-slate-500">{{ r.paid_at }}</span>
+                {% else %}
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[11px] font-semibold">
+                    <i class="ri-time-line"></i> —
+                  </span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+
+          {% if not lots or lots|length == 0 %}
+            <tr>
+              <td colspan="7" class="px-3 py-8 text-center text-slate-500">
+                Không có dữ liệu lô cho khách này.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Custom Modal (no native alert/confirm) ============ -->
+<div id="exModal" class="fixed inset-0 z-[200] hidden">
+  <div class="absolute inset-0 bg-slate-900/50"></div>
+  <div class="absolute inset-0 flex items-center justify-center p-3">
+    <div class="w-full max-w-lg rounded-2xl bg-white shadow-xl border border-slate-200 overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-200">
+        <div id="exModalTitle" class="text-base font-semibold text-slate-900">—</div>
+        <div id="exModalDesc" class="mt-1 text-sm text-slate-500">—</div>
+      </div>
+
+      <div class="px-5 py-4">
+        <div id="exReasonWrap" class="mb-3">
+          <label class="block text-xs font-medium text-slate-600 mb-1">Lý do</label>
+          <textarea
+            id="exReason"
+            rows="3"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            placeholder="Nhập lý do loại (bắt buộc)"
+          ></textarea>
+          <div id="exReasonErr" class="mt-1 text-xs text-rose-600 hidden">
+            Vui lòng nhập lý do.
+          </div>
+        </div>
+
+        <div class="text-xs text-slate-500">
+          * Thao tác này <b>không thay đổi dữ liệu thanh toán</b>, chỉ áp dụng cho danh sách điểm danh thực tế.
+        </div>
+      </div>
+
+      <div class="px-5 py-4 border-t border-slate-200 flex items-center justify-end gap-2">
+        <button
+          type="button"
+          class="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 text-sm hover:bg-slate-50"
+          onclick="closeExModal()"
+        >
+          Huỷ
+        </button>
+        <button
+          id="exModalSubmitBtn"
+          type="button"
+          class="px-4 py-2 rounded-lg bg-rose-600 text-white text-sm font-medium hover:bg-rose-700 inline-flex items-center gap-2"
+          onclick="submitExModal()"
+        >
+          <i class="ri-check-line"></i> Xác nhận
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<form id="excludeForm" method="post" action="/bid-attendance/detail/exclude" class="hidden">
+  <input type="hidden" name="project_id" value="{{ customer.project_id }}">
+  <input type="hidden" name="project_code" value="{{ project_code }}">
+  <input type="hidden" name="customer_id" value="{{ customer.customer_id }}">
+  <input type="hidden" name="reason" id="excludeReasonInput" value="">
+</form>
+
+<form id="clearForm" method="post" action="/bid-attendance/detail/clear" class="hidden">
+  <input type="hidden" name="project_id" value="{{ customer.project_id }}">
+  <input type="hidden" name="project_code" value="{{ project_code }}">
+  <input type="hidden" name="customer_id" value="{{ customer.customer_id }}">
+</form>
+
+<script>
+  const exModal = document.getElementById("exModal");
+  const exModalTitle = document.getElementById("exModalTitle");
+  const exModalDesc = document.getElementById("exModalDesc");
+  const exReasonWrap = document.getElementById("exReasonWrap");
+  const exReason = document.getElementById("exReason");
+  const exReasonErr = document.getElementById("exReasonErr");
+  const exSubmitBtn = document.getElementById("exModalSubmitBtn");
+
+  let __mode = null; // "exclude" | "clear"
+
+  function openExcludeModal() {
+    __mode = "exclude";
+    exModalTitle.textContent = "Xác nhận loại khách khỏi danh sách điểm danh";
+    exModalDesc.textContent = "Thao tác này là hiếm gặp. Vui lòng nhập lý do.";
+    exReasonWrap.classList.remove("hidden");
+    exReason.value = "";
+    exReasonErr.classList.add("hidden");
+    exSubmitBtn.classList.remove("bg-slate-900");
+    exSubmitBtn.classList.add("bg-rose-600");
+    exSubmitBtn.classList.add("hover:bg-rose-700");
+    exSubmitBtn.innerHTML = '<i class="ri-forbid-2-line"></i> Xác nhận loại';
+    showExModal();
+    setTimeout(() => exReason.focus(), 50);
+  }
+
+  function openClearModal() {
+    __mode = "clear";
+    exModalTitle.textContent = "Xác nhận gỡ loại";
+    exModalDesc.textContent = "Khách sẽ được đưa trở lại danh sách điểm danh theo dự án.";
+    exReasonWrap.classList.add("hidden");
+    exReasonErr.classList.add("hidden");
+    exSubmitBtn.classList.remove("bg-rose-600");
+    exSubmitBtn.classList.add("bg-slate-900");
+    exSubmitBtn.innerHTML = '<i class="ri-refresh-line"></i> Xác nhận gỡ loại';
+    showExModal();
+  }
+
+  function showExModal() {
+    exModal.classList.remove("hidden");
+    document.body.classList.add("overflow-hidden");
+  }
+
+  function closeExModal() {
+    exModal.classList.add("hidden");
+    document.body.classList.remove("overflow-hidden");
+  }
+
+  function submitExModal() {
+    if (__mode === "exclude") {
+      const v = (exReason.value || "").trim();
+      if (!v) {
+        exReasonErr.classList.remove("hidden");
+        exReason.focus();
+        return;
+      }
+      document.getElementById("excludeReasonInput").value = v;
+      document.getElementById("excludeForm").submit();
+      return;
+    }
+    if (__mode === "clear") {
+      document.getElementById("clearForm").submit();
+      return;
+    }
+  }
+
+  // close on backdrop click
+  exModal.addEventListener("click", function (e) {
+    const card = exModal.querySelector(".max-w-lg");
+    if (!card.contains(e.target)) closeExModal();
+  });
+
+  // close on ESC
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && !exModal.classList.contains("hidden")) {
+      closeExModal();
+    }
+  });
+</script>
+{% endblock %}

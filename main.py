@@ -24,14 +24,18 @@ from routers.bank_import.router import router as bank_import_router
 from routers.send_info_dossier import router as send_info_dossier_router
 from routers.dossier_buyers import router as dossier_buyers_router
 from routers import transactions  # <-- NEW
-from routers.api_proxy import router as api_proxy_router   # <-- NEW
+from routers.api_proxy import router as api_proxy_router  # <-- NEW
 from routers.reports import router as reports_router
 from routers.reports_export import router as reports_export_router
 from routers.dashboard import router as dashboard_router
 from routers import company_mailers
 from routers import auction_docs  # import file mới
 from routers import bid_tickets as bid_tickets_router
-from routers import bid_attendance as bid_attendance_router  # <-- NEW
+
+# Bid attendance
+from routers import bid_attendance as bid_attendance_router
+from routers.bid_attendance_exclusions import router as bid_attendance_exclusions_router
+
 from routers.customer_documents import router as customer_documents_router
 from routers.announcements import router as announcements_router
 from routers.auction_results import router as auction_results_router
@@ -65,13 +69,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(
     title="Dashboard Công ty — v20",
     lifespan=lifespan,
-    docs_url=None,     # TẮT /docs
+    docs_url=None,  # TẮT /docs
 )
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.middleware("http")(auth_guard_middleware)
 
 # Đăng ký routers
-app.include_router(api_proxy_router)                 # <-- NEW: /api/*
+app.include_router(api_proxy_router)  # <-- NEW: /api/*
 app.include_router(ppa_router)
 app.include_router(auth_router)
 app.include_router(dashboard_router)
@@ -89,12 +94,17 @@ app.include_router(reports_export_router)
 app.include_router(company_mailers.router)
 app.include_router(auction_docs.router)
 app.include_router(bid_tickets_router.router)
+
+# Bid attendance (list/print) + exclusions (detail/exclude/clear)
 app.include_router(bid_attendance_router.router)
+app.include_router(bid_attendance_exclusions_router)
+
 app.include_router(customer_documents_router)
 app.include_router(announcements_router)
 app.include_router(auction_results_router)
 app.include_router(deposit_refunds.router)
 app.include_router(auction_prints_router)
+
 
 @app.get("/healthz")
 def healthz():

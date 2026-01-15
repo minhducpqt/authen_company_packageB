@@ -100,6 +100,7 @@
           <th class="px-2 py-2 border-b">Số điện thoại</th>
           <th class="px-2 py-2 border-b">Địa chỉ</th>
           <th class="px-2 py-2 border-b text-right">Số lô tham gia đấu</th>
+          <th class="px-2 py-2 border-b text-right">Thao tác</th>
         </tr>
       </thead>
       <tbody>
@@ -128,11 +129,20 @@
           <td class="px-2 py-1.5 border-b text-right font-semibold">
             {{ c.customer_lot_count or 0 }}
           </td>
+          <td class="px-2 py-1.5 border-b text-right">
+            <a
+              href="/bid-attendance/detail?project_code={{ c.project_code }}&customer_id={{ c.customer_id }}"
+              class="px-2 py-1 rounded-md border border-slate-300 text-[11px] text-slate-700 hover:bg-slate-50 inline-flex items-center gap-1"
+              title="Xem chi tiết / Loại khách (hiếm)"
+            >
+              <i class="ri-eye-line"></i> Chi tiết
+            </a>
+          </td>
         </tr>
       {% endfor %}
       {% if not customers or customers|length == 0 %}
         <tr>
-          <td colspan="6" class="px-3 py-6 text-center text-slate-500">
+          <td colspan="7" class="px-3 py-6 text-center text-slate-500">
             Chưa có khách hàng nào phù hợp bộ lọc hiện tại.
           </td>
         </tr>
