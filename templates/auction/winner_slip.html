@@ -185,10 +185,10 @@
 
 {# mode #}
 {% set is_per_sqm = (p.get('is_per_sqm') is not none and p.get('is_per_sqm')) or ((p.get('auction_mode') or '') == 'PER_SQM') %}
-{% set auction_mode_text = ("Trả giá theo mét vuông (đồng/m²)" if is_per_sqm else "Trả giá theo giá trị lô đất (đồng/lô)") %}
 
 {# company name (không hardcode) #}
 {% set company_name = (p.get('company_name') or '') %}
+{% set company_upper = (company_name | upper) %}
 
 {# price fields from A #}
 {% set start_total = (lot.get('starting_price_total_vnd') or 0) %}
@@ -223,12 +223,19 @@
       </div>
     </div>
 
+    <!-- ✅ 1) "Theo" -> "Căn cứ" -->
     <div class="para keep">
-      Theo Biên bản đấu giá tài sản được lập ngày {{ dd }} tháng {{ mm }} năm {{ yyyy }}
+      Căn cứ Biên bản đấu giá tài sản được lập ngày {{ dd }} tháng {{ mm }} năm {{ yyyy }}
       {% if venue %}
-        tại {{ venue }},
+        tại {{ venue }}
       {% endif %}
-      như sau:
+    </div>
+
+    <!-- ✅ 2) Sau đoạn căn cứ: TÊN CÔNG TY + XÁC NHẬN (viết hoa toàn bộ) -->
+    <div class="center keep" style="margin: 2px 0 6px;">
+      <div style="font-size:16px;font-weight:800;letter-spacing:.2px;">
+        {{ company_upper }} XÁC NHẬN
+      </div>
     </div>
 
     <table class="kv keep" role="presentation">
@@ -254,10 +261,7 @@
         <td class="value">{{ areafmt(lot.get('area')) }} <span class="nowrap">m²</span></td>
       </tr>
 
-      <tr>
-        <td class="label">Hình thức đấu giá:</td>
-        <td class="value">{{ auction_mode_text }}</td>
-      </tr>
+      <!-- ✅ 3) Bỏ hình thức đấu giá: đã xóa toàn bộ block này -->
 
       <tr>
         <td class="label"><strong>Giá khởi điểm:</strong></td>
