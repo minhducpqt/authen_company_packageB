@@ -4,116 +4,116 @@
   <meta charset="utf-8"/>
   <title>Phiếu trả giá</title>
   <style>
-    @page {
+    @page{
       size: A4;
       margin: 18mm 16mm;
     }
 
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: #e5e7eb;
-      font-family: "Times New Roman", Times, serif;
-      font-size: 12.5pt;
-      color: #000;
+    html, body{
+      margin:0;
+      padding:0;
+      background:#e5e7eb;
+      font-family:"Times New Roman", Times, serif;
+      font-size:12.5pt;
+      color:#000;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
 
-    .page {
-      width: 210mm;
-      min-height: 297mm;
-      margin: 10px auto;
-      background: #fff;
-      box-shadow: 0 0 6px rgba(0,0,0,0.18);
-      box-sizing: border-box;
-      padding: 18mm 16mm;
-      position: relative;
-      page-break-after: always;
+    /* 1 page = 1 tờ A4, KHÔNG min-height 297mm (tránh tràn 2 trang) */
+    .page{
+      width:210mm;
+      margin:10px auto;
+      background:#fff;
+      box-shadow:0 0 6px rgba(0,0,0,0.18);
+      box-sizing:border-box;
+      position:relative;
+      page-break-after:always;
+      /* không padding nữa (đã dùng @page margin) */
+      padding:0;
     }
 
-    @media print {
-      html, body {
-        background: #ffffff;
+    @media print{
+      html, body{ background:#fff; }
+      .page{
+        margin:0;
+        box-shadow:none;
+        /* đảm bảo không bị “đếm đôi” */
+        padding:0;
       }
-      .page {
-        margin: 0;
-        box-shadow: none;
-        page-break-after: always;
-      }
     }
 
-    .center { text-align: center; }
-    .bold { font-weight: 700; }
-    .title { font-size: 18pt; font-weight: 800; text-transform: uppercase; }
-    .gov   { font-size: 15pt; font-weight: 800; text-transform: uppercase; }
-    .mt-1  { margin-top: 3mm; }
-    .mt-2  { margin-top: 4mm; }
-    .mt-3  { margin-top: 6mm; }
-    .mt-4  { margin-top: 8mm; }
-    .mb-2  { margin-bottom: 4mm; }
-    .small { font-size: 11pt; }
-    .note  { font-size: 10.5pt; }
+    .center { text-align:center; }
+    .bold { font-weight:700; }
+    .title { font-size:18pt; font-weight:800; text-transform:uppercase; }
+    .gov   { font-size:15pt; font-weight:800; text-transform:uppercase; }
+    .mt-1  { margin-top:3mm; }
+    .mt-2  { margin-top:4mm; }
+    .mt-3  { margin-top:6mm; }
+    .mb-2  { margin-bottom:4mm; }
+    .small { font-size:11pt; }
+    .note  { font-size:10.5pt; }
 
-    .divider {
+    .divider{
       text-align:center;
-      margin: 2mm 0 6mm;
+      margin:2mm 0 6mm;
     }
 
-    /* Box mã nhận dạng nhỏ ở góc trái trên */
-    .flag-box {
-      position: absolute;
-      top: 10mm;
-      left: 8mm;
-      font-size: 9pt;
-      border: 1px solid #444;
-      padding: 2px 6px;
-      line-height: 1.3;
-      background: #f9fafb;
+    /* Box mã nhận dạng nhỏ ở góc trái trên
+       (top/left tính theo vùng in bên trong @page margin) */
+    .flag-box{
+      position:absolute;
+      top:0mm;
+      left:0mm;
+      font-size:9pt;
+      border:1px solid #444;
+      padding:2px 6px;
+      line-height:1.3;
+      background:#f9fafb;
     }
 
-    /* Dòng label: value dạng bảng */
-    .info-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 2mm;
-      margin-bottom: 2mm;
+    .info-table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:2mm;
+      margin-bottom:2mm;
     }
-    .info-table td {
-      padding: 1mm 0;
-      vertical-align: top;
+    .info-table td{
+      padding:1mm 0;
+      vertical-align:top;
     }
-    .info-label {
-      width: 45mm;
-      white-space: nowrap;
-      font-weight: 700;
+    .info-label{
+      width:45mm;
+      white-space:nowrap;
+      font-weight:700;
     }
-    .info-sep {
-      width: 4mm;
+    .info-sep{ width:4mm; }
+
+    .dotline{
+      display:inline-block;
+      border-bottom:0.6pt dotted #888;
+      min-width:45mm;
+      line-height:1.6;
+    }
+    .dotline.long{ min-width:120mm; }
+
+    .textline-block{
+      margin-top:4mm;
+      margin-bottom:5mm;
+      line-height:1.8;
     }
 
-    /* Dòng chấm viết tay */
-    .dotline {
-      display: inline-block;
-      border-bottom: 0.6pt dotted #888;
-      min-width: 45mm;
-      line-height: 1.6; /* giãn cao hơn một chút */
-    }
-    .dotline.long {
-      min-width: 120mm;
+    .signature-block{
+      width:60%;
+      margin-left:auto;
+      text-align:center;
+      margin-top:14mm; /* giảm nhẹ để chắc 1 trang */
+      page-break-inside:avoid;
     }
 
-    /* Giãn khoảng cách giữa 2 dòng Bằng chữ */
-    .textline-block {
-      margin-top: 4mm;
-      margin-bottom: 5mm;
-      line-height: 1.8;
-    }
-
-    .signature-block {
-      width: 60%;
-      margin-left: auto;
-      text-align: center;
-      margin-top: 16mm;
-      page-break-inside: avoid;
+    /* tránh Chrome tự thêm header/footer đẩy trang */
+    @media print{
+      body { -webkit-print-color-adjust: exact; }
     }
   </style>
 </head>
@@ -217,7 +217,6 @@
       </tr>
     </table>
 
-    <!-- GIÃN DÒNG Ở ĐÂY -->
     <div class="small textline-block">
       Bằng chữ:
       <span class="dotline long">&nbsp;</span>
@@ -239,7 +238,7 @@
       - Được điền đầy đủ các thông tin;<br/>
       - Trường hợp sai lệch giữa giá trả bằng số với giá trả bằng chữ, thì sẽ lấy giá trả bằng chữ.
     </div>
-    
+
     <div class="signature-block">
       ................................, ngày ...... tháng ...... năm ......<br/><br/>
       <span class="bold">Khách hàng tham gia đấu giá</span><br/>
@@ -251,6 +250,7 @@
 
 <script>
   window.addEventListener("load", function () {
+    // Tip: tắt "Headers and footers" trong hộp thoại in của Chrome để không bị đẩy trang.
     window.print();
   });
 </script>
