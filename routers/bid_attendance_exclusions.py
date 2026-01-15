@@ -17,6 +17,9 @@ router = APIRouter(prefix="/bid-attendance", tags=["bid_attendance"])
 SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 
 
+# =========================================================
+# HTTP helpers
+# =========================================================
 async def _get_json(
     client: httpx.AsyncClient,
     url: str,
@@ -44,15 +47,21 @@ async def _post_json(
         return r.status_code, None
 
 
-def _detail_url(project_code: str, customer_id: int, err: Optional[str] = None) -> str:
-    base = f"/bid-attendance/detail?project_code={quote(project_code)}&customer_id={customer_id}"
-    if err:
-        base += f"&err={quote(err)}"
-    return base
+def _safe_int(v: Any) -> Optional[int]:
+    try:
+        if v is None:
+            return None
+        return int(v)
+    except Exception:
+        return None
 
 
 # =========================================================
-# DETAIL PAGE: 1 KHÁCH trong 1 DỰ ÁN (để Loại/Gỡ)
+# DETAIL PAGE: 1 KHÁCH trong 1 DỰ ÁN (Loại theo LÔ / Loại tất cả lô)
+#
+# Nguồn dữ liệu:
+#   + /api/v1/report/bid_tickets (lọc theo project_code + customer_id) -> lấy info KH + lots auto đủ đk
+#   + /api/v1/auction/eligibility-exclusions/summary (project_id + customer_id) -> excluded lots + remaining
 # =========================================================
 @router.get("/detail", response_class=HTMLResponse)
 async def bid_attendance_detail_page(
@@ -64,7 +73,7 @@ async def bid_attendance_detail_page(
     token = get_access_token(request)
     me = await fetch_me(token)
     if not me:
-        next_url = _detail_url(project_code, customer_id)
+        next_url = f"/bid-attendance/detail?project_code={quote(project_code)}&customer_id={customer_id}"
         return RedirectResponse(url=f"/login?next={quote(next_url)}", status_code=303)
 
     headers = {"Authorization": f"Bearer {token}"}
@@ -72,22 +81,19 @@ async def bid_attendance_detail_page(
     load_err: Optional[str] = None
     customer: Dict[str, Any] = {}
     lots: List[Dict[str, Any]] = []
-    exclusion: Optional[Dict[str, Any]] = None
+    summary: Optional[Dict[str, Any]] = None
 
     try:
-        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=25.0) as client:
-            # 1) Lấy dữ liệu khách + các lô tham gia (tận dụng report bid_tickets)
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=20.0) as client:
+            # 1) Lấy dữ liệu khách + các lô tham gia (auto đủ điều kiện)
             params = {
                 "project_code": project_code,
                 "customer_id": customer_id,
                 "page": 1,
-                "size": 2000,
+                "size": 5000,
             }
             st, js = await _get_json(client, "/api/v1/report/bid_tickets", headers, params)
-
-            if st == 401 or st == 403:
-                load_err = "Bạn không có quyền hoặc phiên đăng nhập đã hết hạn (Service A)."
-            elif st != 200 or not isinstance(js, dict):
+            if st != 200 or not isinstance(js, dict):
                 load_err = f"Không tải được dữ liệu điểm danh (HTTP {st})."
             else:
                 rows = js.get("data") or []
@@ -118,19 +124,32 @@ async def bid_attendance_detail_page(
                     }
                     lots = rows
 
-            # 2) Lấy trạng thái exclusion (nếu đã có project_id)
-            if customer.get("project_id"):
+            # 2) Summary exclusions theo lot (cần project_id)
+            pid = _safe_int(customer.get("project_id"))
+            if pid:
                 st2, js2 = await _get_json(
                     client,
-                    "/api/v1/auction/eligibility-exclusions/one",
+                    "/api/v1/auction/eligibility-exclusions/summary",
                     headers,
-                    {"project_id": customer["project_id"], "customer_id": customer_id},
+                    {"project_id": pid, "customer_id": customer_id},
                 )
                 if st2 == 200 and isinstance(js2, dict):
-                    exclusion = js2.get("data")
+                    summary = js2.get("data")
+                else:
+                    # không coi là lỗi cứng
+                    summary = None
 
     except Exception as e:
         load_err = str(e)
+
+    # Normalize excluded lot ids for UI use
+    excluded_ids: List[int] = []
+    remaining_ids: List[int] = []
+    is_customer_excluded = False
+    if isinstance(summary, dict):
+        excluded_ids = [int(x) for x in (summary.get("excluded_lot_ids") or []) if _safe_int(x) is not None]
+        remaining_ids = [int(x) for x in (summary.get("remaining_lot_ids") or []) if _safe_int(x) is not None]
+        is_customer_excluded = bool(summary.get("is_customer_excluded"))
 
     return templates.TemplateResponse(
         "pages/bid_attendance/detail.html",
@@ -138,22 +157,132 @@ async def bid_attendance_detail_page(
             "request": request,
             "title": "Chi tiết điểm danh",
             "me": me,
-            "err": err,  # ✅ để show thông báo validate/flow
             "load_err": load_err,
+            "flash_err": err,
             "project_code": project_code,
             "customer_id": customer_id,
             "customer": customer,
-            "lots": lots,
-            "exclusion": exclusion,
+            "lots": lots,  # list auto đủ đk (trước exclusions)
+            "summary": summary,
+            "excluded_lot_ids": set(excluded_ids),
+            "remaining_lot_ids": set(remaining_ids),
+            "is_customer_excluded": is_customer_excluded,
         },
     )
 
 
 # =========================================================
-# ACTION: EXCLUDE (Loại khách khỏi DS điểm danh)
+# ACTION: EXCLUDE 1 LOT
+# - Service A: POST /api/v1/auction/eligibility-exclusions/exclude-lot
 # =========================================================
-@router.post("/detail/exclude")
-async def bid_attendance_exclude_action(
+@router.post("/detail/exclude-lot")
+async def bid_attendance_exclude_lot_action(
+    request: Request,
+    project_id: int = Form(...),
+    project_code: str = Form(...),
+    customer_id: int = Form(...),
+    lot_id: int = Form(...),
+    reason: str = Form(...),
+):
+    token = get_access_token(request)
+    me = await fetch_me(token)
+    if not me:
+        next_url = f"/bid-attendance/detail?project_code={quote(project_code)}&customer_id={customer_id}"
+        return RedirectResponse(url=f"/login?next={quote(next_url)}", status_code=303)
+
+    r_reason = (reason or "").strip()
+    if not r_reason:
+        return RedirectResponse(
+            url=(
+                f"/bid-attendance/detail?project_code={quote(project_code)}"
+                f"&customer_id={customer_id}&err={quote('Vui lòng nhập lý do loại lô')}"
+            ),
+            status_code=303,
+        )
+
+    headers = {"Authorization": f"Bearer {token}"}
+    payload = {
+        "project_id": int(project_id),
+        "customer_id": int(customer_id),
+        "lot_id": int(lot_id),
+        "reason": r_reason,
+    }
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=20.0) as client:
+            st, js = await _post_json(
+                client,
+                "/api/v1/auction/eligibility-exclusions/exclude-lot",
+                headers,
+                payload,
+            )
+        if st != 200:
+            return HTMLResponse(
+                f"<h1>Lỗi</h1><p>Không loại được lô (HTTP {st}).</p><pre>{js}</pre>",
+                status_code=500,
+            )
+    except Exception as e:
+        return HTMLResponse(f"<h1>Lỗi</h1><p>{e}</p>", status_code=500)
+
+    return RedirectResponse(
+        url=f"/bid-attendance/detail?project_code={quote(project_code)}&customer_id={customer_id}",
+        status_code=303,
+    )
+
+
+# =========================================================
+# ACTION: CLEAR 1 LOT
+# - Service A: POST /api/v1/auction/eligibility-exclusions/clear-lot
+# =========================================================
+@router.post("/detail/clear-lot")
+async def bid_attendance_clear_lot_action(
+    request: Request,
+    project_id: int = Form(...),
+    project_code: str = Form(...),
+    customer_id: int = Form(...),
+    lot_id: int = Form(...),
+):
+    token = get_access_token(request)
+    me = await fetch_me(token)
+    if not me:
+        next_url = f"/bid-attendance/detail?project_code={quote(project_code)}&customer_id={customer_id}"
+        return RedirectResponse(url=f"/login?next={quote(next_url)}", status_code=303)
+
+    headers = {"Authorization": f"Bearer {token}"}
+    payload = {
+        "project_id": int(project_id),
+        "customer_id": int(customer_id),
+        "lot_id": int(lot_id),
+    }
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=20.0) as client:
+            st, js = await _post_json(
+                client,
+                "/api/v1/auction/eligibility-exclusions/clear-lot",
+                headers,
+                payload,
+            )
+        if st != 200:
+            return HTMLResponse(
+                f"<h1>Lỗi</h1><p>Không gỡ loại được lô (HTTP {st}).</p><pre>{js}</pre>",
+                status_code=500,
+            )
+    except Exception as e:
+        return HTMLResponse(f"<h1>Lỗi</h1><p>{e}</p>", status_code=500)
+
+    return RedirectResponse(
+        url=f"/bid-attendance/detail?project_code={quote(project_code)}&customer_id={customer_id}",
+        status_code=303,
+    )
+
+
+# =========================================================
+# ACTION: EXCLUDE CUSTOMER (loại tất cả lô của khách)
+# - Service A: POST /api/v1/auction/eligibility-exclusions/exclude-customer
+# =========================================================
+@router.post("/detail/exclude-customer")
+async def bid_attendance_exclude_customer_action(
     request: Request,
     project_id: int = Form(...),
     project_code: str = Form(...),
@@ -163,54 +292,54 @@ async def bid_attendance_exclude_action(
     token = get_access_token(request)
     me = await fetch_me(token)
     if not me:
-        next_url = _detail_url(project_code, customer_id)
+        next_url = f"/bid-attendance/detail?project_code={quote(project_code)}&customer_id={customer_id}"
         return RedirectResponse(url=f"/login?next={quote(next_url)}", status_code=303)
 
-    reason = (reason or "").strip()
-    if not reason:
+    r_reason = (reason or "").strip()
+    if not r_reason:
         return RedirectResponse(
-            url=_detail_url(project_code, customer_id, "Vui lòng nhập lý do loại"),
+            url=(
+                f"/bid-attendance/detail?project_code={quote(project_code)}"
+                f"&customer_id={customer_id}&err={quote('Vui lòng nhập lý do loại khách')}"
+            ),
             status_code=303,
         )
 
     headers = {"Authorization": f"Bearer {token}"}
-    payload = {"project_id": project_id, "customer_id": customer_id, "reason": reason}
+    payload = {
+        "project_id": int(project_id),
+        "customer_id": int(customer_id),
+        "reason": r_reason,
+    }
 
     try:
         async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=20.0) as client:
             st, js = await _post_json(
                 client,
-                "/api/v1/auction/eligibility-exclusions/exclude",
+                "/api/v1/auction/eligibility-exclusions/exclude-customer",
                 headers,
                 payload,
-            )
-
-        if st == 401 or st == 403:
-            return HTMLResponse(
-                "<h1>Lỗi</h1><p>Không có quyền thao tác hoặc phiên đăng nhập đã hết hạn (Service A).</p>",
-                status_code=403,
             )
         if st != 200:
             return HTMLResponse(
                 f"<h1>Lỗi</h1><p>Không loại được khách (HTTP {st}).</p><pre>{js}</pre>",
                 status_code=500,
             )
-
     except Exception as e:
         return HTMLResponse(f"<h1>Lỗi</h1><p>{e}</p>", status_code=500)
 
-    # ✅ Flow hợp lý: loại xong quay về LIST của dự án (người đó sẽ biến mất nếu list có trừ exclusions)
     return RedirectResponse(
-        url=f"/bid-attendance?project_code={quote(project_code)}",
+        url=f"/bid-attendance/detail?project_code={quote(project_code)}&customer_id={customer_id}",
         status_code=303,
     )
 
 
 # =========================================================
-# ACTION: CLEAR (Gỡ loại)
+# ACTION: CLEAR CUSTOMER (gỡ loại tất cả lô của khách)
+# - Service A: POST /api/v1/auction/eligibility-exclusions/clear-customer
 # =========================================================
-@router.post("/detail/clear")
-async def bid_attendance_clear_action(
+@router.post("/detail/clear-customer")
+async def bid_attendance_clear_customer_action(
     request: Request,
     project_id: int = Form(...),
     project_code: str = Form(...),
@@ -219,37 +348,32 @@ async def bid_attendance_clear_action(
     token = get_access_token(request)
     me = await fetch_me(token)
     if not me:
-        next_url = _detail_url(project_code, customer_id)
+        next_url = f"/bid-attendance/detail?project_code={quote(project_code)}&customer_id={customer_id}"
         return RedirectResponse(url=f"/login?next={quote(next_url)}", status_code=303)
 
     headers = {"Authorization": f"Bearer {token}"}
-    payload = {"project_id": project_id, "customer_id": customer_id}
+    payload = {
+        "project_id": int(project_id),
+        "customer_id": int(customer_id),
+    }
 
     try:
         async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=20.0) as client:
             st, js = await _post_json(
                 client,
-                "/api/v1/auction/eligibility-exclusions/clear",
+                "/api/v1/auction/eligibility-exclusions/clear-customer",
                 headers,
                 payload,
-            )
-
-        if st == 401 or st == 403:
-            return HTMLResponse(
-                "<h1>Lỗi</h1><p>Không có quyền thao tác hoặc phiên đăng nhập đã hết hạn (Service A).</p>",
-                status_code=403,
             )
         if st != 200:
             return HTMLResponse(
                 f"<h1>Lỗi</h1><p>Không gỡ loại được khách (HTTP {st}).</p><pre>{js}</pre>",
                 status_code=500,
             )
-
     except Exception as e:
         return HTMLResponse(f"<h1>Lỗi</h1><p>{e}</p>", status_code=500)
 
-    # gỡ loại thì quay lại detail để thấy badge đổi ngay
     return RedirectResponse(
-        url=_detail_url(project_code, customer_id),
+        url=f"/bid-attendance/detail?project_code={quote(project_code)}&customer_id={customer_id}",
         status_code=303,
     )
