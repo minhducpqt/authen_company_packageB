@@ -1,10 +1,10 @@
-# routers/bid_attendance.py
-
+# routers/bid_attendance.py (Service B - Admin)
 from __future__ import annotations
-from typing import Optional, Dict, Any, List
-from urllib.parse import quote
 
+from typing import Optional, Dict, Any, List, Literal
+from urllib.parse import quote
 import os
+
 import httpx
 from fastapi import APIRouter, Request, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -30,6 +30,18 @@ async def _get_json(
         return r.status_code, None
 
 
+def _normalize_mode(v: Optional[str]) -> Literal["final", "auto"]:
+    """
+    Quy ước:
+      - final: danh sách điểm danh THỰC (đã loại các lô bị exclude; chỉ còn khách còn lô hợp lệ)
+      - auto : danh sách AUTO gốc (từ điều kiện hệ thống, chưa trừ loại) — vẫn có thể show khách đã bị loại hết
+    """
+    s = (v or "").strip().lower()
+    if s in ("auto", "raw", "all"):
+        return "auto"
+    return "final"
+
+
 # ======================================================================
 # PAGE: DANH SÁCH ĐIỂM DANH
 # ======================================================================
@@ -37,27 +49,49 @@ async def _get_json(
 async def bid_attendance_page(
     request: Request,
     project_code: Optional[str] = Query(None),
-    customer_q: Optional[str] = Query(
-        None, description="Tên khách / CCCD / điện thoại"
+    customer_q: Optional[str] = Query(None, description="Tên khách / CCCD / điện thoại"),
+    mode: Optional[str] = Query(
+        "final",
+        description="final = điểm danh thực; auto = danh sách auto gốc",
     ),
     page: int = Query(1, ge=1),
     size: int = Query(500, ge=1, le=5000),
 ):
     """
-    Màn hình 4.1: Danh sách điểm danh khách đủ điều kiện tham gia đấu giá.
+    Màn hình 4.1: Danh sách điểm danh.
     Dữ liệu lấy từ Service A: /api/v1/report/bid_tickets/customers
+
+    Lưu ý:
+    - Có thêm query param mode:
+        + mode=final: danh sách điểm danh THỰC (đã trừ các lô bị loại)
+        + mode=auto : danh sách AUTO gốc (chưa trừ loại)
     """
     token = get_access_token(request)
     me = await fetch_me(token)
     if not me:
-        return RedirectResponse(
-            url=f"/login?next={quote('/bid-attendance')}",
-            status_code=303,
-        )
+        # giữ next kèm query để quay lại đúng bộ lọc
+        next_url = "/bid-attendance"
+        qs = []
+        if project_code:
+            qs.append(f"project_code={quote(project_code)}")
+        if customer_q:
+            qs.append(f"customer_q={quote(customer_q)}")
+        if mode:
+            qs.append(f"mode={quote(mode)}")
+        if page and page != 1:
+            qs.append(f"page={page}")
+        if size and size != 500:
+            qs.append(f"size={size}")
+        if qs:
+            next_url += "?" + "&".join(qs)
+        return RedirectResponse(url=f"/login?next={quote(next_url)}", status_code=303)
+
+    mode_norm = _normalize_mode(mode)
 
     params: Dict[str, Any] = {
         "page": page,
         "size": size,
+        "mode": mode_norm,  # <<< NEW: truyền sang Service A
     }
     if project_code:
         params["project_code"] = project_code
@@ -69,18 +103,17 @@ async def bid_attendance_page(
     load_err: Optional[str] = None
 
     try:
-        async with httpx.AsyncClient(
-            base_url=SERVICE_A_BASE_URL, timeout=20.0
-        ) as client:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=20.0) as client:
             st, js = await _get_json(
-                client, "/api/v1/report/bid_tickets/customers", headers, params
+                client,
+                "/api/v1/report/bid_tickets/customers",
+                headers,
+                params,
             )
             if st == 200 and isinstance(js, dict):
                 data = js
             else:
-                load_err = (
-                    f"Không tải được danh sách khách đủ điều kiện (HTTP {st})."
-                )
+                load_err = f"Không tải được danh sách khách (HTTP {st})."
     except Exception as e:
         load_err = str(e)
 
@@ -103,6 +136,7 @@ async def bid_attendance_page(
             "filters": {
                 "project_code": project_code or "",
                 "customer_q": customer_q or "",
+                "mode": mode_norm,  # <<< NEW: template dùng để render toggle
             },
             "page": data,
             "customers": customers,
@@ -118,32 +152,35 @@ async def bid_attendance_page(
 async def print_bid_attendance(
     request: Request,
     project_code: str = Query(..., description="Mã dự án cần in danh sách"),
+    mode: Optional[str] = Query(
+        "final",
+        description="final = điểm danh thực; auto = danh sách auto gốc",
+    ),
 ):
     """
     In danh sách điểm danh cho 1 dự án:
-      - Dùng /api/v1/report/bid_tickets/customers?project_code=...&page=1&size=5000
+      - Dùng /api/v1/report/bid_tickets/customers?project_code=...&mode=...&page=1&size=5000
       - Sort theo STT
       - Render template print.html
     """
     token = get_access_token(request)
     me = await fetch_me(token)
     if not me:
-        return RedirectResponse(
-            url=f"/login?next={quote('/bid-attendance')}",
-            status_code=303,
-        )
+        next_url = f"/bid-attendance/print?project_code={quote(project_code)}&mode={quote(mode or 'final')}"
+        return RedirectResponse(url=f"/login?next={quote(next_url)}", status_code=303)
+
+    mode_norm = _normalize_mode(mode)
 
     headers = {"Authorization": f"Bearer {token}"}
     params = {
         "project_code": project_code,
+        "mode": mode_norm,  # <<< NEW
         "page": 1,
         "size": 5000,
     }
 
     try:
-        async with httpx.AsyncClient(
-            base_url=SERVICE_A_BASE_URL, timeout=30.0
-        ) as client:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=30.0) as client:
             r = await client.get(
                 "/api/v1/report/bid_tickets/customers",
                 headers=headers,
@@ -161,7 +198,7 @@ async def print_bid_attendance(
 
     if not customers:
         return HTMLResponse(
-            "<h1>Không có khách nào đủ điều kiện trong dự án này để in.</h1>",
+            "<h1>Không có khách nào trong danh sách để in.</h1>",
             status_code=404,
         )
 
@@ -179,6 +216,7 @@ async def print_bid_attendance(
             "request": request,
             "me": me,
             "project_code": project_code,
+            "mode": mode_norm,  # <<< NEW: template có thể in tiêu đề "AUTO" / "FINAL"
             "customers": customers,
         },
     )

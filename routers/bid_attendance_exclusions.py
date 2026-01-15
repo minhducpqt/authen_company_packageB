@@ -16,6 +16,10 @@ router = APIRouter(prefix="/bid-attendance", tags=["bid_attendance"])
 
 SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 
+# IMPORTANT: Service A endpoint trả về danh sách AUTO lots (bao gồm cả lô đã bị loại)
+# Nếu bên A đặt khác, đổi đúng 1 chỗ này.
+AUTO_LOTS_PATH = "/api/v1/auction/eligibility-exclusions/auto-lots"
+
 
 # =========================================================
 # HTTP helpers
@@ -87,9 +91,15 @@ _REASON_REQUIRED_MSG = "Vui lòng nhập lý do loại (bắt buộc)."
 
 # =========================================================
 # DETAIL PAGE: 1 KHÁCH trong 1 DỰ ÁN (để Loại/Gỡ theo LOT hoặc theo CUSTOMER)
-# - Nguồn dữ liệu:
-#   1) /api/v1/report/bid_tickets?project_code&customer_id -> info KH + list lots
-#   2) /api/v1/auction/eligibility-exclusions/summary?project_id&customer_id -> trạng thái loại theo lot
+#
+# YÊU CẦU NGHIỆP VỤ:
+# - Màn detail PHẢI hiển thị đầy đủ AUTO lots gốc (kể cả lô đã bị loại),
+#   và dùng excluded_lot_ids để tô trạng thái.
+#
+# Nguồn dữ liệu (đúng):
+#   1) /api/v1/report/bid_tickets?project_code&customer_id -> lấy info khách + project_id (fallback)
+#   2) /api/v1/auction/eligibility-exclusions/summary?project_id&customer_id -> excluded_lot_ids + exclusions
+#   3) /api/v1/auction/eligibility-exclusions/auto-lots?project_id&customer_id -> AUTO lots gốc (bao gồm cả excluded)
 # =========================================================
 @router.get("/detail", response_class=HTMLResponse)
 async def bid_attendance_detail_page(
@@ -113,7 +123,9 @@ async def bid_attendance_detail_page(
 
     try:
         async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=25.0) as client:
-            # 1) Lấy dữ liệu khách + các lô tham gia (tận dụng report bid_tickets)
+            # ---------------------------------------------------------
+            # (A) LẤY CUSTOMER + PROJECT_ID (fallback base)
+            # ---------------------------------------------------------
             params = {
                 "project_code": project_code,
                 "customer_id": customer_id,
@@ -150,11 +162,15 @@ async def bid_attendance_detail_page(
                             "total_deposit_amount_per_customer_project"
                         ),
                     }
+                    # lots tạm thời = rows (report). SẼ thay bằng auto-lots nếu endpoint có.
                     lots = rows
 
-            # 2) Summary trạng thái loại theo lô (nếu có project_id)
+            # Nếu chưa có customer/project_id thì thôi
             pid = _safe_int(customer.get("project_id"))
             if pid:
+                # ---------------------------------------------------------
+                # (B) SUMMARY exclusions
+                # ---------------------------------------------------------
                 st2, js2 = await _get_json(
                     client,
                     "/api/v1/auction/eligibility-exclusions/summary",
@@ -166,10 +182,36 @@ async def bid_attendance_detail_page(
                 else:
                     summary = None
 
+                # ---------------------------------------------------------
+                # (C) AUTO LOTS (bao gồm cả excluded) — quan trọng nhất
+                # ---------------------------------------------------------
+                st3, js3 = await _get_json(
+                    client,
+                    AUTO_LOTS_PATH,
+                    headers,
+                    {"project_id": pid, "customer_id": int(customer_id)},
+                )
+                # Kỳ vọng: {"data": {"lots":[...]} } hoặc {"data":[...]}
+                if st3 == 200 and isinstance(js3, dict):
+                    d = js3.get("data")
+                    if isinstance(d, dict) and isinstance(d.get("lots"), list):
+                        lots = d.get("lots") or lots
+                    elif isinstance(d, list):
+                        lots = d
+                    # nếu A trả luôn customer trong auto-lots thì merge
+                    if isinstance(d, dict) and isinstance(d.get("customer"), dict):
+                        # ưu tiên các field đang có, chỉ fill thiếu
+                        for k, v in d["customer"].items():
+                            if customer.get(k) in (None, "", []):
+                                customer[k] = v
+                # nếu 404/500 -> giữ fallback (lots=report rows) để không chết trang
+
     except Exception as e:
         load_err = str(e)
 
-    # Map excluded_lot_ids for template render
+    # ---------------------------------------------------------
+    # excluded_lot_ids for template
+    # ---------------------------------------------------------
     excluded_lot_ids: List[int] = []
     if isinstance(summary, dict):
         for lid in (summary.get("excluded_lot_ids") or []):
@@ -177,6 +219,26 @@ async def bid_attendance_detail_page(
                 excluded_lot_ids.append(int(lid))
             except Exception:
                 pass
+
+    excluded_lot_ids = sorted(list(set(excluded_lot_ids)))
+
+    # ---------------------------------------------------------
+    # Nếu summary thiếu các con số (do A chưa trả), B tự tính "đúng nghĩa"
+    # auto_count = số AUTO lots gốc (len(lots))
+    # excluded_count = số lô trong lots mà nằm trong excluded_lot_ids
+    # remaining = auto - excluded
+    # ---------------------------------------------------------
+    if isinstance(summary, dict):
+        # chỉ fill nếu thiếu để không override A
+        if summary.get("auto_lot_count") is None:
+            summary["auto_lot_count"] = len(lots or [])
+        if summary.get("excluded_count") is None:
+            s = set(excluded_lot_ids)
+            summary["excluded_count"] = sum(1 for r in (lots or []) if _safe_int(r.get("lot_id")) in s)
+        if summary.get("remaining_lot_count") is None:
+            summary["remaining_lot_count"] = max(0, int(summary["auto_lot_count"]) - int(summary["excluded_count"]))
+        if summary.get("is_customer_excluded") is None:
+            summary["is_customer_excluded"] = (int(summary["remaining_lot_count"]) <= 0 and int(summary["auto_lot_count"]) > 0)
 
     return templates.TemplateResponse(
         "pages/bid_attendance/detail.html",
@@ -192,7 +254,7 @@ async def bid_attendance_detail_page(
             "customer": customer,
             "lots": lots,
             "summary": summary,
-            "excluded_lot_ids": sorted(list(set(excluded_lot_ids))),
+            "excluded_lot_ids": excluded_lot_ids,
         },
     )
 
@@ -215,7 +277,6 @@ async def bid_attendance_exclude_customer_action(
     if not me:
         return _redirect_login(project_code, customer_id)
 
-    # enforce confirm text
     if (confirm_text or "").strip().lower() != "tôi xác nhận":
         return _redirect_err(project_code, customer_id, _CONFIRM_MSG)
 
@@ -364,7 +425,11 @@ async def bid_attendance_clear_lot_action(
     if (confirm_text or "").strip().lower() != "tôi xác nhận":
         return _redirect_err(project_code, customer_id, _CONFIRM_MSG)
 
-    payload = {"project_id": int(project_id), "customer_id": int(customer_id), "lot_id": int(lot_id)}
+    payload = {
+        "project_id": int(project_id),
+        "customer_id": int(customer_id),
+        "lot_id": int(lot_id),
+    }
     headers = {"Authorization": f"Bearer {token}"}
 
     try:
