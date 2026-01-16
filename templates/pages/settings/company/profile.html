@@ -1,7 +1,19 @@
 {% extends "base.html" %}
 {% block content %}
 
-{% set V = item or {} %}
+{# NOTE:
+  - Router hiện tại đang truyền "company". Ở template này bạn đang dùng "item".
+  - Để không phá vỡ nơi khác, mình fallback: item -> company -> {}
+#}
+{% set V = (item or company or {}) %}
+
+{# edit policy:
+   - CAN_EDIT: quyền (role) từ server (biến can_edit)
+   - EDIT_LOCKED: trạng thái khóa sửa từ Service A (company.edit_locked)
+   - Khi không cho edit vì LOCK: popup nội dung riêng theo yêu cầu.
+#}
+{% set CAN_EDIT = (can_edit and True) %}
+{% set EDIT_LOCKED = (V.edit_locked and True) %}
 
 {# ====== Toast lỗi tải (nếu có) ====== #}
 {% if load_err %}
@@ -18,7 +30,24 @@
       <div class="mt-0.5 text-lg font-semibold text-slate-800 truncate">
         {{ (V.company_code | default('', true)) or '-' }}
       </div>
+
+      {# nhỏ gọn: show created_at + trạng thái lock #}
+      <div class="mt-1 flex flex-wrap items-center gap-2 text-xs">
+        <span class="text-slate-500">Tạo lúc:</span>
+        <span class="font-medium text-slate-700">{{ V.created_at or '-' }}</span>
+
+        {% if EDIT_LOCKED %}
+          <span class="inline-flex items-center gap-1 px-2.5 h-6 rounded-full bg-amber-50 text-amber-700 ring-1 ring-amber-200">
+            <i class="ri-lock-2-line"></i> Đã khoá chỉnh sửa
+          </span>
+        {% else %}
+          <span class="inline-flex items-center gap-1 px-2.5 h-6 rounded-full bg-slate-50 text-slate-700 ring-1 ring-slate-200">
+            <i class="ri-edit-2-line"></i> Cho phép chỉnh sửa
+          </span>
+        {% endif %}
+      </div>
     </div>
+
     <span class="shrink-0 inline-flex items-center gap-1.5 px-3 h-7 rounded-full text-xs font-medium
                 {% if V.is_active %}bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200{% else %}bg-slate-100 text-slate-600 ring-1 ring-slate-200{% endif %}">
       {% if V.is_active %}<i class="ri-check-line"></i> ACTIVE{% else %}<i class="ri-pause-line"></i> DISABLED{% endif %}
@@ -63,11 +92,17 @@
                 class="px-5 h-11 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm">
           Chỉnh sửa
         </button>
+
+        {% if EDIT_LOCKED %}
+          <span class="text-xs text-slate-500">
+            Hồ sơ đã hoạt động ổn định. Chức năng chỉnh sửa đang bị khoá.
+          </span>
+        {% endif %}
       </div>
     </div>
 
     <!-- EDIT MODE (hidden by default) -->
-    <form id="editMode" method="post" action="/settings/company/save" class="hidden">
+    <form id="editMode" method="post" action="/settings/company" class="hidden">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="md:col-span-2">
           <label class="label">Tên công ty</label>
@@ -114,7 +149,7 @@
   </div>
 </div>
 
-<!-- ===== Custom Modal (no permission) ===== -->
+<!-- ===== Custom Modal: No permission ===== -->
 <div id="noPermModal" class="fixed inset-0 z-[60] hidden">
   <div class="absolute inset-0 bg-slate-900/40"></div>
   <div class="relative mx-auto mt-32 w-[92%] max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200">
@@ -134,22 +169,46 @@
   </div>
 </div>
 
+<!-- ===== Custom Modal: Locked edit ===== -->
+<div id="lockedEditModal" class="fixed inset-0 z-[60] hidden">
+  <div class="absolute inset-0 bg-slate-900/40"></div>
+  <div class="relative mx-auto mt-32 w-[92%] max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200">
+    <div class="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
+      <i class="ri-lock-2-line text-amber-600 text-xl"></i>
+      <div class="font-semibold text-slate-800">Chức năng chỉnh sửa đã bị khoá</div>
+    </div>
+    <div class="px-5 py-4 text-slate-700 leading-relaxed">
+      Hồ sơ đã hoạt động ổn định đang khoá chức năng edit nếu cần thay đổi liên hệ đơn vị cung cấp phần mềm.
+    </div>
+    <div class="px-5 py-4 border-t border-slate-100 text-right">
+      <button id="lockedEditClose"
+              class="px-4 h-10 rounded-xl bg-amber-600 text-white hover:bg-amber-700">
+        Đã hiểu
+      </button>
+    </div>
+  </div>
+</div>
+
 <style>
   .label{ @apply block text-sm font-medium text-slate-700 mb-2; }
   .input{ @apply rounded-xl border border-slate-300 bg-white placeholder:text-slate-400 px-3; }
 </style>
 
 <script>
-  // server side flag
+  // server-side flags
   const CAN_EDIT = {{ (can_edit and True) | tojson }};
+  const EDIT_LOCKED = {{ (V.edit_locked and True) | tojson }};
 
   const $view   = document.getElementById('viewMode');
   const $edit   = document.getElementById('editMode');
   const $btnEd  = document.getElementById('btnEdit');
   const $btnCan = document.getElementById('btnCancel');
 
-  const $modal      = document.getElementById('noPermModal');
-  const $modalClose = document.getElementById('noPermClose');
+  const $noPermModal      = document.getElementById('noPermModal');
+  const $noPermClose      = document.getElementById('noPermClose');
+
+  const $lockedModal      = document.getElementById('lockedEditModal');
+  const $lockedClose      = document.getElementById('lockedEditClose');
 
   function openEdit() {
     $view.classList.add('hidden');
@@ -159,16 +218,34 @@
     $edit.classList.add('hidden');
     $view.classList.remove('hidden');
   }
-  function openNoPerm() { $modal.classList.remove('hidden'); }
-  function closeNoPerm(){ $modal.classList.add('hidden'); }
+
+  function openNoPerm() { $noPermModal.classList.remove('hidden'); }
+  function closeNoPerm(){ $noPermModal.classList.add('hidden'); }
+
+  function openLocked() { $lockedModal.classList.remove('hidden'); }
+  function closeLocked(){ $lockedModal.classList.add('hidden'); }
 
   $btnEd.addEventListener('click', () => {
-    if (CAN_EDIT) openEdit();
-    else openNoPerm();
+    // ưu tiên lock (dù có quyền vẫn không cho edit)
+    if (EDIT_LOCKED) return openLocked();
+    if (CAN_EDIT) return openEdit();
+    return openNoPerm();
   });
-  $btnCan.addEventListener('click', (e) => { e.preventDefault(); closeEdit(); });
-  $modalClose.addEventListener('click', closeNoPerm);
-  $modal.addEventListener('click', (e) => { if (e.target === $modal) closeNoPerm(); });
+
+  $btnCan?.addEventListener('click', (e) => { e.preventDefault(); closeEdit(); });
+
+  $noPermClose?.addEventListener('click', closeNoPerm);
+  $noPermModal?.addEventListener('click', (e) => { if (e.target === $noPermModal) closeNoPerm(); });
+
+  $lockedClose?.addEventListener('click', closeLocked);
+  $lockedModal?.addEventListener('click', (e) => { if (e.target === $lockedModal) closeLocked(); });
+
+  // ESC to close modals
+  window.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    closeNoPerm();
+    closeLocked();
+  });
 </script>
 
 {% endblock %}
