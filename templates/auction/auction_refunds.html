@@ -84,6 +84,16 @@
     <span class="text-xs text-slate-500">(mỗi CCCD chỉ giữ 1 dòng)</span>
   </div>
 
+  <!-- ✅ NEW: Group by CCCD (local) -->
+  <div class="flex items-center gap-2 pb-1">
+    <input id="fGroupByCccd" type="checkbox"
+           class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+    <label for="fGroupByCccd" class="text-sm text-slate-700 font-medium select-none">
+      Group theo <b>CCCD</b> (lọc local)
+    </label>
+    <span class="text-xs text-slate-500">(mỗi CCCD chỉ giữ 1 giao dịch đầu tiên)</span>
+  </div>
+
   <div class="flex items-center gap-3 ml-auto flex-wrap justify-end">
     <button type="button" id="btnResetFilters"
             class="h-10 px-4 rounded-xl border border-slate-300 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 inline-flex items-center gap-2">
@@ -148,7 +158,6 @@
             data-customer-name="{{ (r.customer_name or '')|e }}"
             data-account-name="{{ (r.account_name or '')|e }}">
 
-          <!-- ✅ Tín nhiệm: 2 dòng (STT + dot) -->
           <td class="px-4 py-3 text-center align-middle whitespace-nowrap">
             <div class="text-xs font-semibold text-slate-700">#{{ loop.index }}</div>
             <div class="mt-1 flex items-center justify-center">
@@ -157,7 +166,6 @@
           </td>
 
           <td class="px-4 py-3">
-            <!-- ✅ tên KH luôn màu bình thường; chỉ xanh khi match -->
             <div class="font-semibold text-slate-900 row-customer">{{ r.customer_name or '-' }}</div>
           </td>
 
@@ -170,7 +178,6 @@
 
           <td class="px-4 py-3 text-slate-700">
             {% if r.account_number or r.bank_code %}
-              <!-- ✅ nếu mismatch: bôi đỏ toàn bộ cụm này; nếu match: bôi xanh cả cụm -->
               <div class="text-xs row-account">
                 <div class="font-semibold">{{ r.bank_code or '' }} — {{ r.account_number or '' }}</div>
                 <div class="acc-name text-slate-600">{{ r.account_name or '' }}</div>
@@ -180,7 +187,6 @@
             {% endif %}
           </td>
 
-          <!-- ✅ Chi tiết đưa lên trước để dễ thấy -->
           <td class="px-4 py-3 text-right whitespace-nowrap">
             {% if r.id %}
               <button type="button"
@@ -193,7 +199,6 @@
             {% endif %}
           </td>
 
-          <!-- ✅ Nội dung để cuối -->
           <td class="px-4 py-3 text-xs text-slate-700">
             <div class="font-mono bg-white border border-slate-200 rounded-xl px-3 py-2">
               {{ r.content or '' }}
@@ -418,7 +423,6 @@
         accBox?.classList.add('text-emerald-700','font-semibold');
         accNameEl?.classList.add('text-emerald-700','font-semibold');
       }else{
-        // tên KH giữ nguyên
         accBox?.classList.add('text-rose-700','font-semibold');
         accNameEl?.classList.add('text-rose-700','font-semibold');
       }
@@ -426,10 +430,14 @@
   }
 
   // =========================
-  // Local filter: mismatch only + dedupe by CCCD
+  // Local filter:
+  //   - mismatch only (local)
+  //   - group by CCCD (local) -> keep first row of each CCCD
   // =========================
   function applyLocalFilter(){
     const onlyMismatch = !!document.getElementById('fMismatchOnly')?.checked;
+    const groupByCccd = !!document.getElementById('fGroupByCccd')?.checked;
+
     const seen = new Set();
 
     document.querySelectorAll('tr[data-row="1"]').forEach(tr=>{
@@ -438,23 +446,33 @@
 
       let show = true;
 
+      // mismatch filter
       if(onlyMismatch){
         if(isMatch) show = false;
+      }
 
-        if(show){
-          const key = cccd || "__NO_CCCD__";
-          if(seen.has(key)) show = false;
-          else seen.add(key);
-        }
+      // group-by CCCD filter (applies independently)
+      if(show && groupByCccd){
+        const key = cccd || "__NO_CCCD__";
+        if(seen.has(key)) show = false;
+        else seen.add(key);
+      }
+
+      // (giữ behavior cũ: mismatch-only trước đây có dedupe theo CCCD)
+      // Nếu bạn muốn giữ đúng y như cũ: khi onlyMismatch=true thì vẫn dedupe.
+      // Hiện tại: mismatch-only + group-by đều có thể cùng bật, dedupe vẫn đúng.
+      if(show && onlyMismatch && !groupByCccd){
+        const key = cccd || "__NO_CCCD__";
+        if(seen.has(key)) show = false;
+        else seen.add(key);
       }
 
       tr.classList.toggle('hidden', !show);
     });
   }
 
-  document.getElementById('fMismatchOnly')?.addEventListener('change', ()=>{
-    applyLocalFilter();
-  });
+  document.getElementById('fMismatchOnly')?.addEventListener('change', ()=> applyLocalFilter());
+  document.getElementById('fGroupByCccd')?.addEventListener('change', ()=> applyLocalFilter());
 
   applyNameColors();
   applyLocalFilter();
@@ -509,7 +527,6 @@
     subtitle.textContent = `candidate_id=${candidateId}`;
 
     try{
-      // ✅ gọi đúng route hiện có ở Service B (query-param)
       const res = await fetch(`/auction/refunds/detail.json?candidate_id=${encodeURIComponent(candidateId)}`, {
         headers: { 'Accept': 'application/json' }
       });
