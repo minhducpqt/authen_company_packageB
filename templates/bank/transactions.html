@@ -41,9 +41,6 @@
     overflow:hidden;
     box-shadow: 0 24px 60px rgba(0,0,0,.22);
     border:1px solid #e2e8f0;
-    display:flex;
-    flex-direction:column;
-    max-height: calc(100vh - 36px);
   }
   .modal-header{
     padding:14px 16px;
@@ -64,17 +61,8 @@
     font-size:12px;
     color:#64748b;
     margin-top:4px;
-    white-space:normal;
-    overflow-wrap:anywhere;
   }
-
-  /* ✅ Fix tràn nội dung: body scroll trong modal */
-  .modal-body{
-    padding: 16px;
-    overflow:auto;
-    max-height: calc(100vh - 36px - 56px - 60px);
-  }
-
+  .modal-body{ padding: 16px; }
   .modal-footer{
     padding: 12px 16px;
     border-top:1px solid #eef2f7;
@@ -99,14 +87,7 @@
     font-size: 13px;
   }
   .kv .k{ color:#64748b; }
-  .kv .v{
-    color:#0f172a;
-    font-weight:600;
-    white-space:normal;
-    overflow-wrap:anywhere;   /* ✅ wrap chuỗi dài */
-    word-break:break-word;
-  }
-
+  .kv .v{ color:#0f172a; font-weight:600; }
   .chip{
     display:inline-flex;
     align-items:center;
@@ -122,13 +103,11 @@
   .chip.matched{ background:#ecfdf5; border-color:#bbf7d0; color:#065f46; }
   .chip.unmatched{ background:#fffbeb; border-color:#fde68a; color:#92400e; }
   .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-
   .grid2{
     display:grid;
     grid-template-columns: 1fr 1fr;
     gap:12px;
   }
-
   .card{
     border:1px solid #e2e8f0;
     border-radius:14px;
@@ -144,10 +123,9 @@
     justify-content:space-between;
     gap:10px;
   }
-
   .flow{
     display:flex;
-    align-items:stretch;
+    align-items:center;
     gap:10px;
     flex-wrap:wrap;
     margin-top:4px;
@@ -157,8 +135,7 @@
     border-radius:12px;
     padding:10px 12px;
     background:#f8fafc;
-    min-width: 260px;
-    flex: 1 1 260px;
+    min-width: 240px;
   }
   .flow .box .t{
     font-size:12px;
@@ -169,31 +146,36 @@
     font-size:13px;
     color:#0f172a;
     font-weight:700;
-    overflow-wrap:anywhere;
-    word-break:break-word;
   }
   .flow .arrow{
     font-size: 18px;
     color:#94a3b8;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding: 0 4px;
   }
 
-  .muted{
-    color:#64748b;
-    font-size:12px;
-    margin-top:6px;
-    white-space:normal;
-    overflow-wrap:anywhere;
+  /* ===== Table widths + description clamp ===== */
+  th.col-desc, td.col-desc{ width: 420px; max-width: 420px; }     /* hẹp lại */
+  th.col-counter, td.col-counter{ width: 220px; max-width: 220px; } /* rộng hơn */
+  .desc-clamp{
+    display:-webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow:hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    line-height: 1.35;
+    max-height: calc(1.35em * 2);
   }
 
+  @media (max-width: 980px){
+    th.col-desc, td.col-desc{ width: 320px; max-width: 320px; }
+    th.col-counter, td.col-counter{ width: 200px; max-width: 200px; }
+  }
   @media (max-width: 720px){
     .kv{ grid-template-columns: 120px 1fr; }
     .grid2{ grid-template-columns: 1fr; }
     .flow .box{ min-width: 100%; }
-    .modal-body{ max-height: calc(100vh - 36px - 56px - 60px); }
+    th.col-desc, td.col-desc{ width: 260px; max-width: 260px; }
+    th.col-counter, td.col-counter{ width: 190px; max-width: 190px; }
   }
 </style>
 
@@ -228,7 +210,7 @@
     <div class="col-span-12 md:col-span-8">
       <label class="block text-xs text-slate-500 mb-1">Tìm kiếm</label>
       <input name="q" value="{{ filters.q }}"
-             placeholder="mô tả / TK đối ứng / TK công ty / ref_extracted / ref_no"
+             placeholder="mô tả / TK đối ứng / TK công ty / provider_uid / statement_uid / ref_extracted / ref_no"
              class="h-10 w-full rounded-lg border border-slate-300 px-3"/>
     </div>
 
@@ -261,7 +243,7 @@
       <label class="block text-xs text-slate-500 mb-1">Ref bóc tách</label>
       <div class="h-10 flex items-center gap-2 rounded-lg border border-slate-300 px-3">
         <input type="checkbox" id="no_ref_only" name="no_ref_only" {% if filters.no_ref_only %}checked{% endif %}/>
-        <label for="no_ref_only" class="text-sm">Chỉ giao dịch không có ref_extracted</label>
+        <label for="no_ref_only" class="text-sm">Giao dịch trôi nổi</label>
       </div>
     </div>
 
@@ -295,9 +277,9 @@
           <th class="px-3 py-2 border-b">Thời gian</th>
           <th class="px-3 py-2 border-b text-right">Số tiền</th>
           <th class="px-3 py-2 border-b text-right">Số dư (sau GD)</th>
-          <th class="px-3 py-2 border-b">Mô tả</th>
+          <th class="px-3 py-2 border-b col-desc">Mô tả</th>
           <th class="px-3 py-2 border-b">TK công ty</th>
-          <th class="px-3 py-2 border-b">TK đối ứng</th>
+          <th class="px-3 py-2 border-b col-counter">TK đối ứng</th>
           <th class="px-3 py-2 border-b w-24">Chi tiết</th>
         </tr>
       </thead>
@@ -309,21 +291,25 @@
           <td class="px-3 py-2 border-b">{{ loop.index + ((page.page-1) * page.size) }}</td>
           <td class="px-3 py-2 border-b font-mono js-txn-time" data-txntime="{{ t.txn_time or '' }}">{{ t.txn_time or '—' }}</td>
 
+          <!-- Số tiền (SSR) -->
           <td class="px-3 py-2 border-b text-right font-mono js-money-amount"
               data-raw="{{ t.amount }}">{{ t.amount }}</td>
 
+          <!-- Số dư sau GD (SSR) -->
           <td class="px-3 py-2 border-b text-right font-mono js-money-balance"
               data-raw="{{ t.balance_after if t.balance_after is not none else '' }}">
             {{ t.balance_after if t.balance_after is not none else '—' }}
           </td>
 
-          <td class="px-3 py-2 border-b">{{ t.description or '—' }}</td>
+          <td class="px-3 py-2 border-b col-desc">
+            <div class="desc-clamp" title="{{ t.description or '' }}">{{ t.description or '—' }}</div>
+          </td>
 
           <td class="px-3 py-2 border-b font-mono">
             {{ t.bank_code or '—' }} — {{ t.account_number or '—' }}
           </td>
 
-          <td class="px-3 py-2 border-b font-mono">
+          <td class="px-3 py-2 border-b font-mono col-counter">
             {% if t.counter_bank_code or t.counter_account %}
               {{ t.counter_bank_code or '—' }} — {{ t.counter_account or '—' }}
               {% if t.counter_bank_short_name %}
@@ -386,12 +372,10 @@
     </div>
 
     <div class="modal-body">
-      <!-- ✅ Layout mới: 2 cột (desktop), 1 cột (mobile) -->
       <div class="grid2">
-        <!-- Card 1: Tổng quan -->
         <div class="card">
           <div class="card-title">
-            <span>Tổng quan</span>
+            <span>Trạng thái & thời gian</span>
             <span id="detailChip" class="chip">—</span>
           </div>
           <div class="kv">
@@ -406,19 +390,21 @@
 
             <div class="k">Số dư sau</div>
             <div class="v mono" id="d_balance_after">—</div>
-
-            <div class="k">Tài khoản nhận</div>
-            <div class="v mono" id="d_to_acc">—</div>
           </div>
         </div>
 
-        <!-- Card 2: Nội dung/Ref nghiệp vụ (KHÔNG show provider_uid/statement_uid) -->
         <div class="card">
           <div class="card-title">
-            <span>Nội dung & tham chiếu</span>
+            <span>Tham chiếu</span>
             <span class="chip mono" id="d_ref_extracted">ref_extracted: —</span>
           </div>
           <div class="kv">
+            <div class="k">provider_uid</div>
+            <div class="v mono" id="d_provider_uid">—</div>
+
+            <div class="k">statement_uid</div>
+            <div class="v mono" id="d_statement_uid">—</div>
+
             <div class="k">ref_no</div>
             <div class="v mono" id="d_ref_no">—</div>
 
@@ -428,7 +414,6 @@
         </div>
       </div>
 
-      <!-- Card 3: Luồng tiền -->
       <div class="card mt-3">
         <div class="card-title">
           <span>Luồng tiền</span>
@@ -439,15 +424,14 @@
           <div class="box">
             <div class="t">Tài khoản nguồn (đối ứng)</div>
             <div class="b mono" id="d_from_acc">—</div>
-            <div class="muted" id="d_from_name">—</div>
-            <div class="muted" id="d_from_bank">—</div>
+            <div class="text-xs text-slate-500 mt-1" id="d_from_bank">—</div>
           </div>
 
           <div class="arrow"><i class="ri-arrow-right-line"></i></div>
 
           <div class="box">
             <div class="t">Tài khoản nhận (công ty)</div>
-            <div class="b mono" id="d_to_acc_2">—</div>
+            <div class="b mono" id="d_to_acc">—</div>
           </div>
         </div>
       </div>
@@ -502,6 +486,7 @@
     if (!value) return '—';
     const d = new Date(value);
     if (!Number.isFinite(d.getTime())) return value;
+
     if (!vnTimeFormatter) return value;
 
     const parts = vnTimeFormatter.formatToParts(d);
@@ -520,27 +505,42 @@
   function formatMoneyInt(value) {
     if (value === null || value === undefined) return '—';
     if (value === '—' || value === '') return '—';
+
     const n = Number(value);
     if (!Number.isFinite(n)) return value;
+
     const rounded = Math.round(n);
-    try { return rounded.toLocaleString('vi-VN'); }
-    catch (e) { return String(rounded).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+    try {
+      return rounded.toLocaleString('vi-VN');
+    } catch (e) {
+      return String(rounded).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
   }
 
-  function safeJsonParse(s) { try { return JSON.parse(s); } catch (e) { return null; } }
+  function safeJsonParse(s) {
+    try { return JSON.parse(s); } catch (e) { return null; }
+  }
 
   const debounce = (fn, ms=300) => {
     let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
   };
 
+  // ✅ Build params khớp Service A:
   function buildParams(overrides={}) {
-    const p = { page: state.page, size: state.size, sort: state.sort };
+    const p = {
+      page: state.page,
+      size: state.size,
+      sort: state.sort
+    };
     if (state.account_id) p.account_id = state.account_id;
     if (state.q) p.q = state.q;
+
     if (state.date_from) p.date_from = state.date_from;
     if (state.date_to) p.date_to = state.date_to;
+
     if (state.matched && state.matched !== 'ALL') p.matched = state.matched;
     if (state.no_ref_only) p.no_ref_only = 'true';
+
     Object.assign(p, overrides);
     return new URLSearchParams(p);
   }
@@ -565,25 +565,34 @@
     } else {
       tableBody.innerHTML = data.data.map((t, idx) => {
         const rowNo = (data.page - 1) * data.size + idx + 1;
+
         const time = formatTxnTime(t.txn_time || '');
         const amt  = formatMoneyInt(t.amount);
         const bal  = formatMoneyInt(t.balance_after);
+
         const desc = t.description || '—';
         const bank = t.bank_code || '—';
         const acc  = t.account_number || '—';
+
         const counterHtml = renderCounterAccount(t);
+
         const dataJson = (() => {
           try { return JSON.stringify(t).replace(/</g, '\\u003c'); } catch(e){ return '{}'; }
         })();
+
+        const descTitle = (t.description || '').replace(/"/g, '&quot;');
+
         return `
           <tr class="${rowClass(t)}" data-txn='${dataJson}'>
             <td class="px-3 py-2 border-b">${rowNo}</td>
             <td class="px-3 py-2 border-b mono">${time}</td>
             <td class="px-3 py-2 border-b text-right mono">${amt}</td>
             <td class="px-3 py-2 border-b text-right mono">${bal}</td>
-            <td class="px-3 py-2 border-b">${desc}</td>
+            <td class="px-3 py-2 border-b col-desc">
+              <div class="desc-clamp" title="${descTitle}">${desc}</div>
+            </td>
             <td class="px-3 py-2 border-b mono">${bank} — ${acc}</td>
-            <td class="px-3 py-2 border-b">${counterHtml}</td>
+            <td class="px-3 py-2 border-b col-counter">${counterHtml}</td>
             <td class="px-3 py-2 border-b">
               <button type="button" class="btn-mini js-detail-btn"><i class="ri-information-line"></i> Xem</button>
             </td>
@@ -595,6 +604,8 @@
     const totalPages = Math.floor(data.total / data.size) + (data.total % data.size > 0 ? 1 : 0);
     summary.textContent = `Tổng: ${data.total}, Trang: ${data.page}/${totalPages}`;
     renderPagination(data.page, totalPages);
+
+    // bind detail after render
     bindDetailButtons();
   }
 
@@ -660,6 +671,7 @@
     }
   }
 
+  // ===== Modal helpers =====
   function openModal() {
     modalBackdrop.style.display = 'flex';
     modalBackdrop.setAttribute('aria-hidden', 'false');
@@ -691,25 +703,22 @@
     const amt = formatMoneyInt(t.amount);
     const after = (t.balance_after === null || t.balance_after === undefined) ? '—' : formatMoneyInt(t.balance_after);
 
+    // balance_before = after - amount (best-effort)
     let before = '—';
     const nAfter = Number(t.balance_after);
     const nAmt = Number(t.amount);
-    if (Number.isFinite(nAfter) && Number.isFinite(nAmt)) before = formatMoneyInt(nAfter - nAmt);
+    if (Number.isFinite(nAfter) && Number.isFinite(nAmt)) {
+      before = formatMoneyInt(nAfter - nAmt);
+    }
 
     const bankTo = `${t.bank_code || '—'} — ${t.account_number || '—'}`;
     const fromAcc = `${t.counter_bank_code || '—'} — ${t.counter_account || '—'}`;
-
-    const refEx = (t.ref_extracted && String(t.ref_extracted).trim()) ? String(t.ref_extracted).trim() : '—';
-
     const fromBankLine = [
       (t.counter_bank_code || '—'),
       (t.counter_bank_short_name ? `(${t.counter_bank_short_name})` : ''),
       (t.counter_bank_name ? `— ${t.counter_bank_name}` : ''),
       (t.counter_bank_bin ? `— BIN ${t.counter_bank_bin}` : '')
     ].filter(Boolean).join(' ');
-
-    // ✅ counter_name (mới)
-    const counterName = (t.counter_name && String(t.counter_name).trim()) ? String(t.counter_name).trim() : '—';
 
     document.getElementById('detailTitle').textContent = 'Chi tiết giao dịch';
     document.getElementById('detailSub').innerHTML = `<span class="mono">${bankTo}</span> • <span class="mono">${time}</span>`;
@@ -721,16 +730,17 @@
     setText('d_balance_before', before);
     setText('d_balance_after', after);
 
-    setText('d_to_acc', bankTo);
-    setText('d_to_acc_2', bankTo);
-
-    document.getElementById('d_ref_extracted').textContent = `ref_extracted: ${refEx}`;
+    setText('d_provider_uid', t.provider_uid || '—');
+    setText('d_statement_uid', t.statement_uid || '—');
     setText('d_ref_no', t.ref_no || '—');
     setText('d_desc', t.description || '—');
 
+    const refEx = (t.ref_extracted && String(t.ref_extracted).trim()) ? String(t.ref_extracted).trim() : '—';
+    document.getElementById('d_ref_extracted').textContent = `ref_extracted: ${refEx}`;
+
     setText('d_from_acc', fromAcc);
-    setText('d_from_name', counterName === '—' ? '—' : `Tên đối ứng: ${counterName}`);
     setText('d_from_bank', fromBankLine || '—');
+    setText('d_to_acc', bankTo);
 
     openModal();
   }
@@ -748,10 +758,16 @@
     });
   }
 
+  // Close modal events
   modalCloseBtns.forEach(b => b.addEventListener('click', closeModal));
-  modalBackdrop.addEventListener('click', (e) => { if (e.target === modalBackdrop) closeModal(); });
-  window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modalBackdrop.style.display === 'flex') closeModal(); });
+  modalBackdrop.addEventListener('click', (e) => {
+    if (e.target === modalBackdrop) closeModal();
+  });
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modalBackdrop.style.display === 'flex') closeModal();
+  });
 
+  // ===== Filters wiring =====
   const onQuickChange = debounce(() => fetchData({ resetPage: true }), 300);
 
   ['q', 'date_from', 'date_to'].forEach(name => {
@@ -782,6 +798,7 @@
     });
   }
 
+  // ===== Initial SSR formatting =====
   function applyInitialTimeFormat() {
     const cells = document.querySelectorAll('.js-txn-time');
     cells.forEach(el => {
@@ -818,7 +835,8 @@
   applyInitialTimeFormat();
   applyInitialMoneyFormat();
   bindInitialPagination();
-  bindDetailButtons();
+  bindDetailButtons(); // SSR rows
+
 })();
 </script>
 {% endblock %}
