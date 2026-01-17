@@ -1,5 +1,202 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+  /* ===== Row highlight (matched / unmatched) ===== */
+  .txn-row { transition: background-color .12s ease; }
+  .txn-row.is-matched { background: #ecfdf5; }     /* emerald-50 */
+  .txn-row.is-unmatched { background: #fffbeb; }   /* amber-50 */
+  .txn-row:hover { background: #f1f5f9; }          /* slate-100 */
+
+  /* ===== Small detail button ===== */
+  .btn-mini{
+    height: 30px;
+    padding: 0 10px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    color:#0f172a;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-size:12px;
+    white-space:nowrap;
+  }
+  .btn-mini:hover{ background:#f8fafc; }
+  .btn-mini i{ font-size:14px; }
+
+  /* ===== Modal ===== */
+  .modal-backdrop{
+    position:fixed; inset:0;
+    background: rgba(15,23,42,.55);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding: 18px;
+    z-index: 60;
+  }
+  .modal{
+    width: min(920px, 100%);
+    background:#fff;
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow: 0 24px 60px rgba(0,0,0,.22);
+    border:1px solid #e2e8f0;
+    display:flex;
+    flex-direction:column;
+    max-height: calc(100vh - 36px);
+  }
+  .modal-header{
+    padding:14px 16px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    border-bottom:1px solid #eef2f7;
+    background: linear-gradient(180deg, #ffffff, #fbfdff);
+  }
+  .modal-title{
+    font-size: 16px;
+    font-weight: 700;
+    color:#0f172a;
+    line-height:1.2;
+  }
+  .modal-sub{
+    font-size:12px;
+    color:#64748b;
+    margin-top:4px;
+    white-space:normal;
+    overflow-wrap:anywhere;
+  }
+
+  /* ✅ Fix tràn nội dung: body scroll trong modal */
+  .modal-body{
+    padding: 16px;
+    overflow:auto;
+    max-height: calc(100vh - 36px - 56px - 60px);
+  }
+
+  .modal-footer{
+    padding: 12px 16px;
+    border-top:1px solid #eef2f7;
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+    background:#fff;
+  }
+  .btn-close{
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    background:#fff;
+  }
+  .btn-close:hover{ background:#f8fafc; }
+
+  .kv{
+    display:grid;
+    grid-template-columns: 160px 1fr;
+    gap: 10px 14px;
+    font-size: 13px;
+  }
+  .kv .k{ color:#64748b; }
+  .kv .v{
+    color:#0f172a;
+    font-weight:600;
+    white-space:normal;
+    overflow-wrap:anywhere;   /* ✅ wrap chuỗi dài */
+    word-break:break-word;
+  }
+
+  .chip{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    border: 1px solid #e2e8f0;
+    background:#f8fafc;
+    color:#0f172a;
+    white-space:nowrap;
+  }
+  .chip.matched{ background:#ecfdf5; border-color:#bbf7d0; color:#065f46; }
+  .chip.unmatched{ background:#fffbeb; border-color:#fde68a; color:#92400e; }
+  .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+  .grid2{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:12px;
+  }
+
+  .card{
+    border:1px solid #e2e8f0;
+    border-radius:14px;
+    padding:12px;
+    background:#ffffff;
+  }
+  .card-title{
+    font-size:12px;
+    color:#64748b;
+    margin-bottom:8px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+
+  .flow{
+    display:flex;
+    align-items:stretch;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:4px;
+  }
+  .flow .box{
+    border:1px solid #e2e8f0;
+    border-radius:12px;
+    padding:10px 12px;
+    background:#f8fafc;
+    min-width: 260px;
+    flex: 1 1 260px;
+  }
+  .flow .box .t{
+    font-size:12px;
+    color:#64748b;
+    margin-bottom:4px;
+  }
+  .flow .box .b{
+    font-size:13px;
+    color:#0f172a;
+    font-weight:700;
+    overflow-wrap:anywhere;
+    word-break:break-word;
+  }
+  .flow .arrow{
+    font-size: 18px;
+    color:#94a3b8;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: 0 4px;
+  }
+
+  .muted{
+    color:#64748b;
+    font-size:12px;
+    margin-top:6px;
+    white-space:normal;
+    overflow-wrap:anywhere;
+  }
+
+  @media (max-width: 720px){
+    .kv{ grid-template-columns: 120px 1fr; }
+    .grid2{ grid-template-columns: 1fr; }
+    .flow .box{ min-width: 100%; }
+    .modal-body{ max-height: calc(100vh - 36px - 56px - 60px); }
+  }
+</style>
+
 <div class="bg-white rounded-xl border border-slate-200 p-5">
   <div class="flex items-center justify-between mb-4">
     <div>
@@ -31,7 +228,7 @@
     <div class="col-span-12 md:col-span-8">
       <label class="block text-xs text-slate-500 mb-1">Tìm kiếm</label>
       <input name="q" value="{{ filters.q }}"
-             placeholder="mô tả / số TK đối ứng / số TK / ref_no / statement_uid / ref_extracted"
+             placeholder="mô tả / TK đối ứng / TK công ty / ref_extracted / ref_no"
              class="h-10 w-full rounded-lg border border-slate-300 px-3"/>
     </div>
 
@@ -49,18 +246,7 @@
              class="h-10 w-full rounded-lg border border-slate-300 px-3"/>
     </div>
 
-    <!-- Trạng thái (legacy) -->
-    <div class="col-span-6 md:col-span-2">
-      <label class="block text-xs text-slate-500 mb-1">Trạng thái</label>
-      <select name="status" class="h-10 w-full rounded-lg border border-slate-300 px-3">
-        <option value="ALL"  {% if filters.status == 'ALL' %}selected{% endif %}>— Tất cả —</option>
-        <option value="OK"   {% if filters.status == 'OK' %}selected{% endif %}>OK</option>
-        <option value="PEND" {% if filters.status == 'PEND' %}selected{% endif %}>Chờ đối soát</option>
-        <option value="ERR"  {% if filters.status == 'ERR' %}selected{% endif %}>Lỗi</option>
-      </select>
-    </div>
-
-    <!-- NEW: Matched filter -->
+    <!-- Matched filter -->
     <div class="col-span-6 md:col-span-2">
       <label class="block text-xs text-slate-500 mb-1">Matched</label>
       <select name="matched" class="h-10 w-full rounded-lg border border-slate-300 px-3">
@@ -70,8 +256,8 @@
       </select>
     </div>
 
-    <!-- NEW: Only no ref_extracted -->
-    <div class="col-span-6 md:col-span-2">
+    <!-- Only no ref_extracted -->
+    <div class="col-span-6 md:col-span-3">
       <label class="block text-xs text-slate-500 mb-1">Ref bóc tách</label>
       <div class="h-10 flex items-center gap-2 rounded-lg border border-slate-300 px-3">
         <input type="checkbox" id="no_ref_only" name="no_ref_only" {% if filters.no_ref_only %}checked{% endif %}/>
@@ -112,33 +298,53 @@
           <th class="px-3 py-2 border-b">Mô tả</th>
           <th class="px-3 py-2 border-b">TK công ty</th>
           <th class="px-3 py-2 border-b">TK đối ứng</th>
-          <th class="px-3 py-2 border-b">Ref</th>
-          <th class="px-3 py-2 border-b">Trạng thái</th>
+          <th class="px-3 py-2 border-b w-24">Chi tiết</th>
         </tr>
       </thead>
       <tbody id="tableBody">
         {% for t in page.data %}
-        <tr>
+        {% set is_matched = (t.status == 'MATCHED') or (t.matched_receipt_id is not none) %}
+        <tr class="txn-row {{ 'is-matched' if is_matched else 'is-unmatched' }}"
+            data-txn='{{ t|tojson|safe }}'>
           <td class="px-3 py-2 border-b">{{ loop.index + ((page.page-1) * page.size) }}</td>
           <td class="px-3 py-2 border-b font-mono js-txn-time" data-txntime="{{ t.txn_time or '' }}">{{ t.txn_time or '—' }}</td>
-          <!-- Số tiền (SSR) -->
+
           <td class="px-3 py-2 border-b text-right font-mono js-money-amount"
               data-raw="{{ t.amount }}">{{ t.amount }}</td>
-          <!-- Số dư sau GD (SSR) -->
+
           <td class="px-3 py-2 border-b text-right font-mono js-money-balance"
               data-raw="{{ t.balance_after if t.balance_after is not none else '' }}">
             {{ t.balance_after if t.balance_after is not none else '—' }}
           </td>
+
           <td class="px-3 py-2 border-b">{{ t.description or '—' }}</td>
-          <td class="px-3 py-2 border-b font-mono">{{ t.bank_code or '—' }} — {{ t.account_number or '—' }}</td>
-          <td class="px-3 py-2 border-b font-mono">{{ t.counter_account or '—' }}</td>
-          <td class="px-3 py-2 border-b font-mono">{{ t.ref_no or '—' }}</td>
-          <td class="px-3 py-2 border-b">{{ t.status or '—' }}</td>
+
+          <td class="px-3 py-2 border-b font-mono">
+            {{ t.bank_code or '—' }} — {{ t.account_number or '—' }}
+          </td>
+
+          <td class="px-3 py-2 border-b font-mono">
+            {% if t.counter_bank_code or t.counter_account %}
+              {{ t.counter_bank_code or '—' }} — {{ t.counter_account or '—' }}
+              {% if t.counter_bank_short_name %}
+                <div class="text-xs text-slate-500 mt-0.5">{{ t.counter_bank_short_name }}</div>
+              {% endif %}
+            {% else %}
+              —
+            {% endif %}
+          </td>
+
+          <td class="px-3 py-2 border-b">
+            <button type="button" class="btn-mini js-detail-btn">
+              <i class="ri-information-line"></i> Xem
+            </button>
+          </td>
         </tr>
         {% endfor %}
+
         {% if page.data|length == 0 %}
         <tr>
-          <td colspan="9" class="px-3 py-6 text-center text-slate-500">Không có giao dịch.</td>
+          <td colspan="8" class="px-3 py-6 text-center text-slate-500">Không có giao dịch.</td>
         </tr>
         {% endif %}
       </tbody>
@@ -168,12 +374,100 @@
   </div>
 </div>
 
+<!-- ======================= DETAIL MODAL ======================= -->
+<div id="detailModal" class="modal-backdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+    <div class="modal-header">
+      <div class="min-w-0">
+        <div id="detailTitle" class="modal-title">Chi tiết giao dịch</div>
+        <div id="detailSub" class="modal-sub">—</div>
+      </div>
+      <button type="button" class="btn-close js-modal-close"><i class="ri-close-line"></i></button>
+    </div>
+
+    <div class="modal-body">
+      <!-- ✅ Layout mới: 2 cột (desktop), 1 cột (mobile) -->
+      <div class="grid2">
+        <!-- Card 1: Tổng quan -->
+        <div class="card">
+          <div class="card-title">
+            <span>Tổng quan</span>
+            <span id="detailChip" class="chip">—</span>
+          </div>
+          <div class="kv">
+            <div class="k">Thời gian</div>
+            <div class="v mono" id="d_txn_time">—</div>
+
+            <div class="k">Số tiền</div>
+            <div class="v mono" id="d_amount">—</div>
+
+            <div class="k">Số dư trước</div>
+            <div class="v mono" id="d_balance_before">—</div>
+
+            <div class="k">Số dư sau</div>
+            <div class="v mono" id="d_balance_after">—</div>
+
+            <div class="k">Tài khoản nhận</div>
+            <div class="v mono" id="d_to_acc">—</div>
+          </div>
+        </div>
+
+        <!-- Card 2: Nội dung/Ref nghiệp vụ (KHÔNG show provider_uid/statement_uid) -->
+        <div class="card">
+          <div class="card-title">
+            <span>Nội dung & tham chiếu</span>
+            <span class="chip mono" id="d_ref_extracted">ref_extracted: —</span>
+          </div>
+          <div class="kv">
+            <div class="k">ref_no</div>
+            <div class="v mono" id="d_ref_no">—</div>
+
+            <div class="k">Mô tả</div>
+            <div class="v" id="d_desc">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Luồng tiền -->
+      <div class="card mt-3">
+        <div class="card-title">
+          <span>Luồng tiền</span>
+          <span class="text-xs text-slate-500">Nguồn → Đích</span>
+        </div>
+
+        <div class="flow">
+          <div class="box">
+            <div class="t">Tài khoản nguồn (đối ứng)</div>
+            <div class="b mono" id="d_from_acc">—</div>
+            <div class="muted" id="d_from_name">—</div>
+            <div class="muted" id="d_from_bank">—</div>
+          </div>
+
+          <div class="arrow"><i class="ri-arrow-right-line"></i></div>
+
+          <div class="box">
+            <div class="t">Tài khoản nhận (công ty)</div>
+            <div class="b mono" id="d_to_acc_2">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn-close js-modal-close">Đóng</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function() {
   const form = document.getElementById('filtersForm');
   const tableBody = document.getElementById('tableBody');
   const summary = document.getElementById('summary');
   const pagination = document.getElementById('pagination');
+
+  const modalBackdrop = document.getElementById('detailModal');
+  const modalCloseBtns = document.querySelectorAll('.js-modal-close');
 
   let state = {
     page: {{ page.page }},
@@ -182,13 +476,12 @@
     account_id: "{{ filters.account_id or '' }}",
     date_from: "{{ filters.date_from or '' }}",
     date_to: "{{ filters.date_to or '' }}",
-    status: "{{ filters.status or 'ALL' }}",
     matched: "{{ filters.matched or 'ALL' }}",
     no_ref_only: {{ 'true' if filters.no_ref_only else 'false' }},
     sort: "{{ filters.sort or '-txn_time' }}"
   };
 
-  // Formatter cho múi giờ Việt Nam (Asia/Bangkok)
+  // Formatter (Asia/Bangkok)
   let vnTimeFormatter;
   try {
     vnTimeFormatter = new Intl.DateTimeFormat('en-GB', {
@@ -209,15 +502,10 @@
     if (!value) return '—';
     const d = new Date(value);
     if (!Number.isFinite(d.getTime())) return value;
-
-    if (!vnTimeFormatter) {
-      // Fallback nếu Intl/timeZone không hỗ trợ
-      return value;
-    }
+    if (!vnTimeFormatter) return value;
 
     const parts = vnTimeFormatter.formatToParts(d);
-    let year = '0000', month = '00', day = '00', hour = '00', minute = '00', second = '00';
-
+    let year='0000', month='00', day='00', hour='00', minute='00', second='00';
     for (const p of parts) {
       if (p.type === 'year') year = p.value;
       else if (p.type === 'month') month = p.value;
@@ -229,101 +517,76 @@
     return `${year}/${month}/${day} ${hour}:${minute}:${second}`;
   }
 
-  // ===== FORMAT SỐ TIỀN: số nguyên + ngăn cách hàng nghìn =====
   function formatMoneyInt(value) {
     if (value === null || value === undefined) return '—';
     if (value === '—' || value === '') return '—';
-
     const n = Number(value);
     if (!Number.isFinite(n)) return value;
-
-    const rounded = Math.round(n); // đảm bảo không có phần thập phân
-    try {
-      return rounded.toLocaleString('vi-VN'); // 1.234.567.890
-    } catch (e) {
-      // Fallback nếu môi trường không hỗ trợ locale
-      return String(rounded).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    }
+    const rounded = Math.round(n);
+    try { return rounded.toLocaleString('vi-VN'); }
+    catch (e) { return String(rounded).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
   }
+
+  function safeJsonParse(s) { try { return JSON.parse(s); } catch (e) { return null; } }
 
   const debounce = (fn, ms=300) => {
     let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
   };
 
   function buildParams(overrides={}) {
-    const p = {
-      page: state.page,
-      size: state.size,
-      sort: state.sort
-    };
+    const p = { page: state.page, size: state.size, sort: state.sort };
     if (state.account_id) p.account_id = state.account_id;
     if (state.q) p.q = state.q;
     if (state.date_from) p.date_from = state.date_from;
     if (state.date_to) p.date_to = state.date_to;
-    if (state.status && state.status !== 'ALL') p.status = state.status;
-
-    // NEW filters
     if (state.matched && state.matched !== 'ALL') p.matched = state.matched;
     if (state.no_ref_only) p.no_ref_only = 'true';
-
     Object.assign(p, overrides);
     return new URLSearchParams(p);
   }
 
-  async function fetchData(overrides = {}) {
-    if (overrides.resetPage) {
-      state.page = 1;
-      delete overrides.resetPage;
-    }
-    const params = buildParams(overrides);
-    const url = `/giao-dich-ngan-hang/data?${params.toString()}`;
+  function rowClass(t){
+    const isMatched = (t.status === 'MATCHED') || (t.matched_receipt_id !== null && t.matched_receipt_id !== undefined);
+    return isMatched ? 'txn-row is-matched' : 'txn-row is-unmatched';
+  }
 
-    tableBody.innerHTML = `<tr><td colspan="9" class="px-3 py-6 text-center text-slate-500">Đang tải...</td></tr>`;
-
-    try {
-      const res = await fetch(url, { credentials: 'same-origin' });
-      if (!res.ok) {
-        tableBody.innerHTML = `<tr><td colspan="9" class="px-3 py-6 text-center text-rose-600">Lỗi tải dữ liệu (${res.status}).</td></tr>`;
-        return;
-      }
-      const data = await res.json();
-      render(data);
-
-      const pageUrl = new URL(window.location.href);
-      pageUrl.search = buildParams().toString();
-      window.history.replaceState({}, '', pageUrl.toString());
-    } catch (e) {
-      tableBody.innerHTML = `<tr><td colspan="9" class="px-3 py-6 text-center text-rose-600">Lỗi kết nối.</td></tr>`;
-    }
+  function renderCounterAccount(t){
+    const bankCode = t.counter_bank_code || '—';
+    const acc = t.counter_account || '—';
+    const shortName = t.counter_bank_short_name || '';
+    const line1 = `<span class="mono">${bankCode} — ${acc}</span>`;
+    const line2 = shortName ? `<div class="text-xs text-slate-500 mt-0.5">${shortName}</div>` : '';
+    return (t.counter_bank_code || t.counter_account) ? (line1 + line2) : '—';
   }
 
   function render(data) {
     if (!data.data || data.data.length === 0) {
-      tableBody.innerHTML = `<tr><td colspan="9" class="px-3 py-6 text-center text-slate-500">Không có giao dịch.</td></tr>`;
+      tableBody.innerHTML = `<tr><td colspan="8" class="px-3 py-6 text-center text-slate-500">Không có giao dịch.</td></tr>`;
     } else {
       tableBody.innerHTML = data.data.map((t, idx) => {
         const rowNo = (data.page - 1) * data.size + idx + 1;
-        const bank = t.bank_code || '—';
-        const acc  = t.account_number || '—';
-        const counter = t.counter_account || t.counter_account_no || '—';
+        const time = formatTxnTime(t.txn_time || '');
         const amt  = formatMoneyInt(t.amount);
         const bal  = formatMoneyInt(t.balance_after);
-        const timeRaw = t.txn_time || '';
-        const time = formatTxnTime(timeRaw);
         const desc = t.description || '—';
-        const ref  = t.ref_no || '—';
-        const st   = t.status || '—';
+        const bank = t.bank_code || '—';
+        const acc  = t.account_number || '—';
+        const counterHtml = renderCounterAccount(t);
+        const dataJson = (() => {
+          try { return JSON.stringify(t).replace(/</g, '\\u003c'); } catch(e){ return '{}'; }
+        })();
         return `
-          <tr>
+          <tr class="${rowClass(t)}" data-txn='${dataJson}'>
             <td class="px-3 py-2 border-b">${rowNo}</td>
-            <td class="px-3 py-2 border-b font-mono">${time}</td>
-            <td class="px-3 py-2 border-b text-right font-mono">${amt}</td>
-            <td class="px-3 py-2 border-b text-right font-mono">${bal}</td>
+            <td class="px-3 py-2 border-b mono">${time}</td>
+            <td class="px-3 py-2 border-b text-right mono">${amt}</td>
+            <td class="px-3 py-2 border-b text-right mono">${bal}</td>
             <td class="px-3 py-2 border-b">${desc}</td>
-            <td class="px-3 py-2 border-b font-mono">${bank} — ${acc}</td>
-            <td class="px-3 py-2 border-b font-mono">${counter}</td>
-            <td class="px-3 py-2 border-b font-mono">${ref}</td>
-            <td class="px-3 py-2 border-b">${st}</td>
+            <td class="px-3 py-2 border-b mono">${bank} — ${acc}</td>
+            <td class="px-3 py-2 border-b">${counterHtml}</td>
+            <td class="px-3 py-2 border-b">
+              <button type="button" class="btn-mini js-detail-btn"><i class="ri-information-line"></i> Xem</button>
+            </td>
           </tr>
         `;
       }).join('');
@@ -332,6 +595,7 @@
     const totalPages = Math.floor(data.total / data.size) + (data.total % data.size > 0 ? 1 : 0);
     summary.textContent = `Tổng: ${data.total}, Trang: ${data.page}/${totalPages}`;
     renderPagination(data.page, totalPages);
+    bindDetailButtons();
   }
 
   function renderPagination(current, totalPages) {
@@ -369,7 +633,174 @@
     });
   }
 
-  // ✅ FIX: bind click cho pagination SSR ban đầu (page 1 2 3 ... render sẵn)
+  async function fetchData(overrides = {}) {
+    if (overrides.resetPage) {
+      state.page = 1;
+      delete overrides.resetPage;
+    }
+    const params = buildParams(overrides);
+    const url = `/giao-dich-ngan-hang/data?${params.toString()}`;
+
+    tableBody.innerHTML = `<tr><td colspan="8" class="px-3 py-6 text-center text-slate-500">Đang tải...</td></tr>`;
+
+    try {
+      const res = await fetch(url, { credentials: 'same-origin' });
+      if (!res.ok) {
+        tableBody.innerHTML = `<tr><td colspan="8" class="px-3 py-6 text-center text-rose-600">Lỗi tải dữ liệu (${res.status}).</td></tr>`;
+        return;
+      }
+      const data = await res.json();
+      render(data);
+
+      const pageUrl = new URL(window.location.href);
+      pageUrl.search = buildParams().toString();
+      window.history.replaceState({}, '', pageUrl.toString());
+    } catch (e) {
+      tableBody.innerHTML = `<tr><td colspan="8" class="px-3 py-6 text-center text-rose-600">Lỗi kết nối.</td></tr>`;
+    }
+  }
+
+  function openModal() {
+    modalBackdrop.style.display = 'flex';
+    modalBackdrop.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    modalBackdrop.style.display = 'none';
+    modalBackdrop.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+
+  function badgeFor(t){
+    const isMatched = (t.status === 'MATCHED') || (t.matched_receipt_id !== null && t.matched_receipt_id !== undefined);
+    const chip = document.getElementById('detailChip');
+    chip.className = 'chip ' + (isMatched ? 'matched' : 'unmatched');
+    chip.textContent = isMatched ? 'Đã matched' : 'Chưa matched';
+    return isMatched;
+  }
+
+  function setText(id, value){
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = (value === null || value === undefined || value === '') ? '—' : String(value);
+  }
+
+  function showTxnDetail(t){
+    const time = formatTxnTime(t.txn_time || '');
+    const amt = formatMoneyInt(t.amount);
+    const after = (t.balance_after === null || t.balance_after === undefined) ? '—' : formatMoneyInt(t.balance_after);
+
+    let before = '—';
+    const nAfter = Number(t.balance_after);
+    const nAmt = Number(t.amount);
+    if (Number.isFinite(nAfter) && Number.isFinite(nAmt)) before = formatMoneyInt(nAfter - nAmt);
+
+    const bankTo = `${t.bank_code || '—'} — ${t.account_number || '—'}`;
+    const fromAcc = `${t.counter_bank_code || '—'} — ${t.counter_account || '—'}`;
+
+    const refEx = (t.ref_extracted && String(t.ref_extracted).trim()) ? String(t.ref_extracted).trim() : '—';
+
+    const fromBankLine = [
+      (t.counter_bank_code || '—'),
+      (t.counter_bank_short_name ? `(${t.counter_bank_short_name})` : ''),
+      (t.counter_bank_name ? `— ${t.counter_bank_name}` : ''),
+      (t.counter_bank_bin ? `— BIN ${t.counter_bank_bin}` : '')
+    ].filter(Boolean).join(' ');
+
+    // ✅ counter_name (mới)
+    const counterName = (t.counter_name && String(t.counter_name).trim()) ? String(t.counter_name).trim() : '—';
+
+    document.getElementById('detailTitle').textContent = 'Chi tiết giao dịch';
+    document.getElementById('detailSub').innerHTML = `<span class="mono">${bankTo}</span> • <span class="mono">${time}</span>`;
+
+    badgeFor(t);
+
+    setText('d_txn_time', time);
+    setText('d_amount', amt);
+    setText('d_balance_before', before);
+    setText('d_balance_after', after);
+
+    setText('d_to_acc', bankTo);
+    setText('d_to_acc_2', bankTo);
+
+    document.getElementById('d_ref_extracted').textContent = `ref_extracted: ${refEx}`;
+    setText('d_ref_no', t.ref_no || '—');
+    setText('d_desc', t.description || '—');
+
+    setText('d_from_acc', fromAcc);
+    setText('d_from_name', counterName === '—' ? '—' : `Tên đối ứng: ${counterName}`);
+    setText('d_from_bank', fromBankLine || '—');
+
+    openModal();
+  }
+
+  function bindDetailButtons(){
+    tableBody.querySelectorAll('.js-detail-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tr = btn.closest('tr');
+        if (!tr) return;
+        const raw = tr.getAttribute('data-txn') || '{}';
+        const t = safeJsonParse(raw);
+        if (!t) return;
+        showTxnDetail(t);
+      });
+    });
+  }
+
+  modalCloseBtns.forEach(b => b.addEventListener('click', closeModal));
+  modalBackdrop.addEventListener('click', (e) => { if (e.target === modalBackdrop) closeModal(); });
+  window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modalBackdrop.style.display === 'flex') closeModal(); });
+
+  const onQuickChange = debounce(() => fetchData({ resetPage: true }), 300);
+
+  ['q', 'date_from', 'date_to'].forEach(name => {
+    const el = form.querySelector(`[name="${name}"]`);
+    if (el) {
+      el.addEventListener('input', () => {
+        state[name] = el.value || '';
+        onQuickChange();
+      });
+    }
+  });
+
+  ['account_id', 'matched', 'sort'].forEach(name => {
+    const el = form.querySelector(`[name="${name}"]`);
+    if (el) {
+      el.addEventListener('change', () => {
+        state[name] = el.value || '';
+        fetchData({ resetPage: true });
+      });
+    }
+  });
+
+  const elNoRef = form.querySelector('#no_ref_only');
+  if (elNoRef) {
+    elNoRef.addEventListener('change', () => {
+      state.no_ref_only = !!elNoRef.checked;
+      fetchData({ resetPage: true });
+    });
+  }
+
+  function applyInitialTimeFormat() {
+    const cells = document.querySelectorAll('.js-txn-time');
+    cells.forEach(el => {
+      const raw = el.getAttribute('data-txntime');
+      el.textContent = formatTxnTime(raw);
+    });
+  }
+
+  function applyInitialMoneyFormat() {
+    document.querySelectorAll('.js-money-amount').forEach(el => {
+      const raw = el.getAttribute('data-raw') ?? el.textContent;
+      el.textContent = formatMoneyInt(raw);
+    });
+    document.querySelectorAll('.js-money-balance').forEach(el => {
+      const raw = el.getAttribute('data-raw') ?? el.textContent;
+      el.textContent = formatMoneyInt(raw);
+    });
+  }
+
   function bindInitialPagination() {
     if (!pagination) return;
     pagination.querySelectorAll('.page-link').forEach(a => {
@@ -384,70 +815,10 @@
     });
   }
 
-  // Lắng nghe thay đổi bộ lọc (auto update)
-  const onQuickChange = debounce(() => fetchData({ resetPage: true }), 300);
-
-  ['q', 'date_from', 'date_to'].forEach(name => {
-    const el = form.querySelector(`[name="${name}"]`);
-    if (el) {
-      el.addEventListener('input', () => {
-        state[name] = el.value || '';
-        onQuickChange();
-      });
-    }
-  });
-
-  // Selects
-  ['account_id', 'status', 'matched', 'sort'].forEach(name => {
-    const el = form.querySelector(`[name="${name}"]`);
-    if (el) {
-      el.addEventListener('change', () => {
-        state[name] = el.value || '';
-        fetchData({ resetPage: true });
-      });
-    }
-  });
-
-  // Checkbox: no_ref_only
-  const elNoRef = form.querySelector('#no_ref_only');
-  if (elNoRef) {
-    elNoRef.addEventListener('change', () => {
-      state.no_ref_only = !!elNoRef.checked;
-      fetchData({ resetPage: true });
-    });
-  }
-
-  // Áp dụng format thời gian cho các dòng SSR ban đầu
-  function applyInitialTimeFormat() {
-    const cells = document.querySelectorAll('.js-txn-time');
-    cells.forEach(el => {
-      const raw = el.getAttribute('data-txntime');
-      el.textContent = formatTxnTime(raw);
-    });
-  }
-
-  // Áp dụng format tiền cho các dòng SSR ban đầu
-  function applyInitialMoneyFormat() {
-    const amountCells = document.querySelectorAll('.js-money-amount');
-    amountCells.forEach(el => {
-      const raw = el.getAttribute('data-raw') ?? el.textContent;
-      el.textContent = formatMoneyInt(raw);
-    });
-
-    const balanceCells = document.querySelectorAll('.js-money-balance');
-    balanceCells.forEach(el => {
-      const raw = el.getAttribute('data-raw') ?? el.textContent;
-      el.textContent = formatMoneyInt(raw);
-    });
-  }
-
   applyInitialTimeFormat();
   applyInitialMoneyFormat();
-
-  // ✅ FIX: gọi bind cho pagination SSR ban đầu
   bindInitialPagination();
-
-  // Trang đã SSR sẵn; không auto fetch lại khi load.
+  bindDetailButtons();
 })();
 </script>
 {% endblock %}

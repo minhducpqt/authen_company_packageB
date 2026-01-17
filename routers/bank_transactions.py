@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import os
 from typing import Optional, List, Tuple, Dict, Any
 
@@ -12,6 +13,7 @@ from utils.auth import get_access_token
 SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 
 router = APIRouter()
+
 
 # -----------------------
 # Internal HTTP helpers
@@ -29,6 +31,7 @@ async def _api_get(
         timeout=25.0,
     )
 
+
 # -----------------------
 # Small util
 # -----------------------
@@ -43,6 +46,7 @@ def _to_int_or_none(v: Optional[str]) -> Optional[int]:
         return int(s)
     except Exception:
         return None
+
 
 def _match_to_bool(matched_str: Optional[str]) -> Optional[bool]:
     """
@@ -60,6 +64,7 @@ def _match_to_bool(matched_str: Optional[str]) -> Optional[bool]:
         return False
     return None
 
+
 # ============================================================
 # 1) PAGE: /giao-dich-ngan-hang — danh sách giao dịch (HTML)
 # ============================================================
@@ -67,7 +72,13 @@ def _match_to_bool(matched_str: Optional[str]) -> Optional[bool]:
 async def bank_transactions_page(
     request: Request,
     account_id: Optional[str] = Query(None),  # nhận string để không 422 khi account_id=
-    q: Optional[str] = Query(None, description="free text: mô tả / số TK đối ứng / provider_uid / statement_uid"),
+    q: Optional[str] = Query(
+        None,
+        description=(
+            "free text: description/counter_account/account_number/"
+            "provider_uid/statement_uid/ref_extracted/ref_no"
+        ),
+    ),
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     status: Optional[str] = Query("ALL"),
@@ -75,7 +86,7 @@ async def bank_transactions_page(
     no_ref_only: Optional[bool] = Query(False),  # NEW
     sort: str = Query("-txn_time"),
     page: int = Query(1, ge=1),
-    size: int = Query(50, ge=1, le=200),   # <-- mặc định 50
+    size: int = Query(50, ge=1, le=200),  # <-- mặc định 50
 ):
     token = get_access_token(request)
     print(f"[BANK] INFO ENTER PAGE token_present={bool(token)} path={request.url.path}")
@@ -122,7 +133,7 @@ async def bank_transactions_page(
         if company_code:
             params["company_code"] = company_code
 
-        # Map account_id -> bank_code + account_number (Service A dùng cặp này)
+        # Map account_id -> bank_code + account_number
         if account_id_int is not None:
             selected = next((a for a in accounts if int(a.get("id", -1)) == account_id_int), None)
             if selected:
@@ -133,19 +144,22 @@ async def bank_transactions_page(
 
         if q:
             params["q"] = q
+
+        # ✅ FIX: Service A dùng from_date/to_date (không phải date_from/date_to)
         if date_from:
-            params["date_from"] = date_from
+            params["from_date"] = date_from
         if date_to:
-            params["date_to"] = date_to
+            params["to_date"] = date_to
+
         if status and status != "ALL":
             params["status"] = status
 
-        # NEW: matched filter
+        # matched filter
         matched_bool = _match_to_bool(matched)
         if matched_bool is not None:
             params["matched"] = str(matched_bool).lower()
 
-        # NEW: no_ref_only filter
+        # no_ref_only filter
         if bool(no_ref_only):
             params["no_ref_only"] = "true"
 
@@ -185,6 +199,7 @@ async def bank_transactions_page(
         },
     )
 
+
 # ============================================================
 # 2) DATA JSON (AJAX) — cùng API Service A
 # ============================================================
@@ -196,11 +211,11 @@ async def bank_txn_data(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     status: Optional[str] = Query("ALL"),
-    matched: Optional[str] = Query("ALL"),         # NEW
-    no_ref_only: Optional[bool] = Query(False),    # NEW
+    matched: Optional[str] = Query("ALL"),  # NEW
+    no_ref_only: Optional[bool] = Query(False),  # NEW
     sort: str = Query("-txn_time"),
     page: int = Query(1, ge=1),
-    size: int = Query(50, ge=1, le=200),   # <-- mặc định 50
+    size: int = Query(50, ge=1, le=200),  # <-- mặc định 50
 ):
     token = get_access_token(request)
     if not token:
@@ -243,19 +258,22 @@ async def bank_txn_data(
 
     if q:
         params["q"] = q
+
+    # ✅ FIX: Service A dùng from_date/to_date
     if date_from:
-        params["date_from"] = date_from
+        params["from_date"] = date_from
     if date_to:
-        params["date_to"] = date_to
+        params["to_date"] = date_to
+
     if status and status != "ALL":
         params["status"] = status
 
-    # NEW: matched filter
+    # matched filter
     matched_bool = _match_to_bool(matched)
     if matched_bool is not None:
         params["matched"] = str(matched_bool).lower()
 
-    # NEW: no_ref_only
+    # no_ref_only
     if bool(no_ref_only):
         params["no_ref_only"] = "true"
 
