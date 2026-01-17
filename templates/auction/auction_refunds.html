@@ -12,7 +12,7 @@
     5.4 Hoàn tiền đặt trước
   </h1>
   <p class="text-slate-500 text-sm mt-1">
-    Danh sách hoàn theo dự án — tô màu theo <b>mức tín nhiệm tài khoản nhận hoàn</b>.
+    Danh sách hoàn theo dự án — có thể kéo ngang để xem đủ thông tin.
   </p>
 </div>
 
@@ -40,7 +40,6 @@
     </select>
   </div>
 
-  {# ✅ Filter 1: Eligible (default ELIGIBLE = Phải hoàn) #}
   <div class="flex flex-col">
     <label class="text-xs font-semibold text-slate-500 mb-1">Loại danh sách</label>
     {% set cur_eligible = (eligible or 'ELIGIBLE') %}
@@ -51,15 +50,14 @@
     </select>
   </div>
 
-  {# ✅ Filter 2: trust level (default ALL) #}
   <div class="flex flex-col">
     <label class="text-xs font-semibold text-slate-500 mb-1">Tín nhiệm</label>
     {% set cur_level = (score_level or 'ALL') %}
     <select id="fScoreLevel" name="score_level" class="h-10 rounded-xl border px-3 text-sm w-56">
       <option value="ALL" {% if cur_level == 'ALL' %}selected{% endif %}>Tất cả</option>
-      <option value="HIGH" {% if cur_level == 'HIGH' %}selected{% endif %}>Tín nhiệm cao (an toàn)</option>
+      <option value="HIGH" {% if cur_level == 'HIGH' %}selected{% endif %}>Tín nhiệm cao</option>
       <option value="MEDIUM" {% if cur_level == 'MEDIUM' %}selected{% endif %}>Tín nhiệm TB</option>
-      <option value="LOW" {% if cur_level == 'LOW' %}selected{% endif %}>Tín nhiệm thấp (cần check)</option>
+      <option value="LOW" {% if cur_level == 'LOW' %}selected{% endif %}>Tín nhiệm thấp</option>
     </select>
   </div>
 
@@ -76,6 +74,16 @@
            class="h-10 rounded-xl border px-3 text-sm w-28" min="1" max="5000">
   </div>
 
+  <!-- ✅ Local filter -->
+  <div class="flex items-center gap-2 pb-1">
+    <input id="fMismatchOnly" type="checkbox"
+           class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+    <label for="fMismatchOnly" class="text-sm text-slate-700 font-medium select-none">
+      Chỉ hiện <b>TK nhận không trùng tên</b> (lọc local)
+    </label>
+    <span class="text-xs text-slate-500">(mỗi CCCD chỉ giữ 1 dòng)</span>
+  </div>
+
   <div class="flex items-center gap-3 ml-auto flex-wrap justify-end">
     <button type="button" id="btnResetFilters"
             class="h-10 px-4 rounded-xl border border-slate-300 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 inline-flex items-center gap-2">
@@ -90,50 +98,36 @@
   </div>
 </form>
 
-<!-- Legend + Summary -->
-<div class="mb-3 flex flex-wrap items-center gap-3 text-xs text-slate-600">
-  <div class="flex items-center gap-2">
-    <span class="inline-flex w-3 h-3 rounded-full bg-emerald-400"></span>
-    <span>Cao (an toàn)</span>
-  </div>
-  <div class="flex items-center gap-2">
-    <span class="inline-flex w-3 h-3 rounded-full bg-amber-400"></span>
-    <span>TB</span>
-  </div>
-  <div class="flex items-center gap-2">
-    <span class="inline-flex w-3 h-3 rounded-full bg-rose-400"></span>
-    <span>Thấp (cần check)</span>
-  </div>
-
-  <div class="ml-auto text-sm text-slate-600 flex flex-wrap items-center gap-2">
-    {% if project_id %}
-      <span><b class="text-slate-900">{{ total }}</b> dòng</span>
-      <span class="text-slate-300">•</span>
-      <span><b class="text-slate-900 money" data-value="{{ total_amount_vnd }}">—</b> VND</span>
-    {% else %}
-      Chọn dự án để xem dữ liệu.
-    {% endif %}
-  </div>
+<!-- Summary -->
+<div class="mb-3 flex flex-wrap items-center gap-2 text-sm text-slate-600">
+  {% if project_id %}
+    <span><b class="text-slate-900">{{ total }}</b> dòng</span>
+    <span class="text-slate-300">•</span>
+    <span><b class="text-slate-900 money" data-value="{{ total_amount_vnd }}">—</b> VND</span>
+  {% else %}
+    Chọn dự án để xem dữ liệu.
+  {% endif %}
 </div>
 
 <div class="bg-white border rounded-2xl shadow-sm overflow-hidden">
   <div class="overflow-x-auto">
-    <table class="min-w-full text-sm text-slate-700">
+    <table class="min-w-[1400px] w-full text-sm text-slate-700">
       <thead class="bg-slate-50 text-slate-500 border-b">
         <tr>
-          <th class="px-4 py-2 text-left font-semibold">Tín nhiệm</th>
-          <th class="px-4 py-2 text-left font-semibold">Họ tên</th>
-          <th class="px-4 py-2 text-left font-semibold">CCCD</th>
-          <th class="px-4 py-2 text-left font-semibold">Lô</th>
-          <th class="px-4 py-2 text-right font-semibold">Số tiền hoàn</th>
-          <th class="px-4 py-2 text-left font-semibold">Tài khoản nhận</th>
-          <th class="px-4 py-2 text-left font-semibold">Nội dung CK (chuẩn)</th>
-          <th class="px-4 py-2 text-right font-semibold">Chi tiết</th>
+          <th class="px-4 py-3 text-center font-semibold w-[90px]">Tín nhiệm</th>
+          <th class="px-4 py-3 text-left font-semibold">Họ tên</th>
+          <th class="px-4 py-3 text-left font-semibold">CCCD</th>
+          <th class="px-4 py-3 text-left font-semibold">Lô</th>
+          <th class="px-4 py-3 text-right font-semibold">Số tiền hoàn</th>
+          <th class="px-4 py-3 text-left font-semibold">Tài khoản nhận</th>
+          <th class="px-4 py-3 text-right font-semibold w-[120px]">Chi tiết</th>
+          <th class="px-4 py-3 text-left font-semibold">Nội dung CK (chuẩn)</th>
         </tr>
       </thead>
 
-      <tbody class="divide-y divide-slate-100">
+      <tbody class="divide-y divide-slate-100" id="refundTbody">
       {% for r in rows %}
+        {% set cccd = (r.customer_cccd or '') %}
         {% set lvl = (r.trust_level or 'LOW') %}
         {% set sc  = (r.trust_score if r.trust_score is not none else 0) %}
 
@@ -142,35 +136,32 @@
             else ('bg-amber-50/40' if lvl == 'MEDIUM'
             else 'bg-rose-50/35')
         %}
-
         {% set dotClass =
             'bg-emerald-500' if lvl == 'HIGH'
             else ('bg-amber-500' if lvl == 'MEDIUM'
             else 'bg-rose-500')
         %}
 
-        {% set badgeClass =
-            'bg-emerald-100 text-emerald-800 border-emerald-200' if lvl == 'HIGH'
-            else ('bg-amber-100 text-amber-800 border-amber-200' if lvl == 'MEDIUM'
-            else 'bg-rose-100 text-rose-800 border-rose-200')
-        %}
+        <tr class="{{ rowClass }}"
+            data-row="1"
+            data-cccd="{{ cccd }}"
+            data-customer-name="{{ (r.customer_name or '')|e }}"
+            data-account-name="{{ (r.account_name or '')|e }}">
 
-        <tr class="{{ rowClass }}">
-          <td class="px-4 py-3 whitespace-nowrap">
-            <div class="flex items-center gap-2">
-              <span class="inline-flex w-2.5 h-2.5 rounded-full {{ dotClass }}"></span>
-              <span class="inline-flex items-center px-2 py-0.5 rounded-lg border text-xs font-semibold {{ badgeClass }}">
-                {{ 'Cao' if lvl=='HIGH' else ('TB' if lvl=='MEDIUM' else 'Thấp') }}
-              </span>
-              <span class="text-xs text-slate-600">({{ sc }})</span>
+          <!-- ✅ Tín nhiệm: 2 dòng (STT + dot) -->
+          <td class="px-4 py-3 text-center align-middle whitespace-nowrap">
+            <div class="text-xs font-semibold text-slate-700">#{{ loop.index }}</div>
+            <div class="mt-1 flex items-center justify-center">
+              <span class="inline-flex w-3 h-3 rounded-full {{ dotClass }}" title="{{ lvl }} ({{ sc }})"></span>
             </div>
           </td>
 
           <td class="px-4 py-3">
-            <div class="font-semibold text-slate-900">{{ r.customer_name or '-' }}</div>
+            <!-- ✅ tên KH luôn màu bình thường; chỉ xanh khi match -->
+            <div class="font-semibold text-slate-900 row-customer">{{ r.customer_name or '-' }}</div>
           </td>
 
-          <td class="px-4 py-3 text-slate-600 whitespace-nowrap">{{ r.customer_cccd or '' }}</td>
+          <td class="px-4 py-3 text-slate-600 whitespace-nowrap">{{ cccd }}</td>
           <td class="px-4 py-3 text-slate-600 whitespace-nowrap">{{ r.lot_code or '' }}</td>
 
           <td class="px-4 py-3 text-right whitespace-nowrap">
@@ -179,11 +170,8 @@
 
           <td class="px-4 py-3 text-slate-700">
             {% if r.account_number or r.bank_code %}
-              <div class="text-xs"
-                   data-acc-check="1"
-                   data-trust-level="{{ lvl }}"
-                   data-customer-name="{{ (r.customer_name or '')|e }}"
-                   data-account-name="{{ (r.account_name or '')|e }}">
+              <!-- ✅ nếu mismatch: bôi đỏ toàn bộ cụm này; nếu match: bôi xanh cả cụm -->
+              <div class="text-xs row-account">
                 <div class="font-semibold">{{ r.bank_code or '' }} — {{ r.account_number or '' }}</div>
                 <div class="acc-name text-slate-600">{{ r.account_name or '' }}</div>
               </div>
@@ -192,12 +180,7 @@
             {% endif %}
           </td>
 
-          <td class="px-4 py-3 text-xs text-slate-700">
-            <div class="font-mono bg-white/70 border border-slate-200 rounded-xl px-3 py-2">
-              {{ r.message_content or r.content or '' }}
-            </div>
-          </td>
-
+          <!-- ✅ Chi tiết đưa lên trước để dễ thấy -->
           <td class="px-4 py-3 text-right whitespace-nowrap">
             {% if r.id %}
               <button type="button"
@@ -208,6 +191,13 @@
             {% else %}
               <span class="text-xs text-slate-400">—</span>
             {% endif %}
+          </td>
+
+          <!-- ✅ Nội dung để cuối -->
+          <td class="px-4 py-3 text-xs text-slate-700">
+            <div class="font-mono bg-white border border-slate-200 rounded-xl px-3 py-2">
+              {{ r.content or '' }}
+            </div>
           </td>
         </tr>
       {% endfor %}
@@ -303,8 +293,8 @@
       </div>
 
       <div class="px-5 py-3 border-t border-slate-100 bg-slate-50/60 text-xs text-slate-500">
-        Gợi ý: Nếu tài khoản hoàn <b>trùng</b> tên khách (không dấu) → xanh. Nếu <b>không trùng</b> → đỏ.
-        Riêng <b>tín nhiệm cao</b> sẽ ưu tiên theo trust level (không đổi màu tên TK).
+        Nếu <b>trùng tên</b> (không dấu) → bôi xanh <b>Họ tên</b> và <b>Tài khoản nhận</b>.
+        Nếu <b>không trùng</b> → bôi đỏ <b>Tài khoản nhận</b> (tên KH giữ màu bình thường).
       </div>
     </div>
   </div>
@@ -336,11 +326,9 @@
 
     if(project) u.searchParams.set('project', project); else u.searchParams.delete('project');
 
-    // eligible: default ELIGIBLE => keep URL clean when default
     if(eligible && eligible !== 'ELIGIBLE') u.searchParams.set('eligible', eligible);
     else u.searchParams.delete('eligible');
 
-    // score_level: default ALL => keep URL clean when default
     if(scoreLevel && scoreLevel !== 'ALL') u.searchParams.set('score_level', scoreLevel);
     else u.searchParams.delete('score_level');
 
@@ -362,9 +350,9 @@
   document.getElementById('fSize')?.addEventListener('change', ()=> applyFilters(true));
   document.getElementById('fQ')?.addEventListener('input', ()=> applyFiltersDebounced());
 
+  // ✅ Reset: KHÔNG reset dự án
   document.getElementById('btnResetFilters')?.addEventListener('click', ()=>{
     const u = currentUrl();
-    u.searchParams.delete('project');
     u.searchParams.delete('eligible');
     u.searchParams.delete('score_level');
     u.searchParams.delete('q');
@@ -387,11 +375,9 @@
     el.textContent = formatVND(v);
   });
 
-  // =========================================================
-  // ✅ Account-name check: (no-accent) account_name vs customer_name
-  //   - If trust_level == HIGH: do nothing (trust overrides)
-  //   - Else: green if match, red if mismatch
-  // =========================================================
+  // =========================
+  // Name match (no-accent)
+  // =========================
   function stripAccents(s){
     s = String(s || '').trim();
     if(!s) return '';
@@ -409,26 +395,73 @@
     return (a.includes(c) || c.includes(a));
   }
 
-  document.querySelectorAll('[data-acc-check="1"]').forEach(box=>{
-    const lvl = String(box.getAttribute('data-trust-level') || 'LOW').toUpperCase();
-    if(lvl === 'HIGH') return;
+  // ✅ match => xanh (họ tên + tài khoản)
+  // ✅ mismatch => đỏ (chỉ tài khoản), họ tên giữ màu bình thường
+  function applyNameColors(){
+    document.querySelectorAll('tr[data-row="1"]').forEach(tr=>{
+      const cus = tr.getAttribute('data-customer-name') || '';
+      const acc = tr.getAttribute('data-account-name') || '';
+      const ok = namesMatch(acc, cus);
+      tr.dataset.nameMatch = ok ? "1" : "0";
 
-    const cus = box.getAttribute('data-customer-name') || '';
-    const acc = box.getAttribute('data-account-name') || '';
-    const accEl = box.querySelector('.acc-name');
-    if(!accEl) return;
+      const nameEl = tr.querySelector('.row-customer');
+      const accBox = tr.querySelector('.row-account');
+      const accNameEl = tr.querySelector('.acc-name');
 
-    if(!acc.trim() || !cus.trim()) return;
+      // reset
+      nameEl?.classList.remove('text-emerald-700','font-semibold');
+      accBox?.classList.remove('text-emerald-700','text-rose-700','font-semibold');
+      accNameEl?.classList.remove('text-emerald-700','text-rose-700','font-semibold');
 
-    if(namesMatch(acc, cus)){
-      accEl.classList.remove('text-slate-600','text-rose-700');
-      accEl.classList.add('text-emerald-700','font-semibold');
-    }else{
-      accEl.classList.remove('text-slate-600','text-emerald-700');
-      accEl.classList.add('text-rose-700','font-semibold');
-    }
+      if(ok){
+        nameEl?.classList.add('text-emerald-700','font-semibold');
+        accBox?.classList.add('text-emerald-700','font-semibold');
+        accNameEl?.classList.add('text-emerald-700','font-semibold');
+      }else{
+        // tên KH giữ nguyên
+        accBox?.classList.add('text-rose-700','font-semibold');
+        accNameEl?.classList.add('text-rose-700','font-semibold');
+      }
+    });
+  }
+
+  // =========================
+  // Local filter: mismatch only + dedupe by CCCD
+  // =========================
+  function applyLocalFilter(){
+    const onlyMismatch = !!document.getElementById('fMismatchOnly')?.checked;
+    const seen = new Set();
+
+    document.querySelectorAll('tr[data-row="1"]').forEach(tr=>{
+      const cccd = (tr.getAttribute('data-cccd') || '').trim();
+      const isMatch = (tr.dataset.nameMatch === "1");
+
+      let show = true;
+
+      if(onlyMismatch){
+        if(isMatch) show = false;
+
+        if(show){
+          const key = cccd || "__NO_CCCD__";
+          if(seen.has(key)) show = false;
+          else seen.add(key);
+        }
+      }
+
+      tr.classList.toggle('hidden', !show);
+    });
+  }
+
+  document.getElementById('fMismatchOnly')?.addEventListener('change', ()=>{
+    applyLocalFilter();
   });
 
+  applyNameColors();
+  applyLocalFilter();
+
+  // -------------------------
+  // Modal helpers
+  // -------------------------
   function badgeMeta(level){
     const lvl = String(level || 'LOW').toUpperCase();
     if (lvl === 'HIGH') return { text: 'Cao', cls: 'bg-emerald-100 text-emerald-800 border-emerald-200' };
@@ -447,7 +480,6 @@
     }
   }
 
-  // Modal
   const modal = document.getElementById('detailModal');
   const backdrop = document.getElementById('detailBackdrop');
   const btnClose = document.getElementById('dmClose');
@@ -477,9 +509,11 @@
     subtitle.textContent = `candidate_id=${candidateId}`;
 
     try{
-      const res = await fetch(`/auction/refunds/${encodeURIComponent(candidateId)}/detail.json`, {
+      // ✅ gọi đúng route hiện có ở Service B (query-param)
+      const res = await fetch(`/auction/refunds/detail.json?candidate_id=${encodeURIComponent(candidateId)}`, {
         headers: { 'Accept': 'application/json' }
       });
+
       const js = await res.json().catch(()=> ({}));
       if(!res.ok || js.ok === false){
         const msg = (js && (js.detail || js.message)) || `HTTP ${res.status}`;
