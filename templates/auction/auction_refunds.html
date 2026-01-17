@@ -2,11 +2,18 @@
 {% block title %}Hoàn tiền đặt trước{% endblock %}
 
 {% block content %}
+{% set rows = (data or {}).get('data') or [] %}
+{% set total = (data or {}).get('total') or (rows|length) %}
+{% set total_amount_vnd = (data or {}).get('total_amount_vnd') or 0 %}
+
 <div class="mb-6">
   <h1 class="text-2xl font-semibold text-slate-900 flex items-center gap-2">
     <i class="ri-refund-2-line text-indigo-600 text-3xl"></i>
     5.4 Hoàn tiền đặt trước
   </h1>
+  <p class="text-slate-500 text-sm mt-1">
+    Danh sách hoàn theo dự án — tô màu theo <b>mức tín nhiệm tài khoản nhận hoàn</b>.
+  </p>
 </div>
 
 {% if error %}
@@ -15,10 +22,6 @@
     <div class="mt-1">status={{ error.status }} | {{ (error.body or {}).get('detail') or error.body }}</div>
   </div>
 {% endif %}
-
-{% set rows = (data or {}).get('data') or [] %}
-{% set total = (data or {}).get('total') or (rows|length) %}
-{% set total_amount_vnd = (data or {}).get('total_amount_vnd') or 0 %}
 
 <form id="filtersForm" method="get"
       class="bg-white border rounded-2xl shadow-sm p-4 mb-4 flex flex-wrap gap-4 items-end"
@@ -37,12 +40,15 @@
     </select>
   </div>
 
+  {# ✅ Filter trust level #}
   <div class="flex flex-col">
-    <label class="text-xs font-semibold text-slate-500 mb-1">Loại danh sách</label>
-    <select id="fEligible" name="eligible" class="h-10 rounded-xl border px-3 text-sm w-52">
-      <option value="ELIGIBLE" {% if eligible == 'ELIGIBLE' or not eligible %}selected{% endif %}>Phải hoàn</option>
-      <option value="EXCLUDED" {% if eligible == 'EXCLUDED' %}selected{% endif %}>Bị loại (khách trúng)</option>
-      <option value="ALL" {% if eligible == 'ALL' %}selected{% endif %}>Tất cả</option>
+    <label class="text-xs font-semibold text-slate-500 mb-1">Tín nhiệm</label>
+    {% set cur_level = (score_level or 'ALL') %}
+    <select id="fScoreLevel" name="score_level" class="h-10 rounded-xl border px-3 text-sm w-56">
+      <option value="ALL" {% if cur_level == 'ALL' %}selected{% endif %}>Tất cả</option>
+      <option value="HIGH" {% if cur_level == 'HIGH' %}selected{% endif %}>Tín nhiệm cao (an toàn)</option>
+      <option value="MEDIUM" {% if cur_level == 'MEDIUM' %}selected{% endif %}>Tín nhiệm TB</option>
+      <option value="LOW" {% if cur_level == 'LOW' %}selected{% endif %}>Tín nhiệm thấp (cần check)</option>
     </select>
   </div>
 
@@ -50,7 +56,7 @@
     <label class="text-xs font-semibold text-slate-500 mb-1">Tìm kiếm</label>
     <input id="fQ" type="text" name="q" value="{{ q }}"
            class="h-10 rounded-xl border px-3 text-sm min-w-[300px]"
-           placeholder="CCCD, tên khách, SĐT, mã lô, STK...">
+           placeholder="CCCD, tên khách, mã lô, STK...">
   </div>
 
   <div class="flex flex-col">
@@ -66,24 +72,37 @@
     </button>
 
     <a id="btnExportXlsx"
-       href="{% if project_id %}/auction/refunds/export.xlsx?project_id={{ project_id }}&eligible={{ eligible or 'ELIGIBLE' }}{% else %}#{% endif %}"
+       href="{% if project_id %}/auction/refunds/export.xlsx?project_id={{ project_id }}&score_level={{ cur_level }}{% if q %}&q={{ q|urlencode }}{% endif %}{% else %}#{% endif %}"
        class="h-10 px-4 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 inline-flex items-center gap-2 {% if not project_id %}opacity-40 pointer-events-none{% endif %}">
       <i class="ri-file-excel-2-line"></i> Download XLSX
     </a>
   </div>
 </form>
 
-<!-- ✅ Summary row -->
-<div class="mb-3 text-sm text-slate-600 flex flex-wrap items-center gap-3">
-  {% if project_id %}
-    <div>
-      <span class="font-semibold text-slate-900">{{ total }}</span> dòng —
-      <span class="font-semibold text-slate-900 money" data-value="{{ total_amount_vnd }}">—</span> VND
-      <span class="text-slate-400">({{ eligible or 'ELIGIBLE' }})</span>
-    </div>
-  {% else %}
-    Chọn dự án để xem dữ liệu.
-  {% endif %}
+<!-- Legend + Summary -->
+<div class="mb-3 flex flex-wrap items-center gap-3 text-xs text-slate-600">
+  <div class="flex items-center gap-2">
+    <span class="inline-flex w-3 h-3 rounded-full bg-emerald-400"></span>
+    <span>Cao (an toàn)</span>
+  </div>
+  <div class="flex items-center gap-2">
+    <span class="inline-flex w-3 h-3 rounded-full bg-amber-400"></span>
+    <span>TB</span>
+  </div>
+  <div class="flex items-center gap-2">
+    <span class="inline-flex w-3 h-3 rounded-full bg-rose-400"></span>
+    <span>Thấp (cần check)</span>
+  </div>
+
+  <div class="ml-auto text-sm text-slate-600 flex flex-wrap items-center gap-2">
+    {% if project_id %}
+      <span><b class="text-slate-900">{{ total }}</b> dòng</span>
+      <span class="text-slate-300">•</span>
+      <span><b class="text-slate-900 money" data-value="{{ total_amount_vnd }}">—</b> VND</span>
+    {% else %}
+      Chọn dự án để xem dữ liệu.
+    {% endif %}
+  </div>
 </div>
 
 <div class="bg-white border rounded-2xl shadow-sm overflow-hidden">
@@ -91,31 +110,59 @@
     <table class="min-w-full text-sm text-slate-700">
       <thead class="bg-slate-50 text-slate-500 border-b">
         <tr>
+          <th class="px-4 py-2 text-left font-semibold">Tín nhiệm</th>
           <th class="px-4 py-2 text-left font-semibold">Họ tên</th>
           <th class="px-4 py-2 text-left font-semibold">CCCD</th>
-          {# ✅ bỏ cột SĐT #}
           <th class="px-4 py-2 text-left font-semibold">Lô</th>
           <th class="px-4 py-2 text-right font-semibold">Số tiền hoàn</th>
           <th class="px-4 py-2 text-left font-semibold">Tài khoản nhận</th>
           <th class="px-4 py-2 text-left font-semibold">Nội dung CK (chuẩn)</th>
+          <th class="px-4 py-2 text-right font-semibold">Chi tiết</th>
         </tr>
       </thead>
 
       <tbody class="divide-y divide-slate-100">
       {% for r in rows %}
-        <tr class="hover:bg-slate-50">
+        {% set lvl = (r.trust_level or 'LOW') %}
+        {% set sc  = (r.trust_score if r.trust_score is not none else 0) %}
+
+        {% set rowClass =
+            'bg-emerald-50/40' if lvl == 'HIGH'
+            else ('bg-amber-50/40' if lvl == 'MEDIUM'
+            else 'bg-rose-50/35')
+        %}
+
+        {% set dotClass =
+            'bg-emerald-500' if lvl == 'HIGH'
+            else ('bg-amber-500' if lvl == 'MEDIUM'
+            else 'bg-rose-500')
+        %}
+
+        {% set badgeClass =
+            'bg-emerald-100 text-emerald-800 border-emerald-200' if lvl == 'HIGH'
+            else ('bg-amber-100 text-amber-800 border-amber-200' if lvl == 'MEDIUM'
+            else 'bg-rose-100 text-rose-800 border-rose-200')
+        %}
+
+        <tr class="{{ rowClass }} hover:bg-slate-50/60">
+          <td class="px-4 py-3 whitespace-nowrap">
+            <div class="flex items-center gap-2">
+              <span class="inline-flex w-2.5 h-2.5 rounded-full {{ dotClass }}"></span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-lg border text-xs font-semibold {{ badgeClass }}">
+                {{ 'Cao' if lvl=='HIGH' else ('TB' if lvl=='MEDIUM' else 'Thấp') }}
+              </span>
+              <span class="text-xs text-slate-600">({{ sc }})</span>
+            </div>
+          </td>
+
           <td class="px-4 py-3">
             <div class="font-semibold text-slate-900">{{ r.customer_name or '-' }}</div>
           </td>
 
           <td class="px-4 py-3 text-slate-600 whitespace-nowrap">{{ r.customer_cccd or '' }}</td>
-
-          {# ✅ bỏ cell SĐT #}
-
           <td class="px-4 py-3 text-slate-600 whitespace-nowrap">{{ r.lot_code or '' }}</td>
 
           <td class="px-4 py-3 text-right whitespace-nowrap">
-            <!-- ưu tiên refund_amount_vnd / paid_vnd; formatter JS sẽ xử lý đúng cả "108000000.0" -->
             <span class="money" data-value="{{ r.refund_amount_vnd if r.refund_amount_vnd is not none else (r.paid_vnd if r.paid_vnd is not none else 0) }}">—</span>
           </td>
 
@@ -131,16 +178,28 @@
           </td>
 
           <td class="px-4 py-3 text-xs text-slate-700">
-            <div class="font-mono bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
-              {{ r.content or '' }}
+            <div class="font-mono bg-white/70 border border-slate-200 rounded-xl px-3 py-2">
+              {{ r.message_content or r.content or '' }}
             </div>
+          </td>
+
+          <td class="px-4 py-3 text-right whitespace-nowrap">
+            {% if r.id %}
+              <button type="button"
+                      class="btnDetail h-9 px-3 rounded-xl border border-slate-300 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-50 inline-flex items-center gap-2"
+                      data-id="{{ r.id }}">
+                <i class="ri-information-line"></i> Detail
+              </button>
+            {% else %}
+              <span class="text-xs text-slate-400">—</span>
+            {% endif %}
           </td>
         </tr>
       {% endfor %}
 
       {% if rows|length == 0 %}
         <tr>
-          <td colspan="6" class="px-4 py-6 text-center text-slate-400">
+          <td colspan="8" class="px-4 py-6 text-center text-slate-400">
             {% if project_id %}
               Không có dữ liệu theo bộ lọc hiện tại.
             {% else %}
@@ -154,8 +213,90 @@
   </div>
 </div>
 
+<!-- Detail Modal -->
+<div id="detailModal" class="fixed inset-0 z-[60] hidden">
+  <div id="detailBackdrop" class="absolute inset-0 bg-slate-900/40"></div>
+  <div class="absolute inset-0 flex items-start justify-center p-4 sm:p-6 overflow-auto">
+    <div class="w-full max-w-4xl bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div class="min-w-0">
+          <div class="text-sm font-semibold text-slate-900">Chi tiết tín nhiệm tài khoản</div>
+          <div id="dmSubtitle" class="text-xs text-slate-500 mt-0.5">—</div>
+        </div>
+        <button id="dmClose"
+                class="h-9 px-3 rounded-xl border border-slate-300 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50 inline-flex items-center gap-2">
+          <i class="ri-close-line"></i> Đóng
+        </button>
+      </div>
+
+      <div class="p-5">
+        <div id="dmLoading" class="text-sm text-slate-600">Đang tải…</div>
+        <div id="dmError" class="hidden text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl p-3"></div>
+
+        <div id="dmBody" class="hidden space-y-5">
+          <div class="rounded-2xl border border-slate-200 bg-slate-50/40 p-4">
+            <div class="flex items-center justify-between gap-3 flex-wrap">
+              <div class="text-sm font-semibold text-slate-900">Tài khoản hoàn hiện tại</div>
+              <div class="flex items-center gap-2">
+                <span id="dmCurBadge" class="inline-flex items-center px-2 py-0.5 rounded-lg border text-xs font-semibold">—</span>
+                <span class="text-xs text-slate-500">score: <b id="dmCurScore" class="text-slate-900">—</b></span>
+              </div>
+            </div>
+
+            <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+              <div class="p-3 rounded-xl bg-white border border-slate-200">
+                <div class="text-xs text-slate-500 font-semibold">Tài khoản</div>
+                <div id="dmCurAccount" class="mt-1 font-semibold text-slate-900">—</div>
+                <div id="dmCurName" class="text-xs text-slate-500 mt-0.5">—</div>
+              </div>
+              <div class="p-3 rounded-xl bg-white border border-slate-200">
+                <div class="text-xs text-slate-500 font-semibold">Tổng tiền đã chuyển</div>
+                <div class="mt-1 font-semibold text-slate-900"><span id="dmCurTotal" class="money" data-value="0">—</span> VND</div>
+                <div class="text-xs text-slate-500 mt-0.5">Số lần: <b id="dmCurSeen">—</b></div>
+              </div>
+              <div class="p-3 rounded-xl bg-white border border-slate-200">
+                <div class="text-xs text-slate-500 font-semibold">Lần giao dịch</div>
+                <div class="text-xs text-slate-500 mt-1">Xa nhất: <b id="dmCurFirst" class="text-slate-900">—</b></div>
+                <div class="text-xs text-slate-500 mt-0.5">Gần nhất: <b id="dmCurLast" class="text-slate-900">—</b></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-2xl border border-slate-200 bg-white p-4">
+            <div class="text-sm font-semibold text-slate-900">Các tài khoản khách đã dùng giao dịch với công ty</div>
+            <div class="text-xs text-slate-500 mt-1">Danh sách tham khảo để đối chiếu khi cần xác minh.</div>
+
+            <div class="mt-3 overflow-x-auto">
+              <table class="min-w-full text-sm text-slate-700">
+                <thead class="bg-slate-50 text-slate-500 border-b">
+                  <tr>
+                    <th class="px-3 py-2 text-left font-semibold">Tín nhiệm</th>
+                    <th class="px-3 py-2 text-left font-semibold">Tài khoản</th>
+                    <th class="px-3 py-2 text-right font-semibold">Tổng tiền</th>
+                    <th class="px-3 py-2 text-right font-semibold">Số lần</th>
+                    <th class="px-3 py-2 text-left font-semibold">Xa nhất</th>
+                    <th class="px-3 py-2 text-left font-semibold">Gần nhất</th>
+                  </tr>
+                </thead>
+                <tbody id="dmOtherTbody" class="divide-y divide-slate-100">
+                  <tr><td colspan="6" class="px-3 py-3 text-slate-400 text-center">—</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-5 py-3 border-t border-slate-100 bg-slate-50/60 text-xs text-slate-500">
+        Gợi ý: Nếu tài khoản hoàn <b>trùng</b> với một tài khoản đã từng chuyển vào công ty → yên tâm hơn.
+        Nếu <b>không trùng</b> → kế toán cần verify.
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
-  const DEFAULT_SIZE = 500; // default 500
+  const DEFAULT_SIZE = 500;
 
   function debounce(fn, wait){
     let t = null;
@@ -171,7 +312,7 @@
     const u = currentUrl();
 
     const project = (document.getElementById('fProject')?.value || '').trim();
-    const eligible = (document.getElementById('fEligible')?.value || 'ELIGIBLE').trim();
+    const scoreLevel = (document.getElementById('fScoreLevel')?.value || 'ALL').trim();
     const q = (document.getElementById('fQ')?.value || '').trim();
     const size = (document.getElementById('fSize')?.value || '').trim();
 
@@ -179,9 +320,9 @@
 
     if(project) u.searchParams.set('project', project); else u.searchParams.delete('project');
 
-    // keep eligible param only if not default
-    if(eligible && eligible !== 'ELIGIBLE') u.searchParams.set('eligible', eligible);
-    else u.searchParams.delete('eligible');
+    // keep score_level only if not ALL
+    if(scoreLevel && scoreLevel !== 'ALL') u.searchParams.set('score_level', scoreLevel);
+    else u.searchParams.delete('score_level');
 
     if(q) u.searchParams.set('q', q); else u.searchParams.delete('q');
 
@@ -196,22 +337,20 @@
   const applyFiltersDebounced = debounce(()=> applyFilters(true), 300);
 
   document.getElementById('fProject')?.addEventListener('change', ()=> applyFilters(true));
-  document.getElementById('fEligible')?.addEventListener('change', ()=> applyFilters(true));
+  document.getElementById('fScoreLevel')?.addEventListener('change', ()=> applyFilters(true));
   document.getElementById('fSize')?.addEventListener('change', ()=> applyFilters(true));
   document.getElementById('fQ')?.addEventListener('input', ()=> applyFiltersDebounced());
 
   document.getElementById('btnResetFilters')?.addEventListener('click', ()=>{
-    // Reset must default to "Phải hoàn" (ELIGIBLE)
     const u = currentUrl();
     u.searchParams.delete('project');
-    u.searchParams.delete('eligible');
+    u.searchParams.delete('score_level');
     u.searchParams.delete('q');
     u.searchParams.delete('size');
     u.searchParams.delete('page');
     window.location.assign(u.toString());
   });
 
-  // ✅ Money format (fix x10 bug caused by "108000000.0" -> digits-only)
   function formatVND(value){
     if (value === null || value === undefined || value === '') return '—';
     const s = String(value).trim();
@@ -224,6 +363,170 @@
   document.querySelectorAll('.money').forEach(el=>{
     const v = el.getAttribute('data-value');
     el.textContent = formatVND(v);
+  });
+
+  function badgeMeta(level){
+    const lvl = String(level || 'LOW').toUpperCase();
+    if (lvl === 'HIGH') return { text: 'Cao', cls: 'bg-emerald-100 text-emerald-800 border-emerald-200' };
+    if (lvl === 'MEDIUM') return { text: 'TB', cls: 'bg-amber-100 text-amber-800 border-amber-200' };
+    return { text: 'Thấp', cls: 'bg-rose-100 text-rose-800 border-rose-200' };
+  }
+
+  function fmtTime(s){
+    if(!s) return '—';
+    try{
+      const d = new Date(s);
+      if (Number.isNaN(d.getTime())) return String(s);
+      return d.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+    }catch(e){
+      return String(s);
+    }
+  }
+
+  // Modal
+  const modal = document.getElementById('detailModal');
+  const backdrop = document.getElementById('detailBackdrop');
+  const btnClose = document.getElementById('dmClose');
+
+  function openModal(){
+    modal?.classList.remove('hidden');
+    document.documentElement.classList.add('overflow-hidden');
+  }
+  function closeModal(){
+    modal?.classList.add('hidden');
+    document.documentElement.classList.remove('overflow-hidden');
+  }
+
+  btnClose?.addEventListener('click', closeModal);
+  backdrop?.addEventListener('click', closeModal);
+  document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal(); });
+
+  async function loadDetail(candidateId){
+    const loading = document.getElementById('dmLoading');
+    const err = document.getElementById('dmError');
+    const body = document.getElementById('dmBody');
+    const subtitle = document.getElementById('dmSubtitle');
+
+    loading.classList.remove('hidden');
+    err.classList.add('hidden');
+    body.classList.add('hidden');
+    subtitle.textContent = `candidate_id=${candidateId}`;
+
+    try{
+      const res = await fetch(`/auction/refunds/detail.json?candidate_id=${encodeURIComponent(candidateId)}`, {
+        headers: { 'Accept': 'application/json' }
+      });
+      const js = await res.json().catch(()=> ({}));
+      if(!res.ok || js.ok === false){
+        const msg = (js && (js.detail || js.message)) || `HTTP ${res.status}`;
+        throw new Error(msg);
+      }
+
+      // ✅ Correct keys from Service A:
+      // { ok: true, candidate: {...}, current_refund_account: {...}, accounts_used: [...] }
+      const cand = js.candidate || {};
+      const cur  = js.current_refund_account || {};
+      const others = js.accounts_used || [];
+
+      const curLvl = String(cur.trust_level || 'LOW').toUpperCase();
+      const curScore = (cur.trust_score ?? 0);
+
+      const b = badgeMeta(curLvl);
+      const badge = document.getElementById('dmCurBadge');
+      badge.className = `inline-flex items-center px-2 py-0.5 rounded-lg border text-xs font-semibold ${b.cls}`;
+      badge.textContent = b.text;
+
+      document.getElementById('dmCurScore').textContent = String(curScore);
+
+      const bankCode = cur.bank_code || cand.bank_code || '';
+      const accNo = cur.account_number || cand.account_number || '';
+      const accName = cur.account_name || cand.account_name || '';
+      document.getElementById('dmCurAccount').textContent =
+        `${bankCode}${bankCode && accNo ? ' — ' : ''}${accNo}`.trim() || '—';
+      document.getElementById('dmCurName').textContent = accName || '—';
+
+      const totalIn = cur.total_in_amount_vnd ?? 0;
+      const seen = cur.seen_count ?? 0;
+      const firstAt = cur.first_paid_at ?? null;
+      const lastAt = cur.last_paid_at ?? null;
+
+      const curTotalEl = document.getElementById('dmCurTotal');
+      curTotalEl.setAttribute('data-value', String(totalIn || 0));
+      curTotalEl.textContent = formatVND(totalIn || 0);
+
+      document.getElementById('dmCurSeen').textContent = String(seen || 0);
+      document.getElementById('dmCurFirst').textContent = fmtTime(firstAt);
+      document.getElementById('dmCurLast').textContent = fmtTime(lastAt);
+
+      const cname = cand.customer_name || '';
+      const cccd = cand.customer_cccd || '';
+      const lot = cand.lot_code || '';
+      subtitle.textContent = `${cname}${cname && cccd ? ' • ' : ''}${cccd}${(cname||cccd) && lot ? ' • ' : ''}${lot}`.trim() || `candidate_id=${candidateId}`;
+
+      // accounts_used table
+      const tbody = document.getElementById('dmOtherTbody');
+      tbody.innerHTML = '';
+
+      if(Array.isArray(others) && others.length){
+        for(const a of others){
+          const lvl = String(a.trust_level || 'LOW').toUpperCase();
+          const score = (a.trust_score ?? 0);
+          const bb = badgeMeta(lvl);
+
+          const aBank = a.bank_code || '';
+          const aAcc = a.account_number_raw || a.account_number_norm || '';
+          const aName = a.account_name_raw || '';
+          const aTotal = a.total_in_amount_vnd ?? 0;
+          const aSeen  = a.seen_count ?? 0;
+          const aFirst = a.first_paid_at ?? null;
+          const aLast  = a.last_paid_at ?? null;
+          const isCur = !!a.is_current_refund_account;
+
+          const tr = document.createElement('tr');
+          tr.className = isCur ? 'bg-indigo-50/60' : '';
+          tr.innerHTML = `
+            <td class="px-3 py-2 whitespace-nowrap">
+              <div class="flex items-center gap-2">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-lg border text-xs font-semibold ${bb.cls}">${bb.text}</span>
+                <span class="text-xs text-slate-500">(${score})</span>
+                ${isCur ? '<span class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200">Đang chọn</span>' : ''}
+              </div>
+            </td>
+            <td class="px-3 py-2">
+              <div class="font-semibold text-slate-900">${(aBank && aAcc) ? `${aBank} — ${aAcc}` : (aAcc || '—')}</div>
+              <div class="text-xs text-slate-500">${aName || ''}</div>
+            </td>
+            <td class="px-3 py-2 text-right whitespace-nowrap">${formatVND(aTotal || 0)}</td>
+            <td class="px-3 py-2 text-right whitespace-nowrap">${String(aSeen || 0)}</td>
+            <td class="px-3 py-2 whitespace-nowrap text-slate-600">${fmtTime(aFirst)}</td>
+            <td class="px-3 py-2 whitespace-nowrap text-slate-600">${fmtTime(aLast)}</td>
+          `;
+          tbody.appendChild(tr);
+        }
+      }else{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan="6" class="px-3 py-3 text-slate-400 text-center">Không có dữ liệu tài khoản tham khảo.</td>`;
+        tbody.appendChild(tr);
+      }
+
+      loading.classList.add('hidden');
+      err.classList.add('hidden');
+      body.classList.remove('hidden');
+    }catch(e){
+      loading.classList.add('hidden');
+      body.classList.add('hidden');
+      err.classList.remove('hidden');
+      err.textContent = `Không tải được chi tiết: ${e?.message || e}`;
+    }
+  }
+
+  document.querySelectorAll('.btnDetail').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = btn.getAttribute('data-id');
+      if(!id) return;
+      openModal();
+      await loadDetail(id);
+    });
   });
 </script>
 {% endblock %}
