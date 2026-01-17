@@ -84,7 +84,7 @@
     <span class="text-xs text-slate-500">(mỗi CCCD chỉ giữ 1 dòng)</span>
   </div>
 
-  <!-- ✅ NEW: Group by CCCD (local) -->
+  <!-- ✅ Group by CCCD (local) -->
   <div class="flex items-center gap-2 pb-1">
     <input id="fGroupByCccd" type="checkbox"
            class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
@@ -114,6 +114,10 @@
     <span><b class="text-slate-900">{{ total }}</b> dòng</span>
     <span class="text-slate-300">•</span>
     <span><b class="text-slate-900 money" data-value="{{ total_amount_vnd }}">—</b> VND</span>
+
+    <!-- ✅ NEW: visible rows count (local filter result) -->
+    <span class="text-slate-300">•</span>
+    <span>Hiển thị: <b id="visibleCount" class="text-slate-900">—</b> dòng</span>
   {% else %}
     Chọn dự án để xem dữ liệu.
   {% endif %}
@@ -355,7 +359,7 @@
   document.getElementById('fSize')?.addEventListener('change', ()=> applyFilters(true));
   document.getElementById('fQ')?.addEventListener('input', ()=> applyFiltersDebounced());
 
-  // ✅ Reset: KHÔNG reset dự án
+  // ✅ Reset: KHÔNG reset dự án + reset local checkboxes về unchecked
   document.getElementById('btnResetFilters')?.addEventListener('click', ()=>{
     const u = currentUrl();
     u.searchParams.delete('eligible');
@@ -400,8 +404,6 @@
     return (a.includes(c) || c.includes(a));
   }
 
-  // ✅ match => xanh (họ tên + tài khoản)
-  // ✅ mismatch => đỏ (chỉ tài khoản), họ tên giữ màu bình thường
   function applyNameColors(){
     document.querySelectorAll('tr[data-row="1"]').forEach(tr=>{
       const cus = tr.getAttribute('data-customer-name') || '';
@@ -413,7 +415,6 @@
       const accBox = tr.querySelector('.row-account');
       const accNameEl = tr.querySelector('.acc-name');
 
-      // reset
       nameEl?.classList.remove('text-emerald-700','font-semibold');
       accBox?.classList.remove('text-emerald-700','text-rose-700','font-semibold');
       accNameEl?.classList.remove('text-emerald-700','text-rose-700','font-semibold');
@@ -429,11 +430,15 @@
     });
   }
 
-  // =========================
-  // Local filter:
-  //   - mismatch only (local)
-  //   - group by CCCD (local) -> keep first row of each CCCD
-  // =========================
+  // ✅ NEW: count visible rows
+  function updateVisibleCount(){
+    const el = document.getElementById('visibleCount');
+    if(!el) return;
+    const rows = Array.from(document.querySelectorAll('tr[data-row="1"]'));
+    const n = rows.filter(tr=> !tr.classList.contains('hidden')).length;
+    el.textContent = n.toLocaleString('vi-VN');
+  }
+
   function applyLocalFilter(){
     const onlyMismatch = !!document.getElementById('fMismatchOnly')?.checked;
     const groupByCccd = !!document.getElementById('fGroupByCccd')?.checked;
@@ -446,21 +451,16 @@
 
       let show = true;
 
-      // mismatch filter
       if(onlyMismatch){
         if(isMatch) show = false;
       }
 
-      // group-by CCCD filter (applies independently)
       if(show && groupByCccd){
         const key = cccd || "__NO_CCCD__";
         if(seen.has(key)) show = false;
         else seen.add(key);
       }
 
-      // (giữ behavior cũ: mismatch-only trước đây có dedupe theo CCCD)
-      // Nếu bạn muốn giữ đúng y như cũ: khi onlyMismatch=true thì vẫn dedupe.
-      // Hiện tại: mismatch-only + group-by đều có thể cùng bật, dedupe vẫn đúng.
       if(show && onlyMismatch && !groupByCccd){
         const key = cccd || "__NO_CCCD__";
         if(seen.has(key)) show = false;
@@ -469,6 +469,8 @@
 
       tr.classList.toggle('hidden', !show);
     });
+
+    updateVisibleCount();
   }
 
   document.getElementById('fMismatchOnly')?.addEventListener('change', ()=> applyLocalFilter());
@@ -476,6 +478,7 @@
 
   applyNameColors();
   applyLocalFilter();
+  updateVisibleCount();
 
   // -------------------------
   // Modal helpers
