@@ -40,7 +40,18 @@
     </select>
   </div>
 
-  {# ✅ Filter trust level #}
+  {# ✅ Filter 1: Eligible (default ELIGIBLE = Phải hoàn) #}
+  <div class="flex flex-col">
+    <label class="text-xs font-semibold text-slate-500 mb-1">Loại danh sách</label>
+    {% set cur_eligible = (eligible or 'ELIGIBLE') %}
+    <select id="fEligible" name="eligible" class="h-10 rounded-xl border px-3 text-sm w-56">
+      <option value="ELIGIBLE" {% if cur_eligible == 'ELIGIBLE' %}selected{% endif %}>Phải hoàn</option>
+      <option value="EXCLUDED" {% if cur_eligible == 'EXCLUDED' %}selected{% endif %}>Không hoàn (khách trúng)</option>
+      <option value="ALL" {% if cur_eligible == 'ALL' %}selected{% endif %}>Tất cả</option>
+    </select>
+  </div>
+
+  {# ✅ Filter 2: trust level (default ALL) #}
   <div class="flex flex-col">
     <label class="text-xs font-semibold text-slate-500 mb-1">Tín nhiệm</label>
     {% set cur_level = (score_level or 'ALL') %}
@@ -72,7 +83,7 @@
     </button>
 
     <a id="btnExportXlsx"
-       href="{% if project_id %}/auction/refunds/export.xlsx?project_id={{ project_id }}&score_level={{ cur_level }}{% if q %}&q={{ q|urlencode }}{% endif %}{% else %}#{% endif %}"
+       href="{% if project_id %}/auction/refunds/export.xlsx?project_id={{ project_id }}&eligible={{ cur_eligible }}&score_level={{ cur_level }}{% if q %}&q={{ q|urlencode }}{% endif %}{% else %}#{% endif %}"
        class="h-10 px-4 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 inline-flex items-center gap-2 {% if not project_id %}opacity-40 pointer-events-none{% endif %}">
       <i class="ri-file-excel-2-line"></i> Download XLSX
     </a>
@@ -144,7 +155,7 @@
             else 'bg-rose-100 text-rose-800 border-rose-200')
         %}
 
-        <tr class="{{ rowClass }} hover:bg-slate-50/60">
+        <tr class="{{ rowClass }}">
           <td class="px-4 py-3 whitespace-nowrap">
             <div class="flex items-center gap-2">
               <span class="inline-flex w-2.5 h-2.5 rounded-full {{ dotClass }}"></span>
@@ -168,9 +179,13 @@
 
           <td class="px-4 py-3 text-slate-700">
             {% if r.account_number or r.bank_code %}
-              <div class="text-xs">
+              <div class="text-xs"
+                   data-acc-check="1"
+                   data-trust-level="{{ lvl }}"
+                   data-customer-name="{{ (r.customer_name or '')|e }}"
+                   data-account-name="{{ (r.account_name or '')|e }}">
                 <div class="font-semibold">{{ r.bank_code or '' }} — {{ r.account_number or '' }}</div>
-                <div class="text-slate-600">{{ r.account_name or '' }}</div>
+                <div class="acc-name text-slate-600">{{ r.account_name or '' }}</div>
               </div>
             {% else %}
               <span class="text-slate-400 text-xs">Chưa có TK hoàn</span>
@@ -288,8 +303,8 @@
       </div>
 
       <div class="px-5 py-3 border-t border-slate-100 bg-slate-50/60 text-xs text-slate-500">
-        Gợi ý: Nếu tài khoản hoàn <b>trùng</b> với một tài khoản đã từng chuyển vào công ty → yên tâm hơn.
-        Nếu <b>không trùng</b> → kế toán cần verify.
+        Gợi ý: Nếu tài khoản hoàn <b>trùng</b> tên khách (không dấu) → xanh. Nếu <b>không trùng</b> → đỏ.
+        Riêng <b>tín nhiệm cao</b> sẽ ưu tiên theo trust level (không đổi màu tên TK).
       </div>
     </div>
   </div>
@@ -312,6 +327,7 @@
     const u = currentUrl();
 
     const project = (document.getElementById('fProject')?.value || '').trim();
+    const eligible = (document.getElementById('fEligible')?.value || 'ELIGIBLE').trim();
     const scoreLevel = (document.getElementById('fScoreLevel')?.value || 'ALL').trim();
     const q = (document.getElementById('fQ')?.value || '').trim();
     const size = (document.getElementById('fSize')?.value || '').trim();
@@ -320,7 +336,11 @@
 
     if(project) u.searchParams.set('project', project); else u.searchParams.delete('project');
 
-    // keep score_level only if not ALL
+    // eligible: default ELIGIBLE => keep URL clean when default
+    if(eligible && eligible !== 'ELIGIBLE') u.searchParams.set('eligible', eligible);
+    else u.searchParams.delete('eligible');
+
+    // score_level: default ALL => keep URL clean when default
     if(scoreLevel && scoreLevel !== 'ALL') u.searchParams.set('score_level', scoreLevel);
     else u.searchParams.delete('score_level');
 
@@ -337,6 +357,7 @@
   const applyFiltersDebounced = debounce(()=> applyFilters(true), 300);
 
   document.getElementById('fProject')?.addEventListener('change', ()=> applyFilters(true));
+  document.getElementById('fEligible')?.addEventListener('change', ()=> applyFilters(true));
   document.getElementById('fScoreLevel')?.addEventListener('change', ()=> applyFilters(true));
   document.getElementById('fSize')?.addEventListener('change', ()=> applyFilters(true));
   document.getElementById('fQ')?.addEventListener('input', ()=> applyFiltersDebounced());
@@ -344,6 +365,7 @@
   document.getElementById('btnResetFilters')?.addEventListener('click', ()=>{
     const u = currentUrl();
     u.searchParams.delete('project');
+    u.searchParams.delete('eligible');
     u.searchParams.delete('score_level');
     u.searchParams.delete('q');
     u.searchParams.delete('size');
@@ -363,6 +385,48 @@
   document.querySelectorAll('.money').forEach(el=>{
     const v = el.getAttribute('data-value');
     el.textContent = formatVND(v);
+  });
+
+  // =========================================================
+  // ✅ Account-name check: (no-accent) account_name vs customer_name
+  //   - If trust_level == HIGH: do nothing (trust overrides)
+  //   - Else: green if match, red if mismatch
+  // =========================================================
+  function stripAccents(s){
+    s = String(s || '').trim();
+    if(!s) return '';
+    s = s.replaceAll('Đ','D').replaceAll('đ','d');
+    try{
+      s = s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').normalize('NFC');
+    }catch(e){}
+    return s.toLowerCase().replace(/\s+/g,' ').trim();
+  }
+
+  function namesMatch(accName, cusName){
+    const a = stripAccents(accName);
+    const c = stripAccents(cusName);
+    if(!a || !c) return false;
+    return (a.includes(c) || c.includes(a));
+  }
+
+  document.querySelectorAll('[data-acc-check="1"]').forEach(box=>{
+    const lvl = String(box.getAttribute('data-trust-level') || 'LOW').toUpperCase();
+    if(lvl === 'HIGH') return;
+
+    const cus = box.getAttribute('data-customer-name') || '';
+    const acc = box.getAttribute('data-account-name') || '';
+    const accEl = box.querySelector('.acc-name');
+    if(!accEl) return;
+
+    if(!acc.trim() || !cus.trim()) return;
+
+    if(namesMatch(acc, cus)){
+      accEl.classList.remove('text-slate-600','text-rose-700');
+      accEl.classList.add('text-emerald-700','font-semibold');
+    }else{
+      accEl.classList.remove('text-slate-600','text-emerald-700');
+      accEl.classList.add('text-rose-700','font-semibold');
+    }
   });
 
   function badgeMeta(level){
@@ -413,7 +477,7 @@
     subtitle.textContent = `candidate_id=${candidateId}`;
 
     try{
-      const res = await fetch(`/auction/refunds/detail.json?candidate_id=${encodeURIComponent(candidateId)}`, {
+      const res = await fetch(`/auction/refunds/${encodeURIComponent(candidateId)}/detail.json`, {
         headers: { 'Accept': 'application/json' }
       });
       const js = await res.json().catch(()=> ({}));
@@ -422,8 +486,6 @@
         throw new Error(msg);
       }
 
-      // ✅ Correct keys from Service A:
-      // { ok: true, candidate: {...}, current_refund_account: {...}, accounts_used: [...] }
       const cand = js.candidate || {};
       const cur  = js.current_refund_account || {};
       const others = js.accounts_used || [];
@@ -463,7 +525,6 @@
       const lot = cand.lot_code || '';
       subtitle.textContent = `${cname}${cname && cccd ? ' • ' : ''}${cccd}${(cname||cccd) && lot ? ' • ' : ''}${lot}`.trim() || `candidate_id=${candidateId}`;
 
-      // accounts_used table
       const tbody = document.getElementById('dmOtherTbody');
       tbody.innerHTML = '';
 

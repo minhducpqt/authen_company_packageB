@@ -1,3 +1,4 @@
+# routers/deposit_refunds.py  (Service B)
 from __future__ import annotations
 
 import os
@@ -10,7 +11,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from utils.templates import templates
 from utils.auth import get_access_token
 
-router = APIRouter(tags=["refunds"])
+router = APIRouter(tags=["auction:refunds"])
 
 SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 
@@ -19,12 +20,13 @@ SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 # Logging / errors
 # =========================================================
 def _log(msg: str):
-    print(f"[REFUNDS_B] {msg}")
+    print(f"[DEPOSIT_REFUNDS_B] {msg}")
 
 
 def _preview_body(data: Any, limit: int = 350) -> str:
     try:
         import json
+
         s = json.dumps(data, ensure_ascii=False)
     except Exception:
         s = str(data)
@@ -60,7 +62,12 @@ async def _get_json(path: str, token: str, params: Dict[str, Any] | None = None)
     return js
 
 
-async def _post_json(path: str, token: str, params: Dict[str, Any] | None = None, json_body: Any | None = None) -> Any:
+async def _post_json(
+    path: str,
+    token: str,
+    params: Dict[str, Any] | None = None,
+    json_body: Any | None = None,
+) -> Any:
     url = SERVICE_A_BASE_URL.rstrip("/") + path
     _log(f"POST {url} params={params}")
     async with httpx.AsyncClient(timeout=120.0) as client:
@@ -80,7 +87,11 @@ async def _post_json(path: str, token: str, params: Dict[str, Any] | None = None
     return js
 
 
-async def _get_bytes(path: str, token: str, params: Dict[str, Any] | None = None) -> Tuple[int, bytes, Dict[str, str]]:
+async def _get_bytes(
+    path: str,
+    token: str,
+    params: Dict[str, Any] | None = None,
+) -> Tuple[int, bytes, Dict[str, str]]:
     url = SERVICE_A_BASE_URL.rstrip("/") + path
     _log(f"GET(BYTES) {url} params={params}")
     async with httpx.AsyncClient(timeout=180.0) as client:
@@ -126,14 +137,25 @@ def _norm_score_level(s: str) -> str:
     return s if s in ("ALL", "LOW", "MEDIUM", "HIGH") else "ALL"
 
 
+def _norm_eligible(s: str) -> str:
+    """
+    UI có thể dùng: ELIGIBLE | EXCLUDED | ALL
+    (khớp với A)
+    """
+    s = (s or "").upper().strip()
+    return s if s in ("ELIGIBLE", "EXCLUDED", "ALL") else "ELIGIBLE"
+
+
 # =========================================================
-# 1) PAGE: Refund candidates (A: /api/v1/refunds)
+# 1) PAGE: Refund candidates
+#    A: GET /api/v1/auction/refunds
 # =========================================================
 @router.get("/auction/refunds", response_class=HTMLResponse)
-async def refunds_page(
+async def refund_candidates_page(
     request: Request,
     project: str = Query("", alias="project"),
-    score_level: str = Query("ALL", alias="score_level"),  # ✅ NEW
+    score_level: str = Query("ALL", alias="score_level"),  # UI default ALL
+    eligible: str = Query("ELIGIBLE", alias="eligible"),   # optional (A supports)
     q: str = Query(""),
     page: int = Query(1, ge=1),
     size: int = Query(500, ge=1, le=5000),
@@ -148,8 +170,9 @@ async def refunds_page(
     project_id = None
 
     score_level = _norm_score_level(score_level)
+    eligible = _norm_eligible(eligible)
 
-    # Load projects (same behavior)
+    # Load projects (giữ hành vi cũ)
     try:
         candidates = [
             ("/api/v1/projects", {"page": 1, "size": 2000}),
@@ -180,24 +203,31 @@ async def refunds_page(
         try:
             params = {
                 "project_id": int(project_id),
+                "eligible": eligible,   # ✅ A supports
                 "q": q or "",
-                "score_level": score_level,
                 "page": page,
                 "size": size,
             }
-            data = await _get_json("/api/v1/refunds", token, params=params)
+
+            # score_level: chỉ gửi nếu bạn đã bổ sung filter này ở A
+            # (Nếu A chưa hỗ trợ, có thể comment 2 dòng dưới)
+            if score_level and score_level != "ALL":
+                params["score_level"] = score_level
+
+            data = await _get_json("/api/v1/auction/refunds", token, params=params)
         except ServiceAError as e:
             error = {"status": e.status, "body": e.body}
             data = None
 
     return templates.TemplateResponse(
-        "auction/auction_refunds.html",
+        "auction/auction_refunds.html",  # ✅ đúng path template
         {
             "request": request,
             "projects": projects,
             "project": project,
             "project_id": project_id,
             "score_level": score_level,
+            "eligible": eligible,
             "q": q,
             "page": page,
             "size": size,
@@ -208,10 +238,11 @@ async def refunds_page(
 
 
 # =========================================================
-# 2) AJAX: Detail popup (A: /api/v1/refunds/{id}/detail)
+# 2) AJAX: Detail popup
+#    A: GET /api/v1/auction/refunds/{id}/detail
 # =========================================================
 @router.get("/auction/refunds/detail.json")
-async def refunds_detail_json(
+async def refund_candidate_detail_json(
     request: Request,
     candidate_id: int = Query(..., ge=1),
 ):
@@ -220,17 +251,17 @@ async def refunds_detail_json(
         return JSONResponse({"ok": False, "detail": "Not authenticated"}, status_code=401)
 
     try:
-        js = await _get_json(f"/api/v1/refunds/{int(candidate_id)}/detail", token, params=None)
+        js = await _get_json(f"/api/v1/auction/refunds/{int(candidate_id)}/detail", token, params=None)
         return JSONResponse(js)
     except ServiceAError as e:
         return JSONResponse({"ok": False, "status": e.status, "body": e.body}, status_code=500)
 
 
 # =========================================================
-# 3) Optional rebuild (keep if exists in your A)
+# 3) Rebuild snapshot (A: POST /api/v1/auction/refunds/rebuild)
 # =========================================================
 @router.post("/auction/refunds/rebuild")
-async def refunds_rebuild(request: Request):
+async def rebuild_refund_candidates(request: Request):
     token = get_access_token(request)
     if not token:
         return JSONResponse({"ok": False, "detail": "Not authenticated"}, status_code=401)
@@ -248,12 +279,14 @@ async def refunds_rebuild(request: Request):
 
 
 # =========================================================
-# 4) Export XLSX proxy (A: /api/v1/refunds/export.xlsx)
+# 4) Export XLSX proxy
+#    A: GET /api/v1/auction/refunds/export.xlsx
 # =========================================================
 @router.get("/auction/refunds/export.xlsx")
-async def refunds_export_xlsx(
+async def export_refunds_xlsx_proxy(
     request: Request,
     project_id: int = Query(..., ge=1),
+    eligible: str = Query("ELIGIBLE"),
     score_level: str = Query("ALL"),
     q: str = Query(""),
 ):
@@ -261,28 +294,40 @@ async def refunds_export_xlsx(
     if not token:
         return RedirectResponse(url="/public/login", status_code=302)
 
+    eligible = _norm_eligible(eligible)
     score_level = _norm_score_level(score_level)
+
+    params: Dict[str, Any] = {
+        "project_id": int(project_id),
+        "eligible": eligible,
+    }
+
+    # score_level/q: chỉ gửi nếu A hỗ trợ (A có thể ignore)
+    if score_level and score_level != "ALL":
+        params["score_level"] = score_level
+    if q:
+        params["q"] = q
 
     try:
         status, content, headers = await _get_bytes(
-            "/api/v1/refunds/export.xlsx",
+            "/api/v1/auction/refunds/export.xlsx",
             token,
-            params={
-                "project_id": int(project_id),
-                "score_level": score_level,
-                "q": q or "",
-            },
+            params=params,
         )
         if status >= 400:
             try:
                 import json
+
                 js = json.loads(content.decode("utf-8", errors="ignore"))
             except Exception:
                 js = {"raw": content[:400].decode("utf-8", errors="ignore")}
             raise ServiceAError(status, js)
 
         cd = headers.get("content-disposition") or headers.get("Content-Disposition")
-        resp_headers = {"Content-Disposition": cd or f'attachment; filename="refunds_candidates_project_{project_id}.xlsx"'}
+        resp_headers = {
+            "Content-Disposition": cd
+            or f'attachment; filename="refunds_project_{project_id}.xlsx"'
+        }
 
         return Response(
             content=content,
