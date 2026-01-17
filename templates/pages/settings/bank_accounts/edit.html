@@ -6,11 +6,34 @@
       action="{% if mode == 'create' %}/settings/bank-accounts/create{% else %}/settings/bank-accounts/{{ item.id }}/edit{% endif %}"
       class="max-w-4xl">
 
+  {# ====== Error banner (from redirect err_msg) ====== #}
   {% if load_err %}
-    <div class="p-3 rounded bg-red-50 text-red-700 text-sm mb-4">{{ load_err }}</div>
+    <div class="mb-4 p-3 rounded-xl bg-rose-50 text-rose-700 text-sm border border-rose-100 flex items-start gap-2">
+      <i class="ri-error-warning-line text-lg mt-0.5"></i>
+      <div class="min-w-0">{{ load_err }}</div>
+    </div>
   {% endif %}
 
   <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 md:p-8">
+    <div class="flex items-start justify-between gap-4 mb-6">
+      <div>
+        <h2 class="text-xl font-semibold text-slate-800">
+          {% if mode == 'create' %}Thêm tài khoản ngân hàng{% else %}Sửa tài khoản ngân hàng{% endif %}
+        </h2>
+        <p class="text-sm text-slate-500 mt-1">
+          {% if mode == 'create' %}
+            Nhập đúng số tài khoản để hệ thống nhận tiền chính xác.
+          {% else %}
+            Một số trường được khoá để đảm bảo an toàn dữ liệu.
+          {% endif %}
+        </p>
+      </div>
+      <a href="/settings/bank-accounts"
+         class="h-10 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm text-slate-700 inline-flex items-center gap-2">
+        <i class="ri-arrow-left-line"></i> Danh sách
+      </a>
+    </div>
+
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
 
       {# ====== BANK PICKER ====== #}
@@ -19,46 +42,52 @@
           Ngân hàng <span class="text-rose-600">*</span>
         </label>
 
-        {# Luôn gửi bank_code lên server #}
+        {# Always submit bank_code #}
         <input type="hidden" name="bank_code" id="bank_code"
                value="{{ (item.bank_code if item else '') or '' }}"/>
 
         {% if mode == 'create' %}
-          {# --- CREATE: Cho phép chọn ngân hàng bằng dropdown như cũ --- #}
-          <!-- readonly “pill”; click để mở danh sách -->
           <button id="bank_chosen"
                   type="button"
-                  class="w-full h-12 px-4 rounded-xl border border-slate-300 bg-slate-50/60 text-left flex items-center gap-3 hover:bg-white focus:ring-2 focus:ring-indigo-200"
+                  class="w-full h-12 px-4 rounded-xl border border-slate-300 bg-slate-50/60 text-left flex items-center gap-3 hover:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200"
                   aria-haspopup="listbox" aria-expanded="false">
             <i class="ri-bank-line text-slate-400 text-xl"></i>
-            <span id="bank_chosen_text" class="text-slate-600">
+            <span id="bank_chosen_text" class="text-slate-600 truncate">
               {% if selected_bank %}
                 {{ selected_bank.short_name or selected_bank.name or selected_bank.code }} — {{ selected_bank.name or '' }}{% if selected_bank.code %} — {{ selected_bank.code }}{% endif %}
               {% else %}
                 Chọn ngân hàng…
               {% endif %}
             </span>
+            <span class="ml-auto text-slate-400">
+              <i class="ri-arrow-down-s-line text-xl"></i>
+            </span>
           </button>
 
-          <!-- dropdown -->
           <div id="bank_dropdown" class="relative hidden">
-            <div class="absolute z-40 mt-2 w-full bg-white rounded-xl shadow-2xl border border-slate-200">
+            <div class="absolute z-40 mt-2 w-full bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden">
               <div class="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
                 <i class="ri-search-line text-slate-400"></i>
                 <input id="bank_filter" type="text"
                        class="w-full outline-none text-base placeholder:text-slate-400"
                        placeholder="Tìm tên hoặc mã ngân hàng…">
+                <button type="button" id="bank_close"
+                        class="ml-1 w-9 h-9 rounded-lg hover:bg-slate-50 text-slate-500"
+                        title="Đóng">
+                  <i class="ri-close-line text-xl"></i>
+                </button>
               </div>
-              <ul id="bank_list"
-                  role="listbox"
-                  class="max-h-80 overflow-auto py-1"></ul>
+              <ul id="bank_list" role="listbox" class="max-h-80 overflow-auto py-1"></ul>
             </div>
           </div>
+
+          <p class="mt-2 text-xs text-slate-500">
+            Gợi ý: bạn có thể gõ <span class="font-mono">VCB</span> / <span class="font-mono">BIDV</span> hoặc tên ngân hàng để lọc nhanh.
+          </p>
         {% else %}
-          {# --- EDIT: Không cho đổi ngân hàng, chỉ hiển thị readonly --- #}
           <div class="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/70 flex items-center gap-3">
             <i class="ri-bank-line text-slate-400 text-xl"></i>
-            <span class="text-slate-700">
+            <span class="text-slate-700 truncate">
               {% if selected_bank %}
                 {{ selected_bank.short_name or selected_bank.name or selected_bank.code }} — {{ selected_bank.name or '' }}{% if selected_bank.code %} — {{ selected_bank.code }}{% endif %}
               {% else %}
@@ -66,6 +95,9 @@
               {% endif %}
             </span>
           </div>
+          <p class="mt-2 text-xs text-slate-500">
+            Trường này bị khoá khi chỉnh sửa.
+          </p>
         {% endif %}
       </div>
 
@@ -76,16 +108,19 @@
         </label>
 
         {% if mode == 'create' %}
-          {# CREATE: cho nhập số tài khoản bình thường #}
           <input name="account_number"
                  value="{{ item.account_number if item else '' }}"
                  required
+                 inputmode="numeric"
+                 autocomplete="off"
                  pattern="[0-9]{6,20}"
                  title="Chỉ số, 6–20 ký tự"
                  class="w-full h-12 rounded-xl border-2 border-slate-300 px-4 font-mono font-semibold text-slate-900 tracking-wide focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                 placeholder="Ví dụ: 0123456789">
+                 placeholder="Ví dụ: 019180000644">
+          <p class="mt-2 text-xs text-slate-500">
+            Chỉ nhập số (không dấu cách). Hệ thống sẽ tự chuẩn hoá nếu bạn lỡ nhập có khoảng trắng/dấu chấm.
+          </p>
         {% else %}
-          {# EDIT: Khoá không cho sửa, nhưng vẫn gửi giá trị cũ bằng hidden input #}
           <input
             value="{{ item.account_number if item else '' }}"
             disabled
@@ -93,6 +128,9 @@
           >
           <input type="hidden" name="account_number"
                  value="{{ item.account_number if item else '' }}">
+          <p class="mt-2 text-xs text-slate-500">
+            Trường này bị khoá khi chỉnh sửa.
+          </p>
         {% endif %}
       </div>
 
@@ -103,17 +141,19 @@
                value="{{ item.account_name if item else '' }}"
                class="w-full h-12 rounded-xl border-2 border-slate-300 px-4 text-base font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                placeholder="(tuỳ chọn)">
+        <p class="mt-2 text-xs text-slate-500">
+          Ví dụ: “CÔNG TY ĐẤU GIÁ …”. Không bắt buộc.
+        </p>
       </div>
 
       {# ====== STATUS SWITCH ====== #}
       <div class="md:col-span-2">
         <label class="block text-sm font-medium text-slate-700 mb-2">Trạng thái</label>
 
-        {# Gửi luôn false khi tắt (checkbox không gửi gì) #}
+        {# Always send false when unchecked #}
         <input type="hidden" name="is_active" value="false">
 
         <label class="inline-flex items-center gap-3 select-none">
-          {# Khi bật sẽ gửi 'true' (khớp parser truthy phía Service A) #}
           <input type="checkbox" name="is_active" value="true"
                  class="peer sr-only"
                  {% if item is none or item.is_active %}checked{% endif %}>
@@ -122,6 +162,10 @@
           </span>
           <span class="text-slate-700">Bật</span>
         </label>
+
+        <p class="mt-2 text-xs text-slate-500">
+          Nếu tắt, tài khoản sẽ không được ưu tiên hiển thị trong các màn hình cấu hình nhận tiền.
+        </p>
       </div>
 
     </div>
@@ -131,7 +175,7 @@
   <div class="mt-6 flex items-center gap-3">
     <button class="px-5 h-11 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
             type="submit">
-      {% if mode == 'create' %}Lưu{% else %}Lưu{% endif %}
+      Lưu
     </button>
     <a href="/settings/bank-accounts"
        class="px-5 h-11 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50">
@@ -143,17 +187,16 @@
 {# =================== SCRIPT =================== #}
 {% if mode == 'create' %}
 <script>
-  // Data passed from server (array of banks)
   const BANKS = {{ (banks or []) | tojson }};
   const SELECTED = {{ (selected_bank or {}) | tojson }};
 
-  // Elements
   const $hidden   = document.getElementById('bank_code');
   const $chosen   = document.getElementById('bank_chosen');
   const $chosenTx = document.getElementById('bank_chosen_text');
   const $dropdown = document.getElementById('bank_dropdown');
   const $filter   = document.getElementById('bank_filter');
   const $listbox  = document.getElementById('bank_list');
+  const $closeBtn = document.getElementById('bank_close');
 
   let filtered = [];
   let cursor   = -1;
@@ -176,7 +219,6 @@
       .trim();
   }
 
-  // Ưu tiên: shortname > code > name; startsWith > includes
   function scoreItem(b, q) {
     if (!q) return 9999;
     const qf = fold(q);
@@ -234,7 +276,7 @@
   }
 
   function choose(b) {
-    $hidden.value  = b.code || '';
+    $hidden.value = b.code || '';
     $chosenTx.textContent = label(b);
     closeDropdown();
   }
@@ -258,11 +300,15 @@
     renderList(filtered);
   }
 
-  // Bindings
   $chosen.addEventListener('click', (e) => {
     e.preventDefault();
     if ($dropdown.classList.contains('hidden')) openDropdown();
     else closeDropdown();
+  });
+
+  $closeBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    closeDropdown();
   });
 
   document.addEventListener('click', (e) => {
@@ -273,7 +319,6 @@
 
   $filter.addEventListener('input', (e) => doFilter(e.target.value));
 
-  // Keyboard navigation
   $filter.addEventListener('keydown', (e) => {
     const max = filtered.length - 1;
     if (e.key === 'ArrowDown') { e.preventDefault(); cursor = Math.min(max, cursor + 1); highlight(); }
@@ -292,10 +337,9 @@
     if (lis[cursor]) lis[cursor].scrollIntoView({ block: 'nearest' });
   }
 
-  // Init selected (nếu có)
   (function initSelected(){
     if (SELECTED && (SELECTED.code || SELECTED.id)) {
-      $hidden.value  = SELECTED.code || '';
+      $hidden.value = SELECTED.code || '';
       $chosenTx.textContent = label(SELECTED);
     }
   })();

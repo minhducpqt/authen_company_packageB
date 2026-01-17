@@ -1,7 +1,7 @@
 # routers/settings/bank_accounts.py
 from __future__ import annotations
 import os
-from typing import Optional
+from typing import Optional, Any
 from urllib.parse import urlencode, quote
 
 import httpx
@@ -17,12 +17,41 @@ SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 
 
 # ------------------------ HTTP helpers ------------------------
+def _extract_err_detail(data: Any) -> str | None:
+    """
+    Chuẩn hoá error message từ Service A:
+      - FastAPI HTTPException thường trả {"detail": "..."} hoặc {"detail": {...}}
+    """
+    if data is None:
+        return None
+    if isinstance(data, dict):
+        d = data.get("detail")
+        if isinstance(d, str):
+            return d
+        if isinstance(d, dict):
+            # best-effort stringify
+            try:
+                return d.get("message") or str(d)
+            except Exception:
+                return str(d)
+        if d is not None:
+            return str(d)
+        # some APIs return {"message": "..."}
+        if isinstance(data.get("message"), str):
+            return data.get("message")
+    # list or str
+    if isinstance(data, str):
+        return data
+    return None
+
+
 async def _get_json(client: httpx.AsyncClient, url: str, headers: dict):
     r = await client.get(url, headers=headers)
     try:
         return r.status_code, r.json()
     except Exception:
         return r.status_code, None
+
 
 async def _post_json(client: httpx.AsyncClient, url: str, headers: dict, payload: dict | None):
     r = await client.post(url, headers=headers, json=payload or {})
@@ -31,12 +60,14 @@ async def _post_json(client: httpx.AsyncClient, url: str, headers: dict, payload
     except Exception:
         return r.status_code, None
 
+
 async def _put_json(client: httpx.AsyncClient, url: str, headers: dict, payload: dict | None):
     r = await client.put(url, headers=headers, json=payload or {})
     try:
         return r.status_code, r.json()
     except Exception:
         return r.status_code, None
+
 
 async def _delete(client: httpx.AsyncClient, url: str, headers: dict):
     r = await client.delete(url, headers=headers)
@@ -55,20 +86,29 @@ async def _load_banks(token: str) -> list[dict]:
     """
     banks: list[dict] = []
     async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
-        # thêm sort=id để ưu tiên id nhỏ lên đầu
-        st, data = await _get_json(client, "/api/v1/catalogs/banks?page=1&size=500&sort=id",
-                                   {"Authorization": f"Bearer {token}"})
+        st, data = await _get_json(
+            client,
+            "/api/v1/catalogs/banks?page=1&size=500&sort=id",
+            {"Authorization": f"Bearer {token}"},
+        )
         if st == 200:
             if isinstance(data, dict):
                 banks = data.get("data") or []
             elif isinstance(data, list):
                 banks = data
+
     # fallback: nếu API chưa hỗ trợ sort thì sort tại FE
     try:
         banks.sort(key=lambda b: (b.get("id") is None, b.get("id", 1_000_000)))
     except Exception:
         pass
     return banks
+
+
+def _to_bool(v) -> bool:
+    if v is None:
+        return False
+    return str(v).strip().lower() in {"1", "true", "on", "yes"}
 
 
 # ------------------------ Endpoints ------------------------
@@ -78,6 +118,9 @@ async def list_accounts(
     q: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     size: int = Query(50, ge=1, le=200),
+    msg: Optional[str] = Query(None),
+    err: Optional[str] = Query(None),
+    err_msg: Optional[str] = Query(None),
 ):
     """
     Danh sách tài khoản NH của công ty đang đăng nhập.
@@ -99,13 +142,12 @@ async def list_accounts(
 
     page_data = {"data": [], "page": page, "size": size, "total": 0}
     load_err = None
+    banks: list[dict] = []
 
     try:
         async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
-            # Catalog banks
             banks = await _load_banks(token)
 
-            # List CBA
             st, data = await _get_json(
                 client,
                 f"/api/v1/company_bank_accounts?{urlencode(params)}",
@@ -123,11 +165,32 @@ async def list_accounts(
     except Exception as e:
         load_err = str(e)
 
-    # map code -> name hiển thị
     bank_name_map = {
         (b.get("code") or "").upper(): (b.get("name") or b.get("short_name") or b.get("code"))
-        for b in (locals().get("banks") or [])
+        for b in (banks or [])
     }
+
+    # map msg/err to friendly text (optional)
+    toast_msg = None
+    toast_err = None
+    if msg == "created":
+        toast_msg = "Đã thêm tài khoản ngân hàng."
+    elif msg == "updated":
+        toast_msg = "Đã cập nhật tài khoản ngân hàng."
+    elif msg == "deleted":
+        toast_msg = "Đã xoá tài khoản ngân hàng."
+
+    if err:
+        # ưu tiên err_msg cụ thể
+        if err_msg:
+            toast_err = err_msg
+        else:
+            mapping = {
+                "create_failed": "Thêm tài khoản thất bại.",
+                "update_failed": "Cập nhật tài khoản thất bại.",
+                "delete_failed": "Xoá tài khoản thất bại.",
+            }
+            toast_err = mapping.get(err, "Thao tác thất bại.")
 
     return templates.TemplateResponse(
         "pages/settings/bank_accounts/list.html",
@@ -139,18 +202,30 @@ async def list_accounts(
             "page": page_data,
             "bank_name_map": bank_name_map,
             "load_err": load_err,
+            "toast_msg": toast_msg,
+            "toast_err": toast_err,
         },
     )
 
 
 @router.get("/create", response_class=HTMLResponse)
-async def create_form(request: Request):
+async def create_form(
+    request: Request,
+    err: Optional[str] = Query(None),
+    err_msg: Optional[str] = Query(None),
+):
     token = get_access_token(request)
     me = await fetch_me(token)
     if not me:
         return RedirectResponse(url="/login?next=/settings/bank-accounts/create", status_code=303)
 
     banks = await _load_banks(token)
+
+    load_err = None
+    # show inline error on the form (templates may ignore if not used)
+    if err:
+        load_err = err_msg or "Thêm tài khoản thất bại."
+
     return templates.TemplateResponse(
         "pages/settings/bank_accounts/edit.html",
         {
@@ -161,15 +236,10 @@ async def create_form(request: Request):
             "mode": "create",
             "item": None,
             "selected_bank": None,
-            "load_err": None,
+            "load_err": load_err,
         },
     )
 
-
-def _to_bool(v) -> bool:
-    if v is None:
-        return False
-    return str(v).strip().lower() in {"1", "true", "on", "yes"}
 
 # --- create ---
 @router.post("/create")
@@ -178,7 +248,7 @@ async def create_submit(
     bank_code: str = Form(...),
     account_number: str = Form(...),
     account_name: str = Form(""),
-    is_active: str | None = Form(None),   # <- đổi ở đây
+    is_active: str | None = Form(None),
 ):
     token = get_access_token(request)
     me = await fetch_me(token)
@@ -191,36 +261,67 @@ async def create_submit(
         "bank_code": (bank_code or "").strip(),
         "account_number": (account_number or "").strip(),
         "account_name": (account_name or "").strip() or None,
-        "is_active": _to_bool(is_active),  # <- dùng helper
+        "is_active": _to_bool(is_active),
     }
 
-    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
-        st, _ = await _post_json(client, "/api/v1/company_bank_accounts",
-                                 {"Authorization": f"Bearer {token}"}, payload)
+    st = 0
+    data = None
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            st, data = await _post_json(
+                client,
+                "/api/v1/company_bank_accounts",
+                {"Authorization": f"Bearer {token}"},
+                payload,
+            )
+    except Exception as e:
+        # network error -> redirect to list with message
+        em = quote(str(e))
+        return RedirectResponse(url=f"/settings/bank-accounts?err=create_failed&err_msg={em}", status_code=303)
 
-    to = "/settings/bank-accounts?msg=created" if st == 200 else "/settings/bank-accounts?err=create_failed"
-    return RedirectResponse(url=to, status_code=303)
+    if st == 200:
+        return RedirectResponse(url="/settings/bank-accounts?msg=created", status_code=303)
 
+    # ✅ NEW: show Service A detail message (e.g. cross-company duplicate with company name)
+    detail = _extract_err_detail(data) or f"Thêm tài khoản thất bại (HTTP {st})."
+    em = quote(detail)
+
+    # Option A (recommended): redirect back to create form with inline error
+    return RedirectResponse(url=f"/settings/bank-accounts/create?err=1&err_msg={em}", status_code=303)
 
 
 @router.get("/{cba_id}/edit", response_class=HTMLResponse)
-async def edit_form(request: Request, cba_id: int = Path(...)):
+async def edit_form(
+    request: Request,
+    cba_id: int = Path(...),
+    err: Optional[str] = Query(None),
+    err_msg: Optional[str] = Query(None),
+):
     token = get_access_token(request)
     me = await fetch_me(token)
     if not me:
-        return RedirectResponse(url=f"/login?next={quote(f'/settings/bank-accounts/{cba_id}/edit')}", status_code=303)
+        return RedirectResponse(
+            url=f"/login?next={quote(f'/settings/bank-accounts/{cba_id}/edit')}",
+            status_code=303,
+        )
 
     banks = await _load_banks(token)
     item = None
     load_err = None
     selected_bank = None
 
+    if err:
+        load_err = err_msg or "Cập nhật thất bại."
+
     try:
         async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
-            st, data = await _get_json(client, f"/api/v1/company_bank_accounts/{cba_id}", {"Authorization": f"Bearer {token}"})
+            st, data = await _get_json(
+                client,
+                f"/api/v1/company_bank_accounts/{cba_id}",
+                {"Authorization": f"Bearer {token}"},
+            )
             if st == 200 and isinstance(data, dict):
                 item = data
-                # preselect bank
                 code = (item.get("bank_code") or "").upper()
                 selected_bank = next((b for b in banks if (b.get("code") or "").upper() == code), None)
             else:
@@ -251,7 +352,7 @@ async def edit_submit(
     bank_code: str = Form(...),
     account_number: str = Form(...),
     account_name: str = Form(""),
-    is_active: str | None = Form(None),   # <- đổi ở đây
+    is_active: str | None = Form(None),
 ):
     token = get_access_token(request)
     if not token:
@@ -261,15 +362,30 @@ async def edit_submit(
         "bank_code": (bank_code or "").strip(),
         "account_number": (account_number or "").strip(),
         "account_name": (account_name or "").strip() or None,
-        "is_active": _to_bool(is_active),  # <- dùng helper
+        "is_active": _to_bool(is_active),
     }
 
-    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
-        st, _ = await _put_json(client, f"/api/v1/company_bank_accounts/{cba_id}",
-                                {"Authorization": f"Bearer {token}"}, payload)
+    st = 0
+    data = None
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            st, data = await _put_json(
+                client,
+                f"/api/v1/company_bank_accounts/{cba_id}",
+                {"Authorization": f"Bearer {token}"},
+                payload,
+            )
+    except Exception as e:
+        em = quote(str(e))
+        return RedirectResponse(url=f"/settings/bank-accounts?err=update_failed&err_msg={em}", status_code=303)
 
-    to = "/settings/bank-accounts?msg=updated" if st == 200 else "/settings/bank-accounts?err=update_failed"
-    return RedirectResponse(url=to, status_code=303)
+    if st == 200:
+        return RedirectResponse(url="/settings/bank-accounts?msg=updated", status_code=303)
+
+    # ✅ NEW: if Service A rejects cross-company duplicate, show the detail (with company name)
+    detail = _extract_err_detail(data) or f"Cập nhật thất bại (HTTP {st})."
+    em = quote(detail)
+    return RedirectResponse(url=f"/settings/bank-accounts/{cba_id}/edit?err=1&err_msg={em}", status_code=303)
 
 
 @router.post("/{cba_id}/delete")
@@ -278,8 +394,22 @@ async def delete_submit(request: Request, cba_id: int = Path(...)):
     if not token:
         return RedirectResponse(url="/login?next=/settings/bank-accounts", status_code=303)
 
-    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=8.0) as client:
-        st, _ = await _delete(client, f"/api/v1/company_bank_accounts/{cba_id}", {"Authorization": f"Bearer {token}"})
+    st = 0
+    data = None
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=8.0) as client:
+            st, data = await _delete(
+                client,
+                f"/api/v1/company_bank_accounts/{cba_id}",
+                {"Authorization": f"Bearer {token}"},
+            )
+    except Exception as e:
+        em = quote(str(e))
+        return RedirectResponse(url=f"/settings/bank-accounts?err=delete_failed&err_msg={em}", status_code=303)
 
-    to = "/settings/bank-accounts?msg=deleted" if st == 200 else "/settings/bank-accounts?err=delete_failed"
-    return RedirectResponse(url=to, status_code=303)
+    if st == 200:
+        return RedirectResponse(url="/settings/bank-accounts?msg=deleted", status_code=303)
+
+    detail = _extract_err_detail(data) or f"Xoá thất bại (HTTP {st})."
+    em = quote(detail)
+    return RedirectResponse(url=f"/settings/bank-accounts?err=delete_failed&err_msg={em}", status_code=303)
