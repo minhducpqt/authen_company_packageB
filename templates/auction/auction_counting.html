@@ -1,262 +1,258 @@
 {% extends "base.html" %}
-{% block title %}Kiểm phiếu trúng đấu giá{% endblock %}
+{% block title %}Kiểm phiếu trúng đấu giá (2 vòng){% endblock %}
 
 {% block content %}
-{% set projects = projects or [] %}
-{% set project_id = project_id %}
-{% set session = session %}
 {% set rows = (data or {}).get('data') or [] %}
-{% set total = (data or {}).get('total') or (rows|length) %}
-{% set qv = q or "" %}
+{% set total = (data or {}).get('total') or 0 %}
+{% set sess = session %}
+{% set prj = project_obj %}
+{% set project_id = project_id %}
+{% set qval = q or '' %}
+{% set selected_key = project or '' %}
 
-<div class="mb-6">
-  <div class="flex items-start justify-between gap-3 flex-wrap">
-    <div>
-      <h1 class="text-2xl font-semibold text-slate-900 flex items-center gap-2">
-        <i class="ri-auction-line text-emerald-600 text-3xl"></i>
-        Kiểm phiếu trúng đấu giá (2 vòng)
-      </h1>
-      <p class="text-slate-500 text-sm mt-1">
-        Vòng 1: xác định <b>TIED</b> (>=2 khách cùng giá cao nhất). Vòng 2: bốc thăm chọn <b>WON</b> từ danh sách TIED (bắt buộc xác nhận <code>is_lucky_draw</code>).
-      </p>
+<style>
+  /* ====== Small utility (fallback if base.html doesn't have) ====== */
+  .ac-card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .ac-muted{color:#64748b}
+  .ac-chip{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;border:1px solid #e5e7eb;background:#f8fafc;font-weight:600;font-size:13px}
+  .ac-chip strong{font-weight:800}
+  .ac-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 14px;border-radius:12px;border:1px solid #e5e7eb;background:#fff;font-weight:700}
+  .ac-btn.primary{background:#16a34a;border-color:#16a34a;color:#fff}
+  .ac-btn.dark{background:#0f172a;border-color:#0f172a;color:#fff}
+  .ac-btn.ghost{background:#fff}
+  .ac-btn:disabled{opacity:.55;cursor:not-allowed}
+  .ac-input{width:100%;border:1px solid #cbd5e1;border-radius:12px;padding:10px 12px;outline:none;background:#fff}
+  .ac-input:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.15)}
+  .ac-select{width:100%;border:1px solid #cbd5e1;border-radius:12px;padding:10px 12px;background:#fff}
+  .ac-table{width:100%;border-collapse:separate;border-spacing:0}
+  .ac-table th{font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:#64748b;text-align:left;padding:12px 14px;border-bottom:1px solid #e5e7eb;background:#f8fafc}
+  .ac-table td{padding:14px;border-bottom:1px solid #eef2f7;vertical-align:top}
+  .ac-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font-weight:800;font-size:12px;border:1px solid transparent}
+  .ac-badge.pending{background:#f1f5f9;color:#0f172a;border-color:#e2e8f0}
+  .ac-badge.won{background:#ecfdf5;color:#065f46;border-color:#a7f3d0}
+  .ac-badge.tied{background:#fff7ed;color:#9a3412;border-color:#fed7aa}
+  .ac-kv{display:flex;gap:10px;flex-wrap:wrap}
+  .ac-kv span{display:inline-flex;gap:6px;align-items:baseline}
+  .ac-kv .k{color:#64748b;font-size:12px}
+  .ac-kv .v{font-weight:800;color:#0f172a}
+  .ac-winner{margin-top:8px;padding:10px 12px;border-radius:12px;background:#f8fafc;border:1px solid #e5e7eb}
+  .ac-winner .name{font-weight:900}
+  .ac-winner .sub{color:#475569;font-size:13px;margin-top:2px}
+  .ac-right{display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+  .ac-topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .ac-h1{font-size:24px;font-weight:900;color:#0f172a;display:flex;gap:10px;align-items:center}
+  .ac-h1 i{font-size:26px;color:#16a34a}
+  .ac-sub{margin-top:6px;color:#64748b}
+  .ac-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}
+  @media (max-width: 1024px){ .ac-grid{grid-template-columns:1fr} }
+  /* ===== Modal ===== */
+  .ac-modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;padding:18px;z-index:60}
+  .ac-modal-backdrop.show{display:flex}
+  .ac-modal{width:min(1120px, 100%);max-height:calc(100vh - 36px);background:#fff;border-radius:18px;box-shadow:0 20px 80px rgba(0,0,0,.35);overflow:hidden;display:flex;flex-direction:column}
+  .ac-modal-header{padding:16px 18px;border-bottom:1px solid #eef2f7;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .ac-modal-title{font-weight:1000;font-size:18px;color:#0f172a}
+  .ac-modal-sub{font-size:13px;color:#64748b;margin-top:4px}
+  .ac-modal-body{padding:16px 18px;overflow:auto}
+  .ac-modal-footer{padding:14px 18px;border-top:1px solid #eef2f7;display:flex;gap:10px;justify-content:flex-end;background:#fff;position:sticky;bottom:0}
+  .ac-x{border:none;background:transparent;font-size:22px;line-height:1;color:#475569;cursor:pointer}
+  /* ===== Pricing focus ===== */
+  .price-box{border:1px solid #dbeafe;background:#eff6ff;border-radius:16px;padding:14px}
+  .price-main{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .price-main .label{color:#1e3a8a;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+  .price-main .big{font-size:28px;font-weight:1000;color:#0f172a}
+  .stepper{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .stepper .sbtn{padding:10px 12px;border-radius:12px;border:1px solid #cbd5e1;background:#fff;font-weight:900;min-width:56px}
+  .stepper .sbtn:hover{background:#f8fafc}
+  .help-note{font-size:12px;color:#475569;margin-top:8px}
+  .cust-row{border:1px solid #e5e7eb;border-radius:16px;padding:12px 12px;background:#fff;display:flex;align-items:flex-start;gap:12px}
+  .cust-row:hover{border-color:#cbd5e1}
+  .cust-meta{flex:1;min-width:0}
+  .cust-name{font-weight:1000;color:#0f172a}
+  .cust-sub{margin-top:4px;color:#475569;font-size:13px;display:flex;gap:8px;flex-wrap:wrap}
+  .cust-id{font-weight:800;color:#64748b}
+  .cust-pick{margin-top:2px}
+  .ac-toast{display:none;margin:0 0 14px 0;padding:12px 12px;border-radius:14px;border:1px solid #fecaca;background:#fef2f2;color:#991b1b}
+  .ac-toast.show{display:block}
+  .tiny{font-size:12px;color:#64748b}
+</style>
+
+<div class="ac-topbar mb-6">
+  <div>
+    <div class="ac-h1">
+      <i class="ri-auction-line"></i>
+      Kiểm phiếu trúng đấu giá (2 vòng)
     </div>
-
-    <div class="flex items-center gap-2">
-      <a
-        id="btnDisplay"
-        class="px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium inline-flex items-center gap-2"
-        href="{% if project %}/auction/counting/display?project={{ project|urlencode }}{% else %}#{% endif %}"
-        target="_blank"
-      >
-        <i class="ri-slideshow-3-line"></i>
-        Trình chiếu
-      </a>
-
-      <button
-        id="btnRefresh"
-        class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium inline-flex items-center gap-2"
-        type="button"
-        {% if not project_id %}disabled aria-disabled="true" class="opacity-50"{% endif %}
-      >
-        <i class="ri-refresh-line"></i>
-        Tải lại
-      </button>
+    <div class="ac-sub">
+      Vòng 1: xác định <b>TIED</b> (≥2 khách cùng giá cao nhất). Vòng 2: bốc thăm chọn <b>WON</b> từ danh sách TIED (khi lưu WON bắt buộc xác nhận <b>is_lucky_draw</b>).
     </div>
+  </div>
+
+  <div class="ac-right">
+    <button class="ac-btn ghost" id="btnOpenDisplay" type="button">
+      <i class="ri-slideshow-3-line"></i> Trình chiếu
+    </button>
+    <button class="ac-btn primary" id="btnReload" type="button">
+      <i class="ri-refresh-line"></i> Tải lại
+    </button>
   </div>
 </div>
 
-{# ====== Errors ====== #}
 {% if session_err %}
-  <div class="p-3 rounded-xl bg-red-50 border border-red-100 text-red-700 text-sm mb-4">
-    Không tạo/khởi động được phiên kiểm phiếu. {{ session_err.body.detail if session_err.body else session_err }}
+  <div class="ac-toast show">
+    Không tạo/khởi tạo được phiên COUNTING.
+    <div class="tiny">HTTP {{ session_err.status }} — {{ session_err.body }}</div>
   </div>
 {% endif %}
 
 {% if error %}
-  <div class="p-3 rounded-xl bg-red-50 border border-red-100 text-red-700 text-sm mb-4">
-    Lỗi tải danh sách lô. {{ error.body.detail if error.body else error }}
+  <div class="ac-toast show">
+    Lỗi tải danh sách lô.
+    <div class="tiny">HTTP {{ error.status }} — {{ error.body }}</div>
   </div>
 {% endif %}
 
-{# ====== Project chooser + filters ====== #}
-<div class="bg-white border border-slate-200 rounded-2xl shadow-sm mb-4">
-  <div class="p-4 md:p-5 flex flex-col gap-3">
-    <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-      <div class="md:col-span-5">
-        <label class="block text-sm font-medium text-slate-700 mb-1">Chọn dự án</label>
-        <div class="relative">
-          <select
-            id="projectSelect"
-            class="w-full rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500 text-sm"
-          >
+<div class="ac-card p-5 mb-6">
+  <div class="ac-grid">
+    <div>
+      <div class="font-extrabold text-slate-900 mb-2">Chọn dự án</div>
+      <div class="flex gap-10 flex-wrap items-center">
+        <div style="min-width: 360px; flex: 1;">
+          <select class="ac-select" id="selProject">
             <option value="">— Chọn dự án —</option>
             {% for p in projects %}
-              {% set code = (p.project_code or p.code or "") %}
-              {% set pid = (p.id or p.project_id or "") %}
-              {% set key = (code if code else pid) %}
-              {% set st = (p.status or "") %}
-              <option
-                value="{{ key }}"
-                {% if project and (project|string) == (key|string) %}selected{% endif %}
-              >
-                {{ code or ("#" ~ pid) }} — {{ p.name or "(no name)" }}
-                {% if st %} ({{ st }}){% endif %}
+              {% set code = p.get('project_code') or p.get('code') %}
+              {% set pid = p.get('id') or p.get('project_id') %}
+              {% set label = (code or pid) ~ " — " ~ (p.get('name') or '') %}
+              <option value="{{ code or pid }}" {% if (selected_key|upper) == ((code or pid|string)|upper) %}selected{% endif %}>
+                {{ label }}
               </option>
             {% endfor %}
           </select>
-
-          <div class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-            <i class="ri-arrow-down-s-line"></i>
+          <div class="mt-2 ac-muted text-sm">
+            Dropdown gồm cả <b>ACTIVE</b> và <b>INACTIVE</b>. Nếu chỉ có 1 ACTIVE, hệ thống tự chọn.
           </div>
         </div>
-        <div class="text-xs text-slate-500 mt-1">
-          Dropdown gồm <b>cả ACTIVE và INACTIVE</b>. Nếu chỉ có 1 ACTIVE, hệ thống tự chọn.
+
+        <div style="min-width: 280px;">
+          <div class="font-extrabold text-slate-900 mb-2">Tìm lô</div>
+          <form id="frmFilter" class="flex gap-2">
+            <input class="ac-input" name="q" id="inpQ" placeholder="Nhập mã lô..." value="{{ qval }}" />
+            <button class="ac-btn dark" type="submit"><i class="ri-filter-3-line"></i> Lọc</button>
+            <button class="ac-btn ghost" type="button" id="btnReset">Reset</button>
+          </form>
         </div>
       </div>
 
-      <div class="md:col-span-4">
-        <label class="block text-sm font-medium text-slate-700 mb-1">Tìm lô</label>
-        <input
-          id="qInput"
-          class="w-full rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500 text-sm"
-          placeholder="Nhập mã lô hoặc tên lô..."
-          value="{{ qv }}"
-        />
-      </div>
-
-      <div class="md:col-span-3 flex gap-2">
-        <button
-          id="btnApplyFilter"
-          class="flex-1 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium"
-          type="button"
-        >
-          Lọc
-        </button>
-        <button
-          id="btnClearFilter"
-          class="px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium"
-          type="button"
-        >
-          Reset
-        </button>
+      <div class="mt-4 flex gap-2 flex-wrap items-center">
+        <span class="ac-chip"><i class="ri-timer-line"></i> Phiên: <strong>{% if sess %}#{{ sess.id }} ({{ sess.status }}){% else %}—{% endif %}</strong></span>
+        <span class="ac-chip"><i class="ri-stack-line"></i> Tổng lô: <strong id="chipTotalLots">—</strong></span>
+        <span class="ac-chip" style="background:#ecfdf5;border-color:#a7f3d0;color:#065f46"><i class="ri-trophy-line"></i> WON: <strong id="chipWon">—</strong></span>
+        <span class="ac-chip" style="background:#fff7ed;border-color:#fed7aa;color:#9a3412"><i class="ri-git-merge-line"></i> TIED: <strong id="chipTied">—</strong></span>
+        <span class="ac-chip" style="background:#f1f5f9;border-color:#e2e8f0;color:#0f172a"><i class="ri-check-line"></i> Đã xử lý: <strong id="chipChecked">—</strong></span>
       </div>
     </div>
 
-    <div class="flex flex-wrap items-center gap-2 text-sm">
-      <span class="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-slate-50 border border-slate-200 text-slate-700">
-        <i class="ri-flag-line text-slate-500"></i>
-        Phiên:
-        <span class="font-semibold" id="sessionBadge">
-          {% if session and session.id %}#{{ session.id }} ({{ session.status }}){% else %}—{% endif %}
-        </span>
-      </span>
-
-      <span class="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-slate-50 border border-slate-200 text-slate-700">
-        <i class="ri-stack-line text-slate-500"></i>
-        Tổng lô: <b id="totalLots">{{ total }}</b>
-      </span>
-
-      <span class="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700">
-        <i class="ri-trophy-line"></i>
-        WON: <b id="countWon">0</b>
-      </span>
-
-      <span class="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-amber-50 border border-amber-100 text-amber-700">
-        <i class="ri-group-line"></i>
-        TIED: <b id="countTied">0</b>
-      </span>
-
-      <span class="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-slate-50 border border-slate-200 text-slate-700">
-        <i class="ri-checkbox-circle-line text-slate-500"></i>
-        Đã xử lý: <b id="countChecked">0</b>
-      </span>
+    <div>
+      <div class="font-extrabold text-slate-900 mb-2">Ghi chú nghiệp vụ</div>
+      <div class="ac-muted text-sm leading-relaxed">
+        - Vòng 1: nhập <b>WON</b> nếu có 1 người cao nhất; nhập <b>TIED</b> nếu ≥2 người hòa.<br/>
+        - Vòng 2: chọn 1 người trong danh sách TIED → lưu <b>WON</b> và <b>tick “Bốc thăm”</b> (is_lucky_draw).<br/>
+        - Có thể chỉnh sửa linh hoạt (TIED → WON hoặc WON → TIED/PENDING) nếu phát hiện nhập sai.
+      </div>
     </div>
   </div>
 </div>
 
-{# ====== Lots table ====== #}
-<div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-  <div class="px-4 md:px-5 py-3 border-b border-slate-100 flex items-center justify-between gap-2">
-    <div class="text-sm font-semibold text-slate-800">Danh sách lô</div>
-    <div class="text-xs text-slate-500">
-      Bấm <b>Xử lý</b> để nhập kết quả vòng 1 / vòng 2.
-    </div>
+<div class="ac-card overflow-hidden">
+  <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+    <div class="font-extrabold text-slate-900">Danh sách lô</div>
+    <div class="ac-muted text-sm">Bấm <b>Xử lý</b> để nhập kết quả vòng 1 / vòng 2.</div>
   </div>
 
   <div class="overflow-x-auto">
-    <table class="min-w-full text-sm">
-      <thead class="bg-slate-50 text-slate-600">
+    <table class="ac-table" id="tblLots">
+      <thead>
         <tr>
-          <th class="text-left px-4 py-3 font-semibold w-[140px]">Mã lô</th>
-          <th class="text-left px-4 py-3 font-semibold min-w-[260px]">Tên lô</th>
-          <th class="text-left px-4 py-3 font-semibold min-w-[260px]">Giá / Bước giá</th>
-          <th class="text-left px-4 py-3 font-semibold w-[140px]">Trạng thái</th>
-          <th class="text-left px-4 py-3 font-semibold min-w-[260px]">Ghi chú</th>
-          <th class="text-right px-4 py-3 font-semibold w-[120px]">Thao tác</th>
+          <th style="width:160px">Mã lô</th>
+          <th style="width:360px">Giá / Bước / Diện tích</th>
+          <th style="width:160px">Giá trúng</th>
+          <th style="width:200px">Trạng thái</th>
+          <th>Người trúng (nếu có)</th>
+          <th style="width:140px;text-align:right">Thao tác</th>
         </tr>
       </thead>
-      <tbody id="lotTbody">
+      <tbody>
         {% for r in rows %}
-          {% set st = (r.counting_status or "") %}
-          <tr
-            class="border-t border-slate-100"
-            data-lot='{{ r|tojson }}'
-          >
-            <td class="px-4 py-3 align-top">
-              <div class="font-semibold text-slate-900">{{ r.lot_code }}</div>
-              <div class="text-xs text-slate-500">
-                ID: {{ r.lot_id }}
+          {% set st = (r.get('counting_status') or 'PENDING') %}
+          <tr data-lot='{{ r | tojson }}'>
+            <td>
+              <div class="font-extrabold text-slate-900">{{ r.get('lot_code') }}</div>
+              <div class="tiny">ID: {{ r.get('lot_id') }}</div>
+            </td>
+
+            <td>
+              <div class="ac-kv">
+                <span><span class="k">Giá KL:</span><span class="v" data-money="{{ r.get('starting_price_vnd') }}">{{ r.get('starting_price_vnd') }}</span></span>
+                <span><span class="k">Bước:</span><span class="v" data-money="{{ r.get('bid_step_vnd') }}">{{ r.get('bid_step_vnd') }}</span></span>
+                <span><span class="k">DT:</span><span class="v">{{ r.get('area') or '—' }} m²</span></span>
               </div>
-            </td>
-            <td class="px-4 py-3 align-top">
-              <div class="text-slate-900 font-medium">{{ r.lot_name or "" }}</div>
-            </td>
-            <td class="px-4 py-3 align-top">
-              <div class="text-slate-900">
-                <span class="font-medium">Giá khởi điểm (cả lô):</span>
-                <span class="tabular-nums">{{ r.starting_price_vnd or "" }}</span>
+              <div class="mt-2 tiny">
+                Giá/m²: <b data-money-sqm="{{ r.get('starting_price_vnd') }}" data-area="{{ r.get('area') }}">—</b>
+                · Mode: <b class="mode">{{ r.get('auction_mode') or ((data or {}).get('project') or {}).get('auction_mode') or (project_obj or {}).get('auction_mode') or '—' }}</b>
               </div>
-
-              {% if r.area %}
-                <div class="text-slate-700">
-                  <span class="font-medium">Diện tích:</span>
-                  <span class="tabular-nums">{{ r.area }}</span> m²
-                </div>
-                <div class="text-slate-700">
-                  <span class="font-medium">Giá khởi điểm (m²):</span>
-                  <span class="tabular-nums">
-                    {# compute safely server-side only if numeric; else JS will compute #}
-                    —
-                  </span>
-                </div>
-              {% endif %}
-
-              {% if r.bid_step_vnd %}
-                <div class="text-slate-700">
-                  <span class="font-medium">Bước giá:</span>
-                  <span class="tabular-nums">{{ r.bid_step_vnd }}</span>
-                </div>
-              {% endif %}
-
-              {% if r.highest_price_vnd %}
-                <div class="text-slate-700 mt-1">
-                  <span class="font-medium">Giá cao nhất:</span>
-                  <span class="tabular-nums">{{ r.highest_price_vnd }}</span>
+              {% if r.get('highest_price_vnd') %}
+                <div class="mt-2 tiny">
+                  Giá cao nhất đã nhập: <b data-money="{{ r.get('highest_price_vnd') }}">{{ r.get('highest_price_vnd') }}</b>
                 </div>
               {% endif %}
             </td>
-            <td class="px-4 py-3 align-top">
-              {% if st == "WON" %}
-                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold">
-                  <i class="ri-trophy-line"></i> WON
-                </span>
-              {% elif st == "TIED" %}
-                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50 border border-amber-100 text-amber-700 text-xs font-semibold">
-                  <i class="ri-group-line"></i> TIED
-                </span>
-              {% elif st == "PENDING" %}
-                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold">
-                  <i class="ri-time-line"></i> PENDING
-                </span>
+
+            <td>
+              {% if st == 'WON' and r.get('highest_price_vnd') %}
+                <div class="font-extrabold text-slate-900" data-money="{{ r.get('highest_price_vnd') }}">{{ r.get('highest_price_vnd') }}</div>
+                <div class="tiny">{% if r.get('is_lucky_draw') %}Bốc thăm{% else %}Không bốc thăm{% endif %}</div>
               {% else %}
-                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-500 text-xs font-semibold">
-                  —
-                </span>
+                <div class="ac-muted">—</div>
               {% endif %}
             </td>
-            <td class="px-4 py-3 align-top">
-              <div class="text-slate-700 text-xs whitespace-pre-line">
-                {% if r.edit_reason %}<div><b>Lý do:</b> {{ r.edit_reason }}</div>{% endif %}
-                {% if r.set_by %}<div><b>Người nhập:</b> {{ r.set_by }}</div>{% endif %}
-                {% if r.set_at %}<div><b>Thời điểm:</b> {{ r.set_at }}</div>{% endif %}
+
+            <td>
+              {% if st == 'WON' %}
+                <span class="ac-badge won"><i class="ri-trophy-line"></i> WON</span>
+              {% elif st == 'TIED' %}
+                <span class="ac-badge tied"><i class="ri-git-merge-line"></i> TIED</span>
+              {% else %}
+                <span class="ac-badge pending"><i class="ri-time-line"></i> PENDING</span>
+              {% endif %}
+
+              <div class="tiny mt-2">
+                {% if r.get('set_by') %}Người nhập: <b>{{ r.get('set_by') }}</b>{% endif %}
+                {% if r.get('set_at') %}
+                  <div>Thời điểm: <b class="ts">{{ r.get('set_at') }}</b></div>
+                {% endif %}
+                {% if r.get('edit_reason') %}
+                  <div>Ghi chú: {{ r.get('edit_reason') }}</div>
+                {% endif %}
               </div>
             </td>
-            <td class="px-4 py-3 align-top text-right">
-              <button
-                class="btnHandle inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold"
-                type="button"
-                {% if not project_id %}disabled aria-disabled="true" class="opacity-50"{% endif %}
-              >
+
+            <td>
+              {# winner info from API (if later A adds it in list response) #}
+              {% if r.get('winner_name') or r.get('winner_cccd') or r.get('winner_phone') %}
+                <div class="ac-winner">
+                  <div class="name">{{ r.get('winner_name') or '—' }}</div>
+                  <div class="sub">
+                    CCCD: <b>{{ r.get('winner_cccd') or '—' }}</b>
+                    · SĐT: <b>{{ r.get('winner_phone') or '—' }}</b>
+                  </div>
+                </div>
+              {% else %}
+                <div class="ac-muted">—</div>
+              {% endif %}
+            </td>
+
+            <td style="text-align:right">
+              <button class="ac-btn ghost btnHandle" type="button">
                 <i class="ri-edit-2-line"></i> Xử lý
               </button>
             </td>
@@ -265,723 +261,627 @@
 
         {% if rows|length == 0 %}
           <tr>
-            <td class="px-4 py-6 text-slate-500 text-sm" colspan="6">
-              {% if not project_id %}
-                Hãy chọn dự án để bắt đầu kiểm phiếu.
-              {% else %}
-                Không có lô nào (hoặc không khớp bộ lọc).
-              {% endif %}
-            </td>
+            <td colspan="6" class="ac-muted" style="padding:18px">Chưa có dữ liệu. Hãy chọn dự án.</td>
           </tr>
         {% endif %}
       </tbody>
     </table>
   </div>
-
-  <div class="px-4 md:px-5 py-3 border-t border-slate-100 flex items-center justify-between text-sm">
-    <div class="text-slate-500">
-      Trang {{ page }} • Hiển thị {{ rows|length }} / {{ total }}
-    </div>
-    <div class="flex items-center gap-2">
-      <a
-        class="px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium"
-        href="?project={{ project|urlencode }}&q={{ qv|urlencode }}&page={{ 1 }}&size={{ size }}"
-      >Đầu</a>
-      <a
-        class="px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium {% if page <= 1 %}opacity-50 pointer-events-none{% endif %}"
-        href="?project={{ project|urlencode }}&q={{ qv|urlencode }}&page={{ (page-1) }}&size={{ size }}"
-      >Trước</a>
-      <a
-        class="px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium {% if (page*size) >= total %}opacity-50 pointer-events-none{% endif %}"
-        href="?project={{ project|urlencode }}&q={{ qv|urlencode }}&page={{ (page+1) }}&size={{ size }}"
-      >Sau</a>
-    </div>
-  </div>
 </div>
 
-{# =========================
-   Custom Modal: Editor
-   ========================= #}
-<div id="modalMask" class="fixed inset-0 bg-black/40 hidden z-[60]"></div>
-
-<div id="editorModal" class="fixed inset-0 hidden z-[61]">
-  <div class="min-h-full flex items-end md:items-center justify-center p-3 md:p-6">
-    <div class="w-full max-w-5xl bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-      <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-        <div class="min-w-0">
-          <div class="text-sm text-slate-500">Xử lý kết quả</div>
-          <div class="text-lg font-semibold text-slate-900 truncate" id="modalTitle">—</div>
-          <div class="text-xs text-slate-500 mt-1" id="modalSub">—</div>
-        </div>
-        <button id="btnCloseModal" class="p-2 rounded-xl hover:bg-slate-50 text-slate-500" type="button">
-          <i class="ri-close-line text-xl"></i>
-        </button>
+{# ===================== MODAL ===================== #}
+<div class="ac-modal-backdrop" id="modalBackdrop" aria-hidden="true">
+  <div class="ac-modal" role="dialog" aria-modal="true">
+    <div class="ac-modal-header">
+      <div>
+        <div class="ac-modal-title" id="modalTitle">Xử lý kết quả</div>
+        <div class="ac-modal-sub" id="modalSub">—</div>
       </div>
+      <button class="ac-x" type="button" id="btnCloseModal">×</button>
+    </div>
 
-      <div class="p-5 grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <div class="lg:col-span-5 space-y-3">
-          <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50">
-            <div class="text-sm font-semibold text-slate-900 mb-2">Thông tin lô</div>
-            <div class="text-sm text-slate-700 space-y-1">
-              <div><b>Mã lô:</b> <span id="mLotCode"></span></div>
-              <div><b>Tên lô:</b> <span id="mLotName"></span></div>
-              <div><b>Diện tích:</b> <span id="mArea">—</span></div>
-              <div><b>Giá khởi điểm (cả lô):</b> <span id="mStartLot">—</span></div>
-              <div><b>Giá khởi điểm (m²):</b> <span id="mStartM2">—</span></div>
-              <div><b>Bước giá:</b> <span id="mBidStep">—</span></div>
-              <div><b>Loại hình đấu:</b> <span id="mAuctionMode" class="font-semibold">—</span></div>
-            </div>
-          </div>
+    <div class="ac-modal-body">
+      <div class="ac-toast" id="modalErr"></div>
 
-          <div class="p-4 rounded-2xl border border-slate-200">
-            <div class="text-sm font-semibold text-slate-900 mb-2">Trạng thái nhập</div>
+      <div class="ac-grid" style="grid-template-columns:.95fr 1.05fr">
+        <div style="display:flex;flex-direction:column;gap:12px">
 
-            <label class="block text-sm font-medium text-slate-700 mb-1">Trạng thái</label>
-            <select id="mStatus" class="w-full rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+          <div class="ac-card p-4" style="border-radius:16px">
+            <div class="font-extrabold text-slate-900 mb-2">Trạng thái nhập</div>
+
+            <label class="tiny font-extrabold text-slate-700">Trạng thái</label>
+            <select class="ac-select mt-1" id="selStatus">
               <option value="PENDING">PENDING (chưa xử lý)</option>
-              <option value="TIED">TIED (vòng 1: hòa)</option>
-              <option value="WON">WON (kết quả: trúng)</option>
+              <option value="WON">WON (chốt người trúng)</option>
+              <option value="TIED">TIED (hòa ≥2 khách)</option>
             </select>
 
-            <div class="mt-3">
-              <label class="block text-sm font-medium text-slate-700 mb-1">Giá cao nhất</label>
-              <input id="mHighest" inputmode="numeric" class="w-full rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-                     placeholder="Nhập giá cao nhất (VND)..." />
-              <div class="text-xs text-slate-500 mt-1">
-                Gợi ý: nếu dự án <b>PER_SQM</b> thì giá nhập thường là giá theo m²; nếu <b>PER_LOT</b> thì là giá theo cả lô.
+            <div class="mt-3 price-box">
+              <div class="price-main">
+                <div>
+                  <div class="label">Giá cao nhất (để xét)</div>
+                  <div class="tiny mt-1" id="priceHint">—</div>
+                </div>
+              </div>
+
+              <div style="margin-top:10px">
+                <input class="ac-input" id="inpHighest" inputmode="numeric" placeholder="Nhập giá..." />
+              </div>
+
+              <div class="stepper">
+                <button class="sbtn" type="button" data-step="-5">-5</button>
+                <button class="sbtn" type="button" data-step="-2">-2</button>
+                <button class="sbtn" type="button" data-step="-1">-1</button>
+                <button class="sbtn" type="button" data-step="1">+1</button>
+                <button class="sbtn" type="button" data-step="2">+2</button>
+                <button class="sbtn" type="button" data-step="5">+5</button>
+              </div>
+
+              <div class="help-note">
+                Mẹo: nếu chưa nhập giá, bấm +1 sẽ lấy <b>giá khởi điểm</b> làm base và cộng theo <b>bước giá</b>.
               </div>
             </div>
 
             <div class="mt-3">
-              <label class="block text-sm font-medium text-slate-700 mb-1">Lý do chỉnh sửa (tuỳ chọn)</label>
-              <input id="mReason" class="w-full rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-                     placeholder="Ví dụ: sửa sai người hòa / cập nhật lại giá..." />
+              <label class="tiny font-extrabold text-slate-700">Lý do chỉnh sửa (tuỳ chọn)</label>
+              <input class="ac-input mt-1" id="inpReason" placeholder="Ví dụ: sửa sai người hòa / cập nhật lại giá..." />
             </div>
 
-            <div id="wonConfirmBox" class="mt-3 hidden">
-              <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-100">
-                <div class="text-sm font-semibold text-emerald-800">Xác nhận is_lucky_draw</div>
-                <div class="text-xs text-emerald-700 mt-1">
-                  Khi lưu <b>WON</b>, bắt buộc người nhập xác nhận đây có phải kết quả bốc thăm hay không.
-                </div>
-
-                <div class="mt-2 flex gap-3 text-sm">
-                  <label class="inline-flex items-center gap-2">
-                    <input type="radio" name="isLuckyDraw" value="true" class="rounded border-slate-300" />
-                    <span>Có bốc thăm</span>
-                  </label>
-                  <label class="inline-flex items-center gap-2">
-                    <input type="radio" name="isLuckyDraw" value="false" class="rounded border-slate-300" />
-                    <span>Không bốc thăm</span>
-                  </label>
-                </div>
-              </div>
+            <div class="mt-3" id="boxLucky" style="display:none">
+              <label class="tiny font-extrabold text-slate-700">Xác nhận bốc thăm (is_lucky_draw)</label>
+              <label style="display:flex;gap:10px;align-items:center;margin-top:8px">
+                <input type="checkbox" id="chkLucky" style="width:18px;height:18px"/>
+                <span class="font-extrabold text-slate-900">Kết quả WON này là do bốc thăm</span>
+              </label>
+              <div class="tiny mt-1 ac-muted">Bắt buộc tick nếu bạn đang chốt người trúng từ nhóm TIED.</div>
             </div>
-
           </div>
         </div>
 
-        <div class="lg:col-span-7 space-y-3">
-          <div class="p-4 rounded-2xl border border-slate-200">
-            <div class="flex items-center justify-between gap-2">
-              <div class="text-sm font-semibold text-slate-900">Danh sách khách đủ điều kiện</div>
-              <div class="text-xs text-slate-500" id="eligibleNote">—</div>
-            </div>
-
-            <div class="mt-2 flex flex-col md:flex-row gap-2">
-              <input id="eligibleSearch" class="flex-1 rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-                     placeholder="Tìm theo tên/CCCD/phone..." />
-              <button id="btnReloadEligible" type="button"
-                      class="px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium inline-flex items-center gap-2">
-                <i class="ri-refresh-line"></i> Tải DS
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="ac-card p-4" style="border-radius:16px">
+            <div class="flex items-center justify-between gap-10 flex-wrap">
+              <div>
+                <div class="font-extrabold text-slate-900">Danh sách khách đủ điều kiện</div>
+                <div class="tiny ac-muted mt-1">Chọn khách theo trạng thái: WON (1 khách) · TIED (≥2 khách)</div>
+              </div>
+              <button class="ac-btn ghost" type="button" id="btnLoadCustomers">
+                <i class="ri-download-2-line"></i> Tải DS
               </button>
             </div>
 
-            <div class="mt-3 grid grid-cols-1 gap-2 max-h-[360px] overflow-auto pr-1" id="eligibleList">
-              <div class="text-sm text-slate-500">Chọn trạng thái để tải danh sách.</div>
+            <div class="mt-3">
+              <input class="ac-input" id="inpSearchCust" placeholder="Tìm theo tên/CCCD/phone..." />
             </div>
 
-            <div class="mt-3 text-xs text-slate-500">
-              - Nếu <b>TIED</b>: tick <b>=&gt; chọn >= 2</b> khách hòa. <br/>
-              - Nếu <b>WON</b>: chọn <b>1</b> khách trúng.
+            <div class="mt-3 ac-muted tiny" id="custCount">Tổng: —</div>
+
+            <div class="mt-3" id="custList" style="display:flex;flex-direction:column;gap:10px;max-height:420px;overflow:auto;padding-right:2px"></div>
+
+            <div class="ac-card p-3 mt-3" style="border-radius:14px;background:#f8fafc">
+              <div class="font-extrabold text-slate-900 mb-1">Tóm tắt lựa chọn</div>
+              <div class="tiny" id="pickSummary">PENDING: chưa chọn khách.</div>
             </div>
           </div>
-
-          <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50">
-            <div class="text-sm font-semibold text-slate-900 mb-2">Tóm tắt lựa chọn</div>
-            <div class="text-sm text-slate-700" id="selectionSummary">—</div>
-          </div>
-
-        </div>
-      </div>
-
-      <div class="px-5 py-4 border-t border-slate-100 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2">
-        <div class="text-xs text-slate-500" id="saveHint">
-          Khi lưu WON/TIED, hệ thống sẽ cập nhật lên Service A và đồng bộ hiển thị.
-        </div>
-        <div class="flex items-center gap-2 justify-end">
-          <button id="btnSave" type="button"
-                  class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold inline-flex items-center gap-2">
-            <i class="ri-save-3-line"></i> Lưu
-          </button>
-          <button id="btnCancel" type="button"
-                  class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-semibold">
-            Đóng
-          </button>
         </div>
       </div>
     </div>
-  </div>
-</div>
 
-{# =========================
-   Custom Confirm Modal
-   ========================= #}
-<div id="confirmModal" class="fixed inset-0 hidden z-[70]">
-  <div class="min-h-full flex items-end md:items-center justify-center p-3 md:p-6">
-    <div class="w-full max-w-lg bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-      <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-        <div class="text-lg font-semibold text-slate-900">Xác nhận lưu</div>
-        <button id="btnConfirmClose" class="p-2 rounded-xl hover:bg-slate-50 text-slate-500" type="button">
-          <i class="ri-close-line text-xl"></i>
-        </button>
-      </div>
-      <div class="p-5">
-        <div class="text-sm text-slate-700 whitespace-pre-line" id="confirmText">—</div>
-      </div>
-      <div class="px-5 py-4 border-t border-slate-100 flex items-center justify-end gap-2">
-        <button id="btnConfirmNo" type="button" class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-semibold">
-          Huỷ
-        </button>
-        <button id="btnConfirmYes" type="button" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold">
-          Đồng ý lưu
-        </button>
-      </div>
+    <div class="ac-modal-footer">
+      <button class="ac-btn ghost" type="button" id="btnCancel">Đóng</button>
+      <button class="ac-btn primary" type="button" id="btnSave">
+        <i class="ri-save-3-line"></i> Lưu
+      </button>
     </div>
-  </div>
-</div>
-
-{# =========================
-   Toast / Error modal
-   ========================= #}
-<div id="toast" class="fixed bottom-4 right-4 z-[80] hidden">
-  <div class="max-w-md bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-lg text-sm flex items-start gap-2">
-    <i class="ri-information-line text-lg mt-0.5"></i>
-    <div class="min-w-0">
-      <div class="font-semibold" id="toastTitle">Thông báo</div>
-      <div class="opacity-90 mt-0.5 whitespace-pre-line" id="toastMsg">—</div>
-    </div>
-    <button id="toastClose" class="ml-2 opacity-80 hover:opacity-100">
-      <i class="ri-close-line"></i>
-    </button>
   </div>
 </div>
 
 <script>
 (function(){
   const PROJECT_ID = {{ project_id or 'null' }};
-  const PROJECT_KEY = "{{ (project or '')|e }}";
-  const SESSION_ID = {{ (session.id if session and session.id else 'null') }};
-  const PROJECT_OBJ = {{ (project_obj or {})|tojson }};
-  const AUCTION_MODE = (PROJECT_OBJ && PROJECT_OBJ.auction_mode) ? String(PROJECT_OBJ.auction_mode).toUpperCase() : "";
+  const SESSION_ID = {{ (sess.id if sess else 'null') }};
+  const SELECTED_KEY = {{ (selected_key|tojson) }};
+  const POLL_URL = "/auction/counting/api/display/snapshot";
 
-  const el = (id)=>document.getElementById(id);
-  const qs = (s,root=document)=>root.querySelector(s);
-  const qsa = (s,root=document)=>Array.from(root.querySelectorAll(s));
+  const fmtVND = (n) => {
+    if (n === null || n === undefined || n === '') return "—";
+    const x = Number(n);
+    if (!isFinite(x)) return "—";
+    return Math.round(x).toLocaleString('vi-VN');
+  };
 
-  function toast(title,msg){
-    el("toastTitle").textContent = title || "Thông báo";
-    el("toastMsg").textContent = msg || "";
-    el("toast").classList.remove("hidden");
-  }
-  el("toastClose").addEventListener("click", ()=> el("toast").classList.add("hidden"));
+  const moneyNoFrac = (el) => {
+    const v = el.getAttribute('data-money');
+    el.textContent = fmtVND(v);
+  };
 
-  function openModal(){
-    el("modalMask").classList.remove("hidden");
-    el("editorModal").classList.remove("hidden");
-    document.body.classList.add("overflow-hidden");
-  }
-  function closeModal(){
-    el("modalMask").classList.add("hidden");
-    el("editorModal").classList.add("hidden");
-    document.body.classList.remove("overflow-hidden");
-  }
+  const calcSqmPrice = (total, area) => {
+    const t = Number(total);
+    const a = Number(area);
+    if (!isFinite(t) || !isFinite(a) || a <= 0) return null;
+    return t / a;
+  };
 
-  el("btnCloseModal").addEventListener("click", closeModal);
-  el("btnCancel").addEventListener("click", closeModal);
-  el("modalMask").addEventListener("click", ()=>{
-    // do nothing (avoid misclick close), user must press Close
+  // format on list immediately
+  document.querySelectorAll('[data-money]').forEach(moneyNoFrac);
+  document.querySelectorAll('[data-money-sqm]').forEach(el=>{
+    const total = el.getAttribute('data-money-sqm');
+    const area = el.getAttribute('data-area');
+    const sqm = calcSqmPrice(total, area);
+    el.textContent = sqm ? (fmtVND(sqm) + " VND/m²") : "—";
+  });
+  document.querySelectorAll('.ts').forEach(el=>{
+    // keep as is; you can custom format later
+    try{
+      const d = new Date(el.textContent);
+      if (!isNaN(d.getTime())){
+        el.textContent = d.toLocaleString('vi-VN');
+      }
+    }catch(e){}
   });
 
-  // project select navigation
-  el("projectSelect").addEventListener("change", ()=>{
-    const v = el("projectSelect").value || "";
-    const url = new URL(window.location.href);
-    if(v) url.searchParams.set("project", v);
-    else url.searchParams.delete("project");
-    url.searchParams.set("page","1");
-    window.location.href = url.toString();
-  });
+  // chips via snapshot
+  async function refreshSnapshot(){
+    if (!PROJECT_ID) return;
+    const url = new URL(location.origin + POLL_URL);
+    url.searchParams.set("project_id", PROJECT_ID);
+    if (SESSION_ID) url.searchParams.set("session_id", SESSION_ID);
+    try{
+      const r = await fetch(url.toString(), {headers: {"Accept":"application/json"}});
+      if (!r.ok) return;
+      const js = await r.json();
+      const sum = (js && js.summary) || {};
+      document.getElementById("chipTotalLots").textContent = (sum.total_lots ?? "—");
+      document.getElementById("chipWon").textContent = (sum.won ?? "—");
+      document.getElementById("chipTied").textContent = (sum.tied ?? "—");
+      document.getElementById("chipChecked").textContent = (sum.checked ?? "—");
+    }catch(e){}
+  }
+  refreshSnapshot();
 
-  el("btnApplyFilter").addEventListener("click", ()=>{
-    const url = new URL(window.location.href);
-    const q = (el("qInput").value || "").trim();
-    if(q) url.searchParams.set("q", q);
-    else url.searchParams.delete("q");
-    url.searchParams.set("page","1");
-    window.location.href = url.toString();
-  });
-
-  el("btnClearFilter").addEventListener("click", ()=>{
-    const url = new URL(window.location.href);
+  // top actions
+  document.getElementById("btnReload").addEventListener("click", ()=>location.reload());
+  document.getElementById("btnReset").addEventListener("click", ()=>{
+    const pid = document.getElementById("selProject").value || "";
+    const url = new URL(location.href);
     url.searchParams.delete("q");
     url.searchParams.set("page","1");
-    window.location.href = url.toString();
+    if (pid) url.searchParams.set("project", pid);
+    else url.searchParams.delete("project");
+    location.href = url.toString();
   });
 
-  el("btnRefresh").addEventListener("click", ()=>{
-    window.location.reload();
+  document.getElementById("frmFilter").addEventListener("submit", (e)=>{
+    e.preventDefault();
+    const pid = document.getElementById("selProject").value || "";
+    const q = document.getElementById("inpQ").value || "";
+    const url = new URL(location.href);
+    url.searchParams.set("page","1");
+    if (pid) url.searchParams.set("project", pid); else url.searchParams.delete("project");
+    if (q.trim()) url.searchParams.set("q", q.trim()); else url.searchParams.delete("q");
+    location.href = url.toString();
   });
 
-  // disable display button if no project
-  const displayBtn = el("btnDisplay");
-  if(!PROJECT_ID){
-    displayBtn.classList.add("opacity-50","pointer-events-none");
-    displayBtn.setAttribute("aria-disabled","true");
-    displayBtn.href = "#";
-  }
+  document.getElementById("selProject").addEventListener("change", ()=>{
+    const v = document.getElementById("selProject").value || "";
+    const url = new URL(location.href);
+    url.searchParams.set("page","1");
+    url.searchParams.delete("q");
+    if (v) url.searchParams.set("project", v); else url.searchParams.delete("project");
+    location.href = url.toString();
+  });
 
-  // count summary from table
-  function refreshCounters(){
-    const trs = qsa("#lotTbody tr[data-lot]");
-    let won=0, tied=0;
-    trs.forEach(tr=>{
-      try{
-        const d = JSON.parse(tr.getAttribute("data-lot") || "{}");
-        const st = String(d.counting_status || "").toUpperCase();
-        if(st==="WON") won++;
-        if(st==="TIED") tied++;
-      }catch(e){}
-    });
-    el("countWon").textContent = String(won);
-    el("countTied").textContent = String(tied);
-    el("countChecked").textContent = String(won + tied);
-  }
-  refreshCounters();
+  document.getElementById("btnOpenDisplay").addEventListener("click", ()=>{
+    const v = document.getElementById("selProject").value || SELECTED_KEY || "";
+    if (!v){
+      alert("Hãy chọn dự án trước."); // base fallback; nếu bạn muốn modal custom như quy ước, mình đổi sau
+      return;
+    }
+    const u = new URL(location.origin + "/auction/counting/display");
+    u.searchParams.set("project", v);
+    window.open(u.toString(), "_blank");
+  });
 
-  // ---------------------------
-  // Editor state
-  // ---------------------------
-  let currentLot = null;
-  let eligible = []; // list from API
-  let selectedWinner = null;
-  let selectedTied = new Set();
+  // ===== Modal state =====
+  const bd = document.getElementById("modalBackdrop");
+  const btnClose = document.getElementById("btnCloseModal");
+  const btnCancel = document.getElementById("btnCancel");
+  const btnSave = document.getElementById("btnSave");
+  const modalErr = document.getElementById("modalErr");
 
-  function fmtNum(n){
-    if(n===null || n===undefined || n==="") return "";
-    const x = Number(String(n).replaceAll(",","").trim());
-    if(!isFinite(x)) return String(n);
-    return x.toLocaleString("en-US");
-  }
-  function parseNum(s){
-    if(s===null || s===undefined) return null;
-    const t = String(s).replaceAll(",","").replaceAll(" ","").trim();
-    if(!t) return null;
-    const x = Number(t);
-    return isFinite(x) ? x : null;
-  }
+  const selStatus = document.getElementById("selStatus");
+  const inpHighest = document.getElementById("inpHighest");
+  const inpReason = document.getElementById("inpReason");
+  const boxLucky = document.getElementById("boxLucky");
+  const chkLucky = document.getElementById("chkLucky");
 
-  function computeStartM2(startLot, area){
-    const a = Number(area);
-    const s = Number(startLot);
-    if(!isFinite(a) || a<=0 || !isFinite(s)) return null;
-    return Math.round(s / a);
-  }
+  const btnLoadCustomers = document.getElementById("btnLoadCustomers");
+  const inpSearchCust = document.getElementById("inpSearchCust");
+  const custList = document.getElementById("custList");
+  const custCount = document.getElementById("custCount");
+  const pickSummary = document.getElementById("pickSummary");
+  const priceHint = document.getElementById("priceHint");
 
-  function setLuckyDrawRadios(v){
-    const rs = qsa('input[name="isLuckyDraw"]');
-    rs.forEach(r=> r.checked = (String(v)===String(r.value)));
-  }
-  function getLuckyDrawValue(){
-    const r = qs('input[name="isLuckyDraw"]:checked');
-    return r ? r.value : null;
-  }
+  let curLot = null;
+  let customers = [];
+  let picked = new Set(); // customer_ids selected
+  let baseStart = 0;
+  let stepV = 0;
+  let auctionMode = "PER_LOT"; // or PER_SQM
+  let startPerSqm = null;
 
-  function updateAuctionInfo(){
-    const lot = currentLot || {};
-    const area = lot.area ?? lot.area_m2 ?? null;
-    const startLot = lot.starting_price_vnd ?? null;
-    const bidStep = lot.bid_step_vnd ?? null;
+  function openModal(lot){
+    curLot = lot;
+    picked = new Set();
+    customers = [];
+    custList.innerHTML = "";
+    custCount.textContent = "Tổng: —";
+    inpSearchCust.value = "";
+    modalErr.classList.remove("show");
+    modalErr.textContent = "";
 
-    el("mLotCode").textContent = lot.lot_code || "";
-    el("mLotName").textContent = lot.lot_name || "";
-    el("mArea").textContent = area ? (fmtNum(area) + " m²") : "—";
-    el("mStartLot").textContent = startLot!=null ? (fmtNum(startLot) + " VND") : "—";
+    const lotCode = lot.lot_code || lot.lotCode || "";
+    const lotId = lot.lot_id || lot.id || "";
+    const area = lot.area || lot.area_m2 || null;
 
-    const sm2 = (startLot!=null && area!=null) ? computeStartM2(startLot, area) : null;
-    el("mStartM2").textContent = sm2!=null ? (fmtNum(sm2) + " VND/m²") : "—";
+    // start price full lot
+    const sp = Number(lot.starting_price_vnd || 0);
+    const bs = Number(lot.bid_step_vnd || 0);
 
-    el("mBidStep").textContent = bidStep!=null ? (fmtNum(bidStep) + " VND") : "—";
+    baseStart = isFinite(sp) ? sp : 0;
+    stepV = isFinite(bs) ? bs : 0;
 
-    const mode = AUCTION_MODE || (lot.auction_mode ? String(lot.auction_mode).toUpperCase() : "");
-    el("mAuctionMode").textContent = mode ? mode : "—";
+    // mode (project-level)
+    auctionMode = (lot.auction_mode || ({{ (project_obj.get('auction_mode') if project_obj else '')|tojson }}) || "PER_LOT").toString().toUpperCase();
+    startPerSqm = calcSqmPrice(baseStart, area);
 
-    const modeLabel = mode === "PER_SQM" ? "Đấu theo m²" : (mode === "PER_LOT" ? "Đấu theo cả lô" : "—");
-    el("modalSub").textContent = modeLabel;
-  }
+    document.getElementById("modalTitle").textContent = `Xử lý kết quả — Lô ${lotCode}`;
+    document.getElementById("modalSub").textContent =
+      `Mode: ${auctionMode} · Bước giá: ${fmtVND(stepV)} VND · Giá KL: ${fmtVND(baseStart)} VND` +
+      (startPerSqm ? ` · Giá KL/m²: ${fmtVND(startPerSqm)} VND/m²` : "");
 
-  function updateStatusUI(){
-    const st = String(el("mStatus").value || "").toUpperCase();
-    // show lucky draw box only when WON
-    if(st === "WON"){
-      el("wonConfirmBox").classList.remove("hidden");
-    }else{
-      el("wonConfirmBox").classList.add("hidden");
-      setLuckyDrawRadios(""); // clear
+    // default status + prefill from existing counting
+    const st = (lot.counting_status || "PENDING").toString().toUpperCase();
+    selStatus.value = ["PENDING","WON","TIED"].includes(st) ? st : "PENDING";
+    inpReason.value = lot.edit_reason || "";
+
+    // price hint depending on mode
+    const baseForInput = (auctionMode === "PER_SQM" && startPerSqm) ? startPerSqm : baseStart;
+    priceHint.textContent =
+      (auctionMode === "PER_SQM")
+        ? `Dự án đấu theo m²: giá nhập thường là giá theo m² (base ≈ ${fmtVND(baseForInput)}).`
+        : `Dự án đấu theo cả lô: giá nhập là giá cho cả lô (base = ${fmtVND(baseForInput)}).`;
+
+    // set input from existing highest_price_vnd (as typed raw)
+    if (lot.highest_price_vnd){
+      inpHighest.value = fmtVND(lot.highest_price_vnd);
+    } else {
+      inpHighest.value = "";
     }
 
-    // reset selections shown
-    renderEligibleList();
-    updateSelectionSummary();
+    // lucky draw default
+    chkLucky.checked = !!lot.is_lucky_draw;
+
+    // preselect winner/tied candidates if exists
+    if (selStatus.value === "WON" && lot.winner_customer_id){
+      picked.add(Number(lot.winner_customer_id));
+    } else if (selStatus.value === "TIED" && lot.tied_customer_ids){
+      let ids = lot.tied_customer_ids;
+      if (typeof ids === "string"){
+        try{ ids = JSON.parse(ids); }catch(e){ ids = []; }
+      }
+      if (Array.isArray(ids)){
+        ids.forEach(x=>{
+          const n = Number(x);
+          if (isFinite(n) && n>0) picked.add(n);
+        });
+      }
+    }
+
+    updateLuckyUI();
+    updatePickSummary();
+    bd.classList.add("show");
+    bd.setAttribute("aria-hidden","false");
+    document.body.style.overflow = "hidden";
   }
 
-  el("mStatus").addEventListener("change", updateStatusUI);
-  el("eligibleSearch").addEventListener("input", renderEligibleList);
+  function closeModal(){
+    bd.classList.remove("show");
+    bd.setAttribute("aria-hidden","true");
+    document.body.style.overflow = "";
+    curLot = null;
+  }
 
-  async function apiEligibleCustomers(){
-    if(!PROJECT_ID || !currentLot) return [];
-    const lotCode = encodeURIComponent(String(currentLot.lot_code || "").trim());
-    if(!lotCode) return [];
+  function showErr(msg){
+    modalErr.textContent = msg;
+    modalErr.classList.add("show");
+    // scroll modal body top
+    document.querySelector(".ac-modal-body").scrollTop = 0;
+  }
+
+  btnClose.addEventListener("click", closeModal);
+  btnCancel.addEventListener("click", closeModal);
+  bd.addEventListener("click", (e)=>{ if(e.target === bd) closeModal(); });
+
+  function parseMoneyInput(str){
+    const s = (str || "").toString().replace(/[^\d]/g,"");
+    if (!s) return null;
+    const n = Number(s);
+    return isFinite(n) ? n : null;
+  }
+  function setMoneyInput(n){
+    if (n === null || n === undefined) { inpHighest.value = ""; return; }
+    inpHighest.value = fmtVND(n);
+  }
+  inpHighest.addEventListener("input", ()=>{
+    // live formatting but keep caret tricky => simplest: allow digits only then format on blur
+    const raw = inpHighest.value.replace(/[^\d]/g,"");
+    inpHighest.value = raw ? raw : "";
+  });
+  inpHighest.addEventListener("blur", ()=>{
+    const n = parseMoneyInput(inpHighest.value);
+    if (n !== null) setMoneyInput(n);
+  });
+
+  document.querySelectorAll(".stepper .sbtn").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const k = Number(btn.getAttribute("data-step") || 0);
+      if (!k) return;
+
+      const step = stepV || 0;
+      if (step <= 0){
+        showErr("Chưa có bước giá hợp lệ (bid_step_vnd).");
+        return;
+      }
+
+      // base for input depends on auction_mode
+      const base = (auctionMode === "PER_SQM" && startPerSqm) ? startPerSqm : baseStart;
+      let cur = parseMoneyInput(inpHighest.value);
+      if (cur === null) cur = Math.round(base);
+
+      cur = cur + k * step;
+      if (cur < 0) cur = 0;
+
+      setMoneyInput(cur);
+    });
+  });
+
+  function updateLuckyUI(){
+    // show only for WON
+    const st = selStatus.value;
+    boxLucky.style.display = (st === "WON") ? "block" : "none";
+    if (st !== "WON"){
+      chkLucky.checked = false;
+    }
+  }
+
+  function updatePickSummary(){
+    const st = selStatus.value;
+    if (st === "PENDING"){
+      pickSummary.textContent = "PENDING: chưa chọn khách.";
+      return;
+    }
+    const ids = Array.from(picked.values());
+    if (st === "WON"){
+      pickSummary.textContent = ids.length ? `WON: chọn #${ids[0]}` : "WON: chưa chọn người trúng.";
+      return;
+    }
+    // TIED
+    pickSummary.textContent = ids.length ? `TIED: chọn ${ids.length} khách (#${ids.join(", #")})` : "TIED: chưa chọn khách hòa.";
+  }
+
+  selStatus.addEventListener("change", ()=>{
+    // adjust picked rules
+    const st = selStatus.value;
+    if (st === "WON" && picked.size > 1){
+      // keep first only
+      const first = picked.values().next().value;
+      picked = new Set([first]);
+    }
+    if (st === "PENDING"){
+      picked = new Set();
+    }
+    updateLuckyUI();
+    renderCustomers();
+    updatePickSummary();
+  });
+
+  // Handle click on list button
+  document.querySelectorAll(".btnHandle").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const tr = btn.closest("tr");
+      if (!tr) return;
+      try{
+        const lot = JSON.parse(tr.getAttribute("data-lot"));
+        if (!PROJECT_ID || !SESSION_ID){
+          alert("Hãy chọn dự án trước."); // fallback
+          return;
+        }
+        openModal(lot);
+      }catch(e){}
+    });
+  });
+
+  // Load eligible customers
+  async function loadCustomers(){
+    if (!curLot) return;
+    const lotCode = encodeURIComponent((curLot.lot_code || "").trim());
+    if (!lotCode) return;
+
+    btnLoadCustomers.disabled = true;
+    btnLoadCustomers.innerHTML = `<i class="ri-loader-4-line"></i> Đang tải...`;
+
     const url = `/auction/counting/api/projects/${PROJECT_ID}/lots/${lotCode}/eligible-customers?limit=5000&include_unpaid=false`;
     try{
       const r = await fetch(url, {headers: {"Accept":"application/json"}});
       const js = await r.json();
-      if(!r.ok || !js || js.ok!==true){
-        throw new Error((js && (js.detail || js.error)) || ("HTTP " + r.status));
+      if (!r.ok || !js || js.ok !== true){
+        throw new Error((js && (js.detail || js.error)) || "Load failed");
       }
-      return js.data || [];
+      customers = js.data || [];
+      custCount.textContent = `Tổng: ${customers.length}`;
+      renderCustomers();
     }catch(e){
-      toast("Lỗi", "Không tải được DS khách đủ điều kiện.\n" + (e.message || e));
-      return [];
+      showErr("Không tải được danh sách khách đủ điều kiện.");
+    }finally{
+      btnLoadCustomers.disabled = false;
+      btnLoadCustomers.innerHTML = `<i class="ri-download-2-line"></i> Tải DS`;
     }
   }
 
-  function normText(s){
-    return String(s||"").toLowerCase();
-  }
+  btnLoadCustomers.addEventListener("click", loadCustomers);
 
-  function renderEligibleList(){
-    const root = el("eligibleList");
-    const st = String(el("mStatus").value || "").toUpperCase();
-    const q = normText(el("eligibleSearch").value || "").trim();
+  inpSearchCust.addEventListener("input", ()=>{
+    renderCustomers();
+  });
 
-    const list = (eligible || []).filter(it=>{
-      if(!q) return true;
-      return (
-        normText(it.full_name).includes(q) ||
-        normText(it.cccd).includes(q) ||
-        normText(it.phone).includes(q)
-      );
-    });
-
-    root.innerHTML = "";
-
-    if(!PROJECT_ID){
-      root.innerHTML = `<div class="text-sm text-slate-500">Hãy chọn dự án.</div>`;
-      return;
-    }
-    if(!currentLot){
-      root.innerHTML = `<div class="text-sm text-slate-500">Chưa chọn lô.</div>`;
-      return;
-    }
-    if(list.length===0){
-      root.innerHTML = `<div class="text-sm text-slate-500">Không có dữ liệu phù hợp.</div>`;
-      return;
+  function renderCustomers(){
+    const kw = (inpSearchCust.value || "").trim().toLowerCase();
+    let list = customers || [];
+    if (kw){
+      list = list.filter(c=>{
+        const s = [
+          c.full_name, c.cccd, c.phone, c.email, c.address, c.customer_id
+        ].map(x=> (x ?? "").toString().toLowerCase()).join(" ");
+        return s.includes(kw);
+      });
     }
 
-    const isWon = (st==="WON");
-    const isTied = (st==="TIED");
+    const st = selStatus.value;
+    custList.innerHTML = "";
 
-    list.forEach(it=>{
-      const cid = it.customer_id;
-      const name = it.full_name || "";
-      const cccd = it.cccd || "";
-      const phone = it.phone || "";
-      const right = `<span class="text-xs text-slate-500">#${cid}</span>`;
+    list.forEach(c=>{
+      const cid = Number(c.customer_id || c.id);
+      if (!cid) return;
 
-      const pickType = isWon ? "radio" : "checkbox";
-      const checked = isWon ? (String(selectedWinner)===String(cid)) : (selectedTied.has(String(cid)));
+      const checked = picked.has(cid);
 
-      const row = document.createElement("label");
-      row.className = "flex items-start gap-3 p-3 rounded-2xl border border-slate-200 hover:bg-slate-50 cursor-pointer";
+      const row = document.createElement("div");
+      row.className = "cust-row";
       row.innerHTML = `
-        <input class="mt-1" type="${pickType}" name="pickCustomer" value="${cid}" ${checked?"checked":""} />
-        <div class="min-w-0 flex-1">
-          <div class="flex items-start justify-between gap-2">
-            <div class="font-semibold text-slate-900 truncate">${name}</div>
-            ${right}
+        <div class="cust-pick">
+          <input type="checkbox" ${checked ? "checked" : ""} style="width:18px;height:18px;margin-top:3px"/>
+        </div>
+        <div class="cust-meta">
+          <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+            <div class="cust-name">${escapeHtml(c.full_name || "—")}</div>
+            <div class="cust-id">#${cid}</div>
           </div>
-          <div class="text-xs text-slate-600 mt-1">
-            CCCD: <span class="font-medium">${cccd}</span>
-            &nbsp;•&nbsp; Phone: <span class="font-medium">${phone}</span>
+          <div class="cust-sub">
+            <span>CCCD: <b>${escapeHtml(c.cccd || "—")}</b></span>
+            <span>· Phone: <b>${escapeHtml(c.phone || "—")}</b></span>
           </div>
         </div>
       `;
 
-      const input = row.querySelector("input");
-      input.addEventListener("change", ()=>{
-        if(isWon){
-          selectedWinner = String(cid);
-          selectedTied.clear();
-          // force re-render (uncheck others)
-          renderEligibleList();
-        }else if(isTied){
-          selectedWinner = null;
-          if(input.checked) selectedTied.add(String(cid));
-          else selectedTied.delete(String(cid));
-        }else{
-          selectedWinner = null;
-          selectedTied.clear();
+      const cb = row.querySelector("input[type=checkbox]");
+      cb.addEventListener("change", ()=>{
+        if (st === "PENDING"){
+          cb.checked = false;
+          return;
         }
-        updateSelectionSummary();
+        if (st === "WON"){
+          // only 1
+          picked = new Set([cid]);
+          // uncheck others by rerender
+          renderCustomers();
+        } else {
+          // TIED multi
+          if (cb.checked) picked.add(cid);
+          else picked.delete(cid);
+        }
+        updatePickSummary();
       });
 
-      root.appendChild(row);
+      custList.appendChild(row);
     });
+
+    updatePickSummary();
   }
 
-  function updateSelectionSummary(){
-    const st = String(el("mStatus").value || "").toUpperCase();
-    if(st==="PENDING"){
-      el("selectionSummary").textContent = "PENDING: chưa chọn khách.";
-      return;
-    }
-    if(st==="WON"){
-      if(!selectedWinner){
-        el("selectionSummary").textContent = "WON: chưa chọn khách trúng.";
-        return;
-      }
-      const it = (eligible||[]).find(x=>String(x.customer_id)===String(selectedWinner));
-      el("selectionSummary").textContent = it ? (`WON: #${it.customer_id} • ${it.full_name || ""}`) : (`WON: #${selectedWinner}`);
-      return;
-    }
-    // TIED
-    const ids = Array.from(selectedTied);
-    if(ids.length<2){
-      el("selectionSummary").textContent = "TIED: cần chọn tối thiểu 2 khách hòa.";
-      return;
-    }
-    const names = ids.map(id=>{
-      const it = (eligible||[]).find(x=>String(x.customer_id)===String(id));
-      return it ? (`#${id} ${it.full_name||""}`) : `#${id}`;
-    });
-    el("selectionSummary").textContent = "TIED: " + names.join(" • ");
+  function escapeHtml(s){
+    return (s ?? "").toString()
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#39;");
   }
 
-  // reload eligible
-  el("btnReloadEligible").addEventListener("click", async ()=>{
-    if(!currentLot){ toast("Thông báo","Chưa chọn lô."); return; }
-    el("eligibleNote").textContent = "Đang tải...";
-    eligible = await apiEligibleCustomers();
-    el("eligibleNote").textContent = "Tổng: " + (eligible.length || 0);
-    // keep selections if still exists
-    renderEligibleList();
-    updateSelectionSummary();
-  });
-
-  // open editor on row
-  qsa(".btnHandle").forEach(btn=>{
-    btn.addEventListener("click", async ()=>{
-      if(!PROJECT_ID || !SESSION_ID){
-        toast("Thiếu thông tin", "Hãy chọn dự án để tạo phiên kiểm phiếu.");
-        return;
-      }
-      const tr = btn.closest("tr[data-lot]");
-      if(!tr) return;
-      try{
-        currentLot = JSON.parse(tr.getAttribute("data-lot") || "{}");
-      }catch(e){
-        toast("Lỗi","Không đọc được dữ liệu lô.");
-        return;
-      }
-
-      // reset state
-      eligible = [];
-      selectedWinner = null;
-      selectedTied = new Set();
-
-      el("modalTitle").textContent = `Lô ${currentLot.lot_code || ""} — ${currentLot.lot_name || ""}`;
-      updateAuctionInfo();
-
-      // set modal form from existing data (if any)
-      const st = String(currentLot.counting_status || "PENDING").toUpperCase();
-      el("mStatus").value = ["PENDING","TIED","WON"].includes(st) ? st : "PENDING";
-      el("mHighest").value = currentLot.highest_price_vnd != null ? fmtNum(currentLot.highest_price_vnd) : "";
-      el("mReason").value = currentLot.edit_reason || "";
-
-      // restore tied ids if any
-      if(st==="TIED"){
-        const ids = currentLot.tied_customer_ids;
-        let arr = [];
-        if(Array.isArray(ids)) arr = ids;
-        else if(typeof ids === "string"){
-          try{ arr = JSON.parse(ids); }catch(e){}
-        }
-        (arr||[]).forEach(x=> selectedTied.add(String(x)));
-      }
-      if(st==="WON" && currentLot.winner_customer_id){
-        selectedWinner = String(currentLot.winner_customer_id);
-        // restore is_lucky_draw if present
-        if(currentLot.is_lucky_draw === true) setLuckyDrawRadios("true");
-        if(currentLot.is_lucky_draw === false) setLuckyDrawRadios("false");
-      }else{
-        setLuckyDrawRadios("");
-      }
-
-      updateStatusUI();
-      openModal();
-
-      // load eligible immediately
-      el("eligibleNote").textContent = "Đang tải...";
-      eligible = await apiEligibleCustomers();
-      el("eligibleNote").textContent = "Tổng: " + (eligible.length || 0);
-
-      // if selections exist, re-render
-      renderEligibleList();
-      updateSelectionSummary();
-    });
-  });
-
-  // ---------------------------
-  // Confirm flow (custom)
-  // ---------------------------
-  let pendingConfirm = null; // function
-
-  function openConfirm(text, onYes){
-    el("confirmText").textContent = text || "";
-    pendingConfirm = onYes;
-    el("modalMask").classList.remove("hidden");
-    el("confirmModal").classList.remove("hidden");
-  }
-  function closeConfirm(){
-    el("confirmModal").classList.add("hidden");
-    pendingConfirm = null;
-    // keep editor open; mask remains from editor
-  }
-  el("btnConfirmClose").addEventListener("click", closeConfirm);
-  el("btnConfirmNo").addEventListener("click", closeConfirm);
-  el("btnConfirmYes").addEventListener("click", async ()=>{
-    const fn = pendingConfirm;
-    closeConfirm();
-    if(fn) await fn();
-  });
-
-  // ---------------------------
   // Save
-  // ---------------------------
-  async function apiUpsert(payload){
-    const lotCode = encodeURIComponent(String(currentLot.lot_code || "").trim());
-    const url = `/auction/counting/api/sessions/${SESSION_ID}/lots/${lotCode}`;
-    const r = await fetch(url, {
-      method: "PUT",
-      headers: {"Content-Type":"application/json","Accept":"application/json"},
-      body: JSON.stringify(payload)
-    });
-    const js = await r.json().catch(()=> ({}));
-    if(!r.ok || !js || js.ok!==true){
-      const msg = (js && (js.detail || js.error)) ? (js.detail || js.error) : ("HTTP " + r.status);
-      throw new Error(msg);
+  async function save(){
+    if (!curLot) return;
+    modalErr.classList.remove("show");
+    modalErr.textContent = "";
+
+    const lotCode = encodeURIComponent((curLot.lot_code || "").trim());
+    const st = selStatus.value;
+    const hp = parseMoneyInput(inpHighest.value);
+    const reason = (inpReason.value || "").trim();
+    const ids = Array.from(picked.values());
+
+    // validate
+    if (st === "WON"){
+      if (!hp || hp <= 0) return showErr("Giá cao nhất là bắt buộc khi WON.");
+      if (ids.length !== 1) return showErr("WON phải chọn đúng 1 khách trúng.");
+      // is_lucky_draw required when status=WON (per your Service A)
+      // User must explicitly confirm via checkbox (payload carries is_lucky_draw)
+      // You said: operator confirms, sure correct.
+      const draw = !!chkLucky.checked;
+      // allow both false/true, but must be present -> always send boolean
+      var payload = {
+        status: "WON",
+        highest_price_vnd: hp,
+        winner_customer_id: ids[0],
+        is_lucky_draw: draw,
+        edit_reason: reason || null
+      };
+    } else if (st === "TIED"){
+      if (!hp || hp <= 0) return showErr("Giá cao nhất là bắt buộc khi TIED.");
+      if (ids.length < 2) return showErr("TIED phải chọn ≥ 2 khách hòa.");
+      var payload = {
+        status: "TIED",
+        highest_price_vnd: hp,
+        tied_customer_ids: ids,
+        edit_reason: reason || null
+      };
+    } else {
+      var payload = {
+        status: "PENDING",
+        edit_reason: reason || null
+      };
     }
-    return js;
+
+    btnSave.disabled = true;
+    btnSave.innerHTML = `<i class="ri-loader-4-line"></i> Đang lưu...`;
+
+    try{
+      const url = `/auction/counting/api/sessions/${SESSION_ID}/lots/${lotCode}`;
+      const r = await fetch(url, {
+        method: "PUT",
+        headers: {"Content-Type":"application/json","Accept":"application/json"},
+        body: JSON.stringify(payload)
+      });
+      const js = await r.json();
+      if (!r.ok || !js || js.ok !== true){
+        throw new Error((js && (js.detail || js.error)) || "Save failed");
+      }
+      // success: reload to reflect list changes
+      closeModal();
+      location.reload();
+    }catch(e){
+      showErr("Lưu thất bại. Vui lòng kiểm tra dữ liệu và thử lại.");
+    }finally{
+      btnSave.disabled = false;
+      btnSave.innerHTML = `<i class="ri-save-3-line"></i> Lưu`;
+    }
   }
 
-  el("btnSave").addEventListener("click", async ()=>{
-    if(!PROJECT_ID || !SESSION_ID || !currentLot){
-      toast("Thiếu dữ liệu", "Không đủ thông tin để lưu.");
-      return;
-    }
+  btnSave.addEventListener("click", save);
 
-    const status = String(el("mStatus").value || "").toUpperCase();
-    const highest = parseNum(el("mHighest").value);
-    const reason = (el("mReason").value || "").trim();
-
-    // Build payload by status (matching Service A)
-    const payload = { status };
-
-    if(status === "PENDING"){
-      // allow clear
-      payload.edit_reason = reason || null;
-    }
-
-    if(status === "TIED"){
-      if(highest===null || highest<=0){
-        toast("Thiếu dữ liệu", "TIED cần nhập Giá cao nhất > 0.");
-        return;
-      }
-      const ids = Array.from(selectedTied).map(x=> parseInt(x,10)).filter(x=> Number.isFinite(x) && x>0);
-      const uniq = Array.from(new Set(ids));
-      if(uniq.length < 2){
-        toast("Thiếu dữ liệu", "TIED cần chọn tối thiểu 2 khách hòa.");
-        return;
-      }
-      payload.highest_price_vnd = highest;
-      payload.tied_customer_ids = uniq;
-      payload.edit_reason = reason || null;
-    }
-
-    if(status === "WON"){
-      if(highest===null || highest<=0){
-        toast("Thiếu dữ liệu", "WON cần nhập Giá cao nhất > 0.");
-        return;
-      }
-      if(!selectedWinner){
-        toast("Thiếu dữ liệu", "WON cần chọn 1 khách trúng.");
-        return;
-      }
-      const draw = getLuckyDrawValue(); // must be chosen explicitly
-      if(draw === null){
-        toast("Thiếu dữ liệu", "WON bắt buộc xác nhận is_lucky_draw (Có/Không bốc thăm).");
-        return;
-      }
-
-      payload.highest_price_vnd = highest;
-      payload.winner_customer_id = parseInt(selectedWinner, 10);
-      payload.is_lucky_draw = (draw === "true");
-      payload.edit_reason = reason || null;
-    }
-
-    // confirm text
-    const lotLine = `Lô ${currentLot.lot_code || ""} — ${currentLot.lot_name || ""}`;
-    let confirmText = `${lotLine}\nTrạng thái: ${status}\n`;
-    if(status==="WON"){
-      const it = (eligible||[]).find(x=>String(x.customer_id)===String(selectedWinner));
-      confirmText += `Khách trúng: ${it ? ("#"+it.customer_id+" "+(it.full_name||"")) : ("#"+selectedWinner)}\n`;
-      confirmText += `Giá cao nhất: ${fmtNum(highest)}\n`;
-      confirmText += `is_lucky_draw: ${payload.is_lucky_draw ? "TRUE (bốc thăm)" : "FALSE (không bốc thăm)"}\n`;
-    }
-    if(status==="TIED"){
-      confirmText += `Giá cao nhất: ${fmtNum(highest)}\n`;
-      confirmText += `Số khách hòa: ${payload.tied_customer_ids.length}\n`;
-    }
-    if(status==="PENDING"){
-      confirmText += `Sẽ xóa/đưa về PENDING cho lô này.\n`;
-    }
-    if(reason) confirmText += `Lý do: ${reason}\n`;
-
-    openConfirm(confirmText, async ()=>{
-      try{
-        el("btnSave").disabled = true;
-        el("btnSave").classList.add("opacity-70");
-        await apiUpsert(payload);
-        toast("Thành công", "Đã lưu kết quả. Trang sẽ tải lại để đồng bộ.");
-        setTimeout(()=> window.location.reload(), 600);
-      }catch(e){
-        toast("Lỗi lưu", e.message || String(e));
-      }finally{
-        el("btnSave").disabled = false;
-        el("btnSave").classList.remove("opacity-70");
-      }
-    });
+  // open modal by keyboard ESC
+  document.addEventListener("keydown", (e)=>{
+    if (e.key === "Escape" && bd.classList.contains("show")) closeModal();
   });
 
 })();
