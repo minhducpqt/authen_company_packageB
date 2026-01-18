@@ -1,0 +1,545 @@
+{% extends "base.html" %}
+{% block title %}Kiểm phiếu trúng đấu giá{% endblock %}
+
+{% block content %}
+{% set prj = project_obj or {} %}
+{% set sess = session or (data or {}).get('session') or {} %}
+{% set sid = sess.get('id') %}
+
+<style>
+  .card { background:#fff; border:1px solid #e2e8f0; border-radius:16px; box-shadow:0 8px 24px rgba(15,23,42,.06); }
+  .btn { border-radius:12px; padding:.55rem .85rem; font-weight:600; border:1px solid #e2e8f0; background:#fff; }
+  .btn-primary{ background:#111827; color:#fff; border-color:#111827; }
+  .btn-danger{ background:#ef4444; color:#fff; border-color:#ef4444; }
+  .btn-muted{ background:#f8fafc; color:#0f172a; }
+  .pill { display:inline-flex; align-items:center; gap:.4rem; border-radius:999px; padding:.25rem .55rem; font-size:.75rem; font-weight:700; border:1px solid #e2e8f0; }
+  .pill-won{ background:#ecfdf5; border-color:#bbf7d0; color:#065f46; }
+  .pill-tied{ background:#fffbeb; border-color:#fde68a; color:#92400e; }
+  .pill-pending{ background:#f1f5f9; border-color:#e2e8f0; color:#334155; }
+  .row-active{ outline:2px solid rgba(99,102,241,.25); background:rgba(99,102,241,.05); }
+  .mono{ font-variant-numeric: tabular-nums; }
+  .table{ width:100%; border-collapse:separate; border-spacing:0; }
+  .table th{ text-align:left; font-size:.75rem; letter-spacing:.02em; color:#64748b; padding:.6rem .75rem; border-bottom:1px solid #e2e8f0; background:#fafafa; position:sticky; top:0; z-index:1;}
+  .table td{ padding:.65rem .75rem; border-bottom:1px solid #f1f5f9; vertical-align:top; }
+  .small{ font-size:.875rem; color:#475569; }
+  .muted{ color:#64748b; }
+  .grid2{ display:grid; grid-template-columns: 1.35fr .95fr; gap:16px; }
+  @media (max-width: 1024px){ .grid2{ grid-template-columns: 1fr; } }
+
+  /* Custom modal */
+  .modal-backdrop{ position:fixed; inset:0; background:rgba(2,6,23,.55); display:none; align-items:center; justify-content:center; z-index:9999; padding:16px; }
+  .modal{ width:min(720px, 100%); background:#fff; border-radius:18px; border:1px solid #e2e8f0; box-shadow:0 18px 60px rgba(0,0,0,.25); overflow:hidden; }
+  .modal-hd{ padding:14px 16px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; justify-content:space-between; }
+  .modal-bd{ padding:16px; }
+  .modal-ft{ padding:14px 16px; border-top:1px solid #f1f5f9; display:flex; gap:10px; justify-content:flex-end; }
+  .xbtn{ width:36px; height:36px; border-radius:12px; border:1px solid #e2e8f0; background:#fff; display:inline-flex; align-items:center; justify-content:center;}
+  .field{ border:1px solid #e2e8f0; border-radius:12px; padding:.55rem .65rem; width:100%; outline:none; }
+  .field:focus{ border-color:rgba(99,102,241,.55); box-shadow:0 0 0 3px rgba(99,102,241,.15); }
+  .chk-row{ display:flex; align-items:flex-start; gap:10px; padding:.55rem .6rem; border:1px solid #e2e8f0; border-radius:14px; }
+  .chk-row:hover{ background:#f8fafc; }
+</style>
+
+<div class="mb-5 flex items-start justify-between gap-3">
+  <div>
+    <h1 class="text-2xl font-semibold text-slate-900 flex items-center gap-2">
+      <i class="ri-auction-line text-indigo-600 text-3xl"></i>
+      Kiểm phiếu trúng đấu giá
+    </h1>
+    <p class="text-slate-500 text-sm mt-1">
+      Admin nhập giá cao nhất, chọn người trúng hoặc danh sách bốc thăm (khi nhiều người cùng giá cao nhất).
+    </p>
+  </div>
+
+  <div class="flex gap-2">
+    <a class="btn btn-muted" href="/auction/counting/display{% if project_id %}?project={{ project_id }}{% endif %}" target="_blank">
+      <i class="ri-slideshow-3-line"></i>&nbsp; Mở màn trình chiếu
+    </a>
+  </div>
+</div>
+
+{% if session_err %}
+  <div class="p-3 rounded-xl bg-red-50 border border-red-100 text-red-700 text-sm mb-4">
+    Không tạo/khởi động được phiên kiểm phiếu. {{ session_err }}
+  </div>
+{% endif %}
+
+<div class="card p-4 mb-4">
+  <div class="flex flex-wrap items-end gap-3">
+    <div class="min-w-[260px]">
+      <div class="text-xs font-semibold text-slate-600 mb-1">Dự án</div>
+      <select id="projectSel" class="field">
+        <option value="">— Chọn dự án —</option>
+        {% for p in projects %}
+          {% set code = (p.get('project_code') or p.get('code') or '') %}
+          {% set pid = (p.get('id') or p.get('project_id') or '') %}
+          {% set label = (code ~ " — " ~ (p.get('name') or '')) %}
+          <option value="{{ pid }}" {% if project_id and (pid|int == project_id|int) %}selected{% endif %}>
+            {{ label }}{% if p.get('status') %} ({{ p.get('status') }}){% endif %}
+          </option>
+        {% endfor %}
+      </select>
+      <div class="text-xs text-slate-500 mt-1">
+        * Dropdown hiển thị <b>tất cả</b> dự án (ACTIVE + INACTIVE). Nếu chỉ có 1 ACTIVE thì tự chọn.
+      </div>
+    </div>
+
+    <div class="flex-1 min-w-[240px]">
+      <div class="text-xs font-semibold text-slate-600 mb-1">Tìm lô (lot_code / tên lô)</div>
+      <input id="qInput" class="field" value="{{ q }}" placeholder="VD: L10, lô 12, ..." />
+    </div>
+
+    <div class="flex gap-2">
+      <button id="btnReload" class="btn btn-muted">
+        <i class="ri-refresh-line"></i>&nbsp; Tải lại
+      </button>
+    </div>
+
+    <div class="ml-auto text-sm text-slate-600">
+      <div>Session: <span class="mono font-semibold" id="sessionIdText">{{ sid or "-" }}</span></div>
+      <div class="text-xs text-slate-500">Trạng thái: <span id="sessionStatusText">{{ sess.get('status') or "-" }}</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="grid2">
+  <!-- LEFT: lots -->
+  <div class="card overflow-hidden">
+    <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+      <div>
+        <div class="text-sm font-semibold text-slate-900">Danh sách lô</div>
+        <div class="text-xs text-slate-500">Bấm 1 lô để nhập kết quả kiểm phiếu</div>
+      </div>
+      <div class="text-xs text-slate-500">
+        Tổng: <span id="totalLots">{{ (data or {}).get('total') or 0 }}</span>
+      </div>
+    </div>
+
+    <div class="max-h-[560px] overflow-auto">
+      <table class="table">
+        <thead>
+          <tr>
+            <th style="width:110px;">Lô</th>
+            <th>Mô tả</th>
+            <th style="width:120px;">Trạng thái</th>
+            <th style="width:120px;" class="text-right">Giá cao nhất</th>
+          </tr>
+        </thead>
+        <tbody id="lotsBody">
+          {% for r in (data or {}).get('data') or [] %}
+            {% set st = (r.get('counting_status') or 'PENDING') %}
+            <tr class="lot-row cursor-pointer" data-lot="{{ r.get('lot_code') }}">
+              <td class="font-semibold text-slate-900">{{ r.get('lot_code') }}</td>
+              <td class="small">
+                <div class="text-slate-900">{{ r.get('lot_name') or '' }}</div>
+                <div class="muted text-xs">ID: {{ r.get('lot_id') }}</div>
+              </td>
+              <td>
+                {% if st == 'WON' %}
+                  <span class="pill pill-won"><i class="ri-check-line"></i> WON</span>
+                {% elif st == 'TIED' %}
+                  <span class="pill pill-tied"><i class="ri-shuffle-line"></i> TIED</span>
+                {% else %}
+                  <span class="pill pill-pending"><i class="ri-time-line"></i> PENDING</span>
+                {% endif %}
+              </td>
+              <td class="text-right mono">
+                {{ (r.get('highest_price_vnd') or '') }}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- RIGHT: editor -->
+  <div class="card">
+    <div class="p-4 border-b border-slate-100">
+      <div class="text-sm font-semibold text-slate-900">Nhập kết quả kiểm phiếu</div>
+      <div class="text-xs text-slate-500">Chọn lô bên trái để load danh sách đủ điều kiện.</div>
+    </div>
+
+    <div class="p-4 space-y-4">
+      <div>
+        <div class="text-xs font-semibold text-slate-600 mb-1">Lô đang chọn</div>
+        <div class="flex items-center gap-2">
+          <div id="curLotCode" class="text-lg font-bold text-slate-900">—</div>
+          <div id="curLotName" class="text-sm text-slate-500"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="text-xs font-semibold text-slate-600 mb-1">Giá cao nhất (VND)</div>
+        <input id="highestPrice" class="field mono" placeholder="VD: 1250000000" inputmode="numeric" />
+        <div class="text-xs text-slate-500 mt-1">* Nhập số. Khi bốc thăm, giá vẫn là giá cao nhất (bằng nhau).</div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2">
+        <button class="btn btn-muted" id="btnSetPending"><i class="ri-eraser-line"></i>&nbsp; Reset PENDING</button>
+        <button class="btn btn-muted" id="btnSetTied"><i class="ri-shuffle-line"></i>&nbsp; Set TIED</button>
+        <button class="btn btn-primary" id="btnSetWon"><i class="ri-check-line"></i>&nbsp; Set WON</button>
+      </div>
+
+      <div class="border-t border-slate-100 pt-4">
+        <div class="flex items-center justify-between mb-2">
+          <div class="text-xs font-semibold text-slate-600">Danh sách đủ điều kiện</div>
+          <div class="text-xs text-slate-500">Chọn 1 người (WON) hoặc >=2 người (TIED)</div>
+        </div>
+
+        <div id="eligibleBox" class="space-y-2 max-h-[320px] overflow-auto pr-1">
+          <div class="text-sm text-slate-500">Chưa chọn lô.</div>
+        </div>
+      </div>
+
+      <div class="border-t border-slate-100 pt-4">
+        <div class="text-xs font-semibold text-slate-600 mb-1">Lý do chỉnh sửa (nếu sửa nhầm)</div>
+        <input id="editReason" class="field" placeholder="VD: nhập nhầm giá / nhầm người trúng..." />
+      </div>
+
+      <div class="flex gap-2">
+        <button class="btn btn-muted w-full" id="btnReloadEligible" disabled>
+          <i class="ri-user-search-line"></i>&nbsp; Tải lại danh sách đủ điều kiện
+        </button>
+      </div>
+
+      <div id="saveStatus" class="text-sm"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ======= Custom Modal (Confirm / Alert) ======= -->
+<div id="modalBackdrop" class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="font-semibold text-slate-900" id="modalTitle">Xác nhận</div>
+      <button class="xbtn" id="modalCloseBtn"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-bd">
+      <div class="text-slate-700" id="modalBody">...</div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-muted" id="modalCancelBtn">Huỷ</button>
+      <button class="btn btn-primary" id="modalOkBtn">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const projectId = {{ project_id or 'null' }};
+  const sessionId = {{ sid or 'null' }};
+
+  const selProject = document.getElementById('projectSel');
+  const qInput = document.getElementById('qInput');
+  const lotsBody = document.getElementById('lotsBody');
+  const btnReload = document.getElementById('btnReload');
+
+  const curLotCode = document.getElementById('curLotCode');
+  const curLotName = document.getElementById('curLotName');
+  const eligibleBox = document.getElementById('eligibleBox');
+  const highestPrice = document.getElementById('highestPrice');
+  const editReason = document.getElementById('editReason');
+  const btnReloadEligible = document.getElementById('btnReloadEligible');
+
+  const btnSetPending = document.getElementById('btnSetPending');
+  const btnSetTied = document.getElementById('btnSetTied');
+  const btnSetWon = document.getElementById('btnSetWon');
+  const saveStatus = document.getElementById('saveStatus');
+
+  // modal
+  const backdrop = document.getElementById('modalBackdrop');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalBody  = document.getElementById('modalBody');
+  const modalOkBtn = document.getElementById('modalOkBtn');
+  const modalCancelBtn = document.getElementById('modalCancelBtn');
+  const modalCloseBtn = document.getElementById('modalCloseBtn');
+
+  function openModal({title, body, okText='OK', cancelText='Huỷ', onOk=null, onCancel=null, showCancel=true}){
+    modalTitle.textContent = title || 'Thông báo';
+    modalBody.innerHTML = body || '';
+    modalOkBtn.textContent = okText;
+    modalCancelBtn.textContent = cancelText;
+    modalCancelBtn.style.display = showCancel ? '' : 'none';
+
+    let done = false;
+    function close(){
+      if(done) return;
+      done = true;
+      backdrop.style.display = 'none';
+      modalOkBtn.onclick = null;
+      modalCancelBtn.onclick = null;
+      modalCloseBtn.onclick = null;
+    }
+
+    modalOkBtn.onclick = () => { try{ onOk && onOk(close); } catch(e){ close(); } if(!onOk) close(); };
+    modalCancelBtn.onclick = () => { try{ onCancel && onCancel(close); } catch(e){ close(); } close(); };
+    modalCloseBtn.onclick = () => { try{ onCancel && onCancel(()=>{}); } catch(e){} close(); };
+    backdrop.style.display = 'flex';
+  }
+
+  function fmtMoney(x){
+    if(x === null || x === undefined || x === '') return '';
+    const n = Number(String(x).replace(/[^\d.-]/g,''));
+    if(!isFinite(n)) return String(x);
+    return n.toLocaleString('vi-VN');
+  }
+
+  function getSelectedCustomerIds(){
+    const checks = eligibleBox.querySelectorAll('input[type="checkbox"][data-cid]:checked');
+    return Array.from(checks).map(ch => parseInt(ch.getAttribute('data-cid'),10)).filter(x=>x>0);
+  }
+
+  function getSelectedWinnerId(){
+    const r = eligibleBox.querySelector('input[type="radio"][name="winner"]:checked');
+    if(!r) return null;
+    const cid = parseInt(r.getAttribute('data-cid'),10);
+    return cid>0 ? cid : null;
+  }
+
+  async function apiGet(url){
+    const r = await fetch(url, { headers: { 'Accept':'application/json' }});
+    const js = await r.json().catch(()=>({}));
+    return {ok: r.ok, status: r.status, js};
+  }
+  async function apiPut(url, payload){
+    const r = await fetch(url, { method:'PUT', headers:{'Content-Type':'application/json','Accept':'application/json'}, body: JSON.stringify(payload||{})});
+    const js = await r.json().catch(()=>({}));
+    return {ok: r.ok, status: r.status, js};
+  }
+
+  function setStatus(msg, ok=true){
+    saveStatus.className = ok ? 'text-sm text-emerald-700' : 'text-sm text-red-600';
+    saveStatus.textContent = msg;
+  }
+
+  // navigation
+  selProject.addEventListener('change', () => {
+    const pid = selProject.value;
+    if(!pid){ window.location.href = '/auction/counting'; return; }
+    window.location.href = `/auction/counting?project=${encodeURIComponent(pid)}`;
+  });
+
+  btnReload.addEventListener('click', () => {
+    const pid = selProject.value;
+    if(!pid){ window.location.reload(); return; }
+    const q = (qInput.value || '').trim();
+    const url = q ? `/auction/counting?project=${encodeURIComponent(pid)}&q=${encodeURIComponent(q)}` : `/auction/counting?project=${encodeURIComponent(pid)}`;
+    window.location.href = url;
+  });
+
+  // state
+  let currentLotCode = null;
+  let currentLotName = null;
+
+  async function loadEligible(lotCode){
+    if(!projectId || !lotCode) return;
+    eligibleBox.innerHTML = '<div class="text-sm text-slate-500">Đang tải…</div>';
+    const url = `/auction/counting/api/projects/${projectId}/lots/${encodeURIComponent(lotCode)}/eligible-customers?limit=5000&include_unpaid=false`;
+    const {ok, status, js} = await apiGet(url);
+    if(!ok){
+      eligibleBox.innerHTML = `<div class="text-sm text-red-600">Không tải được danh sách (HTTP ${status}).</div>`;
+      return;
+    }
+    const rows = (js.data || []);
+    if(!rows.length){
+      eligibleBox.innerHTML = `<div class="text-sm text-slate-500">Không có khách đủ điều kiện.</div>`;
+      return;
+    }
+
+    // Render list: radio for WON + checkbox for TIED (same list)
+    const html = rows.map((c) => {
+      const name = (c.full_name || '').trim();
+      const phone = (c.phone || c.phone_masked || '');
+      const cid = c.customer_id || c.id || '';
+      const phoneShow = phone ? String(phone) : '';
+      return `
+        <div class="chk-row">
+          <div class="pt-1">
+            <input type="radio" name="winner" data-cid="${cid}">
+          </div>
+          <div class="pt-1">
+            <input type="checkbox" data-cid="${cid}">
+          </div>
+          <div class="min-w-0">
+            <div class="font-semibold text-slate-900">${escapeHtml(name)}</div>
+            <div class="text-xs text-slate-500">SĐT: <span class="mono">${escapeHtml(phoneShow)}</span> • ID: <span class="mono">${cid}</span></div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    eligibleBox.innerHTML = html;
+  }
+
+  function escapeHtml(s){
+    s = String(s ?? '');
+    return s.replace(/[&<>"']/g, (m)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+  }
+
+  function highlightRow(lotCode){
+    const rows = lotsBody.querySelectorAll('tr.lot-row');
+    rows.forEach(r => {
+      if(r.getAttribute('data-lot') === lotCode) r.classList.add('row-active');
+      else r.classList.remove('row-active');
+    });
+  }
+
+  lotsBody.addEventListener('click', async (ev) => {
+    const tr = ev.target.closest('tr.lot-row');
+    if(!tr) return;
+    const lotCode = tr.getAttribute('data-lot');
+    if(!lotCode) return;
+
+    currentLotCode = lotCode;
+    currentLotName = (tr.querySelector('td:nth-child(2) .text-slate-900')?.textContent || '').trim();
+    curLotCode.textContent = lotCode;
+    curLotName.textContent = currentLotName ? `— ${currentLotName}` : '';
+    btnReloadEligible.disabled = false;
+    highlightRow(lotCode);
+
+    setStatus('', true);
+    await loadEligible(lotCode);
+  });
+
+  btnReloadEligible.addEventListener('click', async () => {
+    if(!currentLotCode) return;
+    await loadEligible(currentLotCode);
+  });
+
+  async function savePending(){
+    if(!sessionId || !currentLotCode){
+      openModal({title:'Thiếu dữ liệu', body:'Chọn lô trước khi lưu.', showCancel:false});
+      return;
+    }
+    const payload = {
+      status: 'PENDING',
+      edit_reason: (editReason.value || '').trim() || null,
+    };
+    const url = `/auction/counting/api/sessions/${sessionId}/lots/${encodeURIComponent(currentLotCode)}`;
+    const {ok, status, js} = await apiPut(url, payload);
+    if(!ok){
+      openModal({title:'Lỗi lưu', body:`HTTP ${status}<br><pre style="white-space:pre-wrap">${escapeHtml(JSON.stringify(js,null,2))}</pre>`, showCancel:false});
+      return;
+    }
+    setStatus('Đã reset PENDING.', true);
+    btnReload.click();
+  }
+
+  async function saveWon(){
+    if(!sessionId || !currentLotCode){
+      openModal({title:'Thiếu dữ liệu', body:'Chọn lô trước khi lưu.', showCancel:false});
+      return;
+    }
+    const hpRaw = (highestPrice.value || '').trim();
+    const winnerId = getSelectedWinnerId();
+
+    if(!hpRaw){
+      openModal({title:'Thiếu dữ liệu', body:'Vui lòng nhập <b>giá cao nhất</b>.', showCancel:false});
+      return;
+    }
+    if(!winnerId){
+      openModal({title:'Thiếu dữ liệu', body:'Vui lòng chọn <b>1 người trúng</b> (radio).', showCancel:false});
+      return;
+    }
+
+    const payload = {
+      status: 'WON',
+      highest_price_vnd: hpRaw,
+      winner_customer_id: winnerId,
+      edit_reason: (editReason.value || '').trim() || null,
+    };
+
+    openModal({
+      title: 'Xác nhận chốt TRÚNG',
+      body: `
+        <div class="text-slate-700">
+          Bạn sắp chốt <b>WON</b> cho lô <b>${escapeHtml(currentLotCode)}</b>.
+          <div class="mt-2 text-sm text-slate-600">
+            Giá cao nhất: <b class="mono">${escapeHtml(fmtMoney(hpRaw))}</b><br>
+            Winner ID: <b class="mono">${winnerId}</b>
+          </div>
+          <div class="mt-3 text-xs text-slate-500">
+            Lưu ý: nếu nhập nhầm có thể sửa lại, hệ thống sẽ tự cập nhật bảng kết quả trúng.
+          </div>
+        </div>
+      `,
+      okText: 'Chốt WON',
+      cancelText: 'Xem lại',
+      onOk: async (close) => {
+        const url = `/auction/counting/api/sessions/${sessionId}/lots/${encodeURIComponent(currentLotCode)}`;
+        const {ok, status, js} = await apiPut(url, payload);
+        if(!ok){
+          close();
+          openModal({title:'Lỗi lưu', body:`HTTP ${status}<br><pre style="white-space:pre-wrap">${escapeHtml(JSON.stringify(js,null,2))}</pre>`, showCancel:false});
+          return;
+        }
+        close();
+        setStatus('Đã chốt WON.', true);
+        btnReload.click();
+      }
+    });
+  }
+
+  async function saveTied(){
+    if(!sessionId || !currentLotCode){
+      openModal({title:'Thiếu dữ liệu', body:'Chọn lô trước khi lưu.', showCancel:false});
+      return;
+    }
+    const hpRaw = (highestPrice.value || '').trim();
+    const ids = getSelectedCustomerIds();
+
+    if(!hpRaw){
+      openModal({title:'Thiếu dữ liệu', body:'Vui lòng nhập <b>giá cao nhất</b>.', showCancel:false});
+      return;
+    }
+    if(!ids || ids.length < 2){
+      openModal({title:'Thiếu dữ liệu', body:'Vui lòng tick <b>tối thiểu 2 người</b> (checkbox) cho bốc thăm.', showCancel:false});
+      return;
+    }
+
+    const payload = {
+      status: 'TIED',
+      highest_price_vnd: hpRaw,
+      tied_customer_ids: ids,
+      edit_reason: (editReason.value || '').trim() || null,
+    };
+
+    openModal({
+      title: 'Xác nhận đưa vào BỐC THĂM',
+      body: `
+        <div class="text-slate-700">
+          Bạn sắp đặt trạng thái <b>TIED</b> cho lô <b>${escapeHtml(currentLotCode)}</b>.
+          <div class="mt-2 text-sm text-slate-600">
+            Giá cao nhất: <b class="mono">${escapeHtml(fmtMoney(hpRaw))}</b><br>
+            Số người bốc thăm: <b class="mono">${ids.length}</b>
+          </div>
+          <div class="mt-3 text-xs text-slate-500">
+            Bốc thăm làm offline. Khi có kết quả, quay lại chọn WON cho người trúng.
+          </div>
+        </div>
+      `,
+      okText: 'Đưa vào bốc thăm',
+      cancelText: 'Xem lại',
+      onOk: async (close) => {
+        const url = `/auction/counting/api/sessions/${sessionId}/lots/${encodeURIComponent(currentLotCode)}`;
+        const {ok, status, js} = await apiPut(url, payload);
+        if(!ok){
+          close();
+          openModal({title:'Lỗi lưu', body:`HTTP ${status}<br><pre style="white-space:pre-wrap">${escapeHtml(JSON.stringify(js,null,2))}</pre>`, showCancel:false});
+          return;
+        }
+        close();
+        setStatus('Đã set TIED (chờ bốc thăm).', true);
+        btnReload.click();
+      }
+    });
+  }
+
+  btnSetPending.addEventListener('click', savePending);
+  btnSetWon.addEventListener('click', saveWon);
+  btnSetTied.addEventListener('click', saveTied);
+
+})();
+</script>
+
+{% endblock %}

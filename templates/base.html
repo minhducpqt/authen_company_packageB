@@ -158,7 +158,7 @@
             </a>
         </li>
 
-        {# ===== OLD 4 -> NEW 5: VĂN BẢN PHÁP LÝ ===== #}
+        {# ===== 5: PHIÊN ĐẤU GIÁ ===== #}
         <li class="side-title mt-4">5. Phiên Đấu Giá</li>
         <li>
           <a class="side-link {% if request.url.path.startswith('/bid-attendance') %}active{% endif %}"
@@ -173,21 +173,31 @@
           </a>
         </li>
 
-        <!-- ✅ NEW 5.3: KẾT QUẢ TRÚNG ĐẤU GIÁ -->
+        <!-- ✅ NEW 5.3: KIỂM PHIẾU -->
         <li>
-          <a class="side-link {% if request.url.path.startswith('/auction/results') %}active{% endif %}"
-             href="/auction/results">
-            <i class="ri-auction-line"></i> 5.3 Kết quả trúng đấu giá
-          </a>
-        </li>
-        <li>
-          <a class="side-link {% if request.url.path.startswith('/auction/refunds') %}active{% endif %}"
-             href="/auction/refunds">
-            <i class="ri-refund-2-line"></i> 5.4 Hoàn tiền đặt trước
+          <a class="side-link {% if request.url.path.startswith('/auction/counting') %}active{% endif %}"
+             href="/auction/counting">
+            <i class="ri-clipboard-line"></i> 5.3 Kiểm phiếu
           </a>
         </li>
 
-        {# ===== OLD 5 -> NEW 6: THIẾT LẬP ===== #}
+        <!-- ✅ OLD 5.3 -> NEW 5.4 -->
+        <li>
+          <a class="side-link {% if request.url.path.startswith('/auction/results') %}active{% endif %}"
+             href="/auction/results">
+            <i class="ri-auction-line"></i> 5.4 Kết quả trúng đấu giá
+          </a>
+        </li>
+
+        <!-- ✅ OLD 5.4 -> NEW 5.5 -->
+        <li>
+          <a class="side-link {% if request.url.path.startswith('/auction/refunds') %}active{% endif %}"
+             href="/auction/refunds">
+            <i class="ri-refund-2-line"></i> 5.5 Hoàn tiền đặt trước
+          </a>
+        </li>
+
+        {# ===== 6: THIẾT LẬP ===== #}
         <li class="side-title mt-4">6. Thiết lập</li>
         <li>
           <a class="side-link {% if request.url.path.startswith('/settings/company') %}active{% endif %}"

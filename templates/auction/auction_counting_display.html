@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+{% block title %}Trình chiếu kiểm phiếu{% endblock %}
+
+{% block content %}
+{% set prj = project_obj or {} %}
+{% set poll_ms = poll_ms or 5000 %}
+
+<style>
+  body { background:#050712; }
+  .neo-wrap{
+    background: radial-gradient(1000px 500px at 20% 0%, rgba(99,102,241,.25), transparent 60%),
+                radial-gradient(900px 420px at 80% 10%, rgba(34,211,238,.20), transparent 60%),
+                radial-gradient(1200px 600px at 50% 100%, rgba(244,63,94,.14), transparent 65%),
+                linear-gradient(180deg, #050712 0%, #070a16 100%);
+    border:1px solid rgba(148,163,184,.14);
+    border-radius:22px;
+    box-shadow: 0 30px 120px rgba(0,0,0,.55);
+    overflow:hidden;
+  }
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 18px; border-bottom:1px solid rgba(148,163,184,.14);
+    background: rgba(2,6,23,.35);
+    backdrop-filter: blur(10px);
+  }
+  .title{
+    display:flex; align-items:center; gap:10px;
+    color:#e2e8f0; font-weight:800; font-size:22px;
+    letter-spacing:.02em;
+  }
+  .badge{
+    display:inline-flex; align-items:center; gap:8px;
+    border:1px solid rgba(148,163,184,.18);
+    background: rgba(15,23,42,.55);
+    color:#e2e8f0;
+    padding:6px 10px; border-radius:999px;
+    font-weight:700; font-size:12px;
+  }
+  .content{ padding:18px; }
+  .grid{
+    display:grid; grid-template-columns: 1.4fr .9fr; gap:18px;
+  }
+  @media (max-width: 1100px){ .grid{ grid-template-columns: 1fr; } }
+  .panel{
+    border:1px solid rgba(148,163,184,.14);
+    background: rgba(2,6,23,.35);
+    border-radius:20px;
+    overflow:hidden;
+  }
+  .panel-hd{
+    padding:14px 16px;
+    border-bottom:1px solid rgba(148,163,184,.14);
+    display:flex; align-items:center; justify-content:space-between;
+    color:#cbd5e1;
+  }
+  .panel-hd .h{
+    font-weight:800; letter-spacing:.02em;
+  }
+  .panel-bd{ padding:14px 16px; }
+  .row{
+    display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+    padding:10px 12px; border-radius:16px;
+    border:1px solid rgba(148,163,184,.12);
+    background: rgba(15,23,42,.40);
+  }
+  .row + .row{ margin-top:10px; }
+  .lot{
+    font-weight:900; color:#e2e8f0; font-size:16px;
+    text-shadow: 0 0 18px rgba(99,102,241,.25);
+  }
+  .name{
+    font-weight:800; color:#f1f5f9; font-size:16px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    max-width: 520px;
+  }
+  .sub{
+    color:#94a3b8; font-size:12px;
+  }
+  .mono{ font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+  .price{ color:#22c55e; font-weight:900; }
+  .tiedTag{
+    color:#f59e0b; font-weight:900;
+  }
+  .kpi{
+    display:flex; gap:10px; flex-wrap:wrap;
+  }
+  .kpi .badge{ background: rgba(15,23,42,.35); }
+  .select{
+    min-width: 320px;
+    border:1px solid rgba(148,163,184,.18);
+    background: rgba(15,23,42,.55);
+    color:#e2e8f0;
+    padding:10px 12px;
+    border-radius:14px;
+    outline:none;
+  }
+  .toast{
+    position:fixed; right:16px; bottom:16px;
+    background: rgba(15,23,42,.9);
+    border:1px solid rgba(148,163,184,.16);
+    color:#e2e8f0;
+    padding:10px 12px;
+    border-radius:14px;
+    display:none;
+    max-width: 420px;
+  }
+</style>
+
+<div class="neo-wrap">
+  <div class="topbar">
+    <div class="title">
+      <i class="ri-slideshow-3-line text-cyan-300"></i>
+      TRÌNH CHIẾU KIỂM PHIẾU
+      <span class="badge"><i class="ri-timer-2-line"></i> Poll: {{ (poll_ms/1000)|int }}s</span>
+    </div>
+    <div class="flex items-center gap-3">
+      <select id="projectSel" class="select">
+        <option value="">— Chọn dự án —</option>
+        {% for p in projects %}
+          {% set code = (p.get('project_code') or p.get('code') or '') %}
+          {% set pid = (p.get('id') or p.get('project_id') or '') %}
+          <option value="{{ pid }}" {% if project_id and (pid|int == project_id|int) %}selected{% endif %}>
+            {{ code }} — {{ p.get('name') or '' }}{% if p.get('status') %} ({{ p.get('status') }}){% endif %}
+          </option>
+        {% endfor %}
+      </select>
+      <div class="badge" id="lastUpdated">—</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="kpi mb-4">
+      <span class="badge">Tổng lô: <span class="mono" id="kTotal">0</span></span>
+      <span class="badge">Đã kiểm: <span class="mono" id="kChecked">0</span></span>
+      <span class="badge">TRÚNG: <span class="mono" id="kWon">0</span></span>
+      <span class="badge">CHỜ BỐC THĂM: <span class="mono" id="kTied">0</span></span>
+      <span class="badge">Session: <span class="mono" id="kSession">-</span></span>
+    </div>
+
+    <div class="grid">
+      <!-- winners -->
+      <div class="panel">
+        <div class="panel-hd">
+          <div class="h"><i class="ri-award-line"></i> DANH SÁCH TRÚNG</div>
+          <div class="sub">Hiển thị tên đầy đủ • SĐT chỉ lộ 3 số cuối</div>
+        </div>
+        <div class="panel-bd" id="winnersBox">
+          <div class="sub">Chưa có dữ liệu.</div>
+        </div>
+      </div>
+
+      <!-- tied -->
+      <div class="panel">
+        <div class="panel-hd">
+          <div class="h"><i class="ri-shuffle-line"></i> CHỜ BỐC THĂM</div>
+          <div class="sub">Số lượng thường ít, bố trí gọn</div>
+        </div>
+        <div class="panel-bd" id="tiedBox">
+          <div class="sub">Chưa có dữ liệu.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+(function(){
+  const pollMs = {{ poll_ms or 5000 }};
+  const initProjectId = {{ project_id or 'null' }};
+  const sel = document.getElementById('projectSel');
+
+  const elLast = document.getElementById('lastUpdated');
+  const kTotal = document.getElementById('kTotal');
+  const kChecked = document.getElementById('kChecked');
+  const kWon = document.getElementById('kWon');
+  const kTied = document.getElementById('kTied');
+  const kSession = document.getElementById('kSession');
+
+  const winnersBox = document.getElementById('winnersBox');
+  const tiedBox = document.getElementById('tiedBox');
+  const toast = document.getElementById('toast');
+
+  function showToast(msg){
+    toast.textContent = msg;
+    toast.style.display = 'block';
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(()=> toast.style.display='none', 2600);
+  }
+
+  function fmtMoney(x){
+    if(x === null || x === undefined || x === '') return '';
+    const n = Number(String(x).replace(/[^\d.-]/g,''));
+    if(!isFinite(n)) return String(x);
+    return n.toLocaleString('vi-VN');
+  }
+  function esc(s){
+    s = String(s ?? '');
+    return s.replace(/[&<>"']/g, (m)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+  }
+
+  sel.addEventListener('change', () => {
+    const pid = sel.value;
+    if(!pid){ window.location.href = '/auction/counting/display'; return; }
+    window.location.href = `/auction/counting/display?project=${encodeURIComponent(pid)}`;
+  });
+
+  let timer = null;
+  let running = false;
+
+  async function fetchSnapshot(projectId){
+    const url = `/auction/counting/api/display/snapshot?project_id=${encodeURIComponent(projectId)}`;
+    const r = await fetch(url, { headers: { 'Accept':'application/json' }});
+    const js = await r.json().catch(()=>({}));
+    return {ok:r.ok, status:r.status, js};
+  }
+
+  function render(snapshot){
+    const sum = snapshot.summary || {};
+    const sess = snapshot.session || null;
+
+    kTotal.textContent = sum.total_lots ?? 0;
+    kChecked.textContent = sum.checked ?? 0;
+    kWon.textContent = sum.won ?? 0;
+    kTied.textContent = sum.tied ?? 0;
+    kSession.textContent = sess && sess.id ? String(sess.id) : '-';
+
+    const winners = snapshot.winners || [];
+    if(!winners.length){
+      winnersBox.innerHTML = `<div class="sub">Chưa có lô nào chốt trúng.</div>`;
+    } else {
+      winnersBox.innerHTML = winners.map(w => `
+        <div class="row">
+          <div class="min-w-0">
+            <div class="lot">${esc(w.lot_code || '')}</div>
+            <div class="sub">${esc(w.lot_name || '')}</div>
+          </div>
+          <div class="text-right min-w-[360px]">
+            <div class="name">${esc(w.full_name || '')}</div>
+            <div class="sub">SĐT: <span class="mono">${esc(w.phone_masked || '')}</span></div>
+            <div class="sub">Giá: <span class="mono price">${esc(fmtMoney(w.highest_price_vnd))}</span></div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    const tied = snapshot.tied || [];
+    if(!tied.length){
+      tiedBox.innerHTML = `<div class="sub">Không có lô cần bốc thăm.</div>`;
+    } else {
+      tiedBox.innerHTML = tied.map(t => {
+        const cand = (t.candidates || []);
+        const candHtml = cand.slice(0, 8).map(c => `
+          <div class="sub">• ${esc(c.full_name || '')} — <span class="mono">${esc(c.phone_masked || '')}</span></div>
+        `).join('');
+        const more = cand.length > 8 ? `<div class="sub muted">+ ${cand.length - 8} người khác…</div>` : '';
+        return `
+          <div class="row">
+            <div class="min-w-0">
+              <div class="lot">${esc(t.lot_code || '')} <span class="tiedTag">• TIED</span></div>
+              <div class="sub">${esc(t.lot_name || '')}</div>
+              <div class="sub">Giá cao nhất: <span class="mono tiedTag">${esc(fmtMoney(t.highest_price_vnd))}</span></div>
+            </div>
+            <div class="min-w-[360px]">
+              ${candHtml || '<div class="sub">Chưa có danh sách ứng viên.</div>'}
+              ${more}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    const ts = new Date();
+    elLast.innerHTML = `<i class="ri-wifi-line"></i> ${ts.toLocaleTimeString('vi-VN')}`;
+  }
+
+  async function tick(){
+    if(running) return;
+    const pid = sel.value ? parseInt(sel.value,10) : null;
+    if(!pid){ return; }
+    running = true;
+    try{
+      const {ok, status, js} = await fetchSnapshot(pid);
+      if(!ok){
+        showToast(`Không tải được snapshot (HTTP ${status})`);
+      } else {
+        render(js);
+      }
+    }catch(e){
+      showToast(`Lỗi kết nối snapshot`);
+    }finally{
+      running = false;
+    }
+  }
+
+  function start(){
+    if(timer) clearInterval(timer);
+    timer = setInterval(tick, pollMs);
+    tick();
+  }
+
+  if(initProjectId){
+    start();
+  }
+})();
+</script>
+
+{% endblock %}
