@@ -5,38 +5,87 @@
 {% set prj = project_obj or {} %}
 {% set sess = session or (data or {}).get('session') or {} %}
 {% set sid = sess.get('id') %}
+{% set pid = project_id %}
 
 <style>
-  .card { background:#fff; border:1px solid #e2e8f0; border-radius:16px; box-shadow:0 8px 24px rgba(15,23,42,.06); }
-  .btn { border-radius:12px; padding:.55rem .85rem; font-weight:600; border:1px solid #e2e8f0; background:#fff; }
-  .btn-primary{ background:#111827; color:#fff; border-color:#111827; }
+  .card { background:#fff; border:1px solid #e2e8f0; border-radius:18px; box-shadow:0 10px 30px rgba(15,23,42,.06); }
+  .btn { border-radius:12px; padding:.58rem .9rem; font-weight:700; border:1px solid #e2e8f0; background:#fff; transition:.15s ease; }
+  .btn:hover{ transform: translateY(-1px); box-shadow: 0 10px 22px rgba(15,23,42,.08); }
+  .btn:active{ transform:none; box-shadow:none; }
+  .btn-primary{ background:linear-gradient(135deg,#111827,#0b1224); color:#fff; border-color:#0b1224; }
   .btn-danger{ background:#ef4444; color:#fff; border-color:#ef4444; }
   .btn-muted{ background:#f8fafc; color:#0f172a; }
-  .pill { display:inline-flex; align-items:center; gap:.4rem; border-radius:999px; padding:.25rem .55rem; font-size:.75rem; font-weight:700; border:1px solid #e2e8f0; }
+  .pill { display:inline-flex; align-items:center; gap:.4rem; border-radius:999px; padding:.25rem .58rem; font-size:.75rem; font-weight:900; border:1px solid #e2e8f0; }
   .pill-won{ background:#ecfdf5; border-color:#bbf7d0; color:#065f46; }
   .pill-tied{ background:#fffbeb; border-color:#fde68a; color:#92400e; }
   .pill-pending{ background:#f1f5f9; border-color:#e2e8f0; color:#334155; }
-  .row-active{ outline:2px solid rgba(99,102,241,.25); background:rgba(99,102,241,.05); }
-  .mono{ font-variant-numeric: tabular-nums; }
+  .row-active{ outline:2px solid rgba(99,102,241,.35); background:rgba(99,102,241,.06); }
+  .mono{ font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
   .table{ width:100%; border-collapse:separate; border-spacing:0; }
-  .table th{ text-align:left; font-size:.75rem; letter-spacing:.02em; color:#64748b; padding:.6rem .75rem; border-bottom:1px solid #e2e8f0; background:#fafafa; position:sticky; top:0; z-index:1;}
-  .table td{ padding:.65rem .75rem; border-bottom:1px solid #f1f5f9; vertical-align:top; }
+  .table th{ text-align:left; font-size:.75rem; letter-spacing:.02em; color:#64748b; padding:.65rem .75rem; border-bottom:1px solid #e2e8f0; background:#fafafa; position:sticky; top:0; z-index:1;}
+  .table td{ padding:.7rem .75rem; border-bottom:1px solid #f1f5f9; vertical-align:top; }
   .small{ font-size:.875rem; color:#475569; }
   .muted{ color:#64748b; }
   .grid2{ display:grid; grid-template-columns: 1.35fr .95fr; gap:16px; }
   @media (max-width: 1024px){ .grid2{ grid-template-columns: 1fr; } }
+  .field{ border:1px solid #e2e8f0; border-radius:12px; padding:.6rem .7rem; width:100%; outline:none; background:#fff; }
+  .field:focus{ border-color:rgba(99,102,241,.65); box-shadow:0 0 0 3px rgba(99,102,241,.15); }
+  .hint{ font-size:.75rem; color:#64748b; margin-top:.25rem; }
+
+  /* Eligible list */
+  .pick-row{
+    display:flex; gap:12px; align-items:flex-start;
+    padding:.62rem .7rem;
+    border:1px solid #e2e8f0; border-radius:16px;
+    background: linear-gradient(180deg, #ffffff, #fbfcff);
+    cursor:pointer;
+  }
+  .pick-row:hover{ background:#f8fafc; }
+  .pick-left{ display:flex; gap:10px; padding-top:2px; }
+  .pick-main{ min-width:0; flex:1; }
+  .pick-name{ font-weight:800; color:#0f172a; line-height:1.25; }
+  .pick-meta{ font-size:.75rem; color:#64748b; margin-top:2px; }
+  .tag{
+    display:inline-flex; align-items:center;
+    gap:6px;
+    font-size:.72rem;
+    padding:.18rem .5rem;
+    border-radius:999px;
+    border:1px solid #e2e8f0;
+    color:#334155;
+    background:#fff;
+  }
+
+  /* Price preview */
+  .price-box{
+    display:grid; grid-template-columns: 1fr;
+    gap:8px;
+  }
+  .price-preview{
+    display:flex; justify-content:space-between; align-items:center;
+    border:1px solid #e2e8f0; border-radius:14px;
+    padding:.6rem .7rem;
+    background: #0b1224;
+    color: rgba(236,253,245,.96);
+    box-shadow: inset 0 0 0 1px rgba(16,185,129,.18);
+  }
+  .price-preview .lbl{ font-size:.75rem; color: rgba(167,243,208,.85); font-weight:700; }
+  .price-preview .val{ font-size:1.05rem; font-weight:950; letter-spacing:.01em; }
+  .warn{
+    font-size:.75rem; color:#b45309;
+    background:#fffbeb; border:1px solid #fde68a;
+    padding:.45rem .6rem; border-radius:12px; display:none;
+  }
 
   /* Custom modal */
   .modal-backdrop{ position:fixed; inset:0; background:rgba(2,6,23,.55); display:none; align-items:center; justify-content:center; z-index:9999; padding:16px; }
-  .modal{ width:min(720px, 100%); background:#fff; border-radius:18px; border:1px solid #e2e8f0; box-shadow:0 18px 60px rgba(0,0,0,.25); overflow:hidden; }
+  .modal{ width:min(760px, 100%); background:#fff; border-radius:18px; border:1px solid #e2e8f0; box-shadow:0 18px 60px rgba(0,0,0,.25); overflow:hidden; }
   .modal-hd{ padding:14px 16px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; justify-content:space-between; }
   .modal-bd{ padding:16px; }
   .modal-ft{ padding:14px 16px; border-top:1px solid #f1f5f9; display:flex; gap:10px; justify-content:flex-end; }
   .xbtn{ width:36px; height:36px; border-radius:12px; border:1px solid #e2e8f0; background:#fff; display:inline-flex; align-items:center; justify-content:center;}
-  .field{ border:1px solid #e2e8f0; border-radius:12px; padding:.55rem .65rem; width:100%; outline:none; }
-  .field:focus{ border-color:rgba(99,102,241,.55); box-shadow:0 0 0 3px rgba(99,102,241,.15); }
-  .chk-row{ display:flex; align-items:flex-start; gap:10px; padding:.55rem .6rem; border:1px solid #e2e8f0; border-radius:14px; }
-  .chk-row:hover{ background:#f8fafc; }
+  .kpi{ display:flex; gap:10px; flex-wrap:wrap; }
+  .kpi .chip{ border:1px solid #e2e8f0; border-radius:999px; padding:.32rem .55rem; font-size:.78rem; font-weight:800; background:#fff; color:#334155; }
 </style>
 
 <div class="mb-5 flex items-start justify-between gap-3">
@@ -46,12 +95,14 @@
       Kiểm phiếu trúng đấu giá
     </h1>
     <p class="text-slate-500 text-sm mt-1">
-      Admin nhập giá cao nhất, chọn người trúng hoặc danh sách bốc thăm (khi nhiều người cùng giá cao nhất).
+      Nhập giá cao nhất, chọn <b>người trúng</b> hoặc <b>danh sách bốc thăm</b> (khi nhiều người cùng giá).
     </p>
   </div>
 
   <div class="flex gap-2">
-    <a class="btn btn-muted" href="/auction/counting/display{% if project_id %}?project={{ project_id }}{% endif %}" target="_blank">
+    <a class="btn btn-muted"
+       href="/auction/counting/display?project_id={{ pid }}"
+       target="_blank">
       <i class="ri-slideshow-3-line"></i>&nbsp; Mở màn trình chiếu
     </a>
   </div>
@@ -65,27 +116,27 @@
 
 <div class="card p-4 mb-4">
   <div class="flex flex-wrap items-end gap-3">
-    <div class="min-w-[260px]">
-      <div class="text-xs font-semibold text-slate-600 mb-1">Dự án</div>
+    <div class="min-w-[280px]">
+      <div class="text-xs font-extrabold text-slate-600 mb-1">Dự án</div>
       <select id="projectSel" class="field">
         <option value="">— Chọn dự án —</option>
         {% for p in projects %}
           {% set code = (p.get('project_code') or p.get('code') or '') %}
-          {% set pid = (p.get('id') or p.get('project_id') or '') %}
+          {% set _pid = (p.get('id') or p.get('project_id') or '') %}
           {% set label = (code ~ " — " ~ (p.get('name') or '')) %}
-          <option value="{{ pid }}" {% if project_id and (pid|int == project_id|int) %}selected{% endif %}>
+          <option value="{{ _pid }}" {% if pid and (_pid|int == pid|int) %}selected{% endif %}>
             {{ label }}{% if p.get('status') %} ({{ p.get('status') }}){% endif %}
           </option>
         {% endfor %}
       </select>
-      <div class="text-xs text-slate-500 mt-1">
-        * Dropdown hiển thị <b>tất cả</b> dự án (ACTIVE + INACTIVE). Nếu chỉ có 1 ACTIVE thì tự chọn.
+      <div class="hint">
+        * Dropdown hiển thị <b>tất cả</b> dự án (đang hoạt động + đã đóng). Nếu chỉ có 1 dự án đang hoạt động thì tự chọn.
       </div>
     </div>
 
     <div class="flex-1 min-w-[240px]">
-      <div class="text-xs font-semibold text-slate-600 mb-1">Tìm lô (lot_code / tên lô)</div>
-      <input id="qInput" class="field" value="{{ q }}" placeholder="VD: L10, lô 12, ..." />
+      <div class="text-xs font-extrabold text-slate-600 mb-1">Tìm lô (mã lô / tên lô)</div>
+      <input id="qInput" class="field" value="{{ q }}" placeholder="VD: L10, B12, lô góc, ..." />
     </div>
 
     <div class="flex gap-2">
@@ -94,9 +145,11 @@
       </button>
     </div>
 
-    <div class="ml-auto text-sm text-slate-600">
-      <div>Session: <span class="mono font-semibold" id="sessionIdText">{{ sid or "-" }}</span></div>
-      <div class="text-xs text-slate-500">Trạng thái: <span id="sessionStatusText">{{ sess.get('status') or "-" }}</span></div>
+    <div class="ml-auto">
+      <div class="kpi">
+        <span class="chip">Phiên: <span class="mono">{{ sid or "-" }}</span></span>
+        <span class="chip">Trạng thái: <span class="mono">{{ sess.get('status') or "-" }}</span></span>
+      </div>
     </div>
   </div>
 </div>
@@ -106,8 +159,8 @@
   <div class="card overflow-hidden">
     <div class="p-4 border-b border-slate-100 flex items-center justify-between">
       <div>
-        <div class="text-sm font-semibold text-slate-900">Danh sách lô</div>
-        <div class="text-xs text-slate-500">Bấm 1 lô để nhập kết quả kiểm phiếu</div>
+        <div class="text-sm font-extrabold text-slate-900">Danh sách lô</div>
+        <div class="text-xs text-slate-500">Bấm một lô để nhập kết quả kiểm phiếu</div>
       </div>
       <div class="text-xs text-slate-500">
         Tổng: <span id="totalLots">{{ (data or {}).get('total') or 0 }}</span>
@@ -118,32 +171,34 @@
       <table class="table">
         <thead>
           <tr>
-            <th style="width:110px;">Lô</th>
+            <th style="width:120px;">Mã lô</th>
             <th>Mô tả</th>
-            <th style="width:120px;">Trạng thái</th>
-            <th style="width:120px;" class="text-right">Giá cao nhất</th>
+            <th style="width:130px;">Kết quả</th>
+            <th style="width:150px;" class="text-right">Giá cao nhất</th>
           </tr>
         </thead>
         <tbody id="lotsBody">
           {% for r in (data or {}).get('data') or [] %}
             {% set st = (r.get('counting_status') or 'PENDING') %}
-            <tr class="lot-row cursor-pointer" data-lot="{{ r.get('lot_code') }}">
-              <td class="font-semibold text-slate-900">{{ r.get('lot_code') }}</td>
+            <tr class="lot-row cursor-pointer" data-lot="{{ r.get('lot_code') }}"
+                data-lotname="{{ (r.get('lot_name') or '')|e }}"
+                data-hp="{{ (r.get('highest_price_vnd') or '') }}">
+              <td class="font-extrabold text-slate-900">{{ r.get('lot_code') }}</td>
               <td class="small">
                 <div class="text-slate-900">{{ r.get('lot_name') or '' }}</div>
-                <div class="muted text-xs">ID: {{ r.get('lot_id') }}</div>
+                <div class="muted text-xs">ID: <span class="mono">{{ r.get('lot_id') }}</span></div>
               </td>
               <td>
                 {% if st == 'WON' %}
-                  <span class="pill pill-won"><i class="ri-check-line"></i> WON</span>
+                  <span class="pill pill-won"><i class="ri-check-line"></i> Trúng</span>
                 {% elif st == 'TIED' %}
-                  <span class="pill pill-tied"><i class="ri-shuffle-line"></i> TIED</span>
+                  <span class="pill pill-tied"><i class="ri-shuffle-line"></i> Bốc thăm</span>
                 {% else %}
-                  <span class="pill pill-pending"><i class="ri-time-line"></i> PENDING</span>
+                  <span class="pill pill-pending"><i class="ri-time-line"></i> Chưa nhập</span>
                 {% endif %}
               </td>
               <td class="text-right mono">
-                {{ (r.get('highest_price_vnd') or '') }}
+                <span class="hp-cell">{{ (r.get('highest_price_vnd') or '') }}</span>
               </td>
             </tr>
           {% endfor %}
@@ -155,35 +210,51 @@
   <!-- RIGHT: editor -->
   <div class="card">
     <div class="p-4 border-b border-slate-100">
-      <div class="text-sm font-semibold text-slate-900">Nhập kết quả kiểm phiếu</div>
-      <div class="text-xs text-slate-500">Chọn lô bên trái để load danh sách đủ điều kiện.</div>
+      <div class="text-sm font-extrabold text-slate-900">Nhập kết quả kiểm phiếu</div>
+      <div class="text-xs text-slate-500">Chọn lô bên trái để tải danh sách đủ điều kiện.</div>
     </div>
 
     <div class="p-4 space-y-4">
       <div>
-        <div class="text-xs font-semibold text-slate-600 mb-1">Lô đang chọn</div>
+        <div class="text-xs font-extrabold text-slate-600 mb-1">Lô đang chọn</div>
         <div class="flex items-center gap-2">
-          <div id="curLotCode" class="text-lg font-bold text-slate-900">—</div>
+          <div id="curLotCode" class="text-xl font-black text-slate-900">—</div>
           <div id="curLotName" class="text-sm text-slate-500"></div>
         </div>
       </div>
 
-      <div>
-        <div class="text-xs font-semibold text-slate-600 mb-1">Giá cao nhất (VND)</div>
-        <input id="highestPrice" class="field mono" placeholder="VD: 1250000000" inputmode="numeric" />
-        <div class="text-xs text-slate-500 mt-1">* Nhập số. Khi bốc thăm, giá vẫn là giá cao nhất (bằng nhau).</div>
+      <div class="price-box">
+        <div>
+          <div class="text-xs font-extrabold text-slate-600 mb-1">Giá cao nhất (VND)</div>
+          <input id="highestPrice" class="field mono" placeholder="VD: 5200000000" inputmode="numeric" />
+          <div class="hint">* Nhập số. Hệ thống sẽ tự hiển thị dạng 5.200.000.000 ₫ để anh dễ kiểm soát.</div>
+        </div>
+
+        <div class="price-preview">
+          <div>
+            <div class="lbl">Giá đang nhập</div>
+            <div class="val mono" id="pricePreview">—</div>
+          </div>
+          <div class="text-xs" style="color: rgba(167,243,208,.85); font-weight:800;">
+            VND
+          </div>
+        </div>
+
+        <div id="priceWarn" class="warn">
+          Giá đang nhập có vẻ bất thường. Vui lòng kiểm tra lại.
+        </div>
       </div>
 
       <div class="grid grid-cols-3 gap-2">
-        <button class="btn btn-muted" id="btnSetPending"><i class="ri-eraser-line"></i>&nbsp; Reset PENDING</button>
-        <button class="btn btn-muted" id="btnSetTied"><i class="ri-shuffle-line"></i>&nbsp; Set TIED</button>
-        <button class="btn btn-primary" id="btnSetWon"><i class="ri-check-line"></i>&nbsp; Set WON</button>
+        <button class="btn btn-muted" id="btnSetPending"><i class="ri-eraser-line"></i>&nbsp; Xoá kết quả</button>
+        <button class="btn btn-muted" id="btnSetTied"><i class="ri-shuffle-line"></i>&nbsp; Đưa vào bốc thăm</button>
+        <button class="btn btn-primary" id="btnSetWon"><i class="ri-check-line"></i>&nbsp; Chốt trúng</button>
       </div>
 
       <div class="border-t border-slate-100 pt-4">
         <div class="flex items-center justify-between mb-2">
-          <div class="text-xs font-semibold text-slate-600">Danh sách đủ điều kiện</div>
-          <div class="text-xs text-slate-500">Chọn 1 người (WON) hoặc >=2 người (TIED)</div>
+          <div class="text-xs font-extrabold text-slate-600">Danh sách đủ điều kiện</div>
+          <div class="text-xs text-slate-500">Trúng: chọn 1 người • Bốc thăm: tick từ 2 người trở lên</div>
         </div>
 
         <div id="eligibleBox" class="space-y-2 max-h-[320px] overflow-auto pr-1">
@@ -192,8 +263,8 @@
       </div>
 
       <div class="border-t border-slate-100 pt-4">
-        <div class="text-xs font-semibold text-slate-600 mb-1">Lý do chỉnh sửa (nếu sửa nhầm)</div>
-        <input id="editReason" class="field" placeholder="VD: nhập nhầm giá / nhầm người trúng..." />
+        <div class="text-xs font-extrabold text-slate-600 mb-1">Lý do chỉnh sửa (nếu có)</div>
+        <input id="editReason" class="field" placeholder="VD: nhập nhầm giá / nhầm người..." />
       </div>
 
       <div class="flex gap-2">
@@ -211,7 +282,7 @@
 <div id="modalBackdrop" class="modal-backdrop">
   <div class="modal">
     <div class="modal-hd">
-      <div class="font-semibold text-slate-900" id="modalTitle">Xác nhận</div>
+      <div class="font-extrabold text-slate-900" id="modalTitle">Xác nhận</div>
       <button class="xbtn" id="modalCloseBtn"><i class="ri-close-line"></i></button>
     </div>
     <div class="modal-bd">
@@ -226,8 +297,8 @@
 
 <script>
 (function(){
-  const projectId = {{ project_id or 'null' }};
-  const sessionId = {{ sid or 'null' }};
+  const PROJECT_ID = {{ pid or 'null' }};
+  const SESSION_ID = {{ sid or 'null' }};
 
   const selProject = document.getElementById('projectSel');
   const qInput = document.getElementById('qInput');
@@ -238,6 +309,8 @@
   const curLotName = document.getElementById('curLotName');
   const eligibleBox = document.getElementById('eligibleBox');
   const highestPrice = document.getElementById('highestPrice');
+  const pricePreview = document.getElementById('pricePreview');
+  const priceWarn = document.getElementById('priceWarn');
   const editReason = document.getElementById('editReason');
   const btnReloadEligible = document.getElementById('btnReloadEligible');
 
@@ -253,6 +326,11 @@
   const modalOkBtn = document.getElementById('modalOkBtn');
   const modalCancelBtn = document.getElementById('modalCancelBtn');
   const modalCloseBtn = document.getElementById('modalCloseBtn');
+
+  function escapeHtml(s){
+    s = String(s ?? '');
+    return s.replace(/[&<>"']/g, (m)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+  }
 
   function openModal({title, body, okText='OK', cancelText='Huỷ', onOk=null, onCancel=null, showCancel=true}){
     modalTitle.textContent = title || 'Thông báo';
@@ -277,46 +355,54 @@
     backdrop.style.display = 'flex';
   }
 
+  function setStatus(msg, ok=true){
+    saveStatus.className = ok ? 'text-sm text-emerald-700 font-semibold' : 'text-sm text-red-600 font-semibold';
+    saveStatus.textContent = msg || '';
+  }
+
   function fmtMoney(x){
     if(x === null || x === undefined || x === '') return '';
-    const n = Number(String(x).replace(/[^\d.-]/g,''));
-    if(!isFinite(n)) return String(x);
+    const n = Number(String(x).replace(/[^\d]/g,''));
+    if(!isFinite(n) || n <= 0) return '';
     return n.toLocaleString('vi-VN');
   }
 
-  function getSelectedCustomerIds(){
-    const checks = eligibleBox.querySelectorAll('input[type="checkbox"][data-cid]:checked');
-    return Array.from(checks).map(ch => parseInt(ch.getAttribute('data-cid'),10)).filter(x=>x>0);
+  function normalizeNumberStr(s){
+    s = String(s ?? '').replace(/[^\d]/g,'');
+    // tránh số siêu dài do dán nhầm
+    if (s.length > 18) s = s.slice(0, 18);
+    return s;
   }
 
-  function getSelectedWinnerId(){
-    const r = eligibleBox.querySelector('input[type="radio"][name="winner"]:checked');
-    if(!r) return null;
-    const cid = parseInt(r.getAttribute('data-cid'),10);
-    return cid>0 ? cid : null;
+  function updatePricePreview(){
+    const raw = normalizeNumberStr(highestPrice.value || '');
+    const show = fmtMoney(raw);
+    pricePreview.textContent = show ? (show + " ₫") : "—";
+
+    // cảnh báo đơn giản (không kỹ thuật)
+    // < 10 triệu hoặc > 1.000.000 tỷ -> dễ nhập nhầm
+    const n = raw ? Number(raw) : 0;
+    const bad = (n > 0 && (n < 10_000_000 || n > 1_000_000_000_000_000));
+    priceWarn.style.display = bad ? 'block' : 'none';
   }
 
-  async function apiGet(url){
-    const r = await fetch(url, { headers: { 'Accept':'application/json' }});
-    const js = await r.json().catch(()=>({}));
-    return {ok: r.ok, status: r.status, js};
-  }
-  async function apiPut(url, payload){
-    const r = await fetch(url, { method:'PUT', headers:{'Content-Type':'application/json','Accept':'application/json'}, body: JSON.stringify(payload||{})});
-    const js = await r.json().catch(()=>({}));
-    return {ok: r.ok, status: r.status, js};
-  }
+  highestPrice.addEventListener('input', () => {
+    const caret = highestPrice.selectionStart;
+    const raw = normalizeNumberStr(highestPrice.value);
+    highestPrice.value = raw;
+    updatePricePreview();
+    try { highestPrice.setSelectionRange(caret, caret); } catch(e){}
+  });
 
-  function setStatus(msg, ok=true){
-    saveStatus.className = ok ? 'text-sm text-emerald-700' : 'text-sm text-red-600';
-    saveStatus.textContent = msg;
-  }
+  updatePricePreview();
 
   // navigation
   selProject.addEventListener('change', () => {
     const pid = selProject.value;
     if(!pid){ window.location.href = '/auction/counting'; return; }
-    window.location.href = `/auction/counting?project=${encodeURIComponent(pid)}`;
+    const q = (qInput.value || '').trim();
+    const url = q ? `/auction/counting?project=${encodeURIComponent(pid)}&q=${encodeURIComponent(q)}` : `/auction/counting?project=${encodeURIComponent(pid)}`;
+    window.location.href = url;
   });
 
   btnReload.addEventListener('click', () => {
@@ -330,51 +416,7 @@
   // state
   let currentLotCode = null;
   let currentLotName = null;
-
-  async function loadEligible(lotCode){
-    if(!projectId || !lotCode) return;
-    eligibleBox.innerHTML = '<div class="text-sm text-slate-500">Đang tải…</div>';
-    const url = `/auction/counting/api/projects/${projectId}/lots/${encodeURIComponent(lotCode)}/eligible-customers?limit=5000&include_unpaid=false`;
-    const {ok, status, js} = await apiGet(url);
-    if(!ok){
-      eligibleBox.innerHTML = `<div class="text-sm text-red-600">Không tải được danh sách (HTTP ${status}).</div>`;
-      return;
-    }
-    const rows = (js.data || []);
-    if(!rows.length){
-      eligibleBox.innerHTML = `<div class="text-sm text-slate-500">Không có khách đủ điều kiện.</div>`;
-      return;
-    }
-
-    // Render list: radio for WON + checkbox for TIED (same list)
-    const html = rows.map((c) => {
-      const name = (c.full_name || '').trim();
-      const phone = (c.phone || c.phone_masked || '');
-      const cid = c.customer_id || c.id || '';
-      const phoneShow = phone ? String(phone) : '';
-      return `
-        <div class="chk-row">
-          <div class="pt-1">
-            <input type="radio" name="winner" data-cid="${cid}">
-          </div>
-          <div class="pt-1">
-            <input type="checkbox" data-cid="${cid}">
-          </div>
-          <div class="min-w-0">
-            <div class="font-semibold text-slate-900">${escapeHtml(name)}</div>
-            <div class="text-xs text-slate-500">SĐT: <span class="mono">${escapeHtml(phoneShow)}</span> • ID: <span class="mono">${cid}</span></div>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    eligibleBox.innerHTML = html;
-  }
-
-  function escapeHtml(s){
-    s = String(s ?? '');
-    return s.replace(/[&<>"']/g, (m)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
-  }
+  let eligibleCache = []; // keep for confirm summary
 
   function highlightRow(lotCode){
     const rows = lotsBody.querySelectorAll('tr.lot-row');
@@ -384,19 +426,146 @@
     });
   }
 
+  async function apiGet(url){
+    const r = await fetch(url, { headers: { 'Accept':'application/json' }});
+    const js = await r.json().catch(()=>({}));
+    return {ok: r.ok, status: r.status, js};
+  }
+  async function apiPut(url, payload){
+    const r = await fetch(url, { method:'PUT', headers:{'Content-Type':'application/json','Accept':'application/json'}, body: JSON.stringify(payload||{})});
+    const js = await r.json().catch(()=>({}));
+    return {ok: r.ok, status: r.status, js};
+  }
+
+  function customerById(cid){
+    cid = Number(cid);
+    return eligibleCache.find(x => Number(x.customer_id) === cid) || null;
+  }
+
+  function getSelectedWinnerId(){
+    const r = eligibleBox.querySelector('input[type="radio"][name="winner_pick"]:checked');
+    if(!r) return null;
+    const cid = Number(r.value || r.getAttribute('data-cid') || 0);
+    return (cid && cid > 0) ? cid : null;
+  }
+
+  function getSelectedTiedIds(){
+    const checks = eligibleBox.querySelectorAll('input[type="checkbox"][name="tied_pick"]:checked');
+    const ids = Array.from(checks).map(ch => Number(ch.value || ch.getAttribute('data-cid') || 0)).filter(x => x>0);
+    // unique
+    return Array.from(new Set(ids));
+  }
+
+  function maskPhoneLast3(phone){
+    const s = String(phone || '').replace(/\D/g,'');
+    if(!s) return '';
+    if(s.length <= 3) return '*'.repeat(Math.max(0, s.length-1)) + s.slice(-1);
+    return '*'.repeat(s.length-3) + s.slice(-3);
+  }
+
+  async function loadEligible(lotCode){
+    if(!PROJECT_ID || !lotCode) return;
+
+    eligibleBox.innerHTML = '<div class="text-sm text-slate-500">Đang tải danh sách…</div>';
+    eligibleCache = [];
+
+    const url = `/auction/counting/api/projects/${PROJECT_ID}/lots/${encodeURIComponent(lotCode)}/eligible-customers?limit=5000&include_unpaid=false`;
+    const {ok, status, js} = await apiGet(url);
+    if(!ok){
+      eligibleBox.innerHTML = `<div class="text-sm text-red-600">Không tải được danh sách (HTTP ${status}).</div>`;
+      return;
+    }
+
+    const rows = (js.data || []) || [];
+    const norm = [];
+
+    for (const c of rows){
+      // normalize id strictly
+      const cid = Number(c.customer_id ?? c.id ?? 0);
+      if(!cid || cid <= 0) continue;
+
+      norm.push({
+        customer_id: cid,
+        full_name: (c.full_name || '').trim(),
+        phone_raw: (c.phone || c.phone_masked || '').toString(),
+        phone_masked: (c.phone_masked || maskPhoneLast3(c.phone || '')),
+        cccd: (c.cccd || '').toString(),
+      });
+    }
+
+    eligibleCache = norm;
+
+    if(!norm.length){
+      eligibleBox.innerHTML = `<div class="text-sm text-slate-500">Không có khách đủ điều kiện.</div>`;
+      return;
+    }
+
+    const html = norm.map((c) => {
+      const name = escapeHtml(c.full_name || '(Không có tên)');
+      const phoneShow = escapeHtml(c.phone_masked || '');
+      const cid = c.customer_id;
+
+      return `
+        <div class="pick-row" data-row-cid="${cid}">
+          <div class="pick-left">
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <label class="tag" title="Chọn người trúng">
+                <input type="radio" name="winner_pick" value="${cid}" data-cid="${cid}">
+                <span>Trúng</span>
+              </label>
+              <label class="tag" title="Chọn vào danh sách bốc thăm">
+                <input type="checkbox" name="tied_pick" value="${cid}" data-cid="${cid}">
+                <span>Bốc thăm</span>
+              </label>
+            </div>
+          </div>
+          <div class="pick-main">
+            <div class="pick-name">${name}</div>
+            <div class="pick-meta">SĐT: <span class="mono">${phoneShow}</span> • ID: <span class="mono">${cid}</span></div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    eligibleBox.innerHTML = html;
+
+    // UX: click row -> auto select radio (WON) unless user clicked checkbox
+    eligibleBox.querySelectorAll('.pick-row').forEach(rowEl => {
+      rowEl.addEventListener('click', (e) => {
+        const target = e.target;
+        // nếu click thẳng vào checkbox/radio thì thôi
+        if (target && (target.tagName === 'INPUT')) return;
+
+        const cid = Number(rowEl.getAttribute('data-row-cid') || 0);
+        if (!cid) return;
+        const radio = rowEl.querySelector('input[type="radio"][name="winner_pick"]');
+        if (radio) radio.checked = true;
+      });
+    });
+  }
+
   lotsBody.addEventListener('click', async (ev) => {
     const tr = ev.target.closest('tr.lot-row');
     if(!tr) return;
+
     const lotCode = tr.getAttribute('data-lot');
     if(!lotCode) return;
 
     currentLotCode = lotCode;
-    currentLotName = (tr.querySelector('td:nth-child(2) .text-slate-900')?.textContent || '').trim();
+    currentLotName = (tr.getAttribute('data-lotname') || '').trim();
+
     curLotCode.textContent = lotCode;
     curLotName.textContent = currentLotName ? `— ${currentLotName}` : '';
     btnReloadEligible.disabled = false;
-    highlightRow(lotCode);
 
+    // gợi ý giá theo dữ liệu hiện có nếu có
+    const hp = (tr.getAttribute('data-hp') || '').trim();
+    if (hp && !highestPrice.value.trim()){
+      highestPrice.value = normalizeNumberStr(hp);
+      updatePricePreview();
+    }
+
+    highlightRow(lotCode);
     setStatus('', true);
     await loadEligible(lotCode);
   });
@@ -406,138 +575,172 @@
     await loadEligible(currentLotCode);
   });
 
-  async function savePending(){
-    if(!sessionId || !currentLotCode){
-      openModal({title:'Thiếu dữ liệu', body:'Chọn lô trước khi lưu.', showCancel:false});
-      return;
+  function ensureBasics(){
+    if(!SESSION_ID){
+      openModal({title:'Thiếu phiên kiểm phiếu', body:'Phiên kiểm phiếu chưa sẵn sàng. Vui lòng tải lại trang.', showCancel:false});
+      return false;
     }
-    const payload = {
-      status: 'PENDING',
-      edit_reason: (editReason.value || '').trim() || null,
-    };
-    const url = `/auction/counting/api/sessions/${sessionId}/lots/${encodeURIComponent(currentLotCode)}`;
-    const {ok, status, js} = await apiPut(url, payload);
-    if(!ok){
-      openModal({title:'Lỗi lưu', body:`HTTP ${status}<br><pre style="white-space:pre-wrap">${escapeHtml(JSON.stringify(js,null,2))}</pre>`, showCancel:false});
-      return;
+    if(!currentLotCode){
+      openModal({title:'Chưa chọn lô', body:'Vui lòng chọn <b>một lô</b> ở danh sách bên trái.', showCancel:false});
+      return false;
     }
-    setStatus('Đã reset PENDING.', true);
-    btnReload.click();
+    return true;
   }
 
-  async function saveWon(){
-    if(!sessionId || !currentLotCode){
-      openModal({title:'Thiếu dữ liệu', body:'Chọn lô trước khi lưu.', showCancel:false});
-      return;
+  function ensurePrice(){
+    const raw = normalizeNumberStr(highestPrice.value || '');
+    if(!raw){
+      openModal({title:'Thiếu giá cao nhất', body:'Vui lòng nhập <b>giá cao nhất</b>.', showCancel:false});
+      return null;
     }
-    const hpRaw = (highestPrice.value || '').trim();
-    const winnerId = getSelectedWinnerId();
+    return raw;
+  }
 
-    if(!hpRaw){
-      openModal({title:'Thiếu dữ liệu', body:'Vui lòng nhập <b>giá cao nhất</b>.', showCancel:false});
-      return;
+  function listNames(ids){
+    const arr = [];
+    for(const id of ids){
+      const c = customerById(id);
+      if(c){
+        arr.push(`${escapeHtml(c.full_name)} <span class="mono" style="color:#64748b">(${escapeHtml(c.phone_masked)})</span>`);
+      }else{
+        arr.push(`<span class="mono">ID ${id}</span>`);
+      }
     }
+    return arr;
+  }
+
+  async function doSave(status, payload, confirmTitle, confirmHtml){
+    openModal({
+      title: confirmTitle,
+      body: confirmHtml,
+      okText: 'Xác nhận',
+      cancelText: 'Xem lại',
+      onOk: async (close) => {
+        const url = `/auction/counting/api/sessions/${SESSION_ID}/lots/${encodeURIComponent(currentLotCode)}`;
+        const {ok, status: httpStatus, js} = await apiPut(url, payload);
+        if(!ok){
+          close();
+          openModal({
+            title:'Lỗi lưu dữ liệu',
+            body:`HTTP ${httpStatus}<br><pre style="white-space:pre-wrap; font-size:12px; background:#0b1224; color:#e5e7eb; padding:12px; border-radius:12px; overflow:auto;">${escapeHtml(JSON.stringify(js,null,2))}</pre>`,
+            showCancel:false
+          });
+          return;
+        }
+        close();
+        setStatus('Đã lưu thành công.', true);
+        // reload list to show status updated
+        btnReload.click();
+      }
+    });
+  }
+
+  btnSetPending.addEventListener('click', async () => {
+    if(!ensureBasics()) return;
+
+    const reason = (editReason.value || '').trim() || null;
+
+    const payload = { status: 'PENDING', edit_reason: reason };
+
+    const html = `
+      <div style="line-height:1.55">
+        <div>Bạn sắp <b>xóa kết quả</b> cho lô <b>${escapeHtml(currentLotCode)}</b>.</div>
+        ${currentLotName ? `<div class="muted text-sm mt-1">${escapeHtml(currentLotName)}</div>` : ``}
+        <div class="mt-3 text-sm text-slate-600">Sau khi xoá, lô sẽ về trạng thái <b>Chưa nhập</b>.</div>
+      </div>
+    `;
+    await doSave('PENDING', payload, 'Xác nhận xoá kết quả', html);
+  });
+
+  btnSetWon.addEventListener('click', async () => {
+    if(!ensureBasics()) return;
+
+    const hpRaw = ensurePrice();
+    if(!hpRaw) return;
+
+    const winnerId = getSelectedWinnerId();
     if(!winnerId){
-      openModal({title:'Thiếu dữ liệu', body:'Vui lòng chọn <b>1 người trúng</b> (radio).', showCancel:false});
+      openModal({title:'Chưa chọn người trúng', body:'Vui lòng chọn <b>1 người trúng</b> (mục “Trúng”).', showCancel:false});
       return;
     }
+
+    const c = customerById(winnerId);
+    const reason = (editReason.value || '').trim() || null;
 
     const payload = {
       status: 'WON',
       highest_price_vnd: hpRaw,
       winner_customer_id: winnerId,
-      edit_reason: (editReason.value || '').trim() || null,
+      edit_reason: reason,
     };
 
-    openModal({
-      title: 'Xác nhận chốt TRÚNG',
-      body: `
-        <div class="text-slate-700">
-          Bạn sắp chốt <b>WON</b> cho lô <b>${escapeHtml(currentLotCode)}</b>.
-          <div class="mt-2 text-sm text-slate-600">
-            Giá cao nhất: <b class="mono">${escapeHtml(fmtMoney(hpRaw))}</b><br>
-            Winner ID: <b class="mono">${winnerId}</b>
-          </div>
-          <div class="mt-3 text-xs text-slate-500">
-            Lưu ý: nếu nhập nhầm có thể sửa lại, hệ thống sẽ tự cập nhật bảng kết quả trúng.
-          </div>
+    const winnerLine = c
+      ? `<div class="mt-2"><b>Người trúng:</b> ${escapeHtml(c.full_name)} <span class="mono" style="color:#64748b">(${escapeHtml(c.phone_masked)})</span></div>`
+      : `<div class="mt-2"><b>Người trúng (ID):</b> <span class="mono">${winnerId}</span></div>`;
+
+    const html = `
+      <div style="line-height:1.6">
+        <div>Bạn sắp <b>chốt trúng</b> cho lô <b>${escapeHtml(currentLotCode)}</b>.</div>
+        ${currentLotName ? `<div class="muted text-sm mt-1">${escapeHtml(currentLotName)}</div>` : ``}
+        <div class="mt-3">
+          <b>Giá cao nhất:</b> <span class="mono">${escapeHtml(fmtMoney(hpRaw))}</span> ₫
         </div>
-      `,
-      okText: 'Chốt WON',
-      cancelText: 'Xem lại',
-      onOk: async (close) => {
-        const url = `/auction/counting/api/sessions/${sessionId}/lots/${encodeURIComponent(currentLotCode)}`;
-        const {ok, status, js} = await apiPut(url, payload);
-        if(!ok){
-          close();
-          openModal({title:'Lỗi lưu', body:`HTTP ${status}<br><pre style="white-space:pre-wrap">${escapeHtml(JSON.stringify(js,null,2))}</pre>`, showCancel:false});
-          return;
-        }
-        close();
-        setStatus('Đã chốt WON.', true);
-        btnReload.click();
-      }
-    });
-  }
+        ${winnerLine}
+        <div class="mt-3 text-xs text-slate-500">
+          Nếu nhập nhầm, anh có thể sửa lại. Hệ thống sẽ tự cập nhật kết quả trúng theo dữ liệu mới.
+        </div>
+      </div>
+    `;
 
-  async function saveTied(){
-    if(!sessionId || !currentLotCode){
-      openModal({title:'Thiếu dữ liệu', body:'Chọn lô trước khi lưu.', showCancel:false});
-      return;
-    }
-    const hpRaw = (highestPrice.value || '').trim();
-    const ids = getSelectedCustomerIds();
+    await doSave('WON', payload, 'Xác nhận chốt trúng', html);
+  });
 
-    if(!hpRaw){
-      openModal({title:'Thiếu dữ liệu', body:'Vui lòng nhập <b>giá cao nhất</b>.', showCancel:false});
-      return;
-    }
+  btnSetTied.addEventListener('click', async () => {
+    if(!ensureBasics()) return;
+
+    const hpRaw = ensurePrice();
+    if(!hpRaw) return;
+
+    const ids = getSelectedTiedIds();
     if(!ids || ids.length < 2){
-      openModal({title:'Thiếu dữ liệu', body:'Vui lòng tick <b>tối thiểu 2 người</b> (checkbox) cho bốc thăm.', showCancel:false});
+      openModal({title:'Chưa đủ người bốc thăm', body:'Vui lòng tick <b>từ 2 người trở lên</b> ở mục “Bốc thăm”.', showCancel:false});
       return;
     }
+
+    const reason = (editReason.value || '').trim() || null;
 
     const payload = {
       status: 'TIED',
       highest_price_vnd: hpRaw,
       tied_customer_ids: ids,
-      edit_reason: (editReason.value || '').trim() || null,
+      edit_reason: reason,
     };
 
-    openModal({
-      title: 'Xác nhận đưa vào BỐC THĂM',
-      body: `
-        <div class="text-slate-700">
-          Bạn sắp đặt trạng thái <b>TIED</b> cho lô <b>${escapeHtml(currentLotCode)}</b>.
-          <div class="mt-2 text-sm text-slate-600">
-            Giá cao nhất: <b class="mono">${escapeHtml(fmtMoney(hpRaw))}</b><br>
-            Số người bốc thăm: <b class="mono">${ids.length}</b>
-          </div>
-          <div class="mt-3 text-xs text-slate-500">
-            Bốc thăm làm offline. Khi có kết quả, quay lại chọn WON cho người trúng.
-          </div>
-        </div>
-      `,
-      okText: 'Đưa vào bốc thăm',
-      cancelText: 'Xem lại',
-      onOk: async (close) => {
-        const url = `/auction/counting/api/sessions/${sessionId}/lots/${encodeURIComponent(currentLotCode)}`;
-        const {ok, status, js} = await apiPut(url, payload);
-        if(!ok){
-          close();
-          openModal({title:'Lỗi lưu', body:`HTTP ${status}<br><pre style="white-space:pre-wrap">${escapeHtml(JSON.stringify(js,null,2))}</pre>`, showCancel:false});
-          return;
-        }
-        close();
-        setStatus('Đã set TIED (chờ bốc thăm).', true);
-        btnReload.click();
-      }
-    });
-  }
+    const lines = listNames(ids);
+    const listHtml = `
+      <ul class="mt-2" style="padding-left:18px; line-height:1.65">
+        ${lines.slice(0, 8).map(x => `<li>${x}</li>`).join('')}
+        ${lines.length > 8 ? `<li class="muted">+ ${lines.length - 8} người khác…</li>` : ``}
+      </ul>
+    `;
 
-  btnSetPending.addEventListener('click', savePending);
-  btnSetWon.addEventListener('click', saveWon);
-  btnSetTied.addEventListener('click', saveTied);
+    const html = `
+      <div style="line-height:1.6">
+        <div>Bạn sắp đưa lô <b>${escapeHtml(currentLotCode)}</b> vào trạng thái <b>Bốc thăm</b>.</div>
+        ${currentLotName ? `<div class="muted text-sm mt-1">${escapeHtml(currentLotName)}</div>` : ``}
+        <div class="mt-3">
+          <b>Giá cao nhất:</b> <span class="mono">${escapeHtml(fmtMoney(hpRaw))}</span> ₫
+        </div>
+        <div class="mt-2"><b>Danh sách bốc thăm:</b> <span class="mono">${ids.length}</span> người</div>
+        ${listHtml}
+        <div class="mt-3 text-xs text-slate-500">
+          Bốc thăm thực hiện offline. Khi có kết quả, quay lại chọn “Chốt trúng” cho người trúng.
+        </div>
+      </div>
+    `;
+
+    await doSave('TIED', payload, 'Xác nhận đưa vào bốc thăm', html);
+  });
 
 })();
 </script>

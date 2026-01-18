@@ -1,309 +1,1104 @@
-{% extends "base.html" %}
-{% block title %}Trình chiếu kiểm phiếu{% endblock %}
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Trình chiếu kiểm phiếu</title>
 
-{% block content %}
-{% set prj = project_obj or {} %}
-{% set poll_ms = poll_ms or 5000 %}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css">
 
-<style>
-  body { background:#050712; }
-  .neo-wrap{
-    background: radial-gradient(1000px 500px at 20% 0%, rgba(99,102,241,.25), transparent 60%),
-                radial-gradient(900px 420px at 80% 10%, rgba(34,211,238,.20), transparent 60%),
-                radial-gradient(1200px 600px at 50% 100%, rgba(244,63,94,.14), transparent 65%),
-                linear-gradient(180deg, #050712 0%, #070a16 100%);
-    border:1px solid rgba(148,163,184,.14);
-    border-radius:22px;
-    box-shadow: 0 30px 120px rgba(0,0,0,.55);
-    overflow:hidden;
-  }
-  .topbar{
-    display:flex; align-items:center; justify-content:space-between;
-    padding:16px 18px; border-bottom:1px solid rgba(148,163,184,.14);
-    background: rgba(2,6,23,.35);
-    backdrop-filter: blur(10px);
-  }
-  .title{
-    display:flex; align-items:center; gap:10px;
-    color:#e2e8f0; font-weight:800; font-size:22px;
-    letter-spacing:.02em;
-  }
-  .badge{
-    display:inline-flex; align-items:center; gap:8px;
-    border:1px solid rgba(148,163,184,.18);
-    background: rgba(15,23,42,.55);
-    color:#e2e8f0;
-    padding:6px 10px; border-radius:999px;
-    font-weight:700; font-size:12px;
-  }
-  .content{ padding:18px; }
-  .grid{
-    display:grid; grid-template-columns: 1.4fr .9fr; gap:18px;
-  }
-  @media (max-width: 1100px){ .grid{ grid-template-columns: 1fr; } }
-  .panel{
-    border:1px solid rgba(148,163,184,.14);
-    background: rgba(2,6,23,.35);
-    border-radius:20px;
-    overflow:hidden;
-  }
-  .panel-hd{
-    padding:14px 16px;
-    border-bottom:1px solid rgba(148,163,184,.14);
-    display:flex; align-items:center; justify-content:space-between;
-    color:#cbd5e1;
-  }
-  .panel-hd .h{
-    font-weight:800; letter-spacing:.02em;
-  }
-  .panel-bd{ padding:14px 16px; }
-  .row{
-    display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
-    padding:10px 12px; border-radius:16px;
-    border:1px solid rgba(148,163,184,.12);
-    background: rgba(15,23,42,.40);
-  }
-  .row + .row{ margin-top:10px; }
-  .lot{
-    font-weight:900; color:#e2e8f0; font-size:16px;
-    text-shadow: 0 0 18px rgba(99,102,241,.25);
-  }
-  .name{
-    font-weight:800; color:#f1f5f9; font-size:16px;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-    max-width: 520px;
-  }
-  .sub{
-    color:#94a3b8; font-size:12px;
-  }
-  .mono{ font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-  .price{ color:#22c55e; font-weight:900; }
-  .tiedTag{
-    color:#f59e0b; font-weight:900;
-  }
-  .kpi{
-    display:flex; gap:10px; flex-wrap:wrap;
-  }
-  .kpi .badge{ background: rgba(15,23,42,.35); }
-  .select{
-    min-width: 320px;
-    border:1px solid rgba(148,163,184,.18);
-    background: rgba(15,23,42,.55);
-    color:#e2e8f0;
-    padding:10px 12px;
-    border-radius:14px;
-    outline:none;
-  }
-  .toast{
-    position:fixed; right:16px; bottom:16px;
-    background: rgba(15,23,42,.9);
-    border:1px solid rgba(148,163,184,.16);
-    color:#e2e8f0;
-    padding:10px 12px;
-    border-radius:14px;
-    display:none;
-    max-width: 420px;
-  }
-</style>
+  <style>
+    :root{
+      --bg0:#060712;
+      --bg1:#0a0c1a;
+      --card:#0e1226cc;
+      --card2:#0e1226f2;
+      --stroke:#223055;
+      --text:#eaf0ff;
+      --muted:#a9b6d6;
 
-<div class="neo-wrap">
-  <div class="topbar">
-    <div class="title">
-      <i class="ri-slideshow-3-line text-cyan-300"></i>
-      TRÌNH CHIẾU KIỂM PHIẾU
-      <span class="badge"><i class="ri-timer-2-line"></i> Poll: {{ (poll_ms/1000)|int }}s</span>
-    </div>
-    <div class="flex items-center gap-3">
-      <select id="projectSel" class="select">
-        <option value="">— Chọn dự án —</option>
-        {% for p in projects %}
-          {% set code = (p.get('project_code') or p.get('code') or '') %}
-          {% set pid = (p.get('id') or p.get('project_id') or '') %}
-          <option value="{{ pid }}" {% if project_id and (pid|int == project_id|int) %}selected{% endif %}>
-            {{ code }} — {{ p.get('name') or '' }}{% if p.get('status') %} ({{ p.get('status') }}){% endif %}
-          </option>
-        {% endfor %}
-      </select>
-      <div class="badge" id="lastUpdated">—</div>
-    </div>
-  </div>
+      --cyan:#35f2ff;
+      --blue:#4c7dff;
+      --green:#41ff9b;
+      --amber:#ffc857;
+      --violet:#b47cff;
+      --rose:#ff4d8d;
 
-  <div class="content">
-    <div class="kpi mb-4">
-      <span class="badge">Tổng lô: <span class="mono" id="kTotal">0</span></span>
-      <span class="badge">Đã kiểm: <span class="mono" id="kChecked">0</span></span>
-      <span class="badge">TRÚNG: <span class="mono" id="kWon">0</span></span>
-      <span class="badge">CHỜ BỐC THĂM: <span class="mono" id="kTied">0</span></span>
-      <span class="badge">Session: <span class="mono" id="kSession">-</span></span>
-    </div>
+      --shadow: 0 18px 60px rgba(0,0,0,.55);
+      --glow-cyan: 0 0 24px rgba(53,242,255,.35);
+      --glow-green: 0 0 22px rgba(65,255,155,.28);
+      --glow-amber: 0 0 22px rgba(255,200,87,.25);
+      --glow-violet: 0 0 24px rgba(180,124,255,.25);
 
-    <div class="grid">
-      <!-- winners -->
-      <div class="panel">
-        <div class="panel-hd">
-          <div class="h"><i class="ri-award-line"></i> DANH SÁCH TRÚNG</div>
-          <div class="sub">Hiển thị tên đầy đủ • SĐT chỉ lộ 3 số cuối</div>
-        </div>
-        <div class="panel-bd" id="winnersBox">
-          <div class="sub">Chưa có dữ liệu.</div>
-        </div>
-      </div>
-
-      <!-- tied -->
-      <div class="panel">
-        <div class="panel-hd">
-          <div class="h"><i class="ri-shuffle-line"></i> CHỜ BỐC THĂM</div>
-          <div class="sub">Số lượng thường ít, bố trí gọn</div>
-        </div>
-        <div class="panel-bd" id="tiedBox">
-          <div class="sub">Chưa có dữ liệu.</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div id="toast" class="toast"></div>
-
-<script>
-(function(){
-  const pollMs = {{ poll_ms or 5000 }};
-  const initProjectId = {{ project_id or 'null' }};
-  const sel = document.getElementById('projectSel');
-
-  const elLast = document.getElementById('lastUpdated');
-  const kTotal = document.getElementById('kTotal');
-  const kChecked = document.getElementById('kChecked');
-  const kWon = document.getElementById('kWon');
-  const kTied = document.getElementById('kTied');
-  const kSession = document.getElementById('kSession');
-
-  const winnersBox = document.getElementById('winnersBox');
-  const tiedBox = document.getElementById('tiedBox');
-  const toast = document.getElementById('toast');
-
-  function showToast(msg){
-    toast.textContent = msg;
-    toast.style.display = 'block';
-    clearTimeout(showToast._t);
-    showToast._t = setTimeout(()=> toast.style.display='none', 2600);
-  }
-
-  function fmtMoney(x){
-    if(x === null || x === undefined || x === '') return '';
-    const n = Number(String(x).replace(/[^\d.-]/g,''));
-    if(!isFinite(n)) return String(x);
-    return n.toLocaleString('vi-VN');
-  }
-  function esc(s){
-    s = String(s ?? '');
-    return s.replace(/[&<>"']/g, (m)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
-  }
-
-  sel.addEventListener('change', () => {
-    const pid = sel.value;
-    if(!pid){ window.location.href = '/auction/counting/display'; return; }
-    window.location.href = `/auction/counting/display?project=${encodeURIComponent(pid)}`;
-  });
-
-  let timer = null;
-  let running = false;
-
-  async function fetchSnapshot(projectId){
-    const url = `/auction/counting/api/display/snapshot?project_id=${encodeURIComponent(projectId)}`;
-    const r = await fetch(url, { headers: { 'Accept':'application/json' }});
-    const js = await r.json().catch(()=>({}));
-    return {ok:r.ok, status:r.status, js};
-  }
-
-  function render(snapshot){
-    const sum = snapshot.summary || {};
-    const sess = snapshot.session || null;
-
-    kTotal.textContent = sum.total_lots ?? 0;
-    kChecked.textContent = sum.checked ?? 0;
-    kWon.textContent = sum.won ?? 0;
-    kTied.textContent = sum.tied ?? 0;
-    kSession.textContent = sess && sess.id ? String(sess.id) : '-';
-
-    const winners = snapshot.winners || [];
-    if(!winners.length){
-      winnersBox.innerHTML = `<div class="sub">Chưa có lô nào chốt trúng.</div>`;
-    } else {
-      winnersBox.innerHTML = winners.map(w => `
-        <div class="row">
-          <div class="min-w-0">
-            <div class="lot">${esc(w.lot_code || '')}</div>
-            <div class="sub">${esc(w.lot_name || '')}</div>
-          </div>
-          <div class="text-right min-w-[360px]">
-            <div class="name">${esc(w.full_name || '')}</div>
-            <div class="sub">SĐT: <span class="mono">${esc(w.phone_masked || '')}</span></div>
-            <div class="sub">Giá: <span class="mono price">${esc(fmtMoney(w.highest_price_vnd))}</span></div>
-          </div>
-        </div>
-      `).join('');
+      --r: 22px;
     }
 
-    const tied = snapshot.tied || [];
-    if(!tied.length){
-      tiedBox.innerHTML = `<div class="sub">Không có lô cần bốc thăm.</div>`;
-    } else {
-      tiedBox.innerHTML = tied.map(t => {
-        const cand = (t.candidates || []);
-        const candHtml = cand.slice(0, 8).map(c => `
-          <div class="sub">• ${esc(c.full_name || '')} — <span class="mono">${esc(c.phone_masked || '')}</span></div>
-        `).join('');
-        const more = cand.length > 8 ? `<div class="sub muted">+ ${cand.length - 8} người khác…</div>` : '';
-        return `
-          <div class="row">
-            <div class="min-w-0">
-              <div class="lot">${esc(t.lot_code || '')} <span class="tiedTag">• TIED</span></div>
-              <div class="sub">${esc(t.lot_name || '')}</div>
-              <div class="sub">Giá cao nhất: <span class="mono tiedTag">${esc(fmtMoney(t.highest_price_vnd))}</span></div>
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+      background:
+        radial-gradient(1000px 600px at 20% 10%, rgba(53,242,255,.12), transparent 55%),
+        radial-gradient(900px 600px at 90% 25%, rgba(180,124,255,.14), transparent 55%),
+        radial-gradient(900px 600px at 35% 95%, rgba(65,255,155,.10), transparent 55%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow:hidden;
+    }
+
+    /* subtle grid */
+    body:before{
+      content:"";
+      position:fixed; inset:0;
+      background-image:
+        linear-gradient(to right, rgba(255,255,255,.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+      opacity:.25;
+      pointer-events:none;
+      mask-image: radial-gradient(circle at 30% 20%, black 0%, transparent 62%);
+    }
+
+    .wrap{
+      height:100%;
+      padding: 28px 34px;
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
+
+    /* Header */
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      padding: 18px 20px;
+      border-radius: var(--r);
+      background: linear-gradient(180deg, rgba(14,18,38,.85), rgba(10,12,26,.65));
+      border: 1px solid rgba(34,48,85,.75);
+      box-shadow: var(--shadow);
+      position:relative;
+      overflow:hidden;
+    }
+    .topbar:after{
+      content:"";
+      position:absolute; inset:-2px;
+      background: radial-gradient(420px 160px at 15% 0%, rgba(53,242,255,.18), transparent 70%),
+                  radial-gradient(420px 160px at 70% 20%, rgba(180,124,255,.16), transparent 70%);
+      pointer-events:none;
+      filter: blur(6px);
+    }
+    .brand{
+      display:flex; align-items:center; gap:14px;
+      min-width: 0;
+      z-index:1;
+    }
+    .logo{
+      width:44px; height:44px;
+      border-radius: 14px;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(53,242,255,.55), transparent 60%),
+        radial-gradient(circle at 70% 70%, rgba(180,124,255,.45), transparent 60%),
+        linear-gradient(180deg, rgba(14,18,38,.9), rgba(6,7,18,.7));
+      border:1px solid rgba(53,242,255,.35);
+      box-shadow: var(--glow-cyan);
+      display:flex; align-items:center; justify-content:center;
+    }
+    .logo i{font-size:22px; color: rgba(234,240,255,.95)}
+    .titlebox{min-width:0}
+    .title{
+      font-weight:800;
+      letter-spacing:.02em;
+      font-size: 22px;
+      line-height: 1.1;
+      text-transform: uppercase;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .subtitle{
+      margin-top:6px;
+      color: var(--muted);
+      font-size: 14px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .rightinfo{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      z-index:1;
+    }
+
+    .pill{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: rgba(14,18,38,.75);
+      border: 1px solid rgba(34,48,85,.7);
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      min-width: 170px;
+    }
+    .pill .k{
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing:.02em;
+      text-transform: uppercase;
+    }
+    .pill .v{
+      font-weight:800;
+      font-size: 18px;
+      letter-spacing:.01em;
+    }
+
+    .pill.progress .v{
+      color: var(--cyan);
+      text-shadow: var(--glow-cyan);
+    }
+    .pill.draw .v{
+      color: var(--amber);
+      text-shadow: var(--glow-amber);
+    }
+    .pill.time .v{
+      color: rgba(234,240,255,.95);
+    }
+
+    .liveDot{
+      width:10px; height:10px; border-radius:999px;
+      background: var(--green);
+      box-shadow: var(--glow-green);
+      animation: pulse 1.6s infinite;
+    }
+    @keyframes pulse{
+      0%{transform:scale(1); opacity:.9}
+      55%{transform:scale(1.9); opacity:.18}
+      100%{transform:scale(1); opacity:.9}
+    }
+
+    /* Main stage */
+    .stage{
+      flex:1;
+      display:flex;
+      gap:18px;
+      min-height:0;
+      position:relative;
+    }
+
+    /* Grid panel (mode counting) */
+    .gridPanel{
+      flex:1;
+      min-width:0;
+      border-radius: var(--r);
+      background: rgba(10,12,26,.42);
+      border: 1px solid rgba(34,48,85,.55);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      overflow:hidden;
+      position:relative;
+    }
+    .gridPanel:before{
+      content:"";
+      position:absolute; inset:-1px;
+      background: radial-gradient(520px 260px at 25% 0%, rgba(53,242,255,.10), transparent 70%),
+                  radial-gradient(520px 260px at 80% 10%, rgba(180,124,255,.10), transparent 70%);
+      pointer-events:none;
+      filter: blur(2px);
+    }
+
+    .gridHeader{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:16px;
+      margin-bottom: 12px;
+      position:relative;
+      z-index:1;
+    }
+    .focus{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-width:0;
+    }
+    .focus .label{
+      color: var(--muted);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing:.04em;
+    }
+    .focus .lot{
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing:.02em;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .focus .lot span{
+      color: var(--blue);
+      text-shadow: 0 0 18px rgba(76,125,255,.25);
+    }
+    .focusNote{
+      color: var(--muted);
+      font-size: 14px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width: 48vw;
+    }
+
+    .grid{
+      position:relative;
+      z-index:1;
+      margin-top: 12px;
+      height: calc(100% - 92px);
+      overflow:hidden;
+    }
+    .cards{
+      height:100%;
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      align-content:start;
+      overflow:hidden;
+    }
+
+    /* Winner card */
+    .card{
+      border-radius: 18px;
+      background: var(--card);
+      border: 1px solid rgba(34,48,85,.7);
+      box-shadow: 0 10px 32px rgba(0,0,0,.35);
+      padding: 14px 14px 12px;
+      min-height: 148px;
+      position:relative;
+      overflow:hidden;
+    }
+    .card:after{
+      content:"";
+      position:absolute; inset:-2px;
+      background: radial-gradient(260px 120px at 20% 0%, rgba(65,255,155,.14), transparent 70%);
+      pointer-events:none;
+      filter: blur(8px);
+      opacity:.9;
+    }
+    .card .cTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      position:relative;
+      z-index:1;
+    }
+    .badgeWon{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-size: 12px;
+      letter-spacing:.06em;
+      text-transform: uppercase;
+      font-weight: 900;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(65,255,155,.35);
+      color: rgba(225,255,242,.96);
+      background: rgba(12,32,26,.55);
+      box-shadow: var(--glow-green);
+    }
+    .lotCode{
+      font-weight: 950;
+      font-size: 18px;
+      letter-spacing:.02em;
+      color: rgba(234,240,255,.98);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .price{
+      position:relative;
+      z-index:1;
+      margin-top: 10px;
+      font-size: 26px;
+      font-weight: 950;
+      letter-spacing: .01em;
+      color: var(--green);
+      text-shadow: var(--glow-green);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .name{
+      position:relative;
+      z-index:1;
+      margin-top: 10px;
+      font-size: 16px;
+      font-weight: 850;
+      color: rgba(234,240,255,.96);
+      display:-webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow:hidden;
+      min-height: 44px;
+    }
+    .phone{
+      position:relative;
+      z-index:1;
+      margin-top: 6px;
+      font-size: 14px;
+      color: rgba(169,182,214,.96);
+      letter-spacing:.08em;
+    }
+
+    /* Floating draw card */
+    .floating{
+      position:absolute;
+      right: 18px;
+      top: 96px;
+      width: 420px;
+      max-width: 38vw;
+      border-radius: 20px;
+      background: rgba(20,16,8,.55);
+      border: 1px solid rgba(255,200,87,.32);
+      box-shadow: var(--shadow), var(--glow-amber);
+      padding: 14px 14px 12px;
+      z-index: 50;
+      overflow:hidden;
+      display:none;
+    }
+    .floating.show{display:block}
+    .floating:before{
+      content:"";
+      position:absolute; inset:-2px;
+      background: radial-gradient(320px 180px at 20% 0%, rgba(255,200,87,.22), transparent 70%);
+      filter: blur(10px);
+      pointer-events:none;
+    }
+    .floating .fHead{
+      position:relative;
+      z-index:1;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom: 10px;
+    }
+    .floating .fTitle{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight: 950;
+      text-transform: uppercase;
+      letter-spacing:.06em;
+      font-size: 13px;
+      color: rgba(255,235,205,.98);
+    }
+    .floating .fTitle i{color: var(--amber)}
+    .floating .count{
+      font-weight: 950;
+      font-size: 13px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255,200,87,.12);
+      border: 1px solid rgba(255,200,87,.25);
+      color: rgba(255,235,205,.98);
+    }
+    .floating .fLot{
+      position:relative;
+      z-index:1;
+      font-size: 18px;
+      font-weight: 950;
+      margin-top: 4px;
+      margin-bottom: 6px;
+      display:flex;
+      align-items:baseline;
+      justify-content:space-between;
+      gap:10px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .floating .fLot .lc{color: rgba(255,235,205,.98)}
+    .floating .fLot .pc{color: var(--amber); text-shadow: var(--glow-amber); font-weight:950}
+    .floating .names{
+      position:relative;
+      z-index:1;
+      border-top: 1px dashed rgba(255,200,87,.28);
+      margin-top: 10px;
+      padding-top: 10px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .floating .nm{
+      font-size: 14px;
+      color: rgba(255,244,230,.92);
+      display:flex;
+      align-items:flex-start;
+      gap:10px;
+      line-height:1.25;
+    }
+    .floating .nm:before{
+      content:"";
+      width: 8px; height: 8px;
+      border-radius: 999px;
+      background: rgba(255,200,87,.95);
+      box-shadow: var(--glow-amber);
+      margin-top: 5px;
+      flex: 0 0 auto;
+    }
+    .floating .hint{
+      position:relative;
+      z-index:1;
+      margin-top: 10px;
+      color: rgba(255,244,230,.78);
+      font-size: 13px;
+      line-height:1.35;
+    }
+
+    /* Draw mode full screen */
+    .drawMode{
+      position:absolute;
+      inset:0;
+      border-radius: var(--r);
+      background: rgba(10,12,26,.52);
+      border: 1px solid rgba(34,48,85,.55);
+      box-shadow: var(--shadow);
+      padding: 22px;
+      display:none;
+      overflow:hidden;
+    }
+    .drawMode.show{display:block}
+    .drawMode:before{
+      content:"";
+      position:absolute; inset:-2px;
+      background: radial-gradient(620px 320px at 25% 0%, rgba(180,124,255,.16), transparent 70%),
+                  radial-gradient(620px 320px at 70% 10%, rgba(53,242,255,.10), transparent 70%);
+      pointer-events:none;
+      filter: blur(8px);
+    }
+    .drawHead{
+      position:relative;
+      z-index:1;
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:16px;
+      margin-bottom: 16px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid rgba(34,48,85,.55);
+    }
+    .drawTitle{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-width:0;
+    }
+    .drawTitle .t1{
+      font-weight: 950;
+      letter-spacing:.06em;
+      text-transform: uppercase;
+      font-size: 15px;
+      color: rgba(234,240,255,.92);
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .drawTitle .t1 i{
+      color: var(--violet);
+      text-shadow: var(--glow-violet);
+      font-size: 20px;
+    }
+    .drawTitle .t2{
+      font-size: 34px;
+      font-weight: 980;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .drawTitle .t2 span{
+      color: var(--amber);
+      text-shadow: var(--glow-amber);
+      font-weight:980;
+    }
+    .drawTitle .t3{
+      color: var(--muted);
+      font-size: 14px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .drawBody{
+      position:relative;
+      z-index:1;
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 18px;
+      height: calc(100% - 98px);
+      min-height:0;
+    }
+    .drawList{
+      border-radius: 20px;
+      background: rgba(14,18,38,.72);
+      border: 1px solid rgba(34,48,85,.65);
+      box-shadow: 0 10px 32px rgba(0,0,0,.35);
+      padding: 16px;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      min-height:0;
+    }
+    .drawList h3{
+      margin:0 0 10px 0;
+      font-size: 14px;
+      color: rgba(169,182,214,.95);
+      text-transform: uppercase;
+      letter-spacing:.06em;
+      font-weight: 900;
+    }
+    .rows{
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+      min-height:0;
+    }
+    .row{
+      border-radius: 16px;
+      border: 1px solid rgba(34,48,85,.65);
+      background: rgba(6,7,18,.55);
+      padding: 12px 14px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+    }
+    .row .who{
+      font-size: 18px;
+      font-weight: 900;
+      color: rgba(234,240,255,.96);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width: 62%;
+    }
+    .row .ph{
+      font-size: 16px;
+      color: rgba(169,182,214,.95);
+      letter-spacing:.10em;
+      white-space:nowrap;
+    }
+    .row.win{
+      border-color: rgba(65,255,155,.45);
+      background: rgba(10,32,22,.55);
+      box-shadow: var(--glow-green);
+      animation: winFlash 1.8s ease-in-out infinite;
+    }
+    @keyframes winFlash{
+      0%,100%{filter:brightness(1)}
+      50%{filter:brightness(1.15)}
+    }
+
+    .drawSide{
+      border-radius: 20px;
+      background: rgba(14,18,38,.72);
+      border: 1px solid rgba(34,48,85,.65);
+      box-shadow: 0 10px 32px rgba(0,0,0,.35);
+      padding: 16px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      overflow:hidden;
+    }
+    .hintBox{
+      border-radius: 16px;
+      padding: 14px;
+      background: rgba(180,124,255,.10);
+      border: 1px solid rgba(180,124,255,.25);
+      color: rgba(234,240,255,.90);
+      line-height:1.35;
+    }
+    .statBox{
+      border-radius: 16px;
+      padding: 14px;
+      background: rgba(53,242,255,.08);
+      border: 1px solid rgba(53,242,255,.22);
+      color: rgba(234,240,255,.92);
+    }
+    .statBox .big{
+      font-size: 22px;
+      font-weight: 980;
+      color: var(--cyan);
+      text-shadow: var(--glow-cyan);
+    }
+    .statBox .small{
+      margin-top: 6px;
+      color: rgba(169,182,214,.92);
+      font-size: 13px;
+      line-height:1.35;
+    }
+
+    /* Footer tiny */
+    .footerline{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      color: rgba(169,182,214,.85);
+      font-size: 12px;
+      letter-spacing:.02em;
+      padding: 0 6px;
+    }
+
+    /* Responsive tweaks */
+    @media (max-width: 1280px){
+      .cards{grid-template-columns: repeat(3, minmax(0, 1fr));}
+      .floating{width: 380px;}
+    }
+    @media (max-width: 980px){
+      .wrap{padding: 18px}
+      .cards{grid-template-columns: repeat(2, minmax(0, 1fr));}
+      .floating{max-width: 80vw}
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo"><i class="ri-pulse-line"></i></div>
+        <div class="titlebox">
+          <div class="title" id="uiTitle">KẾT QUẢ KIỂM PHIẾU</div>
+          <div class="subtitle" id="uiSub">Đang tải dữ liệu…</div>
+        </div>
+      </div>
+
+      <div class="rightinfo">
+        <div class="pill time">
+          <div class="liveDot" title="Đang cập nhật"></div>
+          <div>
+            <div class="k">Thời gian</div>
+            <div class="v" id="uiClock">--:--:--</div>
+          </div>
+        </div>
+
+        <div class="pill progress">
+          <div>
+            <div class="k">Tiến độ</div>
+            <div class="v" id="uiProgress">0/0</div>
+          </div>
+        </div>
+
+        <div class="pill draw">
+          <div>
+            <div class="k">Chờ bốc thăm</div>
+            <div class="v" id="uiDrawCount">0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STAGE -->
+    <div class="stage">
+      <!-- COUNTING MODE -->
+      <div class="gridPanel" id="panelCounting">
+        <div class="gridHeader">
+          <div class="focus">
+            <div class="label">Đang kiểm phiếu</div>
+            <div class="lot" id="uiCurrentLot">Lô <span>—</span></div>
+            <div class="focusNote" id="uiNote">Đang tổng hợp kết quả…</div>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="cards" id="cardsWinners">
+            <!-- cards render here -->
+          </div>
+        </div>
+
+        <!-- Floating "Chờ bốc thăm" -->
+        <div class="floating" id="floatingDraw">
+          <div class="fHead">
+            <div class="fTitle"><i class="ri-alert-line"></i> Chờ bốc thăm</div>
+            <div class="count" id="floatCount">0 lô</div>
+          </div>
+          <div class="fLot" id="floatLotLine">
+            <div class="lc">Lô —</div>
+            <div class="pc">— ₫</div>
+          </div>
+          <div class="names" id="floatNames">
+            <!-- names -->
+          </div>
+          <div class="hint">
+            Các lô đồng giá sẽ được xử lý ở <b>vòng bốc thăm</b> sau khi kiểm xong các lô còn lại.
+          </div>
+        </div>
+      </div>
+
+      <!-- DRAW MODE (full screen inside stage) -->
+      <div class="drawMode" id="panelDraw">
+        <div class="drawHead">
+          <div class="drawTitle">
+            <div class="t1"><i class="ri-focus-3-line"></i> Vòng bốc thăm</div>
+            <div class="t2" id="drawLotTitle">Lô <span>—</span></div>
+            <div class="t3" id="drawLotSub">Đang chờ thông tin…</div>
+          </div>
+          <div class="pill progress" style="min-width:190px">
+            <div>
+              <div class="k">Tiến độ</div>
+              <div class="v" id="drawProgress">0/0</div>
             </div>
-            <div class="min-w-[360px]">
-              ${candHtml || '<div class="sub">Chưa có danh sách ứng viên.</div>'}
-              ${more}
+          </div>
+        </div>
+
+        <div class="drawBody">
+          <div class="drawList">
+            <h3>Danh sách ứng viên đồng giá</h3>
+            <div class="rows" id="drawCandidates">
+              <!-- candidates -->
+            </div>
+          </div>
+
+          <div class="drawSide">
+            <div class="hintBox">
+              <b>Lưu ý:</b> Bốc thăm để xác định <b>người trúng</b> cho lô đồng giá.
+              Khi có kết quả, hệ thống sẽ tự cập nhật và hiển thị ngay trên màn hình.
+            </div>
+            <div class="statBox">
+              <div class="big" id="drawRemain">Còn lại: 0 lô</div>
+              <div class="small">
+                Vòng bốc thăm thường có rất ít lô, nên màn hình sẽ tập trung toàn bộ vào từng lô để mọi người theo dõi rõ ràng.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="footerline">
+      <div id="uiFooterLeft">Hệ thống đấu giá thông minh – Trình chiếu hội trường</div>
+      <div id="uiFooterRight">Tự cập nhật theo diễn biến kiểm phiếu</div>
+    </div>
+  </div>
+
+  <script>
+    // =========================
+    // CẤU HÌNH TỐI THIỂU
+    // =========================
+    // Ví dụ: /auction/counting/api/display/snapshot?project_id=123
+    const params = new URLSearchParams(location.search);
+    const projectId = params.get("project_id") || "";
+    const sessionId = params.get("session_id") || ""; // optional
+
+    const SNAPSHOT_URL = (() => {
+      let u = "/auction/counting/api/display/snapshot";
+      const q = new URLSearchParams();
+      if (projectId) q.set("project_id", projectId);
+      if (sessionId) q.set("session_id", sessionId);
+      const qs = q.toString();
+      return qs ? (u + "?" + qs) : u;
+    })();
+
+    // Tự cập nhật theo diễn biến (mặc định 5 giây)
+    const CAP_NHAT_MOI = 5000;
+
+    // =========================
+    // HELPERS HIỂN THỊ
+    // =========================
+    function fmtVND(x){
+      if (x == null) return "—";
+      const n = Number(x);
+      if (!isFinite(n)) return "—";
+      return n.toLocaleString("vi-VN") + " ₫";
+    }
+
+    function maskPhoneLast3(phoneMaskedOrRaw){
+      if (!phoneMaskedOrRaw) return "";
+      const s = String(phoneMaskedOrRaw);
+      // Nếu A đã trả về dạng *******321 thì giữ nguyên
+      if (s.includes("*")) return s;
+      // Nếu lỡ nhận số thô thì che lại
+      const digits = s.replace(/\D/g, "");
+      if (digits.length <= 3) return digits;
+      return "*".repeat(digits.length - 3) + digits.slice(-3);
+    }
+
+    function nowClock(){
+      const d = new Date();
+      const hh = String(d.getHours()).padStart(2,"0");
+      const mm = String(d.getMinutes()).padStart(2,"0");
+      const ss = String(d.getSeconds()).padStart(2,"0");
+      return `${hh}:${mm}:${ss}`;
+    }
+
+    function setText(id, txt){
+      const el = document.getElementById(id);
+      if (el) el.textContent = txt;
+    }
+
+    function escapeHtml(s){
+      return String(s ?? "")
+        .replaceAll("&","&amp;").replaceAll("<","&lt;")
+        .replaceAll(">","&gt;").replaceAll('"',"&quot;")
+        .replaceAll("'","&#39;");
+    }
+
+    // =========================
+    // RENDER: COUNTING MODE
+    // =========================
+    function renderWinners(winners){
+      const box = document.getElementById("cardsWinners");
+      if (!box) return;
+
+      if (!Array.isArray(winners) || winners.length === 0){
+        box.innerHTML = `
+          <div style="grid-column: 1 / -1; opacity:.9; padding:18px; border:1px dashed rgba(34,48,85,.6); border-radius:18px; background: rgba(14,18,38,.35)">
+            <div style="font-weight:950; font-size:18px; color: rgba(234,240,255,.95)">Chưa có kết quả trúng nào được chốt.</div>
+            <div style="margin-top:8px; color: rgba(169,182,214,.9); line-height:1.4">
+              Khi admin nhập người trúng cho từng lô, danh sách sẽ tự cập nhật và hiển thị tại đây.
             </div>
           </div>
         `;
-      }).join('');
-    }
-
-    const ts = new Date();
-    elLast.innerHTML = `<i class="ri-wifi-line"></i> ${ts.toLocaleTimeString('vi-VN')}`;
-  }
-
-  async function tick(){
-    if(running) return;
-    const pid = sel.value ? parseInt(sel.value,10) : null;
-    if(!pid){ return; }
-    running = true;
-    try{
-      const {ok, status, js} = await fetchSnapshot(pid);
-      if(!ok){
-        showToast(`Không tải được snapshot (HTTP ${status})`);
-      } else {
-        render(js);
+        return;
       }
-    }catch(e){
-      showToast(`Lỗi kết nối snapshot`);
-    }finally{
-      running = false;
+
+      // Hiển thị tối đa để nhìn rõ: tự cân theo màn hình
+      const maxCards = 12; // 4 cột x 3 hàng
+      const show = winners.slice(0, maxCards);
+
+      box.innerHTML = show.map(w => {
+        const lot = escapeHtml(w.lot_code || "—");
+        const name = escapeHtml(w.full_name || "—");
+        const phone = escapeHtml(maskPhoneLast3(w.phone_masked || w.phone || ""));
+        const price = escapeHtml(fmtVND(w.highest_price_vnd));
+        return `
+          <div class="card">
+            <div class="cTop">
+              <div class="badgeWon"><i class="ri-trophy-line"></i> Đã trúng</div>
+              <div class="lotCode">Lô ${lot}</div>
+            </div>
+            <div class="price">${price}</div>
+            <div class="name">${name}</div>
+            <div class="phone">${phone}</div>
+          </div>
+        `;
+      }).join("");
+
+      if (winners.length > maxCards){
+        box.insertAdjacentHTML("beforeend", `
+          <div class="card" style="background: rgba(14,18,38,.55); border-style:dashed">
+            <div class="cTop">
+              <div class="badgeWon" style="border-color: rgba(53,242,255,.35); background: rgba(10,20,35,.55); box-shadow: 0 0 18px rgba(53,242,255,.20)">
+                <i class="ri-more-2-fill"></i> Còn nữa
+              </div>
+              <div class="lotCode">+${winners.length - maxCards} lô</div>
+            </div>
+            <div class="price" style="color: var(--cyan); text-shadow: var(--glow-cyan)">Đang hiển thị ${maxCards} lô gần nhất</div>
+            <div class="name" style="min-height:auto; opacity:.9">Danh sách tiếp tục được cập nhật theo diễn biến kiểm phiếu.</div>
+            <div class="phone" style="opacity:.75">—</div>
+          </div>
+        `);
+      }
     }
-  }
 
-  function start(){
-    if(timer) clearInterval(timer);
-    timer = setInterval(tick, pollMs);
-    tick();
-  }
+    function renderFloatingDraw(tied){
+      const card = document.getElementById("floatingDraw");
+      const cCount = document.getElementById("floatCount");
+      const lotLine = document.getElementById("floatLotLine");
+      const names = document.getElementById("floatNames");
 
-  if(initProjectId){
-    start();
-  }
-})();
-</script>
+      if (!card || !cCount || !lotLine || !names) return;
 
-{% endblock %}
+      if (!Array.isArray(tied) || tied.length === 0){
+        card.classList.remove("show");
+        return;
+      }
+
+      card.classList.add("show");
+      cCount.textContent = `${tied.length} lô`;
+
+      // Ưu tiên show 1 lô nổi bật (đầu danh sách)
+      const t = tied[0] || {};
+      const lc = escapeHtml(t.lot_code || "—");
+      const pc = escapeHtml(fmtVND(t.highest_price_vnd));
+
+      lotLine.innerHTML = `<div class="lc">Lô ${lc}</div><div class="pc">${pc}</div>`;
+
+      // Tối đa 4 tên, nếu hơn thì +n người khác
+      const cs = Array.isArray(t.candidates) ? t.candidates : [];
+      const max = 4;
+      const shown = cs.slice(0, max);
+
+      names.innerHTML = shown.map(x => `<div class="nm">${escapeHtml(x.full_name || "—")}</div>`).join("");
+
+      if (cs.length > max){
+        names.insertAdjacentHTML("beforeend", `<div class="nm">+${cs.length - max} người khác</div>`);
+      }
+    }
+
+    // =========================
+    // RENDER: DRAW MODE
+    // =========================
+    function renderDrawMode(payload){
+      const tied = payload?.tied || [];
+      const winners = payload?.winners || [];
+      const summary = payload?.summary || {};
+      const total = Number(summary.total_lots || 0);
+      const checked = Number(summary.checked || 0);
+
+      // Khi kiểm xong hết (checked gần bằng total) và có tied -> chuyển sang vòng bốc thăm
+      // (anh có thể điều chỉnh tiêu chí: session DONE hoặc admin bật chế độ)
+      const nearlyDone = (total > 0 && checked >= total);
+      const shouldDraw = nearlyDone && Array.isArray(tied) && tied.length > 0;
+
+      const panelCounting = document.getElementById("panelCounting");
+      const panelDraw = document.getElementById("panelDraw");
+
+      if (!panelCounting || !panelDraw) return;
+
+      if (!shouldDraw){
+        panelDraw.classList.remove("show");
+        panelCounting.style.opacity = "1";
+        panelCounting.style.pointerEvents = "auto";
+        return;
+      }
+
+      // show draw mode
+      panelDraw.classList.add("show");
+      panelCounting.style.opacity = "0";
+      panelCounting.style.pointerEvents = "none";
+
+      const t = tied[0] || {};
+      const lot = t.lot_code || "—";
+      const price = fmtVND(t.highest_price_vnd);
+
+      setText("drawLotTitle", `Lô ${lot} – `);
+      // giữ màu vàng cho giá
+      const el = document.getElementById("drawLotTitle");
+      if (el){
+        el.innerHTML = `Lô <span>${escapeHtml(lot)}</span> – <span style="color:var(--amber); text-shadow:var(--glow-amber)">${escapeHtml(price)}</span>`;
+      }
+
+      setText("drawLotSub", "Bốc thăm để xác định người trúng cho lô đồng giá.");
+      setText("drawProgress", `${checked}/${total}`);
+
+      const remain = tied.length;
+      setText("drawRemain", `Còn lại: ${remain} lô`);
+
+      const box = document.getElementById("drawCandidates");
+      if (box){
+        const cs = Array.isArray(t.candidates) ? t.candidates : [];
+        if (cs.length === 0){
+          box.innerHTML = `<div class="hintBox" style="background: rgba(255,200,87,.08); border-color: rgba(255,200,87,.22)">
+            Chưa có danh sách ứng viên cho lô này.
+          </div>`;
+        } else {
+          // Nếu admin đã nhập winner sau bốc thăm, lô sẽ chuyển WON và không còn ở tied
+          // Nhưng để phòng trường hợp, ta vẫn render: nếu payload có "winner_for_draw" thì highlight.
+          const winnerId = t.winner_customer_id || null;
+
+          box.innerHTML = cs.map(c => {
+            const name = escapeHtml(c.full_name || "—");
+            const ph = escapeHtml(maskPhoneLast3(c.phone_masked || c.phone || ""));
+            const cid = c.customer_id != null ? String(c.customer_id) : "";
+            const isWin = winnerId && cid && String(winnerId) === cid;
+            return `
+              <div class="row ${isWin ? "win" : ""}">
+                <div class="who">${name}</div>
+                <div class="ph">${ph}</div>
+              </div>
+            `;
+          }).join("");
+        }
+      }
+    }
+
+    // =========================
+    // TỔNG HỢP RENDER
+    // =========================
+    function renderAll(payload){
+      const project = payload?.project || {};
+      const session = payload?.session || null;
+      const summary = payload?.summary || {};
+      const winners = payload?.winners || [];
+      const tied = payload?.tied || [];
+
+      const pcode = (project.project_code || "").toString().trim();
+      const pname = (project.name || "").toString().trim();
+
+      setText("uiSub", `${pname || "Dự án"}${pcode ? " – " + pcode : ""}`);
+
+      const total = Number(summary.total_lots || 0);
+      const checked = Number(summary.checked || 0);
+      setText("uiProgress", `${checked}/${total}`);
+      setText("uiDrawCount", String(Array.isArray(tied) ? tied.length : 0));
+
+      // “Đang kiểm: ...” — không có current lot từ A, nên hiển thị câu dễ hiểu
+      // (Nếu sau anh muốn có “lô đang kiểm”, mình sẽ lấy từ B state hoặc thêm field từ A)
+      setText("uiCurrentLot", `Đang tổng hợp: ${checked}/${total} lô`);
+
+      // Note mềm, không thuật ngữ kỹ thuật
+      const note = session
+        ? `Hệ thống đang cập nhật theo diễn biến kiểm phiếu.`
+        : `Chưa mở phiên kiểm phiếu cho dự án này.`;
+      setText("uiNote", note);
+
+      // Title
+      setText("uiTitle", "KẾT QUẢ KIỂM PHIẾU");
+
+      // Render
+      renderWinners(winners);
+      renderFloatingDraw(tied);
+
+      // Draw mode
+      renderDrawMode(payload);
+    }
+
+    // =========================
+    // LOAD DATA
+    // =========================
+    let lastOkAt = 0;
+
+    async function loadSnapshot(){
+      try{
+        const r = await fetch(SNAPSHOT_URL, { credentials: "include" });
+        const js = await r.json().catch(() => null);
+
+        if (!r.ok || !js || js.ok !== true){
+          // lỗi nhẹ: không phá layout, chỉ note
+          setText("uiNote", "Không lấy được dữ liệu mới. Vui lòng kiểm tra kết nối.");
+          return;
+        }
+        lastOkAt = Date.now();
+        renderAll(js);
+      }catch(e){
+        setText("uiNote", "Không lấy được dữ liệu mới. Vui lòng kiểm tra kết nối.");
+      }
+    }
+
+    // clock
+    setInterval(() => setText("uiClock", nowClock()), 500);
+
+    // auto update
+    async function loop(){
+      await loadSnapshot();
+      setInterval(loadSnapshot, CAP_NHAT_MOI);
+    }
+
+    // init
+    setText("uiClock", nowClock());
+    loop();
+  </script>
+</body>
+</html>
