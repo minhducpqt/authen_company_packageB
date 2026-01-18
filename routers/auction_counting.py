@@ -22,7 +22,6 @@ def _log(msg: str):
 def _preview_body(data: Any, limit: int = 300) -> str:
     try:
         import json
-
         s = json.dumps(data, ensure_ascii=False)
     except Exception:
         s = str(data)
@@ -51,13 +50,14 @@ async def _get_json(
         return r.status_code, {"detail": (r.text or "")[:500]}
 
 
-async def _post_json(path: str, token: str, payload: Dict[str, Any]):
+async def _post_json(path: str, token: str, payload: Dict[str, Any] | None = None):
     url = f"{SERVICE_A_BASE_URL}{path}"
     headers = {"Authorization": f"Bearer {token}"}
-    _log(f"→ POST {url} body={_preview_body(payload)}")
+    body = payload or {}
+    _log(f"→ POST {url} body={_preview_body(body)}")
     async with httpx.AsyncClient(timeout=120.0) as c:
         try:
-            r = await c.post(url, headers=headers, json=payload)
+            r = await c.post(url, headers=headers, json=body)
         except Exception as e:
             _log(f"← EXC {url} error={e}")
             return 599, {"detail": str(e)}
@@ -128,7 +128,6 @@ async def _load_projects_all(token: str, project_param: Optional[str]) -> tuple[
 
     # auto-select if only 1 ACTIVE
     if not selected and len(active_projects) == 1:
-        # prefer project_code if exists else id
         p0 = active_projects[0]
         selected = str((p0.get("project_code") or p0.get("code") or p0.get("id") or "")).strip()
 
@@ -158,7 +157,7 @@ async def _load_projects_all(token: str, project_param: Optional[str]) -> tuple[
 
 
 # =========================================================
-# SSR PAGE - ADMIN COUNTING
+# SSR PAGE - ADMIN COUNTING (2 rounds)
 # =========================================================
 @router.get("/auction/counting", response_class=HTMLResponse)
 async def auction_counting_page(
@@ -175,7 +174,7 @@ async def auction_counting_page(
     projects, selected_key, selected_project, active_projects = await _load_projects_all(token, project)
     project_id = _project_id_of(selected_project)
 
-    # ensure a COUNTING session exists if project selected (reuse A behavior)
+    # ensure a COUNTING session exists if project selected
     session: Optional[Dict[str, Any]] = None
     session_err: Optional[Dict[str, Any]] = None
     if project_id:
@@ -189,14 +188,10 @@ async def auction_counting_page(
     data: Dict[str, Any] = {"data": [], "total": 0, "page": page, "size": size, "project": None, "session": session}
     error: Optional[Dict[str, Any]] = None
 
-    if project_id:
-        params: Dict[str, Any] = {"page": page, "size": size}
+    if project_id and session and session.get("id"):
+        params: Dict[str, Any] = {"page": page, "size": size, "session_id": session["id"]}
         if q:
             params["q"] = q
-        # pass session_id if exists
-        if session and session.get("id"):
-            params["session_id"] = session["id"]
-
         st, js = await _get_json(f"/api/v1/auction-counting/projects/{project_id}/lots", token, params)
         if st == 200 and isinstance(js, dict):
             data = js
@@ -245,7 +240,7 @@ async def auction_counting_display_page(
         "project": selected_key,
         "project_obj": selected_project,
         "project_id": project_id,
-        "poll_ms": 5000,  # ✅ 5s/poll
+        "poll_ms": 2000,  # mượt hơn (2s)
     }
     return templates.TemplateResponse("auction/auction_counting_display.html", ctx)
 
