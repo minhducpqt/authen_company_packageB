@@ -33,10 +33,13 @@
         id="projectSelect"
         class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
       >
-        <option value="">Tất cả dự án</option>
+        <option value="">Chọn dự án…</option>
       </select>
       <!-- giữ giá trị để submit GET -->
       <input type="hidden" name="project_code" id="projectCodeInput" value="{{ filters.project_code }}">
+      <div class="mt-1 text-[11px] text-slate-500">
+        * Bắt buộc chọn dự án để tải dữ liệu / in phiếu.
+      </div>
     </div>
 
     <!-- Tìm khách -->
@@ -288,13 +291,15 @@
               <div class="text-[11px] text-slate-500">
                 Số KH nộp: <span class="font-semibold text-slate-800">{{ (l.customers|length) }}</span>
               </div>
+
+              <!-- ✅ NÚT IN CỦA LÔ: CHỈ IN CÁC PHIẾU ĐANG TÍCH CHỌN TRONG LÔ -->
               <button
                 type="button"
                 class="px-3 py-1.5 rounded bg-sky-600 text-white text-[11px] font-medium hover:bg-sky-700"
-                onclick="openPrintLotAllCustomers('{{ l.project_code }}', '{{ l.lot_id }}')"
-                title="In tất cả phiếu cho lô này (tất cả khách đủ ĐK)"
+                onclick="openPrintSelectedForLot('{{ l.lot_id }}')"
+                title="In các phiếu đang tích chọn của lô này"
               >
-                <i class="ri-printer-line mr-1"></i>In tất cả phiếu của lô
+                <i class="ri-printer-line mr-1"></i>In các phiếu đã chọn của lô
               </button>
             </div>
           </div>
@@ -461,7 +466,7 @@
 
   function openPrintAllForProject() {
     const projectCodeInput = document.getElementById("projectCodeInput");
-    const projectCode = (projectCodeInput && projectCodeInput.value || "").trim();
+    const projectCode = ((projectCodeInput && projectCodeInput.value) || "").trim();
 
     if (!projectCode) {
       showConfirm("Vui lòng chọn một dự án trước khi in tất cả phiếu.", function () {});
@@ -470,17 +475,38 @@
 
     showConfirm(`In tất cả phiếu trả giá cho dự án ${projectCode}?`, function () {
       const url = `/bid-tickets/print-all?project_code=${encodeURIComponent(projectCode)}`;
-      window.location.href = url;
+      window.open(url, "_blank");
     });
   }
 
-  // In tất cả phiếu của 1 lô (tất cả khách)
-  function openPrintLotAllCustomers(projectCode, lotId) {
-    showConfirm("In tất cả phiếu của lô này (tất cả khách đủ điều kiện)?", function () {
-      // dùng API list, print-selected phía backend sẽ gọi /one theo từng khách-lô
-      // ở đây cách nhanh nhất: mở trang list theo lot rồi người dùng bấm chọn tất cả và in.
-      // Nếu anh muốn 1-click in all của lô: sẽ cần thêm route riêng (chưa làm).
-      const url = `/bid-tickets?project_code=${encodeURIComponent(projectCode)}&lot_code=`;
+  // ✅ In phiếu đã chọn của 1 lô (chỉ các checkbox đang tick thuộc lot đó)
+  function openPrintSelectedForLot(lotId) {
+    const lid = String(lotId || "").trim();
+    if (!lid) {
+      showConfirm("Thiếu lot_id, không thể in.", function () {});
+      return;
+    }
+
+    const safeLid = (window.CSS && CSS.escape) ? CSS.escape(lid) : lid.replace(/"/g, '\\"');
+    const checks = Array.from(document.querySelectorAll(`.js-row-lot:checked[data-lot-id="${safeLid}"]`));
+    if (!checks.length) {
+      showConfirm("Vui lòng tích chọn ít nhất 1 phiếu trong lô này để in.", function () {});
+      return;
+    }
+
+    showConfirm(`In ${checks.length} phiếu đã chọn của lô này?`, function () {
+      const params = new URLSearchParams();
+      params.set("only_lot_id", lid);
+
+      checks.forEach(chk => {
+        const pj = chk.dataset.project || "";
+        const cid = chk.dataset.customerId || "";
+        const lot = chk.dataset.lotId || "";
+        if (!pj || !cid || !lot) return;
+        params.append("item", `${pj}|${cid}|${lot}`);
+      });
+
+      const url = `/bid-tickets/print-selected?${params.toString()}`;
       window.open(url, "_blank");
     });
   }
@@ -518,7 +544,7 @@
       });
     }
 
-    // In các dòng đã chọn (tab Theo LÔ) -> 1 popup -> /print-selected?item=...
+    // In các dòng đã chọn (tab Theo LÔ) -> /print-selected?item=...
     const btnPrintSelected = document.querySelector(".js-print-selected-lots");
     if (btnPrintSelected) {
       btnPrintSelected.addEventListener("click", function () {
@@ -535,7 +561,6 @@
             const cid = chk.dataset.customerId || "";
             const lid = chk.dataset.lotId || "";
             if (!pj || !cid || !lid) return;
-            // item format: project|customer|lot
             params.append("item", `${pj}|${cid}|${lid}`);
           });
 
@@ -556,24 +581,31 @@
       const pj = projectCodeInput2.value.trim();
       const q = customerSearch.value.trim();
       const lot = lotCodeInput.value.trim();
+
       if (pj) params.set("project_code", pj);
       if (q) params.set("customer_q", q);
       if (lot) params.set("lot_code", lot);
+
       const qs = params.toString();
       const url = qs ? `/bid-tickets?${qs}` : "/bid-tickets";
       window.location.href = url;
     }
 
-    customerSearch.addEventListener("input", function () {
-      debounce(submitWithCurrentFilters, 400);
-    });
+    if (customerSearch) {
+      customerSearch.addEventListener("input", function () {
+        debounce(submitWithCurrentFilters, 400);
+      });
+    }
 
-    projectSelect.addEventListener("change", function () {
-      projectCodeInput2.value = projectSelect.value || "";
-      submitWithCurrentFilters();
-    });
+    if (projectSelect) {
+      projectSelect.addEventListener("change", function () {
+        projectCodeInput2.value = projectSelect.value || "";
+        submitWithCurrentFilters();
+      });
+    }
 
-    // ====== Load danh sách dự án active cho dropdown ======
+    // ====== Load danh sách dự án ACTIVE cho dropdown ======
+    // Backend đã auto-pick nếu thiếu project_code, FE chỉ load để hiển thị dropdown.
     const ACTIVE_PROJ_URL = "/projects/options/active";
     const currentProjectCode = projectCodeInput2.value || "";
 
@@ -581,8 +613,9 @@
       .then(r => r.json())
       .then(js => {
         const list = js.data || js.items || [];
-        projectSelect.innerHTML = '<option value="">Tất cả dự án</option>';
-        list.forEach(p => {
+        projectSelect.innerHTML = '<option value="">Chọn dự án…</option>';
+
+        (list || []).forEach(p => {
           const code = p.project_code || p.code || "";
           const name = p.name || code;
           if (!code) return;
@@ -594,13 +627,6 @@
 
         if (currentProjectCode) {
           projectSelect.value = currentProjectCode;
-        } else if (list.length === 1) {
-          const onlyCode = list[0].project_code || list[0].code || "";
-          if (onlyCode) {
-            projectSelect.value = onlyCode;
-            projectCodeInput2.value = onlyCode;
-            submitWithCurrentFilters();
-          }
         }
       })
       .catch(() => {

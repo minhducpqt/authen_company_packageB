@@ -3,7 +3,6 @@
 from __future__ import annotations
 from typing import Optional, Dict, Any, List, Tuple
 from urllib.parse import quote
-
 import os
 import httpx
 from fastapi import APIRouter, Request, Query
@@ -48,6 +47,48 @@ def _parse_item(s: str) -> Optional[Tuple[str, int, int]]:
         return None
 
 
+async def _auto_pick_project_code_if_missing(
+    token: str,
+    me: dict,
+    incoming_filters: dict,
+) -> Optional[str]:
+    """
+    Nếu chưa chọn project_code:
+      - Nếu có đúng 1 ACTIVE -> chọn nó
+      - Nếu có nhiều ACTIVE -> chọn ACTIVE ở cuối danh sách
+    Trả về project_code hoặc None nếu không chọn được.
+    """
+    headers = {"Authorization": f"Bearer {token}"}
+    company_code = (me or {}).get("company_code") or (me or {}).get("company") or (me or {}).get("companyCode")
+    company_code = (company_code or "").strip()
+
+    params = {
+        "status": "ACTIVE",
+        "page": 1,
+        "size": 1000,
+    }
+    if company_code:
+        params["company_code"] = company_code
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=15.0) as client:
+            st, js = await _get_json(client, "/api/v1/projects/public", headers, params)
+        if st != 200 or not isinstance(js, dict):
+            return None
+        items = js.get("data") or js.get("items") or []
+        if not isinstance(items, list):
+            return None
+        items = [x for x in items if isinstance(x, dict)]
+        if not items:
+            return None
+        if len(items) == 1:
+            return (items[0].get("project_code") or "").strip() or None
+        last = items[-1]
+        return (last.get("project_code") or "").strip() or None
+    except Exception:
+        return None
+
+
 # ======================================================================
 # PAGE: INDEX
 # ======================================================================
@@ -62,6 +103,9 @@ async def bid_tickets_page(
 ):
     """
     Màn hình quản lý/in phiếu trả giá.
+    - BẮT BUỘC có project_code mới tải dữ liệu (chống trộn dự án).
+    - Nếu chưa có project_code:
+        + auto chọn nếu có 1 ACTIVE hoặc chọn ACTIVE cuối danh sách
     - Tab 1: Theo KHÁCH (group theo customer_id)
     - Tab 2: Theo LÔ (group theo lot_id, sort lot_id asc, customers asc)
     """
@@ -73,12 +117,57 @@ async def bid_tickets_page(
             status_code=303,
         )
 
+    pj = (project_code or "").strip()
+
+    if not pj:
+        picked = await _auto_pick_project_code_if_missing(
+            token=token,
+            me=me,
+            incoming_filters={
+                "customer_q": customer_q or "",
+                "lot_code": lot_code or "",
+                "page": page,
+                "size": size,
+            },
+        )
+        if picked:
+            qs = [f"project_code={quote(picked)}"]
+            if customer_q:
+                qs.append(f"customer_q={quote(customer_q)}")
+            if lot_code:
+                qs.append(f"lot_code={quote(lot_code)}")
+            if page and page != 1:
+                qs.append(f"page={page}")
+            if size:
+                qs.append(f"size={size}")
+            return RedirectResponse(url="/bid-tickets?" + "&".join(qs), status_code=303)
+
+        return templates.TemplateResponse(
+            "pages/bid_tickets/index.html",
+            {
+                "request": request,
+                "title": "Phiếu trả giá",
+                "me": me,
+                "filters": {
+                    "project_code": "",
+                    "customer_q": customer_q or "",
+                    "lot_code": lot_code or "",
+                },
+                "page": {"data": [], "page": 1, "size": size, "total": 0},
+                "rows": [],
+                "customers": [],
+                "lots": [],
+                "lots_total": 0,
+                "pairs_total": 0,
+                "load_err": "Vui lòng chọn dự án trước khi thao tác / in phiếu.",
+            },
+        )
+
     params: Dict[str, Any] = {
         "page": page,
         "size": size,
+        "project_code": pj,
     }
-    if project_code:
-        params["project_code"] = project_code
     if lot_code:
         params["lot_code"] = lot_code
     if customer_q:
@@ -100,9 +189,7 @@ async def bid_tickets_page(
 
     rows: List[Dict[str, Any]] = data.get("data") or []
 
-    # -----------------------------
-    # TAB 1: Group theo khách
-    # -----------------------------
+    # TAB 1: group theo khách
     customers: Dict[int, Dict[str, Any]] = {}
     for r in rows:
         cid = r.get("customer_id")
@@ -136,22 +223,18 @@ async def bid_tickets_page(
         )
     )
 
-    # -----------------------------
-    # TAB 2: Group theo lô
-    # - sort lots by lot_id asc
-    # - inside each lot: customers sort by customer_id asc
-    # -----------------------------
+    # TAB 2: group theo lô
     lots_map: Dict[Tuple[str, int], Dict[str, Any]] = {}
     for r in rows:
-        pj = (r.get("project_code") or "").strip()
+        pj2 = (r.get("project_code") or "").strip()
         lid = r.get("lot_id")
-        if not pj or lid is None:
+        if not pj2 or lid is None:
             continue
         lid = int(lid)
-        key = (pj, lid)
+        key = (pj2, lid)
         if key not in lots_map:
             lots_map[key] = {
-                "project_code": pj,
+                "project_code": pj2,
                 "project_name": r.get("project_name"),
                 "project_id": r.get("project_id"),
                 "auction_mode": r.get("auction_mode"),
@@ -171,7 +254,6 @@ async def bid_tickets_page(
                 "customers": [],
             }
 
-        # push customer-row
         lots_map[key]["customers"].append(r)
 
     lots_list = list(lots_map.values())
@@ -190,14 +272,14 @@ async def bid_tickets_page(
             "title": "Phiếu trả giá",
             "me": me,
             "filters": {
-                "project_code": project_code or "",
+                "project_code": pj,
                 "customer_q": customer_q or "",
                 "lot_code": lot_code or "",
             },
             "page": data,
-            "rows": rows,              # vẫn giữ nếu anh cần debug
+            "rows": rows,
             "customers": customers_list,
-            "lots": lots_list,         # ✅ NEW: tab theo lô dùng cái này
+            "lots": lots_list,
             "lots_total": lots_total,
             "pairs_total": pairs_total,
             "load_err": load_err,
@@ -215,11 +297,6 @@ async def print_bid_tickets(
     customer_id: int = Query(...),
     lot_id: Optional[int] = Query(None),
 ):
-    """
-    In phiếu:
-    - Nếu truyền lot_id -> in 1 phiếu (1 khách+1 lô)
-    - Nếu KHÔNG truyền lot_id -> in tất cả phiếu cho khách này trong dự án (N trang)
-    """
     token = get_access_token(request)
     me = await fetch_me(token)
     if not me:
@@ -348,18 +425,18 @@ async def print_all_bid_tickets(
 
 # ======================================================================
 # PRINT-SELECTED: IN N PHIẾU ĐÃ CHỌN (1 POPUP, N TRANG)
+# - DÙNG API BULK BÊN A: POST /api/v1/report/bid_tickets/selected
+# - only_lot_id: để nút "In của lô" chỉ in những phiếu đã tick thuộc lô đó
 # ======================================================================
 @router.get("/print-selected", response_class=HTMLResponse)
 async def print_selected_bid_tickets(
     request: Request,
     item: List[str] = Query(..., description="Repeated: project|customer_id|lot_id"),
+    only_lot_id: Optional[int] = Query(
+        None,
+        description="Nếu set, chỉ in các item thuộc lot_id này (phục vụ nút In của lô).",
+    ),
 ):
-    """
-    In các phiếu đã chọn (tab Theo LÔ):
-    - Nhận nhiều item=project|customer|lot
-    - Backend gom tickets -> render print.html (mỗi ticket = 1 trang)
-    - Chỉ mở 1 popup => không bị popup blocker
-    """
     token = get_access_token(request)
     me = await fetch_me(token)
     if not me:
@@ -368,11 +445,14 @@ async def print_selected_bid_tickets(
             status_code=303,
         )
 
+    # Parse + dedupe
     parsed: List[Tuple[str, int, int]] = []
     seen = set()
     for s in item or []:
         tup = _parse_item(s)
         if not tup:
+            continue
+        if only_lot_id is not None and tup[2] != int(only_lot_id):
             continue
         if tup in seen:
             continue
@@ -382,45 +462,46 @@ async def print_selected_bid_tickets(
     if not parsed:
         return HTMLResponse("<h1>Không có phiếu hợp lệ để in.</h1>", status_code=400)
 
+    # Must be 1 project_code (vì UI bắt chọn dự án trước)
+    project_code = (parsed[0][0] or "").strip()
+    if not project_code:
+        return HTMLResponse("<h1>Thiếu project_code.</h1>", status_code=400)
+
+    # Nếu lẫn project_code (do UI/bug), vẫn chặn để tránh trộn dự án khi in
+    for (pj, _, _) in parsed:
+        if (pj or "").strip() != project_code:
+            return HTMLResponse(
+                "<h1>Lỗi</h1><p>Danh sách in bị trộn nhiều dự án. Vui lòng chọn 1 dự án duy nhất.</p>",
+                status_code=400,
+            )
+
+    # Build payload for Service A bulk endpoint
+    payload = {
+        "project_code": project_code,
+        "items": [{"customer_id": cid, "lot_id": lid} for (_, cid, lid) in parsed],
+        "include_excluded": False,
+        "sort_mode": "LOT_ASC_CUSTOMER_ASC",
+    }
+
     headers = {"Authorization": f"Bearer {token}"}
 
-    async def _fetch_one(client: httpx.AsyncClient, pj: str, cid: int, lid: int) -> Optional[Dict[str, Any]]:
-        try:
-            params = {"project_code": pj, "customer_id": cid, "lot_id": lid}
-            r = await client.get("/api/v1/report/bid_tickets/one", headers=headers, params=params)
-            if r.status_code != 200:
-                return None
-            js = r.json() or {}
-            row = js.get("data") or None
-            if isinstance(row, dict) and row.get("customer_id") and row.get("lot_id"):
-                return row
-            return None
-        except Exception:
-            return None
-
-    tickets: List[Dict[str, Any]] = []
     try:
         async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=30.0) as client:
-            tasks = [_fetch_one(client, pj, cid, lid) for (pj, cid, lid) in parsed]
-            results = await httpx.AsyncClient()._transport  # never reached; just to avoid linter
-    except Exception:
-        results = None
-
-    # NOTE: không dùng trick internal transport; thực thi gather đúng cách:
-    try:
-        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=30.0) as client:
-            coros = [_fetch_one(client, pj, cid, lid) for (pj, cid, lid) in parsed]
-            fetched = await __import__("asyncio").gather(*coros)
-            tickets = [x for x in fetched if isinstance(x, dict)]
+            r = await client.post("/api/v1/report/bid_tickets/selected", headers=headers, json=payload)
+        if r.status_code != 200:
+            return HTMLResponse(
+                f"<h1>Lỗi</h1><p>Không lấy được dữ liệu phiếu để in (HTTP {r.status_code}).</p>",
+                status_code=500,
+            )
+        js = r.json() or {}
+        tickets: List[Dict[str, Any]] = js.get("data") or []
     except Exception as e:
         return HTMLResponse(f"<h1>Lỗi</h1><p>{e}</p>", status_code=500)
 
     if not tickets:
         return HTMLResponse("<h1>Không lấy được dữ liệu phiếu để in.</h1>", status_code=404)
 
-    # Sort đúng yêu cầu: lot_id asc, rồi customer_id asc
-    tickets.sort(key=lambda t: (t.get("lot_id") or 10**18, t.get("customer_id") or 10**18))
-
+    # Sort đã do A quyết định; B giữ nguyên.
     return templates.TemplateResponse(
         "pages/bid_tickets/print.html",
         {
