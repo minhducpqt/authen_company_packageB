@@ -751,6 +751,30 @@
     const noProjectOverlay = document.getElementById("noProjectOverlay");
 
     // =========================
+    // Fix #1: marquee không bị giật về đầu sau mỗi poll
+    // - dùng negative animation-delay theo "thời gian chạy" + hash lot_code
+    // - rerender innerHTML vẫn giữ đúng pha chạy hiện tại
+    // =========================
+    const MARQUEE_DUR_SEC = 24;
+    const marqueeEpoch = performance.now();
+
+    function hashStr(s){
+      s = String(s || "");
+      let h = 2166136261;
+      for (let i=0;i<s.length;i++){
+        h ^= s.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return (h >>> 0);
+    }
+    function marqueeDelayForLot(lotCode){
+      const t = (performance.now() - marqueeEpoch) / 1000;
+      const base = t % MARQUEE_DUR_SEC;                       // pha theo thời gian chạy
+      const off  = (hashStr(lotCode) % 1000) / 1000 * MARQUEE_DUR_SEC; // offset ổn định theo lot
+      return (base + off) % MARQUEE_DUR_SEC;
+    }
+
+    // =========================
     // State
     // =========================
     let lastSeenSig = new Map();      // lot_code -> signature (for "latest changed")
@@ -768,7 +792,7 @@
     let loopingEnabled = false;
 
     // tốc độ vừa đủ đọc
-    let scrollSpeed = 0.10;
+    let scrollSpeed = 0.06;
 
     // =========================
     // Card renderers
@@ -839,6 +863,9 @@
       const joined = candChips.join("");
       const doubled = joined + joined;
 
+      // ✅ Fix #1: giữ pha marquee qua các lần poll/rerender
+      const delay = marqueeDelayForLot(lot);
+
       return `
         <div class="card tied" data-lot="${escapeHtml(lot)}">
           <div class="card-inner">
@@ -859,7 +886,7 @@
             </div>
 
             <div class="marquee">
-              <div class="marquee-track">
+              <div class="marquee-track" style="animation-duration:${MARQUEE_DUR_SEC}s; animation-delay:-${delay}s;">
                 ${
                   doubled
                   || `<span class="cand"><b>Đang chờ danh sách bốc thăm…</b><i>SĐT —</i></span>`
