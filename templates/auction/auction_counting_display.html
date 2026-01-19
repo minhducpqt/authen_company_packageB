@@ -34,6 +34,18 @@
 
       --cardH: 160px;
       --cardPad: 13px;
+
+      /* ✨ Pro accents */
+      --wonGlow1: rgba(0,255,213,.35);
+      --wonGlow2: rgba(0,167,255,.28);
+      --wonEdge: rgba(0,255,213,.55);
+
+      --tiedGlow1: rgba(255,216,106,.35);
+      --tiedGlow2: rgba(255,77,216,.28);
+      --tiedEdge: rgba(255,216,106,.60);
+
+      --innerStroke: rgba(255,255,255,.10);
+      --grain: rgba(255,255,255,.035);
     }
 
     *{box-sizing:border-box}
@@ -245,31 +257,47 @@
       100%{ transform: scale(1.0); opacity:1; }
     }
 
-    /* CARD */
+    /* =========================
+       ✨ CARD (UI only upgrade)
+       ========================= */
     .card{
       height: var(--cardH);
       border-radius: var(--radius);
       border: 1px solid rgba(255,255,255,.14);
       background:
-        radial-gradient(900px 240px at 20% 10%, rgba(255,255,255,.08), transparent 65%),
-        rgba(10,12,24,.46);
+        radial-gradient(900px 260px at 18% 14%, rgba(255,255,255,.10), transparent 62%),
+        radial-gradient(820px 240px at 82% 72%, rgba(255,255,255,.07), transparent 64%),
+        rgba(10,12,24,.44);
       box-shadow:
-        0 18px 70px rgba(0,0,0,.40),
+        0 18px 72px rgba(0,0,0,.44),
         inset 0 1px 0 rgba(255,255,255,.06);
       position:relative;
       overflow:hidden;
       transform: translateZ(0);
+      isolation:isolate;
+    }
+
+    /* subtle inner border */
+    .card::before{
+      content:"";
+      position:absolute; inset:1px;
+      border-radius: calc(var(--radius) - 1px);
+      border: 1px solid var(--innerStroke);
+      opacity:.55;
+      pointer-events:none;
+      z-index:0;
     }
 
     /* sheen */
     .card::after{
       content:"";
       position:absolute; inset:0;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,.12), transparent);
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.14), transparent);
       transform: translateX(-70%);
       opacity:.10;
       animation: sheen 3.8s ease-in-out infinite;
       pointer-events:none;
+      z-index:0;
     }
     @keyframes sheen{
       0%{ transform: translateX(-70%); opacity:.06; }
@@ -277,40 +305,28 @@
       100%{ transform: translateX(130%); opacity:.06; }
     }
 
-    /* stronger status glow layers */
-    .card.won::before,
-    .card.tied::before{
-      content:"";
-      position:absolute; inset:-2px;
-      border-radius: calc(var(--radius) + 2px);
-      pointer-events:none;
-      opacity:.0;
-      filter: blur(0px);
-      transition: opacity .25s ease;
+    /* top status bar */
+    .status-bar{
+      position:absolute; left:10px; right:10px; top:10px;
+      height:6px;
+      border-radius:999px;
+      opacity:.95;
+      filter: drop-shadow(0 0 16px rgba(255,255,255,.10));
+      z-index:2;
     }
-    .card.won::before{
-      background:
-        radial-gradient(700px 220px at 12% 10%, rgba(0,255,213,.22), transparent 60%),
-        radial-gradient(680px 220px at 88% 75%, rgba(0,167,255,.18), transparent 62%);
-    }
-    .card.tied::before{
-      background:
-        radial-gradient(700px 220px at 12% 10%, rgba(255,216,106,.22), transparent 60%),
-        radial-gradient(680px 220px at 88% 75%, rgba(255,77,216,.18), transparent 62%);
-    }
-    .card.won{ animation: glowWon 2.8s ease-in-out infinite; }
-    .card.tied{ animation: glowTied 2.8s ease-in-out infinite; }
-    @keyframes glowWon{
-      0%,100%{ box-shadow: 0 18px 74px rgba(0,255,213,.18), 0 18px 74px rgba(0,167,255,.12), inset 0 1px 0 rgba(255,255,255,.06); }
-      50%{ box-shadow: 0 22px 92px rgba(0,255,213,.26), 0 20px 84px rgba(0,167,255,.18), inset 0 1px 0 rgba(255,255,255,.07); }
-    }
-    @keyframes glowTied{
-      0%,100%{ box-shadow: 0 18px 74px rgba(255,216,106,.20), 0 18px 74px rgba(255,77,216,.12), inset 0 1px 0 rgba(255,255,255,.06); }
-      50%{ box-shadow: 0 22px 92px rgba(255,216,106,.28), 0 20px 84px rgba(255,77,216,.18), inset 0 1px 0 rgba(255,255,255,.07); }
-    }
-    .card.won:hover::before,
-    .card.tied:hover::before{ opacity:.85; }
 
+    /* corner accent (different per status) */
+    .corner-accent{
+      position:absolute;
+      right:-42px; top:-42px;
+      width:120px; height:120px;
+      transform: rotate(45deg);
+      opacity:.55;
+      z-index:1;
+      filter: blur(.1px);
+    }
+
+    /* grain (premium) */
     .card-inner{
       position:relative;
       height:100%;
@@ -318,11 +334,25 @@
       display:flex;
       flex-direction:column;
       gap:7px;
+      z-index:3;
     }
+    .card-inner::after{
+      content:"";
+      position:absolute; inset:0;
+      background:
+        repeating-linear-gradient(0deg, transparent 0 2px, rgba(255,255,255,.02) 2px 3px);
+      opacity:.10;
+      mix-blend-mode: overlay;
+      pointer-events:none;
+      z-index:0;
+    }
+    .card-inner > *{ position:relative; z-index:1; }
+
     .row{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+
     .lot-code{
       font-weight:1000;
-      letter-spacing: 1.0px;
+      letter-spacing: 1.05px;
       font-size:22px;
       line-height:1;
       text-transform:uppercase;
@@ -344,6 +374,7 @@
       border: 1px solid rgba(255,255,255,.14);
       background: rgba(255,255,255,.05);
       white-space:nowrap;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
     }
 
     .tied-count{
@@ -433,38 +464,81 @@
       text-overflow:clip;
     }
 
-    /* WON */
+    /* ===== WON (crisp teal/blue) ===== */
     .card.won{
-      border-color: rgba(0,255,213,.40);
+      border-color: rgba(0,255,213,.45);
+      box-shadow:
+        0 20px 88px rgba(0,255,213,.22),
+        0 18px 78px rgba(0,167,255,.16),
+        inset 0 1px 0 rgba(255,255,255,.06);
     }
+    .card.won .status-bar{
+      background: linear-gradient(90deg, rgba(0,255,213,.0), rgba(0,255,213,.95), rgba(0,167,255,.95), rgba(0,167,255,.0));
+    }
+    .card.won .corner-accent{
+      background: radial-gradient(closest-side, rgba(0,255,213,.55), rgba(0,167,255,.18), transparent 70%);
+    }
+    .card.won::before{
+      /* keep inner stroke + add glow via outline feel */
+      box-shadow: inset 0 0 0 1px rgba(0,255,213,.10);
+    }
+    .card.won::marker{ content:""; }
     .card.won .lot-code{
-      color: rgba(0,255,213,.97);
-      text-shadow: 0 0 30px rgba(0,255,213,.26);
+      color: rgba(0,255,213,.98);
+      text-shadow: 0 0 34px rgba(0,255,213,.28);
     }
     .card.won .status-chip{
-      color: rgba(0,255,213,.96);
-      border-color: rgba(0,255,213,.34);
-      background: rgba(0,255,213,.12);
-      box-shadow: 0 0 26px rgba(0,255,213,.22);
+      color: rgba(0,255,213,.98);
+      border-color: rgba(0,255,213,.38);
+      background: rgba(0,255,213,.14);
+      box-shadow: 0 0 30px rgba(0,255,213,.24), inset 0 1px 0 rgba(255,255,255,.10);
     }
 
-    /* TIED */
+    /* ===== TIED (gold/pink with pattern) ===== */
     .card.tied{
-      border-color: rgba(255,216,106,.40);
+      border-color: rgba(255,216,106,.46);
       background:
-        radial-gradient(900px 240px at 20% 10%, rgba(255,216,106,.16), transparent 65%),
-        radial-gradient(900px 260px at 80% 30%, rgba(255,77,216,.14), transparent 60%),
-        rgba(10,12,24,.46);
+        radial-gradient(900px 260px at 18% 12%, rgba(255,216,106,.18), transparent 62%),
+        radial-gradient(900px 260px at 82% 28%, rgba(255,77,216,.16), transparent 62%),
+        rgba(10,12,24,.44);
+      box-shadow:
+        0 20px 92px rgba(255,216,106,.24),
+        0 18px 82px rgba(255,77,216,.16),
+        inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .card.tied .status-bar{
+      background: linear-gradient(90deg, rgba(255,216,106,.0), rgba(255,216,106,.98), rgba(255,77,216,.92), rgba(255,77,216,.0));
+    }
+    .card.tied .corner-accent{
+      background: radial-gradient(closest-side, rgba(255,216,106,.55), rgba(255,77,216,.22), transparent 72%);
+    }
+    /* small diagonal pattern to clearly differentiate */
+    .card.tied .card-inner::before{
+      content:"";
+      position:absolute; inset:0;
+      background:
+        repeating-linear-gradient(135deg, rgba(255,216,106,.07) 0 6px, rgba(255,77,216,.06) 6px 12px);
+      opacity:.12;
+      mix-blend-mode: overlay;
+      pointer-events:none;
+      border-radius: var(--radius);
+      z-index:0;
     }
     .card.tied .lot-code{
-      color: rgba(255,216,106,.98);
-      text-shadow: 0 0 30px rgba(255,216,106,.22);
+      color: rgba(255,216,106,.99);
+      text-shadow: 0 0 34px rgba(255,216,106,.24);
     }
     .card.tied .status-chip{
-      color: rgba(255,216,106,.96);
-      border-color: rgba(255,216,106,.34);
-      background: rgba(255,216,106,.12);
-      box-shadow: 0 0 26px rgba(255,216,106,.20);
+      color: rgba(255,216,106,.98);
+      border-color: rgba(255,216,106,.40);
+      background: rgba(255,216,106,.14);
+      box-shadow: 0 0 30px rgba(255,216,106,.22), inset 0 1px 0 rgba(255,255,255,.10);
+    }
+
+    /* hover: more premium pop (still subtle) */
+    .card:hover{
+      transform: translateY(-1px) translateZ(0);
+      transition: transform .16s ease;
     }
 
     /* TIED marquee */
@@ -491,14 +565,15 @@
       align-items:center;
       gap:10px;
       font-size:12px;
-      color: rgba(255,255,255,.84);
+      color: rgba(255,255,255,.88);
       padding:6px 10px;
       border-radius:999px;
-      background: rgba(0,0,0,.28);
+      background: rgba(0,0,0,.26);
       border:1px solid rgba(255,255,255,.12);
       box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+      backdrop-filter: blur(6px);
     }
-    .cand b{ font-weight:950; color: rgba(255,255,255,.95); }
+    .cand b{ font-weight:950; color: rgba(255,255,255,.96); }
     .cand i{
       font-style:normal;
       opacity:.9;
@@ -794,12 +869,11 @@
       return isFinite(t) ? t : 0;
     }
     function updatedAtOf(it){
-      // backend sẽ trả updated_at (ISO). Nếu thiếu, fallback 0.
       return parseTs(it && (it.updated_at ?? it.updatedAt));
     }
 
     // =========================
-    // Card renderers
+    // Card renderers (LOGIC GIỮ NGUYÊN, CHỈ THÊM 2 DIV DECOR)
     // =========================
     function cardWON(it){
       const lot = safeText(it.lot_code || "—").toUpperCase();
@@ -819,6 +893,9 @@
 
       return `
         <div class="card won" data-lot="${escapeHtml(lot)}">
+          <div class="status-bar"></div>
+          <div class="corner-accent"></div>
+
           <div class="card-inner">
             <div class="row">
               <div class="lot-code">${escapeHtml(lot)}</div>
@@ -871,6 +948,9 @@
 
       return `
         <div class="card tied" data-lot="${escapeHtml(lot)}">
+          <div class="status-bar"></div>
+          <div class="corner-accent"></div>
+
           <div class="card-inner">
             <div class="row">
               <div class="lot-code">${escapeHtml(lot)}</div>
@@ -954,8 +1034,7 @@
       for (const t of tied) pool.push({type:"TIED", item:t, ts: updatedAtOf(t)});
 
       pool.sort((a,b)=>{
-        if (b.ts !== a.ts) return b.ts - a.ts; // mới nhất trước
-        // fallback ổn định: lot_id ASC, rồi lot_code
+        if (b.ts !== a.ts) return b.ts - a.ts;
         const aid = Number(a.item?.lot_id ?? 0);
         const bid = Number(b.item?.lot_id ?? 0);
         if (aid !== bid) return aid - bid;
@@ -977,11 +1056,29 @@
     // Và KHÔNG reset scrollY giữa các lần poll
     function renderAllList(js){
       const winners = Array.isArray(js.winners) ? js.winners : [];
-      const tied = Array.isArray(js.tied) ? js.tied : [];
+      const tied    = Array.isArray(js.tied) ? js.tied : [];
 
+      // ✅ MERGE 2 LIST -> SORT lot_id ASC
       const all = [];
-      for (const w of winners) all.push({type:"WON", item:w});
-      for (const t of tied) all.push({type:"TIED", item:t});
+      for (const w of winners) all.push({ type:"WON",  item:w });
+      for (const t of tied)    all.push({ type:"TIED", item:t });
+
+      all.sort((a,b)=>{
+        const aid = Number(a.item?.lot_id ?? 0);
+        const bid = Number(b.item?.lot_id ?? 0);
+        if (aid !== bid) return aid - bid;
+
+        // fallback ổn định: lot_code ASC
+        const ac = String(a.item?.lot_code || "");
+        const bc = String(b.item?.lot_code || "");
+        const ccmp = ac.localeCompare(bc, "vi");
+        if (ccmp !== 0) return ccmp;
+
+        // fallback cuối: WON trước TIED (hoặc ngược lại tuỳ bạn)
+        const ap = (a.type === "WON") ? 0 : 1;
+        const bp = (b.type === "WON") ? 0 : 1;
+        return ap - bp;
+      });
 
       if (!all.length){
         scrollTrack.innerHTML = `
@@ -999,14 +1096,17 @@
         return;
       }
 
+      // ✅ GIỮ SCROLL MƯỢT QUA POLL (không reset)
       const prevHeight = trackHeight || 0;
       const prevScroll = scrollY || 0;
 
+      // ✅ render theo thứ tự đã sort
       const htmlHalf = all.map(x=>{
         const card = (x.type === "TIED") ? cardTIED(x.item) : cardWON(x.item);
         return `<div style="margin-bottom:10px">${card}</div>`;
       }).join("");
 
+      // loop track: nhân đôi để chạy vòng
       scrollTrack.innerHTML = htmlHalf + htmlHalf;
 
       requestAnimationFrame(()=>{
@@ -1020,6 +1120,7 @@
         trackHeight = h;
 
         if (trackHeight > 0){
+          // giữ “vị trí tương đối” khi chiều cao danh sách thay đổi
           if (prevHeight > 0){
             const ratio = prevScroll / prevHeight;
             scrollY = ratio * trackHeight;
@@ -1036,6 +1137,7 @@
         }
       });
     }
+
 
     // =========================
     // Smooth loop scroll
@@ -1100,10 +1202,7 @@
           return;
         }
 
-        // ✅ Tab trái: top 6 theo updated_at DESC
         renderLatestFromSnapshot(js);
-
-        // ✅ Panel phải: theo thứ tự API trả về (đã sort theo lot_id ASC)
         renderAllList(js);
 
       }catch(e){
