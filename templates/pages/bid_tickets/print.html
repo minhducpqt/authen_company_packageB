@@ -137,6 +137,7 @@
   {% set qty_lots = t.customer_lot_count or 1 %}
   {% set lot_short = (t.lot_code or '').replace('-', '.') %}
   {% set stt_code = t.stt_padded or (t.stt or '') %}
+  {% set show_price_step = (t.show_price_step if (t.show_price_step is not none) else true) %}
 
   <div class="page">
 
@@ -208,6 +209,7 @@
         </td>
       </tr>
 
+      {% if show_price_step %}
       <tr>
         <td class="info-label">Bước giá ({{ bid_unit }})</td>
         <td class="info-sep">:</td>
@@ -217,6 +219,7 @@
           {% endif %}
         </td>
       </tr>
+      {% endif %}
 
       <tr>
         <td class="info-label">Tôi xin trả giá là</td>
