@@ -44,8 +44,8 @@ async def bid_tickets_page(
 ):
     """
     Màn hình quản lý/in phiếu trả giá.
-    - Tab 1: Theo KHÁCH (group theo customer_id, có STT)
-    - Tab 2: Theo LÔ (dữ liệu thô từng lô)
+    - Tab 1: Theo KHÁCH (group theo customer_id)
+    - Tab 2: Theo LÔ (group theo lot_id; trong mỗi lô có list khách)
     """
     token = get_access_token(request)
     me = await fetch_me(token)
@@ -55,10 +55,7 @@ async def bid_tickets_page(
             status_code=303,
         )
 
-    params: Dict[str, Any] = {
-        "page": page,
-        "size": size,
-    }
+    params: Dict[str, Any] = {"page": page, "size": size}
     if project_code:
         params["project_code"] = project_code
     if lot_code:
@@ -82,7 +79,9 @@ async def bid_tickets_page(
 
     rows: List[Dict[str, Any]] = data.get("data") or []
 
-    # Group theo khách
+    # ------------------------------------------------------------------
+    # Group theo KHÁCH (giữ nguyên như anh đang dùng)
+    # ------------------------------------------------------------------
     customers: Dict[int, Dict[str, Any]] = {}
     for r in rows:
         cid = r.get("customer_id")
@@ -101,7 +100,6 @@ async def bid_tickets_page(
                 ),
                 "project_code": r.get("project_code"),
                 "project_name": r.get("project_name"),
-                # STT theo dự án (do Service A tính trong v_report_bid_customers)
                 "stt": r.get("stt"),
                 "stt_padded": r.get("stt_padded"),
                 "lots": [],
@@ -109,14 +107,50 @@ async def bid_tickets_page(
         customers[cid]["lots"].append(r)
 
     customers_list = list(customers.values())
-
-    # Sort customers_list theo project_code, rồi STT (đảm bảo đúng thứ tự điểm danh)
     customers_list.sort(
         key=lambda c: (
             c.get("project_code") or "",
             c.get("stt") or 10**9,
         )
     )
+
+    # ------------------------------------------------------------------
+    # Group theo LÔ (MỚI): lots_list sort theo lot_id tăng dần
+    #   - Mỗi lô có customers[] sort theo customer_id tăng dần
+    # ------------------------------------------------------------------
+    lots_map: Dict[int, Dict[str, Any]] = {}
+    for r in rows:
+        lid = r.get("lot_id")
+        if lid is None:
+            continue
+
+        if lid not in lots_map:
+            lots_map[lid] = {
+                "lot_id": lid,
+                "lot_code": r.get("lot_code"),
+                "lot_description": r.get("lot_description"),
+                "project_code": r.get("project_code"),
+                "project_name": r.get("project_name"),
+                "auction_mode": r.get("auction_mode"),
+                "area_m2": r.get("area_m2"),
+                "starting_price_vnd": r.get("starting_price_vnd"),
+                "bid_step_vnd": r.get("bid_step_vnd"),
+                "deposit_customer_count": r.get("deposit_customer_count"),
+                "deposit_amount": r.get("deposit_amount"),  # per (customer, lot)
+                "deposit_amount_vnd": r.get("deposit_amount_vnd"),
+                "customers": [],
+            }
+
+        lots_map[lid]["customers"].append(r)
+
+    lots_list = list(lots_map.values())
+
+    # sort lots by lot_id asc
+    lots_list.sort(key=lambda x: x.get("lot_id") or 0)
+
+    # sort customers inside each lot by customer_id asc
+    for lot in lots_list:
+        lot["customers"].sort(key=lambda x: x.get("customer_id") or 0)
 
     return templates.TemplateResponse(
         "pages/bid_tickets/index.html",
@@ -130,8 +164,9 @@ async def bid_tickets_page(
                 "lot_code": lot_code or "",
             },
             "page": data,
-            "rows": rows,
-            "customers": customers_list,
+            "rows": rows,                 # giữ lại (không bắt buộc nhưng đang dùng)
+            "customers": customers_list,  # tab Theo KHÁCH
+            "lots": lots_list,            # tab Theo LÔ (MỚI)
             "load_err": load_err,
         },
     )
@@ -206,8 +241,6 @@ async def print_bid_tickets(
     if not rows:
         return HTMLResponse("<h1>Không có dữ liệu phiếu để in.</h1>", status_code=404)
 
-    # Service A đã sort theo project_code, stt, customer_full_name, lot_code
-    # ở đây vẫn có thể đảm bảo lại thứ tự theo lot_code cho 1 khách
     rows.sort(
         key=lambda t: (
             t.get("stt") or 10**9,
@@ -234,16 +267,9 @@ async def print_all_bid_tickets(
     request: Request,
     project_code: str = Query(...),
 ):
-    """
-    In tất cả phiếu trả giá của TẤT CẢ khách đủ điều kiện trong 1 dự án.
-    - Lấy từ Service A: /api/v1/report/bid_tickets?project_code=...&page=1&size=10000
-    - Sort theo STT (điểm danh) rồi theo mã lô để in đúng thứ tự.
-    - Render chung bằng template print.html (mỗi phiếu = 1 trang A4).
-    """
     token = get_access_token(request)
     me = await fetch_me(token)
     if not me:
-        # quay lại màn hình login, giữ next để quay lại trang list
         return RedirectResponse(
             url=f"/login?next={quote('/bid-tickets')}",
             status_code=303,
@@ -253,7 +279,7 @@ async def print_all_bid_tickets(
     params = {
         "project_code": project_code,
         "page": 1,
-        "size": 10000,  # đủ lớn cho 1 dự án
+        "size": 10000,
     }
 
     try:
@@ -272,9 +298,6 @@ async def print_all_bid_tickets(
     if not rows:
         return HTMLResponse("<h1>Không có phiếu nào trong dự án này để in.</h1>", status_code=404)
 
-    # Đảm bảo thứ tự in:
-    #  - Theo STT (điểm danh) của khách trong dự án
-    #  - Rồi theo mã lô (để các lô của 1 khách đi liền nhau, có thứ tự dễ kiểm)
     rows.sort(
         key=lambda t: (
             t.get("stt") or 10**9,
