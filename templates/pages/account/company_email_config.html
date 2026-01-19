@@ -7,7 +7,7 @@
 .h1{font-size:22px;font-weight:800;margin:10px 0 14px}
 .card{background:#fff;border:1px solid var(--b);border-radius:14px;padding:14px;box-shadow:0 8px 24px rgba(2,6,23,.06)}
 .tbl{width:100%;border-collapse:collapse}
-.tbl th,.tbl td{border-bottom:1px solid var(--b);padding:10px 8px;text-align:left;font-size:14px}
+.tbl th,.tbl td{border-bottom:1px solid var(--b);padding:10px 8px;text-align:left;font-size:14px;vertical-align:top}
 .badge{font-size:12px;border-radius:999px;padding:2px 8px;display:inline-block}
 .badge.ok{background:rgba(16,185,129,.12);color:#065f46;border:1px solid rgba(16,185,129,.3)}
 .badge.off{background:rgba(100,116,139,.12);color:#334155;border:1px solid rgba(100,116,139,.3)}
@@ -35,12 +35,24 @@
 
   <div class="card" style="margin-bottom:14px">
     <h3 style="margin:0 0 10px;font-weight:800">Danh sách cấu hình</h3>
-    <div class="help" style="margin-bottom:8px">Hệ thống cho phép nhiều cấu hình; chọn <i>Kích hoạt</i> để đánh dấu cấu hình đang dùng.</div>
+    <div class="help" style="margin-bottom:8px">
+      Hệ thống cho phép nhiều cấu hình; chọn <i>Kích hoạt</i> để đánh dấu cấu hình đang dùng.
+      <br>
+      <b>From name</b> là tên hiển thị (ví dụ: <i>Đấu giá Kinh Đô</i>) để email hiện “Đấu giá Kinh Đô &lt;cskh@...&gt;”.
+    </div>
     <div id="list-wrap">
       <table class="tbl" id="mailer-table">
         <thead>
           <tr>
-            <th>ID</th><th>From</th><th>Host</th><th>Port</th><th>User</th><th>STARTTLS</th><th>SSL</th><th>Trạng thái</th><th style="width:220px">Hành động</th>
+            <th>ID</th>
+            <th>From</th>
+            <th>Host</th>
+            <th>Port</th>
+            <th>User</th>
+            <th>STARTTLS</th>
+            <th>SSL</th>
+            <th>Trạng thái</th>
+            <th style="width:220px">Hành động</th>
           </tr>
         </thead>
         <tbody id="mailer-tbody"><tr><td colspan="9">Đang tải...</td></tr></tbody>
@@ -54,12 +66,23 @@
       <div class="grid">
         <div>
           <label>From email</label>
-          <input class="input" name="from_email" required placeholder="noreply@company.com">
+          <input class="input" name="from_email" required placeholder="cskh@daugiathongminh.vn">
         </div>
+        <div>
+          <label>From name (tên hiển thị)</label>
+          <input class="input" name="from_name" placeholder="Đấu giá Kinh Đô">
+          <div class="help">Tên hiển thị ở Gmail. Để trống thì Gmail thường hiện phần trước dấu @ (ví dụ: <b>cskh</b>).</div>
+        </div>
+
         <div>
           <label>Reply-To (tuỳ chọn)</label>
           <input class="input" name="reply_to" placeholder="support@company.com">
         </div>
+        <div>
+          <label>Ghi chú</label>
+          <input class="input" name="notes" placeholder="Gmail SMTP / SMTP Relay">
+        </div>
+
         <div>
           <label>SMTP Host</label>
           <input class="input" name="host" required placeholder="smtp.gmail.com">
@@ -68,15 +91,17 @@
           <label>Port</label>
           <input class="input" name="port" type="number" value="587" required>
         </div>
+
         <div>
           <label>Username</label>
-          <input class="input" name="username" required placeholder="noreply@company.com">
+          <input class="input" name="username" required placeholder="cskh@daugiathongminh.vn">
         </div>
         <div>
           <label>App Password</label>
           <input class="input" name="app_password" required placeholder="16 ký tự App Password">
-          <div class="help">Gmail: bật 2FA & tạo App password.</div>
+          <div class="help">Gmail SMTP thường: bật 2FA & tạo App password. (SMTP Relay thì thường không cần, tuỳ cấu hình).</div>
         </div>
+
         <div>
           <label>STARTTLS</label>
           <select class="input" name="use_starttls">
@@ -91,6 +116,7 @@
             <option value="true">Có</option>
           </select>
         </div>
+
         <div>
           <label>Kích hoạt ngay</label>
           <select class="input" name="is_active">
@@ -99,10 +125,12 @@
           </select>
         </div>
         <div>
-          <label>Ghi chú</label>
-          <input class="input" name="notes" placeholder="Gmail SMTP">
+          <div class="help" style="margin-top:22px">
+            Tip: nếu dùng Gmail SMTP Relay thì <b>From name</b> vẫn lấy theo cấu hình trong hệ thống gửi mail (header From).
+          </div>
         </div>
       </div>
+
       <div style="margin-top:12px;display:flex;gap:8px">
         <button class="btn" type="submit">Tạo cấu hình</button>
         <button class="btn btn-ghost" type="reset">Xoá</button>
@@ -127,9 +155,20 @@
             <input class="input" name="from_email" required>
           </div>
           <div>
+            <label>From name (tên hiển thị)</label>
+            <input class="input" name="from_name" placeholder="Đấu giá Kinh Đô">
+            <div class="help">Nếu để trống, Gmail có thể hiện “cskh”.</div>
+          </div>
+
+          <div>
             <label>Reply-To (tuỳ chọn)</label>
             <input class="input" name="reply_to" placeholder="support@company.com">
           </div>
+          <div>
+            <label>Ghi chú</label>
+            <input class="input" name="notes" placeholder="Gmail SMTP / SMTP Relay">
+          </div>
+
           <div>
             <label>SMTP Host</label>
             <input class="input" name="host" required>
@@ -138,6 +177,7 @@
             <label>Port</label>
             <input class="input" name="port" type="number" required>
           </div>
+
           <div>
             <label>Username</label>
             <input class="input" name="username" required>
@@ -147,6 +187,7 @@
             <input class="input" name="app_password" placeholder="(để trống nếu không đổi)">
             <div class="help">Để trống nếu giữ nguyên app password hiện tại.</div>
           </div>
+
           <div>
             <label>STARTTLS</label>
             <select class="input" name="use_starttls">
@@ -161,6 +202,7 @@
               <option value="true">Có</option>
             </select>
           </div>
+
           <div>
             <label>Kích hoạt</label>
             <select class="input" name="is_active">
@@ -169,8 +211,7 @@
             </select>
           </div>
           <div>
-            <label>Ghi chú</label>
-            <input class="input" name="notes" placeholder="Gmail SMTP">
+            <div class="help" style="margin-top:22px">Khi bật Kích hoạt, cấu hình này sẽ trở thành cấu hình đang dùng.</div>
           </div>
         </div>
       </div>
@@ -210,10 +251,14 @@ async function loadList(){
     tb.innerHTML = items.map(it => `
       <tr>
         <td>${it.id}</td>
-        <td>${it.from_email}${it.reply_to ? `<div class="help">Reply-To: ${escapeHtml(it.reply_to)}</div>`:''}</td>
-        <td>${it.host}</td>
-        <td>${it.port}</td>
-        <td>${it.username}</td>
+        <td>
+          <div style="font-weight:700">${escapeHtml(it.from_name || '')}</div>
+          <div>${escapeHtml(it.from_email || '')}</div>
+          ${it.reply_to ? `<div class="help">Reply-To: ${escapeHtml(it.reply_to)}</div>`:''}
+        </td>
+        <td>${escapeHtml(it.host || '')}</td>
+        <td>${it.port ?? ''}</td>
+        <td>${escapeHtml(it.username || '')}</td>
         <td>${it.use_starttls ? '✓' : '—'}</td>
         <td>${it.use_ssl ? '✓' : '—'}</td>
         <td>${it.is_active ? '<span class="badge ok">Đang dùng</span>' : '<span class="badge off">Tắt</span>'}</td>
@@ -237,6 +282,7 @@ async function submitCreate(e){
   const payload = {
     company_code: COMPANY_CODE,
     from_email: f.from_email.value.trim(),
+    from_name: f.from_name.value.trim() || null,     // NEW
     reply_to: f.reply_to.value.trim() || null,
     host: f.host.value.trim(),
     port: Number(f.port.value),
@@ -271,10 +317,11 @@ function openEdit(id){
 
   editForm.id.value = it.id;
   editForm.from_email.value = it.from_email || '';
-  editForm.reply_to.value  = it.reply_to || '';
-  editForm.host.value      = it.host || '';
-  editForm.port.value      = it.port || 587;
-  editForm.username.value  = it.username || '';
+  editForm.from_name.value  = it.from_name || '';   // NEW
+  editForm.reply_to.value   = it.reply_to || '';
+  editForm.host.value       = it.host || '';
+  editForm.port.value       = it.port || 587;
+  editForm.username.value   = it.username || '';
   editForm.app_password.value = ''; // để trống nếu không đổi
   editForm.use_starttls.value = it.use_starttls ? 'true' : 'false';
   editForm.use_ssl.value      = it.use_ssl ? 'true' : 'false';
@@ -294,8 +341,10 @@ async function submitEdit(e){
   e.preventDefault();
   const f = e.target;
   const id = f.id.value;
+
   const payload = {
     from_email: f.from_email.value.trim(),
+    from_name: f.from_name.value.trim() || null,   // NEW
     reply_to: f.reply_to.value.trim() || null,
     host: f.host.value.trim(),
     port: Number(f.port.value),
@@ -305,6 +354,7 @@ async function submitEdit(e){
     is_active: f.is_active.value === 'true',
     notes: f.notes.value.trim() || null
   };
+
   // chỉ gửi app_password nếu người dùng nhập
   const pw = f.app_password.value.trim();
   if(pw) payload.app_password = pw;
