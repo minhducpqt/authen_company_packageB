@@ -52,6 +52,7 @@ EP_PUBLIC_PROJECTS = "/api/v1/projects/public"
 EP_COMPANY_PROFILE = "/api/v1/company/profile"
 EP_AUCTION_MODE    = "/api/v1/projects/{project_id}/auction_mode"  # <-- NEW
 EP_AUCTION_CONFIG  = "/api/v1/projects/{project_id}/auction_config"   # <-- NEW
+EP_BID_TICKET_CONFIG = "/api/v1/projects/{project_id}/bid_ticket_config"  # <-- NEW
 
 
 # ==============================
@@ -391,6 +392,8 @@ async def project_detail(request: Request, project_id: int = Path(...)):
 
     # NEW: auction config (extras.auction) từ Service A
     auction_cfg = None
+    # NEW: bid_ticket config (extras.settings.bid_ticket) từ Service A
+    bid_ticket_cfg = None
 
     try:
         async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
@@ -416,6 +419,18 @@ async def project_detail(request: Request, project_id: int = Path(...)):
                     auction_cfg = cfg.get("auction") or {}
                 else:
                     auction_cfg = None
+            # 1c) Lấy bid_ticket_config (extras.settings.bid_ticket)
+            if project:
+                bt_st, bt = await _get_json(
+                    client,
+                    EP_BID_TICKET_CONFIG.format(project_id=project_id),
+                    {"Authorization": f"Bearer {token}"},
+                )
+                if bt_st == 200 and isinstance(bt, dict):
+                    # API A trả: {"settings": {"bid_ticket": {"show_price_step": true}}}
+                    bid_ticket_cfg = ((bt.get("settings") or {}).get("bid_ticket") or {})
+                else:
+                    bid_ticket_cfg = None
 
             # 2) Nếu có project_code thì lấy danh sách lô theo project_code
             if project and project.get("project_code"):
@@ -448,6 +463,7 @@ async def project_detail(request: Request, project_id: int = Path(...)):
             "lots_page": lots_page,
             "auction_cfg": auction_cfg,  # NEW
             "load_err": load_err,
+            "bid_ticket_cfg": bid_ticket_cfg,  # NEW
         },
     )
 
@@ -917,5 +933,42 @@ async def update_project_auction_config(
 
     return RedirectResponse(
         url=f"/projects/{project_id}?msg=auction_config_updated",
+        status_code=303,
+    )
+
+@router.post("/{project_id}/bid-ticket-config")
+async def update_project_bid_ticket_config(
+    request: Request,
+    project_id: int = Path(...),
+    show_price_step_raw: str | None = Form(None),
+):
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(url=f"/login?next=/projects/{project_id}", status_code=303)
+
+    # checkbox checked -> có field; unchecked -> None
+    show_price_step = True if (show_price_step_raw is not None) else False
+    payload = {"show_price_step": show_price_step}
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            r = await client.put(
+                EP_BID_TICKET_CONFIG.format(project_id=project_id),
+                json=payload,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+        if r.status_code != 200:
+            return RedirectResponse(
+                url=f"/projects/{project_id}?err=bid_ticket_config_update_failed",
+                status_code=303,
+            )
+    except Exception:
+        return RedirectResponse(
+            url=f"/projects/{project_id}?err=bid_ticket_config_update_failed",
+            status_code=303,
+        )
+
+    return RedirectResponse(
+        url=f"/projects/{project_id}?msg=bid_ticket_config_updated",
         status_code=303,
     )

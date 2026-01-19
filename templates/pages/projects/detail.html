@@ -33,6 +33,10 @@
   {% set auction_mode = (project.auction_mode or 'PER_LOT') %}
   {% set is_per_sqm = (auction_mode == 'PER_SQM') %}
 
+  {# NEW: bid ticket config default = true nếu không có key #}
+  {% set btc = bid_ticket_cfg or {} %}
+  {% set show_price_step = (btc.show_price_step if (btc.show_price_step is not none) else true) %}
+
   <!-- Thông tin dự án -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
     <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
@@ -65,12 +69,19 @@
               class="flex items-center gap-1 text-xs text-slate-600">
           <label class="inline-flex items-center gap-1 cursor-pointer">
             <input
+              id="auction_mode_checkbox"
               type="checkbox"
               name="auction_mode_per_sqm"
               value="1"
               class="h-3 w-3 rounded border-slate-300 text-emerald-600 focus:ring-0"
               {% if is_per_sqm %}checked{% endif %}
-              onchange="confirmAuctionMode(this)"
+              onchange="confirmWithPhrase(this, {
+                title: 'Xác nhận thay đổi chế độ đấu giá',
+                descHtml: 'Bạn sắp chuyển chế độ tính tiền sang <b>' + (this.checked ? 'TÍNH THEO M²' : 'TÍNH THEO CẢ LÔ') + '</b>. Việc này ảnh hưởng tới cách nhập/hiển thị giá và báo cáo.',
+                confirmText: 'Xác nhận',
+                cancelText: 'Hủy',
+                phrase: 'tôi xác nhận',
+              })"
             >
             <span>Đấu theo <span class="font-semibold">m²</span></span>
           </label>
@@ -95,6 +106,46 @@
       <div class="whitespace-pre-wrap">{{ project.description or '—' }}</div>
     </div>
   </div>
+
+  <!-- NEW: Bid ticket config (toggle) -->
+  <form method="post" action="/projects/{{ project.id }}/bid-ticket-config" class="mb-6">
+    <div class="p-4 rounded-lg bg-indigo-50 border border-indigo-200">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <h3 class="font-semibold text-slate-800">Cấu hình phiếu trả giá</h3>
+          <p class="text-xs text-slate-500 mt-1">
+            Áp dụng khi in phiếu trả giá theo dự án.
+          </p>
+        </div>
+
+        <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer select-none">
+          <input
+            id="show_price_step_checkbox"
+            type="checkbox"
+            name="show_price_step_raw"
+            value="1"
+            class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-0"
+            {% if show_price_step %}checked{% endif %}
+            onchange="confirmWithPhrase(this, {
+              title: 'Xác nhận thay đổi cấu hình phiếu trả giá',
+              descHtml: 'Bạn sắp <b>' + (this.checked ? 'BẬT' : 'TẮT') + '</b> cấu hình: <b>Có in bước giá trong phiếu trả giá</b>.',
+              confirmText: 'Xác nhận',
+              cancelText: 'Hủy',
+              phrase: 'tôi xác nhận',
+            })"
+          >
+          <span>Có in bước giá trong phiếu trả giá</span>
+        </label>
+      </div>
+
+      <div class="mt-2 text-[11px] text-slate-500">
+        Trạng thái hiện tại:
+        <span class="font-semibold">
+          {% if show_price_step %}ĐANG IN BƯỚC GIÁ{% else %}KHÔNG IN BƯỚC GIÁ{% endif %}
+        </span>
+      </div>
+    </div>
+  </form>
 
   <!-- Deadlines -->
   <form method="post" action="/projects/{{ project.id }}/deadlines" class="mb-6">
@@ -329,24 +380,45 @@
   {% endif %}
 </div>
 
-<!-- Modal confirm đổi chế độ đấu giá -->
-<div id="auctionModeModal"
+<!-- GLOBAL CONFIRM MODAL (phrase required) -->
+<div id="confirmPhraseModal"
      class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 hidden">
-  <div class="bg-white rounded-xl p-5 w-80 shadow-xl">
-    <h3 class="font-semibold text-slate-800 mb-3">Xác nhận thay đổi chế độ đấu giá</h3>
-    <p class="text-sm text-slate-600 mb-5">
-      Bạn có chắc chắn muốn chuyển sang
-      <span id="auctionModeLabel" class="font-semibold text-slate-800"></span>?
-    </p>
+  <div class="bg-white rounded-xl p-5 w-[92vw] max-w-md shadow-xl border border-slate-200">
+    <div class="flex items-start justify-between gap-3">
+      <h3 id="cpmTitle" class="font-semibold text-slate-900 text-base">Xác nhận</h3>
+      <button type="button" class="text-slate-400 hover:text-slate-600" onclick="closeConfirmPhrase(false)">
+        <i class="ri-close-line text-xl"></i>
+      </button>
+    </div>
 
-    <div class="flex justify-end gap-2">
-      <button type="button"
-              class="px-3 py-1.5 rounded bg-slate-200 text-slate-700"
-              onclick="closeAuctionModeModal()">Hủy</button>
+    <div id="cpmDesc" class="text-sm text-slate-600 mt-2"></div>
 
+    <div class="mt-4">
+      <label class="block text-xs font-medium text-slate-600 mb-1">
+        Nhập đúng: <span id="cpmPhraseLabel" class="font-semibold text-slate-800">tôi xác nhận</span>
+      </label>
+      <input id="cpmInput" type="text"
+             class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition"
+             placeholder='Gõ: tôi xác nhận'
+             autocomplete="off"
+             oninput="onCpmInput()">
+      <p id="cpmHint" class="mt-1 text-xs text-slate-500">
+        Để tránh bấm nhầm, bạn cần gõ đúng cụm từ xác nhận.
+      </p>
+    </div>
+
+    <div class="flex justify-end gap-2 mt-5">
       <button type="button"
-              class="px-3 py-1.5 rounded bg-indigo-600 text-white"
-              onclick="applyAuctionMode()">Xác nhận</button>
+              class="px-3 py-1.5 rounded-lg bg-slate-200 text-slate-700"
+              onclick="closeConfirmPhrase(false)">
+        Hủy
+      </button>
+
+      <button id="cpmOkBtn" type="button"
+              class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white opacity-50 cursor-not-allowed"
+              onclick="closeConfirmPhrase(true)" disabled>
+        Xác nhận
+      </button>
     </div>
   </div>
 </div>
@@ -372,31 +444,109 @@
 
 <script>
   /* -------------------------
-     CONFIRM THAY ĐỔI AUCTION MODE
+     PHRASE CONFIRM MODAL (custom)
   ------------------------- */
-  let auctionModePending = null;
+  let _cpm = {
+    el: null,
+    titleEl: null,
+    descEl: null,
+    inputEl: null,
+    okBtn: null,
+    phraseLabelEl: null,
+    pendingEl: null,     // checkbox/input element that triggered
+    pendingPrev: null,   // previous checked state for rollback
+    phrase: "tôi xác nhận",
+    onConfirm: null,
+  };
 
-  function confirmAuctionMode(checkbox) {
-    auctionModePending = checkbox;
-    const label = document.getElementById("auctionModeLabel");
-    label.textContent = checkbox.checked ? "TÍNH THEO M²" : "TÍNH THEO CẢ LÔ";
-    document.getElementById("auctionModeModal").classList.remove("hidden");
+  function _norm(s){
+    return String(s || "").trim().toLowerCase();
   }
 
-  function closeAuctionModeModal() {
-    if (auctionModePending) {
-      auctionModePending.checked = !auctionModePending.checked;
+  function ensureCpmInit(){
+    if (_cpm.el) return;
+    _cpm.el = document.getElementById("confirmPhraseModal");
+    _cpm.titleEl = document.getElementById("cpmTitle");
+    _cpm.descEl = document.getElementById("cpmDesc");
+    _cpm.inputEl = document.getElementById("cpmInput");
+    _cpm.okBtn = document.getElementById("cpmOkBtn");
+    _cpm.phraseLabelEl = document.getElementById("cpmPhraseLabel");
+  }
+
+  function confirmWithPhrase(el, opts){
+    ensureCpmInit();
+
+    // save pending + rollback state
+    _cpm.pendingEl = el;
+    _cpm.pendingPrev = (el && typeof el.checked === "boolean") ? (!el.checked) : null;
+
+    _cpm.phrase = (opts && opts.phrase) ? String(opts.phrase) : "tôi xác nhận";
+    _cpm.onConfirm = function(){
+      // default: submit its form if present
+      if (el && el.form) el.form.submit();
+    };
+
+    // set UI
+    _cpm.titleEl.textContent = (opts && opts.title) ? opts.title : "Xác nhận";
+    _cpm.descEl.innerHTML = (opts && opts.descHtml) ? opts.descHtml : "";
+    _cpm.phraseLabelEl.textContent = _cpm.phrase;
+
+    _cpm.inputEl.value = "";
+    _cpm.okBtn.disabled = true;
+    _cpm.okBtn.classList.add("opacity-50","cursor-not-allowed");
+
+    _cpm.el.classList.remove("hidden");
+
+    // focus
+    setTimeout(()=>{ try{ _cpm.inputEl.focus(); }catch(e){} }, 0);
+  }
+
+  function onCpmInput(){
+    ensureCpmInit();
+    const ok = _norm(_cpm.inputEl.value) === _norm(_cpm.phrase);
+    _cpm.okBtn.disabled = !ok;
+    if (ok){
+      _cpm.okBtn.classList.remove("opacity-50","cursor-not-allowed");
+    }else{
+      _cpm.okBtn.classList.add("opacity-50","cursor-not-allowed");
     }
-    auctionModePending = null;
-    document.getElementById("auctionModeModal").classList.add("hidden");
   }
 
-  function applyAuctionMode() {
-    if (!auctionModePending) return;
-    auctionModePending.form.submit();
-    auctionModePending = null;
-    document.getElementById("auctionModeModal").classList.add("hidden");
+  function closeConfirmPhrase(confirmed){
+    ensureCpmInit();
+
+    _cpm.el.classList.add("hidden");
+
+    if (!confirmed){
+      // rollback checkbox state if needed
+      if (_cpm.pendingEl && typeof _cpm.pendingEl.checked === "boolean" && _cpm.pendingPrev !== null){
+        _cpm.pendingEl.checked = _cpm.pendingPrev;
+      }
+      _cpm.pendingEl = null;
+      _cpm.pendingPrev = null;
+      _cpm.onConfirm = null;
+      return;
+    }
+
+    // confirmed
+    try{
+      if (typeof _cpm.onConfirm === "function") _cpm.onConfirm();
+    }finally{
+      _cpm.pendingEl = null;
+      _cpm.pendingPrev = null;
+      _cpm.onConfirm = null;
+    }
   }
+
+  // ESC to close
+  document.addEventListener("keydown", function(e){
+    if (e.key === "Escape"){
+      const m = document.getElementById("confirmPhraseModal");
+      if (m && !m.classList.contains("hidden")){
+        closeConfirmPhrase(false);
+      }
+    }
+  });
 
   /* -------------------------
      DEADLINE PICKER (dùng chung cho deadline + auction_at)
