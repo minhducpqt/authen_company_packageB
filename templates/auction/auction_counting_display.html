@@ -1,303 +1,1058 @@
-{% extends "base.html" %}
-{% block title %}Trình chiếu kiểm phiếu{% endblock %}
+{# templates/auction/auction_counting_display.html #}
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>{{ title or "Trình chiếu kiểm phiếu" }}</title>
 
-{% block content %}
-{% set projects = projects or [] %}
-{% set project_id = project_id %}
-{% set project_key = project or "" %}
-{% set project_obj = project_obj or {} %}
+  <style>
+    :root{
+      --bg0:#04050a;
+      --bg1:#070816;
 
-<div class="mb-5">
-  <div class="flex items-start justify-between gap-3 flex-wrap">
-    <div>
-      <h1 class="text-2xl font-semibold text-slate-900 flex items-center gap-2">
-        <i class="ri-slideshow-3-line text-indigo-600 text-3xl"></i>
-        Trình chiếu kiểm phiếu
-      </h1>
-      <p class="text-slate-500 text-sm mt-1">
-        Tự cập nhật mỗi <b>5 giây</b>. Chỉ hiển thị danh sách <b>WON</b> và các lô <b>TIED</b> đang chờ bốc thăm.
-      </p>
+      --glass: rgba(255,255,255,.05);
+      --glass2: rgba(255,255,255,.075);
+      --stroke: rgba(255,255,255,.11);
+      --stroke2: rgba(255,255,255,.16);
+
+      --text: rgba(255,255,255,.93);
+      --muted: rgba(255,255,255,.62);
+
+      --wonA:#00ffd5;
+      --wonB:#00a7ff;
+
+      --tiedA:#ffd86a;
+      --tiedB:#ff4bd8;
+
+      --pending:#cfcfd6;
+      --danger:#ff4d6d;
+
+      --radius: 22px;
+      --hudH: 76px;
+      --footerH: 34px;
+
+      --cardH: 160px;
+      --cardPad: 13px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%;}
+    body{
+      margin:0;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 680px at 18% 12%, rgba(0,255,213,.16), transparent 58%),
+        radial-gradient(980px 620px at 84% 18%, rgba(255,77,216,.13), transparent 56%),
+        radial-gradient(900px 560px at 62% 90%, rgba(0,167,255,.10), transparent 58%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow:hidden;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+
+    .fx-grid{
+      position:fixed; inset:0; pointer-events:none; z-index:0;
+      background:
+        linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+      background-size: 44px 44px, 44px 44px;
+      opacity:.09;
+      mix-blend-mode:overlay;
+      filter: blur(.15px);
+    }
+    .fx-scan{
+      position:fixed; inset:-60% 0 0 0; pointer-events:none; z-index:0;
+      background: linear-gradient(180deg, transparent, rgba(255,255,255,.14), transparent);
+      opacity:.12;
+      animation: scan 7.8s linear infinite;
+      filter: blur(.2px);
+    }
+    @keyframes scan{
+      0%{ transform: translateY(-30%); }
+      100%{ transform: translateY(150%); }
+    }
+    .fx-glow{
+      position:fixed; inset:0; pointer-events:none; z-index:0;
+      background:
+        radial-gradient(900px 420px at 25% 30%, rgba(0,255,213,.10), transparent 60%),
+        radial-gradient(860px 420px at 75% 70%, rgba(255,77,216,.09), transparent 60%);
+      opacity:.9;
+    }
+
+    /* TOP HUD */
+    .hud{
+      position:fixed; top:0; left:0; right:0;
+      height:var(--hudH);
+      display:flex; align-items:center; justify-content:space-between;
+      padding:12px 16px;
+      z-index:20;
+      backdrop-filter: blur(16px);
+      background: linear-gradient(180deg, rgba(10,12,24,.90), rgba(10,12,24,.54));
+      border-bottom:1px solid rgba(255,255,255,.12);
+      box-shadow: 0 18px 70px rgba(0,0,0,.35);
+    }
+    .hud-left{min-width:0}
+    .hud-title{
+      font-weight:950;
+      letter-spacing:.5px;
+      font-size:18px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      text-shadow: 0 0 28px rgba(0,255,213,.14);
+    }
+    .hud-sub{
+      margin-top:5px;
+      font-size:12px;
+      color:rgba(255,255,255,.65);
+      display:flex; align-items:center; gap:8px;
+      white-space:nowrap;
+    }
+    .dot{
+      width:8px; height:8px; border-radius:999px;
+      background: var(--wonA);
+      box-shadow:0 0 20px rgba(0,255,213,.60), 0 0 40px rgba(0,255,213,.25);
+    }
+    .sep{opacity:.55}
+
+    .hud-right{display:flex; gap:10px; align-items:stretch;}
+    .kpi{
+      width:118px;
+      padding:9px 11px;
+      border-radius:16px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      box-shadow:
+        0 0 26px rgba(255,255,255,.06),
+        inset 0 1px 0 rgba(255,255,255,.08);
+      display:flex; flex-direction:column; justify-content:center;
+    }
+    .kpi-num{font-size:22px; font-weight:950; line-height:1;}
+    .kpi-lbl{margin-top:4px; font-size:11px; color:rgba(255,255,255,.62); letter-spacing:.2px;}
+    .kpi-total .kpi-num{ text-shadow:0 0 26px rgba(255,255,255,.10); }
+    .kpi-won  .kpi-num{ color:rgba(0,255,213,.96); text-shadow:0 0 26px rgba(0,255,213,.28); }
+    .kpi-tied .kpi-num{ color:rgba(255,216,106,.98); text-shadow:0 0 26px rgba(255,216,106,.22); }
+    .kpi-pend .kpi-num{ color:rgba(210,210,220,.92); text-shadow:0 0 26px rgba(255,255,255,.14); }
+
+    /* LAYOUT */
+    .wrap{
+      position:relative;
+      z-index:10;
+      height:100%;
+      padding-top: calc(var(--hudH) + 12px);
+      padding-bottom: calc(var(--footerH) + 10px);
+      padding-left: 16px;
+      padding-right: 16px;
+      display:grid;
+      grid-template-columns: 1.05fr 1fr;
+      gap:12px;
+    }
+
+    .panel{
+      border-radius: 22px;
+      background: rgba(255,255,255,.048);
+      border: 1px solid rgba(255,255,255,.12);
+      box-shadow:
+        0 28px 90px rgba(0,0,0,.40),
+        inset 0 1px 0 rgba(255,255,255,.07);
+      overflow:hidden;
+      position:relative;
+    }
+    .panel::before{
+      content:"";
+      position:absolute; inset:-2px;
+      background: radial-gradient(800px 220px at 20% 0%, rgba(0,255,213,.10), transparent 60%);
+      opacity:.7;
+      pointer-events:none;
+    }
+
+    .panel-head{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:11px 13px;
+      border-bottom: 1px solid rgba(255,255,255,.085);
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.02));
+      backdrop-filter: blur(10px);
+    }
+    .panel-title{
+      font-weight:950;
+      letter-spacing:.4px;
+      font-size:13px;
+      color:rgba(255,255,255,.90);
+      display:flex; align-items:center; gap:10px;
+    }
+    .badge{
+      font-size:11px;
+      padding:5px 9px;
+      border-radius: 999px;
+      border:1px solid rgba(255,255,255,.12);
+      color:rgba(255,255,255,.76);
+      background: rgba(255,255,255,.05);
+    }
+
+    .latest-body{
+      padding:12px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      align-content:start;
+      min-height: 240px;
+    }
+
+    .all-body{
+      position:relative;
+      height: calc(100% - 50px);
+      overflow:hidden;
+    }
+    .scroll-viewport{
+      position:absolute;
+      inset: 0;
+      padding:12px;
+      overflow:hidden;
+    }
+    .scroll-track{
+      position:absolute;
+      left:12px; right:12px; top:12px;
+      will-change: transform;
+    }
+
+    .cycle-indicator{
+      position:absolute;
+      left:12px; right:12px; top:12px;
+      display:flex;
+      justify-content:center;
+      pointer-events:none;
+      opacity:0;
+      transform: translateY(-10px);
+      transition: opacity .22s ease, transform .22s ease;
+      z-index:5;
+    }
+    .cycle-indicator.show{ opacity:1; transform: translateY(0); }
+    .cycle-pill{
+      padding:8px 14px;
+      border-radius:999px;
+      font-weight:950;
+      letter-spacing:.35px;
+      font-size:12px;
+      background: rgba(0,0,0,.35);
+      border:1px solid rgba(255,255,255,.16);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 0 26px rgba(0,255,213,.16);
+      animation: pulse 900ms ease-in-out;
+    }
+    @keyframes pulse{
+      0%{ transform: scale(.98); opacity:.8; }
+      50%{ transform: scale(1.02); opacity:1; }
+      100%{ transform: scale(1.0); opacity:1; }
+    }
+
+    /* CARD */
+    .card{
+      height: var(--cardH);
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,.14);
+      background:
+        radial-gradient(900px 240px at 20% 10%, rgba(255,255,255,.08), transparent 65%),
+        rgba(10,12,24,.46);
+      box-shadow:
+        0 18px 70px rgba(0,0,0,.40),
+        inset 0 1px 0 rgba(255,255,255,.06);
+      position:relative;
+      overflow:hidden;
+    }
+    .card::after{
+      content:"";
+      position:absolute; inset:0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.10), transparent);
+      transform: translateX(-70%);
+      opacity:.10;
+      animation: sheen 3.8s ease-in-out infinite;
+      pointer-events:none;
+    }
+    @keyframes sheen{
+      0%{ transform: translateX(-70%); opacity:.06; }
+      55%{ opacity:.12; }
+      100%{ transform: translateX(130%); opacity:.06; }
+    }
+
+    .card-inner{
+      position:relative;
+      height:100%;
+      padding: var(--cardPad);
+      display:flex;
+      flex-direction:column;
+      gap:7px;
+    }
+    .row{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+    .lot-code{
+      font-weight:1000;
+      letter-spacing: 1.0px;
+      font-size:22px;
+      line-height:1;
+      text-transform:uppercase;
+      white-space:nowrap;
+    }
+    .status-chip{
+      font-size:11px;
+      font-weight:950;
+      letter-spacing:.35px;
+      padding:6px 10px;
+      border-radius:999px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05);
+      white-space:nowrap;
+    }
+
+    .price{
+      font-size:24px;
+      font-weight:1000;
+      letter-spacing:.25px;
+      line-height:1.05;
+      text-shadow: 0 0 26px rgba(255,255,255,.10);
+    }
+    .price-lbl{
+      margin-top:-2px;
+      font-size:11px;
+      color: rgba(255,255,255,.60);
+      letter-spacing:.25px;
+      text-transform:uppercase;
+    }
+
+    .person{
+      margin-top:auto;
+      padding-top:8px;
+      border-top:1px dashed rgba(255,255,255,.12);
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .name{
+      font-weight:950;
+      font-size:15px;
+      letter-spacing:.2px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .meta{
+      display:flex;
+      gap:8px;
+      font-size:12px;
+      color: rgba(255,255,255,.74);
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .meta span{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:4px 8px;
+      border-radius:999px;
+      background: rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.10);
+      max-width: 100%;
+    }
+    .meta .k{opacity:.85}
+    .meta .v{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      letter-spacing:.35px;
+      white-space:nowrap;
+      overflow:visible;
+      text-overflow:clip;
+    }
+
+    /* WON */
+    .card.won{
+      border-color: rgba(0,255,213,.34);
+      box-shadow:
+        0 18px 74px rgba(0,255,213,.14),
+        0 18px 74px rgba(0,167,255,.10),
+        inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .card.won .lot-code{
+      color: rgba(0,255,213,.97);
+      text-shadow: 0 0 30px rgba(0,255,213,.26);
+    }
+    .card.won .status-chip{
+      color: rgba(0,255,213,.96);
+      border-color: rgba(0,255,213,.30);
+      background: rgba(0,255,213,.10);
+      box-shadow: 0 0 22px rgba(0,255,213,.18);
+    }
+
+    /* ✅ TIED: nền + viền khác rõ ràng (phân biệt theo background) */
+    .card.tied{
+      border-color: rgba(255,216,106,.34);
+      background:
+        radial-gradient(900px 240px at 20% 10%, rgba(255,216,106,.14), transparent 65%),
+        radial-gradient(900px 260px at 80% 30%, rgba(255,77,216,.12), transparent 60%),
+        rgba(10,12,24,.46);
+      box-shadow:
+        0 18px 74px rgba(255,216,106,.14),
+        0 18px 74px rgba(255,77,216,.10),
+        inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .card.tied .lot-code{
+      color: rgba(255,216,106,.98);
+      text-shadow: 0 0 30px rgba(255,216,106,.22);
+    }
+    .card.tied .status-chip{
+      color: rgba(255,216,106,.96);
+      border-color: rgba(255,216,106,.30);
+      background: rgba(255,216,106,.10);
+      box-shadow: 0 0 22px rgba(255,216,106,.16);
+    }
+
+    /* TIED marquee */
+    .marquee{
+      margin-top:auto;
+      border-top:1px dashed rgba(255,255,255,.12);
+      padding-top:8px;
+      overflow:hidden;
+      position:relative;
+    }
+    .marquee-track{
+      display:inline-flex;
+      gap:14px;
+      white-space:nowrap;
+      will-change: transform;
+      animation: marquee 24s linear infinite; /* chậm đọc */
+    }
+    @keyframes marquee{
+      0%{ transform: translateX(0); }
+      100%{ transform: translateX(-50%); }
+    }
+    .cand{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      font-size:12px;
+      color: rgba(255,255,255,.82);
+      padding:6px 10px;
+      border-radius:999px;
+      background: rgba(0,0,0,.28);
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .cand b{ font-weight:950; color: rgba(255,255,255,.95); }
+    .cand i{
+      font-style:normal;
+      opacity:.9;
+      padding-left:8px;
+      border-left:1px solid rgba(255,255,255,.12);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      letter-spacing:.25px;
+    }
+
+    /* Placeholder */
+    .ph{
+      height: var(--cardH);
+      border-radius: var(--radius);
+      border:1px solid rgba(255,255,255,.11);
+      background: rgba(255,255,255,.04);
+      position:relative;
+      overflow:hidden;
+    }
+    .ph::after{
+      content:"";
+      position:absolute; inset:0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.12), transparent);
+      transform: translateX(-70%);
+      animation: shimmer 1.7s ease-in-out infinite;
+      opacity:.65;
+    }
+    @keyframes shimmer{
+      0%{ transform: translateX(-70%); }
+      100%{ transform: translateX(140%); }
+    }
+    .ph .ph-inner{
+      position:relative;
+      padding: var(--cardPad);
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .ph-line{
+      height:14px;
+      border-radius:999px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.06);
+    }
+    .ph-line.big{ height:20px; width:62%; }
+    .ph-line.mid{ width:58%; }
+    .ph-line.sm{ width:44%; }
+    .ph-line.full{ width:100%; }
+    .ph .ph-footer{
+      margin-top:auto;
+      height:42px;
+      border-top:1px dashed rgba(255,255,255,.10);
+      padding-top:10px;
+      display:flex;
+      gap:10px;
+    }
+    .ph-pill{
+      height:20px; width:34%;
+      border-radius:999px;
+      background: rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.06);
+    }
+
+    /* No project overlay */
+    .center-overlay{
+      position:absolute; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      padding:24px;
+      z-index:30;
+    }
+    .center-box{
+      width:min(860px, 92vw);
+      border-radius: 24px;
+      background: rgba(0,0,0,.38);
+      border: 1px solid rgba(255,255,255,.16);
+      box-shadow: 0 30px 120px rgba(0,0,0,.52);
+      backdrop-filter: blur(16px);
+      padding: 18px;
+    }
+    .center-box h2{ margin:0; font-size:18px; font-weight:1000; letter-spacing:.35px; }
+    .center-box p{
+      margin:10px 0 0 0;
+      color: rgba(255,255,255,.72);
+      font-size:12px;
+      line-height:1.55;
+    }
+
+    /* Footer */
+    .footer-marquee{
+      position:fixed; left:0; right:0; bottom:0;
+      height: var(--footerH);
+      z-index:20;
+      border-top: 1px solid rgba(255,255,255,.12);
+      background: linear-gradient(180deg, rgba(10,12,24,.28), rgba(10,12,24,.78));
+      backdrop-filter: blur(12px);
+      overflow:hidden;
+    }
+    .footer-track{
+      position:absolute; left:0; top:0; height:100%;
+      display:flex; align-items:center;
+      gap:28px;
+      padding-left:16px;
+      white-space:nowrap;
+      color: rgba(255,255,255,.66);
+      font-size:12px;
+      letter-spacing:.25px;
+      animation: foot 18s linear infinite;
+    }
+    @keyframes foot{
+      0%{ transform: translateX(0); }
+      100%{ transform: translateX(-50%); }
+    }
+
+    @media (max-width: 1100px){
+      .wrap{ grid-template-columns: 1fr; }
+      .hud-right .kpi{ width:108px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="fx-glow"></div>
+  <div class="fx-grid"></div>
+  <div class="fx-scan"></div>
+
+  <div class="hud">
+    <div class="hud-left">
+      <div class="hud-title" id="hudProjectName">DỰ ÁN: —</div>
+      <div class="hud-sub">
+        <span class="dot" id="hudDot"></span>
+        <span id="hudStatus">Đang cập nhật</span>
+        <span class="sep">•</span>
+        <span id="hudUpdatedAt">—</span>
+      </div>
     </div>
 
-    <div class="flex items-center gap-2">
-      <a href="/auction/counting?project={{ project_key|urlencode }}" class="px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium inline-flex items-center gap-2">
-        <i class="ri-settings-3-line"></i> Màn kiểm phiếu
-      </a>
-      <button id="btnFull" class="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium inline-flex items-center gap-2" type="button">
-        <i class="ri-fullscreen-line"></i> Fullscreen
-      </button>
+    <div class="hud-right">
+      <div class="kpi kpi-total">
+        <div class="kpi-num" id="kpiTotal">0</div>
+        <div class="kpi-lbl">Tổng lô</div>
+      </div>
+      <div class="kpi kpi-won">
+        <div class="kpi-num" id="kpiWon">0</div>
+        <div class="kpi-lbl">Đã trúng</div>
+      </div>
+      <div class="kpi kpi-tied">
+        <div class="kpi-num" id="kpiTied">0</div>
+        <div class="kpi-lbl">Chờ bốc thăm</div>
+      </div>
+      <div class="kpi kpi-pend">
+        <div class="kpi-num" id="kpiPending">0</div>
+        <div class="kpi-lbl">Đang xử lý</div>
+      </div>
     </div>
   </div>
-</div>
 
-<div class="bg-white border border-slate-200 rounded-2xl shadow-sm mb-4">
-  <div class="p-4 md:p-5 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-    <div class="md:col-span-7">
-      <label class="block text-sm font-medium text-slate-700 mb-1">Chọn dự án (để trình chiếu)</label>
-      <div class="relative">
-        <select id="projectSelect" class="w-full rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 text-sm">
-          <option value="">— Chọn dự án —</option>
-          {% for p in projects %}
-            {% set code = (p.project_code or p.code or "") %}
-            {% set pid = (p.id or p.project_id or "") %}
-            {% set key = (code if code else pid) %}
-            {% set st = (p.status or "") %}
-            <option value="{{ key }}" {% if project_key and (project_key|string)==(key|string) %}selected{% endif %}>
-              {{ code or ("#" ~ pid) }} — {{ p.name or "(no name)" }}{% if st %} ({{ st }}){% endif %}
-            </option>
-          {% endfor %}
-        </select>
-        <div class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-          <i class="ri-arrow-down-s-line"></i>
+  <main class="wrap">
+    <section class="panel">
+      <div class="panel-head">
+        <div class="panel-title"><span style="color:#5ad1ff">■</span> KẾT QUẢ MỚI CẬP NHẬT</div>
+        <span class="badge" id="badgeLatest">Top 6</span>
+      </div>
+      <div class="latest-body" id="latestBody"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div class="panel-title"><span style="color:#4dff9b">■</span> TẤT CẢ LÔ ĐÃ KIỂM</div>
+        <span class="badge">Tự chạy theo vòng</span>
+      </div>
+
+      <div class="all-body">
+        <div class="cycle-indicator" id="cycleIndicator">
+          <div class="cycle-pill">BẮT ĐẦU VÒNG MỚI</div>
+        </div>
+
+        <div class="scroll-viewport">
+          <div class="scroll-track" id="scrollTrack"></div>
         </div>
       </div>
-      <div class="text-xs text-slate-500 mt-1">
-        Nếu chưa chọn dự án, hệ thống sẽ không tải dữ liệu.
+    </section>
+
+    <div class="center-overlay" id="noProjectOverlay" style="display:none;">
+      <div class="center-box">
+        <h2>Chưa chọn dự án để trình chiếu</h2>
+        <p>
+          Trang này cần tham số dự án <b>?project=</b> (project_code hoặc project_id).<br/>
+          Ví dụ: <b>/auction/counting/display?project=KDO01</b> hoặc <b>?project=123</b>.
+        </p>
       </div>
     </div>
+  </main>
 
-    <div class="md:col-span-5 flex items-center gap-2 justify-end">
-      <div class="text-xs text-slate-500 text-right">
-        <div>Dự án: <b id="projName">{{ project_obj.name or "—" }}</b></div>
-        <div>Cập nhật: <b id="lastUpdated">—</b></div>
-      </div>
-      <button id="btnReload" type="button" class="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium inline-flex items-center gap-2">
-        <i class="ri-refresh-line"></i> Tải ngay
-      </button>
+  <div class="footer-marquee">
+    <div class="footer-track">
+      ©Bản quyền phần mềm: Công Ty Cổ Phần Giải Pháp Công Nghệ VNTECHX •
+      ©Bản quyền phần mềm: Công Ty Cổ Phần Giải Pháp Công Nghệ VNTECHX •
+      ©Bản quyền phần mềm: Công Ty Cổ Phần Giải Pháp Công Nghệ VNTECHX •
+      ©Bản quyền phần mềm: Công Ty Cổ Phần Giải Pháp Công Nghệ VNTECHX •
     </div>
   </div>
 
-  <div class="px-4 md:px-5 pb-4">
-    <div class="flex flex-wrap items-center gap-2 text-sm">
-      <span class="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-slate-50 border border-slate-200 text-slate-700">
-        <i class="ri-stack-line text-slate-500"></i>
-        Tổng lô: <b id="sumTotal">—</b>
-      </span>
-      <span class="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-slate-50 border border-slate-200 text-slate-700">
-        <i class="ri-checkbox-circle-line text-slate-500"></i>
-        Đã xử lý: <b id="sumChecked">—</b>
-      </span>
-      <span class="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700">
-        <i class="ri-trophy-line"></i>
-        WON: <b id="sumWon">—</b>
-      </span>
-      <span class="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-amber-50 border border-amber-100 text-amber-700">
-        <i class="ri-group-line"></i>
-        TIED: <b id="sumTied">—</b>
-      </span>
-    </div>
-  </div>
-</div>
+  <script>
+    const PROJECT_ID = {{ (project_id or 0) | int }};
+    const POLL_MS = {{ (poll_ms or 2000) | int }};
 
-<div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
-  <div class="xl:col-span-7 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-    <div class="px-4 md:px-5 py-3 border-b border-slate-100 flex items-center justify-between">
-      <div class="text-sm font-semibold text-slate-800">Danh sách trúng (WON)</div>
-      <div class="text-xs text-slate-500">Hiển thị theo thứ tự mã lô</div>
-    </div>
-    <div class="overflow-auto max-h-[70vh]">
-      <table class="min-w-full text-sm">
-        <thead class="bg-slate-50 text-slate-600">
-          <tr>
-            <th class="text-left px-4 py-3 font-semibold w-[140px]">Mã lô</th>
-            <th class="text-left px-4 py-3 font-semibold min-w-[240px]">Tên lô</th>
-            <th class="text-left px-4 py-3 font-semibold w-[180px]">Giá cao nhất</th>
-            <th class="text-left px-4 py-3 font-semibold min-w-[240px]">Khách trúng</th>
-            <th class="text-left px-4 py-3 font-semibold w-[160px]">Bốc thăm</th>
-          </tr>
-        </thead>
-        <tbody id="wonTbody">
-          <tr>
-            <td class="px-4 py-6 text-slate-500" colspan="5">Chưa có dữ liệu.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="xl:col-span-5 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-    <div class="px-4 md:px-5 py-3 border-b border-slate-100 flex items-center justify-between">
-      <div class="text-sm font-semibold text-slate-800">Các lô đang hòa (TIED)</div>
-      <div class="text-xs text-slate-500">Chờ bốc thăm</div>
-    </div>
-
-    <div class="p-4 md:p-5 space-y-3 overflow-auto max-h-[70vh]" id="tiedBox">
-      <div class="text-sm text-slate-500">Chưa có dữ liệu.</div>
-    </div>
-  </div>
-</div>
-
-<div id="toast" class="fixed bottom-4 right-4 z-[80] hidden">
-  <div class="max-w-md bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-lg text-sm flex items-start gap-2">
-    <i class="ri-information-line text-lg mt-0.5"></i>
-    <div class="min-w-0">
-      <div class="font-semibold" id="toastTitle">Thông báo</div>
-      <div class="opacity-90 mt-0.5 whitespace-pre-line" id="toastMsg">—</div>
-    </div>
-    <button id="toastClose" class="ml-2 opacity-80 hover:opacity-100">
-      <i class="ri-close-line"></i>
-    </button>
-  </div>
-</div>
-
-<script>
-(function(){
-  const el = (id)=>document.getElementById(id);
-  const PROJECT_ID = {{ project_id or 'null' }};
-  const PROJECT_KEY = "{{ (project_key or '')|e }}";
-
-  function toast(title,msg){
-    el("toastTitle").textContent = title || "Thông báo";
-    el("toastMsg").textContent = msg || "";
-    el("toast").classList.remove("hidden");
-  }
-  el("toastClose").addEventListener("click", ()=> el("toast").classList.add("hidden"));
-
-  // project select navigation
-  el("projectSelect").addEventListener("change", ()=>{
-    const v = el("projectSelect").value || "";
-    const url = new URL(window.location.href);
-    if(v) url.searchParams.set("project", v);
-    else url.searchParams.delete("project");
-    window.location.href = url.toString();
-  });
-
-  el("btnFull").addEventListener("click", ()=>{
-    const d = document.documentElement;
-    if(!document.fullscreenElement){
-      d.requestFullscreen?.().catch(()=>{});
-    }else{
-      document.exitFullscreen?.().catch(()=>{});
+    function fmtVND(v){
+      if (v === null || v === undefined || v === "") return "—";
+      const n = Number(v);
+      if (!isFinite(n)) return String(v);
+      return n.toLocaleString("vi-VN") + " đ";
     }
-  });
-
-  function fmtNum(n){
-    if(n===null || n===undefined || n==="") return "—";
-    const x = Number(String(n).replaceAll(",","").trim());
-    if(!isFinite(x)) return String(n);
-    return x.toLocaleString("en-US");
-  }
-
-  function setUpdatedNow(){
-    const d = new Date();
-    el("lastUpdated").textContent = d.toLocaleString();
-  }
-
-  function renderSnapshot(js){
-    const sum = js.summary || {};
-    el("sumTotal").textContent = String(sum.total_lots ?? "—");
-    el("sumChecked").textContent = String(sum.checked ?? "—");
-    el("sumWon").textContent = String(sum.won ?? "—");
-    el("sumTied").textContent = String(sum.tied ?? "—");
-
-    // WON table
-    const won = js.winners || [];
-    const wonTbody = el("wonTbody");
-    wonTbody.innerHTML = "";
-    if(!won.length){
-      wonTbody.innerHTML = `<tr><td class="px-4 py-6 text-slate-500" colspan="5">Chưa có kết quả WON.</td></tr>`;
-    }else{
-      won.forEach(r=>{
-        const isDraw = !!r.is_lucky_draw;
-        const tr = document.createElement("tr");
-        tr.className = "border-t border-slate-100";
-        tr.innerHTML = `
-          <td class="px-4 py-3 align-top">
-            <div class="font-semibold text-slate-900">${r.lot_code || ""}</div>
-          </td>
-          <td class="px-4 py-3 align-top">
-            <div class="text-slate-900 font-medium">${r.lot_name || ""}</div>
-          </td>
-          <td class="px-4 py-3 align-top tabular-nums text-slate-900 font-semibold">
-            ${fmtNum(r.highest_price_vnd)} VND
-          </td>
-          <td class="px-4 py-3 align-top">
-            <div class="text-slate-900 font-semibold">${r.full_name || ""}</div>
-            <div class="text-xs text-slate-500 mt-1">Phone: ${r.phone_masked || "—"} • ID: #${r.customer_id || "—"}</div>
-          </td>
-          <td class="px-4 py-3 align-top">
-            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold
-              ${isDraw ? "bg-emerald-50 border border-emerald-100 text-emerald-700" : "bg-slate-50 border border-slate-200 text-slate-700"}">
-              <i class="${isDraw ? "ri-dice-line" : "ri-checkbox-circle-line"}"></i>
-              ${isDraw ? "CÓ" : "KHÔNG"}
-            </span>
-          </td>
-        `;
-        wonTbody.appendChild(tr);
-      });
+    function digitsOnly(s){ return String(s || "").replace(/\D/g, ""); }
+    function maskLast4(s){
+      const d = digitsOnly(s);
+      if (!d) return "—";
+      const tail = d.slice(-4);
+      const stars = "*".repeat(Math.max(d.length - 4, 6));
+      return stars + tail;
+    }
+    function safeText(s){ return (s === null || s === undefined) ? "" : String(s); }
+    function escapeHtml(s){
+      return String(s || "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
     }
 
-    // TIED cards
-    const tied = js.tied || [];
-    const tiedBox = el("tiedBox");
-    tiedBox.innerHTML = "";
-    if(!tied.length){
-      tiedBox.innerHTML = `<div class="text-sm text-slate-500">Không có lô TIED.</div>`;
-    }else{
-      tied.forEach(t=>{
-        const div = document.createElement("div");
-        div.className = "p-4 rounded-2xl border border-amber-200 bg-amber-50";
-        const cands = (t.candidates || []);
-        const list = cands.map(c=>{
-          return `
-            <div class="flex items-center justify-between gap-2 py-1">
-              <div class="min-w-0">
-                <div class="text-sm font-semibold text-slate-900 truncate">${c.full_name || ""}</div>
-                <div class="text-xs text-slate-600">Phone: ${c.phone_masked || "—"} • ID: #${c.customer_id || "—"}</div>
+    const hudProjectName = document.getElementById("hudProjectName");
+    const hudUpdatedAt   = document.getElementById("hudUpdatedAt");
+    const hudStatus      = document.getElementById("hudStatus");
+    const hudDot         = document.getElementById("hudDot");
+
+    const kpiTotal   = document.getElementById("kpiTotal");
+    const kpiWon     = document.getElementById("kpiWon");
+    const kpiTied    = document.getElementById("kpiTied");
+    const kpiPending = document.getElementById("kpiPending");
+
+    const latestBody = document.getElementById("latestBody");
+    const scrollTrack = document.getElementById("scrollTrack");
+    const cycleIndicator = document.getElementById("cycleIndicator");
+    const noProjectOverlay = document.getElementById("noProjectOverlay");
+
+    // =========================
+    // State
+    // =========================
+    let lastSeenSig = new Map();      // lot_code -> signature (for "latest changed")
+    let latestQueue = [];
+    const LATEST_SLOTS = 6;
+
+    // ✅ chống "giựt" ở panel phải: chỉ rerender khi data thay đổi
+    let lastAllListSig = "";          // signature of winners+tied list
+    let lastAllListCount = 0;
+
+    // Scroll state
+    let scrollY = 0;
+    let lastRAF = 0;
+    let cycleCount = 0;
+    let trackHeight = 0;
+    let loopingEnabled = false;
+
+    // chậm vừa đủ đọc
+    let scrollSpeed = 0.10;
+
+    // =========================
+    // Card renderers
+    // =========================
+    // ✅ bỏ CCCD: chỉ show SĐT dạng ẩn
+    function cardWON(it){
+      const lot = safeText(it.lot_code || "—").toUpperCase();
+      const price = fmtVND(it.highest_price_vnd);
+      const name = safeText(it.full_name || "—");
+
+      const phoneMasked =
+        it.phone_masked ? safeText(it.phone_masked) :
+        (it.phone ? maskLast4(it.phone) : "—");
+
+      return `
+        <div class="card won" data-lot="${escapeHtml(lot)}">
+          <div class="card-inner">
+            <div class="row">
+              <div class="lot-code">${escapeHtml(lot)}</div>
+              <div class="status-chip">🏆 TRÚNG</div>
+            </div>
+
+            <div>
+              <div class="price">${escapeHtml(price)}</div>
+              <div class="price-lbl">GIÁ TRẢ CAO NHẤT</div>
+            </div>
+
+            <div class="person">
+              <div class="name">${escapeHtml(name)}</div>
+              <div class="meta">
+                <span><span class="k">SĐT:</span> <span class="v">${escapeHtml(phoneMasked)}</span></span>
               </div>
             </div>
-          `;
-        }).join("");
+          </div>
+        </div>
+      `;
+    }
 
-        div.innerHTML = `
-          <div class="flex items-start justify-between gap-2">
-            <div class="min-w-0">
-              <div class="text-sm font-bold text-amber-800">Lô ${t.lot_code || ""}</div>
-              <div class="text-xs text-slate-600 mt-0.5">${t.lot_name || ""}</div>
+    // ✅ TIED: hiển thị rõ card vàng/hồng + marquee người (chỉ SĐT ẩn)
+    function cardTIED(it){
+      const lot = safeText(it.lot_code || "—").toUpperCase();
+      const price = fmtVND(it.highest_price_vnd);
+
+      const cands = Array.isArray(it.candidates) ? it.candidates : [];
+      const candChips = cands.map(c=>{
+        const name = safeText(c.full_name || "—");
+        const phoneMasked =
+          c.phone_masked ? safeText(c.phone_masked) :
+          (c.phone ? maskLast4(c.phone) : "—");
+        return `<span class="cand"><b>${escapeHtml(name)}</b><i>SĐT ${escapeHtml(phoneMasked)}</i></span>`;
+      });
+
+      const joined = candChips.join("");
+      const doubled = joined + joined;
+
+      return `
+        <div class="card tied" data-lot="${escapeHtml(lot)}">
+          <div class="card-inner">
+            <div class="row">
+              <div class="lot-code">${escapeHtml(lot)}</div>
+              <div class="status-chip">🎯 BỐC THĂM</div>
             </div>
-            <div class="text-right">
-              <div class="text-xs text-slate-500">Giá cao nhất</div>
-              <div class="text-sm font-bold text-slate-900 tabular-nums">${fmtNum(t.highest_price_vnd)} VND</div>
+
+            <div>
+              <div class="price">${escapeHtml(price)}</div>
+              <div class="price-lbl">GIÁ TRẢ CAO NHẤT</div>
+            </div>
+
+            <div class="marquee">
+              <div class="marquee-track">
+                ${
+                  doubled
+                  || `<span class="cand"><b>Đang chờ danh sách bốc thăm…</b><i>SĐT —</i></span>`
+                   + `<span class="cand"><b>Đang chờ danh sách bốc thăm…</b><i>SĐT —</i></span>`
+                }
+              </div>
             </div>
           </div>
+        </div>
+      `;
+    }
 
-          <div class="mt-3 text-xs font-semibold text-slate-700">Danh sách hòa (${cands.length})</div>
-          <div class="mt-2 divide-y divide-amber-200">
-            ${list || `<div class="text-sm text-slate-500 py-2">—</div>`}
+    function placeholderCard(){
+      return `
+        <div class="ph">
+          <div class="ph-inner">
+            <div class="ph-line big"></div>
+            <div class="ph-line mid"></div>
+            <div class="ph-line full"></div>
+            <div class="ph-line sm"></div>
+            <div class="ph-footer">
+              <div class="ph-pill"></div>
+              <div class="ph-pill"></div>
+              <div class="ph-pill"></div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // =========================
+    // Signatures (for diff)
+    // =========================
+    function sigW(w){
+      return `W|${w.lot_code}|${w.highest_price_vnd}|${w.customer_id||""}|${w.full_name||""}|${w.phone_masked||""}`;
+    }
+    function sigT(t){
+      const ids = (Array.isArray(t.candidates) ? t.candidates.map(x=>x.customer_id||x.full_name||"").join(",") : "");
+      return `T|${t.lot_code}|${t.highest_price_vnd}|${ids}`;
+    }
+    function allListSignature(js){
+      const winners = Array.isArray(js.winners) ? js.winners : [];
+      const tied = Array.isArray(js.tied) ? js.tied : [];
+      const parts = [];
+      for (const w of winners) parts.push(sigW(w));
+      for (const t of tied) parts.push(sigT(t));
+      return parts.join("||");
+    }
+
+    // =========================
+    // Latest logic
+    // =========================
+    function updateLatestFromSnapshot(js){
+      const winners = Array.isArray(js.winners) ? js.winners : [];
+      const tied = Array.isArray(js.tied) ? js.tied : [];
+      const changed = [];
+
+      for (const w of winners){
+        const key = String(w.lot_code || "").toLowerCase();
+        if (!key) continue;
+        const s = sigW(w);
+        const prev = lastSeenSig.get(key);
+        if (prev !== s){
+          lastSeenSig.set(key, s);
+          changed.push({type:"WON", item:w});
+        }
+      }
+      for (const t of tied){
+        const key = String(t.lot_code || "").toLowerCase();
+        if (!key) continue;
+        const s = sigT(t);
+        const prev = lastSeenSig.get(key);
+        if (prev !== s){
+          lastSeenSig.set(key, s);
+          changed.push({type:"TIED", item:t});
+        }
+      }
+
+      for (const ch of changed.reverse()){
+        latestQueue.unshift(ch);
+      }
+      const seen = new Set();
+      latestQueue = latestQueue.filter(x=>{
+        const key = String(x.item?.lot_code || "").toLowerCase();
+        if (!key) return false;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      latestQueue = latestQueue.slice(0, LATEST_SLOTS);
+
+      // fallback fill
+      if (latestQueue.length < LATEST_SLOTS){
+        const pool = [];
+        for (const w of winners) pool.push({type:"WON", item:w});
+        for (const t of tied) pool.push({type:"TIED", item:t});
+        for (const x of pool){
+          if (latestQueue.length >= LATEST_SLOTS) break;
+          const key = String(x.item?.lot_code || "").toLowerCase();
+          if (!key) continue;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          latestQueue.push(x);
+        }
+      }
+    }
+
+    // =========================
+    // Renderers
+    // =========================
+    function renderTop(js){
+      const prj = js.project || {};
+      const sum = js.summary || {};
+      const total = Number(sum.total_lots || 0);
+      const won = Number(sum.won || 0);
+      const tied = Number(sum.tied || 0);
+      const checked = Number(sum.checked || 0);
+      const pending = Math.max(0, total - checked);
+
+      const pname = prj.name || prj.project_code || "—";
+      hudProjectName.textContent = `DỰ ÁN: ${String(pname).toUpperCase()}`;
+
+      kpiTotal.textContent = String(total);
+      kpiWon.textContent = String(won);
+      kpiTied.textContent = String(tied);
+      kpiPending.textContent = String(pending);
+
+      const now = new Date();
+      hudUpdatedAt.textContent = `Cập nhật: ${now.toLocaleTimeString("vi-VN")}`;
+    }
+
+    function renderLatest(){
+      let html = "";
+      for (const x of latestQueue){
+        html += (x.type === "TIED") ? cardTIED(x.item) : cardWON(x.item);
+      }
+      const remain = Math.max(0, LATEST_SLOTS - latestQueue.length);
+      for (let i=0;i<remain;i++) html += placeholderCard();
+      latestBody.innerHTML = html;
+    }
+
+    // ✅ chỉ build lại khi signature đổi -> hết giựt
+    function renderAllListIfChanged(js){
+      const winners = Array.isArray(js.winners) ? js.winners : [];
+      const tied = Array.isArray(js.tied) ? js.tied : [];
+
+      const sig = allListSignature(js);
+      const totalItems = winners.length + tied.length;
+
+      if (sig === lastAllListSig && totalItems === lastAllListCount){
+        // không thay đổi => giữ nguyên track + giữ scrollY => không giựt
+        return;
+      }
+      lastAllListSig = sig;
+      lastAllListCount = totalItems;
+
+      const all = [];
+      for (const w of winners) all.push({type:"WON", item:w});
+      for (const t of tied) all.push({type:"TIED", item:t}); // ✅ luôn có TIED trong danh sách
+
+      if (!all.length){
+        scrollTrack.innerHTML = `
+          <div style="padding:14px; color:rgba(255,255,255,.72);">
+            <div style="font-weight:950; letter-spacing:.35px; margin-bottom:8px;">Chưa có lô nào được kết luận</div>
+            <div style="font-size:12px; color:rgba(255,255,255,.62); line-height:1.55;">
+              Khi có lô TRÚNG hoặc vào BỐC THĂM, danh sách sẽ xuất hiện ở đây và tự chạy theo vòng để khách theo dõi.
+            </div>
           </div>
         `;
-        tiedBox.appendChild(div);
+        loopingEnabled = false;
+        trackHeight = 0;
+        scrollY = 0;
+        scrollTrack.style.transform = `translateY(0px)`;
+        return;
+      }
+
+      const htmlHalf = all.map(x=>{
+        const card = (x.type === "TIED") ? cardTIED(x.item) : cardWON(x.item);
+        return `<div style="margin-bottom:10px">${card}</div>`;
+      }).join("");
+
+      // rebuild track but keep smooth: reset scrollY gently to 0
+      scrollTrack.innerHTML = htmlHalf + htmlHalf;
+
+      requestAnimationFrame(()=>{
+        const children = Array.from(scrollTrack.children);
+        const half = Math.floor(children.length / 2);
+        let h = 0;
+        for (let i=0;i<half;i++){
+          h += children[i].getBoundingClientRect().height;
+        }
+        trackHeight = h;
+        scrollY = 0;
+        scrollTrack.style.transform = `translateY(0px)`;
+        loopingEnabled = true;
       });
     }
-  }
 
-  async function fetchSnapshot(){
-    if(!PROJECT_ID){
-      return;
+    // =========================
+    // Smooth loop scroll
+    // =========================
+    function showCycleIndicator(){
+      cycleIndicator.classList.add("show");
+      setTimeout(()=>cycleIndicator.classList.remove("show"), 900);
     }
-    const url = `/auction/counting/api/display/snapshot?project_id=${encodeURIComponent(PROJECT_ID)}`;
-    try{
-      const r = await fetch(url, {headers: {"Accept":"application/json"}});
-      const js = await r.json();
-      if(!r.ok || !js || js.ok!==true){
-        throw new Error((js && (js.detail || js.error)) || ("HTTP " + r.status));
+
+    function tick(ts){
+      if (!lastRAF) lastRAF = ts;
+      const dt = Math.min(40, ts - lastRAF);
+      lastRAF = ts;
+
+      if (loopingEnabled && trackHeight > 0){
+        scrollY += (scrollSpeed * dt);
+        if (scrollY >= trackHeight){
+          scrollY = scrollY - trackHeight;
+          showCycleIndicator();
+        }
+        scrollTrack.style.transform = `translateY(${-scrollY}px)`;
       }
-      renderSnapshot(js);
-      setUpdatedNow();
-    }catch(e){
-      toast("Lỗi", "Không tải được snapshot.\n" + (e.message || e));
+      requestAnimationFrame(tick);
     }
-  }
 
-  el("btnReload").addEventListener("click", fetchSnapshot);
+    // =========================
+    // Polling
+    // =========================
+    async function fetchSnapshot(){
+      if (!PROJECT_ID || PROJECT_ID <= 0){
+        noProjectOverlay.style.display = "flex";
+        hudStatus.textContent = "Chưa chọn dự án";
+        hudDot.style.background = "var(--danger)";
+        hudDot.style.boxShadow = "0 0 18px rgba(255,77,109,.60)";
+        latestQueue = [];
+        renderLatest();
+        renderAllListIfChanged({winners:[], tied:[]});
+        return;
+      }
+      noProjectOverlay.style.display = "none";
 
-  // Polling 5s (fixed as requested)
-  if(PROJECT_ID){
-    fetchSnapshot();
-    setInterval(fetchSnapshot, 5000);
-  }else{
-    toast("Chưa chọn dự án", "Hãy chọn dự án để trình chiếu.");
-  }
-})();
-</script>
-{% endblock %}
+      try{
+        hudStatus.textContent = `Đang cập nhật mỗi ${(POLL_MS/1000).toFixed(0)}s`;
+        hudDot.style.background = "var(--wonA)";
+        hudDot.style.boxShadow = "0 0 20px rgba(0,255,213,.60), 0 0 40px rgba(0,255,213,.25)";
+
+        const url = `/auction/counting/api/display/snapshot?project_id=${encodeURIComponent(PROJECT_ID)}`;
+        const r = await fetch(url, {headers: {"Accept":"application/json"}});
+        const js = await r.json();
+
+        if (!js || js.ok !== true){
+          hudStatus.textContent = "Lỗi tải dữ liệu";
+          hudDot.style.background = "var(--danger)";
+          hudDot.style.boxShadow = "0 0 18px rgba(255,77,109,.60)";
+          return;
+        }
+
+        renderTop(js);
+
+        if (!js.session){
+          latestQueue = [];
+          renderLatest();
+          renderAllListIfChanged({winners:[], tied:[]});
+          return;
+        }
+
+        updateLatestFromSnapshot(js);
+        renderLatest();
+
+        // ✅ quan trọng: không rebuild list nếu không đổi => không giựt
+        renderAllListIfChanged(js);
+
+      }catch(e){
+        hudStatus.textContent = "Mất kết nối – đang thử lại…";
+        hudDot.style.background = "var(--danger)";
+        hudDot.style.boxShadow = "0 0 18px rgba(255,77,109,.60)";
+      }
+    }
+
+    (function init(){
+      requestAnimationFrame(tick);
+      latestQueue = [];
+      renderLatest();
+      renderAllListIfChanged({winners:[], tied:[]});
+      fetchSnapshot();
+      setInterval(fetchSnapshot, POLL_MS);
+    })();
+  </script>
+</body>
+</html>
