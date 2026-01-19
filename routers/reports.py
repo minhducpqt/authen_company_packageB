@@ -179,7 +179,7 @@ async def _load_projects(token: str, project_param: Optional[str]) -> tuple[list
     st, pj = await _get_json(
         "/api/v1/projects",
         token,
-        {"status": "ACTIVE", "size": 1000},
+        {"size": 1000},
     )
     projects: list[dict] = []
     selected = (project_param or "").strip().upper()
@@ -216,7 +216,7 @@ async def reports_home(request: Request):
         status, data = await _get_json(
             "/api/v1/projects",
             token,
-            {"status": "ACTIVE", "size": 1000},
+            {"size": 1000},
         )
         if status == 200 and isinstance(data, dict):
             projects = data.get("data") or data.get("items") or []
