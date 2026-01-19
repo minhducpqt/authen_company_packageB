@@ -70,6 +70,15 @@
       padding:2px 6px;
       line-height:1.3;
       background:#f9fafb;
+      text-align:center; /* để căn giữa nội dung trong khung */
+    }
+
+    /* Dòng "Lô: L-13" trong khung góc trái */
+    .flag-lot{
+      font-size:14pt;
+      font-weight:800;
+      line-height:1.1;
+      margin-bottom:1px;
     }
 
     .info-table{
@@ -132,6 +141,7 @@
   <div class="page">
 
     <div class="flag-box">
+      <div class="flag-lot">Lô: {{ t.lot_code }}</div>
       {{ stt_code }}-C{{ t.customer_id }}-S{{ qty_lots }}-{{ lot_short }}
     </div>
 
@@ -160,6 +170,7 @@
 
     <table class="info-table mt-2">
       <tr><td class="info-label">Khách hàng tham gia ĐG</td><td class="info-sep">:</td><td>{{ t.customer_full_name }}</td></tr>
+      <tr><td class="info-label">Mã khách hàng</td><td class="info-sep">:</td><td>C{{ t.customer_id }}</td></tr>
       <tr><td class="info-label">CCCD/Căn cước</td><td class="info-sep">:</td><td>{{ t.cccd }}</td></tr>
       <tr><td class="info-label">Địa chỉ</td><td class="info-sep">:</td><td>{{ t.address }}</td></tr>
       <tr><td class="info-label">Số điện thoại</td><td class="info-sep">:</td><td>{{ t.phone }}</td></tr>
