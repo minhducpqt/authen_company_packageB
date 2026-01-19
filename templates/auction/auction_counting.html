@@ -16,44 +16,73 @@
 {% set auction_mode = (project_obj.get("auction_mode") or "") %}
 
 <style>
-  .ac-card { border: 1px solid rgba(226,232,240,1); border-radius: 16px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.03); }
-  .ac-pill { display:inline-flex; align-items:center; gap:.5rem; padding:.35rem .7rem; border-radius: 999px; font-weight: 600; font-size: .9rem; border: 1px solid rgba(226,232,240,1); background: rgba(248,250,252,1);}
+  :root{
+    --bd: rgba(226,232,240,1);
+    --bd2: rgba(241,245,249,1);
+    --muted: rgba(100,116,139,1);
+    --ink: rgba(15,23,42,1);
+    --bg: #fff;
+    --rowEven: rgba(248,250,252,1);
+  }
+
+  .ac-card { border: 1px solid var(--bd); border-radius: 16px; background: var(--bg); box-shadow: 0 1px 2px rgba(0,0,0,.03); }
+  .ac-pill { display:inline-flex; align-items:center; gap:.5rem; padding:.32rem .65rem; border-radius: 999px; font-weight: 700; font-size: .88rem; border: 1px solid var(--bd); background: rgba(248,250,252,1);}
   .ac-pill.green { border-color: rgba(167,243,208,1); background: rgba(236,253,245,1); color: rgba(6,95,70,1); }
   .ac-pill.orange { border-color: rgba(253,186,116,1); background: rgba(255,247,237,1); color: rgba(154,52,18,1); }
-  .ac-pill.gray { border-color: rgba(226,232,240,1); background: rgba(248,250,252,1); color: rgba(51,65,85,1); }
+  .ac-pill.gray { border-color: var(--bd); background: rgba(248,250,252,1); color: rgba(51,65,85,1); }
   .ac-pill.blue { border-color: rgba(191,219,254,1); background: rgba(239,246,255,1); color: rgba(30,64,175,1); }
 
-  .ac-btn { display:inline-flex; align-items:center; justify-content:center; gap:.5rem; padding:.6rem 1rem; border-radius: 12px; font-weight: 800; border: 1px solid rgba(226,232,240,1); background:#fff; }
+  .ac-btn { display:inline-flex; align-items:center; justify-content:center; gap:.5rem; padding:.56rem .9rem; border-radius: 12px; font-weight: 900; border: 1px solid var(--bd); background:#fff; }
   .ac-btn.primary { background: rgba(16,185,129,1); color:#fff; border-color: rgba(16,185,129,1); }
   .ac-btn.primary:hover { filter: brightness(.98); }
   .ac-btn.ghost:hover { background: rgba(248,250,252,1); }
   .ac-btn:disabled { opacity:.5; cursor:not-allowed; }
 
-  .ac-input { width: 100%; border-radius: 12px; border: 1px solid rgba(226,232,240,1); padding: .75rem .9rem; outline: none; background:#fff; }
+  .ac-btn.slim{ padding:.42rem .7rem; border-radius: 999px; font-size:.86rem; }
+  .ac-btn.print{ border-color: rgba(191,219,254,1); background: rgba(239,246,255,1); color: rgba(30,64,175,1); }
+  .ac-btn.print:hover{ filter: brightness(.98); }
+
+  .ac-mini-print{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid rgba(191,219,254,1);
+    background: rgba(239,246,255,1);
+    color: rgba(30,64,175,1);
+    box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  }
+  .ac-mini-print:hover{ filter: brightness(.98); }
+
+  .ac-input { width: 100%; border-radius: 12px; border: 1px solid var(--bd); padding: .68rem .85rem; outline: none; background:#fff; }
   .ac-input:focus { border-color: rgba(99,102,241,1); box-shadow: 0 0 0 4px rgba(99,102,241,.15); }
 
   .ac-table { width:100%; border-collapse: separate; border-spacing: 0; }
-  .ac-th { text-align:left; font-size:.8rem; letter-spacing:.02em; text-transform:uppercase; color: rgba(100,116,139,1); padding: .7rem 1rem; border-bottom:1px solid rgba(226,232,240,1); background: rgba(248,250,252,1); }
-  .ac-td { padding: .75rem 1rem; border-bottom:1px solid rgba(241,245,249,1); vertical-align: top; }
-  .ac-row:hover { background: rgba(248,250,252,1); }
+  .ac-th { text-align:left; font-size:.76rem; letter-spacing:.02em; text-transform:uppercase; color: var(--muted); padding: .62rem .95rem; border-bottom:1px solid var(--bd); background: rgba(248,250,252,1); }
+  .ac-td { padding: .62rem .95rem; border-bottom:1px solid var(--bd2); vertical-align: top; }
+  .ac-row:hover { background: rgba(241,245,249,1); }
+  #lotsTbody tr.ac-row:nth-child(even){ background: var(--rowEven); }
+  #lotsTbody tr.ac-row:nth-child(even):hover{ background: rgba(241,245,249,1); }
 
-  .ac-muted { color: rgba(100,116,139,1); }
-  .ac-strong { color: rgba(15,23,42,1); font-weight: 900; }
+  .ac-muted { color: var(--muted); }
+  .ac-strong { color: var(--ink); font-weight: 900; }
   .ac-mono { font-variant-numeric: tabular-nums; }
 
-  .ac-badge { display:inline-flex; align-items:center; gap:.4rem; padding:.25rem .6rem; border-radius: 999px; font-weight: 900; font-size:.85rem; }
+  .ac-badge { display:inline-flex; align-items:center; gap:.4rem; padding:.22rem .58rem; border-radius: 999px; font-weight: 950; font-size:.82rem; }
   .ac-badge.won { background: rgba(236,253,245,1); color: rgba(6,95,70,1); border: 1px solid rgba(167,243,208,1); }
   .ac-badge.tied { background: rgba(255,247,237,1); color: rgba(154,52,18,1); border: 1px solid rgba(253,186,116,1); }
-  .ac-badge.pending { background: rgba(248,250,252,1); color: rgba(71,85,105,1); border: 1px solid rgba(226,232,240,1); }
+  .ac-badge.pending { background: rgba(248,250,252,1); color: rgba(71,85,105,1); border: 1px solid var(--bd); }
 
   /* Modal */
   .ac-modal-backdrop { position: fixed; inset: 0; background: rgba(2,6,23,.55); display:none; align-items:center; justify-content:center; padding: 18px; z-index: 60; }
   .ac-modal { width: 100%; max-width: 1200px; background: #fff; border-radius: 18px; overflow:hidden; box-shadow: 0 20px 50px rgba(0,0,0,.25); max-height: calc(100vh - 36px); display:flex; flex-direction:column; }
-  .ac-modal-header { padding: 16px 18px; border-bottom: 1px solid rgba(226,232,240,1); display:flex; align-items:flex-start; justify-content:space-between; gap: 12px; }
+  .ac-modal-header { padding: 16px 18px; border-bottom: 1px solid var(--bd); display:flex; align-items:flex-start; justify-content:space-between; gap: 12px; }
   .ac-modal-body { padding: 16px 18px; overflow:auto; }
-  .ac-modal-footer { padding: 14px 18px; border-top: 1px solid rgba(226,232,240,1); display:flex; justify-content:flex-end; gap: 10px; background: rgba(248,250,252,1); }
+  .ac-modal-footer { padding: 14px 18px; border-top: 1px solid var(--bd); display:flex; justify-content:flex-end; gap: 10px; background: rgba(248,250,252,1); }
 
-  .ac-kbd { font-weight: 900; font-size: .8rem; padding: .15rem .4rem; border-radius: 8px; border:1px solid rgba(226,232,240,1); background:#fff; color: rgba(51,65,85,1); }
+  .ac-kbd { font-weight: 900; font-size: .78rem; padding: .12rem .38rem; border-radius: 8px; border:1px solid var(--bd); background:#fff; color: rgba(51,65,85,1); }
 
   /* ✅ Input + inline autocorrect */
   .ac-input-wrap { position: relative; }
@@ -63,10 +92,10 @@
     right: 10px;
     top: 50%;
     transform: translateY(-50%);
-    padding: .5rem .75rem;
+    padding: .48rem .7rem;
     border-radius: 12px;
     font-weight: 900;
-    border: 1px solid rgba(226,232,240,1);
+    border: 1px solid var(--bd);
     background: #fff;
     display:inline-flex;
     align-items:center;
@@ -74,40 +103,45 @@
     box-shadow: 0 1px 2px rgba(0,0,0,.04);
     user-select:none;
     white-space:nowrap;
+    font-size:.9rem;
   }
   .ac-input-inbtn:hover { background: rgba(248,250,252,1); }
 
   /* ✅ Step buttons close to textbox */
   .ac-quick { display:flex; flex-wrap:wrap; gap: 8px; margin-top: 10px; }
-  .ac-quick button { min-width: 56px; padding:.55rem .75rem; }
+  .ac-quick button { min-width: 56px; padding:.5rem .7rem; font-size:.9rem; }
 
-  .ac-customer { border:1px solid rgba(226,232,240,1); border-radius: 14px; padding: 10px 12px; display:flex; align-items:flex-start; justify-content:space-between; gap: 10px; background:#fff; }
-  .ac-customer .meta { color: rgba(100,116,139,1); font-size:.88rem; margin-top: 2px; }
-  .ac-customer .tag { font-size:.75rem; font-weight:900; padding:.12rem .45rem; border-radius:999px; border:1px solid rgba(226,232,240,1); background: rgba(248,250,252,1); color: rgba(51,65,85,1); }
+  .ac-customer { border:1px solid var(--bd); border-radius: 14px; padding: 10px 12px; display:flex; align-items:flex-start; justify-content:space-between; gap: 10px; background:#fff; }
+  .ac-customer .meta { color: var(--muted); font-size:.86rem; margin-top: 2px; }
+  .ac-customer .tag { font-size:.74rem; font-weight:900; padding:.12rem .45rem; border-radius:999px; border:1px solid var(--bd); background: rgba(248,250,252,1); color: rgba(51,65,85,1); }
 
   .ac-cart { border:1px dashed rgba(148,163,184,1); background: rgba(248,250,252,1); border-radius: 16px; padding: 12px; }
-  .ac-cart .item { display:flex; align-items:flex-start; justify-content:space-between; gap: 10px; padding: 10px; border-radius: 12px; background:#fff; border:1px solid rgba(226,232,240,1); }
+  .ac-cart .item { display:flex; align-items:flex-start; justify-content:space-between; gap: 10px; padding: 10px; border-radius: 12px; background:#fff; border:1px solid var(--bd); }
   .ac-cart .item + .item { margin-top: 8px; }
-  .ac-cart .rm { border:1px solid rgba(226,232,240,1); background:#fff; border-radius: 10px; padding:.35rem .55rem; font-weight:900; }
+  .ac-cart .rm { border:1px solid var(--bd); background:#fff; border-radius: 10px; padding:.35rem .55rem; font-weight:900; }
   .ac-cart .rm:hover { background: rgba(248,250,252,1); }
 
   .ac-toast { position: fixed; right: 16px; bottom: 16px; z-index: 80; display:flex; flex-direction:column; gap:10px; }
-  .ac-toast-item { max-width: 420px; padding: 12px 14px; border-radius: 14px; border:1px solid rgba(226,232,240,1); background:#fff; box-shadow: 0 10px 30px rgba(0,0,0,.12); }
+  .ac-toast-item { max-width: 420px; padding: 12px 14px; border-radius: 14px; border:1px solid var(--bd); background:#fff; box-shadow: 0 10px 30px rgba(0,0,0,.12); }
   .ac-toast-item.err { border-color: rgba(254,202,202,1); background: rgba(254,242,242,1); }
   .ac-toast-item.ok { border-color: rgba(167,243,208,1); background: rgba(236,253,245,1); }
-  .ac-toast-item .t { font-weight: 900; margin-bottom: 2px; }
+  .ac-toast-item .t { font-weight: 950; margin-bottom: 2px; }
 
   /* Compact lot cell */
   .lot-cell { display:flex; flex-direction:column; gap: 4px; }
-  .lot-code { font-size: 1.05rem; font-weight: 950; letter-spacing: .2px; }
-  .lot-sub { font-size:.82rem; color: rgba(100,116,139,1); display:flex; flex-wrap:wrap; gap: 8px; }
+  .lot-code { font-size: .98rem; font-weight: 950; letter-spacing: .15px; }
+  .lot-sub { font-size:.8rem; color: var(--muted); display:flex; flex-wrap:wrap; gap: 8px; }
   .lot-sub b { color: rgba(51,65,85,1); font-weight: 900; }
 
-  .cart-confirm { border:1px solid rgba(226,232,240,1); background:#fff; border-radius: 14px; padding: 10px 12px; }
+  .cart-confirm { border:1px solid var(--bd); background:#fff; border-radius: 14px; padding: 10px 12px; }
   .cart-confirm .line { display:flex; align-items:center; justify-content:space-between; gap: 10px; }
-  .cart-confirm .big { font-weight: 950; color: rgba(15,23,42,1); }
-  .cart-confirm .sub { font-size:.88rem; color: rgba(100,116,139,1); margin-top: 2px; }
+  .cart-confirm .big { font-weight: 950; color: var(--ink); }
+  .cart-confirm .sub { font-size:.86rem; color: var(--muted); margin-top: 2px; }
   .cart-confirm .price { font-variant-numeric: tabular-nums; font-weight: 950; }
+
+  /* Price cell smaller / cleaner */
+  .ac-price-big{ font-size: 1.1rem; font-weight: 950; letter-spacing:.2px; }
+  .ac-price-sub{ font-size:.78rem; color: var(--muted); margin-top: .25rem; }
 </style>
 
 <div class="mb-6 flex items-start justify-between gap-3">
@@ -115,13 +149,13 @@
     <div class="flex items-center gap-2">
       <i class="ri-auction-line text-emerald-600 text-3xl"></i>
       <h1 class="text-2xl font-extrabold text-slate-900 truncate">
-        Kiểm phiếu trúng đấu giá (2 vòng)
+        Kiểm phiếu trúng đấu giá
       </h1>
     </div>
     <p class="text-slate-500 text-sm mt-1">
       Chọn lô → nhập giá cao nhất → tick khách.
       <span class="font-semibold">1 tick → TRÚNG</span>,
-      <span class="font-semibold">≥2 tick → Vào vòng bốc thăm</span>.
+      <span class="font-semibold">≥2 tick → Vòng tiếp theo</span>.
       (Admin: hiển thị full CCCD/SĐT)
     </p>
   </div>
@@ -167,7 +201,7 @@
         Dropdown gồm cả ACTIVE và INACTIVE. Nếu chỉ có 1 ACTIVE thì hệ thống tự chọn.
       </div>
 
-      <div class="mt-4 flex flex-wrap gap-2">
+      <div class="mt-4 flex flex-wrap items-center gap-2">
         <span class="ac-pill">
           <i class="ri-timer-2-line"></i>
           Phiên:
@@ -203,6 +237,18 @@
           Đã xử lý:
           <span class="ac-strong" id="pillChecked">—</span>
         </span>
+
+        {# ✅ NEW: Print all tied for next round #}
+        <button
+          class="ac-btn slim print"
+          id="btnPrintTiedAll"
+          type="button"
+          {% if not project_id or not session or not session.get("id") %}disabled{% endif %}
+          title="In tất cả phiếu của các lô đang TIED (Vòng tiếp theo)"
+        >
+          <i class="ri-printer-line"></i>
+          In TIED (Vòng tiếp theo)
+        </button>
       </div>
     </div>
 
@@ -242,7 +288,7 @@
           <th class="ac-th" style="width: 420px;">Lô</th>
           <th class="ac-th" style="width: 190px;">Trạng thái</th>
           <th class="ac-th" style="width: 220px;">Giá cao nhất</th>
-          <th class="ac-th">Người trúng / TIED (nếu có)</th>
+          <th class="ac-th">Người trúng / Vòng tiếp theo (nếu có)</th>
           <th class="ac-th" style="width: 140px; text-align:right;">Thao tác</th>
         </tr>
       </thead>
@@ -312,8 +358,8 @@
             </td>
 
             <td class="ac-td">
-              <div class="text-xl ac-strong ac-mono jsMoney jsHpCell" data-value="{{ hp if hp is not none else '' }}">—</div>
-              <div class="text-xs ac-muted mt-1 jsDrawNote">
+              <div class="ac-price-big ac-mono jsMoney jsHpCell" data-value="{{ hp if hp is not none else '' }}">—</div>
+              <div class="ac-price-sub jsDrawNote">
                 {% if st == 'WON' %}
                   {% if is_draw %}Bốc thăm{% else %}Không bốc thăm{% endif %}
                 {% endif %}
@@ -322,7 +368,25 @@
 
             <td class="ac-td">
               <div class="jsWinnerCell text-sm">
-                <span class="ac-muted">—</span>
+                {% if st == "TIED" %}
+                  {% set n = (tied_ids|length) if tied_ids is iterable else 0 %}
+                  <span class="ac-badge tied"><i class="ri-focus-2-line"></i> Vòng tiếp theo</span>
+                  <div class="text-sm text-slate-500 mt-1 flex items-center gap-2">
+                    <span>{{ n }} khách</span>
+                    <a
+                      class="ac-mini-print jsPrintTiedLot"
+                      href="#"
+                      data-only-lot-id="{{ lot_id }}"
+                      title="In phiếu cho các khách TIED của lô này"
+                      target="_blank"
+                      rel="noopener"
+                    >
+                      <i class="ri-printer-line"></i>
+                    </a>
+                  </div>
+                {% else %}
+                  <span class="ac-muted">—</span>
+                {% endif %}
               </div>
             </td>
 
@@ -434,7 +498,7 @@
                   <div class="text-xs text-slate-500 font-bold" id="cartCount">0</div>
                 </div>
                 <div class="text-xs text-slate-500 mt-1">
-                  1 người → TRÚNG · ≥2 người → Vào vòng bốc thăm
+                  1 người → TRÚNG · ≥2 người → Vòng tiếp theo
                 </div>
 
                 <div class="mt-3 cart-confirm" id="cartConfirmBox">
@@ -565,6 +629,32 @@
   const btnReload = document.getElementById("btnReload");
   const btnProjector = document.getElementById("btnProjector");
 
+  // ✅ NEW: print buttons
+  const btnPrintTiedAll = document.getElementById("btnPrintTiedAll");
+
+  function openPrintTied(onlyLotId = null) {
+    if (!SESSION_ID) {
+      toast("err", "Thiếu phiên", "Không xác định được session_id để in.");
+      return;
+    }
+    const u = new URL("/bid-tickets/print-tied", window.location.origin);
+    u.searchParams.set("session_id", String(SESSION_ID));
+    if (onlyLotId != null) u.searchParams.set("only_lot_id", String(onlyLotId));
+    window.open(u.toString(), "_blank", "noopener");
+  }
+
+  btnPrintTiedAll?.addEventListener("click", () => openPrintTied(null));
+
+  // delegation for row print icons
+  document.addEventListener("click", (e) => {
+    const a = e.target?.closest?.(".jsPrintTiedLot");
+    if (!a) return;
+    e.preventDefault();
+    const lotId = Number(a.getAttribute("data-only-lot-id") || 0);
+    if (!lotId) return;
+    openPrintTied(lotId);
+  });
+
   function goWithParams(params) {
     const url = new URL(window.location.href);
     url.search = "";
@@ -648,6 +738,9 @@
       document.getElementById("pillTied").textContent = sum.tied ?? "—";
       document.getElementById("pillChecked").textContent = sum.checked ?? "—";
 
+      // enable/disable print all tied
+      if (btnPrintTiedAll) btnPrintTiedAll.disabled = !(SESSION_ID && (sum.tied ?? 0) > 0);
+
       const winners = js.winners || [];
       const winMap = new Map();
       winners.forEach(w => {
@@ -667,8 +760,21 @@
             let ids = [];
             try { ids = JSON.parse(tr.getAttribute("data-tied-ids") || "[]") || []; } catch {}
             const n = Array.isArray(ids) ? ids.length : 0;
-            cell.innerHTML = `<span class="ac-badge tied"><i class="ri-user-shared-2-line"></i> Bốc thăm</span>
-                              <div class="text-sm text-slate-500 mt-1">${n ? (n + " khách") : "—"}</div>`;
+            const lotId = Number(tr.getAttribute("data-lot-id") || 0);
+
+            cell.innerHTML = `
+              <span class="ac-badge tied"><i class="ri-focus-2-line"></i> Vòng tiếp theo</span>
+              <div class="text-sm text-slate-500 mt-1 flex items-center gap-2">
+                <span>${n ? (n + " khách") : "—"}</span>
+                ${lotId ? `
+                  <a class="ac-mini-print jsPrintTiedLot"
+                     href="#"
+                     data-only-lot-id="${lotId}"
+                     title="In phiếu cho các khách TIED của lô này"
+                     target="_blank" rel="noopener">
+                    <i class="ri-printer-line"></i>
+                  </a>` : ``}
+              </div>`;
           } else {
             cell.innerHTML = `<span class="ac-muted">—</span>`;
           }
@@ -971,7 +1077,7 @@
       cartStateBadge.className = "ac-badge won";
       cartStateBadge.innerHTML = `<i class="ri-trophy-line"></i> WON`;
     } else if (n >= 2) {
-      cartStateLine.textContent = "🎯 VÀO VÒNG BỐC THĂM (" + n + " người)";
+      cartStateLine.textContent = "🎯 VÒNG TIẾP THEO (" + n + " người)";
       cartStateBadge.className = "ac-badge tied";
       cartStateBadge.innerHTML = `<i class="ri-focus-2-line"></i> TIED`;
     } else {
@@ -999,8 +1105,8 @@
       return;
     }
 
-    selSummary.innerHTML = `<span class="ac-badge tied"><i class="ri-focus-2-line"></i> TIED</span> · ${picks.length} khách → vào vòng bốc thăm · Giá: <b>${hpText}</b>`;
-    candHint.textContent = "Đang chọn ≥2 khách → hệ thống hiểu vào vòng bốc thăm.";
+    selSummary.innerHTML = `<span class="ac-badge tied"><i class="ri-focus-2-line"></i> TIED</span> · ${picks.length} khách → Vòng tiếp theo · Giá: <b>${hpText}</b>`;
+    candHint.textContent = "Đang chọn ≥2 khách → hệ thống hiểu vào vòng tiếp theo.";
   }
 
   async function loadCandidates(lot_code) {
@@ -1040,7 +1146,6 @@
     return isFinite(n) ? n : null;
   }
 
-  // Nếu backend có field “giá ghi trên phiếu” thì dùng để cap; không có thì bỏ qua.
   function getTicketMaxPrice(c) {
     const keys = [
       "ticket_price_vnd", "wrote_price_vnd", "written_price_vnd",
@@ -1059,10 +1164,7 @@
   function alignDownToStep(target, base, step) {
     const t = Number(target), b = Number(base), s = Number(step);
     if (!isFinite(t) || !isFinite(b) || !isFinite(s) || s <= 0) return null;
-
-    // Nếu nhỏ hơn base thì “auto-correct” đưa về base (hợp lệ tối thiểu)
     if (t <= b) return b;
-
     const k = Math.floor((t - b) / s);
     return b + k * s;
   }
@@ -1085,11 +1187,9 @@
       return;
     }
 
-    // ✅ Correct đúng GIÁ TRỊ ĐANG CÓ TRONG TEXTBOX; nếu trống thì dùng base
     let cur = parseMoney(inpHighest.value);
     if (cur == null) cur = base;
 
-    // ✅ Nếu có “giá ghi trên phiếu” ở các khách đang tick thì cap theo MIN; không có thì bỏ qua
     let cap = null;
     if (selectedIds.size > 0) {
       const ids = Array.from(selectedIds);
@@ -1102,7 +1202,6 @@
       if (caps.length) cap = Math.min(...caps);
     }
 
-    // target: nếu có cap thì không vượt quá cap, còn không thì chỉ dùng cur
     const target = (cap != null && isFinite(cap) && cap > 0) ? Math.min(cur, cap) : cur;
 
     const corrected = alignDownToStep(target, base, bidStep);
@@ -1115,7 +1214,6 @@
     refreshCartConfirm();
     refreshSummary();
 
-    // Toast: nếu có cap thì show thêm thông tin cap
     if (cap != null && isFinite(cap) && cap > 0) {
       toast("ok", "Auto correct xong", `Đã đưa về ${fmtVND(corrected)} (≤ giá ghi trên phiếu: ${fmtVND(cap)}).`);
     } else {
@@ -1229,7 +1327,7 @@
 
   function confirmSummaryLine(lotCode, st, hp, draw, n) {
     if (st === "WON") return `🏆 Lô ${lotCode} · TRÚNG · Giá: ${fmtVND(hp)} · Bốc thăm: ${draw ? "Có" : "Không"}`;
-    return `🎯 Lô ${lotCode} · Vào vòng bốc thăm (${n} người) · Giá: ${fmtVND(hp)}`;
+    return `🎯 Lô ${lotCode} · Vòng tiếp theo (${n} người) · Giá: ${fmtVND(hp)}`;
   }
 
   let pendingConfirm = null;
@@ -1264,7 +1362,7 @@
       detailLines.push(`Người trúng: #${ids[0]} · ${c.full_name || ""}${c.cccd ? " · CCCD " + c.cccd : ""}${c.phone ? " · " + c.phone : ""}`);
       detailLines.push(`Bốc thăm: ${draw ? "Có" : "Không"}`);
     } else {
-      detailLines.push(`Kết quả: Vào vòng bốc thăm`);
+      detailLines.push(`Kết quả: Vòng tiếp theo`);
       detailLines.push(`Danh sách (${ids.length}):`);
       picked.forEach(c => {
         const id = Number(c.customer_id || c.id);
@@ -1322,10 +1420,23 @@
 
     const cell = tr.querySelector(".jsWinnerCell");
     if (!cell) return;
+
     if (st === "TIED") {
       const n = (payload.tied_customer_ids || []).length;
-      cell.innerHTML = `<span class="ac-badge tied"><i class="ri-focus-2-line"></i> Bốc thăm</span>
-                        <div class="text-sm text-slate-500 mt-1">${n} khách (đã lưu)</div>`;
+      const lotId = Number(tr.getAttribute("data-lot-id") || 0);
+      cell.innerHTML = `
+        <span class="ac-badge tied"><i class="ri-focus-2-line"></i> Vòng tiếp theo</span>
+        <div class="text-sm text-slate-500 mt-1 flex items-center gap-2">
+          <span>${n} khách (đã lưu)</span>
+          ${lotId ? `
+            <a class="ac-mini-print jsPrintTiedLot"
+               href="#"
+               data-only-lot-id="${lotId}"
+               title="In phiếu cho các khách TIED của lô này"
+               target="_blank" rel="noopener">
+              <i class="ri-printer-line"></i>
+            </a>` : ``}
+        </div>`;
     } else if (st !== "WON") {
       cell.innerHTML = `<span class="ac-muted">—</span>`;
     }

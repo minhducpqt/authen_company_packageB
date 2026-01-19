@@ -368,7 +368,6 @@ async def print_bid_tickets(
     )
 
 
-
 # ======================================================================
 # PRINT-ALL: TOÀN BỘ KHÁCH / LÔ TRONG 1 DỰ ÁN
 # ======================================================================
@@ -426,7 +425,6 @@ async def print_all_bid_tickets(
             "tickets": rows,
         },
     )
-
 
 
 # ======================================================================
@@ -514,5 +512,127 @@ async def print_selected_bid_tickets(
             "request": request,
             "me": me,
             "tickets": tickets,
+        },
+    )
+
+
+# ======================================================================
+# NEW: PRINT-TIED (NEXT ROUND)
+# - B gọi A lấy pairs đang TIED theo counting session
+# - Sau đó gọi A bulk bid_tickets/selected để render print.html
+# ======================================================================
+@router.get("/print-tied", response_class=HTMLResponse)
+async def print_tied_bid_tickets_next_round(
+    request: Request,
+    # ưu tiên nhận session_id trực tiếp (đơn giản nhất)
+    session_id: int = Query(..., ge=1, description="auction_counting session_id (COUNTING)"),
+    # optional: chỉ in 1 lô (phục vụ nút In của lô trong màn kiểm phiếu)
+    only_lot_id: Optional[int] = Query(None, ge=1),
+):
+    token = get_access_token(request)
+    me = await fetch_me(token)
+    if not me:
+        return RedirectResponse(
+            url=f"/login?next={quote('/bid-tickets')}",
+            status_code=303,
+        )
+
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 1) lấy danh sách cặp lot+customer đang TIED từ A
+    params_pairs: Dict[str, Any] = {}
+    if only_lot_id is not None:
+        params_pairs["only_lot_id"] = int(only_lot_id)
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=30.0) as client:
+            r = await client.get(
+                f"/api/v1/auction-counting/print/sessions/{int(session_id)}/tied-print-pairs",
+                headers=headers,
+                params=params_pairs,
+            )
+        if r.status_code != 200:
+            return HTMLResponse(
+                f"<h1>Lỗi</h1><p>Không lấy được danh sách TIED để in (HTTP {r.status_code}).</p>",
+                status_code=500,
+            )
+        js_pairs = r.json() or {}
+    except Exception as e:
+        return HTMLResponse(f"<h1>Lỗi</h1><p>{e}</p>", status_code=500)
+
+    pairs = (js_pairs or {}).get("pairs") or []
+    project = (js_pairs or {}).get("project") or {}
+    project_code = (project.get("project_code") or "").strip()
+
+    if not project_code:
+        return HTMLResponse("<h1>Lỗi</h1><p>Thiếu project_code từ API counting print.</p>", status_code=500)
+
+    if not isinstance(pairs, list) or not pairs:
+        return HTMLResponse("<h1>Không có lô nào đang TIED để in.</h1>", status_code=404)
+
+    # normalize pairs => items cho bulk bid_tickets
+    items: List[Dict[str, int]] = []
+    seen = set()
+    for p in pairs:
+        if not isinstance(p, dict):
+            continue
+        lid = p.get("lot_id")
+        cid = p.get("customer_id")
+        try:
+            lid = int(lid)
+            cid = int(cid)
+        except Exception:
+            continue
+        if lid <= 0 or cid <= 0:
+            continue
+        k = (cid, lid)
+        if k in seen:
+            continue
+        seen.add(k)
+        items.append({"customer_id": cid, "lot_id": lid})
+
+    if not items:
+        return HTMLResponse("<h1>Không có cặp hợp lệ để in.</h1>", status_code=400)
+
+    # 2) gọi bulk selected để lấy dữ liệu phiếu
+    payload = {
+        "project_code": project_code,
+        "items": items,
+        "include_excluded": False,
+        "sort_mode": "LOT_ASC_CUSTOMER_ASC",
+    }
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=60.0) as client:
+            r2 = await client.post("/api/v1/report/bid_tickets/selected", headers=headers, json=payload)
+        if r2.status_code != 200:
+            return HTMLResponse(
+                f"<h1>Lỗi</h1><p>Không lấy được dữ liệu phiếu để in (HTTP {r2.status_code}).</p>",
+                status_code=500,
+            )
+        js2 = r2.json() or {}
+        tickets: List[Dict[str, Any]] = js2.get("data") or []
+    except Exception as e:
+        return HTMLResponse(f"<h1>Lỗi</h1><p>{e}</p>", status_code=500)
+
+    if not tickets:
+        return HTMLResponse("<h1>Không lấy được dữ liệu phiếu để in.</h1>", status_code=404)
+
+    # sort đã do A quyết định; B không sort lại.
+    return templates.TemplateResponse(
+        "pages/bid_tickets/print.html",
+        {
+            "request": request,
+            "me": me,
+            "tickets": tickets,
+            # optional: show context nếu template muốn dùng (không bắt buộc)
+            "print_ctx": {
+                "mode": "TIED_NEXT_ROUND",
+                "session_id": int(session_id),
+                "only_lot_id": int(only_lot_id) if only_lot_id is not None else None,
+                "project_code": project_code,
+                "project_name": project.get("project_name"),
+                "pairs_count": len(items),
+            },
         },
     )
