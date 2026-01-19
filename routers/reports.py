@@ -1,5 +1,6 @@
 # routers/reports.py
 from __future__ import annotations
+
 import os
 from typing import Optional, Dict, Any, List, Tuple
 
@@ -20,6 +21,62 @@ router = APIRouter(tags=["reports"])
 SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 
 
+# ============================================================
+# RULES / DEFAULTS (min-max + clamp)
+# - Nếu limit > max => auto set về max (KHÔNG trả lỗi)
+# - Luôn có defaults cho các API call để tránh "thiếu param" do HTML/FE quên set
+# ============================================================
+
+MAX_LIMIT_LOTS = 5000
+DEFAULT_LIMIT_LOTS = 5000
+MIN_LIMIT = 1
+
+MAX_LIMIT_DEPOSIT_STATS = 10000
+DEFAULT_LIMIT_DEPOSIT_STATS = 1000
+
+MAX_LIMIT_DOSSIER_DETAIL = 10000
+DEFAULT_LIMIT_DOSSIER_DETAIL = 1000
+
+# Customers count filters: luôn set default min/max để FE quên param vẫn an toàn
+DEFAULT_MIN_CUSTOMERS = 0
+DEFAULT_MAX_CUSTOMERS = 10**9  # đủ lớn, coi như "không giới hạn"
+
+
+def _clamp_int(value: Any, default: int, min_value: int, max_value: int) -> int:
+    """
+    Clamp integer:
+    - None / parse fail -> default
+    - < min_value -> min_value
+    - > max_value -> max_value
+    """
+    if value is None:
+        return default
+    try:
+        v = int(value)
+    except Exception:
+        return default
+    if v < min_value:
+        return min_value
+    if v > max_value:
+        return max_value
+    return v
+
+
+def _clamp_nonneg(value: Any, default: int) -> int:
+    """
+    Non-negative integer:
+    - None / parse fail -> default
+    - < 0 -> 0
+    """
+    if value is None:
+        return default
+    try:
+        v = int(value)
+    except Exception:
+        return default
+    return 0 if v < 0 else v
+
+
 # ---------- logging helper ----------
 def _log(msg: str):
     print(f"[REPORTS_B] {msg}")
@@ -28,6 +85,7 @@ def _log(msg: str):
 def _preview_body(data: Any, limit: int = 300) -> str:
     try:
         import json
+
         s = json.dumps(data, ensure_ascii=False)
     except Exception:
         s = str(data)
@@ -60,7 +118,7 @@ async def _get_json(
     except Exception:
         text_preview = (r.text or "")[:300]
         _log(f"← {r.status_code} {url} text={text_preview}")
-        return r.status_code, {"detail": r.text[:500]}
+        return r.status_code, {"detail": (r.text or "")[:500]}
 
 
 async def _proxy_xlsx(
@@ -145,7 +203,6 @@ async def _load_projects(token: str, project_param: Optional[str]) -> tuple[list
 async def reports_home(request: Request):
     _log(f"REQ /reports url={request.url}")
 
-    # 1. Lấy access token từ cookie
     token = get_access_token(request)
     if not token:
         _log("AUTH missing → redirect /login")
@@ -154,7 +211,6 @@ async def reports_home(request: Request):
             status_code=303,
         )
 
-    # 2. Load danh sách dự án ACTIVE
     projects: list[dict] = []
     try:
         status, data = await _get_json(
@@ -167,7 +223,6 @@ async def reports_home(request: Request):
     except Exception as e:
         _log(f"reports_home: load projects error={e!r}")
 
-    # 3. Render template
     return templates.TemplateResponse(
         "reports/index.html",
         {
@@ -187,7 +242,7 @@ async def lots_eligible_page(
     request: Request,
     project: Optional[str] = Query(None, description="project_code như KIDO6"),
     lot_code: Optional[str] = Query(None, description="Prefix mã lô, ví dụ: CL03"),
-    limit: Optional[int] = Query(5000, ge=1, le=5000, description="Giới hạn số dòng tối đa"),
+    limit: Optional[int] = Query(DEFAULT_LIMIT_LOTS, description="Giới hạn số dòng tối đa"),
 ):
     """
     Lô đủ điều kiện (≥ 2 khách).
@@ -196,21 +251,21 @@ async def lots_eligible_page(
     _log(f"REQ /reports/lots/eligible url={request.url}")
     token = get_access_token(request)
     if not token:
-        return RedirectResponse(
-            url="/login?next=%2Freports%2Flots%2Feligible",
-            status_code=303,
-        )
+        return RedirectResponse(url="/login?next=%2Freports%2Flots%2Feligible", status_code=303)
 
     projects, selected_project = await _load_projects(token, project)
+
+    # clamp + đảm bảo luôn có default
+    limit2 = _clamp_int(limit, default=DEFAULT_LIMIT_LOTS, min_value=MIN_LIMIT, max_value=MAX_LIMIT_LOTS)
+
     data: Dict[str, Any] | None = None
     error: Dict[str, Any] | None = None
 
     if selected_project:
-        params: Dict[str, Any] = {"project": selected_project}
+        # luôn gửi đủ param cơ bản để tránh FE/HTML quên
+        params: Dict[str, Any] = {"project": selected_project, "limit": limit2}
         if lot_code:
             params["lot_code"] = lot_code
-        if limit is not None:
-            params["limit"] = limit
 
         st, js = await _get_json("/api/v1/reports/view/project-lots-eligible", token, params)
         if st == 200:
@@ -224,7 +279,7 @@ async def lots_eligible_page(
         "projects": projects,
         "project": selected_project,
         "lot_code": lot_code or "",
-        "limit": limit,
+        "limit": limit2,
         "data": data or {"items": [], "count": 0},
         "error": error,
     }
@@ -242,11 +297,11 @@ async def lots_eligible_export(
     if not token:
         return _unauth()
 
-    params: Dict[str, Any] = {"project": project}
+    limit2 = _clamp_int(limit, default=DEFAULT_LIMIT_LOTS, min_value=MIN_LIMIT, max_value=MAX_LIMIT_LOTS)
+
+    params: Dict[str, Any] = {"project": project, "limit": limit2}
     if lot_code:
         params["lot_code"] = lot_code
-    if limit is not None:
-        params["limit"] = limit
 
     filename = f"project_lots_eligible_{project}.xlsx"
     return await _proxy_xlsx("/api/v1/reports/view/project-lots-eligible", token, params, filename)
@@ -257,7 +312,7 @@ async def lots_ineligible_page(
     request: Request,
     project: Optional[str] = Query(None, description="project_code như KIDO6"),
     lot_code: Optional[str] = Query(None, description="Prefix mã lô, ví dụ: CL03"),
-    limit: Optional[int] = Query(5000, ge=1, le=5000, description="Giới hạn số dòng tối đa"),
+    limit: Optional[int] = Query(DEFAULT_LIMIT_LOTS, description="Giới hạn số dòng tối đa"),
 ):
     """
     Lô KHÔNG đủ điều kiện (0–1 khách).
@@ -266,21 +321,19 @@ async def lots_ineligible_page(
     _log(f"REQ /reports/lots/ineligible url={request.url}")
     token = get_access_token(request)
     if not token:
-        return RedirectResponse(
-            url="/login?next=%2Freports%2Flots%2Fineligible",
-            status_code=303,
-        )
+        return RedirectResponse(url="/login?next=%2Freports%2Flots%2Fineligible", status_code=303)
 
     projects, selected_project = await _load_projects(token, project)
+
+    limit2 = _clamp_int(limit, default=DEFAULT_LIMIT_LOTS, min_value=MIN_LIMIT, max_value=MAX_LIMIT_LOTS)
+
     data: Dict[str, Any] | None = None
     error: Dict[str, Any] | None = None
 
     if selected_project:
-        params: Dict[str, Any] = {"project": selected_project}
+        params: Dict[str, Any] = {"project": selected_project, "limit": limit2}
         if lot_code:
             params["lot_code"] = lot_code
-        if limit is not None:
-            params["limit"] = limit
 
         st, js = await _get_json("/api/v1/reports/view/project-lots-not-eligible", token, params)
         if st == 200:
@@ -294,7 +347,7 @@ async def lots_ineligible_page(
         "projects": projects,
         "project": selected_project,
         "lot_code": lot_code or "",
-        "limit": limit,
+        "limit": limit2,
         "data": data or {"items": [], "count": 0},
         "error": error,
     }
@@ -312,11 +365,11 @@ async def lots_ineligible_export(
     if not token:
         return _unauth()
 
-    params: Dict[str, Any] = {"project": project}
+    limit2 = _clamp_int(limit, default=DEFAULT_LIMIT_LOTS, min_value=MIN_LIMIT, max_value=MAX_LIMIT_LOTS)
+
+    params: Dict[str, Any] = {"project": project, "limit": limit2}
     if lot_code:
         params["lot_code"] = lot_code
-    if limit is not None:
-        params["limit"] = limit
 
     filename = f"project_lots_not_eligible_{project}.xlsx"
     return await _proxy_xlsx("/api/v1/reports/view/project-lots-not-eligible", token, params, filename)
@@ -329,9 +382,9 @@ async def lots_deposit_stats_page(
     request: Request,
     project: Optional[str] = Query(None, description="project_code như KIDO6"),
     lot_code: Optional[str] = Query(None, description="Prefix mã lô"),
-    min_customers: Optional[int] = Query(None, ge=0),
-    max_customers: Optional[int] = Query(None, ge=0),
-    limit: Optional[int] = Query(1000, ge=1, le=10000),
+    min_customers: Optional[int] = Query(None, description="Số khách tối thiểu (>=0)"),
+    max_customers: Optional[int] = Query(None, description="Số khách tối đa (>=0)"),
+    limit: Optional[int] = Query(DEFAULT_LIMIT_DEPOSIT_STATS, description="Giới hạn số dòng tối đa"),
 ):
     """
     Thống kê tiền đặt trước theo từng lô.
@@ -340,25 +393,31 @@ async def lots_deposit_stats_page(
     _log(f"REQ /reports/lots/deposit-stats url={request.url}")
     token = get_access_token(request)
     if not token:
-        return RedirectResponse(
-            url="/login?next=%2Freports%2Flots%2Fdeposit-stats",
-            status_code=303,
-        )
+        return RedirectResponse(url="/login?next=%2Freports%2Flots%2Fdeposit-stats", status_code=303)
 
     projects, selected_project = await _load_projects(token, project)
+
+    # defaults min/max để tránh thiếu param
+    min2 = _clamp_nonneg(min_customers, default=DEFAULT_MIN_CUSTOMERS)
+    max2 = _clamp_nonneg(max_customers, default=DEFAULT_MAX_CUSTOMERS)
+    if max2 < min2:
+        # nếu user nhập ngược, tự sửa về hợp lệ
+        max2 = min2
+
+    limit2 = _clamp_int(limit, default=DEFAULT_LIMIT_DEPOSIT_STATS, min_value=MIN_LIMIT, max_value=MAX_LIMIT_DEPOSIT_STATS)
+
     data: Dict[str, Any] | None = None
     error: Dict[str, Any] | None = None
 
     if selected_project:
-        params: Dict[str, Any] = {"project": selected_project}
+        params: Dict[str, Any] = {
+            "project": selected_project,
+            "min_customers": min2,
+            "max_customers": max2,
+            "limit": limit2,
+        }
         if lot_code:
             params["lot_code"] = lot_code
-        if min_customers is not None:
-            params["min_customers"] = min_customers
-        if max_customers is not None:
-            params["max_customers"] = max_customers
-        if limit is not None:
-            params["limit"] = limit
 
         st, js = await _get_json("/api/v1/reports/view/project-lot-deposit-stats", token, params)
         if st == 200:
@@ -372,9 +431,10 @@ async def lots_deposit_stats_page(
         "projects": projects,
         "project": selected_project,
         "lot_code": lot_code or "",
-        "min_customers": min_customers,
-        "max_customers": max_customers,
-        "limit": limit,
+        # UI vẫn giữ giá trị người dùng nhập (hoặc trống), nhưng backend call đã có default an toàn
+        "min_customers": (min_customers if min_customers is not None else None),
+        "max_customers": (max_customers if max_customers is not None else None),
+        "limit": limit2,
         "data": data or {"items": [], "count": 0},
         "error": error,
     }
@@ -394,15 +454,21 @@ async def lots_deposit_stats_export(
     if not token:
         return _unauth()
 
-    params: Dict[str, Any] = {"project": project}
+    min2 = _clamp_nonneg(min_customers, default=DEFAULT_MIN_CUSTOMERS)
+    max2 = _clamp_nonneg(max_customers, default=DEFAULT_MAX_CUSTOMERS)
+    if max2 < min2:
+        max2 = min2
+
+    limit2 = _clamp_int(limit, default=DEFAULT_LIMIT_DEPOSIT_STATS, min_value=MIN_LIMIT, max_value=MAX_LIMIT_DEPOSIT_STATS)
+
+    params: Dict[str, Any] = {
+        "project": project,
+        "min_customers": min2,
+        "max_customers": max2,
+        "limit": limit2,
+    }
     if lot_code:
         params["lot_code"] = lot_code
-    if min_customers is not None:
-        params["min_customers"] = min_customers
-    if max_customers is not None:
-        params["max_customers"] = max_customers
-    if limit is not None:
-        params["limit"] = limit
 
     filename = f"project_lot_deposit_stats_{project}.xlsx"
     return await _proxy_xlsx("/api/v1/reports/view/project-lot-deposit-stats", token, params, filename)
@@ -418,7 +484,7 @@ async def customers_eligible_lots_page(
     project: Optional[str] = Query(None, description="project_code như KIDO6"),
     customer_cccd: Optional[str] = Query(None, description="Exact CCCD"),
     lot_code: Optional[str] = Query(None, description="Prefix mã lô"),
-    limit: Optional[int] = Query(5000, ge=1, le=5000),
+    limit: Optional[int] = Query(DEFAULT_LIMIT_LOTS, description="Giới hạn số dòng tối đa"),
 ):
     """
     Khách + lô đủ điều kiện.
@@ -427,12 +493,12 @@ async def customers_eligible_lots_page(
     _log(f"REQ /reports/customers/eligible-lots url={request.url}")
     token = get_access_token(request)
     if not token:
-        return RedirectResponse(
-            url="/login?next=%2Freports%2Fcustomers%2Feligible-lots",
-            status_code=303,
-        )
+        return RedirectResponse(url="/login?next=%2Freports%2Fcustomers%2Feligible-lots", status_code=303)
 
     projects, selected_project = await _load_projects(token, project)
+
+    limit2 = _clamp_int(limit, default=DEFAULT_LIMIT_LOTS, min_value=MIN_LIMIT, max_value=MAX_LIMIT_LOTS)
+
     data: Dict[str, Any] | None = None
     error: Dict[str, Any] | None = None
 
@@ -440,13 +506,12 @@ async def customers_eligible_lots_page(
         params: Dict[str, Any] = {
             "project": selected_project,
             "expose_phone": "true",
+            "limit": limit2,
         }
         if customer_cccd:
             params["customer_cccd"] = customer_cccd
         if lot_code:
             params["lot_code"] = lot_code
-        if limit is not None:
-            params["limit"] = limit
 
         st, js = await _get_json("/api/v1/reports/view/project-customers-lots-eligible", token, params)
         if st == 200:
@@ -461,7 +526,7 @@ async def customers_eligible_lots_page(
         "project": selected_project,
         "customer_cccd": customer_cccd or "",
         "lot_code": lot_code or "",
-        "limit": limit,
+        "limit": limit2,
         "data": data or {"items": [], "count": 0},
         "error": error,
     }
@@ -480,16 +545,17 @@ async def customers_eligible_lots_export(
     if not token:
         return _unauth()
 
+    limit2 = _clamp_int(limit, default=DEFAULT_LIMIT_LOTS, min_value=MIN_LIMIT, max_value=MAX_LIMIT_LOTS)
+
     params: Dict[str, Any] = {
         "project": project,
         "expose_phone": "true",
+        "limit": limit2,
     }
     if customer_cccd:
         params["customer_cccd"] = customer_cccd
     if lot_code:
         params["lot_code"] = lot_code
-    if limit is not None:
-        params["limit"] = limit
 
     filename = f"project_customers_lots_eligible_{project}.xlsx"
     return await _proxy_xlsx("/api/v1/reports/view/project-customers-lots-eligible", token, params, filename)
@@ -501,7 +567,7 @@ async def customers_ineligible_lots_page(
     project: Optional[str] = Query(None, description="project_code như KIDO6"),
     customer_cccd: Optional[str] = Query(None, description="Exact CCCD"),
     lot_code: Optional[str] = Query(None, description="Prefix mã lô"),
-    limit: Optional[int] = Query(5000, ge=1, le=5000),
+    limit: Optional[int] = Query(DEFAULT_LIMIT_LOTS, description="Giới hạn số dòng tối đa"),
 ):
     """
     Khách + lô KHÔNG đủ điều kiện.
@@ -510,12 +576,12 @@ async def customers_ineligible_lots_page(
     _log(f"REQ /reports/customers/not-eligible-lots url={request.url}")
     token = get_access_token(request)
     if not token:
-        return RedirectResponse(
-            url="/login?next=%2Freports%2Fcustomers%2Fnot-eligible-lots",
-            status_code=303,
-        )
+        return RedirectResponse(url="/login?next=%2Freports%2Fcustomers%2Fnot-eligible-lots", status_code=303)
 
     projects, selected_project = await _load_projects(token, project)
+
+    limit2 = _clamp_int(limit, default=DEFAULT_LIMIT_LOTS, min_value=MIN_LIMIT, max_value=MAX_LIMIT_LOTS)
+
     data: Dict[str, Any] | None = None
     error: Dict[str, Any] | None = None
 
@@ -523,13 +589,12 @@ async def customers_ineligible_lots_page(
         params: Dict[str, Any] = {
             "project": selected_project,
             "expose_phone": "true",
+            "limit": limit2,
         }
         if customer_cccd:
             params["customer_cccd"] = customer_cccd
         if lot_code:
             params["lot_code"] = lot_code
-        if limit is not None:
-            params["limit"] = limit
 
         st, js = await _get_json("/api/v1/reports/view/project-customers-lots-not-enough", token, params)
         if st == 200:
@@ -544,7 +609,7 @@ async def customers_ineligible_lots_page(
         "project": selected_project,
         "customer_cccd": customer_cccd or "",
         "lot_code": lot_code or "",
-        "limit": limit,
+        "limit": limit2,
         "data": data or {"items": [], "count": 0},
         "error": error,
     }
@@ -563,16 +628,17 @@ async def customers_ineligible_lots_export(
     if not token:
         return _unauth()
 
+    limit2 = _clamp_int(limit, default=DEFAULT_LIMIT_LOTS, min_value=MIN_LIMIT, max_value=MAX_LIMIT_LOTS)
+
     params: Dict[str, Any] = {
         "project": project,
         "expose_phone": "true",
+        "limit": limit2,
     }
     if customer_cccd:
         params["customer_cccd"] = customer_cccd
     if lot_code:
         params["lot_code"] = lot_code
-    if limit is not None:
-        params["limit"] = limit
 
     filename = f"project_customers_lots_not_enough_{project}.xlsx"
     return await _proxy_xlsx("/api/v1/reports/view/project-customers-lots-not-enough", token, params, filename)
@@ -587,7 +653,7 @@ async def dossiers_paid_detail_page(
     request: Request,
     project: Optional[str] = Query(None, description="project_code như KIDO6"),
     customer_cccd: Optional[str] = Query(None, description="Exact CCCD"),
-    limit: Optional[int] = Query(1000, ge=1, le=10000),
+    limit: Optional[int] = Query(DEFAULT_LIMIT_DOSSIER_DETAIL, description="Giới hạn số dòng tối đa"),
 ):
     """
     Chi tiết các đơn mua hồ sơ theo khách & đơn.
@@ -596,12 +662,12 @@ async def dossiers_paid_detail_page(
     _log(f"REQ /reports/dossiers/paid/detail url={request.url}")
     token = get_access_token(request)
     if not token:
-        return RedirectResponse(
-            url="/login?next=%2Freports%2Fdossiers%2Fpaid%2Fdetail",
-            status_code=303,
-        )
+        return RedirectResponse(url="/login?next=%2Freports%2Fdossiers%2Fpaid%2Fdetail", status_code=303)
 
     projects, selected_project = await _load_projects(token, project)
+
+    limit2 = _clamp_int(limit, default=DEFAULT_LIMIT_DOSSIER_DETAIL, min_value=MIN_LIMIT, max_value=MAX_LIMIT_DOSSIER_DETAIL)
+
     data: Dict[str, Any] | None = None
     error: Dict[str, Any] | None = None
 
@@ -609,11 +675,10 @@ async def dossiers_paid_detail_page(
         params: Dict[str, Any] = {
             "project": selected_project,
             "expose_phone": "true",
+            "limit": limit2,
         }
         if customer_cccd:
             params["customer_cccd"] = customer_cccd
-        if limit is not None:
-            params["limit"] = limit
 
         st, js = await _get_json("/api/v1/reports/view/project-dossier-items", token, params)
         if st == 200:
@@ -628,7 +693,7 @@ async def dossiers_paid_detail_page(
         "projects": projects,
         "project": selected_project,
         "customer_cccd": customer_cccd or "",
-        "limit": limit,
+        "limit": limit2,
         "data": data or {"items": [], "count": 0},
         "error": error,
     }
@@ -646,14 +711,15 @@ async def dossiers_paid_detail_export(
     if not token:
         return _unauth()
 
+    limit2 = _clamp_int(limit, default=DEFAULT_LIMIT_DOSSIER_DETAIL, min_value=MIN_LIMIT, max_value=MAX_LIMIT_DOSSIER_DETAIL)
+
     params: Dict[str, Any] = {
         "project": project,
         "expose_phone": "true",
+        "limit": limit2,
     }
     if customer_cccd:
         params["customer_cccd"] = customer_cccd
-    if limit is not None:
-        params["limit"] = limit
 
     filename = f"project_dossier_items_{project}.xlsx"
     return await _proxy_xlsx("/api/v1/reports/view/project-dossier-items", token, params, filename)
@@ -672,10 +738,7 @@ async def dossiers_paid_summary_page(
     _log(f"REQ /reports/dossiers/paid/summary url={request.url}")
     token = get_access_token(request)
     if not token:
-        return RedirectResponse(
-            url="/login?next=%2Freports%2Fdossiers%2Fpaid%2Fsummary",
-            status_code=303,
-        )
+        return RedirectResponse(url="/login?next=%2Freports%2Fdossiers%2Fpaid%2Fsummary", status_code=303)
 
     projects, selected_project = await _load_projects(token, project)
 
@@ -684,14 +747,12 @@ async def dossiers_paid_summary_page(
     st1 = st2 = None
 
     if selected_project:
-        # ✅ bật expose_phone để Service A fill phone/email
-        params = {"project": selected_project, "expose_phone": "true"}
-        st1, data1 = await _get_json(
-            "/api/v1/reports/dossiers/paid/summary-customer", token, params
-        )
-        # totals-by-type không cần phone/email
+        params = {"project": selected_project, "expose_phone": "true"}  # luôn đủ param
+        st1, data1 = await _get_json("/api/v1/reports/dossiers/paid/summary-customer", token, params)
         st2, data2 = await _get_json(
-            "/api/v1/reports/dossiers/paid/totals-by-type", token, {"project": selected_project}
+            "/api/v1/reports/dossiers/paid/totals-by-type",
+            token,
+            {"project": selected_project},
         )
         if st1 == 200:
             data_summary_customer = data1
@@ -712,11 +773,7 @@ async def dossiers_paid_summary_page(
         "project": selected_project,
         "data": data,
     }
-    return templates.TemplateResponse(
-        "reports/dossiers_paid.html",
-        ctx,
-        status_code=200 if ok else 502,
-    )
+    return templates.TemplateResponse("reports/dossiers_paid.html", ctx, status_code=200 if ok else 502)
 
 
 @router.get("/reports/dossiers/paid/summary/customer/export")
@@ -728,12 +785,9 @@ async def dossiers_paid_summary_customer_export(
     if not token:
         return _unauth()
 
-    # ✅ bật expose_phone cho export
-    params = {"project": project, "expose_phone": "true"}
+    params = {"project": project, "expose_phone": "true"}  # luôn đủ param
     filename = f"dossier_summary_customer_{project}.xlsx"
-    return await _proxy_xlsx(
-        "/api/v1/reports/dossiers/paid/summary-customer", token, params, filename
-    )
+    return await _proxy_xlsx("/api/v1/reports/dossiers/paid/summary-customer", token, params, filename)
 
 
 @router.get("/reports/dossiers/paid/summary/types/export")
@@ -776,8 +830,10 @@ async def reports_api(
         return JSONResponse({"error": "invalid_kind"}, status_code=400)
 
     params: Dict[str, Any] = {}
+
+    # đảm bảo luôn có project nếu truyền
     if project:
-        params["project"] = project
+        params["project"] = (project or "").strip().upper()
 
     st, data = await _get_json(path, token, params)
     if st == 401:
