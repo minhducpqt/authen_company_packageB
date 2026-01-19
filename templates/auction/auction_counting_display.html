@@ -725,7 +725,6 @@
         .replaceAll("&","&amp;")
         .replaceAll("<","&lt;")
         .replaceAll(">","&gt;")
-        .replaceAll('"',"quot;")   // keep legacy behavior? (fixed below)
         .replaceAll('"',"&quot;")
         .replaceAll("'","&#039;");
     }
@@ -751,9 +750,7 @@
     const noProjectOverlay = document.getElementById("noProjectOverlay");
 
     // =========================
-    // Fix #1: marquee không bị giật về đầu sau mỗi poll
-    // - dùng negative animation-delay theo "thời gian chạy" + hash lot_code
-    // - rerender innerHTML vẫn giữ đúng pha chạy hiện tại
+    // marquee không bị giật về đầu sau mỗi poll
     // =========================
     const MARQUEE_DUR_SEC = 24;
     const marqueeEpoch = performance.now();
@@ -769,21 +766,15 @@
     }
     function marqueeDelayForLot(lotCode){
       const t = (performance.now() - marqueeEpoch) / 1000;
-      const base = t % MARQUEE_DUR_SEC;                       // pha theo thời gian chạy
-      const off  = (hashStr(lotCode) % 1000) / 1000 * MARQUEE_DUR_SEC; // offset ổn định theo lot
+      const base = t % MARQUEE_DUR_SEC;
+      const off  = (hashStr(lotCode) % 1000) / 1000 * MARQUEE_DUR_SEC;
       return (base + off) % MARQUEE_DUR_SEC;
     }
 
     // =========================
     // State
     // =========================
-    let lastSeenSig = new Map();      // lot_code -> signature (for "latest changed")
-    let latestQueue = [];
     const LATEST_SLOTS = 6;
-
-    // ✅ chống giựt: chỉ rerender panel phải khi data thật sự đổi (và ổn định theo sort)
-    let lastAllListSig = "";          // signature of winners+tied list (sorted)
-    let lastAllListCount = 0;
 
     // Scroll state (panel phải) — giữ nguyên giữa các poll
     let scrollY = 0;
@@ -793,6 +784,19 @@
 
     // tốc độ vừa đủ đọc
     let scrollSpeed = 0.06;
+
+    // =========================
+    // Helpers: time parsing + sort
+    // =========================
+    function parseTs(v){
+      if (!v) return 0;
+      const t = Date.parse(String(v));
+      return isFinite(t) ? t : 0;
+    }
+    function updatedAtOf(it){
+      // backend sẽ trả updated_at (ISO). Nếu thiếu, fallback 0.
+      return parseTs(it && (it.updated_at ?? it.updatedAt));
+    }
 
     // =========================
     // Card renderers
@@ -863,7 +867,6 @@
       const joined = candChips.join("");
       const doubled = joined + joined;
 
-      // ✅ Fix #1: giữ pha marquee qua các lần poll/rerender
       const delay = marqueeDelayForLot(lot);
 
       return `
@@ -918,96 +921,6 @@
     }
 
     // =========================
-    // Signatures (for diff)
-    // =========================
-    function sigW(w){
-      // chỉ lấy trường ổn định — tránh "đổi nhẹ" làm giật
-      const lot = String(w.lot_code || "").toLowerCase();
-      const cid = (w.customer_id ?? w.id ?? "");
-      return `W|${lot}|${w.highest_price_vnd ?? ""}|${cid}|${w.full_name||""}|${w.phone_masked||""}`;
-    }
-    function sigT(t){
-      const lot = String(t.lot_code || "").toLowerCase();
-      const cands = Array.isArray(t.candidates) ? t.candidates : [];
-      // sort để ổn định, tránh reorder khiến signature đổi
-      const ids = cands
-        .map(x => String(x.customer_id ?? x.id ?? x.full_name ?? ""))
-        .sort()
-        .join(",");
-      return `T|${lot}|${t.highest_price_vnd ?? ""}|${ids}`;
-    }
-
-    // ✅ signature dựa trên list đã sort (ổn định theo lot_code) => poll ngầm update, scroll không reset
-    function allListSignature(js){
-      const winners = (Array.isArray(js.winners) ? js.winners : []).slice();
-      const tied = (Array.isArray(js.tied) ? js.tied : []).slice();
-      winners.sort((a,b)=> String(a.lot_code||"").localeCompare(String(b.lot_code||""), "vi"));
-      tied.sort((a,b)=> String(a.lot_code||"").localeCompare(String(b.lot_code||""), "vi"));
-
-      const parts = [];
-      for (const w of winners) parts.push(sigW(w));
-      for (const t of tied) parts.push(sigT(t));
-      return parts.join("||");
-    }
-
-    // =========================
-    // Latest logic
-    // =========================
-    function updateLatestFromSnapshot(js){
-      const winners = Array.isArray(js.winners) ? js.winners : [];
-      const tied = Array.isArray(js.tied) ? js.tied : [];
-      const changed = [];
-
-      for (const w of winners){
-        const key = String(w.lot_code || "").toLowerCase();
-        if (!key) continue;
-        const s = sigW(w);
-        const prev = lastSeenSig.get(key);
-        if (prev !== s){
-          lastSeenSig.set(key, s);
-          changed.push({type:"WON", item:w});
-        }
-      }
-      for (const t of tied){
-        const key = String(t.lot_code || "").toLowerCase();
-        if (!key) continue;
-        const s = sigT(t);
-        const prev = lastSeenSig.get(key);
-        if (prev !== s){
-          lastSeenSig.set(key, s);
-          changed.push({type:"TIED", item:t});
-        }
-      }
-
-      for (const ch of changed.reverse()){
-        latestQueue.unshift(ch);
-      }
-      const seen = new Set();
-      latestQueue = latestQueue.filter(x=>{
-        const key = String(x.item?.lot_code || "").toLowerCase();
-        if (!key) return false;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-      latestQueue = latestQueue.slice(0, LATEST_SLOTS);
-
-      if (latestQueue.length < LATEST_SLOTS){
-        const pool = [];
-        for (const w of winners) pool.push({type:"WON", item:w});
-        for (const t of tied) pool.push({type:"TIED", item:t});
-        for (const x of pool){
-          if (latestQueue.length >= LATEST_SLOTS) break;
-          const key = String(x.item?.lot_code || "").toLowerCase();
-          if (!key) continue;
-          if (seen.has(key)) continue;
-          seen.add(key);
-          latestQueue.push(x);
-        }
-      }
-    }
-
-    // =========================
     // Renderers
     // =========================
     function renderTop(js){
@@ -1031,33 +944,40 @@
       hudUpdatedAt.textContent = `Cập nhật: ${now.toLocaleTimeString("vi-VN")}`;
     }
 
-    function renderLatest(){
+    // ✅ Tab trái: lấy top 6 "mới nhất" theo updated_at DESC (mới nhất -> mới 6)
+    function renderLatestFromSnapshot(js){
+      const winners = Array.isArray(js.winners) ? js.winners : [];
+      const tied = Array.isArray(js.tied) ? js.tied : [];
+
+      const pool = [];
+      for (const w of winners) pool.push({type:"WON", item:w, ts: updatedAtOf(w)});
+      for (const t of tied) pool.push({type:"TIED", item:t, ts: updatedAtOf(t)});
+
+      pool.sort((a,b)=>{
+        if (b.ts !== a.ts) return b.ts - a.ts; // mới nhất trước
+        // fallback ổn định: lot_id ASC, rồi lot_code
+        const aid = Number(a.item?.lot_id ?? 0);
+        const bid = Number(b.item?.lot_id ?? 0);
+        if (aid !== bid) return aid - bid;
+        return String(a.item?.lot_code||"").localeCompare(String(b.item?.lot_code||""), "vi");
+      });
+
+      const top = pool.slice(0, LATEST_SLOTS);
+
       let html = "";
-      for (const x of latestQueue){
+      for (const x of top){
         html += (x.type === "TIED") ? cardTIED(x.item) : cardWON(x.item);
       }
-      const remain = Math.max(0, LATEST_SLOTS - latestQueue.length);
+      const remain = Math.max(0, LATEST_SLOTS - top.length);
       for (let i=0;i<remain;i++) html += placeholderCard();
       latestBody.innerHTML = html;
     }
 
-    // ✅ rebuild track chỉ khi list thật sự đổi; và QUAN TRỌNG: giữ nguyên scrollY (không reset về 0)
-    function renderAllListIfChanged(js){
-      const winners0 = Array.isArray(js.winners) ? js.winners : [];
-      const tied0 = Array.isArray(js.tied) ? js.tied : [];
-
-      const sig = allListSignature(js);
-      const totalItems = winners0.length + tied0.length;
-
-      if (sig === lastAllListSig && totalItems === lastAllListCount){
-        return; // không đổi => không re-render => marquee/scroll không bị reset
-      }
-      lastAllListSig = sig;
-      lastAllListCount = totalItems;
-
-      // build list ổn định theo lot_code để tránh “đảo thứ tự” gây giật
-      const winners = winners0.slice().sort((a,b)=> String(a.lot_code||"").localeCompare(String(b.lot_code||""), "vi"));
-      const tied = tied0.slice().sort((a,b)=> String(a.lot_code||"").localeCompare(String(b.lot_code||""), "vi"));
+    // ✅ Panel phải: render đúng thứ tự API trả về (đã sort theo lot_id ASC)
+    // Và KHÔNG reset scrollY giữa các lần poll
+    function renderAllList(js){
+      const winners = Array.isArray(js.winners) ? js.winners : [];
+      const tied = Array.isArray(js.tied) ? js.tied : [];
 
       const all = [];
       for (const w of winners) all.push({type:"WON", item:w});
@@ -1079,7 +999,6 @@
         return;
       }
 
-      // ✅ lưu trạng thái cuộn hiện tại trước khi rebuild
       const prevHeight = trackHeight || 0;
       const prevScroll = scrollY || 0;
 
@@ -1100,7 +1019,6 @@
         }
         trackHeight = h;
 
-        // ✅ giữ nguyên vị trí cuộn: nếu height đổi, giữ theo tỉ lệ; nếu không, giữ nguyên
         if (trackHeight > 0){
           if (prevHeight > 0){
             const ratio = prevScroll / prevHeight;
@@ -1108,7 +1026,6 @@
           } else {
             scrollY = prevScroll;
           }
-          // đảm bảo nằm trong [0, trackHeight)
           scrollY = ((scrollY % trackHeight) + trackHeight) % trackHeight;
           scrollTrack.style.transform = `translateY(${-scrollY}px)`;
           loopingEnabled = true;
@@ -1153,9 +1070,8 @@
         hudStatus.textContent = "Chưa chọn dự án";
         hudDot.style.background = "var(--danger)";
         hudDot.style.boxShadow = "0 0 18px rgba(255,77,109,.60)";
-        latestQueue = [];
-        renderLatest();
-        renderAllListIfChanged({winners:[], tied:[]});
+        latestBody.innerHTML = placeholderCard()+placeholderCard()+placeholderCard()+placeholderCard()+placeholderCard()+placeholderCard();
+        renderAllList({winners:[], tied:[]});
         return;
       }
       noProjectOverlay.style.display = "none";
@@ -1179,18 +1095,16 @@
         renderTop(js);
 
         if (!js.session){
-          latestQueue = [];
-          renderLatest();
-          renderAllListIfChanged({winners:[], tied:[]});
+          latestBody.innerHTML = placeholderCard()+placeholderCard()+placeholderCard()+placeholderCard()+placeholderCard()+placeholderCard();
+          renderAllList({winners:[], tied:[]});
           return;
         }
 
-        // cập nhật latest (trái) vẫn ok
-        updateLatestFromSnapshot(js);
-        renderLatest();
+        // ✅ Tab trái: top 6 theo updated_at DESC
+        renderLatestFromSnapshot(js);
 
-        // ✅ panel phải: poll ngầm update — scroll giữ nguyên, chỉ rebuild khi list thật sự đổi
-        renderAllListIfChanged(js);
+        // ✅ Panel phải: theo thứ tự API trả về (đã sort theo lot_id ASC)
+        renderAllList(js);
 
       }catch(e){
         hudStatus.textContent = "Mất kết nối – đang thử lại…";
@@ -1201,9 +1115,8 @@
 
     (function init(){
       requestAnimationFrame(tick);
-      latestQueue = [];
-      renderLatest();
-      renderAllListIfChanged({winners:[], tied:[]});
+      latestBody.innerHTML = placeholderCard()+placeholderCard()+placeholderCard()+placeholderCard()+placeholderCard()+placeholderCard();
+      renderAllList({winners:[], tied:[]});
       fetchSnapshot();
       setInterval(fetchSnapshot, POLL_MS);
     })();
