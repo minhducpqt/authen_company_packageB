@@ -348,10 +348,12 @@ async def print_bid_tickets(
     if not rows:
         return HTMLResponse("<h1>Không có dữ liệu phiếu để in.</h1>", status_code=404)
 
+    # ✅ FIX: sort theo LOT_ID (không dùng lot_code string)
     rows.sort(
         key=lambda t: (
-            t.get("stt") or 10**9,
-            t.get("customer_id") or 10**9,
+            t.get("stt") if t.get("stt") is not None else 2147483647,
+            t.get("customer_id") if t.get("customer_id") is not None else 10**18,
+            t.get("lot_id") if t.get("lot_id") is not None else 10**18,
             t.get("lot_code") or "",
         )
     )
@@ -364,6 +366,7 @@ async def print_bid_tickets(
             "tickets": rows,
         },
     )
+
 
 
 # ======================================================================
@@ -405,10 +408,12 @@ async def print_all_bid_tickets(
     if not rows:
         return HTMLResponse("<h1>Không có phiếu nào trong dự án này để in.</h1>", status_code=404)
 
+    # ✅ FIX: sort theo LOT_ID (không dùng lot_code string)
     rows.sort(
         key=lambda t: (
-            t.get("stt") or 10**9,
-            t.get("customer_id") or 10**9,
+            t.get("stt") if t.get("stt") is not None else 2147483647,
+            t.get("customer_id") if t.get("customer_id") is not None else 10**18,
+            t.get("lot_id") if t.get("lot_id") is not None else 10**18,
             t.get("lot_code") or "",
         )
     )
@@ -421,6 +426,7 @@ async def print_all_bid_tickets(
             "tickets": rows,
         },
     )
+
 
 
 # ======================================================================
