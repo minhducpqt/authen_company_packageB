@@ -54,8 +54,32 @@
   .ac-modal-footer { padding: 14px 18px; border-top: 1px solid rgba(226,232,240,1); display:flex; justify-content:flex-end; gap: 10px; background: rgba(248,250,252,1); }
 
   .ac-kbd { font-weight: 900; font-size: .8rem; padding: .15rem .4rem; border-radius: 8px; border:1px solid rgba(226,232,240,1); background:#fff; color: rgba(51,65,85,1); }
+
+  /* ✅ Input + inline autocorrect */
+  .ac-input-wrap { position: relative; }
+  .ac-input-wrap .ac-input { padding-right: 170px; }
+  .ac-input-inbtn {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: .5rem .75rem;
+    border-radius: 12px;
+    font-weight: 900;
+    border: 1px solid rgba(226,232,240,1);
+    background: #fff;
+    display:inline-flex;
+    align-items:center;
+    gap:.45rem;
+    box-shadow: 0 1px 2px rgba(0,0,0,.04);
+    user-select:none;
+    white-space:nowrap;
+  }
+  .ac-input-inbtn:hover { background: rgba(248,250,252,1); }
+
+  /* ✅ Step buttons close to textbox */
   .ac-quick { display:flex; flex-wrap:wrap; gap: 8px; margin-top: 10px; }
-  .ac-quick button { min-width: 56px; }
+  .ac-quick button { min-width: 56px; padding:.55rem .75rem; }
 
   .ac-customer { border:1px solid rgba(226,232,240,1); border-radius: 14px; padding: 10px 12px; display:flex; align-items:flex-start; justify-content:space-between; gap: 10px; background:#fff; }
   .ac-customer .meta { color: rgba(100,116,139,1); font-size:.88rem; margin-top: 2px; }
@@ -79,7 +103,6 @@
   .lot-sub { font-size:.82rem; color: rgba(100,116,139,1); display:flex; flex-wrap:wrap; gap: 8px; }
   .lot-sub b { color: rgba(51,65,85,1); font-weight: 900; }
 
-  /* Cart confirm header */
   .cart-confirm { border:1px solid rgba(226,232,240,1); background:#fff; border-radius: 14px; padding: 10px 12px; }
   .cart-confirm .line { display:flex; align-items:center; justify-content:space-between; gap: 10px; }
   .cart-confirm .big { font-weight: 950; color: rgba(15,23,42,1); }
@@ -341,27 +364,31 @@
     <div class="ac-modal-body">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
 
-        {# Left: input #}
         <div class="lg:col-span-5 ac-card p-4">
           <div class="flex items-center justify-between gap-2">
             <div class="font-extrabold text-slate-900">Nhập kết quả</div>
-            <div class="text-xs text-slate-500 font-bold">
-              (Smart trạng thái theo số tick)
-            </div>
+            <div class="text-xs text-slate-500 font-bold">(Smart trạng thái theo số tick)</div>
           </div>
 
-          {# Ẩn trạng thái chọn tay để tránh sai logic #}
           <input type="hidden" id="inpStatus" value="PENDING"/>
 
           <div class="mt-4 p-4 rounded-2xl border border-slate-200 bg-slate-50">
             <div class="flex items-center justify-between gap-2">
               <div class="font-extrabold text-slate-900">Giá cao nhất (để xét)</div>
-              <div class="text-xs text-slate-500">
-                Nút <span class="ac-kbd">+/-</span> theo bước giá
-              </div>
+              <div class="text-xs text-slate-500">Nút <span class="ac-kbd">+/-</span> theo bước giá</div>
             </div>
 
-            <input id="inpHighest" class="ac-input mt-3 text-lg font-extrabold ac-mono" inputmode="numeric" placeholder="Nhập giá..." />
+            <div class="ac-input-wrap mt-3">
+              <input id="inpHighest" class="ac-input text-lg font-extrabold ac-mono" inputmode="numeric" placeholder="Nhập giá..." />
+              <button type="button" class="ac-input-inbtn" id="btnAutoCorrect" title="Correct giá hiện tại theo bước giá; nếu có giá ghi trên phiếu thì không vượt quá">
+                <i class="ri-magic-line"></i> Auto correct
+              </button>
+            </div>
+
+            <div class="text-xs text-slate-500 mt-2">
+              Auto-correct sẽ <b>chỉnh đúng giá đang nằm trong ô</b> theo bước giá.
+              Nếu các khách đang tick có <b>giá ghi trên phiếu</b> thì sẽ đảm bảo <b>không vượt quá</b> mức đó.
+            </div>
 
             <div class="ac-quick">
               <button type="button" class="ac-btn ghost jsStepBtn" data-step="-5">-5</button>
@@ -373,13 +400,8 @@
             </div>
 
             <div class="text-xs text-slate-500 mt-3">
-              Nếu chưa nhập giá, bấm <span class="font-extrabold">+1</span> sẽ lấy <span class="font-extrabold">giá khởi điểm</span> làm base rồi cộng theo <span class="font-extrabold">bước giá</span>.
+              Nếu chưa nhập giá, bấm <b>+1</b> sẽ lấy <b>giá khởi điểm</b> làm base rồi cộng theo <b>bước giá</b>.
             </div>
-          </div>
-
-          <div class="mt-4">
-            <label class="text-sm font-bold text-slate-900">Lý do chỉnh sửa (tuỳ chọn)</label>
-            <input id="inpReason" class="ac-input mt-2" placeholder="Ví dụ: sửa sai người hòa / cập nhật lại giá..." />
           </div>
 
           <div class="mt-4 ac-card p-4" style="background: rgba(248,250,252,1);">
@@ -388,7 +410,6 @@
           </div>
         </div>
 
-        {# Right: candidates + cart confirm #}
         <div class="lg:col-span-7 ac-card p-4">
           <div class="flex items-start justify-between gap-2">
             <div>
@@ -467,7 +488,6 @@
 
     <div class="ac-modal-footer">
       <button class="ac-btn ghost" type="button" id="btnModalCancel">Đóng</button>
-      {# bỏ nút lưu ở footer theo yêu cầu #}
     </div>
   </div>
 </div>
@@ -538,7 +558,6 @@
     setTimeout(() => { el.remove(); }, 4200);
   }
 
-  // Top controls
   const projectSelect = document.getElementById("projectSelect");
   const qInput = document.getElementById("qInput");
   const btnFilter = document.getElementById("btnFilter");
@@ -578,7 +597,6 @@
     btnProjector.href = "/auction/counting/display?project=" + encodeURIComponent(projectSelect.value);
   }
 
-  // Render money & area in table, compute start_per_sqm
   function renderRowBase() {
     document.querySelectorAll(".jsMoney").forEach(el => {
       const v = el.getAttribute("data-value");
@@ -615,7 +633,6 @@
   }
   renderRowBase();
 
-  // Snapshot (admin shows full CCCD/phone)
   async function loadSnapshotAndApply() {
     if (!PROJECT_ID || !SESSION_ID) return;
     try {
@@ -682,17 +699,14 @@
     toast("ok", "Đã tải snapshot", "Đã cập nhật người trúng & thống kê (không reload trang).");
   });
 
-  // =========================
-  // Modal logic (smart status)
-  // =========================
   const modalBackdrop = document.getElementById("modalBackdrop");
   const btnModalClose = document.getElementById("btnModalClose");
   const btnModalCancel = document.getElementById("btnModalCancel");
 
-  const inpStatus = document.getElementById("inpStatus"); // hidden
+  const inpStatus = document.getElementById("inpStatus");
   const inpHighest = document.getElementById("inpHighest");
-  const inpReason = document.getElementById("inpReason");
   const inpLuckyDraw = document.getElementById("inpLuckyDraw");
+  const btnAutoCorrect = document.getElementById("btnAutoCorrect");
 
   const candHint = document.getElementById("candHint");
   const candCount = document.getElementById("candCount");
@@ -763,7 +777,6 @@
     if (e.target === confirmBackdrop) closeConfirm();
   });
 
-  // Price input formatting
   function digitsOnly(s) { return (s || "").replace(/[^\d]/g, ""); }
   function parseMoney(s) {
     const d = digitsOnly(s);
@@ -775,6 +788,7 @@
     if (n == null || !isFinite(n)) { el.value = ""; return; }
     el.value = fmtVND(n);
   }
+
   inpHighest?.addEventListener("input", () => {
     const n = parseMoney(inpHighest.value);
     if (n == null) { refreshCartConfirm(); refreshSummary(); return; }
@@ -785,7 +799,6 @@
     refreshSummary();
   });
 
-  // Step buttons
   document.querySelectorAll(".jsStepBtn").forEach(btn => {
     btn.addEventListener("click", () => {
       if (!activeLot) return;
@@ -817,17 +830,14 @@
     applySmartStatus();
   });
 
-  // Smart status: 1 => WON, >=2 => TIED, 0 => PENDING (nhưng vẫn không cho lưu)
   function applySmartStatus() {
     const n = selectedIds.size;
     if (n === 1) inpStatus.value = "WON";
     else if (n >= 2) inpStatus.value = "TIED";
     else inpStatus.value = "PENDING";
 
-    // Lucky draw UI only if exactly 1
-    if (n === 1) {
-      cartLuckyWrap.style.display = "block";
-    } else {
+    if (n === 1) cartLuckyWrap.style.display = "block";
+    else {
       cartLuckyWrap.style.display = "none";
       inpLuckyDraw.checked = false;
     }
@@ -951,13 +961,11 @@
   candSearch?.addEventListener("input", () => renderCandidates());
 
   function refreshCartConfirm() {
-    // price live
     const hp = parseMoney(inpHighest.value);
     cartHighestPrice.textContent = (hp != null ? fmtVND(hp) : "—");
 
     const n = selectedIds.size;
 
-    // badge + state line
     if (n === 1) {
       cartStateLine.textContent = "🏆 TRÚNG (1 người)";
       cartStateBadge.className = "ac-badge won";
@@ -974,7 +982,6 @@
   }
 
   function refreshSummary() {
-    const st = (inpStatus.value || "PENDING").toUpperCase();
     const hp = parseMoney(inpHighest.value);
     const draw = !!inpLuckyDraw.checked;
     const picks = Array.from(selectedIds);
@@ -996,7 +1003,6 @@
     candHint.textContent = "Đang chọn ≥2 khách → hệ thống hiểu vào vòng bốc thăm.";
   }
 
-  // Load candidates
   async function loadCandidates(lot_code) {
     candList.innerHTML = `<div class="text-sm text-slate-500">Đang tải...</div>`;
     candCount.textContent = "Tổng: —";
@@ -1026,7 +1032,100 @@
     try { return JSON.parse(s); } catch { return fallback; }
   }
 
+  // =========================
+  // ✅ AUTO CORRECT (FIXED)
+  // =========================
+  function _num(v) {
+    const n = Number(v);
+    return isFinite(n) ? n : null;
+  }
+
+  // Nếu backend có field “giá ghi trên phiếu” thì dùng để cap; không có thì bỏ qua.
+  function getTicketMaxPrice(c) {
+    const keys = [
+      "ticket_price_vnd", "wrote_price_vnd", "written_price_vnd",
+      "max_price_vnd", "bid_price_vnd", "bid_price", "price_vnd",
+      "max_price", "price"
+    ];
+    for (const k of keys) {
+      if (c && c[k] != null && c[k] !== "") {
+        const n = _num(c[k]);
+        if (n != null && n > 0) return n;
+      }
+    }
+    return null;
+  }
+
+  function alignDownToStep(target, base, step) {
+    const t = Number(target), b = Number(base), s = Number(step);
+    if (!isFinite(t) || !isFinite(b) || !isFinite(s) || s <= 0) return null;
+
+    // Nếu nhỏ hơn base thì “auto-correct” đưa về base (hợp lệ tối thiểu)
+    if (t <= b) return b;
+
+    const k = Math.floor((t - b) / s);
+    return b + k * s;
+  }
+
+  btnAutoCorrect?.addEventListener("click", () => {
+    if (!activeLot) {
+      toast("err", "Chưa có lô", "Hãy bấm “Xử lý” một lô trước.");
+      return;
+    }
+
+    const bidStep = Number(activeLot.bid_step || 0);
+    const base = Number(activeLot.base_start || 0);
+
+    if (!isFinite(bidStep) || bidStep <= 0) {
+      toast("err", "Thiếu bước giá", "Lô này chưa có bid_step_vnd hoặc bước giá không hợp lệ.");
+      return;
+    }
+    if (!isFinite(base) || base <= 0) {
+      toast("err", "Thiếu giá khởi điểm", "Không xác định được giá khởi điểm (base) để căn theo bước.");
+      return;
+    }
+
+    // ✅ Correct đúng GIÁ TRỊ ĐANG CÓ TRONG TEXTBOX; nếu trống thì dùng base
+    let cur = parseMoney(inpHighest.value);
+    if (cur == null) cur = base;
+
+    // ✅ Nếu có “giá ghi trên phiếu” ở các khách đang tick thì cap theo MIN; không có thì bỏ qua
+    let cap = null;
+    if (selectedIds.size > 0) {
+      const ids = Array.from(selectedIds);
+      const caps = [];
+      ids.forEach(id => {
+        const c = candidateById(id) || {};
+        const p = getTicketMaxPrice(c);
+        if (p != null) caps.push(p);
+      });
+      if (caps.length) cap = Math.min(...caps);
+    }
+
+    // target: nếu có cap thì không vượt quá cap, còn không thì chỉ dùng cur
+    const target = (cap != null && isFinite(cap) && cap > 0) ? Math.min(cur, cap) : cur;
+
+    const corrected = alignDownToStep(target, base, bidStep);
+    if (corrected == null) {
+      toast("err", "Không thể auto-correct", "Không tìm được mức giá hợp lệ theo bước giá (kiểm tra base/step).");
+      return;
+    }
+
+    setMoneyInput(inpHighest, corrected);
+    refreshCartConfirm();
+    refreshSummary();
+
+    // Toast: nếu có cap thì show thêm thông tin cap
+    if (cap != null && isFinite(cap) && cap > 0) {
+      toast("ok", "Auto correct xong", `Đã đưa về ${fmtVND(corrected)} (≤ giá ghi trên phiếu: ${fmtVND(cap)}).`);
+    } else {
+      toast("ok", "Auto correct xong", `Đã đưa về ${fmtVND(corrected)} theo base + bước giá.`);
+    }
+  });
+
+  // =========================
   // Open modal + prefill selection
+  // =========================
   document.querySelectorAll(".jsHandleBtn").forEach(btn => {
     btn.addEventListener("click", async () => {
       const tr = btn.closest("tr[data-lot-code]");
@@ -1062,12 +1161,10 @@
       const sStep = isFinite(bid_step) ? fmtVND(bid_step) + " VND" : "—";
       document.getElementById("modalSub").textContent = `Bước: ${sStep} · KL: ${s1} · DT: ${sArea} · KL/m²: ${s2}`;
 
-      // Prefill price
       const curHighest = tr.getAttribute("data-highest-price");
       if (curHighest) setMoneyInput(inpHighest, Number(curHighest));
       else inpHighest.value = "";
 
-      // Prefill selection from row
       selectedIds = new Set();
       const winnerId = Number(tr.getAttribute("data-winner-id") || 0);
       const tiedIds = parseJsonSafe(tr.getAttribute("data-tied-ids") || "[]", []);
@@ -1076,19 +1173,13 @@
       if (curStatus === "WON" && winnerId) selectedIds.add(winnerId);
       else if (curStatus === "TIED" && Array.isArray(tiedIds)) tiedIds.forEach(x => selectedIds.add(Number(x)));
 
-      // Lucky draw checkbox state from row only if exactly 1 selected
       const curDraw = tr.getAttribute("data-is-draw") === "1";
       inpLuckyDraw.checked = !!curDraw;
-
-      inpReason.value = "";
 
       openModal();
       await loadCandidates(lot_code);
 
-      // apply smart status based on selection
       applySmartStatus();
-
-      // if selection is not exactly 1 -> force lucky false
       if (selectedIds.size !== 1) inpLuckyDraw.checked = false;
 
       refreshCartConfirm();
@@ -1097,7 +1188,7 @@
   });
 
   // =========================
-  // Confirm + Save API
+  // Confirm + Save API (giữ nguyên)
   // =========================
   function pickCustomerObjects(ids) {
     const map = new Map();
@@ -1107,14 +1198,10 @@
 
   function validatePayload() {
     const hp = parseMoney(inpHighest.value);
-    const reason = (inpReason.value || "").trim();
     const draw = !!inpLuckyDraw.checked;
 
     if (!activeLot) return { ok:false, msg:"Không xác định được lô đang xử lý." };
-
-    // 0 tick => không cho lưu (theo yêu cầu)
     if (selectedIds.size === 0) return { ok:false, msg:"Bạn phải tick ít nhất 1 khách (0 tick không cho lưu)." };
-
     if (hp == null || hp <= 0) return { ok:false, msg:"Vui lòng nhập Giá hợp lệ cao nhất > 0." };
 
     if (selectedIds.size === 1) {
@@ -1125,8 +1212,7 @@
           status: "WON",
           highest_price_vnd: hp,
           winner_customer_id: winnerId,
-          is_lucky_draw: draw,
-          edit_reason: reason
+          is_lucky_draw: draw
         }
       };
     }
@@ -1136,8 +1222,7 @@
       payload: {
         status: "TIED",
         highest_price_vnd: hp,
-        tied_customer_ids: Array.from(selectedIds),
-        edit_reason: reason
+        tied_customer_ids: Array.from(selectedIds)
       }
     };
   }
