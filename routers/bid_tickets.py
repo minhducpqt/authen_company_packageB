@@ -521,6 +521,8 @@ async def print_selected_bid_tickets(
 # - B gọi A lấy pairs đang TIED theo counting session
 # - Sau đó gọi A bulk bid_tickets/selected để render print.html
 # ======================================================================
+from typing import Literal
+
 @router.get("/print-tied", response_class=HTMLResponse)
 async def print_tied_bid_tickets_next_round(
     request: Request,
@@ -528,6 +530,11 @@ async def print_tied_bid_tickets_next_round(
     session_id: int = Query(..., ge=1, description="auction_counting session_id (COUNTING)"),
     # optional: chỉ in 1 lô (phục vụ nút In của lô trong màn kiểm phiếu)
     only_lot_id: Optional[int] = Query(None, ge=1),
+    # NEW: sort_type forward sang Service A
+    sort_type: Literal["lot_customer", "customer_lot"] = Query(
+        "lot_customer",
+        description="Sort output pairs: lot_customer (default) hoặc customer_lot",
+    ),
 ):
     token = get_access_token(request)
     me = await fetch_me(token)
@@ -540,7 +547,9 @@ async def print_tied_bid_tickets_next_round(
     headers = {"Authorization": f"Bearer {token}"}
 
     # 1) lấy danh sách cặp lot+customer đang TIED từ A
-    params_pairs: Dict[str, Any] = {}
+    params_pairs: Dict[str, Any] = {
+        "sort_type": sort_type,  # 👈 forward sang A
+    }
     if only_lot_id is not None:
         params_pairs["only_lot_id"] = int(only_lot_id)
 
@@ -599,6 +608,7 @@ async def print_tied_bid_tickets_next_round(
         "project_code": project_code,
         "items": items,
         "include_excluded": False,
+        # giữ nguyên để không phụ thuộc việc A có hỗ trợ sort_mode khác hay không
         "sort_mode": "LOT_ASC_CUSTOMER_ASC",
     }
 
@@ -618,14 +628,32 @@ async def print_tied_bid_tickets_next_round(
     if not tickets:
         return HTMLResponse("<h1>Không lấy được dữ liệu phiếu để in.</h1>", status_code=404)
 
-    # sort đã do A quyết định; B không sort lại.
+    # ✅ FIX CỐT LÕI:
+    # /api/v1/report/bid_tickets/selected có thể đã sort lại theo LOT (do sort_mode),
+    # nên B phải sort lại lần cuối đúng theo sort_type để đảm bảo thứ tự in.
+    if sort_type == "customer_lot":
+        tickets.sort(
+            key=lambda t: (
+                t.get("customer_id") if t.get("customer_id") is not None else 10**18,
+                t.get("lot_id") if t.get("lot_id") is not None else 10**18,
+                t.get("lot_code") or "",
+            )
+        )
+    else:
+        tickets.sort(
+            key=lambda t: (
+                t.get("lot_id") if t.get("lot_id") is not None else 10**18,
+                t.get("customer_id") if t.get("customer_id") is not None else 10**18,
+                t.get("lot_code") or "",
+            )
+        )
+
     return templates.TemplateResponse(
         "pages/bid_tickets/print.html",
         {
             "request": request,
             "me": me,
             "tickets": tickets,
-            # optional: show context nếu template muốn dùng (không bắt buộc)
             "print_ctx": {
                 "mode": "TIED_NEXT_ROUND",
                 "session_id": int(session_id),
@@ -633,6 +661,8 @@ async def print_tied_bid_tickets_next_round(
                 "project_code": project_code,
                 "project_name": project.get("project_name"),
                 "pairs_count": len(items),
+                "sort_type": sort_type,
             },
         },
     )
+

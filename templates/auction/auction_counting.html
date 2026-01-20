@@ -238,17 +238,29 @@
           <span class="ac-strong" id="pillChecked">—</span>
         </span>
 
-        {# ✅ NEW: Print all tied for next round #}
+        {# ✅ Print for next round (two modes) #}
         <button
           class="ac-btn slim print"
           id="btnPrintTiedAll"
           type="button"
           {% if not project_id or not session or not session.get("id") %}disabled{% endif %}
-          title="In tất cả phiếu của các lô đang TIED (Vòng tiếp theo)"
+          title="In phiếu cho vòng tiếp theo theo thứ tự Lô → Khách"
         >
           <i class="ri-printer-line"></i>
-          In TIED (Vòng tiếp theo)
+          In Phiếu (Vòng Tiếp - Theo Lô)
         </button>
+
+        <button
+          class="ac-btn slim print"
+          id="btnPrintTiedAllByCustomer"
+          type="button"
+          {% if not project_id or not session or not session.get("id") %}disabled{% endif %}
+          title="In phiếu cho vòng tiếp theo theo thứ tự Khách → Lô"
+        >
+          <i class="ri-printer-line"></i>
+          In Phiếu (Vòng Tiếp - Theo Khách)
+        </button>
+
       </div>
     </div>
 
@@ -631,8 +643,9 @@
 
   // ✅ NEW: print buttons
   const btnPrintTiedAll = document.getElementById("btnPrintTiedAll");
+  const btnPrintTiedAllByCustomer = document.getElementById("btnPrintTiedAllByCustomer");
 
-  function openPrintTied(onlyLotId = null) {
+  function openPrintTied(onlyLotId = null, sortType = "lot_customer") {
     if (!SESSION_ID) {
       toast("err", "Thiếu phiên", "Không xác định được session_id để in.");
       return;
@@ -640,10 +653,16 @@
     const u = new URL("/bid-tickets/print-tied", window.location.origin);
     u.searchParams.set("session_id", String(SESSION_ID));
     if (onlyLotId != null) u.searchParams.set("only_lot_id", String(onlyLotId));
+    if (sortType) u.searchParams.set("sort_type", String(sortType));
     window.open(u.toString(), "_blank", "noopener");
   }
 
-  btnPrintTiedAll?.addEventListener("click", () => openPrintTied(null));
+  // Theo Lô (default)
+  btnPrintTiedAll?.addEventListener("click", () => openPrintTied(null, "lot_customer"));
+
+  // Theo Khách
+  btnPrintTiedAllByCustomer?.addEventListener("click", () => openPrintTied(null, "customer_lot"));
+
 
   // delegation for row print icons
   document.addEventListener("click", (e) => {
@@ -739,7 +758,10 @@
       document.getElementById("pillChecked").textContent = sum.checked ?? "—";
 
       // enable/disable print all tied
-      if (btnPrintTiedAll) btnPrintTiedAll.disabled = !(SESSION_ID && (sum.tied ?? 0) > 0);
+      const canPrint = !!(SESSION_ID && (sum.tied ?? 0) > 0);
+      if (btnPrintTiedAll) btnPrintTiedAll.disabled = !canPrint;
+      if (btnPrintTiedAllByCustomer) btnPrintTiedAllByCustomer.disabled = !canPrint;
+
 
       const winners = js.winners || [];
       const winMap = new Map();
