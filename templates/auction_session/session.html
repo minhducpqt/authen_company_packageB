@@ -25,27 +25,31 @@
     padding:14px 16px;border:1px solid var(--bd);border-radius:18px;background:linear-gradient(180deg, rgba(248,250,252,.92), #fff);
     box-shadow:0 2px 10px rgba(2,6,23,.04);
   }
-  .tleft h1{margin:0;font-size:18px;color:var(--ink);font-weight:900;}
+  .tleft h1{margin:0;font-size:18px;color:var(--ink);font-weight:1000;}
   .tleft .sub{margin-top:6px;color:var(--muted);font-size:13px;display:flex;flex-wrap:wrap;gap:10px;line-height:1.35;}
   .sub b{color:var(--ink);}
+
   .tright{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
+
   .btn{
     height:36px;border-radius:12px;border:1px solid var(--bd);background:#fff;
-    padding:0 12px;font-weight:900;font-size:13px;color:var(--ink);cursor:pointer;
+    padding:0 12px;font-weight:1000;font-size:13px;color:var(--ink);cursor:pointer;
     display:inline-flex;align-items:center;gap:8px;text-decoration:none;transition:.15s ease;
   }
   .btn:hover{transform:translateY(-1px);box-shadow:0 10px 20px rgba(2,6,23,.08);}
   .btn.primary{background:linear-gradient(180deg, var(--pri), var(--pri2));border-color:rgba(2,132,199,.5);color:#fff;}
   .btn.ghost{background:rgba(248,250,252,1);}
   .btn.danger{background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.25);color:#991b1b;}
+
   .pill{
     display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;
-    font-size:12px;font-weight:900;border:1px solid var(--bd);background:#fff;color:var(--muted);
+    font-size:12px;font-weight:1000;border:1px solid var(--bd);background:#fff;color:var(--muted);
   }
   .pill.ok{color:var(--ok);border-color:rgba(22,163,74,.25);background:rgba(22,163,74,.06);}
   .pill.warn{color:var(--warn);border-color:rgba(245,158,11,.25);background:rgba(245,158,11,.08);}
   .pill.bad{color:var(--bad);border-color:rgba(239,68,68,.25);background:rgba(239,68,68,.06);}
 
+  /* Round tabs */
   .tabs{
     margin-top:12px;
     display:flex;gap:8px;flex-wrap:wrap;align-items:center;
@@ -53,21 +57,43 @@
   .tab{
     height:34px;border-radius:999px;border:1px solid var(--bd);background:#fff;
     padding:0 12px;display:inline-flex;align-items:center;gap:8px;
-    font-size:12px;font-weight:900;color:var(--ink);text-decoration:none;cursor:pointer;
+    font-size:12px;font-weight:1000;color:var(--ink);text-decoration:none;cursor:pointer;
   }
   .tab.active{
     background:linear-gradient(180deg, rgba(14,165,233,.15), rgba(14,165,233,.07));
     border-color:rgba(14,165,233,.35);
     color:#075985;
   }
+  .roundMore{
+    height:34px;border-radius:999px;border:1px solid var(--bd);background:#fff;
+    padding:0 10px;font-size:12px;font-weight:1000;color:var(--ink);
+  }
 
-  .card{
+  /* Summary cards */
+  .sum{
     margin-top:12px;
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap:10px;
+  }
+  .sumCard{
     border:1px solid var(--bd);
-    border-radius:18px;
+    border-radius:16px;
     background:#fff;
     box-shadow:0 2px 10px rgba(2,6,23,.04);
-    overflow:hidden;
+    padding:12px 12px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .sumCard .k{font-size:12px;color:var(--muted);font-weight:1000;display:flex;gap:8px;align-items:center;}
+  .sumCard .v{font-size:18px;color:var(--ink);font-weight:1100;letter-spacing:.2px;}
+  .sumCard .h{font-size:12px;color:var(--muted);line-height:1.25;}
+
+  /* Table card */
+  .card{
+    margin-top:12px;border:1px solid var(--bd);border-radius:18px;background:#fff;
+    box-shadow:0 2px 10px rgba(2,6,23,.04);overflow:hidden;
   }
   .card-h{
     padding:12px 14px;border-bottom:1px solid var(--bd2);
@@ -80,13 +106,13 @@
   }
   .search input{
     height:34px;border-radius:12px;border:1px solid var(--bd);
-    padding:0 10px;font-size:13px;outline:none;min-width:220px;
+    padding:0 10px;font-size:13px;outline:none;min-width:240px;
   }
   .search input:focus{border-color:rgba(14,165,233,.6); box-shadow:0 0 0 3px rgba(14,165,233,.15);}
 
   table{width:100%;border-collapse:separate;border-spacing:0;}
   thead th{
-    text-align:left;font-size:12px;color:var(--muted);font-weight:900;
+    text-align:left;font-size:12px;color:var(--muted);font-weight:1000;
     padding:10px 12px;border-bottom:1px solid var(--bd2);background:#fff;
     position:sticky;top:0;z-index:2;
   }
@@ -94,13 +120,11 @@
     padding:12px;border-bottom:1px solid var(--bd2);vertical-align:top;font-size:13px;color:var(--ink);
   }
   tbody tr:hover td{background:rgba(248,250,252,.65);}
-  .lotcode{font-weight:1000;letter-spacing:.2px;}
+
+  .lotcode{font-weight:1100;letter-spacing:.2px;}
   .muted{color:var(--muted);font-size:12px;line-height:1.25;margin-top:4px;}
   .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;}
   .right{display:flex;justify-content:flex-end;}
-  .kpi{display:flex;gap:10px;flex-wrap:wrap;}
-  .kpi .pill{background:#fff;}
-  .nowrap{white-space:nowrap;}
 
   .miniBtn{
     height:32px;border-radius:12px;border:1px solid var(--bd);
@@ -110,35 +134,44 @@
   .miniBtn.primary{background:linear-gradient(180deg, var(--pri), var(--pri2));border-color:rgba(2,132,199,.5);color:#fff;}
   .miniBtn:hover{transform:translateY(-1px);box-shadow:0 10px 18px rgba(2,6,23,.08);}
 
-  .empty{
-    padding:16px;
-    color:var(--muted);
-    font-size:13px;
+  .printIcon{
+    height:26px;border-radius:10px;border:1px solid var(--bd);
+    background:#fff;padding:0 8px;font-size:12px;font-weight:1000;cursor:pointer;
+    display:inline-flex;align-items:center;gap:6px;
   }
+  .printIcon:hover{transform:translateY(-1px);box-shadow:0 10px 18px rgba(2,6,23,.08);}
 
-  /* Modal */
+  .empty{padding:16px;color:var(--muted);font-size:13px;}
+
+  /* Modal — fixed viewport, body scroll, footer sticky */
   .backdrop{
     position:fixed;inset:0;background:rgba(2,6,23,.58);
-    display:none;align-items:flex-start;justify-content:center;
-    padding:34px 14px;z-index:9999;
+    display:none;align-items:center;justify-content:center;
+    padding:18px 14px;z-index:9999;
   }
   .modal{
     width:100%;max-width:980px;background:#fff;border-radius:18px;
     border:1px solid rgba(226,232,240,1);box-shadow:var(--shadow);overflow:hidden;
+
+    max-height: calc(100vh - 48px);
+    display:flex;flex-direction:column;
   }
   .mh{
     padding:14px 16px;border-bottom:1px solid var(--bd2);
     display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
     background:linear-gradient(180deg, rgba(248,250,252,.95), #fff);
+    flex:0 0 auto;
   }
-  .mh b{font-size:14px;color:var(--ink);}
+  .mh b{font-size:14px;color:var(--ink);font-weight:1100;}
   .mh .mmeta{margin-top:6px;color:var(--muted);font-size:12px;display:flex;gap:10px;flex-wrap:wrap;}
   .xbtn{
     width:34px;height:34px;border-radius:10px;border:1px solid var(--bd);
     background:#fff;cursor:pointer;font-weight:900;
   }
-  .mb{padding:14px 16px;background:#fff;}
+
+  .mb{padding:14px 16px;background:#fff; overflow:auto; flex:1 1 auto;}
   .mgrid{display:grid;grid-template-columns: 1.05fr .95fr;gap:14px;}
+
   .box{
     border:1px solid var(--bd);
     border-radius:16px;
@@ -150,10 +183,11 @@
     background:rgba(248,250,252,1);
     display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
   }
-  .box-h b{font-size:12px;color:var(--ink);}
+  .box-h b{font-size:12px;color:var(--ink);font-weight:1100;}
   .box-b{padding:12px;}
+
   .field{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
-  .field label{font-size:12px;color:var(--muted);font-weight:900;}
+  .field label{font-size:12px;color:var(--muted);font-weight:1000;}
   .field select,.field input,.field textarea{
     height:36px;border-radius:12px;border:1px solid var(--bd);
     padding:0 10px;font-size:13px;outline:none;background:#fff;color:var(--ink);
@@ -162,9 +196,8 @@
   .field select:focus,.field input:focus,.field textarea:focus{
     border-color:rgba(14,165,233,.6);box-shadow:0 0 0 3px rgba(14,165,233,.15);
   }
-  .seg{
-    display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;
-  }
+
+  .seg{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
   .seg button{
     height:34px;border-radius:999px;border:1px solid var(--bd);background:#fff;
     padding:0 12px;font-size:12px;font-weight:1000;cursor:pointer;color:var(--ink);
@@ -175,9 +208,55 @@
     color:#075985;
   }
 
-  .dual{
-    display:grid;grid-template-columns: 1fr 70px 1fr;gap:10px;align-items:stretch;
+  /* Winner picker with search */
+  .picker{
+    border:1px solid var(--bd);
+    border-radius:14px;
+    overflow:hidden;
+    background:#fff;
+    display:flex;
+    flex-direction:column;
+    min-height:260px;
   }
+  .picker .ph{
+    padding:10px 10px;border-bottom:1px solid var(--bd2);
+    background:rgba(248,250,252,1);
+    display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;
+  }
+  .picker .ph b{font-size:12px;font-weight:1100;}
+  .picker .ph input{
+    height:30px;border-radius:10px;border:1px solid var(--bd);
+    padding:0 8px;font-size:12px;outline:none;min-width:180px;
+  }
+  .picker .pb{
+    padding:8px;display:flex;flex-direction:column;gap:8px;overflow:auto;max-height:340px;
+  }
+  .pitem{
+    border:1px solid var(--bd);
+    border-radius:12px;
+    padding:10px;
+    background:#fff;
+    display:flex;justify-content:space-between;gap:10px;align-items:flex-start;
+    cursor:pointer;
+  }
+  .pitem:hover{background:rgba(248,250,252,.7);}
+  .pitem.selected{
+    border-color:rgba(14,165,233,.55);
+    box-shadow:0 0 0 3px rgba(14,165,233,.12);
+  }
+  .pitem b{font-size:13px;font-weight:1100;}
+  .pitem .pm{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.25;}
+  .pitem .tag{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:3px 8px;border-radius:999px;
+    font-size:11px;font-weight:1000;
+    border:1px solid var(--bd);background:#fff;color:var(--muted);
+    white-space:nowrap;
+  }
+  .pitem.selected .tag{color:#075985;border-color:rgba(14,165,233,.35);background:rgba(14,165,233,.08);}
+
+  /* Dual list */
+  .dual{display:grid;grid-template-columns: 1fr 70px 1fr;gap:10px;align-items:stretch;}
   .plist{
     border:1px solid var(--bd);
     border-radius:14px;
@@ -190,9 +269,9 @@
   .plist .ph{
     padding:10px 10px;border-bottom:1px solid var(--bd2);
     background:rgba(248,250,252,1);
-    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;
   }
-  .plist .ph b{font-size:12px;}
+  .plist .ph b{font-size:12px;font-weight:1100;}
   .plist .ph input{
     height:30px;border-radius:10px;border:1px solid var(--bd);
     padding:0 8px;font-size:12px;outline:none;min-width:140px;
@@ -200,16 +279,17 @@
   .plist .pb{
     padding:8px;display:flex;flex-direction:column;gap:8px;overflow:auto;max-height:340px;
   }
-  .pitem{
+  .pitem2{
     border:1px solid var(--bd);
     border-radius:12px;
     padding:10px;
     background:#fff;
     display:flex;justify-content:space-between;gap:10px;align-items:flex-start;
   }
-  .pitem b{font-size:13px;}
-  .pitem .pm{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.25;}
-  .pitem .pact{display:flex;flex-direction:column;gap:6px;align-items:flex-end;}
+  .pitem2 b{font-size:13px;font-weight:1100;}
+  .pitem2 .pm{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.25;}
+  .pitem2 .pact{display:flex;flex-direction:column;gap:6px;align-items:flex-end;}
+
   .iconbtn{
     height:30px;border-radius:10px;border:1px solid var(--bd);
     background:#fff;padding:0 10px;font-size:12px;font-weight:1000;cursor:pointer;
@@ -217,14 +297,17 @@
   }
   .iconbtn.primary{background:rgba(14,165,233,.08);border-color:rgba(14,165,233,.25);color:#075985;}
   .iconbtn.danger{background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.25);color:#991b1b;}
+
   .arrows{
     display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;
   }
   .arrows .iconbtn{width:60px;justify-content:center;}
+
   .foot{
     padding:14px 16px;border-top:1px solid var(--bd2);
-    background:rgba(248,250,252,.75);
+    background:rgba(248,250,252,.9);
     display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;
+    flex:0 0 auto;
   }
   .hint{color:var(--muted);font-size:12px;line-height:1.3;}
   .toast{
@@ -238,6 +321,7 @@
     .mgrid{grid-template-columns:1fr;}
     .dual{grid-template-columns:1fr;}
     .arrows{flex-direction:row;}
+    .sum{grid-template-columns:1fr 1fr;}
     thead{display:none;}
     table, tbody, tr, td {display:block;width:100%;}
     tbody td{border-bottom:0;}
@@ -257,20 +341,17 @@
         </span>
         <span><i class="ri-building-2-line"></i> Project: <b>{{ session.project_code or "-" }}</b></span>
         <span><i class="ri-stack-line"></i> Round: <b>#{{ round_no or 1 }}</b></span>
-        <span><i class="ri-checkbox-circle-line"></i> Lots: <b>{{ (ui.lots|length) if ui and ui.lots else 0 }}</b></span>
       </div>
 
-      <div class="tabs">
+      <!-- Round navigation: prefer show buttons; if too many -> dropdown -->
+      <div class="tabs" id="roundTabs">
+        {# tabs rendered by JS to support large N; initial SSR fallback below #}
         {% set rs = rounds or [] %}
         {% if rs|length > 0 %}
           {% for r in rs %}
             <a class="tab {% if (r.round_no or r.get('round_no')) == round_no %}active{% endif %}"
                href="/auction/sessions/{{ session_id }}?round_no={{ r.round_no or r.get('round_no') }}">
-              <i class="ri-stack-line"></i>
               Vòng {{ r.round_no or r.get('round_no') }}
-              {% set wl = (r.winner_lots or r.get('winner_lots') or 0) %}
-              {% set tl = (r.total_lots or r.get('total_lots') or 0) %}
-              <span class="pill" style="padding:2px 8px;font-size:11px;">{{ wl }}/{{ tl }}</span>
             </a>
           {% endfor %}
         {% else %}
@@ -283,11 +364,16 @@
       <a class="btn ghost" href="/auction/sessions"><i class="ri-arrow-left-line"></i> Quay lại</a>
 
       <button class="btn" type="button" onclick="startSessionIfNeeded()">
-        <i class="ri-rocket-line"></i> Start phiên
+        <i class="ri-rocket-line"></i> Start
       </button>
 
       <button class="btn primary" type="button" onclick="createNextRound()">
-        <i class="ri-skip-forward-line"></i> Tạo vòng tiếp theo
+        <i class="ri-skip-forward-line"></i> Tạo vòng sau
+      </button>
+
+      <!-- Print: Round winners (UI only placeholder) -->
+      <button class="btn" type="button" onclick="printRoundWinners()">
+        <i class="ri-printer-line"></i> In phiếu trúng (vòng)
       </button>
 
       <button class="btn" type="button" onclick="refreshAll()">
@@ -305,26 +391,45 @@
     </div>
   {% endif %}
 
+  <!-- Round summary -->
+  <div class="sum">
+    <div class="sumCard">
+      <div class="k"><i class="ri-checkbox-circle-line"></i> Tổng lô (vòng này)</div>
+      <div class="v" id="sumLots">0</div>
+      <div class="h">Đếm theo snapshot round lots.</div>
+    </div>
+    <div class="sumCard">
+      <div class="k"><i class="ri-user-3-line"></i> Tổng khách đấu (unique)</div>
+      <div class="v" id="sumCustomers">0</div>
+      <div class="h">Unique theo <span class="mono">customer_id</span> trong vòng.</div>
+    </div>
+    <div class="sumCard">
+      <div class="k"><i class="ri-trophy-line"></i> Lô WON</div>
+      <div class="v" id="sumWon">0</div>
+      <div class="h">Theo <span class="mono">result_type=WINNER</span> + results.</div>
+    </div>
+    <div class="sumCard">
+      <div class="k"><i class="ri-arrow-right-up-line"></i> Lô sang vòng sau</div>
+      <div class="v" id="sumNext">0</div>
+      <div class="h">Theo <span class="mono">result_type=NEXT_ROUND</span>.</div>
+    </div>
+  </div>
+
   <div class="card">
     <div class="card-h">
-      <b>Danh sách lô trong phiên (Round #{{ round_no }})</b>
+      <b>Danh sách lô — Round #{{ round_no }}</b>
       <div class="search">
-        <div class="kpi">
-          <span class="pill"><i class="ri-trophy-line"></i> WON: <b id="kpiWon">0</b></span>
-          <span class="pill"><i class="ri-time-line"></i> Chưa chốt: <b id="kpiPending">0</b></span>
-          <span class="pill"><i class="ri-arrow-right-up-line"></i> Vào vòng sau: <b id="kpiNext">0</b></span>
-        </div>
-        <input id="q" placeholder="Tìm theo mã lô / mô tả..." oninput="applyFilter()" />
+        <input id="q" placeholder="Tìm theo mã lô / mô tả..." oninput="renderLots()" />
       </div>
     </div>
 
-    <div style="max-height: calc(100vh - 310px); overflow:auto;">
+    <div style="max-height: calc(100vh - 380px); overflow:auto;">
       <table>
         <thead>
           <tr>
             <th style="width:190px;">Lô</th>
             <th>Thông tin</th>
-            <th style="width:260px;">Trạng thái</th>
+            <th style="width:320px;">Kết quả vòng này</th>
             <th class="right" style="width:170px;">Thao tác</th>
           </tr>
         </thead>
@@ -354,7 +459,7 @@
 
     <div class="mb">
       <div class="mgrid">
-        <!-- Left: Lot info & result -->
+        <!-- Left: Lot info -->
         <div class="box">
           <div class="box-h">
             <b><i class="ri-landscape-line"></i> Thông tin lô (vòng hiện tại)</b>
@@ -363,7 +468,7 @@
           <div class="box-b" id="mLotInfo"></div>
         </div>
 
-        <!-- Right: Decide form -->
+        <!-- Right: Decide -->
         <div class="box">
           <div class="box-h">
             <b><i class="ri-gavel-line"></i> Chốt kết quả vòng này</b>
@@ -387,15 +492,20 @@
                 </select>
               </div>
 
-              <div class="field">
-                <label>Người thắng</label>
-                <select id="winnerCustomer"></select>
+              <!-- Searchable winner picker -->
+              <div class="picker">
+                <div class="ph">
+                  <b>Chọn người thắng (search)</b>
+                  <input id="winnerSearch" placeholder="tìm theo tên/CCCD/SĐT..." oninput="renderWinnerPicker()" />
+                </div>
+                <div class="pb" id="winnerList"></div>
               </div>
+              <input type="hidden" id="winnerCustomerId" />
 
-              <div class="field" id="priceWrap">
+              <div class="field" id="priceWrap" style="margin-top:10px;">
                 <label>Giá trúng (VND)</label>
                 <input id="winningPrice" inputmode="numeric" placeholder="Ví dụ: 1250000000" />
-                <div class="hint">Nếu bốc thăm (LOTTERY) thì giá trúng = giá khởi điểm của vòng.</div>
+                <div class="hint">Nếu LOTTERY thì hệ thống lấy giá khởi điểm của vòng.</div>
               </div>
 
               <div class="field">
@@ -460,11 +570,9 @@
 
     <div class="foot">
       <div class="hint" id="mHint">
-        Hệ thống sẽ gọi <code class="mono">/auction/sessions/api/round-lots/{id}/decide</code>.
-        Nếu ai khác đang xử lý, API sẽ trả <b>409 LOCKED_BY_...</b>.
+        API: <code class="mono">/auction/sessions/api/round-lots/{id}/decide</code>. Nếu bị khoá, API trả <b>409 LOCKED_BY_...</b>.
       </div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-        <button class="btn" type="button" onclick="togglePhones()"><i class="ri-eye-line"></i> Hiện/Ẩn SĐT</button>
         <button class="btn danger" type="button" onclick="resetPending()"><i class="ri-restart-line"></i> Reset PENDING</button>
         <button class="btn primary" type="button" onclick="submitDecide()"><i class="ri-check-line"></i> Lưu kết quả</button>
       </div>
@@ -486,16 +594,16 @@
   let SESSION = {{ session|tojson }};
   let ROUNDS = {{ rounds|tojson }};
 
-  // computed: results map by lot_id from /results
-  let RESULTS = [];     // array
+  // results map by lot_id from /results
+  let RESULTS = [];
   let RESULT_BY_LOT = {}; // lot_id => result row
 
   // modal state
-  let currentLot = null;      // round_lot row
-  let currentParticipants = []; // participants array
-  let dualIn = [];            // [{customer_id, name, phone, cccd, ...}]
-  let dualNext = [];          // same
-  let showPhone = false;
+  let currentLot = null;
+  let currentParticipants = [];
+  let dualIn = [];
+  let dualNext = [];
+  let selectedWinnerId = null;
 
   function toast(msg){
     const t = document.getElementById('toast');
@@ -511,25 +619,79 @@
     return n.toLocaleString('vi-VN');
   }
 
-  function maskPhone(s){
-    s = (s || '').toString().trim();
-    if(!s) return '';
-    if(showPhone) return s;
-    if(s.length <= 4) return '***';
-    return s.slice(0,2) + '***' + s.slice(-2);
-  }
-
   function safeText(s){
     return (s===null || s===undefined) ? '' : String(s);
+  }
+
+  function escapeHtml(str){
+    return (str||'').toString()
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'","&#039;");
   }
 
   function getLotSnapshot(lot){
     const snap = (lot.lot_snapshot || (lot.extras && lot.extras.snapshot) || {});
     return snap || {};
   }
-
   function participantSnapshot(p){
     return (p.customer_snapshot || (p.extras && p.extras.snapshot) || {});
+  }
+
+  // =========================
+  // Round nav (show 1..N, if big -> dropdown)
+  // =========================
+  function renderRoundNav(){
+    const host = document.getElementById('roundTabs');
+    if(!host) return;
+    host.innerHTML = '';
+
+    const rs = Array.isArray(ROUNDS) ? ROUNDS.slice() : [];
+    const nums = rs.map(r => Number(r.round_no || r.roundNo || r.get?.('round_no') || 0)).filter(n => n>0);
+    nums.sort((a,b)=>a-b);
+
+    if(nums.length === 0){
+      host.innerHTML = `<span class="pill warn"><i class="ri-information-line"></i> Chưa có vòng</span>`;
+      return;
+    }
+
+    const MAX_SHOW = 8; // ưu tiên show trực tiếp vì thường ít
+    const showNums = nums.slice(0, MAX_SHOW);
+    const moreNums = nums.slice(MAX_SHOW);
+
+    const makeHref = (n)=> `/auction/sessions/${SESSION_ID}?round_no=${n}`;
+
+    for(const n of showNums){
+      const a = document.createElement('a');
+      a.className = 'tab' + (n===ROUND_NO ? ' active' : '');
+      a.href = makeHref(n);
+      a.textContent = `Vòng ${n}`;
+      host.appendChild(a);
+    }
+
+    if(moreNums.length){
+      const sel = document.createElement('select');
+      sel.className = 'roundMore';
+      const opt0 = document.createElement('option');
+      opt0.value = '';
+      opt0.textContent = 'Chọn vòng...';
+      sel.appendChild(opt0);
+
+      for(const n of moreNums){
+        const o = document.createElement('option');
+        o.value = String(n);
+        o.textContent = `Vòng ${n}`;
+        if(n === ROUND_NO) o.selected = true;
+        sel.appendChild(o);
+      }
+      sel.addEventListener('change', ()=>{
+        const v = Number(sel.value||0);
+        if(v>0) window.location.href = makeHref(v);
+      });
+      host.appendChild(sel);
+    }
   }
 
   // =========================
@@ -541,7 +703,7 @@
     if(!r.ok){
       RESULTS = [];
       RESULT_BY_LOT = {};
-      toast("Không tải được kết quả (results): " + (js.detail || ("HTTP " + r.status)));
+      toast("Không tải được results: " + (js.detail || ("HTTP " + r.status)));
       return;
     }
     RESULTS = (js.data || []);
@@ -551,21 +713,32 @@
     }
   }
 
-  function computeKPIs(lots){
-    let won=0, pending=0, next=0;
-    for(const l of lots){
-      const rt = (l.result_type || 'PENDING');
-      if(rt === 'WINNER') won++;
-      else if(rt === 'NEXT_ROUND') next++;
-      else pending++;
-    }
-    document.getElementById('kpiWon').textContent = String(won);
-    document.getElementById('kpiPending').textContent = String(pending);
-    document.getElementById('kpiNext').textContent = String(next);
-  }
+  function computeRoundSummary(){
+    const lots = (UI && UI.lots) ? UI.lots : [];
+    const totalLots = lots.length;
 
-  function applyFilter(){
-    renderLots();
+    // unique customers across lots
+    const setCus = new Set();
+    let wonLots = 0;
+    let nextLots = 0;
+
+    for(const l of lots){
+      const rt = safeText(l.result_type || 'PENDING');
+      if(rt === 'WINNER') wonLots++;
+      if(rt === 'NEXT_ROUND') nextLots++;
+
+      const ps = (l.participants || []);
+      for(const p of ps){
+        const snap = participantSnapshot(p);
+        const cid = Number(p.customer_id || snap.customer_id || 0);
+        if(cid>0) setCus.add(cid);
+      }
+    }
+
+    document.getElementById('sumLots').textContent = String(totalLots);
+    document.getElementById('sumCustomers').textContent = String(setCus.size);
+    document.getElementById('sumWon').textContent = String(wonLots);
+    document.getElementById('sumNext').textContent = String(nextLots);
   }
 
   function renderLots(){
@@ -575,6 +748,7 @@
     tbody.innerHTML = '';
 
     let shown = 0;
+
     for(const lot of lots){
       const snap = getLotSnapshot(lot);
       const lotCode = safeText(lot.lot_code || snap.lot_code || '');
@@ -584,23 +758,35 @@
 
       const partCount = (lot.participants || []).length;
       const rt = safeText(lot.result_type || 'PENDING');
-
       const res = RESULT_BY_LOT[String(lot.lot_id || '')] || null;
 
+      const area = snap.area_m2 ?? lot.lot_area ?? '';
+      const startPrice = (lot.start_price_vnd != null ? lot.start_price_vnd : (snap.starting_price_vnd||0));
+      const step = snap.bid_step_vnd ?? '';
+      const note = safeText(lot.note || '');
+
+      // status block
       let statusHtml = '';
       if(rt === 'WINNER' && res && (res.status === 'WON')){
         const who = safeText(res.winner_name || '') || ('#' + safeText(res.winner_customer_id||''));
+        const printBtn = `<button class="printIcon" type="button" onclick="printWinnerOne(${Number(lot.id)})" title="In phiếu trúng (người này)">
+                            <i class="ri-printer-line"></i>
+                          </button>`;
         statusHtml = `
           <div class="pill ok"><i class="ri-trophy-line"></i> WON</div>
-          <div class="muted">
-            <div><b>${escapeHtml(who)}</b></div>
+          <div class="muted" style="margin-top:6px;">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <b>${escapeHtml(who)}</b> ${printBtn}
+            </div>
             <div>Giá: <b>${fmtMoney(res.winning_price_vnd)}</b> • Vòng: <b>#${escapeHtml(res.winning_round_no||'')}</b></div>
           </div>
         `;
       } else if(rt === 'NEXT_ROUND'){
+        // count next participants in snapshot
+        const nx = (lot.next_participants || []);
         statusHtml = `
           <div class="pill warn"><i class="ri-arrow-right-up-line"></i> Vào vòng sau</div>
-          <div class="muted">Đã chọn danh sách vào vòng tiếp theo.</div>
+          <div class="muted">Số người vào vòng sau: <b>${nx.length}</b></div>
         `;
       } else if(rt === 'NO_VALID'){
         statusHtml = `
@@ -614,33 +800,27 @@
         `;
       }
 
-      const area = snap.area_m2 ?? lot.lot_area ?? '';
-      const startPrice = (lot.start_price_vnd != null ? lot.start_price_vnd : (snap.starting_price_vnd||0));
-      const step = snap.bid_step_vnd ?? '';
-      const note = safeText(lot.note || '');
-      const lock = (lot.extras && lot.extras.lock) ? lot.extras.lock : null;
-      const lockBadge = lock && lock.by ? `<span class="pill warn nowrap"><i class="ri-lock-line"></i> LOCK: ${escapeHtml(lock.by)}</span>` : '';
-
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>
           <div class="lotcode">${escapeHtml(lotCode || '-')}</div>
           <div class="muted">${escapeHtml(desc || '')}</div>
         </td>
+
         <td>
           <div class="muted" style="display:flex;flex-wrap:wrap;gap:10px;">
             <span><i class="ri-ruler-2-line"></i> Diện tích: <b>${escapeHtml(area)}</b></span>
             <span><i class="ri-coins-line"></i> Giá khởi điểm: <b>${fmtMoney(startPrice)}</b></span>
             <span><i class="ri-arrow-up-line"></i> Bước giá: <b>${fmtMoney(step)}</b></span>
+            <span><i class="ri-user-3-line"></i> Tham gia: <b>${partCount}</b></span>
           </div>
           ${note ? `<div class="muted" style="margin-top:6px;"><i class="ri-sticky-note-line"></i> ${escapeHtml(note)}</div>` : ``}
         </td>
-        <td>
-          ${statusHtml}
-          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">${lockBadge}</div>
-        </td>
+
+        <td>${statusHtml}</td>
+
         <td class="right">
-          <button class="miniBtn primary" type="button" onclick="openLotModal(${lot.id})">
+          <button class="miniBtn primary" type="button" onclick="openLotModal(${Number(lot.id)})">
             <i class="ri-settings-3-line"></i> Xử lý
           </button>
         </td>
@@ -650,27 +830,12 @@
     }
 
     document.getElementById('emptyState').style.display = (shown===0) ? 'block' : 'none';
-    computeKPIs((UI && UI.lots) ? UI.lots : []);
-  }
-
-  function escapeHtml(str){
-    return (str||'').toString()
-      .replaceAll('&','&amp;')
-      .replaceAll('<','&lt;')
-      .replaceAll('>','&gt;')
-      .replaceAll('"','&quot;')
-      .replaceAll("'","&#039;");
+    computeRoundSummary();
   }
 
   // =========================
   // Refresh
   // =========================
-  async function refreshAll(){
-    await fetchResults();
-    await fetchRoundUI(ROUND_NO);
-    renderLots();
-  }
-
   async function fetchRoundUI(roundNo){
     const r = await fetch(`/auction/sessions/api/sessions/${SESSION_ID}/rounds/${roundNo}/ui`);
     const js = await r.json().catch(()=> ({}));
@@ -681,14 +846,11 @@
     UI = js;
   }
 
-  async function fetchRounds(){
-    const r = await fetch(`/auction/sessions/api/sessions/${SESSION_ID}/rounds`);
-    const js = await r.json().catch(()=> ({}));
-    if(!r.ok){
-      toast("Tải rounds lỗi: " + (js.detail || ("HTTP " + r.status)));
-      return;
-    }
-    ROUNDS = js.data || [];
+  async function refreshAll(){
+    await fetchResults();
+    await fetchRoundUI(ROUND_NO);
+    renderRoundNav();
+    renderLots();
   }
 
   // =========================
@@ -712,15 +874,11 @@
   }
 
   async function createNextRound(){
-    // from_round_no = current ROUND_NO
-    const ok = confirm("Tạo vòng tiếp theo từ các lô đang ở trạng thái NEXT_ROUND của vòng #" + ROUND_NO + "?");
+    const ok = confirm("Tạo vòng tiếp theo từ các lô NEXT_ROUND của vòng #" + ROUND_NO + "?");
     if(!ok) return;
 
-    const payload = {
-      session_id: SESSION_ID,
-      from_round_no: ROUND_NO,
-      note: null
-    };
+    const payload = { session_id: SESSION_ID, from_round_no: ROUND_NO, note: null };
+
     const r = await fetch(`/auction/sessions/api/sessions/${SESSION_ID}/rounds/next`, {
       method:"POST",
       headers: {"Content-Type":"application/json"},
@@ -732,13 +890,21 @@
       return;
     }
     toast("Đã tạo vòng #" + (js.created_round_no || '') + " (" + (js.created_lot_count||0) + " lô)");
-    // chuyển sang vòng mới luôn
     if(js.created_round_no){
       window.location.href = `/auction/sessions/${SESSION_ID}?round_no=${js.created_round_no}`;
     } else {
-      await fetchRounds();
       await refreshAll();
     }
+  }
+
+  // =========================
+  // Print UI placeholders
+  // =========================
+  function printRoundWinners(){
+    toast("UI OK: In phiếu trúng (vòng này) — sẽ implement action sau.");
+  }
+  function printWinnerOne(roundLotId){
+    toast("UI OK: In phiếu trúng (lô này) — sẽ implement action sau. round_lot_id=" + roundLotId);
   }
 
   // =========================
@@ -751,17 +917,7 @@
     currentParticipants = [];
     dualIn = [];
     dualNext = [];
-  }
-
-  function togglePhones(){
-    showPhone = !showPhone;
-    if(currentLot){
-      // rerender modal lists + lot info
-      renderModalLotInfo();
-      fillWinnerSelect();
-      renderDualLists();
-    }
-    toast(showPhone ? "Đang HIỆN SĐT (client-side)" : "Đang ẨN SĐT");
+    selectedWinnerId = null;
   }
 
   async function openLotModal(roundLotId){
@@ -772,10 +928,8 @@
       return;
     }
 
-    // lock (best-effort)
     await tryLock(roundLotId);
 
-    // build participants
     currentParticipants = (currentLot.participants || []).map(p => {
       const snap = participantSnapshot(p);
       return {
@@ -788,28 +942,34 @@
       };
     }).filter(x => x.customer_id > 0);
 
-    // reset modal fields
+    // reset fields
     document.getElementById('noteWinner').value = '';
     document.getElementById('noteNext').value = '';
     document.getElementById('noteNoValid').value = '';
+    document.getElementById('winnerSearch').value = '';
+    document.getElementById('winnerCustomerId').value = '';
+    selectedWinnerId = null;
 
-    // default mode based on result_type
+    // default mode
     const rt = safeText(currentLot.result_type || 'PENDING');
     if(rt === 'NEXT_ROUND') switchMode('NEXT');
     else if(rt === 'NO_VALID') switchMode('NO_VALID');
     else switchMode('WINNER');
 
-    // set method default
     document.getElementById('winMethod').value = safeText(currentLot.win_method || 'HIGHEST');
     onWinMethodChange();
 
-    // fill values if existed
     document.getElementById('winningPrice').value = currentLot.highest_price_vnd ? String(Math.trunc(Number(currentLot.highest_price_vnd))) : '';
     document.getElementById('highestPrice').value = currentLot.highest_price_vnd ? String(Math.trunc(Number(currentLot.highest_price_vnd))) : '';
 
-    fillWinnerSelect();
+    // preselect winner if existed
+    const curWinner = Number(currentLot.winner_customer_id || 0);
+    if(curWinner){
+      selectedWinnerId = curWinner;
+      document.getElementById('winnerCustomerId').value = String(curWinner);
+    }
 
-    // dual list initial: In = all participants, Next = from currentLot.next_participants if any
+    // dual list init
     const nextIds = new Set((currentLot.next_participants||[]).map(x => Number(x.customer_id||0)).filter(Boolean));
     dualNext = [];
     dualIn = [];
@@ -820,6 +980,7 @@
 
     renderModalHeader();
     renderModalLotInfo();
+    renderWinnerPicker();
     renderDualLists();
 
     document.getElementById('backdrop').style.display = 'flex';
@@ -868,27 +1029,25 @@
     let partHtml = '';
     if(currentParticipants.length){
       partHtml += `<div style="margin-top:10px;">
-        <div class="pill"><i class="ri-group-line"></i> Danh sách tham gia</div>
+        <div class="pill"><i class="ri-group-line"></i> Người tham gia vòng này</div>
         <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px;">`;
       for(const p of currentParticipants){
         partHtml += `
-          <div class="pitem" style="border-radius:14px;">
+          <div class="pitem2" style="border-radius:14px;">
             <div>
               <b>${escapeHtml(p.name || ('#'+p.customer_id))}</b>
               <div class="pm">
                 CCCD: <span class="mono">${escapeHtml(p.cccd)}</span>
-                • SĐT: <span class="mono">${escapeHtml(maskPhone(p.phone))}</span>
+                • SĐT: <span class="mono">${escapeHtml(p.phone)}</span>
               </div>
             </div>
-            <div class="pact">
-              <span class="pill">${escapeHtml(p.customer_id)}</span>
-            </div>
+            <div class="pact"><span class="pill">${escapeHtml(p.customer_id)}</span></div>
           </div>
         `;
       }
       partHtml += `</div></div>`;
     } else {
-      partHtml = `<div class="hint" style="margin-top:10px;">Chưa có danh sách người tham gia (round 1 chưa snapshot hoặc không có ứng viên).</div>`;
+      partHtml = `<div class="hint" style="margin-top:10px;">Chưa có danh sách người tham gia.</div>`;
     }
 
     document.getElementById('mLotInfo').innerHTML = `
@@ -897,7 +1056,7 @@
         ${lockHtml}
       </div>
       <div style="margin-top:10px;">
-        <div style="font-weight:1000;color:var(--ink);">${escapeHtml(desc||'')}</div>
+        <div style="font-weight:1100;color:var(--ink);">${escapeHtml(desc||'')}</div>
         <div class="muted" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:10px;">
           <span><i class="ri-ruler-2-line"></i> Diện tích: <b>${escapeHtml(area)}</b></span>
           <span><i class="ri-coins-line"></i> Giá khởi điểm vòng: <b>${fmtMoney(startPrice)}</b></span>
@@ -921,15 +1080,8 @@
     const lp = document.getElementById('mLockPill');
     lp.style.display = 'none';
 
-    if(r.ok){
-      // update local lot extras
-      if(js && js.data){
-        // when called before modal open, might not have UI mapped. we'll just ignore.
-      }
-      return true;
-    }
+    if(r.ok) return true;
 
-    // handle lock conflict
     const msg = safeText(js.detail || js.error || '');
     if(r.status === 409 && msg.startsWith("LOCKED_BY_")){
       lp.style.display = 'inline-flex';
@@ -961,30 +1113,53 @@
     const m = document.getElementById('winMethod').value;
     const wrap = document.getElementById('priceWrap');
     if(m === 'LOTTERY'){
-      wrap.style.opacity = '.7';
+      wrap.style.opacity = '.75';
       document.getElementById('winningPrice').value = '';
       wrap.querySelector('label').textContent = 'Giá trúng (tự lấy giá khởi điểm vòng)';
-      // vẫn để field nhưng user biết không nhập
     } else {
       wrap.style.opacity = '1';
       wrap.querySelector('label').textContent = 'Giá trúng (VND)';
     }
   }
 
-  function fillWinnerSelect(){
-    const sel = document.getElementById('winnerCustomer');
-    sel.innerHTML = '';
-    for(const p of currentParticipants){
-      const opt = document.createElement('option');
-      opt.value = String(p.customer_id);
-      opt.textContent = `${p.name || ('#'+p.customer_id)} — CCCD ${p.cccd} — SĐT ${maskPhone(p.phone)}`;
-      sel.appendChild(opt);
+  // =========================
+  // Winner picker (search + click select)
+  // =========================
+  function renderWinnerPicker(){
+    const host = document.getElementById('winnerList');
+    if(!host) return;
+    host.innerHTML = '';
+
+    const q = (document.getElementById('winnerSearch').value || '').trim().toLowerCase();
+    const list = Array.isArray(currentParticipants) ? currentParticipants : [];
+
+    for(const p of list){
+      const hay = (safeText(p.name) + ' ' + safeText(p.cccd) + ' ' + safeText(p.phone)).toLowerCase();
+      if(q && !hay.includes(q)) continue;
+
+      const div = document.createElement('div');
+      div.className = 'pitem' + ((Number(p.customer_id) === Number(selectedWinnerId)) ? ' selected' : '');
+      div.onclick = ()=> {
+        selectedWinnerId = Number(p.customer_id);
+        document.getElementById('winnerCustomerId').value = String(selectedWinnerId);
+        renderWinnerPicker();
+      };
+
+      div.innerHTML = `
+        <div>
+          <b>${escapeHtml(p.name || ('#'+p.customer_id))}</b>
+          <div class="pm">
+            CCCD: <span class="mono">${escapeHtml(p.cccd)}</span>
+            • SĐT: <span class="mono">${escapeHtml(p.phone)}</span>
+          </div>
+        </div>
+        <div><span class="tag"><i class="ri-check-line"></i> Chọn</span></div>
+      `;
+      host.appendChild(div);
     }
 
-    // preselect winner if exists
-    const curWinner = Number(currentLot.winner_customer_id || 0);
-    if(curWinner){
-      sel.value = String(curWinner);
+    if(!host.children.length){
+      host.innerHTML = `<div class="empty">Không có kết quả phù hợp.</div>`;
     }
   }
 
@@ -992,7 +1167,6 @@
   // Dual list (NEXT ROUND)
   // =========================
   function renderDualLists(){
-    // filters
     const fi = (document.getElementById('filterIn').value||'').trim().toLowerCase();
     const fn = (document.getElementById('filterNext').value||'').trim().toLowerCase();
 
@@ -1002,17 +1176,17 @@
     nxEl.innerHTML = '';
 
     for(const p of dualIn){
-      const hay = (p.name + ' ' + p.cccd + ' ' + p.phone).toLowerCase();
+      const hay = (safeText(p.name) + ' ' + safeText(p.cccd) + ' ' + safeText(p.phone)).toLowerCase();
       if(fi && !hay.includes(fi)) continue;
 
       const div = document.createElement('div');
-      div.className = 'pitem';
+      div.className = 'pitem2';
       div.innerHTML = `
         <div>
           <b>${escapeHtml(p.name || ('#'+p.customer_id))}</b>
           <div class="pm">
             CCCD: <span class="mono">${escapeHtml(p.cccd)}</span>
-            • SĐT: <span class="mono">${escapeHtml(maskPhone(p.phone))}</span>
+            • SĐT: <span class="mono">${escapeHtml(p.phone)}</span>
           </div>
         </div>
         <div class="pact">
@@ -1025,17 +1199,17 @@
     }
 
     for(const p of dualNext){
-      const hay = (p.name + ' ' + p.cccd + ' ' + p.phone).toLowerCase();
+      const hay = (safeText(p.name) + ' ' + safeText(p.cccd) + ' ' + safeText(p.phone)).toLowerCase();
       if(fn && !hay.includes(fn)) continue;
 
       const div = document.createElement('div');
-      div.className = 'pitem';
+      div.className = 'pitem2';
       div.innerHTML = `
         <div>
           <b>${escapeHtml(p.name || ('#'+p.customer_id))}</b>
           <div class="pm">
             CCCD: <span class="mono">${escapeHtml(p.cccd)}</span>
-            • SĐT: <span class="mono">${escapeHtml(maskPhone(p.phone))}</span>
+            • SĐT: <span class="mono">${escapeHtml(p.phone)}</span>
           </div>
         </div>
         <div class="pact">
@@ -1071,6 +1245,7 @@
     dualIn = [];
     renderDualLists();
   }
+
   function moveAllToIn(){
     dualIn = dualIn.concat(dualNext);
     dualNext = [];
@@ -1124,7 +1299,7 @@
 
     if(mode === 'WINNER'){
       const winMethod = document.getElementById('winMethod').value;
-      const winnerId = Number(document.getElementById('winnerCustomer').value || 0);
+      const winnerId = Number(document.getElementById('winnerCustomerId').value || selectedWinnerId || 0);
       if(!winnerId){
         toast("Vui lòng chọn người thắng.");
         return;
@@ -1135,7 +1310,7 @@
       payload.winner_customer_id = winnerId;
 
       if(winMethod === 'LOTTERY'){
-        payload.highest_price_vnd = null; // API A sẽ lấy start_price_vnd
+        payload.highest_price_vnd = null; // API sẽ lấy start_price_vnd
       } else {
         const price = parseNumberInput('winningPrice');
         if(price === null || price < 0){
@@ -1196,6 +1371,7 @@
     const updated = lots.find(x => Number(x.id) === Number(rlid));
     if(updated){
       currentLot = updated;
+
       // rebuild participants + next lists based on refreshed data
       currentParticipants = (currentLot.participants || []).map(p => {
         const snap = participantSnapshot(p);
@@ -1209,7 +1385,10 @@
         };
       }).filter(x => x.customer_id > 0);
 
-      fillWinnerSelect();
+      // keep selected winner if still exists; else clear
+      const winnerNow = Number(currentLot.winner_customer_id || 0);
+      selectedWinnerId = winnerNow || selectedWinnerId || null;
+      document.getElementById('winnerCustomerId').value = selectedWinnerId ? String(selectedWinnerId) : '';
 
       const nextIds = new Set((currentLot.next_participants||[]).map(x => Number(x.customer_id||0)).filter(Boolean));
       dualNext = [];
@@ -1221,6 +1400,7 @@
 
       renderModalHeader();
       renderModalLotInfo();
+      renderWinnerPicker();
       renderDualLists();
     }
   }
@@ -1228,9 +1408,12 @@
   // =========================
   // Init
   // =========================
-  (async function init(){
-    await fetchResults();
-    renderLots();
+  (function init(){
+    renderRoundNav();
+    // SSR đã có UI, vẫn fetch results để show WON đúng
+    fetchResults().then(()=> {
+      renderLots();
+    });
   })();
 </script>
-{% endblock %}
+

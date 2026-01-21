@@ -55,7 +55,7 @@
     color:var(--muted);
     font-size:13px;
     line-height:1.35;
-    max-width: 720px;
+    max-width: 760px;
   }
 
   .tools{
@@ -98,10 +98,13 @@
     gap:8px;
     transition:.15s ease;
     text-decoration:none;
+    user-select:none;
   }
   .btn:hover{transform:translateY(-1px);box-shadow:0 10px 20px rgba(2,6,23,.08);}
   .btn.primary{background:linear-gradient(180deg, var(--pri), var(--pri2)); border-color:rgba(2,132,199,.5); color:#fff;}
   .btn.ghost{background:rgba(248,250,252,1);}
+  .btn.danger{background:rgba(239,68,68,.06); border-color:rgba(239,68,68,.25); color:#991b1b;}
+  .btn:disabled{opacity:.55; cursor:not-allowed; transform:none; box-shadow:none;}
 
   /* ===== Content grid ===== */
   .grid{
@@ -125,6 +128,7 @@
     align-items:center;
     justify-content:space-between;
     gap:10px;
+    flex-wrap:wrap;
   }
   .pane-h b{font-size:13px;color:var(--ink);font-weight:1000;}
   .pill{
@@ -161,11 +165,10 @@
     background:rgba(248,250,252,.7);
     border-radius:12px;
     margin-top:10px;
+    line-height:1.35;
   }
 
-  .wide{
-    padding:0 16px 16px;
-  }
+  .wide{padding:0 16px 16px;}
 
   .err{
     margin:12px 16px 0;
@@ -175,6 +178,22 @@
     padding:10px 12px;
     border-radius:16px;
     font-size:13px;
+  }
+
+  .hintline{
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.35;
+  }
+  .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;}
+  .kbd{
+    display:inline-flex;align-items:center;
+    padding:1px 6px;border-radius:8px;
+    border:1px solid var(--bd);
+    background:#fff;
+    font-size:12px;
+    color:var(--ink);
+    font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   }
 
   @media (max-width: 980px){
@@ -208,7 +227,7 @@
     position:fixed;right:16px;bottom:16px;z-index:10000;
     background:#0f172a;color:#fff;border-radius:14px;padding:10px 12px;
     font-size:13px;box-shadow:0 10px 30px rgba(2,6,23,.25);
-    display:none;max-width:420px;line-height:1.35;
+    display:none;max-width:520px;line-height:1.35;
   }
 </style>
 
@@ -218,12 +237,13 @@
       <div class="title">
         <h1>{{ title or "Vận hành phiên đấu" }}</h1>
         <p>
-          Chọn dự án để hệ thống hiển thị phiên dở dang và danh sách candidates.
-          Sau khi tạo phiên, trang sẽ tự chuyển về đúng dự án để thấy phiên vừa tạo.
+          1) Chọn <b>Dự án</b> (tự lưu, lần sau quay lại không cần chọn lại) → 2) Hệ thống hiển thị các phiên của dự án →
+          3) Bấm <b>Mở</b> để vào màn hình phiên (mặc định Round mới nhất).<br/>
+          <span class="hintline">Mẹo: dùng <span class="kbd">Start</span> để snapshot Round 1; dùng <span class="kbd">Tạo phiên</span> để tạo phiên mới (DRAFT).</span>
         </p>
       </div>
 
-      <form class="tools" method="get" action="/auction/sessions">
+      <form class="tools" method="get" action="/auction/sessions" id="filterForm">
         <div class="field">
           <label for="statusSel">Trạng thái</label>
           <select id="statusSel" name="status" style="min-width:160px;">
@@ -283,12 +303,12 @@
                 <div>
                   <h3>Chưa chọn dự án</h3>
                   <div class="meta">
-                    <span><i class="ri-arrow-up-down-line"></i> Hãy chọn dự án ở thanh trên để load phiên.</span>
+                    <span><i class="ri-arrow-up-down-line"></i> Chọn dự án ở thanh trên để tải danh sách phiên.</span>
                   </div>
                 </div>
               </div>
               <div class="note">
-                Lưu ý: Nếu bạn tạo phiên mà không redirect kèm project, trang sẽ lại rơi vào trạng thái “Chưa chọn dự án”.
+                Trang sẽ tự nhớ dự án bạn chọn (localStorage). Nếu bạn tạo phiên xong, hệ thống sẽ redirect về dự án đó để thấy phiên vừa tạo.
               </div>
             </div>
 
@@ -308,7 +328,7 @@
                 </div>
               </div>
               <div class="note">
-                Sau khi tạo phiên, bấm “Start” để snapshot Round 1 (lô + khách đủ điều kiện).
+                Sau khi tạo phiên, bấm <b>Start</b> để snapshot Round 1 (lô + khách đủ điều kiện).
               </div>
             </div>
 
@@ -341,7 +361,7 @@
                 </div>
               </div>
               <div class="note">
-                “Mở” vào màn xử lý từng lô theo vòng hiện tại.
+                “Mở” vào màn xử lý lô theo vòng hiện tại / vòng mới nhất.
               </div>
             </div>
           {% endif %}
@@ -354,6 +374,7 @@
           <b>Danh sách phiên dở (candidates)</b>
           <span class="pill"><i class="ri-list-check"></i> {{ (active.candidates|length) if active and active.candidates else 0 }}</span>
         </div>
+
         <div class="list">
           {% if not project_id %}
             <div class="item">
@@ -433,15 +454,15 @@
                   <span><i class="ri-number-2"></i> Tạo phiên (DRAFT)</span>
                   <span><i class="ri-number-3"></i> Bấm “Start” → tạo Round 1 + snapshot lô + khách</span>
                 </div>
+                <div class="note">
+                  Gợi ý tên phiên: <span class="mono">PROJECT_CODE – dd/mm/yyyy – Buổi</span>
+                </div>
               </div>
               <div class="actions">
                 <button class="btn primary" type="button" onclick="openCreateSession()">
                   <i class="ri-add-line"></i> Tạo phiên
                 </button>
               </div>
-            </div>
-            <div class="note">
-              Gợi ý tên phiên: “PROJECT_CODE – dd/mm/yyyy – Buổi”.
             </div>
           </div>
         </div>
@@ -474,12 +495,13 @@
               </option>
             {% endfor %}
           </select>
-          <div class="help">Tạo phiên cho đúng dự án. Sau khi tạo xong trang sẽ chuyển về dự án này.</div>
+          <div class="help">Sau khi tạo xong trang sẽ chuyển về đúng dự án để SSR load phiên.</div>
         </div>
 
         <div class="full">
           <label>Tên phiên</label>
           <input id="csName" placeholder="Ví dụ: KINHDO3 – 21/01/2026 – Sáng" />
+          <div class="help">Nếu bỏ trống, hệ thống vẫn tạo phiên nhưng nên đặt tên để dễ quản trị.</div>
         </div>
 
         <div>
@@ -494,7 +516,7 @@
 
         <div class="full">
           <div class="help">
-            Sau khi tạo xong, bạn bấm “Start” để snapshot Round 1 (lô + khách đủ điều kiện).
+            Sau khi tạo xong, bạn bấm <b>Start</b> để snapshot Round 1 (lô + khách đủ điều kiện).
           </div>
         </div>
       </div>
@@ -510,20 +532,108 @@
 <div id="toast" class="toast"></div>
 
 <script>
+  // <editor-fold desc="Auction Sessions - UI Helpers (toast, storage, filters)">
+  // =========================
+  // Toast
+  // =========================
   function toast(msg){
     const t = document.getElementById('toast');
-    t.textContent = msg;
+    if(!t) return;
+    t.textContent = String(msg || '');
     t.style.display = 'block';
     clearTimeout(window.__toastTimer);
     window.__toastTimer = setTimeout(()=>{ t.style.display='none'; }, 2800);
   }
 
+  // =========================
+  // Remember project selection (localStorage)
+  // =========================
+  const LS_KEY_PROJECT = 'auction_session_last_project';
+  const LS_KEY_STATUS  = 'auction_session_last_status';
+
+  function rememberFilters(){
+    try{
+      const p = (document.getElementById('projectSel')?.value || '').trim();
+      const st = (document.getElementById('statusSel')?.value || '').trim();
+      if(p) localStorage.setItem(LS_KEY_PROJECT, p);
+      else localStorage.removeItem(LS_KEY_PROJECT);
+
+      if(st) localStorage.setItem(LS_KEY_STATUS, st);
+      else localStorage.removeItem(LS_KEY_STATUS);
+    }catch(_){}
+  }
+
+  function restoreFiltersIfEmpty(){
+    // Chỉ auto-apply nếu URL chưa có project
+    const u = new URL(window.location.href);
+    const urlProject = (u.searchParams.get('project') || '').trim();
+    if(urlProject) return;
+
+    let savedProject = '';
+    let savedStatus = '';
+    try{
+      savedProject = (localStorage.getItem(LS_KEY_PROJECT) || '').trim();
+      savedStatus  = (localStorage.getItem(LS_KEY_STATUS) || '').trim();
+    }catch(_){}
+
+    if(!savedProject) return;
+
+    // Set selects then submit filter
+    const projectSel = document.getElementById('projectSel');
+    const statusSel  = document.getElementById('statusSel');
+    const form = document.getElementById('filterForm');
+
+    if(projectSel){
+      const exists = Array.from(projectSel.options).some(o => (o.value||'').toUpperCase() === savedProject.toUpperCase());
+      if(exists) projectSel.value = savedProject;
+    }
+    if(statusSel && savedStatus){
+      const ok = Array.from(statusSel.options).some(o => (o.value||'') === savedStatus);
+      if(ok) statusSel.value = savedStatus;
+    }
+
+    if(form){
+      form.submit();
+    }
+  }
+
+  // Save on change + on submit
+  (function bindFilterMemory(){
+    const projectSel = document.getElementById('projectSel');
+    const statusSel  = document.getElementById('statusSel');
+    const form       = document.getElementById('filterForm');
+
+    if(projectSel){
+      projectSel.addEventListener('change', ()=>{
+        rememberFilters();
+        // UX: nếu đã chọn dự án thì auto submit để load luôn
+        const v = (projectSel.value||'').trim();
+        if(v){
+          form?.submit();
+        }
+      });
+    }
+    if(statusSel){
+      statusSel.addEventListener('change', ()=>{ rememberFilters(); });
+    }
+    if(form){
+      form.addEventListener('submit', ()=>{ rememberFilters(); });
+    }
+  })();
+  // </editor-fold>
+
+  // <editor-fold desc="Auction Sessions - Modal Create Session">
+  // =========================
+  // Modal: Create session
+  // =========================
   function openCreateSession(){
-    document.getElementById('createBackdrop').style.display='flex';
+    const backdrop = document.getElementById('createBackdrop');
+    if(!backdrop) return;
+    backdrop.style.display='flex';
 
     // Prefill name if empty
     const n = document.getElementById('csName');
-    if(!n.value){
+    if(n && !n.value){
       const sel = document.getElementById('projectSel');
       const opt = sel && sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex] : null;
       const code = opt ? (opt.value || '').trim() : '';
@@ -534,15 +644,17 @@
       n.value = (code ? (code + " – ") : "") + dd + "/" + mm + "/" + yy;
     }
 
-    // Sync modal project with current top select if possible
+    // Sync modal project with current top select if possible (by code)
     const topSel = document.getElementById('projectSel');
     const code = topSel ? (topSel.value || '').trim() : '';
     if(code){
       const cs = document.getElementById('csProject');
-      for(const o of cs.options){
-        if((o.getAttribute('data-project-code')||'').toUpperCase() === code.toUpperCase()){
-          cs.value = o.value;
-          break;
+      if(cs){
+        for(const o of cs.options){
+          if((o.getAttribute('data-project-code')||'').toUpperCase() === code.toUpperCase()){
+            cs.value = o.value;
+            break;
+          }
         }
       }
     }
@@ -550,68 +662,142 @@
 
   function closeCreateSession(ev){
     if(ev && ev.target && ev.target.id !== 'createBackdrop') return;
-    document.getElementById('createBackdrop').style.display='none';
+    const backdrop = document.getElementById('createBackdrop');
+    if(backdrop) backdrop.style.display='none';
   }
 
   async function submitCreateSession(){
     const cs = document.getElementById('csProject');
-    const projectId = Number(cs.value || 0);
+    const projectId = Number(cs?.value || 0);
     if(!projectId){
       toast("Vui lòng chọn dự án.");
       return;
     }
-    const projectCode = (cs.options[cs.selectedIndex].getAttribute('data-project-code') || '').trim();
+
+    const opt = cs.options[cs.selectedIndex];
+    const projectCode = (opt?.getAttribute('data-project-code') || '').trim();
 
     const payload = {
       project_id: projectId,
-      name: (document.getElementById('csName').value||"").trim() || null,
-      location: (document.getElementById('csLoc').value||"").trim() || null,
-      note: (document.getElementById('csNote').value||"").trim() || null
+      name: (document.getElementById('csName')?.value || "").trim() || null,
+      location: (document.getElementById('csLoc')?.value || "").trim() || null,
+      note: (document.getElementById('csNote')?.value || "").trim() || null
     };
 
-    const r = await fetch("/auction/sessions/api/sessions", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify(payload)
-    });
+    // disable buttons to prevent double submit
+    const btns = Array.from(document.querySelectorAll('#createBackdrop .btn'));
+    btns.forEach(b => b.disabled = true);
 
-    const js = await r.json().catch(()=> ({}));
-    if(!r.ok){
-      toast("Tạo phiên lỗi: " + (js.detail || js.error || ("HTTP " + r.status)));
-      return;
-    }
+    const errText = (js, status) => {
+      try{
+        if(!js) return "HTTP " + status;
+        if(typeof js === 'string') return js;
+        return (js.detail || js.error || js.message || ("HTTP " + status + " - " + JSON.stringify(js)));
+      }catch(_){
+        return "HTTP " + status;
+      }
+    };
 
-    // ✅ FIX CHÍNH: redirect về đúng dự án để SSR load active/candidates
-    closeCreateSession();
-    toast("Đã tạo phiên #" + ((js.data && js.data.id) ? js.data.id : ""));
+    try{
+      const r = await fetch("/auction/sessions/api/sessions", {
+        method:"POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify(payload)
+      });
 
-    const statusSel = document.getElementById('statusSel');
-    const st = (statusSel && statusSel.value) ? ("&status=" + encodeURIComponent(statusSel.value)) : "";
-    if(projectCode){
-      window.location.href = "/auction/sessions?project=" + encodeURIComponent(projectCode) + st;
-    } else {
-      // fallback: vẫn đi theo id nếu router bạn support
-      window.location.href = "/auction/sessions?project_id=" + encodeURIComponent(String(projectId)) + st;
+      let js = null;
+      try{ js = await r.json(); }catch(_){ js = null; }
+
+      if(!r.ok){
+        toast("Tạo phiên lỗi: " + errText(js, r.status));
+        return;
+      }
+
+      // Service A trả: { ok: true, data: {...} }
+      const data = (js && typeof js === 'object') ? (js.data || js) : {};
+      const sid = data?.id || data?.session_id || js?.id || js?.session_id || "";
+
+      closeCreateSession();
+      toast("Đã tạo phiên" + (sid ? (" #" + sid) : "") + ". Đang tải lại...");
+
+      // Remember chosen project/status for next visit
+      try{
+        if(projectCode) localStorage.setItem(LS_KEY_PROJECT, projectCode);
+      }catch(_){}
+
+      // Redirect back to index with project filter so SSR sees new session
+      const u = new URL(window.location.href);
+      u.pathname = "/auction/sessions";
+      if(projectCode) u.searchParams.set('project', projectCode);
+      else u.searchParams.delete('project');
+
+      // keep current status filter if any, else empty
+      const statusSel = document.getElementById('statusSel');
+      const st = (statusSel?.value || '').trim();
+      if(st) u.searchParams.set('status', st);
+      else u.searchParams.delete('status');
+
+      window.location.href = u.toString();
+
+    }catch(e){
+      toast("Lỗi mạng khi tạo phiên: " + (e?.message || "unknown"));
+    }finally{
+      btns.forEach(b => b.disabled = false);
     }
   }
+  // </editor-fold>
 
-  async function openStartSession(sessionId){
-    if(!sessionId) return;
-    const ok = confirm("Bắt đầu phiên #" + sessionId + "? (Tạo Round 1 + snapshot lô + khách)");
+  // <editor-fold desc="Auction Sessions - Start Session">
+  // =========================
+  // Modal: Start session confirm
+  // =========================
+  function openStartSession(sessionId){
+    sessionId = Number(sessionId||0);
+    if(!sessionId){
+      toast("Thiếu sessionId");
+      return;
+    }
+    const ok = confirm("Start phiên #" + sessionId + " để snapshot Round 1?");
     if(!ok) return;
-
-    const r = await fetch("/auction/sessions/api/sessions/start", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({session_id: Number(sessionId)})
-    });
-    const js = await r.json().catch(()=> ({}));
-    if(!r.ok){
-      toast("Start lỗi: " + (js.detail || js.error || ("HTTP " + r.status)));
-      return;
-    }
-    toast("Đã start. Mở phiên...");
-    window.location.href = "/auction/sessions/" + sessionId;
+    startSession(sessionId);
   }
+
+  async function startSession(sessionId){
+    try{
+      const r = await fetch("/auction/sessions/api/sessions/start",{
+        method:"POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({session_id: Number(sessionId)})
+      });
+      const js = await r.json().catch(()=> ({}));
+      if(!r.ok){
+        toast("Start lỗi: " + (js.detail || js.error || ("HTTP " + r.status)));
+        return;
+      }
+      toast("Đã start phiên #" + sessionId + ". Đang tải lại...");
+      window.location.reload();
+    }catch(e){
+      toast("Lỗi mạng khi start.");
+    }
+  }
+  // </editor-fold>
+
+  // <editor-fold desc="Auction Sessions - Init">
+  // =========================
+  // Init
+  // =========================
+  (function init(){
+    restoreFiltersIfEmpty();
+
+    // Esc to close modal
+    document.addEventListener('keydown', (e)=>{
+      if(e.key === 'Escape'){
+        const b = document.getElementById('createBackdrop');
+        if(b && b.style.display === 'flex') closeCreateSession();
+      }
+    });
+  })();
+  // </editor-fold>
 </script>
+
 {% endblock %}

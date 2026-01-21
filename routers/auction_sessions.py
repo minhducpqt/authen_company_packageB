@@ -85,6 +85,9 @@ def _unauth_json():
 def _redirect_login(request: Request) -> RedirectResponse:
     # quay lại đúng path hiện tại
     nxt = quote(request.url.path)
+    # giữ query-string nếu có (đỡ mất filter)
+    if request.url.query:
+        nxt = quote(f"{request.url.path}?{request.url.query}")
     return RedirectResponse(url=f"/login?next={nxt}", status_code=303)
 
 
@@ -140,7 +143,7 @@ async def _load_projects(
     status_param: Optional[str],
 ) -> tuple[list[dict], str, Optional[dict]]:
     """
-    IMPORTANT CHANGE:
+    IMPORTANT:
     - Không hardcode ACTIVE.
     - Nếu status_param is None/"" => KHÔNG truyền status => lấy FULL.
     - Nếu có status_param => truyền đúng sang Service A.
@@ -228,7 +231,7 @@ async def auction_sessions_page(
         "project_id": project_id,
         "active": active,
         "error": error,
-        "status": status,  # để template giữ filter nếu muốn
+        "status": status,
     }
     return templates.TemplateResponse("auction_session/index.html", ctx)
 
@@ -250,7 +253,6 @@ async def auction_session_detail_page(
 
     st_s, sess = await _get_json(f"/api/v1/auction-sessions/sessions/{session_id}", token, None)
     if st_s != 200 or not isinstance(sess, dict):
-        # trả 404/403/401 nếu upstream trả vậy; còn lại coi là upstream error
         code = st_s if st_s in (401, 403, 404) else 502
         return templates.TemplateResponse(
             "auction_session/session.html",
@@ -301,7 +303,6 @@ async def auction_session_detail_page(
 # - IMPORTANT: pass-through status codes
 # =========================================================
 def _proxy_status(st: int) -> int:
-    # network / local exception
     if st == 599:
         return 503
     return st
@@ -461,6 +462,9 @@ async def api_decide_round_lot(
       - note?
       - extras?
       - client_updated_at?
+    NOTE (newest A):
+      - winning_price/highest_price_vnd is "unit price" (PER_SQM or PER_LOT) per bid_price_unit.
+      - results endpoint now returns bid_price_unit (also stored in results.extras).
     """
     token = get_access_token(request)
     if not token:
@@ -493,6 +497,10 @@ async def api_list_session_results(
     request: Request,
     session_id: int = Path(..., ge=1),
 ):
+    """
+    Newest A:
+      - returns r.* plus bid_price_unit (derived from r.extras->>'bid_price_unit')
+    """
     token = get_access_token(request)
     if not token:
         return _unauth_json()
@@ -500,6 +508,61 @@ async def api_list_session_results(
     st, js = await _get_json(f"/api/v1/auction-sessions/sessions/{session_id}/results", token, None)
     return JSONResponse(js, status_code=_proxy_status(st))
 
+# =========================================================
+# EXTRA PROXIES (B -> A)
+# - Session status update
+# - Backfill participants.stt
+# =========================================================
+
+@router.post("/auction/sessions/api/sessions/{session_id}/status")
+async def api_update_session_status(
+    request: Request,
+    session_id: int = Path(..., ge=1),
+    payload: Dict[str, Any] = Body(...),
+):
+    """
+    Proxy to Service A:
+      POST /api/v1/auction-sessions/sessions/{session_id}/status
+
+    payload (A: SessionUpdateStatusIn):
+      {
+        "status": "DRAFT" | "OPEN" | "PAUSED" | "CLOSED",
+        "note": "optional"
+      }
+    """
+    token = get_access_token(request)
+    if not token:
+        return _unauth_json()
+
+    st, js = await _post_json(
+        f"/api/v1/auction-sessions/sessions/{session_id}/status",
+        token,
+        payload,
+    )
+    return JSONResponse(js, status_code=_proxy_status(st))
+
+
+@router.post("/auction/sessions/api/sessions/{session_id}/backfill-stt")
+async def api_backfill_session_stt(
+    request: Request,
+    session_id: int = Path(..., ge=1),
+):
+    """
+    Proxy to Service A:
+      POST /api/v1/auction-sessions/sessions/{session_id}/backfill-stt
+
+    No payload required.
+    """
+    token = get_access_token(request)
+    if not token:
+        return _unauth_json()
+
+    st, js = await _post_json(
+        f"/api/v1/auction-sessions/sessions/{session_id}/backfill-stt",
+        token,
+        {},
+    )
+    return JSONResponse(js, status_code=_proxy_status(st))
 
 # =========================================================
 # Wiring note (Service B)
