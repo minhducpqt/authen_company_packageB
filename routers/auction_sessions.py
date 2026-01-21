@@ -2,15 +2,15 @@
 from __future__ import annotations
 
 import os
-from typing import Optional, Dict, Any, List, Tuple, Literal
+from typing import Optional, Dict, Any, List, Tuple
 
 import httpx
 from fastapi import APIRouter, Request, Query, Path, Body
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from urllib.parse import quote
 
 from utils.templates import templates
 from utils.auth import get_access_token
-
 
 router = APIRouter(tags=["auction_sessions"])
 
@@ -18,20 +18,74 @@ SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 
 
 # =========================================================
-# Helpers (same style as your running file)
+# Helpers
 # =========================================================
 def _log(msg: str):
     print(f"[AUCTION_SESS_B] {msg}")
+
+
+_SENSITIVE_KEYS = {
+    "phone",
+    "cccd",
+    "id_no",
+    "identity_no",
+    "email",
+    "bank_account",
+    "account_no",
+    "card_no",
+    "token",
+    "access_token",
+    "authorization",
+}
+
+
+def _mask_value(v: Any) -> Any:
+    try:
+        s = str(v)
+    except Exception:
+        return "***"
+    if len(s) <= 4:
+        return "***"
+    return s[:2] + "***" + s[-2:]
+
+
+def _sanitize(obj: Any) -> Any:
+    # mask sensitive keys in nested dict/list
+    if isinstance(obj, dict):
+        out = {}
+        for k, v in obj.items():
+            if str(k).lower() in _SENSITIVE_KEYS:
+                out[k] = _mask_value(v)
+            else:
+                out[k] = _sanitize(v)
+        return out
+    if isinstance(obj, list):
+        return [_sanitize(x) for x in obj]
+    return obj
 
 
 def _preview_body(data: Any, limit: int = 320) -> str:
     try:
         import json
 
-        s = json.dumps(data, ensure_ascii=False)
+        safe = _sanitize(data)
+        s = json.dumps(safe, ensure_ascii=False, default=str)
     except Exception:
-        s = str(data)
+        try:
+            s = str(data)
+        except Exception:
+            s = "<unprintable>"
     return s if len(s) <= limit else s[:limit] + "...(truncated)"
+
+
+def _unauth_json():
+    return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+
+def _redirect_login(request: Request) -> RedirectResponse:
+    # quay lại đúng path hiện tại
+    nxt = quote(request.url.path)
+    return RedirectResponse(url=f"/login?next={nxt}", status_code=303)
 
 
 async def _get_json(
@@ -48,12 +102,15 @@ async def _get_json(
         except Exception as e:
             _log(f"← EXC {url} error={e}")
             return 599, {"detail": str(e)}
+
     try:
         js = r.json()
         _log(f"← {r.status_code} {url} json={_preview_body(js)}")
         return r.status_code, js
     except Exception:
-        return r.status_code, {"detail": (r.text or "")[:500]}
+        body = (r.text or "")[:500]
+        _log(f"← {r.status_code} {url} non-json body={body}")
+        return r.status_code, {"detail": body}
 
 
 async def _post_json(path: str, token: str, payload: Dict[str, Any]):
@@ -66,23 +123,33 @@ async def _post_json(path: str, token: str, payload: Dict[str, Any]):
         except Exception as e:
             _log(f"← EXC {url} error={e}")
             return 599, {"detail": str(e)}
+
     try:
         js = r.json()
         _log(f"← {r.status_code} {url} json={_preview_body(js)}")
         return r.status_code, js
     except Exception:
-        return r.status_code, {"detail": (r.text or "")[:500]}
+        body = (r.text or "")[:500]
+        _log(f"← {r.status_code} {url} non-json body={body}")
+        return r.status_code, {"detail": body}
 
 
-def _unauth_json():
-    return JSONResponse({"error": "unauthorized"}, status_code=401)
-
-
-async def _load_projects(token: str, project_param: Optional[str]) -> tuple[list[dict], str, Optional[dict]]:
+async def _load_projects(
+    token: str,
+    project_param: Optional[str],
+    status_param: Optional[str],
+) -> tuple[list[dict], str, Optional[dict]]:
     """
-    Reuse your convention: /api/v1/projects?status=ACTIVE
+    IMPORTANT CHANGE:
+    - Không hardcode ACTIVE.
+    - Nếu status_param is None/"" => KHÔNG truyền status => lấy FULL.
+    - Nếu có status_param => truyền đúng sang Service A.
     """
-    st, pj = await _get_json("/api/v1/projects", token, {"status": "ACTIVE", "size": 1000})
+    params: Dict[str, Any] = {"size": 1000}
+    if status_param:
+        params["status"] = status_param
+
+    st, pj = await _get_json("/api/v1/projects", token, params)
     projects: list[dict] = []
     selected_code = (project_param or "").strip().upper()
     selected_project: Optional[dict] = None
@@ -124,6 +191,10 @@ def _project_id_of(p: Optional[dict]) -> Optional[int]:
 async def auction_sessions_page(
     request: Request,
     project: Optional[str] = Query(None),
+    status: Optional[str] = Query(
+        None,
+        description="Project status filter. If omitted -> fetch FULL projects (no status param).",
+    ),
 ):
     """
     Trang điều phối:
@@ -133,9 +204,9 @@ async def auction_sessions_page(
     """
     token = get_access_token(request)
     if not token:
-        return RedirectResponse(url="/login?next=%2Fauction%2Fsessions", status_code=303)
+        return _redirect_login(request)
 
-    projects, selected_code, selected_project = await _load_projects(token, project)
+    projects, selected_code, selected_project = await _load_projects(token, project, status)
     project_id = _project_id_of(selected_project)
 
     active: Dict[str, Any] = {"has_active": False, "primary_session": None, "candidates": []}
@@ -157,9 +228,9 @@ async def auction_sessions_page(
         "project_id": project_id,
         "active": active,
         "error": error,
+        "status": status,  # để template giữ filter nếu muốn
     }
-    # bạn tạo template sau: templates/auction/auction_sessions.html
-    return templates.TemplateResponse("auction/auction_sessions.html", ctx)
+    return templates.TemplateResponse("auction_session/index.html", ctx)
 
 
 @router.get("/auction/sessions/{session_id}", response_class=HTMLResponse)
@@ -175,33 +246,40 @@ async def auction_session_detail_page(
     """
     token = get_access_token(request)
     if not token:
-        return RedirectResponse(url="/login?next=%2Fauction%2Fsessions", status_code=303)
+        return _redirect_login(request)
 
     st_s, sess = await _get_json(f"/api/v1/auction-sessions/sessions/{session_id}", token, None)
     if st_s != 200 or not isinstance(sess, dict):
+        # trả 404/403/401 nếu upstream trả vậy; còn lại coi là upstream error
+        code = st_s if st_s in (401, 403, 404) else 502
         return templates.TemplateResponse(
-            "auction/auction_session.html",
+            "auction_session/session.html",
             {"request": request, "title": "Phiên đấu", "error": {"status": st_s, "body": sess}},
-            status_code=200,
+            status_code=code,
         )
+
     sess_data = (sess.get("data") or sess) if isinstance(sess, dict) else {}
 
     if not round_no:
         st_c, cur = await _get_json(f"/api/v1/auction-sessions/sessions/{session_id}/current", token, None)
         if st_c == 200 and isinstance(cur, dict):
-            round_no = int(cur.get("current_round_no") or 1)
+            try:
+                round_no = int(cur.get("current_round_no") or 1)
+            except Exception:
+                round_no = 1
         else:
             round_no = 1
 
     st_ui, ui = await _get_json(
-        f"/api/v1/auction-sessions/sessions/{session_id}/rounds/{int(round_no)}/ui", token, None
+        f"/api/v1/auction-sessions/sessions/{session_id}/rounds/{int(round_no)}/ui",
+        token,
+        None,
     )
     error: Optional[Dict[str, Any]] = None
     if st_ui != 200 or not isinstance(ui, dict):
         error = {"status": st_ui, "body": ui}
         ui = {"ok": False, "lots": []}
 
-    # rounds list for top tabs
     st_r, rounds = await _get_json(f"/api/v1/auction-sessions/sessions/{session_id}/rounds", token, None)
     rounds_data = rounds.get("data") if (st_r == 200 and isinstance(rounds, dict)) else []
 
@@ -215,13 +293,20 @@ async def auction_session_detail_page(
         "ui": ui,
         "error": error,
     }
-    # bạn tạo template sau: templates/auction/auction_session.html
-    return templates.TemplateResponse("auction/auction_session.html", ctx)
+    return templates.TemplateResponse("auction_session/session.html", ctx)
 
 
 # =========================================================
 # AJAX APIs (Service B -> proxy to Service A)
+# - IMPORTANT: pass-through status codes
 # =========================================================
+def _proxy_status(st: int) -> int:
+    # network / local exception
+    if st == 599:
+        return 503
+    return st
+
+
 @router.get("/auction/sessions/api/projects/{project_id}/active")
 async def api_project_active_session(
     request: Request,
@@ -232,7 +317,7 @@ async def api_project_active_session(
         return _unauth_json()
 
     st, js = await _get_json(f"/api/v1/auction-sessions/projects/{project_id}/active", token, None)
-    return JSONResponse(js, status_code=200 if st == 200 else 502)
+    return JSONResponse(js, status_code=_proxy_status(st))
 
 
 @router.get("/auction/sessions/api/sessions")
@@ -246,13 +331,15 @@ async def api_list_sessions(
     token = get_access_token(request)
     if not token:
         return _unauth_json()
+
     params: Dict[str, Any] = {"page": page, "size": size}
     if project_id:
         params["project_id"] = project_id
     if status:
         params["status"] = status
+
     st, js = await _get_json("/api/v1/auction-sessions/sessions", token, params)
-    return JSONResponse(js, status_code=200 if st == 200 else 502)
+    return JSONResponse(js, status_code=_proxy_status(st))
 
 
 @router.post("/auction/sessions/api/sessions")
@@ -264,10 +351,8 @@ async def api_create_session(
     if not token:
         return _unauth_json()
 
-    # expected payload:
-    # { project_id, name?, location?, starts_at?, ends_at?, note?, extras? }
     st, js = await _post_json("/api/v1/auction-sessions/sessions", token, payload)
-    return JSONResponse(js, status_code=200 if st in (200, 201) else 502)
+    return JSONResponse(js, status_code=_proxy_status(st))
 
 
 @router.post("/auction/sessions/api/sessions/start")
@@ -281,8 +366,9 @@ async def api_start_session(
     token = get_access_token(request)
     if not token:
         return _unauth_json()
+
     st, js = await _post_json("/api/v1/auction-sessions/sessions/start", token, payload)
-    return JSONResponse(js, status_code=200 if st == 200 else 502)
+    return JSONResponse(js, status_code=_proxy_status(st))
 
 
 @router.get("/auction/sessions/api/sessions/{session_id}/rounds")
@@ -293,8 +379,9 @@ async def api_list_rounds(
     token = get_access_token(request)
     if not token:
         return _unauth_json()
+
     st, js = await _get_json(f"/api/v1/auction-sessions/sessions/{session_id}/rounds", token, None)
-    return JSONResponse(js, status_code=200 if st == 200 else 502)
+    return JSONResponse(js, status_code=_proxy_status(st))
 
 
 @router.get("/auction/sessions/api/sessions/{session_id}/current")
@@ -305,8 +392,9 @@ async def api_current_round(
     token = get_access_token(request)
     if not token:
         return _unauth_json()
+
     st, js = await _get_json(f"/api/v1/auction-sessions/sessions/{session_id}/current", token, None)
-    return JSONResponse(js, status_code=200 if st == 200 else 502)
+    return JSONResponse(js, status_code=_proxy_status(st))
 
 
 @router.get("/auction/sessions/api/sessions/{session_id}/rounds/{round_no}/ui")
@@ -318,10 +406,13 @@ async def api_round_ui(
     token = get_access_token(request)
     if not token:
         return _unauth_json()
+
     st, js = await _get_json(
-        f"/api/v1/auction-sessions/sessions/{session_id}/rounds/{round_no}/ui", token, None
+        f"/api/v1/auction-sessions/sessions/{session_id}/rounds/{round_no}/ui",
+        token,
+        None,
     )
-    return JSONResponse(js, status_code=200 if st == 200 else 502)
+    return JSONResponse(js, status_code=_proxy_status(st))
 
 
 @router.post("/auction/sessions/api/round-lots/{round_lot_id}/lock")
@@ -336,8 +427,9 @@ async def api_lock_round_lot(
     token = get_access_token(request)
     if not token:
         return _unauth_json()
+
     st, js = await _post_json(f"/api/v1/auction-sessions/round-lots/{round_lot_id}/lock", token, payload)
-    return JSONResponse(js, status_code=200 if st == 200 else 502)
+    return JSONResponse(js, status_code=_proxy_status(st))
 
 
 @router.post("/auction/sessions/api/round-lots/{round_lot_id}/unlock")
@@ -348,8 +440,9 @@ async def api_unlock_round_lot(
     token = get_access_token(request)
     if not token:
         return _unauth_json()
+
     st, js = await _post_json(f"/api/v1/auction-sessions/round-lots/{round_lot_id}/unlock", token, {})
-    return JSONResponse(js, status_code=200 if st == 200 else 502)
+    return JSONResponse(js, status_code=_proxy_status(st))
 
 
 @router.post("/auction/sessions/api/round-lots/{round_lot_id}/decide")
@@ -372,8 +465,9 @@ async def api_decide_round_lot(
     token = get_access_token(request)
     if not token:
         return _unauth_json()
+
     st, js = await _post_json(f"/api/v1/auction-sessions/round-lots/{round_lot_id}/decide", token, payload)
-    return JSONResponse(js, status_code=200 if st == 200 else 502)
+    return JSONResponse(js, status_code=_proxy_status(st))
 
 
 @router.post("/auction/sessions/api/sessions/{session_id}/rounds/next")
@@ -389,8 +483,9 @@ async def api_create_next_round(
     token = get_access_token(request)
     if not token:
         return _unauth_json()
+
     st, js = await _post_json(f"/api/v1/auction-sessions/sessions/{session_id}/rounds/next", token, payload)
-    return JSONResponse(js, status_code=200 if st == 200 else 502)
+    return JSONResponse(js, status_code=_proxy_status(st))
 
 
 @router.get("/auction/sessions/api/sessions/{session_id}/results")
@@ -401,8 +496,9 @@ async def api_list_session_results(
     token = get_access_token(request)
     if not token:
         return _unauth_json()
+
     st, js = await _get_json(f"/api/v1/auction-sessions/sessions/{session_id}/results", token, None)
-    return JSONResponse(js, status_code=200 if st == 200 else 502)
+    return JSONResponse(js, status_code=_proxy_status(st))
 
 
 # =========================================================

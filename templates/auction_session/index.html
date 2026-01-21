@@ -1,0 +1,617 @@
+{# templates/auction_session/index.html #}
+{% extends "base.html" %}
+{% block title %}{{ title or "Vận hành phiên đấu" }}{% endblock %}
+
+{% block content %}
+<style>
+  :root{
+    --bd: rgba(226,232,240,1);
+    --bd2: rgba(241,245,249,1);
+    --muted: rgba(100,116,139,1);
+    --ink: rgba(15,23,42,1);
+    --bg: #fff;
+    --pri: #0ea5e9;
+    --pri2:#0284c7;
+    --ok:#16a34a;
+    --warn:#f59e0b;
+    --bad:#ef4444;
+    --shadow: 0 10px 28px rgba(2,6,23,.08);
+  }
+
+  .wrap{max-width:1180px;margin:0 auto;padding:16px;}
+
+  .page{
+    background:var(--bg);
+    border:1px solid var(--bd);
+    border-radius:18px;
+    box-shadow:0 2px 10px rgba(2,6,23,.04);
+    overflow:hidden;
+  }
+
+  /* ===== Header ===== */
+  .head{
+    padding:16px 18px;
+    border-bottom:1px solid var(--bd2);
+    background:linear-gradient(180deg, rgba(248,250,252,.95), #fff);
+    display:flex;
+    gap:14px;
+    align-items:flex-start;
+    justify-content:space-between;
+    flex-wrap:wrap;
+  }
+  .title{
+    flex: 1 1 420px;
+    min-width: 320px;
+  }
+  .title h1{
+    margin:0;
+    font-size:18px;
+    color:var(--ink);
+    font-weight:1000;
+    letter-spacing:.2px;
+  }
+  .title p{
+    margin:6px 0 0;
+    color:var(--muted);
+    font-size:13px;
+    line-height:1.35;
+    max-width: 720px;
+  }
+
+  .tools{
+    flex: 0 0 auto;
+    display:flex;
+    gap:10px;
+    align-items:flex-end;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+  }
+
+  .field{display:flex;gap:8px;align-items:center;}
+  label{font-size:12px;color:var(--muted);font-weight:900;white-space:nowrap;}
+
+  select, input{
+    height:38px;
+    border:1px solid var(--bd);
+    border-radius:12px;
+    padding:0 12px;
+    background:#fff;
+    color:var(--ink);
+    outline:none;
+    font-size:13px;
+    min-width: 220px;
+  }
+  select:focus,input:focus{border-color:rgba(14,165,233,.6); box-shadow:0 0 0 3px rgba(14,165,233,.15);}
+
+  .btn{
+    height:38px;
+    border-radius:12px;
+    border:1px solid var(--bd);
+    background:#fff;
+    padding:0 12px;
+    font-weight:1000;
+    font-size:13px;
+    color:var(--ink);
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    transition:.15s ease;
+    text-decoration:none;
+  }
+  .btn:hover{transform:translateY(-1px);box-shadow:0 10px 20px rgba(2,6,23,.08);}
+  .btn.primary{background:linear-gradient(180deg, var(--pri), var(--pri2)); border-color:rgba(2,132,199,.5); color:#fff;}
+  .btn.ghost{background:rgba(248,250,252,1);}
+
+  /* ===== Content grid ===== */
+  .grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:14px;
+    padding:16px;
+  }
+
+  .pane{
+    border:1px solid var(--bd);
+    border-radius:18px;
+    background:#fff;
+    overflow:hidden;
+  }
+  .pane-h{
+    padding:12px 14px;
+    border-bottom:1px solid var(--bd2);
+    background:rgba(248,250,252,1);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .pane-h b{font-size:13px;color:var(--ink);font-weight:1000;}
+  .pill{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:4px 10px;border-radius:999px;
+    font-size:12px;font-weight:1000;
+    border:1px solid var(--bd);background:#fff;color:var(--muted);
+    white-space:nowrap;
+  }
+  .pill.ok{color:var(--ok);border-color:rgba(22,163,74,.25);background:rgba(22,163,74,.06);}
+  .pill.warn{color:var(--warn);border-color:rgba(245,158,11,.25);background:rgba(245,158,11,.08);}
+  .pill.bad{color:var(--bad);border-color:rgba(239,68,68,.25);background:rgba(239,68,68,.06);}
+
+  .list{padding:12px; display:flex; flex-direction:column; gap:10px;}
+
+  .item{
+    border:1px solid var(--bd);
+    border-radius:16px;
+    padding:12px;
+    background:#fff;
+    box-shadow:0 1px 2px rgba(2,6,23,.03);
+  }
+  .row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;}
+  .item h3{margin:0;font-size:14px;color:var(--ink);font-weight:1100;}
+  .meta{margin-top:6px;color:var(--muted);font-size:12px;display:flex;flex-wrap:wrap;gap:10px;line-height:1.3;}
+  .actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
+
+  .mini{height:34px;border-radius:12px;padding:0 12px;font-size:12px;font-weight:1100;}
+  .note{
+    padding:10px 12px;
+    border-top:1px dashed var(--bd);
+    color:var(--muted);
+    font-size:12px;
+    background:rgba(248,250,252,.7);
+    border-radius:12px;
+    margin-top:10px;
+  }
+
+  .wide{
+    padding:0 16px 16px;
+  }
+
+  .err{
+    margin:12px 16px 0;
+    border:1px solid rgba(239,68,68,.25);
+    background:rgba(239,68,68,.06);
+    color:#991b1b;
+    padding:10px 12px;
+    border-radius:16px;
+    font-size:13px;
+  }
+
+  @media (max-width: 980px){
+    .grid{grid-template-columns:1fr;}
+    select, input{min-width: 180px;}
+  }
+
+  /* ===== Modal ===== */
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(2,6,23,.55);
+    display:none;align-items:flex-start;justify-content:center;
+    padding:40px 14px;z-index:9999;
+  }
+  .modal{
+    width:100%;max-width:680px;background:#fff;border-radius:18px;
+    border:1px solid rgba(226,232,240,1);box-shadow:var(--shadow);overflow:hidden;
+  }
+  .modal-h{
+    padding:14px 16px;border-bottom:1px solid var(--bd2);
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    background:linear-gradient(180deg, rgba(248,250,252,.95), #fff);
+  }
+  .modal-h b{font-size:14px;color:var(--ink);font-weight:1100;}
+  .xbtn{width:36px;height:36px;border-radius:12px;border:1px solid var(--bd);background:#fff;cursor:pointer;font-weight:900;}
+  .modal-b{padding:14px 16px;}
+  .formgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .formgrid .full{grid-column:1/-1;}
+  .help{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.35;}
+  .foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 16px;border-top:1px solid var(--bd2);background:rgba(248,250,252,.7);}
+  .toast{
+    position:fixed;right:16px;bottom:16px;z-index:10000;
+    background:#0f172a;color:#fff;border-radius:14px;padding:10px 12px;
+    font-size:13px;box-shadow:0 10px 30px rgba(2,6,23,.25);
+    display:none;max-width:420px;line-height:1.35;
+  }
+</style>
+
+<div class="wrap">
+  <div class="page">
+    <div class="head">
+      <div class="title">
+        <h1>{{ title or "Vận hành phiên đấu" }}</h1>
+        <p>
+          Chọn dự án để hệ thống hiển thị phiên dở dang và danh sách candidates.
+          Sau khi tạo phiên, trang sẽ tự chuyển về đúng dự án để thấy phiên vừa tạo.
+        </p>
+      </div>
+
+      <form class="tools" method="get" action="/auction/sessions">
+        <div class="field">
+          <label for="statusSel">Trạng thái</label>
+          <select id="statusSel" name="status" style="min-width:160px;">
+            <option value="" {% if not status %}selected{% endif %}>Tất cả</option>
+            <option value="ACTIVE" {% if status=='ACTIVE' %}selected{% endif %}>ACTIVE</option>
+            <option value="INACTIVE" {% if status=='INACTIVE' %}selected{% endif %}>INACTIVE</option>
+            <option value="DRAFT" {% if status=='DRAFT' %}selected{% endif %}>DRAFT</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="projectSel">Dự án</label>
+          <select id="projectSel" name="project">
+            <option value="">— Chọn dự án —</option>
+            {% for p in projects %}
+              {% set code = (p.get('project_code') or p.get('code') or '') %}
+              <option value="{{ code }}" data-project-id="{{ p.get('id') or p.get('project_id') }}"
+                {% if (project or '')|upper == code|upper %}selected{% endif %}>
+                {{ code }} — {{ p.get('name') or p.get('project_name') or 'Dự án' }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <button class="btn ghost" type="submit">
+          <i class="ri-filter-3-line"></i> Lọc
+        </button>
+      </form>
+    </div>
+
+    {% if error %}
+      <div class="err">
+        <b>Lỗi tải dữ liệu phiên:</b>
+        <span style="opacity:.9">status={{ error.status }}</span>
+        <div style="margin-top:6px;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;font-size:12px;white-space:pre-wrap;">
+          {{ error.body }}
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="grid">
+      <!-- Left: primary session -->
+      <div class="pane">
+        <div class="pane-h">
+          <b>Phiên dở dang (ưu tiên)</b>
+          {% if active and active.has_active %}
+            <span class="pill ok"><i class="ri-flashlight-line"></i> Có phiên</span>
+          {% else %}
+            <span class="pill warn"><i class="ri-information-line"></i> Chưa có</span>
+          {% endif %}
+        </div>
+
+        <div class="list">
+          {% if not project_id %}
+            <div class="item">
+              <div class="row">
+                <div>
+                  <h3>Chưa chọn dự án</h3>
+                  <div class="meta">
+                    <span><i class="ri-arrow-up-down-line"></i> Hãy chọn dự án ở thanh trên để load phiên.</span>
+                  </div>
+                </div>
+              </div>
+              <div class="note">
+                Lưu ý: Nếu bạn tạo phiên mà không redirect kèm project, trang sẽ lại rơi vào trạng thái “Chưa chọn dự án”.
+              </div>
+            </div>
+
+          {% elif not (active and active.has_active and active.primary_session) %}
+            <div class="item">
+              <div class="row">
+                <div>
+                  <h3>Không có phiên dở dang</h3>
+                  <div class="meta">
+                    <span><i class="ri-file-add-line"></i> Tạo phiên mới để bắt đầu vận hành.</span>
+                  </div>
+                </div>
+                <div class="actions">
+                  <button class="btn primary mini" type="button" onclick="openCreateSession()">
+                    <i class="ri-add-line"></i> Tạo phiên
+                  </button>
+                </div>
+              </div>
+              <div class="note">
+                Sau khi tạo phiên, bấm “Start” để snapshot Round 1 (lô + khách đủ điều kiện).
+              </div>
+            </div>
+
+          {% else %}
+            {% set s = active.primary_session %}
+            <div class="item">
+              <div class="row">
+                <div>
+                  <h3>
+                    #{{ s.id }} — {{ s.name or "Phiên đấu" }}
+                    {% if s.status %}
+                      <span class="pill {% if s.status in ['OPEN'] %}ok{% elif s.status in ['PAUSED','DRAFT'] %}warn{% else %}bad{% endif %}" style="margin-left:8px;">
+                        {{ s.status }}
+                      </span>
+                    {% endif %}
+                  </h3>
+                  <div class="meta">
+                    <span><i class="ri-stack-line"></i> Round: <b>{{ s.current_round_no or 0 }}</b></span>
+                    <span><i class="ri-checkbox-circle-line"></i> Tổng lô: <b>{{ s.total_lot_count or 0 }}</b></span>
+                    <span><i class="ri-time-line"></i> Chưa chốt: <b>{{ s.unfinished_lot_count or 0 }}</b></span>
+                  </div>
+                </div>
+                <div class="actions">
+                  <a class="btn primary mini" href="/auction/sessions/{{ s.id }}">
+                    <i class="ri-play-circle-line"></i> Mở
+                  </a>
+                  <button class="btn mini" type="button" onclick="openStartSession({{ s.id }})">
+                    <i class="ri-rocket-line"></i> Start
+                  </button>
+                </div>
+              </div>
+              <div class="note">
+                “Mở” vào màn xử lý từng lô theo vòng hiện tại.
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Right: candidates -->
+      <div class="pane">
+        <div class="pane-h">
+          <b>Danh sách phiên dở (candidates)</b>
+          <span class="pill"><i class="ri-list-check"></i> {{ (active.candidates|length) if active and active.candidates else 0 }}</span>
+        </div>
+        <div class="list">
+          {% if not project_id %}
+            <div class="item">
+              <h3>Chưa có dữ liệu</h3>
+              <div class="meta">
+                <span><i class="ri-information-line"></i> Chọn dự án để load danh sách candidates.</span>
+              </div>
+            </div>
+          {% else %}
+            {% set cs = active.candidates or [] %}
+            {% if cs|length == 0 %}
+              <div class="item">
+                <div class="row">
+                  <div>
+                    <h3>Không có phiên nào đang dở</h3>
+                    <div class="meta">
+                      <span><i class="ri-add-line"></i> Tạo phiên mới để bắt đầu.</span>
+                    </div>
+                  </div>
+                  <div class="actions">
+                    <button class="btn primary mini" type="button" onclick="openCreateSession()">
+                      <i class="ri-add-line"></i> Tạo phiên
+                    </button>
+                  </div>
+                </div>
+              </div>
+            {% else %}
+              {% for s in cs %}
+                <div class="item">
+                  <div class="row">
+                    <div>
+                      <h3>
+                        #{{ s.id }} — {{ s.name or "Phiên đấu" }}
+                        {% if s.status %}
+                          <span class="pill {% if s.status in ['OPEN'] %}ok{% elif s.status in ['PAUSED','DRAFT'] %}warn{% else %}bad{% endif %}" style="margin-left:8px;">
+                            {{ s.status }}
+                          </span>
+                        {% endif %}
+                      </h3>
+                      <div class="meta">
+                        <span><i class="ri-stack-line"></i> Round: <b>{{ s.current_round_no or 0 }}</b></span>
+                        <span><i class="ri-checkbox-circle-line"></i> Tổng lô: <b>{{ s.total_lot_count or 0 }}</b></span>
+                        <span><i class="ri-time-line"></i> Chưa chốt: <b>{{ s.unfinished_lot_count or 0 }}</b></span>
+                      </div>
+                    </div>
+                    <div class="actions">
+                      <a class="btn primary mini" href="/auction/sessions/{{ s.id }}">
+                        <i class="ri-play-circle-line"></i> Mở
+                      </a>
+                      <button class="btn mini" type="button" onclick="openStartSession({{ s.id }})">
+                        <i class="ri-rocket-line"></i> Start
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Create quick -->
+    <div class="wide">
+      <div class="pane" style="border-style:dashed;background:rgba(248,250,252,.5);">
+        <div class="pane-h">
+          <b>Tạo phiên mới</b>
+          <span class="pill"><i class="ri-shield-check-line"></i> Snapshot từ danh sách đủ điều kiện</span>
+        </div>
+        <div class="list">
+          <div class="item">
+            <div class="row">
+              <div>
+                <h3>Quy trình nhanh</h3>
+                <div class="meta">
+                  <span><i class="ri-number-1"></i> Chọn dự án</span>
+                  <span><i class="ri-number-2"></i> Tạo phiên (DRAFT)</span>
+                  <span><i class="ri-number-3"></i> Bấm “Start” → tạo Round 1 + snapshot lô + khách</span>
+                </div>
+              </div>
+              <div class="actions">
+                <button class="btn primary" type="button" onclick="openCreateSession()">
+                  <i class="ri-add-line"></i> Tạo phiên
+                </button>
+              </div>
+            </div>
+            <div class="note">
+              Gợi ý tên phiên: “PROJECT_CODE – dd/mm/yyyy – Buổi”.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= Modal: Create Session ================= -->
+<div id="createBackdrop" class="modal-backdrop" onclick="closeCreateSession(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-h">
+      <b><i class="ri-add-line"></i> Tạo phiên đấu</b>
+      <button class="xbtn" type="button" onclick="closeCreateSession()"><i class="ri-close-line"></i></button>
+    </div>
+
+    <div class="modal-b">
+      <div class="formgrid">
+        <div class="full">
+          <label>Dự án</label>
+          <select id="csProject">
+            <option value="">— Chọn dự án —</option>
+            {% for p in projects %}
+              {% set pid = p.get('id') or p.get('project_id') %}
+              {% set code = p.get('project_code') or p.get('code') %}
+              <option value="{{ pid }}" data-project-code="{{ code }}"
+                {% if project_obj and (project_obj.get('id')==pid or project_obj.get('project_id')==pid) %}selected{% endif %}>
+                {{ code }} — {{ p.get('name') or p.get('project_name') or 'Dự án' }}
+              </option>
+            {% endfor %}
+          </select>
+          <div class="help">Tạo phiên cho đúng dự án. Sau khi tạo xong trang sẽ chuyển về dự án này.</div>
+        </div>
+
+        <div class="full">
+          <label>Tên phiên</label>
+          <input id="csName" placeholder="Ví dụ: KINHDO3 – 21/01/2026 – Sáng" />
+        </div>
+
+        <div>
+          <label>Địa điểm</label>
+          <input id="csLoc" placeholder="Hội trường..." />
+        </div>
+
+        <div>
+          <label>Ghi chú</label>
+          <input id="csNote" placeholder="Tuỳ chọn" />
+        </div>
+
+        <div class="full">
+          <div class="help">
+            Sau khi tạo xong, bạn bấm “Start” để snapshot Round 1 (lô + khách đủ điều kiện).
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="foot">
+      <button class="btn" type="button" onclick="closeCreateSession()"><i class="ri-close-line"></i> Huỷ</button>
+      <button class="btn primary" type="button" onclick="submitCreateSession()"><i class="ri-check-line"></i> Tạo</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+  function toast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.display = 'block';
+    clearTimeout(window.__toastTimer);
+    window.__toastTimer = setTimeout(()=>{ t.style.display='none'; }, 2800);
+  }
+
+  function openCreateSession(){
+    document.getElementById('createBackdrop').style.display='flex';
+
+    // Prefill name if empty
+    const n = document.getElementById('csName');
+    if(!n.value){
+      const sel = document.getElementById('projectSel');
+      const opt = sel && sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex] : null;
+      const code = opt ? (opt.value || '').trim() : '';
+      const d = new Date();
+      const dd = String(d.getDate()).padStart(2,'0');
+      const mm = String(d.getMonth()+1).padStart(2,'0');
+      const yy = d.getFullYear();
+      n.value = (code ? (code + " – ") : "") + dd + "/" + mm + "/" + yy;
+    }
+
+    // Sync modal project with current top select if possible
+    const topSel = document.getElementById('projectSel');
+    const code = topSel ? (topSel.value || '').trim() : '';
+    if(code){
+      const cs = document.getElementById('csProject');
+      for(const o of cs.options){
+        if((o.getAttribute('data-project-code')||'').toUpperCase() === code.toUpperCase()){
+          cs.value = o.value;
+          break;
+        }
+      }
+    }
+  }
+
+  function closeCreateSession(ev){
+    if(ev && ev.target && ev.target.id !== 'createBackdrop') return;
+    document.getElementById('createBackdrop').style.display='none';
+  }
+
+  async function submitCreateSession(){
+    const cs = document.getElementById('csProject');
+    const projectId = Number(cs.value || 0);
+    if(!projectId){
+      toast("Vui lòng chọn dự án.");
+      return;
+    }
+    const projectCode = (cs.options[cs.selectedIndex].getAttribute('data-project-code') || '').trim();
+
+    const payload = {
+      project_id: projectId,
+      name: (document.getElementById('csName').value||"").trim() || null,
+      location: (document.getElementById('csLoc').value||"").trim() || null,
+      note: (document.getElementById('csNote').value||"").trim() || null
+    };
+
+    const r = await fetch("/auction/sessions/api/sessions", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(payload)
+    });
+
+    const js = await r.json().catch(()=> ({}));
+    if(!r.ok){
+      toast("Tạo phiên lỗi: " + (js.detail || js.error || ("HTTP " + r.status)));
+      return;
+    }
+
+    // ✅ FIX CHÍNH: redirect về đúng dự án để SSR load active/candidates
+    closeCreateSession();
+    toast("Đã tạo phiên #" + ((js.data && js.data.id) ? js.data.id : ""));
+
+    const statusSel = document.getElementById('statusSel');
+    const st = (statusSel && statusSel.value) ? ("&status=" + encodeURIComponent(statusSel.value)) : "";
+    if(projectCode){
+      window.location.href = "/auction/sessions?project=" + encodeURIComponent(projectCode) + st;
+    } else {
+      // fallback: vẫn đi theo id nếu router bạn support
+      window.location.href = "/auction/sessions?project_id=" + encodeURIComponent(String(projectId)) + st;
+    }
+  }
+
+  async function openStartSession(sessionId){
+    if(!sessionId) return;
+    const ok = confirm("Bắt đầu phiên #" + sessionId + "? (Tạo Round 1 + snapshot lô + khách)");
+    if(!ok) return;
+
+    const r = await fetch("/auction/sessions/api/sessions/start", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({session_id: Number(sessionId)})
+    });
+    const js = await r.json().catch(()=> ({}));
+    if(!r.ok){
+      toast("Start lỗi: " + (js.detail || js.error || ("HTTP " + r.status)));
+      return;
+    }
+    toast("Đã start. Mở phiên...");
+    window.location.href = "/auction/sessions/" + sessionId;
+  }
+</script>
+{% endblock %}

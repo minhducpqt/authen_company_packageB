@@ -1,0 +1,79 @@
+<div id="lotModal"
+     class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
+
+  <div class="bg-white rounded-xl w-full max-w-4xl p-6 relative">
+
+    <button onclick="closeLotModal()"
+            class="absolute top-3 right-3 text-slate-400">✕</button>
+
+    <h2 class="text-xl font-semibold mb-4">Xử lý lô</h2>
+
+    <!-- Mode -->
+    <div class="flex gap-4 mb-4">
+      <label>
+        <input type="radio" name="mode" value="WINNER" checked>
+        Đã có người thắng
+      </label>
+      <label>
+        <input type="radio" name="mode" value="NEXT_ROUND">
+        Vào vòng tiếp theo
+      </label>
+    </div>
+
+    <!-- WINNER -->
+    <div id="modeWinner">
+      <label class="block mb-2">Người thắng</label>
+      <select id="winnerCustomer" class="border rounded w-full mb-3"></select>
+
+      <label class="block mb-2">Hình thức</label>
+      <select id="winMethod" class="border rounded w-full mb-3">
+        <option value="HIGHEST">Trả giá</option>
+        <option value="LOTTERY">Bốc thăm</option>
+      </select>
+
+      <label class="block mb-2">Giá trúng</label>
+      <input id="winPrice" type="number"
+             class="border rounded w-full"
+             placeholder="Nhập giá trúng">
+    </div>
+
+    <!-- NEXT ROUND -->
+    <div id="modeNext" class="hidden">
+      <label class="block mb-2">Giá cao nhất vòng này</label>
+      <input id="nextPrice" type="number"
+             class="border rounded w-full mb-4">
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <div class="font-medium mb-2">Danh sách hiện tại</div>
+          <ul id="listCurrent" class="border rounded p-2 h-48 overflow-auto"></ul>
+        </div>
+        <div>
+          <div class="font-medium mb-2">Vào vòng sau</div>
+          <ul id="listNext" class="border rounded p-2 h-48 overflow-auto"></ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6 text-right">
+      <button onclick="submitDecision()"
+              class="px-4 py-2 rounded-lg bg-green-600 text-white">
+        Xác nhận
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* JS chỉ placeholder – gắn API Service B proxy:
+   - lock
+   - decide
+   - unlock
+*/
+function openLotModal(lotId) {
+  document.getElementById('lotModal').classList.remove('hidden');
+}
+function closeLotModal() {
+  document.getElementById('lotModal').classList.add('hidden');
+}
+</script>
