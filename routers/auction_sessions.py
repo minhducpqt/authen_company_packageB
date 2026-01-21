@@ -243,14 +243,16 @@ async def auction_session_detail_page(
     round_no: Optional[int] = Query(None, ge=1),
 ):
     """
-    Trang phiên cụ thể:
-      - load current round nếu round_no không truyền
-      - gọi /rounds/{round_no}/ui để render danh sách lô + khách
+    Trang phiên cụ thể (FIX):
+      - Nếu session đang DRAFT hoặc current_round_no = 0
+        => AUTO gọi START để tạo Round 1 + snapshot lots/participants
+      - Sau đó render UI theo round_no (query) hoặc current_round_no (fallback)
     """
     token = get_access_token(request)
     if not token:
         return _redirect_login(request)
 
+    # 1) Load session
     st_s, sess = await _get_json(f"/api/v1/auction-sessions/sessions/{session_id}", token, None)
     if st_s != 200 or not isinstance(sess, dict):
         code = st_s if st_s in (401, 403, 404) else 502
@@ -261,17 +263,68 @@ async def auction_session_detail_page(
         )
 
     sess_data = (sess.get("data") or sess) if isinstance(sess, dict) else {}
+    sess_status = (sess_data.get("status") or "").upper()
 
-    if not round_no:
-        st_c, cur = await _get_json(f"/api/v1/auction-sessions/sessions/{session_id}/current", token, None)
-        if st_c == 200 and isinstance(cur, dict):
+    # 2) Load current round
+    st_c, cur = await _get_json(f"/api/v1/auction-sessions/sessions/{session_id}/current", token, None)
+    current_round_no = 0
+    if st_c == 200 and isinstance(cur, dict):
+        try:
+            current_round_no = int(cur.get("current_round_no") or 0)
+        except Exception:
+            current_round_no = 0
+
+    # 3) AUTO START nếu đang DRAFT hoặc chưa có round (current_round_no=0)
+    #    Mục tiêu: tránh lỗi 404 khi gọi /rounds/1/ui
+    if sess_status == "DRAFT" or current_round_no == 0:
+        st_start, js_start = await _post_json(
+            "/api/v1/auction-sessions/sessions/start",
+            token,
+            {"session_id": session_id},
+        )
+
+        # Nếu start fail vì reason nào đó, vẫn render với error rõ ràng
+        # (nhưng cố reload current để lấy round_no nếu start đã thành công)
+        st_c2, cur2 = await _get_json(f"/api/v1/auction-sessions/sessions/{session_id}/current", token, None)
+        if st_c2 == 200 and isinstance(cur2, dict):
             try:
-                round_no = int(cur.get("current_round_no") or 1)
+                current_round_no = int(cur2.get("current_round_no") or 0)
             except Exception:
-                round_no = 1
-        else:
-            round_no = 1
+                current_round_no = current_round_no or 0
 
+        # reload session status (optional but helps UI show OPEN)
+        st_s2, sess2 = await _get_json(f"/api/v1/auction-sessions/sessions/{session_id}", token, None)
+        if st_s2 == 200 and isinstance(sess2, dict):
+            sess_data = (sess2.get("data") or sess2) if isinstance(sess2, dict) else sess_data
+
+        # Nếu vẫn không có round => báo lỗi start
+        if current_round_no == 0:
+            return templates.TemplateResponse(
+                "auction_session/session.html",
+                {
+                    "request": request,
+                    "title": f"Phiên đấu #{session_id}",
+                    "session_id": session_id,
+                    "session": sess_data,
+                    "round_no": 1,
+                    "rounds": [],
+                    "ui": {"ok": False, "lots": []},
+                    "error": {
+                        "status": st_start,
+                        "body": js_start,
+                    },
+                },
+                status_code=502 if st_start not in (401, 403, 404) else st_start,
+            )
+
+    # 4) Chọn round_no để render:
+    #    - ưu tiên round_no từ query
+    #    - fallback = current_round_no
+    #    - cuối cùng fallback = 1
+    if not round_no or int(round_no) <= 0:
+        round_no = current_round_no if current_round_no > 0 else 1
+
+    # 5) Load UI round
     st_ui, ui = await _get_json(
         f"/api/v1/auction-sessions/sessions/{session_id}/rounds/{int(round_no)}/ui",
         token,
@@ -282,6 +335,7 @@ async def auction_session_detail_page(
         error = {"status": st_ui, "body": ui}
         ui = {"ok": False, "lots": []}
 
+    # 6) Load rounds list
     st_r, rounds = await _get_json(f"/api/v1/auction-sessions/sessions/{session_id}/rounds", token, None)
     rounds_data = rounds.get("data") if (st_r == 200 and isinstance(rounds, dict)) else []
 

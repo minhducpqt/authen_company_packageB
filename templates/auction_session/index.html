@@ -352,9 +352,9 @@
                   </div>
                 </div>
                 <div class="actions">
-                  <a class="btn primary mini" href="/auction/sessions/{{ s.id }}">
+                  <button class="btn primary mini" type="button" onclick="openSessionSmart({{ s.id }}, '{{ (s.status or '')|e }}', {{ (s.current_round_no or 0) }})">
                     <i class="ri-play-circle-line"></i> Mở
-                  </a>
+                  </button>
                   <button class="btn mini" type="button" onclick="openStartSession({{ s.id }})">
                     <i class="ri-rocket-line"></i> Start
                   </button>
@@ -421,9 +421,9 @@
                       </div>
                     </div>
                     <div class="actions">
-                      <a class="btn primary mini" href="/auction/sessions/{{ s.id }}">
+                      <button class="btn primary mini" type="button" onclick="openSessionSmart({{ s.id }}, '{{ (s.status or '')|e }}', {{ (s.current_round_no or 0) }})">
                         <i class="ri-play-circle-line"></i> Mở
-                      </a>
+                      </button>
                       <button class="btn mini" type="button" onclick="openStartSession({{ s.id }})">
                         <i class="ri-rocket-line"></i> Start
                       </button>
@@ -762,7 +762,7 @@
     startSession(sessionId);
   }
 
-  async function startSession(sessionId){
+    async function startSession(sessionId){
     try{
       const r = await fetch("/auction/sessions/api/sessions/start",{
         method:"POST",
@@ -780,6 +780,48 @@
       toast("Lỗi mạng khi start.");
     }
   }
+
+  // ✅ Đặt ở đây (trước init)
+  async function openSessionSmart(sessionId, status, currentRoundNo){
+    sessionId = Number(sessionId||0);
+    status = (status || '').toUpperCase();
+    currentRoundNo = Number(currentRoundNo||0);
+
+    if(status === 'DRAFT' || currentRoundNo === 0){
+      const ok = confirm("Phiên đang DRAFT / chưa snapshot. Hệ thống sẽ Start để tạo Round 1 rồi mở phiên. Tiếp tục?");
+      if(!ok) return;
+
+      try{
+        const r = await fetch("/auction/sessions/api/sessions/start",{
+          method:"POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({session_id: sessionId})
+        });
+        const js = await r.json().catch(()=> ({}));
+        if(!r.ok){
+          toast("Start lỗi: " + (js.detail || js.error || ("HTTP " + r.status)));
+          return;
+        }
+      }catch(e){
+        toast("Lỗi mạng khi start.");
+        return;
+      }
+    }
+
+    window.location.href = "/auction/sessions/" + sessionId;
+  }
+
+  // <editor-fold desc="Auction Sessions - Init">
+  (function init(){
+    restoreFiltersIfEmpty();
+
+    document.addEventListener('keydown', (e)=>{
+      if(e.key === 'Escape'){
+        const b = document.getElementById('createBackdrop');
+        if(b && b.style.display === 'flex') closeCreateSession();
+      }
+    });
+  })();
   // </editor-fold>
 
   // <editor-fold desc="Auction Sessions - Init">

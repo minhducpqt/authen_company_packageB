@@ -1070,23 +1070,38 @@
   // =========================
   // Lock best-effort
   // =========================
-  async function tryLock(roundLotId){
+
+    async function tryLock(roundLotId){
     const r = await fetch(`/auction/sessions/api/round-lots/${roundLotId}/lock`,{
       method:"POST",
       headers: {"Content-Type":"application/json"},
       body: JSON.stringify({ttl_seconds: 900})
     });
     const js = await r.json().catch(()=> ({}));
-    const lp = document.getElementById('mLockPill');
-    lp.style.display = 'none';
 
-    if(r.ok) return true;
+    const lp = document.getElementById('mLockPill');
+    if(lp){
+      lp.style.display = 'none';
+    }
+
+    // ✅ SUCCESS: lock trả về round_lot mới nhất -> phải sync updated_at
+    if(r.ok){
+      const data = js?.data || js; // tùy wrapper
+      if(currentLot && data && Number(data.id) === Number(currentLot.id)){
+        // lock có thể update updated_at / extras.lock -> sync lại để submit không bị 409
+        if(data.updated_at) currentLot.updated_at = data.updated_at;
+        if(data.extras) currentLot.extras = data.extras;
+      }
+      return true;
+    }
 
     const msg = safeText(js.detail || js.error || '');
     if(r.status === 409 && msg.startsWith("LOCKED_BY_")){
-      lp.style.display = 'inline-flex';
-      lp.className = 'pill warn';
-      lp.innerHTML = `<i class="ri-lock-line"></i> ${escapeHtml(msg)}`;
+      if(lp){
+        lp.style.display = 'inline-flex';
+        lp.className = 'pill warn';
+        lp.innerHTML = `<i class="ri-lock-line"></i> ${escapeHtml(msg)}`;
+      }
       toast("Lô đang bị khoá: " + msg);
     } else if(r.status !== 404){
       toast("Lock lỗi: " + (msg || ("HTTP " + r.status)));
@@ -1350,14 +1365,35 @@
 
   async function doDecide(payload, okMsg){
     const rlid = Number(currentLot.id);
+
+    // luôn gắn client_updated_at theo currentLot (đã được sync sau lock / refresh)
+    payload.client_updated_at = currentLot?.updated_at || null;
+
     const r = await fetch(`/auction/sessions/api/round-lots/${rlid}/decide`,{
       method:"POST",
       headers: {"Content-Type":"application/json"},
       body: JSON.stringify(payload)
     });
     const js = await r.json().catch(()=> ({}));
+
+    // ✅ Nếu bị conflict: auto refresh lot + báo người dùng bấm lưu lại
     if(!r.ok){
-      toast("Lưu lỗi: " + (js.detail || js.error || ("HTTP " + r.status)));
+      const detail = safeText(js.detail || js.error || ("HTTP " + r.status));
+
+      if(r.status === 409 && (detail === "CONFLICT_UPDATED_BY_ANOTHER_USER" || detail.startsWith("CONFLICT_"))){
+        toast("Dữ liệu vừa được cập nhật. Đang tải bản mới, vui lòng bấm Lưu lại.");
+        await refreshAll();
+
+        // rebind currentLot theo bản mới nhất
+        const lots = (UI && UI.lots) ? UI.lots : [];
+        const updated = lots.find(x => Number(x.id) === Number(rlid));
+        if(updated){
+          currentLot = updated;
+        }
+        return;
+      }
+
+      toast("Lưu lỗi: " + detail);
       return;
     }
 
@@ -1404,6 +1440,7 @@
       renderDualLists();
     }
   }
+
 
   // =========================
   // Init
