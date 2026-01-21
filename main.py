@@ -32,6 +32,7 @@ from routers import company_mailers
 from routers import auction_docs  # import file mới
 from routers import bid_tickets as bid_tickets_router
 from routers.auction_counting import router as auction_counting_router
+from routers.auction_sessions import router as auction_sessions_router
 
 # Bid attendance
 from routers import bid_attendance as bid_attendance_router
@@ -106,6 +107,7 @@ app.include_router(auction_results_router)
 app.include_router(deposit_refunds.router)
 app.include_router(auction_prints_router)
 app.include_router(auction_counting_router)
+app.include_router(auction_sessions_router)
 
 
 @app.get("/healthz")
