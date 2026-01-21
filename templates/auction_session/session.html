@@ -40,6 +40,7 @@
   .btn.primary{background:linear-gradient(180deg, var(--pri), var(--pri2));border-color:rgba(2,132,199,.5);color:#fff;}
   .btn.ghost{background:rgba(248,250,252,1);}
   .btn.danger{background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.25);color:#991b1b;}
+  .btn:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none;}
 
   .pill{
     display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;
@@ -50,10 +51,7 @@
   .pill.bad{color:var(--bad);border-color:rgba(239,68,68,.25);background:rgba(239,68,68,.06);}
 
   /* Round tabs */
-  .tabs{
-    margin-top:12px;
-    display:flex;gap:8px;flex-wrap:wrap;align-items:center;
-  }
+  .tabs{ margin-top:12px; display:flex;gap:8px;flex-wrap:wrap;align-items:center; }
   .tab{
     height:34px;border-radius:999px;border:1px solid var(--bd);background:#fff;
     padding:0 12px;display:inline-flex;align-items:center;gap:8px;
@@ -70,21 +68,14 @@
   }
 
   /* Summary cards */
-  .sum{
-    margin-top:12px;
-    display:grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap:10px;
-  }
+  .sum{ margin-top:12px; display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; }
   .sumCard{
     border:1px solid var(--bd);
     border-radius:16px;
     background:#fff;
     box-shadow:0 2px 10px rgba(2,6,23,.04);
     padding:12px 12px;
-    display:flex;
-    flex-direction:column;
-    gap:6px;
+    display:flex;flex-direction:column;gap:6px;
   }
   .sumCard .k{font-size:12px;color:var(--muted);font-weight:1000;display:flex;gap:8px;align-items:center;}
   .sumCard .v{font-size:18px;color:var(--ink);font-weight:1100;letter-spacing:.2px;}
@@ -101,9 +92,7 @@
     display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
   }
   .card-h b{font-size:13px;color:var(--ink);}
-  .search{
-    display:flex;gap:10px;align-items:center;flex-wrap:wrap;
-  }
+  .search{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
   .search input{
     height:34px;border-radius:12px;border:1px solid var(--bd);
     padding:0 10px;font-size:13px;outline:none;min-width:240px;
@@ -152,7 +141,6 @@
   .modal{
     width:100%;max-width:980px;background:#fff;border-radius:18px;
     border:1px solid rgba(226,232,240,1);box-shadow:var(--shadow);overflow:hidden;
-
     max-height: calc(100vh - 48px);
     display:flex;flex-direction:column;
   }
@@ -164,13 +152,12 @@
   }
   .mh b{font-size:14px;color:var(--ink);font-weight:1100;}
   .mh .mmeta{margin-top:6px;color:var(--muted);font-size:12px;display:flex;gap:10px;flex-wrap:wrap;}
-  .xbtn{
-    width:34px;height:34px;border-radius:10px;border:1px solid var(--bd);
-    background:#fff;cursor:pointer;font-weight:900;
-  }
+  .xbtn{ width:34px;height:34px;border-radius:10px;border:1px solid var(--bd); background:#fff;cursor:pointer;font-weight:900; }
 
   .mb{padding:14px 16px;background:#fff; overflow:auto; flex:1 1 auto;}
-  .mgrid{display:grid;grid-template-columns: 1.05fr .95fr;gap:14px;}
+
+  /* ✅ NEW: vertical blocks, full width */
+  .vstack{display:flex;flex-direction:column;gap:12px;}
 
   .box{
     border:1px solid var(--bd);
@@ -208,6 +195,44 @@
     color:#075985;
   }
 
+  /* ✅ NEW: prominent price block */
+  .priceCard{
+    border:1px solid rgba(14,165,233,.25);
+    background:linear-gradient(180deg, rgba(14,165,233,.06), rgba(248,250,252,.8));
+    border-radius:14px;
+    padding:12px;
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    margin:10px 0 12px;
+  }
+  .priceCard .plabel{font-size:12px;color:var(--muted);font-weight:1000;}
+  .priceCard .pvalue{
+    font-size:26px;
+    font-weight:1200;
+    letter-spacing:.3px;
+    color:var(--ink);
+    line-height:1.05;
+  }
+  .priceCard .pvalue.muted{color:rgba(15,23,42,.55);}
+  .priceCard .pinput{
+    min-width:260px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .priceInput{
+    height:44px !important;
+    border-radius:14px !important;
+    font-size:18px !important;
+    font-weight:1100 !important;
+    letter-spacing:.3px;
+    padding:0 12px !important;
+  }
+  .priceHelp{font-size:12px;color:var(--muted);line-height:1.35;}
+
   /* Winner picker with search */
   .picker{
     border:1px solid var(--bd);
@@ -228,9 +253,7 @@
     height:30px;border-radius:10px;border:1px solid var(--bd);
     padding:0 8px;font-size:12px;outline:none;min-width:180px;
   }
-  .picker .pb{
-    padding:8px;display:flex;flex-direction:column;gap:8px;overflow:auto;max-height:340px;
-  }
+  .picker .pb{ padding:8px;display:flex;flex-direction:column;gap:8px;overflow:auto;max-height:340px; }
   .pitem{
     border:1px solid var(--bd);
     border-radius:12px;
@@ -264,7 +287,7 @@
     background:#fff;
     display:flex;
     flex-direction:column;
-    min-height:260px;
+    min-height:300px;
   }
   .plist .ph{
     padding:10px 10px;border-bottom:1px solid var(--bd2);
@@ -276,9 +299,7 @@
     height:30px;border-radius:10px;border:1px solid var(--bd);
     padding:0 8px;font-size:12px;outline:none;min-width:140px;
   }
-  .plist .pb{
-    padding:8px;display:flex;flex-direction:column;gap:8px;overflow:auto;max-height:340px;
-  }
+  .plist .pb{ padding:8px;display:flex;flex-direction:column;gap:8px;overflow:auto;max-height:360px; }
   .pitem2{
     border:1px solid var(--bd);
     border-radius:12px;
@@ -298,9 +319,7 @@
   .iconbtn.primary{background:rgba(14,165,233,.08);border-color:rgba(14,165,233,.25);color:#075985;}
   .iconbtn.danger{background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.25);color:#991b1b;}
 
-  .arrows{
-    display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;
-  }
+  .arrows{ display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px; }
   .arrows .iconbtn{width:60px;justify-content:center;}
 
   .foot{
@@ -317,8 +336,44 @@
     display:none;max-width:520px;line-height:1.35;
   }
 
+  /* ===== Custom Dialog (Confirm/Error) ===== */
+  .dlg-backdrop{
+    position:fixed;inset:0;background:rgba(2,6,23,.58);
+    display:none;align-items:center;justify-content:center;
+    padding:18px 14px;z-index:11000;
+  }
+  .dlg{
+    width:100%;max-width:520px;background:#fff;border-radius:18px;
+    border:1px solid rgba(226,232,240,1);box-shadow:var(--shadow);overflow:hidden;
+  }
+  .dlg-h{
+    padding:12px 14px;border-bottom:1px solid var(--bd2);
+    background:linear-gradient(180deg, rgba(248,250,252,.95), #fff);
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+  }
+  .dlg-h b{font-size:13px;color:var(--ink);font-weight:1100;}
+  .dlg-x{
+    width:34px;height:34px;border-radius:10px;border:1px solid var(--bd);
+    background:#fff;cursor:pointer;font-weight:900;
+  }
+  .dlg-b{padding:14px;}
+  .dlg-msg{color:var(--ink);font-size:13px;line-height:1.4;white-space:pre-wrap;}
+  .dlg-sub{margin-top:8px;color:var(--muted);font-size:12px;line-height:1.35;}
+  .dlg-in{ margin-top:12px; display:none; }
+  .dlg-in label{display:block;font-size:12px;color:var(--muted);font-weight:1000;margin-bottom:6px;}
+  .dlg-in input{
+    width:100%;
+    height:38px;border-radius:12px;border:1px solid var(--bd);
+    padding:0 10px;font-size:13px;outline:none;background:#fff;color:var(--ink);
+  }
+  .dlg-in input:focus{border-color:rgba(14,165,233,.6); box-shadow:0 0 0 3px rgba(14,165,233,.15);}
+  .dlg-f{
+    padding:12px 14px;border-top:1px solid var(--bd2);
+    background:rgba(248,250,252,.9);
+    display:flex;justify-content:flex-end;gap:10px;align-items:center;flex-wrap:wrap;
+  }
+
   @media (max-width: 1040px){
-    .mgrid{grid-template-columns:1fr;}
     .dual{grid-template-columns:1fr;}
     .arrows{flex-direction:row;}
     .sum{grid-template-columns:1fr 1fr;}
@@ -327,6 +382,7 @@
     tbody td{border-bottom:0;}
     tbody tr{border-bottom:1px solid var(--bd2);}
     .right{justify-content:flex-start;}
+    .priceCard .pinput{min-width:100%;}
   }
 </style>
 
@@ -343,9 +399,7 @@
         <span><i class="ri-stack-line"></i> Round: <b>#{{ round_no or 1 }}</b></span>
       </div>
 
-      <!-- Round navigation: prefer show buttons; if too many -> dropdown -->
       <div class="tabs" id="roundTabs">
-        {# tabs rendered by JS to support large N; initial SSR fallback below #}
         {% set rs = rounds or [] %}
         {% if rs|length > 0 %}
           {% for r in rs %}
@@ -371,11 +425,6 @@
         <i class="ri-skip-forward-line"></i> Tạo vòng sau
       </button>
 
-      <!-- Print: Round winners (UI only placeholder) -->
-      <button class="btn" type="button" onclick="printRoundWinners()">
-        <i class="ri-printer-line"></i> In phiếu trúng (vòng)
-      </button>
-
       <button class="btn" type="button" onclick="refreshAll()">
         <i class="ri-refresh-line"></i> Làm mới
       </button>
@@ -391,7 +440,6 @@
     </div>
   {% endif %}
 
-  <!-- Round summary -->
   <div class="sum">
     <div class="sumCard">
       <div class="k"><i class="ri-checkbox-circle-line"></i> Tổng lô (vòng này)</div>
@@ -420,6 +468,9 @@
       <b>Danh sách lô — Round #{{ round_no }}</b>
       <div class="search">
         <input id="q" placeholder="Tìm theo mã lô / mô tả..." oninput="renderLots()" />
+        <button class="miniBtn" type="button" onclick="printRoundWinners()">
+          <i class="ri-printer-line"></i> In phiếu trúng (vòng)
+        </button>
       </div>
     </div>
 
@@ -458,8 +509,10 @@
     </div>
 
     <div class="mb">
-      <div class="mgrid">
-        <!-- Left: Lot info -->
+      <!-- ✅ NEW: stack vertical -->
+      <div class="vstack">
+
+        <!-- 1) Lot info (full width) -->
         <div class="box">
           <div class="box-h">
             <b><i class="ri-landscape-line"></i> Thông tin lô (vòng hiện tại)</b>
@@ -468,13 +521,14 @@
           <div class="box-b" id="mLotInfo"></div>
         </div>
 
-        <!-- Right: Decide -->
+        <!-- 2) Decide (full width) -->
         <div class="box">
           <div class="box-h">
             <b><i class="ri-gavel-line"></i> Chốt kết quả vòng này</b>
             <span class="pill" id="mLockPill" style="display:none;"></span>
           </div>
           <div class="box-b">
+
             <div class="seg">
               <button id="segWinner" type="button" onclick="switchMode('WINNER')">1) Chốt WON</button>
               <button id="segNext" type="button" onclick="switchMode('NEXT')">2) Vào vòng sau</button>
@@ -483,6 +537,7 @@
 
             <!-- MODE WINNER -->
             <div id="modeWinner">
+
               <div class="field">
                 <label>Hình thức thắng</label>
                 <select id="winMethod" onchange="onWinMethodChange()">
@@ -490,6 +545,24 @@
                   <option value="MANUAL">Nhập tay / quyết định (MANUAL)</option>
                   <option value="LOTTERY">Bốc thăm (LOTTERY)</option>
                 </select>
+              </div>
+
+              <!-- ✅ Price card first -->
+              <div class="priceCard" id="winnerPriceCard">
+                <div>
+                  <div class="plabel">Giá khởi điểm vòng</div>
+                  <div class="pvalue" id="mStartPriceText">—</div>
+                </div>
+                <div class="pinput">
+                  <div class="plabel" id="winningPriceLabel">Giá trúng (VND)</div>
+                  <input id="winningPrice" class="priceInput" inputmode="numeric" placeholder="Nhập giá trúng..."
+                         oninput="onMoneyInput('winningPrice')" />
+                  <div class="priceHelp" id="winningPriceHelp">Nhập số, hệ thống sẽ tự format dạng tiền (1.234.567).</div>
+                </div>
+                <div>
+                  <div class="plabel">Hiển thị</div>
+                  <div class="pvalue" id="winningPricePretty" class="pvalue muted">—</div>
+                </div>
               </div>
 
               <!-- Searchable winner picker -->
@@ -502,13 +575,7 @@
               </div>
               <input type="hidden" id="winnerCustomerId" />
 
-              <div class="field" id="priceWrap" style="margin-top:10px;">
-                <label>Giá trúng (VND)</label>
-                <input id="winningPrice" inputmode="numeric" placeholder="Ví dụ: 1250000000" />
-                <div class="hint">Nếu LOTTERY thì hệ thống lấy giá khởi điểm của vòng.</div>
-              </div>
-
-              <div class="field">
+              <div class="field" style="margin-top:10px;">
                 <label>Ghi chú</label>
                 <textarea id="noteWinner" placeholder="Tuỳ chọn..."></textarea>
               </div>
@@ -516,9 +583,23 @@
 
             <!-- MODE NEXT ROUND -->
             <div id="modeNext" style="display:none;">
-              <div class="field">
-                <label>Giá cao nhất vòng này (VND)</label>
-                <input id="highestPrice" inputmode="numeric" placeholder="Ví dụ: 1280000000" />
+
+              <!-- ✅ Price card first -->
+              <div class="priceCard" id="nextPriceCard">
+                <div>
+                  <div class="plabel">Giá khởi điểm vòng</div>
+                  <div class="pvalue" id="mStartPriceText2">—</div>
+                </div>
+                <div class="pinput">
+                  <div class="plabel">Giá cao nhất vòng này (VND)</div>
+                  <input id="highestPrice" class="priceInput" inputmode="numeric" placeholder="Nhập giá cao nhất..."
+                         oninput="onMoneyInput('highestPrice')" />
+                  <div class="priceHelp">Giá này sẽ dùng làm <b>giá khởi điểm vòng sau</b>.</div>
+                </div>
+                <div>
+                  <div class="plabel">Hiển thị</div>
+                  <div class="pvalue" id="highestPricePretty">—</div>
+                </div>
               </div>
 
               <div class="dual">
@@ -565,6 +646,7 @@
 
           </div>
         </div>
+
       </div>
     </div>
 
@@ -573,9 +655,40 @@
         API: <code class="mono">/auction/sessions/api/round-lots/{id}/decide</code>. Nếu bị khoá, API trả <b>409 LOCKED_BY_...</b>.
       </div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <!-- ✅ reset “nặng tay” hơn -->
         <button class="btn danger" type="button" onclick="resetPending()"><i class="ri-restart-line"></i> Reset PENDING</button>
         <button class="btn primary" type="button" onclick="submitDecide()"><i class="ri-check-line"></i> Lưu kết quả</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- =========================================================
+     Custom Dialog (Confirm/Error)
+========================================================== -->
+<div id="dlgBackdrop" class="dlg-backdrop" onclick="dlgClose(event)">
+  <div class="dlg" onclick="event.stopPropagation()">
+    <div class="dlg-h">
+      <b id="dlgTitle"><i class="ri-information-line"></i> Thông báo</b>
+      <button class="dlg-x" type="button" onclick="dlgClose()"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="dlg-b">
+      <div class="dlg-msg" id="dlgMsg"></div>
+      <div class="dlg-sub" id="dlgSub" style="display:none;"></div>
+
+      <div class="dlg-in" id="dlgInputWrap">
+        <label id="dlgInputLabel">Nhập xác nhận</label>
+        <input id="dlgInput" placeholder="" />
+        <div class="dlg-sub" id="dlgInputHint" style="margin-top:6px;display:block;"></div>
+      </div>
+    </div>
+    <div class="dlg-f">
+      <button class="btn ghost" type="button" id="dlgCancel" onclick="dlgCancel()">
+        <i class="ri-close-line"></i> Huỷ
+      </button>
+      <button class="btn primary" type="button" id="dlgOk" onclick="dlgOk()" disabled>
+        <i class="ri-check-line"></i> Xác nhận
+      </button>
     </div>
   </div>
 </div>
@@ -605,6 +718,9 @@
   let dualNext = [];
   let selectedWinnerId = null;
 
+  // =========================
+  // Toast
+  // =========================
   function toast(msg){
     const t = document.getElementById('toast');
     t.textContent = msg;
@@ -613,6 +729,9 @@
     window.__toastTimer = setTimeout(()=>{ t.style.display='none'; }, 3200);
   }
 
+  // =========================
+  // Utils
+  // =========================
   function fmtMoney(v){
     const n = Number(v || 0);
     if(!isFinite(n)) return '-';
@@ -632,12 +751,215 @@
       .replaceAll("'","&#039;");
   }
 
+  function pad3(n){
+    n = Number(n||0);
+    if(!isFinite(n) || n<=0) return '';
+    if(n < 100) return String(n).padStart(3,'0');
+    if(n < 1000) return String(n);
+    return String(n);
+  }
+
+  function fmtStt(stt){
+    const s = pad3(stt);
+    return s ? s : '';
+  }
+
   function getLotSnapshot(lot){
     const snap = (lot.lot_snapshot || (lot.extras && lot.extras.snapshot) || {});
     return snap || {};
   }
   function participantSnapshot(p){
     return (p.customer_snapshot || (p.extras && p.extras.snapshot) || {});
+  }
+
+  function getStartPriceVnd(lot){
+    const snap = getLotSnapshot(lot);
+    const sp = (lot && lot.start_price_vnd != null) ? Number(lot.start_price_vnd) : Number(snap.starting_price_vnd || 0);
+    return isFinite(sp) ? sp : 0;
+  }
+
+  function stripToDigits(s){
+    return String(s||'').replace(/[^\d]/g,'');
+  }
+
+  function formatMoneyDigits(digits){
+    if(!digits) return '';
+    const n = Number(digits);
+    if(!isFinite(n)) return '';
+    return n.toLocaleString('vi-VN');
+  }
+
+  // ✅ money input formatter: keep caret stable enough for simple typing
+  function onMoneyInput(id){
+    const el = document.getElementById(id);
+    if(!el) return;
+    const raw = el.value || '';
+    const digits = stripToDigits(raw);
+    const pretty = formatMoneyDigits(digits);
+    el.value = pretty;
+
+    if(id === 'winningPrice'){
+      document.getElementById('winningPricePretty').textContent = pretty || '—';
+      document.getElementById('winningPricePretty').className = 'pvalue' + (pretty ? '' : ' muted');
+    }
+    if(id === 'highestPrice'){
+      document.getElementById('highestPricePretty').textContent = pretty || '—';
+      document.getElementById('highestPricePretty').className = 'pvalue' + (pretty ? '' : ' muted');
+    }
+  }
+
+  function parseMoneyInput(id){
+    const el = document.getElementById(id);
+    if(!el) return null;
+    const digits = stripToDigits(el.value || '');
+    if(!digits) return null;
+    const n = Number(digits);
+    if(!isFinite(n)) return null;
+    return n;
+  }
+
+  // =========================
+  // Custom Dialog
+  // =========================
+  let __dlgResolve = null;
+  let __dlgRequireText = null;
+
+  function dlgClose(ev){
+    if(ev && ev.target && ev.target.id !== 'dlgBackdrop') return;
+    document.getElementById('dlgBackdrop').style.display = 'none';
+  }
+  function dlgCancel(){
+    dlgClose();
+    if(__dlgResolve){ __dlgResolve(false); __dlgResolve = null; }
+  }
+  function dlgOk(){
+    const okBtn = document.getElementById('dlgOk');
+    if(okBtn && okBtn.disabled) return;
+
+    // ✅ verify again if requireText exists
+    if(__dlgRequireText){
+      const ii = document.getElementById('dlgInput');
+      const v = (ii.value || '').trim();
+      if(v !== __dlgRequireText){
+        // keep dialog open, show error text
+        const ih = document.getElementById('dlgInputHint');
+        ih.textContent = `Sai xác nhận. Bạn phải nhập đúng: "${__dlgRequireText}".`;
+        ih.style.color = '#991b1b';
+        okBtn.disabled = true;
+        return;
+      }
+    }
+
+    dlgClose();
+    if(__dlgResolve){ __dlgResolve(true); __dlgResolve = null; }
+  }
+
+  function showDialog(opts){
+    const title = safeText(opts.title || 'Thông báo');
+    const msg = safeText(opts.message || '');
+    const sub = safeText(opts.sub || '');
+    const mode = opts.mode || 'confirm';
+    const okText = safeText(opts.okText || (mode==='alert' ? 'Đóng' : 'Xác nhận'));
+    const cancelText = safeText(opts.cancelText || 'Huỷ');
+
+    __dlgRequireText = (opts.requireText || null);
+
+    const b = document.getElementById('dlgBackdrop');
+    const t = document.getElementById('dlgTitle');
+    const m = document.getElementById('dlgMsg');
+    const s = document.getElementById('dlgSub');
+
+    const iw = document.getElementById('dlgInputWrap');
+    const ii = document.getElementById('dlgInput');
+    const ih = document.getElementById('dlgInputHint');
+
+    const okBtn = document.getElementById('dlgOk');
+    const cancelBtn = document.getElementById('dlgCancel');
+
+    t.innerHTML = `<i class="${mode==='error' ? 'ri-error-warning-line' : 'ri-information-line'}"></i> ${escapeHtml(title)}`;
+    m.textContent = msg;
+
+    if(sub){
+      s.style.display = 'block';
+      s.textContent = sub;
+    } else {
+      s.style.display = 'none';
+      s.textContent = '';
+    }
+
+    okBtn.innerHTML = `<i class="ri-check-line"></i> ${escapeHtml(okText)}`;
+    cancelBtn.innerHTML = `<i class="ri-close-line"></i> ${escapeHtml(cancelText)}`;
+
+    // input confirm
+    if(__dlgRequireText){
+      iw.style.display = 'block';
+      ii.value = '';
+      ii.placeholder = __dlgRequireText;
+
+      ih.style.color = '';
+      ih.textContent = `Bạn phải nhập đúng: "${__dlgRequireText}" để bật nút xác nhận.`;
+
+            okBtn.disabled = true;
+
+      ii.oninput = ()=>{
+        const v = (ii.value || '').trim();
+        // reset hint style
+        ih.style.color = '';
+        ih.textContent = `Bạn phải nhập đúng: "${__dlgRequireText}" để bật nút xác nhận.`;
+        okBtn.disabled = (v !== __dlgRequireText);
+      };
+      ii.onkeydown = (e)=>{
+        if(e.key === 'Enter'){
+          e.preventDefault();
+          if(!okBtn.disabled) dlgOk();
+        }
+      };
+      setTimeout(()=> ii.focus(), 0);
+    } else {
+      iw.style.display = 'none';
+      ii.value = '';
+      ii.oninput = null;
+      ii.onkeydown = null;
+      okBtn.disabled = false;
+    }
+
+    // alert/error: ẩn cancel
+    if(mode === 'alert' || mode === 'error'){
+      cancelBtn.style.display = 'none';
+      okBtn.disabled = false;
+    } else {
+      cancelBtn.style.display = 'inline-flex';
+      // nếu requireText thì disabled sẽ do oninput quyết định
+      if(!__dlgRequireText) okBtn.disabled = false;
+    }
+
+    b.style.display = 'flex';
+
+    return new Promise((resolve)=>{
+      __dlgResolve = resolve;
+    });
+  }
+
+  async function showConfirm(title, message, opts={}){
+    return await showDialog({
+      mode: 'confirm',
+      title,
+      message,
+      sub: opts.sub || '',
+      okText: opts.okText || 'Xác nhận',
+      cancelText: opts.cancelText || 'Huỷ',
+      requireText: opts.requireText || null
+    });
+  }
+
+  function showError(title, message, sub=''){
+    showDialog({
+      mode: 'error',
+      title,
+      message,
+      sub,
+      okText: 'Đóng'
+    });
   }
 
   // =========================
@@ -657,7 +979,7 @@
       return;
     }
 
-    const MAX_SHOW = 8; // ưu tiên show trực tiếp vì thường ít
+    const MAX_SHOW = 8;
     const showNums = nums.slice(0, MAX_SHOW);
     const moreNums = nums.slice(MAX_SHOW);
 
@@ -717,7 +1039,6 @@
     const lots = (UI && UI.lots) ? UI.lots : [];
     const totalLots = lots.length;
 
-    // unique customers across lots
     const setCus = new Set();
     let wonLots = 0;
     let nextLots = 0;
@@ -761,15 +1082,14 @@
       const res = RESULT_BY_LOT[String(lot.lot_id || '')] || null;
 
       const area = snap.area_m2 ?? lot.lot_area ?? '';
-      const startPrice = (lot.start_price_vnd != null ? lot.start_price_vnd : (snap.starting_price_vnd||0));
+      const startPrice = getStartPriceVnd(lot);
       const step = snap.bid_step_vnd ?? '';
       const note = safeText(lot.note || '');
 
-      // status block
       let statusHtml = '';
       if(rt === 'WINNER' && res && (res.status === 'WON')){
         const who = safeText(res.winner_name || '') || ('#' + safeText(res.winner_customer_id||''));
-        const printBtn = `<button class="printIcon" type="button" onclick="printWinnerOne(${Number(lot.id)})" title="In phiếu trúng (người này)">
+        const printBtn = `<button class="printIcon" type="button" onclick="printWinnerOne(${Number(lot.id)})" title="In phiếu trúng (lô này)">
                             <i class="ri-printer-line"></i>
                           </button>`;
         statusHtml = `
@@ -782,7 +1102,6 @@
           </div>
         `;
       } else if(rt === 'NEXT_ROUND'){
-        // count next participants in snapshot
         const nx = (lot.next_participants || []);
         statusHtml = `
           <div class="pill warn"><i class="ri-arrow-right-up-line"></i> Vào vòng sau</div>
@@ -857,48 +1176,72 @@
   // Session actions
   // =========================
   async function startSessionIfNeeded(){
-    const ok = confirm("Thực hiện START phiên để đảm bảo Round 1 đã snapshot?");
+    const ok = await showConfirm(
+      "Start phiên đấu",
+      "Thực hiện START phiên để đảm bảo Round 1 đã snapshot (lô + khách đủ điều kiện).",
+      {
+        sub: "Chỉ cần Start 1 lần. Nếu đã Start trước đó, hệ thống sẽ bỏ qua hoặc trả về trạng thái hiện tại."
+      }
+    );
     if(!ok) return;
-    const r = await fetch("/auction/sessions/api/sessions/start", {
-      method:"POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({session_id: SESSION_ID})
-    });
-    const js = await r.json().catch(()=> ({}));
-    if(!r.ok){
-      toast("Start lỗi: " + (js.detail || ("HTTP " + r.status)));
-      return;
+
+    try{
+      const r = await fetch("/auction/sessions/api/sessions/start", {
+        method:"POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({session_id: SESSION_ID})
+      });
+      const js = await r.json().catch(()=> ({}));
+      if(!r.ok){
+        showError("Start thất bại", safeText(js.detail || js.error || ("HTTP " + r.status)));
+        return;
+      }
+      toast("Đã start. Làm mới dữ liệu...");
+      await refreshAll();
+    }catch(e){
+      showError("Lỗi mạng", "Không thể gọi API start. Vui lòng thử lại.");
     }
-    toast("Đã start. Làm mới dữ liệu...");
-    await refreshAll();
   }
 
   async function createNextRound(){
-    const ok = confirm("Tạo vòng tiếp theo từ các lô NEXT_ROUND của vòng #" + ROUND_NO + "?");
+    const ok = await showConfirm(
+      "Tạo vòng sau",
+      `Bạn sắp tạo vòng tiếp theo từ các lô NEXT_ROUND của vòng #${ROUND_NO}.`,
+      {
+        sub: "Đây là thao tác chốt vòng. Vui lòng kiểm tra chắc chắn mọi kết quả của vòng hiện tại đã DONE.",
+        requireText: "tôi xác nhận",
+        okText: "Tạo vòng sau",
+        cancelText: "Huỷ"
+      }
+    );
     if(!ok) return;
 
     const payload = { session_id: SESSION_ID, from_round_no: ROUND_NO, note: null };
 
-    const r = await fetch(`/auction/sessions/api/sessions/${SESSION_ID}/rounds/next`, {
-      method:"POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify(payload)
-    });
-    const js = await r.json().catch(()=> ({}));
-    if(!r.ok){
-      toast("Tạo vòng tiếp theo lỗi: " + (js.detail || ("HTTP " + r.status)));
-      return;
-    }
-    toast("Đã tạo vòng #" + (js.created_round_no || '') + " (" + (js.created_lot_count||0) + " lô)");
-    if(js.created_round_no){
-      window.location.href = `/auction/sessions/${SESSION_ID}?round_no=${js.created_round_no}`;
-    } else {
-      await refreshAll();
+    try{
+      const r = await fetch(`/auction/sessions/api/sessions/${SESSION_ID}/rounds/next`, {
+        method:"POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify(payload)
+      });
+      const js = await r.json().catch(()=> ({}));
+      if(!r.ok){
+        showError("Tạo vòng sau thất bại", safeText(js.detail || js.error || ("HTTP " + r.status)));
+        return;
+      }
+      toast("Đã tạo vòng #" + (js.created_round_no || '') + " (" + (js.created_lot_count||0) + " lô)");
+      if(js.created_round_no){
+        window.location.href = `/auction/sessions/${SESSION_ID}?round_no=${js.created_round_no}`;
+      } else {
+        await refreshAll();
+      }
+    }catch(e){
+      showError("Lỗi mạng", "Không thể gọi API tạo vòng sau. Vui lòng thử lại.");
     }
   }
 
   // =========================
-  // Print UI placeholders
+  // Print placeholders
   // =========================
   function printRoundWinners(){
     toast("UI OK: In phiếu trúng (vòng này) — sẽ implement action sau.");
@@ -934,6 +1277,7 @@
       const snap = participantSnapshot(p);
       return {
         customer_id: Number(p.customer_id || snap.customer_id || 0),
+        stt: Number(p.stt || snap.stt || 0),
         name: safeText(snap.customer_full_name || ''),
         phone: safeText(snap.phone || ''),
         cccd: safeText(snap.cccd || ''),
@@ -950,6 +1294,10 @@
     document.getElementById('winnerCustomerId').value = '';
     selectedWinnerId = null;
 
+    // reset price pretty
+    document.getElementById('winningPricePretty').textContent = '—';
+    document.getElementById('highestPricePretty').textContent = '—';
+
     // default mode
     const rt = safeText(currentLot.result_type || 'PENDING');
     if(rt === 'NEXT_ROUND') switchMode('NEXT');
@@ -959,8 +1307,19 @@
     document.getElementById('winMethod').value = safeText(currentLot.win_method || 'HIGHEST');
     onWinMethodChange();
 
-    document.getElementById('winningPrice').value = currentLot.highest_price_vnd ? String(Math.trunc(Number(currentLot.highest_price_vnd))) : '';
-    document.getElementById('highestPrice').value = currentLot.highest_price_vnd ? String(Math.trunc(Number(currentLot.highest_price_vnd))) : '';
+    // set start price label
+    const sp = getStartPriceVnd(currentLot);
+    document.getElementById('mStartPriceText').textContent = fmtMoney(sp);
+    document.getElementById('mStartPriceText2').textContent = fmtMoney(sp);
+
+    // hydrate prices
+    const hp = (currentLot.highest_price_vnd != null) ? Number(currentLot.highest_price_vnd) : null;
+    document.getElementById('winningPrice').value = hp ? fmtMoney(hp) : '';
+    document.getElementById('highestPrice').value = hp ? fmtMoney(hp) : '';
+
+    // update pretty
+    onMoneyInput('winningPrice');
+    onMoneyInput('highestPrice');
 
     // preselect winner if existed
     const curWinner = Number(currentLot.winner_customer_id || 0);
@@ -992,7 +1351,7 @@
     document.getElementById('mTitle').innerHTML = `<i class="ri-settings-3-line"></i> Xử lý ${escapeHtml(lotCode || 'Lô')}`;
 
     const area = snap.area_m2 ?? currentLot.lot_area ?? '';
-    const startPrice = (currentLot.start_price_vnd != null ? currentLot.start_price_vnd : (snap.starting_price_vnd||0));
+    const startPrice = getStartPriceVnd(currentLot);
     const step = snap.bid_step_vnd ?? '';
     const partCount = (currentLot.participants || []).length;
 
@@ -1018,37 +1377,13 @@
     const lotCode = safeText(currentLot.lot_code || snap.lot_code || '');
     const desc = safeText(snap.lot_description || currentLot.lot_name || '');
     const area = snap.area_m2 ?? currentLot.lot_area ?? '';
-    const startPrice = (currentLot.start_price_vnd != null ? currentLot.start_price_vnd : (snap.starting_price_vnd||0));
+    const startPrice = getStartPriceVnd(currentLot);
     const step = snap.bid_step_vnd ?? '';
     const lock = (currentLot.extras && currentLot.extras.lock) ? currentLot.extras.lock : null;
 
     const lockHtml = lock && lock.by
       ? `<div class="pill warn"><i class="ri-lock-line"></i> LOCK: ${escapeHtml(lock.by)} • TTL ${escapeHtml(lock.ttl_seconds||'')}</div>`
       : `<div class="pill"><i class="ri-lock-unlock-line"></i> Chưa lock</div>`;
-
-    let partHtml = '';
-    if(currentParticipants.length){
-      partHtml += `<div style="margin-top:10px;">
-        <div class="pill"><i class="ri-group-line"></i> Người tham gia vòng này</div>
-        <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px;">`;
-      for(const p of currentParticipants){
-        partHtml += `
-          <div class="pitem2" style="border-radius:14px;">
-            <div>
-              <b>${escapeHtml(p.name || ('#'+p.customer_id))}</b>
-              <div class="pm">
-                CCCD: <span class="mono">${escapeHtml(p.cccd)}</span>
-                • SĐT: <span class="mono">${escapeHtml(p.phone)}</span>
-              </div>
-            </div>
-            <div class="pact"><span class="pill">${escapeHtml(p.customer_id)}</span></div>
-          </div>
-        `;
-      }
-      partHtml += `</div></div>`;
-    } else {
-      partHtml = `<div class="hint" style="margin-top:10px;">Chưa có danh sách người tham gia.</div>`;
-    }
 
     document.getElementById('mLotInfo').innerHTML = `
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -1063,15 +1398,13 @@
           <span><i class="ri-arrow-up-line"></i> Bước giá: <b>${fmtMoney(step)}</b></span>
         </div>
       </div>
-      ${partHtml}
     `;
   }
 
   // =========================
   // Lock best-effort
   // =========================
-
-    async function tryLock(roundLotId){
+  async function tryLock(roundLotId){
     const r = await fetch(`/auction/sessions/api/round-lots/${roundLotId}/lock`,{
       method:"POST",
       headers: {"Content-Type":"application/json"},
@@ -1080,15 +1413,11 @@
     const js = await r.json().catch(()=> ({}));
 
     const lp = document.getElementById('mLockPill');
-    if(lp){
-      lp.style.display = 'none';
-    }
+    if(lp) lp.style.display = 'none';
 
-    // ✅ SUCCESS: lock trả về round_lot mới nhất -> phải sync updated_at
     if(r.ok){
-      const data = js?.data || js; // tùy wrapper
+      const data = js?.data || js;
       if(currentLot && data && Number(data.id) === Number(currentLot.id)){
-        // lock có thể update updated_at / extras.lock -> sync lại để submit không bị 409
         if(data.updated_at) currentLot.updated_at = data.updated_at;
         if(data.extras) currentLot.extras = data.extras;
       }
@@ -1104,7 +1433,7 @@
       }
       toast("Lô đang bị khoá: " + msg);
     } else if(r.status !== 404){
-      toast("Lock lỗi: " + (msg || ("HTTP " + r.status)));
+      showError("Lock thất bại", msg || ("HTTP " + r.status));
     }
     return false;
   }
@@ -1126,19 +1455,23 @@
 
   function onWinMethodChange(){
     const m = document.getElementById('winMethod').value;
-    const wrap = document.getElementById('priceWrap');
+    const label = document.getElementById('winningPriceLabel');
+    const help = document.getElementById('winningPriceHelp');
+    const input = document.getElementById('winningPrice');
+
     if(m === 'LOTTERY'){
-      wrap.style.opacity = '.75';
-      document.getElementById('winningPrice').value = '';
-      wrap.querySelector('label').textContent = 'Giá trúng (tự lấy giá khởi điểm vòng)';
+      label.textContent = 'Giá trúng (tự lấy giá khởi điểm vòng)';
+      help.innerHTML = 'Nếu LOTTERY thì hệ thống lấy <b>giá khởi điểm</b> của vòng. Không cần nhập.';
+      input.value = '';
+      onMoneyInput('winningPrice');
     } else {
-      wrap.style.opacity = '1';
-      wrap.querySelector('label').textContent = 'Giá trúng (VND)';
+      label.textContent = 'Giá trúng (VND)';
+      help.textContent = 'Nhập số, hệ thống sẽ tự format dạng tiền (1.234.567).';
     }
   }
 
   // =========================
-  // Winner picker (search + click select)
+  // Winner picker (search + click select) + STT prefix
   // =========================
   function renderWinnerPicker(){
     const host = document.getElementById('winnerList');
@@ -1160,9 +1493,12 @@
         renderWinnerPicker();
       };
 
+      const sttPrefix = fmtStt(p.stt);
+      const nameLine = `${sttPrefix ? (escapeHtml(sttPrefix) + " — ") : ""}${escapeHtml(p.name || ('#'+p.customer_id))}`;
+
       div.innerHTML = `
         <div>
-          <b>${escapeHtml(p.name || ('#'+p.customer_id))}</b>
+          <b>${nameLine}</b>
           <div class="pm">
             CCCD: <span class="mono">${escapeHtml(p.cccd)}</span>
             • SĐT: <span class="mono">${escapeHtml(p.phone)}</span>
@@ -1194,11 +1530,14 @@
       const hay = (safeText(p.name) + ' ' + safeText(p.cccd) + ' ' + safeText(p.phone)).toLowerCase();
       if(fi && !hay.includes(fi)) continue;
 
+      const sttPrefix = fmtStt(p.stt);
+      const nameLine = `${sttPrefix ? (escapeHtml(sttPrefix) + " — ") : ""}${escapeHtml(p.name || ('#'+p.customer_id))}`;
+
       const div = document.createElement('div');
       div.className = 'pitem2';
       div.innerHTML = `
         <div>
-          <b>${escapeHtml(p.name || ('#'+p.customer_id))}</b>
+          <b>${nameLine}</b>
           <div class="pm">
             CCCD: <span class="mono">${escapeHtml(p.cccd)}</span>
             • SĐT: <span class="mono">${escapeHtml(p.phone)}</span>
@@ -1217,11 +1556,14 @@
       const hay = (safeText(p.name) + ' ' + safeText(p.cccd) + ' ' + safeText(p.phone)).toLowerCase();
       if(fn && !hay.includes(fn)) continue;
 
+      const sttPrefix = fmtStt(p.stt);
+      const nameLine = `${sttPrefix ? (escapeHtml(sttPrefix) + " — ") : ""}${escapeHtml(p.name || ('#'+p.customer_id))}`;
+
       const div = document.createElement('div');
       div.className = 'pitem2';
       div.innerHTML = `
         <div>
-          <b>${escapeHtml(p.name || ('#'+p.customer_id))}</b>
+          <b>${nameLine}</b>
           <div class="pm">
             CCCD: <span class="mono">${escapeHtml(p.cccd)}</span>
             • SĐT: <span class="mono">${escapeHtml(p.phone)}</span>
@@ -1260,7 +1602,6 @@
     dualIn = [];
     renderDualLists();
   }
-
   function moveAllToIn(){
     dualIn = dualIn.concat(dualNext);
     dualNext = [];
@@ -1270,17 +1611,14 @@
   // =========================
   // Submit decide
   // =========================
-  function parseNumberInput(id){
-    const raw = (document.getElementById(id).value || '').trim();
-    if(!raw) return null;
-    const n = Number(raw.replaceAll('.','').replaceAll(',',''));
-    if(!isFinite(n)) return null;
-    return n;
-  }
-
   async function resetPending(){
     if(!currentLot) return;
-    const ok = confirm("Reset lô về PENDING? (Cho phép chốt lại)");
+
+    const ok = await showConfirm(
+      "Reset PENDING",
+      "Reset lô về PENDING? (Cho phép chốt lại)",
+      { requireText: "reset", okText: "Reset", cancelText: "Huỷ" }
+    );
     if(!ok) return;
 
     const payload = {
@@ -1300,7 +1638,9 @@
   async function submitDecide(){
     if(!currentLot) return;
 
+    const startPrice = getStartPriceVnd(currentLot);
     const mode = window.__mode || 'WINNER';
+
     let payload = {
       result_type: "PENDING",
       win_method: "HIGHEST",
@@ -1316,7 +1656,7 @@
       const winMethod = document.getElementById('winMethod').value;
       const winnerId = Number(document.getElementById('winnerCustomerId').value || selectedWinnerId || 0);
       if(!winnerId){
-        toast("Vui lòng chọn người thắng.");
+        showError("Thiếu dữ liệu", "Vui lòng chọn người thắng.");
         return;
       }
 
@@ -1325,28 +1665,38 @@
       payload.winner_customer_id = winnerId;
 
       if(winMethod === 'LOTTERY'){
-        payload.highest_price_vnd = null; // API sẽ lấy start_price_vnd
+        payload.highest_price_vnd = null;
       } else {
-        const price = parseNumberInput('winningPrice');
+        const price = parseMoneyInput('winningPrice');
         if(price === null || price < 0){
-          toast("Vui lòng nhập giá trúng hợp lệ.");
+          showError("Sai dữ liệu", "Vui lòng nhập giá trúng hợp lệ.");
+          return;
+        }
+        if(price < startPrice){
+          showError("Sai dữ liệu", `Giá trúng phải >= giá khởi điểm (${fmtMoney(startPrice)}).`);
           return;
         }
         payload.highest_price_vnd = price;
       }
+
       payload.note = (document.getElementById('noteWinner').value || '').trim() || null;
     }
 
     if(mode === 'NEXT'){
-      const hp = parseNumberInput('highestPrice');
+      const hp = parseMoneyInput('highestPrice');
       if(hp === null || hp < 0){
-        toast("Vui lòng nhập giá cao nhất hợp lệ.");
+        showError("Sai dữ liệu", "Vui lòng nhập giá cao nhất hợp lệ.");
+        return;
+      }
+      if(hp < startPrice){
+        showError("Sai dữ liệu", `Giá cao nhất phải >= giá khởi điểm (${fmtMoney(startPrice)}).`);
         return;
       }
       if(!dualNext.length){
-        toast("Chưa chọn khách vào vòng sau.");
+        showError("Thiếu dữ liệu", "Chưa chọn khách vào vòng sau.");
         return;
       }
+
       payload.result_type = "NEXT_ROUND";
       payload.win_method = "HIGHEST";
       payload.highest_price_vnd = hp;
@@ -1365,26 +1715,28 @@
 
   async function doDecide(payload, okMsg){
     const rlid = Number(currentLot.id);
-
-    // luôn gắn client_updated_at theo currentLot (đã được sync sau lock / refresh)
     payload.client_updated_at = currentLot?.updated_at || null;
 
-    const r = await fetch(`/auction/sessions/api/round-lots/${rlid}/decide`,{
-      method:"POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify(payload)
-    });
-    const js = await r.json().catch(()=> ({}));
+    let r, js;
+    try{
+      r = await fetch(`/auction/sessions/api/round-lots/${rlid}/decide`,{
+        method:"POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify(payload)
+      });
+      js = await r.json().catch(()=> ({}));
+    }catch(e){
+      showError("Lỗi mạng", "Không thể gọi API chốt kết quả. Vui lòng thử lại.");
+      return;
+    }
 
-    // ✅ Nếu bị conflict: auto refresh lot + báo người dùng bấm lưu lại
     if(!r.ok){
       const detail = safeText(js.detail || js.error || ("HTTP " + r.status));
 
       if(r.status === 409 && (detail === "CONFLICT_UPDATED_BY_ANOTHER_USER" || detail.startsWith("CONFLICT_"))){
-        toast("Dữ liệu vừa được cập nhật. Đang tải bản mới, vui lòng bấm Lưu lại.");
+        showError("Xung đột dữ liệu", "Dữ liệu vừa được cập nhật bởi người khác.\nHệ thống đã tải bản mới, vui lòng kiểm tra và bấm Lưu lại.");
         await refreshAll();
 
-        // rebind currentLot theo bản mới nhất
         const lots = (UI && UI.lots) ? UI.lots : [];
         const updated = lots.find(x => Number(x.id) === Number(rlid));
         if(updated){
@@ -1393,65 +1745,28 @@
         return;
       }
 
-      toast("Lưu lỗi: " + detail);
+      showError("Lưu lỗi", detail);
       return;
     }
 
     toast(okMsg);
 
-    // Refresh UI + results then update table
+    // ✅ thành công: đóng popup và quay về màn hình round
+    closeModal();
     await refreshAll();
-
-    // keep modal open: re-find lot and update currentLot, then rerender modal
-    const lots = (UI && UI.lots) ? UI.lots : [];
-    const updated = lots.find(x => Number(x.id) === Number(rlid));
-    if(updated){
-      currentLot = updated;
-
-      // rebuild participants + next lists based on refreshed data
-      currentParticipants = (currentLot.participants || []).map(p => {
-        const snap = participantSnapshot(p);
-        return {
-          customer_id: Number(p.customer_id || snap.customer_id || 0),
-          name: safeText(snap.customer_full_name || ''),
-          phone: safeText(snap.phone || ''),
-          cccd: safeText(snap.cccd || ''),
-          email: safeText(snap.email || ''),
-          address: safeText(snap.address || '')
-        };
-      }).filter(x => x.customer_id > 0);
-
-      // keep selected winner if still exists; else clear
-      const winnerNow = Number(currentLot.winner_customer_id || 0);
-      selectedWinnerId = winnerNow || selectedWinnerId || null;
-      document.getElementById('winnerCustomerId').value = selectedWinnerId ? String(selectedWinnerId) : '';
-
-      const nextIds = new Set((currentLot.next_participants||[]).map(x => Number(x.customer_id||0)).filter(Boolean));
-      dualNext = [];
-      dualIn = [];
-      for(const p of currentParticipants){
-        if(nextIds.has(p.customer_id)) dualNext.push(p);
-        else dualIn.push(p);
-      }
-
-      renderModalHeader();
-      renderModalLotInfo();
-      renderWinnerPicker();
-      renderDualLists();
-    }
   }
-
 
   // =========================
   // Init
   // =========================
   (function init(){
     renderRoundNav();
-    // SSR đã có UI, vẫn fetch results để show WON đúng
     fetchResults().then(()=> {
       renderLots();
     });
   })();
+
 </script>
 
 {% endblock %}
+
