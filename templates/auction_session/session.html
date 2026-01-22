@@ -67,23 +67,74 @@
     padding:0 10px;font-size:12px;font-weight:1000;color:var(--ink);
   }
 
-  /* Summary cards */
-  .sum{ margin-top:12px; display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; }
+  /* ===== Compact summary strip ===== */
+  .sum{
+    margin-top:10px;
+    display:grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap:10px;
+  }
   .sumCard{
     border:1px solid var(--bd);
     border-radius:16px;
     background:#fff;
     box-shadow:0 2px 10px rgba(2,6,23,.04);
-    padding:12px 12px;
-    display:flex;flex-direction:column;gap:6px;
+    padding:10px 12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    min-height:54px;
   }
-  .sumCard .k{font-size:12px;color:var(--muted);font-weight:1000;display:flex;gap:8px;align-items:center;}
-  .sumCard .v{font-size:18px;color:var(--ink);font-weight:1100;letter-spacing:.2px;}
-  .sumCard .h{font-size:12px;color:var(--muted);line-height:1.25;}
+  .sumCard .left{
+    display:flex;flex-direction:column;gap:4px;min-width:0;
+  }
+  .sumCard .k{
+    font-size:12px;color:var(--muted);font-weight:1100;
+    display:flex;gap:8px;align-items:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .sumCard .v{
+    font-size:20px;color:var(--ink);font-weight:1200;letter-spacing:.2px;line-height:1.05;
+  }
+  .sumCard .badge{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:6px 10px;border-radius:999px;border:1px solid var(--bd);
+    font-size:12px;font-weight:1100;color:var(--muted);background:#fff;white-space:nowrap;
+  }
+
+  .sumCard.ok{
+    border-color:rgba(22,163,74,.22);
+    background:linear-gradient(180deg, rgba(22,163,74,.06), #fff);
+  }
+  .sumCard.ok .badge{
+    border-color:rgba(22,163,74,.25);
+    background:rgba(22,163,74,.07);
+    color:#166534;
+  }
+
+  .sumCard.warn{
+    border-color:rgba(245,158,11,.22);
+    background:linear-gradient(180deg, rgba(245,158,11,.07), #fff);
+  }
+  .sumCard.warn .badge{
+    border-color:rgba(245,158,11,.25);
+    background:rgba(245,158,11,.10);
+    color:#92400e;
+  }
+
+  .sumCard.pending{
+    border-color:rgba(14,165,233,.20);
+    background:linear-gradient(180deg, rgba(14,165,233,.06), #fff);
+  }
+  .sumCard.pending .badge{
+    border-color:rgba(14,165,233,.28);
+    background:rgba(14,165,233,.10);
+    color:#075985;
+  }
 
   /* Table card */
   .card{
-    margin-top:12px;border:1px solid var(--bd);border-radius:18px;background:#fff;
+    margin-top:10px;border:1px solid var(--bd);border-radius:18px;background:#fff;
     box-shadow:0 2px 10px rgba(2,6,23,.04);overflow:hidden;
   }
   .card-h{
@@ -110,7 +161,6 @@
   }
   tbody tr:hover td{background:rgba(248,250,252,.65);}
 
-  /* LOT CODE prominent */
   .lotcode{
     font-weight:800;
     letter-spacing:.15px;
@@ -152,7 +202,7 @@
 
   .empty{padding:16px;color:var(--muted);font-size:13px;}
 
-  /* Modal — fixed viewport, body scroll, footer sticky */
+  /* Modal */
   .backdrop{
     position:fixed;inset:0;background:rgba(2,6,23,.58);
     display:none;align-items:center;justify-content:center;
@@ -176,7 +226,6 @@
 
   .mb{padding:14px 16px;background:#fff; overflow:auto; flex:1 1 auto;}
 
-  /* vertical blocks */
   .vstack{display:flex;flex-direction:column;gap:12px;}
 
   .box{
@@ -204,7 +253,6 @@
     border-color:rgba(14,165,233,.6);box-shadow:0 0 0 3px rgba(14,165,233,.15);
   }
 
-  /* Win method prominent */
   .field.prominent label{display:flex;align-items:center;gap:8px;}
   .field.prominent select{
     height:44px;border-radius:14px;font-size:14px;font-weight:1100;letter-spacing:.2px;
@@ -227,7 +275,7 @@
     color:#075985;
   }
 
-  /* ===== Smart price block (like your screenshot) ===== */
+  /* Smart price */
   .priceBlock{
     border:1px solid rgba(14,165,233,.20);
     background:linear-gradient(180deg, rgba(14,165,233,.05), rgba(248,250,252,.90));
@@ -327,11 +375,8 @@
     font-weight:1100;color:rgba(30,41,59,1);
   }
   .tickPill b{font-weight:1200;}
-  .tickPill.ok{border-color:rgba(22,163,74,.25);background:rgba(22,163,74,.06);color:#166534;}
-  .tickPill.warn{border-color:rgba(245,158,11,.25);background:rgba(245,158,11,.08);color:#92400e;}
-  .tickPill.bad{border-color:rgba(239,68,68,.25);background:rgba(239,68,68,.06);color:#991b1b;}
 
-  /* Winner picker */
+  /* Picker */
   .picker{
     border:1px solid var(--bd);
     border-radius:14px;
@@ -349,7 +394,7 @@
   .picker .ph b{font-size:12px;font-weight:1100;}
   .picker .ph input{
     height:30px;border-radius:10px;border:1px solid var(--bd);
-    padding:0 8px;font-size:12px;outline:none;min-width:180px;
+    padding:0 8px;font-size:12px;outline:none;min-width:200px;
   }
   .picker .pb{ padding:8px;display:flex;flex-direction:column;gap:8px;overflow:auto;max-height:340px; }
   .pitem{
@@ -434,7 +479,7 @@
     display:none;max-width:520px;line-height:1.35;
   }
 
-  /* ===== Custom Dialog (Confirm/Error) ===== */
+  /* Dialog */
   .dlg-backdrop{
     position:fixed;inset:0;background:rgba(2,6,23,.58);
     display:none;align-items:center;justify-content:center;
@@ -463,7 +508,6 @@
     display:flex;justify-content:flex-end;gap:10px;align-items:center;flex-wrap:wrap;
   }
 
-  /* pretty confirm card */
   .cCard{
     border:1px solid var(--bd);
     border-radius:16px;
@@ -569,26 +613,46 @@
     </div>
   {% endif %}
 
+  <!-- Compact summary (no explanations) -->
   <div class="sum">
     <div class="sumCard">
-      <div class="k"><i class="ri-checkbox-circle-line"></i> Tổng lô (vòng này)</div>
-      <div class="v" id="sumLots">0</div>
-      <div class="h">Đếm theo snapshot round lots.</div>
+      <div class="left">
+        <div class="k"><i class="ri-stack-line"></i> Tổng lô</div>
+        <div class="v" id="sumLots">0</div>
+      </div>
+      <div class="badge"><i class="ri-file-list-3-line"></i> round</div>
     </div>
+
     <div class="sumCard">
-      <div class="k"><i class="ri-user-3-line"></i> Tổng khách đấu (unique)</div>
-      <div class="v" id="sumCustomers">0</div>
-      <div class="h">Unique theo <span class="mono">customer_id</span> trong vòng.</div>
+      <div class="left">
+        <div class="k"><i class="ri-user-3-line"></i> Tổng khách</div>
+        <div class="v" id="sumCustomers">0</div>
+      </div>
+      <div class="badge"><i class="ri-fingerprint-line"></i> unique</div>
     </div>
-    <div class="sumCard">
-      <div class="k"><i class="ri-trophy-line"></i> Lô WON</div>
-      <div class="v" id="sumWon">0</div>
-      <div class="h">Theo <span class="mono">result_type=WINNER</span> + results.</div>
+
+    <div class="sumCard ok">
+      <div class="left">
+        <div class="k"><i class="ri-trophy-line"></i> Lô WON</div>
+        <div class="v" id="sumWon">0</div>
+      </div>
+      <div class="badge"><i class="ri-checkbox-circle-line"></i> won</div>
     </div>
-    <div class="sumCard">
-      <div class="k"><i class="ri-arrow-right-up-line"></i> Lô sang vòng sau</div>
-      <div class="v" id="sumNext">0</div>
-      <div class="h">Theo <span class="mono">result_type=NEXT_ROUND</span>.</div>
+
+    <div class="sumCard warn">
+      <div class="left">
+        <div class="k"><i class="ri-arrow-right-up-line"></i> Vào vòng sau</div>
+        <div class="v" id="sumNext">0</div>
+      </div>
+      <div class="badge"><i class="ri-route-line"></i> next</div>
+    </div>
+
+    <div class="sumCard pending">
+      <div class="left">
+        <div class="k"><i class="ri-time-line"></i> Chưa kiểm</div>
+        <div class="v" id="sumPending">0</div>
+      </div>
+      <div class="badge"><i class="ri-hourglass-line"></i> pending</div>
     </div>
   </div>
 
@@ -606,7 +670,7 @@
       </div>
     </div>
 
-    <div style="max-height: calc(100vh - 380px); overflow:auto;">
+    <div style="max-height: calc(100vh - 340px); overflow:auto;">
       <table>
         <thead>
           <tr>
@@ -733,7 +797,7 @@
               <div class="picker">
                 <div class="ph">
                   <b>Chọn người thắng (search)</b>
-                  <input id="winnerSearch" placeholder="tìm theo tên/CCCD/SĐT..." oninput="renderWinnerPicker()" />
+                  <input id="winnerSearch" placeholder="tìm theo tên/CCCD/SĐT (có/không dấu)..." oninput="renderWinnerPicker()" />
                 </div>
                 <div class="pb" id="winnerList"></div>
               </div>
@@ -806,7 +870,7 @@
                 <div class="plist">
                   <div class="ph">
                     <b id="dualInTitle">Trong vòng này</b>
-                    <input id="filterIn" placeholder="lọc..." oninput="renderDualLists()" />
+                    <input id="filterIn" placeholder="lọc (có/không dấu)..." oninput="renderDualLists()" />
                   </div>
                   <div class="pb" id="listIn"></div>
                 </div>
@@ -819,7 +883,7 @@
                 <div class="plist">
                   <div class="ph">
                     <b id="dualNextTitle">Vào vòng sau</b>
-                    <input id="filterNext" placeholder="lọc..." oninput="renderDualLists()" />
+                    <input id="filterNext" placeholder="lọc (có/không dấu)..." oninput="renderDualLists()" />
                   </div>
                   <div class="pb" id="listNext"></div>
                 </div>
@@ -831,7 +895,7 @@
               </div>
 
               <div class="hint">
-                Vòng sau sẽ lấy <b>giá khởi điểm = giá cao nhất vòng này</b>
+                Vòng sau sẽ lấy <b>giá khởi điểm = giá cao nhất vòng này</b> (theo API create_next_round).
               </div>
             </div>
 
@@ -852,7 +916,7 @@
 
     <div class="foot">
       <div class="hint" id="mHint">
-        API: Nếu bị khoá, API trả <b>409 LOCKED_BY_...</b>.
+        API: <code class="mono">/auction/sessions/api/round-lots/{id}/decide</code>. Nếu bị khoá, API trả <b>409 LOCKED_BY_...</b>.
       </div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
         <button class="btn danger" type="button" onclick="resetPending()"><i class="ri-restart-line"></i> Reset PENDING</button>
@@ -1018,6 +1082,16 @@
     return n;
   }
 
+  // ===== Accent-insensitive Vietnamese folding (đ/Đ -> d), case-insensitive =====
+  function vnFold(s){
+    const t = safeText(s).toLowerCase();
+    // NFD splits diacritics -> remove combining marks, then normalize đ
+    return t.normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'd');
+  }
+
   // =========================
   // Custom Dialog (NO typing required)
   // =========================
@@ -1053,7 +1127,6 @@
 
     t.innerHTML = `<i class="${mode==='error' ? 'ri-error-warning-line' : 'ri-information-line'}"></i> ${escapeHtml(title)}`;
 
-    // message can be HTML
     if(opts.html){
       m.innerHTML = opts.message || '';
     } else {
@@ -1197,11 +1270,13 @@
     const setCus = new Set();
     let wonLots = 0;
     let nextLots = 0;
+    let pendingLots = 0;
 
     for(const l of lots){
       const rt = safeText(l.result_type || 'PENDING');
       if(rt === 'WINNER') wonLots++;
-      if(rt === 'NEXT_ROUND') nextLots++;
+      else if(rt === 'NEXT_ROUND') nextLots++;
+      else if(rt === 'PENDING') pendingLots++;
 
       const ps = (l.participants || []);
       for(const p of ps){
@@ -1215,11 +1290,14 @@
     document.getElementById('sumCustomers').textContent = String(setCus.size);
     document.getElementById('sumWon').textContent = String(wonLots);
     document.getElementById('sumNext').textContent = String(nextLots);
+    document.getElementById('sumPending').textContent = String(pendingLots);
   }
 
   function renderLots(){
     const lots = (UI && UI.lots) ? UI.lots : [];
-    const q = (document.getElementById('q').value || '').trim().toLowerCase();
+    const qRaw = (document.getElementById('q').value || '').trim();
+    const q = vnFold(qRaw);
+
     const tbody = document.getElementById('lotTbody');
     tbody.innerHTML = '';
 
@@ -1229,7 +1307,8 @@
       const snap = getLotSnapshot(lot);
       const lotCode = safeText(lot.lot_code || snap.lot_code || '');
       const desc = safeText(snap.lot_description || lot.lot_name || '');
-      const hay = (lotCode + ' ' + desc).toLowerCase();
+      const hay = vnFold(lotCode + ' ' + desc);
+
       if(q && !hay.includes(q)) continue;
 
       const partCount = (lot.participants || []).length;
@@ -1437,20 +1516,12 @@
   }
 
   // =========================
-  // Print (Service B route placeholders)
+  // Print placeholders
   // =========================
-  function printAllBidTickets(){
-    toast("Chưa nối endpoint in phiếu trả giá (admin).");
-  }
-  function printRoundWinners(){
-    toast("Chưa nối endpoint in phiếu trúng theo vòng (admin).");
-  }
-  function printWinnerOne(roundLotId){
-    toast("Chưa nối endpoint in phiếu trúng theo lô. round_lot_id=" + roundLotId);
-  }
-  function printNextRoundOne(roundLotId){
-    toast("Chưa nối endpoint in DS vào vòng sau theo lô. round_lot_id=" + roundLotId);
-  }
+  function printAllBidTickets(){ toast("Chưa nối endpoint in phiếu trả giá (admin)."); }
+  function printRoundWinners(){ toast("Chưa nối endpoint in phiếu trúng theo vòng (admin)."); }
+  function printWinnerOne(roundLotId){ toast("Chưa nối endpoint in phiếu trúng theo lô. round_lot_id=" + roundLotId); }
+  function printNextRoundOne(roundLotId){ toast("Chưa nối endpoint in DS vào vòng sau theo lô. round_lot_id=" + roundLotId); }
 
   // =========================
   // Modal open / close
@@ -1475,7 +1546,6 @@
 
     await tryLock(roundLotId);
 
-    // Admin page: NO MASKING (show full info)
     currentParticipants = (currentLot.participants || []).map(p => {
       const snap = participantSnapshot(p);
       return {
@@ -1675,7 +1745,7 @@
   }
 
   // =========================
-  // Smart price logic: tick + valid + autocorrect + nudge
+  // Smart price logic
   // =========================
   function getBaseAndStep(){
     const sp = currentLot ? getStartPriceVnd(currentLot) : 0;
@@ -1701,7 +1771,6 @@
     const { sp, step } = getBaseAndStep();
     const val = parseMoneyInput(inputId);
 
-    // targets for UI
     const isWinner = (inputId === 'winningPrice');
     const tickEl = document.getElementById(isWinner ? 'tickWinner' : 'tickNext');
     const stepEl = document.getElementById(isWinner ? 'stepWinner' : 'stepNext');
@@ -1746,7 +1815,6 @@
     const raw = parseMoneyInput(inputId);
     const target = (raw === null) ? sp : raw;
 
-    // smallest sp + k*step >= target
     let k = 0;
     if(target <= sp) k = 0;
     else k = Math.ceil((target - sp) / step);
@@ -1782,18 +1850,20 @@
   }
 
   // =========================
-  // Winner picker (NO MASKING)
+  // Winner picker (accent-insensitive search)
   // =========================
   function renderWinnerPicker(){
     const host = document.getElementById('winnerList');
     if(!host) return;
     host.innerHTML = '';
 
-    const q = (document.getElementById('winnerSearch').value || '').trim().toLowerCase();
+    const qRaw = (document.getElementById('winnerSearch').value || '').trim();
+    const q = vnFold(qRaw);
+
     const list = Array.isArray(currentParticipants) ? currentParticipants : [];
 
     for(const p of list){
-      const hay = (safeText(p.name) + ' ' + safeText(p.cccd) + ' ' + safeText(p.phone)).toLowerCase();
+      const hay = vnFold(`${safeText(p.name)} ${safeText(p.cccd)} ${safeText(p.phone)} ${safeText(p.email)}`);
       if(q && !hay.includes(q)) continue;
 
       const div = document.createElement('div');
@@ -1827,7 +1897,7 @@
   }
 
   // =========================
-  // Dual list (NEXT ROUND) + counters (NO MASKING)
+  // Dual list (NEXT ROUND) accent-insensitive filters
   // =========================
   function updateDualCounters(){
     const N = (Array.isArray(currentParticipants) ? currentParticipants.length : 0);
@@ -1843,8 +1913,8 @@
   function renderDualLists(){
     updateDualCounters();
 
-    const fi = (document.getElementById('filterIn').value||'').trim().toLowerCase();
-    const fn = (document.getElementById('filterNext').value||'').trim().toLowerCase();
+    const fi = vnFold((document.getElementById('filterIn').value||'').trim());
+    const fn = vnFold((document.getElementById('filterNext').value||'').trim());
 
     const inEl = document.getElementById('listIn');
     const nxEl = document.getElementById('listNext');
@@ -1852,7 +1922,7 @@
     nxEl.innerHTML = '';
 
     for(const p of dualIn){
-      const hay = (safeText(p.name) + ' ' + safeText(p.cccd) + ' ' + safeText(p.phone)).toLowerCase();
+      const hay = vnFold(`${safeText(p.name)} ${safeText(p.cccd)} ${safeText(p.phone)} ${safeText(p.email)}`);
       if(fi && !hay.includes(fi)) continue;
 
       const sttPrefix = fmtStt(p.stt);
@@ -1879,7 +1949,7 @@
     }
 
     for(const p of dualNext){
-      const hay = (safeText(p.name) + ' ' + safeText(p.cccd) + ' ' + safeText(p.phone)).toLowerCase();
+      const hay = vnFold(`${safeText(p.name)} ${safeText(p.cccd)} ${safeText(p.phone)} ${safeText(p.email)}`);
       if(fn && !hay.includes(fn)) continue;
 
       const sttPrefix = fmtStt(p.stt);
@@ -1936,7 +2006,7 @@
   }
 
   // =========================
-  // Pretty confirm builders
+  // Confirm builders + submit decide (unchanged logic)
   // =========================
   function getCurrentLotCode(){
     if(!currentLot) return '';
@@ -1998,9 +2068,7 @@
             <div class="cItem">
               <div class="k"><i class="ri-money-dollar-circle-line"></i> Giá trúng</div>
               <div class="v">${escapeHtml(priceText)} VND</div>
-              <div class="muted" style="margin-top:6px;">
-                Bước giá: <b>${step ? fmtMoney(step) : '—'}</b>
-              </div>
+              <div class="muted" style="margin-top:6px;">Bước giá: <b>${step ? fmtMoney(step) : '—'}</b></div>
             </div>
           </div>
           ${payload.note ? `<div class="cWarn"><i class="ri-sticky-note-line"></i><div>Ghi chú: ${escapeHtml(payload.note)}</div></div>` : ``}
@@ -2027,12 +2095,12 @@
               <div class="v">${M}/${N} người</div>
             </div>
             <div class="cItem">
-              <div      <div class="k"><i class="ri-flag-2-line"></i> Giá khởi điểm vòng</div>
+              <div class="k"><i class="ri-flag-2-line"></i> Giá khởi điểm vòng</div>
               <div class="v">${fmtMoney(startPrice)} VND</div>
               <div class="muted" style="margin-top:6px;">Bước giá: <b>${step ? fmtMoney(step) : '—'}</b></div>
             </div>
             <div class="cItem">
-              <div class="k"><i class="ri-line-chart-line"></i> Giá cao nhất (dùng làm base vòng sau)</div>
+              <div class="k"><i class="ri-line-chart-line"></i> Giá cao nhất (base vòng sau)</div>
               <div class="v">${fmtMoney(payload.highest_price_vnd)} VND</div>
             </div>
           </div>
@@ -2066,9 +2134,6 @@
     return `<div class="cCard"><div class="cTitle"><i class="ri-information-line"></i> Xác nhận thực hiện?</div></div>`;
   }
 
-  // =========================
-  // Submit decide
-  // =========================
   async function resetPending(){
     if(!currentLot) return;
 
@@ -2129,7 +2194,6 @@
     const mode = window.__mode || 'WINNER';
     const roundLotId = Number(currentLot.id);
 
-    // best-effort lock (không hard fail)
     await tryLock(roundLotId);
 
     let payload = null;
@@ -2144,7 +2208,6 @@
         return;
       }
 
-      // Guard: Round 1 không cho LOTTERY (theo rule/trigger backend của bạn)
       if(winMethod === 'LOTTERY' && Number(ROUND_NO) === 1){
         showError("Không hợp lệ", "Vòng #1 không được chốt LOTTERY (bốc thăm). Vui lòng chọn HIGHEST hoặc MANUAL.");
         return;
@@ -2185,20 +2248,13 @@
         return;
       }
 
-      const next = ids.map(cid => ({ customer_id: cid }));
-
       payload = {
         result_type: "NEXT_ROUND",
         win_method: "HIGHEST",
         highest_price_vnd: hp,
         winner_customer_id: null,
-
-        // required by API
         next_customer_ids: ids,
-
-        // optional (UI/backward)
-        next_participants: next,
-
+        next_participants: ids.map(cid => ({ customer_id: cid })),
         note: note
       };
 
@@ -2218,7 +2274,6 @@
       return;
     }
 
-    // ===== Confirm (NO typing, pretty UI) =====
     const html = buildConfirmHtml(mode === 'NEXT' ? 'NEXT' : mode, payload);
 
     let okText = "Chốt";
