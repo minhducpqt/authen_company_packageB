@@ -132,29 +132,39 @@
     .keep{ break-inside: avoid; page-break-inside: avoid; }
     .nowrap{ white-space:nowrap; }
 
-    /* ✅ STT badge góc trái trên */
-    .stt-badge{
-      position:absolute;
-      top: 2mm;
-      left: 2mm;
-      border: 2px solid #111827;
-      border-radius: 8px;
-      padding: 6px 10px;
-      min-width: 42mm;
-      text-align:center;
-      background:#fff;
-    }
-    .stt-badge .lbl{
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing:.2px;
-    }
-    .stt-badge .val{
-      margin-top:2px;
-      font-size: 18px;
-      font-weight: 900;
-      letter-spacing:.3px;
-    }
+   /* ✅ STT badge – nhỏ gọn, sát góc, rất nhẹ */
+  .stt-badge{
+    position:absolute;
+    top: 1.5mm;          /* sát góc trên hơn */
+    left: 1.5mm;         /* sát góc trái hơn */
+
+    border: 0.8px solid rgba(17,24,39,.25); /* viền rất mờ */
+    border-radius: 6px;  /* bo nhẹ */
+
+    padding: 3px 6px;    /* giảm padding mạnh */
+    min-width: auto;     /* bỏ min-width để không phình */
+
+    background: rgba(255,255,255,.95);
+    text-align:center;
+  }
+
+  /* chữ STT: rất nhỏ, mờ */
+  .stt-badge .lbl{
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .6px;
+    opacity: .4;
+    line-height: 1;
+    margin-bottom: 1px;
+  }
+
+  /* số STT: nổi bật, gọn */
+  .stt-badge .val{
+    font-size: 18px;     /* vẫn rõ nhưng không chiếm chỗ */
+    font-weight: 900;
+    line-height: 1;
+  }
+
 
     /* optional: số biên bản (nếu bạn muốn show) */
     .doc-no{
