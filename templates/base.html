@@ -158,14 +158,16 @@
             </a>
         </li>
 
-        {# ===== 5: PHIÊN ĐẤU GIÁ ===== #}
+                {# ===== 5: PHIÊN ĐẤU GIÁ ===== #}
         <li class="side-title mt-4">5. Phiên Đấu Giá</li>
+
         <li>
           <a class="side-link {% if request.url.path.startswith('/bid-attendance') %}active{% endif %}"
              href="/bid-attendance">
             <i class="ri-user-follow-line"></i> 5.1 Danh sách điểm danh
           </a>
         </li>
+
         <li>
           <a class="side-link {% if request.url.path.startswith('/bid-tickets') %}active{% endif %}"
              href="/bid-tickets">
@@ -173,6 +175,7 @@
           </a>
         </li>
 
+        {# 5.3 GIỮ BẢN HIỆN TẠI #}
         <li>
           <a class="side-link {% if request.url.path.startswith('/auction/sessions') %}active{% endif %}"
              href="/auction/sessions">
@@ -180,7 +183,15 @@
           </a>
         </li>
 
-        <!-- ✅ OLD 5.4 -> NEW 5.5 -->
+        {# 5.4 THÊM LẠI THEO BASE CŨ #}
+        <li>
+          <a class="side-link {% if request.url.path.startswith('/auction/results') %}active{% endif %}"
+             href="/auction/results">
+            <i class="ri-auction-line"></i> 5.4 Kết quả trúng đấu giá
+          </a>
+        </li>
+
+        {# 5.5 GIỮ THEO BASE CŨ #}
         <li>
           <a class="side-link {% if request.url.path.startswith('/auction/refunds') %}active{% endif %}"
              href="/auction/refunds">
