@@ -254,15 +254,13 @@
     <div class="page">
 
       {# STT góc trái #}
+      {% if stt %}
       <div class="stt-badge keep">
         <div class="lbl">STT</div>
         <div class="val">{{ stt }}</div>
       </div>
+      {% endif %}
 
-      {# Nếu bạn muốn show số biên bản bằng session id: bật block này #}
-      <div class="doc-no keep">
-        Biên bản: {{ session.get('id') or '' }}
-      </div>
 
       <div class="center keep">
         <h1 class="h1">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</h1>
@@ -423,6 +421,24 @@
     <div class="pagebreak"></div>
   {% endfor %}
 {% endif %}
+
+<script>
+  (function(){
+    // giống phiếu trả giá: auto mở hộp thoại in khi load trang
+    function doPrint(){
+      try { window.focus(); } catch(e){}
+      window.print();
+    }
+
+    // Tránh auto-print lại khi render print preview / back-forward cache
+    if (window.matchMedia && window.matchMedia('print').matches) return;
+
+    // Delay nhẹ để font/layout ổn định
+    window.addEventListener('load', function(){
+      setTimeout(doPrint, 250);
+    });
+  })();
+</script>
 
 </body>
 </html>

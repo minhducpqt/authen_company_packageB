@@ -598,7 +598,7 @@
 </style>
 
 <div class="wrap">
-
+    {% set is_open = (session.status or '') == 'OPEN' %}
     <div class="top">
         <div class="tleft">
             <h1>{{ title or ("Phiên đấu #" ~ session_id) }}</h1>
@@ -628,9 +628,12 @@
         <div class="tright">
             <a class="btn ghost" href="/auction/sessions"><i class="ri-arrow-left-line"></i> Quay lại</a>
 
+            {% if not is_open %}
             <button class="btn" type="button" onclick="startSessionIfNeeded()">
                 <i class="ri-rocket-line"></i> Start
             </button>
+            {% endif %}
+
 
             <button class="btn primary" type="button" onclick="createNextRound()">
                 <i class="ri-skip-forward-line"></i> Tạo vòng sau
@@ -1199,12 +1202,11 @@
     // ===== Accent-insensitive Vietnamese folding (đ/Đ -> d), case-insensitive =====
     function vnFold(s){
       const t = safeText(s).toLowerCase();
-      // NFD splits diacritics -> remove combining marks, then normalize đ
       return t.normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
-        .replace(/đ/g, 'd')
-        .replace(/Đ/g, 'd');
+        .replace(/đ/g, 'd');
     }
+
 
     function isConfirmTextOk(v){
       return vnFold(v).trim() === 'toi xac nhan';
@@ -1733,9 +1735,48 @@ function openPrintOne(roundLotId){
 }
 
 // Các nút này bạn đang có nhưng API chưa đưa cho mình (phiếu trúng / danh sách next)
-function printRoundWinners(){ toast("Chưa nối: in phiếu trúng theo vòng (chưa có API trong phần bid-sheets)."); }
-function printWinnerOne(roundLotId){ toast("Chưa nối: in phiếu trúng theo lô (chưa có API trong phần bid-sheets)."); }
-function printNextRoundOne(roundLotId){ toast("Chưa nối: in DS vào vòng sau theo lô (chưa có API trong phần bid-sheets)."); }
+// =========================
+// Print WINNERS (CONNECTED to Service B winner printing pages)
+// =========================
+
+// In phiếu trúng của cả VÒNG hiện tại
+function printRoundWinners(){
+  const rn = Number(ROUND_NO || 0);
+  if(!SESSION_ID || rn <= 0){
+    toast("Thiếu session_id/round_no để in phiếu trúng.");
+    return;
+  }
+  const url = `/auction/sessions/${SESSION_ID}/rounds/${rn}/winners/print`;
+  window.open(url, '_blank');
+}
+
+// In phiếu trúng LẺ theo round_lot_id (lô đã WON)
+function printWinnerOne(roundLotId){
+  const id = Number(roundLotId || 0);
+  if(id <= 0){
+    toast("Thiếu round_lot_id để in lẻ phiếu trúng.");
+    return;
+  }
+  const url = `/auction/sessions/round-lots/${id}/winner/print`;
+  window.open(url, '_blank');
+}
+
+// (tuỳ chọn) In phiếu trúng TOÀN PHIÊN
+function printSessionWinners(){
+  if(!SESSION_ID){
+    toast("Thiếu session_id để in phiếu trúng toàn phiên.");
+    return;
+  }
+  const url = `/auction/sessions/${SESSION_ID}/winners/print`;
+  window.open(url, '_blank');
+}
+
+
+// (tuỳ bạn) chưa có route in DS vào vòng sau thì giữ toast
+function printNextRoundOne(roundLotId){
+  toast("Chưa nối: in DS vào vòng sau (chưa triển khai route/template).");
+}
+
 
     // =========================
     // Modal open / close
