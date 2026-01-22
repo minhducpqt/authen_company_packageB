@@ -202,15 +202,11 @@
         <td class="info-label">Giá khởi điểm ({{ price_unit }})</td>
         <td class="info-sep">:</td>
         <td>
-          {% if is_per_sqm and t.starting_price_vnd is number %}
-            {% if t.area_m2 is number and t.area_m2 > 0 %}
-              {% set unit_price = ((t.starting_price_vnd|float) / (t.area_m2|float))|round(0, 'common') %}
-              {{ "{:,.0f}".format(unit_price) }}
-            {% else %}
-              0
-            {% endif %}
-          {% elif t.starting_price_vnd is number %}
+          {# NOTE: API đã trả starting_price_vnd theo đúng đơn vị (PER_SQM => VND/m², PER_LOT => VND/lô) #}
+          {% if t.starting_price_vnd is number %}
             {{ "{:,.0f}".format(t.starting_price_vnd|float) }}
+          {% else %}
+            0
           {% endif %}
         </td>
       </tr>
