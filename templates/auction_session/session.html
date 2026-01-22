@@ -4,690 +4,728 @@
 
 {% block content %}
 <style>
-  :root{
-    --bd: rgba(226,232,240,1);
-    --bd2: rgba(241,245,249,1);
-    --ink: rgba(15,23,42,1);
-    --muted: rgba(100,116,139,1);
-    --bg: #fff;
-    --bg2: rgba(248,250,252,1);
-    --pri: #0ea5e9;
-    --pri2:#0284c7;
-    --ok:#16a34a;
-    --warn:#f59e0b;
-    --bad:#ef4444;
-    --shadow: 0 18px 44px rgba(2,6,23,.18);
-  }
+    :root{
+      --bd: rgba(226,232,240,1);
+      --bd2: rgba(241,245,249,1);
+      --ink: rgba(15,23,42,1);
+      --muted: rgba(100,116,139,1);
+      --bg: #fff;
+      --bg2: rgba(248,250,252,1);
+      --pri: #0ea5e9;
+      --pri2:#0284c7;
+      --ok:#16a34a;
+      --warn:#f59e0b;
+      --bad:#ef4444;
+      --shadow: 0 18px 44px rgba(2,6,23,.18);
+    }
 
-  .wrap{max-width:1220px;margin:0 auto;padding:16px;}
-  .top{
-    display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;
-    padding:14px 16px;border:1px solid var(--bd);border-radius:18px;background:linear-gradient(180deg, rgba(248,250,252,.92), #fff);
-    box-shadow:0 2px 10px rgba(2,6,23,.04);
-  }
-  .tleft h1{margin:0;font-size:18px;color:var(--ink);font-weight:1000;}
-  .tleft .sub{margin-top:6px;color:var(--muted);font-size:13px;display:flex;flex-wrap:wrap;gap:10px;line-height:1.35;}
-  .sub b{color:var(--ink);}
+    .wrap{max-width:1220px;margin:0 auto;padding:16px;}
+    .top{
+      display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;
+      padding:14px 16px;border:1px solid var(--bd);border-radius:18px;background:linear-gradient(180deg, rgba(248,250,252,.92), #fff);
+      box-shadow:0 2px 10px rgba(2,6,23,.04);
+    }
+    .tleft h1{margin:0;font-size:18px;color:var(--ink);font-weight:1000;}
+    .tleft .sub{margin-top:6px;color:var(--muted);font-size:13px;display:flex;flex-wrap:wrap;gap:10px;line-height:1.35;}
+    .sub b{color:var(--ink);}
 
-  .tright{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
+    .tright{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
 
-  .btn{
-    height:36px;border-radius:12px;border:1px solid var(--bd);background:#fff;
-    padding:0 12px;font-weight:1000;font-size:13px;color:var(--ink);cursor:pointer;
-    display:inline-flex;align-items:center;gap:8px;text-decoration:none;transition:.15s ease;
-  }
-  .btn:hover{transform:translateY(-1px);box-shadow:0 10px 20px rgba(2,6,23,.08);}
-  .btn.primary{background:linear-gradient(180deg, var(--pri), var(--pri2));border-color:rgba(2,132,199,.5);color:#fff;}
-  .btn.ghost{background:rgba(248,250,252,1);}
-  .btn.danger{background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.25);color:#991b1b;}
-  .btn:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none;}
+    .btn{
+      height:36px;border-radius:12px;border:1px solid var(--bd);background:#fff;
+      padding:0 12px;font-weight:1000;font-size:13px;color:var(--ink);cursor:pointer;
+      display:inline-flex;align-items:center;gap:8px;text-decoration:none;transition:.15s ease;
+    }
+    .btn:hover{transform:translateY(-1px);box-shadow:0 10px 20px rgba(2,6,23,.08);}
+    .btn.primary{background:linear-gradient(180deg, var(--pri), var(--pri2));border-color:rgba(2,132,199,.5);color:#fff;}
+    .btn.ghost{background:rgba(248,250,252,1);}
+    .btn.danger{background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.25);color:#991b1b;}
+    .btn:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none;}
 
-  .pill{
-    display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;
-    font-size:12px;font-weight:1000;border:1px solid var(--bd);background:#fff;color:var(--muted);
-  }
-  .pill.ok{color:var(--ok);border-color:rgba(22,163,74,.25);background:rgba(22,163,74,.06);}
-  .pill.warn{color:var(--warn);border-color:rgba(245,158,11,.25);background:rgba(245,158,11,.08);}
-  .pill.bad{color:var(--bad);border-color:rgba(239,68,68,.25);background:rgba(239,68,68,.06);}
+    .pill{
+      display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;
+      font-size:12px;font-weight:1000;border:1px solid var(--bd);background:#fff;color:var(--muted);
+    }
+    .pill.ok{color:var(--ok);border-color:rgba(22,163,74,.25);background:rgba(22,163,74,.06);}
+    .pill.warn{color:var(--warn);border-color:rgba(245,158,11,.25);background:rgba(245,158,11,.08);}
+    .pill.bad{color:var(--bad);border-color:rgba(239,68,68,.25);background:rgba(239,68,68,.06);}
 
-  /* Round tabs */
-  .tabs{ margin-top:12px; display:flex;gap:8px;flex-wrap:wrap;align-items:center; }
-  .tab{
-    height:34px;border-radius:999px;border:1px solid var(--bd);background:#fff;
-    padding:0 12px;display:inline-flex;align-items:center;gap:8px;
-    font-size:12px;font-weight:1000;color:var(--ink);text-decoration:none;cursor:pointer;
-  }
-  .tab.active{
-    background:linear-gradient(180deg, rgba(14,165,233,.15), rgba(14,165,233,.07));
-    border-color:rgba(14,165,233,.35);
-    color:#075985;
-  }
-  .roundMore{
-    height:34px;border-radius:999px;border:1px solid var(--bd);background:#fff;
-    padding:0 10px;font-size:12px;font-weight:1000;color:var(--ink);
-  }
+    /* Round tabs */
+    .tabs{ margin-top:12px; display:flex;gap:8px;flex-wrap:wrap;align-items:center; }
+    .tab{
+      height:34px;border-radius:999px;border:1px solid var(--bd);background:#fff;
+      padding:0 12px;display:inline-flex;align-items:center;gap:8px;
+      font-size:12px;font-weight:1000;color:var(--ink);text-decoration:none;cursor:pointer;
+    }
+    .tab.active{
+      background:linear-gradient(180deg, rgba(14,165,233,.15), rgba(14,165,233,.07));
+      border-color:rgba(14,165,233,.35);
+      color:#075985;
+    }
+    .roundMore{
+      height:34px;border-radius:999px;border:1px solid var(--bd);background:#fff;
+      padding:0 10px;font-size:12px;font-weight:1000;color:var(--ink);
+    }
 
-  /* ===== Compact summary strip ===== */
-  .sum{
-    margin-top:10px;
-    display:grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap:10px;
-  }
-  .sumCard{
-    border:1px solid var(--bd);
-    border-radius:16px;
-    background:#fff;
-    box-shadow:0 2px 10px rgba(2,6,23,.04);
-    padding:10px 12px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:10px;
-    min-height:54px;
-  }
-  .sumCard .left{
-    display:flex;flex-direction:column;gap:4px;min-width:0;
-  }
-  .sumCard .k{
-    font-size:12px;color:var(--muted);font-weight:1100;
-    display:flex;gap:8px;align-items:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  }
-  .sumCard .v{
-    font-size:20px;color:var(--ink);font-weight:1200;letter-spacing:.2px;line-height:1.05;
-  }
-  .sumCard .badge{
-    display:inline-flex;align-items:center;gap:6px;
-    padding:6px 10px;border-radius:999px;border:1px solid var(--bd);
-    font-size:12px;font-weight:1100;color:var(--muted);background:#fff;white-space:nowrap;
-  }
+    /* ===== Compact summary strip ===== */
+    .sum{
+      margin-top:10px;
+      display:grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap:10px;
+    }
+    .sumCard{
+      border:1px solid var(--bd);
+      border-radius:16px;
+      background:#fff;
+      box-shadow:0 2px 10px rgba(2,6,23,.04);
+      padding:10px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      min-height:54px;
+    }
+    .sumCard .left{
+      display:flex;flex-direction:column;gap:4px;min-width:0;
+    }
+    .sumCard .k{
+      font-size:12px;color:var(--muted);font-weight:1100;
+      display:flex;gap:8px;align-items:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    .sumCard .v{
+      font-size:20px;color:var(--ink);font-weight:1200;letter-spacing:.2px;line-height:1.05;
+    }
+    .sumCard .badge{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:6px 10px;border-radius:999px;border:1px solid var(--bd);
+      font-size:12px;font-weight:1100;color:var(--muted);background:#fff;white-space:nowrap;
+    }
 
-  .sumCard.ok{
-    border-color:rgba(22,163,74,.22);
-    background:linear-gradient(180deg, rgba(22,163,74,.06), #fff);
-  }
-  .sumCard.ok .badge{
-    border-color:rgba(22,163,74,.25);
-    background:rgba(22,163,74,.07);
-    color:#166534;
-  }
+    .sumCard.ok{
+      border-color:rgba(22,163,74,.22);
+      background:linear-gradient(180deg, rgba(22,163,74,.06), #fff);
+    }
+    .sumCard.ok .badge{
+      border-color:rgba(22,163,74,.25);
+      background:rgba(22,163,74,.07);
+      color:#166534;
+    }
 
-  .sumCard.warn{
-    border-color:rgba(245,158,11,.22);
-    background:linear-gradient(180deg, rgba(245,158,11,.07), #fff);
-  }
-  .sumCard.warn .badge{
-    border-color:rgba(245,158,11,.25);
-    background:rgba(245,158,11,.10);
-    color:#92400e;
-  }
+    .sumCard.warn{
+      border-color:rgba(245,158,11,.22);
+      background:linear-gradient(180deg, rgba(245,158,11,.07), #fff);
+    }
+    .sumCard.warn .badge{
+      border-color:rgba(245,158,11,.25);
+      background:rgba(245,158,11,.10);
+      color:#92400e;
+    }
 
-  .sumCard.pending{
-    border-color:rgba(14,165,233,.20);
-    background:linear-gradient(180deg, rgba(14,165,233,.06), #fff);
-  }
-  .sumCard.pending .badge{
-    border-color:rgba(14,165,233,.28);
-    background:rgba(14,165,233,.10);
-    color:#075985;
-  }
+    .sumCard.pending{
+      border-color:rgba(14,165,233,.20);
+      background:linear-gradient(180deg, rgba(14,165,233,.06), #fff);
+    }
+    .sumCard.pending .badge{
+      border-color:rgba(14,165,233,.28);
+      background:rgba(14,165,233,.10);
+      color:#075985;
+    }
 
-  /* Table card */
-  .card{
-    margin-top:10px;border:1px solid var(--bd);border-radius:18px;background:#fff;
-    box-shadow:0 2px 10px rgba(2,6,23,.04);overflow:hidden;
-  }
-  .card-h{
-    padding:12px 14px;border-bottom:1px solid var(--bd2);
-    background:rgba(248,250,252,1);
-    display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
-  }
-  .card-h b{font-size:13px;color:var(--ink);}
-  .search{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
-  .search input{
-    height:34px;border-radius:12px;border:1px solid var(--bd);
-    padding:0 10px;font-size:13px;outline:none;min-width:240px;
-  }
-  .search input:focus{border-color:rgba(14,165,233,.6); box-shadow:0 0 0 3px rgba(14,165,233,.15);}
+    /* Table card */
+    .card{
+      margin-top:10px;border:1px solid var(--bd);border-radius:18px;background:#fff;
+      box-shadow:0 2px 10px rgba(2,6,23,.04);overflow:hidden;
+    }
+    .card-h{
+      padding:12px 14px;border-bottom:1px solid var(--bd2);
+      background:rgba(248,250,252,1);
+      display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
+    }
+    .card-h b{font-size:13px;color:var(--ink);}
+    .search{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+    .search input{
+      height:34px;border-radius:12px;border:1px solid var(--bd);
+      padding:0 10px;font-size:13px;outline:none;min-width:240px;
+    }
+    .search input:focus{border-color:rgba(14,165,233,.6); box-shadow:0 0 0 3px rgba(14,165,233,.15);}
 
-  table{width:100%;border-collapse:separate;border-spacing:0;}
-  thead th{
-    text-align:left;font-size:12px;color:var(--muted);font-weight:1000;
-    padding:10px 12px;border-bottom:1px solid var(--bd2);background:#fff;
-    position:sticky;top:0;z-index:2;
-  }
-  tbody td{
-    padding:12px;border-bottom:1px solid var(--bd2);vertical-align:top;font-size:13px;color:var(--ink);
-  }
-  tbody tr:hover td{background:rgba(248,250,252,.65);}
+    table{width:100%;border-collapse:separate;border-spacing:0;}
+    thead th{
+      text-align:left;font-size:12px;color:var(--muted);font-weight:1000;
+      padding:10px 12px;border-bottom:1px solid var(--bd2);background:#fff;
+      position:sticky;top:0;z-index:2;
+    }
+    tbody td{
+      padding:12px;border-bottom:1px solid var(--bd2);vertical-align:top;font-size:13px;color:var(--ink);
+    }
+    tbody tr:hover td{background:rgba(248,250,252,.65);}
 
-  .lotcode{
-    font-weight:800;
-    letter-spacing:.15px;
-    font-size:15px;
-    line-height:1.2;
-    color:rgba(15,23,42,1);
+    .lotcode{
+      font-weight:800;
+      letter-spacing:.15px;
+      font-size:15px;
+      line-height:1.2;
+      color:rgba(15,23,42,1);
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+    .lotcode::before{
+      content:"";
+      width:10px;height:10px;border-radius:999px;
+      background:linear-gradient(180deg, rgba(14,165,233,.95), rgba(2,132,199,.95));
+      box-shadow:0 8px 16px rgba(2,132,199,.25);
+      display:inline-block;
+    }
+
+    .muted{color:var(--muted);font-size:12px;line-height:1.25;margin-top:4px;}
+    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;}
+    .right{display:flex;justify-content:flex-end;}
+
+    .miniBtn{
+      height:32px;border-radius:12px;border:1px solid var(--bd);
+      background:#fff;padding:0 10px;font-size:12px;font-weight:1000;cursor:pointer;
+      display:inline-flex;align-items:center;gap:8px;
+    }
+    .miniBtn.primary{background:linear-gradient(180deg, var(--pri), var(--pri2));border-color:rgba(2,132,199,.5);color:#fff;}
+    .miniBtn.ghost{background:rgba(248,250,252,1);}
+    .miniBtn:hover{transform:translateY(-1px);box-shadow:0 10px 18px rgba(2,6,23,.08);}
+    .miniBtn:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none;}
+
+    .printIcon{
+      height:26px;border-radius:10px;border:1px solid var(--bd);
+      background:#fff;padding:0 8px;font-size:12px;font-weight:1000;cursor:pointer;
+      display:inline-flex;align-items:center;gap:6px;
+    }
+    .printIcon:hover{transform:translateY(-1px);box-shadow:0 10px 18px rgba(2,6,23,.08);}
+
+    .empty{padding:16px;color:var(--muted);font-size:13px;}
+
+    /* Modal */
+    .backdrop{
+      position:fixed;inset:0;background:rgba(2,6,23,.58);
+      display:none;align-items:center;justify-content:center;
+      padding:18px 14px;z-index:9999;
+    }
+    .modal{
+      width:100%;max-width:980px;background:#fff;border-radius:18px;
+      border:1px solid rgba(226,232,240,1);box-shadow:var(--shadow);overflow:hidden;
+      max-height: calc(100vh - 48px);
+      display:flex;flex-direction:column;
+    }
+    .mh{
+      padding:14px 16px;border-bottom:1px solid var(--bd2);
+      display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+      background:linear-gradient(180deg, rgba(248,250,252,.95), #fff);
+      flex:0 0 auto;
+    }
+    .mh b{font-size:14px;color:var(--ink);font-weight:1100;}
+    .mh .mmeta{margin-top:6px;color:var(--muted);font-size:12px;display:flex;gap:10px;flex-wrap:wrap;}
+    .xbtn{ width:34px;height:34px;border-radius:10px;border:1px solid var(--bd); background:#fff;cursor:pointer;font-weight:900; }
+
+    .mb{padding:14px 16px;background:#fff; overflow:auto; flex:1 1 auto;}
+
+    .vstack{display:flex;flex-direction:column;gap:12px;}
+
+    .box{
+      border:1px solid var(--bd);
+      border-radius:16px;
+      overflow:hidden;
+      background:#fff;
+    }
+    .box-h{
+      padding:10px 12px;border-bottom:1px solid var(--bd2);
+      background:rgba(248,250,252,1);
+      display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    }
+    .box-h b{font-size:12px;color:var(--ink);font-weight:1100;}
+    .box-b{padding:12px;}
+
+    .field{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
+    .field label{font-size:12px;color:var(--muted);font-weight:1000;}
+    .field select,.field input,.field textarea{
+      height:36px;border-radius:12px;border:1px solid var(--bd);
+      padding:0 10px;font-size:13px;outline:none;background:#fff;color:var(--ink);
+    }
+    .field textarea{height:auto;min-height:78px;padding:10px;resize:vertical;}
+    .field select:focus,.field input:focus,.field textarea:focus{
+      border-color:rgba(14,165,233,.6);box-shadow:0 0 0 3px rgba(14,165,233,.15);
+    }
+
+    .field.prominent label{display:flex;align-items:center;gap:8px;}
+    .field.prominent select{
+      height:44px;border-radius:14px;font-size:14px;font-weight:1100;letter-spacing:.2px;
+      background:linear-gradient(180deg, rgba(14,165,233,.06), rgba(248,250,252,.85));
+      border-color:rgba(14,165,233,.28);
+    }
+    .field.prominent select:focus{
+      border-color:rgba(14,165,233,.6);
+      box-shadow:0 0 0 4px rgba(14,165,233,.16);
+    }
+
+    .seg{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+    .seg button{
+      height:34px;border-radius:999px;border:1px solid var(--bd);background:#fff;
+      padding:0 12px;font-size:12px;font-weight:1000;cursor:pointer;color:var(--ink);
+    }
+    .seg button.active{
+      background:linear-gradient(180deg, rgba(14,165,233,.15), rgba(14,165,233,.07));
+      border-color:rgba(14,165,233,.35);
+      color:#075985;
+    }
+
+    /* Smart price */
+    .priceBlock{
+      border:1px solid rgba(14,165,233,.20);
+      background:linear-gradient(180deg, rgba(14,165,233,.05), rgba(248,250,252,.90));
+      border-radius:18px;
+      padding:12px 12px;
+      margin:10px 0 12px;
+    }
+    .priceTop{
+      display:grid;
+      grid-template-columns: 1.1fr 2fr 1.1fr;
+      gap:12px;
+      align-items:stretch;
+    }
+    .pStat{
+      border:1px solid var(--bd);
+      border-radius:14px;
+      background:#fff;
+      padding:10px 12px;
+      display:flex;flex-direction:column;gap:6px;
+    }
+    .pStat .k{font-size:12px;color:var(--muted);font-weight:1000;display:flex;gap:8px;align-items:center;}
+    .pStat .v{font-size:24px;font-weight:1200;color:var(--ink);line-height:1.05;letter-spacing:.3px;}
+    .pStat .v.muted{color:rgba(15,23,42,.55);}
+
+    .pInputWrap{
+      border:1px solid rgba(2,132,199,.18);
+      border-radius:16px;
+      background:rgba(255,255,255,.82);
+      padding:10px 10px;
+      display:flex;flex-direction:column;gap:10px;
+      box-shadow:0 2px 10px rgba(2,6,23,.04);
+    }
+    .pRow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+    .pLabel{font-size:12px;color:var(--muted);font-weight:1000;display:flex;gap:8px;align-items:center;}
+
+    .moneyWrap{position:relative;flex:1 1 auto;min-width:260px;}
+    .moneySuffix{
+      position:absolute;right:12px;top:50%;transform:translateY(-50%);
+      font-size:12px;font-weight:1100;color:rgba(100,116,139,.9);
+      pointer-events:none;
+      padding-left:10px;
+      background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.9));
+    }
+    .priceInput{
+      width:100%;
+      height:48px !important;
+      border-radius:14px !important;
+      font-size:20px !important;
+      font-weight:1200 !important;
+      letter-spacing:.3px;
+      padding:0 56px 0 12px !important;
+      background:rgba(255,255,255,.92) !important;
+      border:1px solid rgba(2,132,199,.22) !important;
+      outline:none;
+    }
+    .priceInput:focus{
+      border-color:rgba(14,165,233,.6) !important;
+      box-shadow:0 0 0 4px rgba(14,165,233,.16) !important;
+    }
+    .priceInput:disabled{
+      opacity:.7;cursor:not-allowed;
+      background:rgba(248,250,252,1) !important;
+    }
+
+    .autoBtn{
+      height:40px;border-radius:14px;border:1px solid var(--bd);
+      background:#fff;padding:0 14px;font-size:13px;font-weight:1100;cursor:pointer;
+      display:inline-flex;align-items:center;gap:8px;
+      transition:.15s ease;white-space:nowrap;
+    }
+    .autoBtn:hover{transform:translateY(-1px);box-shadow:0 10px 18px rgba(2,6,23,.08);}
+    .autoBtn.primary{
+      background:rgba(14,165,233,.10);
+      border-color:rgba(14,165,233,.28);
+      color:#075985;
+    }
+
+    .stepPad{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+    .stepBtn{
+      height:42px;min-width:66px;
+      border-radius:16px;border:1px solid var(--bd);
+      background:#fff;
+      font-weight:1200;font-size:14px;
+      cursor:pointer;
+      transition:.15s ease;
+    }
+    .stepBtn:hover{transform:translateY(-1px);box-shadow:0 10px 18px rgba(2,6,23,.08);}
+    .stepBtn.neg{color:#7f1d1d;background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.25);}
+    .stepBtn.pos{color:#075985;background:rgba(14,165,233,.08);border-color:rgba(14,165,233,.25);}
+
+    .pHelp{font-size:12px;color:var(--muted);line-height:1.35;margin-top:2px;}
+    .tickInfo{font-size:12px;color:rgba(51,65,85,1);display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+    .tickPill{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:4px 10px;border-radius:999px;
+      border:1px solid var(--bd);background:#fff;
+      font-weight:1100;color:rgba(30,41,59,1);
+    }
+    .tickPill b{font-weight:1200;}
+
+    /* Picker */
+    .picker{
+      border:1px solid var(--bd);
+      border-radius:14px;
+      overflow:hidden;
+      background:#fff;
+      display:flex;
+      flex-direction:column;
+      min-height:260px;
+    }
+    .picker .ph{
+      padding:10px 10px;border-bottom:1px solid var(--bd2);
+      background:rgba(248,250,252,1);
+      display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;
+    }
+    .picker .ph b{font-size:12px;font-weight:1100;}
+    .picker .ph input{
+      height:30px;border-radius:10px;border:1px solid var(--bd);
+      padding:0 8px;font-size:12px;outline:none;min-width:200px;
+    }
+    .picker .pb{ padding:8px;display:flex;flex-direction:column;gap:8px;overflow:auto;max-height:340px; }
+    .pitem{
+      border:1px solid var(--bd);
+      border-radius:12px;
+      padding:10px;
+      background:#fff;
+      display:flex;justify-content:space-between;gap:10px;align-items:flex-start;
+      cursor:pointer;
+    }
+    .pitem:hover{background:rgba(248,250,252,.7);}
+    .pitem.selected{
+      border-color:rgba(14,165,233,.55);
+      box-shadow:0 0 0 3px rgba(14,165,233,.12);
+    }
+    .pitem b{font-size:13px;font-weight:1100;}
+    .pitem .pm{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.25;}
+    .pitem .tag{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:3px 8px;border-radius:999px;
+      font-size:11px;font-weight:1000;
+      border:1px solid var(--bd);background:#fff;color:var(--muted);
+      white-space:nowrap;
+    }
+    .pitem.selected .tag{color:#075985;border-color:rgba(14,165,233,.35);background:rgba(14,165,233,.08);}
+
+    /* Dual list */
+    .dual{display:grid;grid-template-columns: 1fr 70px 1fr;gap:10px;align-items:stretch;}
+    .plist{
+      border:1px solid var(--bd);
+      border-radius:14px;
+      overflow:hidden;
+      background:#fff;
+      display:flex;
+      flex-direction:column;
+      min-height:300px;
+    }
+    .plist .ph{
+      padding:10px 10px;border-bottom:1px solid var(--bd2);
+      background:rgba(248,250,252,1);
+      display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;
+    }
+    .plist .ph b{font-size:12px;font-weight:1100;}
+    .plist .ph input{
+      height:30px;border-radius:10px;border:1px solid var(--bd);
+      padding:0 8px;font-size:12px;outline:none;min-width:140px;
+    }
+    .plist .pb{ padding:8px;display:flex;flex-direction:column;gap:8px;overflow:auto;max-height:360px; }
+    .pitem2{
+      border:1px solid var(--bd);
+      border-radius:12px;
+      padding:10px;
+      background:#fff;
+      display:flex;justify-content:space-between;gap:10px;align-items:flex-start;
+    }
+    .pitem2 b{font-size:13px;font-weight:1100;}
+    .pitem2 .pm{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.25;}
+    .pitem2 .pact{display:flex;flex-direction:column;gap:6px;align-items:flex-end;}
+
+    .iconbtn{
+      height:30px;border-radius:10px;border:1px solid var(--bd);
+      background:#fff;padding:0 10px;font-size:12px;font-weight:1000;cursor:pointer;
+      display:inline-flex;align-items:center;gap:8px;
+    }
+    .iconbtn.primary{background:rgba(14,165,233,.08);border-color:rgba(14,165,233,.25);color:#075985;}
+    .iconbtn.danger{background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.25);color:#991b1b;}
+
+    .arrows{ display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px; }
+    .arrows .iconbtn{width:60px;justify-content:center;}
+
+    .foot{
+      padding:14px 16px;border-top:1px solid var(--bd2);
+      background:rgba(248,250,252,.9);
+      display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;
+      flex:0 0 auto;
+    }
+    .hint{color:var(--muted);font-size:12px;line-height:1.3;}
+    .toast{
+      position:fixed;right:16px;bottom:16px;z-index:10000;
+      background:#0f172a;color:#fff;border-radius:14px;padding:10px 12px;
+      font-size:13px;box-shadow:0 10px 30px rgba(2,6,23,.25);
+      display:none;max-width:520px;line-height:1.35;
+    }
+
+    /* Dialog */
+    .dlg-backdrop{
+      position:fixed;inset:0;background:rgba(2,6,23,.58);
+      display:none;align-items:center;justify-content:center;
+      padding:18px 14px;z-index:11000;
+    }
+    .dlg{
+      width:100%;max-width:720px;background:#fff;border-radius:18px;
+      border:1px solid rgba(226,232,240,1);box-shadow:var(--shadow);overflow:hidden;
+    }
+    .dlg-h{
+      padding:12px 14px;border-bottom:1px solid var(--bd2);
+      background:linear-gradient(180deg, rgba(248,250,252,.95), #fff);
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+    }
+    .dlg-h b{font-size:13px;color:var(--ink);font-weight:1100;}
+    .dlg-x{
+      width:34px;height:34px;border-radius:10px;border:1px solid var(--bd);
+      background:#fff;cursor:pointer;font-weight:900;
+    }
+    .dlg-b{padding:14px;}
+    .dlg-msg{color:var(--ink);font-size:13px;line-height:1.45;}
+    .dlg-sub{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.35;}
+    .dlg-f{
+      padding:12px 14px;border-top:1px solid var(--bd2);
+      background:rgba(248,250,252,.9);
+      display:flex;justify-content:flex-end;gap:10px;align-items:center;flex-wrap:wrap;
+    }
+
+    .cCard{
+      border:1px solid var(--bd);
+      border-radius:16px;
+      background:linear-gradient(180deg, rgba(248,250,252,.9), #fff);
+      padding:12px;
+      box-shadow:0 2px 10px rgba(2,6,23,.04);
+    }
+    .cTop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;}
+    .cTitle{font-size:13px;font-weight:1200;color:var(--ink);display:flex;gap:8px;align-items:center;}
+    .cGrid{
+      margin-top:10px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+    .cItem{
+      border:1px solid var(--bd2);
+      background:#fff;
+      border-radius:14px;
+      padding:10px 10px;
+    }
+    .cItem .k{font-size:12px;color:var(--muted);font-weight:1000;display:flex;gap:8px;align-items:center;}
+    .cItem .v{margin-top:6px;font-size:14px;font-weight:1200;color:var(--ink);line-height:1.2;}
+    .cItem .v.mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;}
+    .cWarn{
+      margin-top:10px;
+      border:1px solid rgba(245,158,11,.25);
+      background:rgba(245,158,11,.08);
+      color:#92400e;
+      border-radius:14px;
+      padding:10px 10px;
+      font-size:12px;
+      line-height:1.35;
+      font-weight:1000;
+      display:flex;gap:8px;align-items:flex-start;
+    }
+
+    @media (max-width: 1040px){
+      .dual{grid-template-columns:1fr;}
+      .arrows{flex-direction:row;}
+      .sum{grid-template-columns:1fr 1fr;}
+      thead{display:none;}
+      table, tbody, tr, td {display:block;width:100%;}
+      tbody td{border-bottom:0;}
+      tbody tr{border-bottom:1px solid var(--bd2);}
+      .right{justify-content:flex-start;}
+      .priceTop{grid-template-columns:1fr;}
+      .cGrid{grid-template-columns:1fr;}
+    }
+    .printDrop{
+    position:relative;
     display:inline-flex;
-    align-items:center;
-    gap:8px;
-  }
-  .lotcode::before{
-    content:"";
-    width:10px;height:10px;border-radius:999px;
-    background:linear-gradient(180deg, rgba(14,165,233,.95), rgba(2,132,199,.95));
-    box-shadow:0 8px 16px rgba(2,132,199,.25);
-    display:inline-block;
   }
 
-  .muted{color:var(--muted);font-size:12px;line-height:1.25;margin-top:4px;}
-  .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;}
-  .right{display:flex;justify-content:flex-end;}
-
-  .miniBtn{
-    height:32px;border-radius:12px;border:1px solid var(--bd);
-    background:#fff;padding:0 10px;font-size:12px;font-weight:1000;cursor:pointer;
-    display:inline-flex;align-items:center;gap:8px;
-  }
-  .miniBtn.primary{background:linear-gradient(180deg, var(--pri), var(--pri2));border-color:rgba(2,132,199,.5);color:#fff;}
-  .miniBtn.ghost{background:rgba(248,250,252,1);}
-  .miniBtn:hover{transform:translateY(-1px);box-shadow:0 10px 18px rgba(2,6,23,.08);}
-  .miniBtn:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none;}
-
-  .printIcon{
-    height:26px;border-radius:10px;border:1px solid var(--bd);
-    background:#fff;padding:0 8px;font-size:12px;font-weight:1000;cursor:pointer;
-    display:inline-flex;align-items:center;gap:6px;
-  }
-  .printIcon:hover{transform:translateY(-1px);box-shadow:0 10px 18px rgba(2,6,23,.08);}
-
-  .empty{padding:16px;color:var(--muted);font-size:13px;}
-
-  /* Modal */
-  .backdrop{
-    position:fixed;inset:0;background:rgba(2,6,23,.58);
-    display:none;align-items:center;justify-content:center;
-    padding:18px 14px;z-index:9999;
-  }
-  .modal{
-    width:100%;max-width:980px;background:#fff;border-radius:18px;
-    border:1px solid rgba(226,232,240,1);box-shadow:var(--shadow);overflow:hidden;
-    max-height: calc(100vh - 48px);
-    display:flex;flex-direction:column;
-  }
-  .mh{
-    padding:14px 16px;border-bottom:1px solid var(--bd2);
-    display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
-    background:linear-gradient(180deg, rgba(248,250,252,.95), #fff);
-    flex:0 0 auto;
-  }
-  .mh b{font-size:14px;color:var(--ink);font-weight:1100;}
-  .mh .mmeta{margin-top:6px;color:var(--muted);font-size:12px;display:flex;gap:10px;flex-wrap:wrap;}
-  .xbtn{ width:34px;height:34px;border-radius:10px;border:1px solid var(--bd); background:#fff;cursor:pointer;font-weight:900; }
-
-  .mb{padding:14px 16px;background:#fff; overflow:auto; flex:1 1 auto;}
-
-  .vstack{display:flex;flex-direction:column;gap:12px;}
-
-  .box{
-    border:1px solid var(--bd);
-    border-radius:16px;
-    overflow:hidden;
+  .printMenu{
+    position:absolute;
+    top:110%;
+    right:0;
     background:#fff;
-  }
-  .box-h{
-    padding:10px 12px;border-bottom:1px solid var(--bd2);
-    background:rgba(248,250,252,1);
-    display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
-  }
-  .box-h b{font-size:12px;color:var(--ink);font-weight:1100;}
-  .box-b{padding:12px;}
-
-  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
-  .field label{font-size:12px;color:var(--muted);font-weight:1000;}
-  .field select,.field input,.field textarea{
-    height:36px;border-radius:12px;border:1px solid var(--bd);
-    padding:0 10px;font-size:13px;outline:none;background:#fff;color:var(--ink);
-  }
-  .field textarea{height:auto;min-height:78px;padding:10px;resize:vertical;}
-  .field select:focus,.field input:focus,.field textarea:focus{
-    border-color:rgba(14,165,233,.6);box-shadow:0 0 0 3px rgba(14,165,233,.15);
-  }
-
-  .field.prominent label{display:flex;align-items:center;gap:8px;}
-  .field.prominent select{
-    height:44px;border-radius:14px;font-size:14px;font-weight:1100;letter-spacing:.2px;
-    background:linear-gradient(180deg, rgba(14,165,233,.06), rgba(248,250,252,.85));
-    border-color:rgba(14,165,233,.28);
-  }
-  .field.prominent select:focus{
-    border-color:rgba(14,165,233,.6);
-    box-shadow:0 0 0 4px rgba(14,165,233,.16);
-  }
-
-  .seg{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
-  .seg button{
-    height:34px;border-radius:999px;border:1px solid var(--bd);background:#fff;
-    padding:0 12px;font-size:12px;font-weight:1000;cursor:pointer;color:var(--ink);
-  }
-  .seg button.active{
-    background:linear-gradient(180deg, rgba(14,165,233,.15), rgba(14,165,233,.07));
-    border-color:rgba(14,165,233,.35);
-    color:#075985;
-  }
-
-  /* Smart price */
-  .priceBlock{
-    border:1px solid rgba(14,165,233,.20);
-    background:linear-gradient(180deg, rgba(14,165,233,.05), rgba(248,250,252,.90));
-    border-radius:18px;
-    padding:12px 12px;
-    margin:10px 0 12px;
-  }
-  .priceTop{
-    display:grid;
-    grid-template-columns: 1.1fr 2fr 1.1fr;
-    gap:12px;
-    align-items:stretch;
-  }
-  .pStat{
     border:1px solid var(--bd);
-    border-radius:14px;
-    background:#fff;
-    padding:10px 12px;
-    display:flex;flex-direction:column;gap:6px;
+    border-radius:12px;
+    box-shadow:0 12px 30px rgba(2,6,23,.18);
+    padding:6px;
+    display:none;
+    min-width:200px;
+    z-index:100;
   }
-  .pStat .k{font-size:12px;color:var(--muted);font-weight:1000;display:flex;gap:8px;align-items:center;}
-  .pStat .v{font-size:24px;font-weight:1200;color:var(--ink);line-height:1.05;letter-spacing:.3px;}
-  .pStat .v.muted{color:rgba(15,23,42,.55);}
 
-  .pInputWrap{
-    border:1px solid rgba(2,132,199,.18);
-    border-radius:16px;
-    background:rgba(255,255,255,.82);
-    padding:10px 10px;
-    display:flex;flex-direction:column;gap:10px;
-    box-shadow:0 2px 10px rgba(2,6,23,.04);
-  }
-  .pRow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
-  .pLabel{font-size:12px;color:var(--muted);font-weight:1000;display:flex;gap:8px;align-items:center;}
-
-  .moneyWrap{position:relative;flex:1 1 auto;min-width:260px;}
-  .moneySuffix{
-    position:absolute;right:12px;top:50%;transform:translateY(-50%);
-    font-size:12px;font-weight:1100;color:rgba(100,116,139,.9);
-    pointer-events:none;
-    padding-left:10px;
-    background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.9));
-  }
-  .priceInput{
+  .printMenu button{
     width:100%;
-    height:48px !important;
-    border-radius:14px !important;
-    font-size:20px !important;
-    font-weight:1200 !important;
-    letter-spacing:.3px;
-    padding:0 56px 0 12px !important;
-    background:rgba(255,255,255,.92) !important;
-    border:1px solid rgba(2,132,199,.22) !important;
-    outline:none;
-  }
-  .priceInput:focus{
-    border-color:rgba(14,165,233,.6) !important;
-    box-shadow:0 0 0 4px rgba(14,165,233,.16) !important;
-  }
-  .priceInput:disabled{
-    opacity:.7;cursor:not-allowed;
-    background:rgba(248,250,252,1) !important;
-  }
-
-  .autoBtn{
-    height:40px;border-radius:14px;border:1px solid var(--bd);
-    background:#fff;padding:0 14px;font-size:13px;font-weight:1100;cursor:pointer;
-    display:inline-flex;align-items:center;gap:8px;
-    transition:.15s ease;white-space:nowrap;
-  }
-  .autoBtn:hover{transform:translateY(-1px);box-shadow:0 10px 18px rgba(2,6,23,.08);}
-  .autoBtn.primary{
-    background:rgba(14,165,233,.10);
-    border-color:rgba(14,165,233,.28);
-    color:#075985;
-  }
-
-  .stepPad{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
-  .stepBtn{
-    height:42px;min-width:66px;
-    border-radius:16px;border:1px solid var(--bd);
+    text-align:left;
+    border:0;
     background:#fff;
-    font-weight:1200;font-size:14px;
-    cursor:pointer;
-    transition:.15s ease;
-  }
-  .stepBtn:hover{transform:translateY(-1px);box-shadow:0 10px 18px rgba(2,6,23,.08);}
-  .stepBtn.neg{color:#7f1d1d;background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.25);}
-  .stepBtn.pos{color:#075985;background:rgba(14,165,233,.08);border-color:rgba(14,165,233,.25);}
-
-  .pHelp{font-size:12px;color:var(--muted);line-height:1.35;margin-top:2px;}
-  .tickInfo{font-size:12px;color:rgba(51,65,85,1);display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
-  .tickPill{
-    display:inline-flex;align-items:center;gap:6px;
-    padding:4px 10px;border-radius:999px;
-    border:1px solid var(--bd);background:#fff;
-    font-weight:1100;color:rgba(30,41,59,1);
-  }
-  .tickPill b{font-weight:1200;}
-
-  /* Picker */
-  .picker{
-    border:1px solid var(--bd);
-    border-radius:14px;
-    overflow:hidden;
-    background:#fff;
-    display:flex;
-    flex-direction:column;
-    min-height:260px;
-  }
-  .picker .ph{
-    padding:10px 10px;border-bottom:1px solid var(--bd2);
-    background:rgba(248,250,252,1);
-    display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;
-  }
-  .picker .ph b{font-size:12px;font-weight:1100;}
-  .picker .ph input{
-    height:30px;border-radius:10px;border:1px solid var(--bd);
-    padding:0 8px;font-size:12px;outline:none;min-width:200px;
-  }
-  .picker .pb{ padding:8px;display:flex;flex-direction:column;gap:8px;overflow:auto;max-height:340px; }
-  .pitem{
-    border:1px solid var(--bd);
-    border-radius:12px;
-    padding:10px;
-    background:#fff;
-    display:flex;justify-content:space-between;gap:10px;align-items:flex-start;
-    cursor:pointer;
-  }
-  .pitem:hover{background:rgba(248,250,252,.7);}
-  .pitem.selected{
-    border-color:rgba(14,165,233,.55);
-    box-shadow:0 0 0 3px rgba(14,165,233,.12);
-  }
-  .pitem b{font-size:13px;font-weight:1100;}
-  .pitem .pm{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.25;}
-  .pitem .tag{
-    display:inline-flex;align-items:center;gap:6px;
-    padding:3px 8px;border-radius:999px;
-    font-size:11px;font-weight:1000;
-    border:1px solid var(--bd);background:#fff;color:var(--muted);
-    white-space:nowrap;
-  }
-  .pitem.selected .tag{color:#075985;border-color:rgba(14,165,233,.35);background:rgba(14,165,233,.08);}
-
-  /* Dual list */
-  .dual{display:grid;grid-template-columns: 1fr 70px 1fr;gap:10px;align-items:stretch;}
-  .plist{
-    border:1px solid var(--bd);
-    border-radius:14px;
-    overflow:hidden;
-    background:#fff;
-    display:flex;
-    flex-direction:column;
-    min-height:300px;
-  }
-  .plist .ph{
-    padding:10px 10px;border-bottom:1px solid var(--bd2);
-    background:rgba(248,250,252,1);
-    display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;
-  }
-  .plist .ph b{font-size:12px;font-weight:1100;}
-  .plist .ph input{
-    height:30px;border-radius:10px;border:1px solid var(--bd);
-    padding:0 8px;font-size:12px;outline:none;min-width:140px;
-  }
-  .plist .pb{ padding:8px;display:flex;flex-direction:column;gap:8px;overflow:auto;max-height:360px; }
-  .pitem2{
-    border:1px solid var(--bd);
-    border-radius:12px;
-    padding:10px;
-    background:#fff;
-    display:flex;justify-content:space-between;gap:10px;align-items:flex-start;
-  }
-  .pitem2 b{font-size:13px;font-weight:1100;}
-  .pitem2 .pm{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.25;}
-  .pitem2 .pact{display:flex;flex-direction:column;gap:6px;align-items:flex-end;}
-
-  .iconbtn{
-    height:30px;border-radius:10px;border:1px solid var(--bd);
-    background:#fff;padding:0 10px;font-size:12px;font-weight:1000;cursor:pointer;
-    display:inline-flex;align-items:center;gap:8px;
-  }
-  .iconbtn.primary{background:rgba(14,165,233,.08);border-color:rgba(14,165,233,.25);color:#075985;}
-  .iconbtn.danger{background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.25);color:#991b1b;}
-
-  .arrows{ display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px; }
-  .arrows .iconbtn{width:60px;justify-content:center;}
-
-  .foot{
-    padding:14px 16px;border-top:1px solid var(--bd2);
-    background:rgba(248,250,252,.9);
-    display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;
-    flex:0 0 auto;
-  }
-  .hint{color:var(--muted);font-size:12px;line-height:1.3;}
-  .toast{
-    position:fixed;right:16px;bottom:16px;z-index:10000;
-    background:#0f172a;color:#fff;border-radius:14px;padding:10px 12px;
-    font-size:13px;box-shadow:0 10px 30px rgba(2,6,23,.25);
-    display:none;max-width:520px;line-height:1.35;
-  }
-
-  /* Dialog */
-  .dlg-backdrop{
-    position:fixed;inset:0;background:rgba(2,6,23,.58);
-    display:none;align-items:center;justify-content:center;
-    padding:18px 14px;z-index:11000;
-  }
-  .dlg{
-    width:100%;max-width:720px;background:#fff;border-radius:18px;
-    border:1px solid rgba(226,232,240,1);box-shadow:var(--shadow);overflow:hidden;
-  }
-  .dlg-h{
-    padding:12px 14px;border-bottom:1px solid var(--bd2);
-    background:linear-gradient(180deg, rgba(248,250,252,.95), #fff);
-    display:flex;align-items:center;justify-content:space-between;gap:10px;
-  }
-  .dlg-h b{font-size:13px;color:var(--ink);font-weight:1100;}
-  .dlg-x{
-    width:34px;height:34px;border-radius:10px;border:1px solid var(--bd);
-    background:#fff;cursor:pointer;font-weight:900;
-  }
-  .dlg-b{padding:14px;}
-  .dlg-msg{color:var(--ink);font-size:13px;line-height:1.45;}
-  .dlg-sub{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.35;}
-  .dlg-f{
-    padding:12px 14px;border-top:1px solid var(--bd2);
-    background:rgba(248,250,252,.9);
-    display:flex;justify-content:flex-end;gap:10px;align-items:center;flex-wrap:wrap;
-  }
-
-  .cCard{
-    border:1px solid var(--bd);
-    border-radius:16px;
-    background:linear-gradient(180deg, rgba(248,250,252,.9), #fff);
-    padding:12px;
-    box-shadow:0 2px 10px rgba(2,6,23,.04);
-  }
-  .cTop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;}
-  .cTitle{font-size:13px;font-weight:1200;color:var(--ink);display:flex;gap:8px;align-items:center;}
-  .cGrid{
-    margin-top:10px;
-    display:grid;
-    grid-template-columns: 1fr 1fr;
-    gap:10px;
-  }
-  .cItem{
-    border:1px solid var(--bd2);
-    background:#fff;
-    border-radius:14px;
-    padding:10px 10px;
-  }
-  .cItem .k{font-size:12px;color:var(--muted);font-weight:1000;display:flex;gap:8px;align-items:center;}
-  .cItem .v{margin-top:6px;font-size:14px;font-weight:1200;color:var(--ink);line-height:1.2;}
-  .cItem .v.mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;}
-  .cWarn{
-    margin-top:10px;
-    border:1px solid rgba(245,158,11,.25);
-    background:rgba(245,158,11,.08);
-    color:#92400e;
-    border-radius:14px;
-    padding:10px 10px;
+    padding:8px 10px;
     font-size:12px;
-    line-height:1.35;
     font-weight:1000;
-    display:flex;gap:8px;align-items:flex-start;
+    border-radius:8px;
+    cursor:pointer;
+    display:flex;
+    gap:8px;
+    align-items:center;
   }
 
-  @media (max-width: 1040px){
-    .dual{grid-template-columns:1fr;}
-    .arrows{flex-direction:row;}
-    .sum{grid-template-columns:1fr 1fr;}
-    thead{display:none;}
-    table, tbody, tr, td {display:block;width:100%;}
-    tbody td{border-bottom:0;}
-    tbody tr{border-bottom:1px solid var(--bd2);}
-    .right{justify-content:flex-start;}
-    .priceTop{grid-template-columns:1fr;}
-    .cGrid{grid-template-columns:1fr;}
+  .printMenu button:hover{
+    background:rgba(14,165,233,.08);
   }
+
 </style>
 
 <div class="wrap">
 
-  <div class="top">
-    <div class="tleft">
-      <h1>{{ title or ("Phiên đấu #" ~ session_id) }}</h1>
-      <div class="sub">
+    <div class="top">
+        <div class="tleft">
+            <h1>{{ title or ("Phiên đấu #" ~ session_id) }}</h1>
+            <div class="sub">
         <span class="pill {% if (session.status or '')=='OPEN' %}ok{% elif (session.status or '') in ['DRAFT','PAUSED'] %}warn{% else %}bad{% endif %}">
           <i class="ri-pulse-line"></i> {{ session.status or "—" }}
         </span>
-        <span><i class="ri-building-2-line"></i> Project: <b>{{ session.project_code or "-" }}</b></span>
-        <span><i class="ri-stack-line"></i> Round: <b>#{{ round_no or 1 }}</b></span>
-      </div>
+                <span><i class="ri-building-2-line"></i> Project: <b>{{ session.project_code or "-" }}</b></span>
+                <span><i class="ri-stack-line"></i> Round: <b>#{{ round_no or 1 }}</b></span>
+            </div>
 
-      <div class="tabs" id="roundTabs">
-        {% set rs = rounds or [] %}
-        {% if rs|length > 0 %}
-          {% for r in rs %}
-            <a class="tab {% if (r.round_no or r.get('round_no')) == round_no %}active{% endif %}"
-               href="/auction/sessions/{{ session_id }}?round_no={{ r.round_no or r.get('round_no') }}">
-              Vòng {{ r.round_no or r.get('round_no') }}
-            </a>
-          {% endfor %}
-        {% else %}
-          <span class="pill warn"><i class="ri-information-line"></i> Chưa có vòng</span>
-        {% endif %}
-      </div>
+            <div class="tabs" id="roundTabs">
+                {% set rs = rounds or [] %}
+                {% if rs|length > 0 %}
+                {% for r in rs %}
+                <a class="tab {% if (r.round_no or r.get('round_no')) == round_no %}active{% endif %}"
+                   href="/auction/sessions/{{ session_id }}?round_no={{ r.round_no or r.get('round_no') }}">
+                    Vòng {{ r.round_no or r.get('round_no') }}
+                </a>
+                {% endfor %}
+                {% else %}
+                <span class="pill warn"><i class="ri-information-line"></i> Chưa có vòng</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="tright">
+            <a class="btn ghost" href="/auction/sessions"><i class="ri-arrow-left-line"></i> Quay lại</a>
+
+            <button class="btn" type="button" onclick="startSessionIfNeeded()">
+                <i class="ri-rocket-line"></i> Start
+            </button>
+
+            <button class="btn primary" type="button" onclick="createNextRound()">
+                <i class="ri-skip-forward-line"></i> Tạo vòng sau
+            </button>
+
+            <button class="btn" type="button" onclick="refreshAll()">
+                <i class="ri-refresh-line"></i> Làm mới
+            </button>
+        </div>
     </div>
 
-    <div class="tright">
-      <a class="btn ghost" href="/auction/sessions"><i class="ri-arrow-left-line"></i> Quay lại</a>
-
-      <button class="btn" type="button" onclick="startSessionIfNeeded()">
-        <i class="ri-rocket-line"></i> Start
-      </button>
-
-      <button class="btn primary" type="button" onclick="createNextRound()">
-        <i class="ri-skip-forward-line"></i> Tạo vòng sau
-      </button>
-
-      <button class="btn" type="button" onclick="refreshAll()">
-        <i class="ri-refresh-line"></i> Làm mới
-      </button>
-    </div>
-  </div>
-
-  {% if error %}
+    {% if error %}
     <div style="margin-top:12px;border:1px solid rgba(239,68,68,.25);background:rgba(239,68,68,.06);color:#991b1b;padding:10px 12px;border-radius:16px;">
-      <b>Lỗi tải UI vòng:</b> status={{ error.status }}
-      <div style="margin-top:6px;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;font-size:12px;white-space:pre-wrap;">
-        {{ error.body }}
-      </div>
+        <b>Lỗi tải UI vòng:</b> status={{ error.status }}
+        <div style="margin-top:6px;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;font-size:12px;white-space:pre-wrap;">
+            {{ error.body }}
+        </div>
     </div>
-  {% endif %}
+    {% endif %}
 
-  <!-- Compact summary (no explanations) -->
-  <div class="sum">
-    <div class="sumCard">
-      <div class="left">
-        <div class="k"><i class="ri-stack-line"></i> Tổng lô</div>
-        <div class="v" id="sumLots">0</div>
-      </div>
-      <div class="badge"><i class="ri-file-list-3-line"></i> round</div>
-    </div>
+    <!-- Compact summary (no explanations) -->
+    <div class="sum">
+        <div class="sumCard">
+            <div class="left">
+                <div class="k"><i class="ri-stack-line"></i> Tổng lô</div>
+                <div class="v" id="sumLots">0</div>
+            </div>
+            <div class="badge"><i class="ri-file-list-3-line"></i> round</div>
+        </div>
 
-    <div class="sumCard">
-      <div class="left">
-        <div class="k"><i class="ri-user-3-line"></i> Tổng khách</div>
-        <div class="v" id="sumCustomers">0</div>
-      </div>
-      <div class="badge"><i class="ri-fingerprint-line"></i> unique</div>
-    </div>
+        <div class="sumCard">
+            <div class="left">
+                <div class="k"><i class="ri-user-3-line"></i> Tổng khách</div>
+                <div class="v" id="sumCustomers">0</div>
+            </div>
+            <div class="badge"><i class="ri-fingerprint-line"></i> unique</div>
+        </div>
 
-    <div class="sumCard ok">
-      <div class="left">
-        <div class="k"><i class="ri-trophy-line"></i> Lô WON</div>
-        <div class="v" id="sumWon">0</div>
-      </div>
-      <div class="badge"><i class="ri-checkbox-circle-line"></i> won</div>
-    </div>
+        <div class="sumCard ok">
+            <div class="left">
+                <div class="k"><i class="ri-trophy-line"></i> Lô WON</div>
+                <div class="v" id="sumWon">0</div>
+            </div>
+            <div class="badge"><i class="ri-checkbox-circle-line"></i> won</div>
+        </div>
 
-    <div class="sumCard warn">
-      <div class="left">
-        <div class="k"><i class="ri-arrow-right-up-line"></i> Vào vòng sau</div>
-        <div class="v" id="sumNext">0</div>
-      </div>
-      <div class="badge"><i class="ri-route-line"></i> next</div>
-    </div>
+        <div class="sumCard warn">
+            <div class="left">
+                <div class="k"><i class="ri-arrow-right-up-line"></i> Vào vòng sau</div>
+                <div class="v" id="sumNext">0</div>
+            </div>
+            <div class="badge"><i class="ri-route-line"></i> next</div>
+        </div>
 
-    <div class="sumCard pending">
-      <div class="left">
-        <div class="k"><i class="ri-time-line"></i> Chưa kiểm</div>
-        <div class="v" id="sumPending">0</div>
-      </div>
-      <div class="badge"><i class="ri-hourglass-line"></i> pending</div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-h">
-      <b>Danh sách lô — Round #{{ round_no }}</b>
-      <div class="search">
-        <input id="q" placeholder="Tìm theo mã lô / mô tả..." oninput="renderLots()" />
-        <button class="miniBtn ghost" type="button" onclick="printAllBidTickets()">
-          <i class="ri-printer-line"></i> In toàn bộ phiếu trả giá
-        </button>
-        <button class="miniBtn primary" type="button" onclick="printRoundWinners()">
-          <i class="ri-printer-line"></i> In phiếu trúng (vòng)
-        </button>
-      </div>
+        <div class="sumCard pending">
+            <div class="left">
+                <div class="k"><i class="ri-time-line"></i> Chưa kiểm</div>
+                <div class="v" id="sumPending">0</div>
+            </div>
+            <div class="badge"><i class="ri-hourglass-line"></i> pending</div>
+        </div>
     </div>
 
-    <div style="max-height: calc(100vh - 340px); overflow:auto;">
-      <table>
-        <thead>
-          <tr>
-            <th style="width:190px;">Lô</th>
-            <th>Thông tin</th>
-            <th style="width:320px;">Kết quả vòng này</th>
-            <th class="right" style="width:170px;">Thao tác</th>
-          </tr>
-        </thead>
-        <tbody id="lotTbody"></tbody>
-      </table>
+    <div class="card">
+        <div class="card-h">
+            <b>Danh sách lô — Round #{{ round_no }}</b>
+            <div class="search">
+                <input id="q" placeholder="Tìm theo mã lô / mô tả..." oninput="renderLots()"/>
+                <button class="miniBtn ghost" type="button" onclick="printAllBidTickets()">
+                    <i class="ri-printer-line"></i> In toàn bộ phiếu trả giá
+                </button>
+                <button class="miniBtn primary" type="button" onclick="printRoundWinners()">
+                    <i class="ri-printer-line"></i> In phiếu trúng (vòng)
+                </button>
+            </div>
+        </div>
 
-      <div id="emptyState" class="empty" style="display:none;">
-        Không có lô nào phù hợp bộ lọc.
-      </div>
+        <div style="max-height: calc(100vh - 340px); overflow:auto;">
+            <table>
+                <thead>
+                <tr>
+                    <th style="width:190px;">Lô</th>
+                    <th>Thông tin</th>
+                    <th style="width:320px;">Kết quả vòng này</th>
+                    <th class="right" style="width:170px;">Thao tác</th>
+                </tr>
+                </thead>
+                <tbody id="lotTbody"></tbody>
+            </table>
+
+            <div id="emptyState" class="empty" style="display:none;">
+                Không có lô nào phù hợp bộ lọc.
+            </div>
+        </div>
     </div>
-  </div>
 
 </div>
 
@@ -695,1688 +733,1772 @@
      Modal: Decide Lot
 ========================================================== -->
 <div id="backdrop" class="backdrop" onclick="closeModal(event)">
-  <div class="modal" onclick="event.stopPropagation()">
-    <div class="mh">
-      <div>
-        <b id="mTitle"><i class="ri-settings-3-line"></i> Xử lý lô</b>
-        <div class="mmeta" id="mMeta"></div>
-      </div>
-      <button class="xbtn" type="button" onclick="closeModal()"><i class="ri-close-line"></i></button>
-    </div>
-
-    <div class="mb">
-      <div class="vstack">
-
-        <div class="box">
-          <div class="box-h">
-            <b><i class="ri-landscape-line"></i> Thông tin lô (vòng hiện tại)</b>
-            <span class="pill" id="mStatusPill">—</span>
-          </div>
-          <div class="box-b" id="mLotInfo"></div>
+    <div class="modal" onclick="event.stopPropagation()">
+        <div class="mh">
+            <div>
+                <b id="mTitle"><i class="ri-settings-3-line"></i> Xử lý lô</b>
+                <div class="mmeta" id="mMeta"></div>
+            </div>
+            <button class="xbtn" type="button" onclick="closeModal()"><i class="ri-close-line"></i></button>
         </div>
 
-        <div class="box">
-          <div class="box-h">
-            <b><i class="ri-gavel-line"></i> Chốt kết quả vòng này</b>
-            <span class="pill" id="mLockPill" style="display:none;"></span>
-          </div>
-          <div class="box-b">
+        <div class="mb">
+            <div class="vstack">
 
-            <div class="seg">
-              <button id="segWinner" type="button" onclick="switchMode('WINNER')">1) Chốt WON</button>
-              <button id="segNext" type="button" onclick="switchMode('NEXT')">2) Vào vòng sau</button>
-              <button id="segNoValid" type="button" onclick="switchMode('NO_VALID')">No valid</button>
+                <div class="box">
+                    <div class="box-h">
+                        <b><i class="ri-landscape-line"></i> Thông tin lô (vòng hiện tại)</b>
+                        <span class="pill" id="mStatusPill">—</span>
+                    </div>
+                    <div class="box-b" id="mLotInfo"></div>
+                </div>
+
+                <div class="box">
+                    <div class="box-h">
+                        <b><i class="ri-gavel-line"></i> Chốt kết quả vòng này</b>
+                        <span class="pill" id="mLockPill" style="display:none;"></span>
+                    </div>
+                    <div class="box-b">
+
+                        <div class="seg">
+                            <button id="segWinner" type="button" onclick="switchMode('WINNER')">1) Chốt WON</button>
+                            <button id="segNext" type="button" onclick="switchMode('NEXT')">2) Vào vòng sau</button>
+                            <button id="segNoValid" type="button" onclick="switchMode('NO_VALID')">No valid</button>
+                        </div>
+
+                        <!-- MODE WINNER -->
+                        <div id="modeWinner">
+
+                            <div class="field prominent">
+                                <label><i class="ri-award-line"></i> Hình thức thắng (quan trọng)</label>
+                                <select id="winMethod" onchange="onWinMethodChange()">
+                                    <option value="HIGHEST">Trả giá cao nhất (HIGHEST)</option>
+                                    <option value="MANUAL">Nhập tay / quyết định (MANUAL)</option>
+                                    <option value="LOTTERY">Bốc thăm (LOTTERY)</option>
+                                </select>
+                            </div>
+
+                            <!-- Smart price input (WINNER) -->
+                            <div class="priceBlock" id="winnerPriceBlock">
+                                <div class="priceTop">
+                                    <div class="pStat">
+                                        <div class="k"><i class="ri-flag-2-line"></i> Giá khởi điểm vòng</div>
+                                        <div class="v" id="mStartPriceText">—</div>
+                                        <div class="pHelp">Base để tính tick theo bước giá.</div>
+                                    </div>
+
+                                    <div class="pInputWrap">
+                                        <div class="pRow" style="justify-content:space-between;">
+                                            <div class="pLabel"><i class="ri-money-dollar-circle-line"></i> Giá trúng
+                                                (VND)
+                                            </div>
+                                            <button class="autoBtn primary" type="button" id="btnAutoCorrectWinner"
+                                                    onclick="autoCorrectPrice('winningPrice')">
+                                                <i class="ri-magic-line"></i> Auto correct
+                                            </button>
+                                        </div>
+
+                                        <div class="pRow">
+                                            <div class="moneyWrap">
+                                                <input id="winningPrice" class="priceInput" inputmode="numeric"
+                                                       placeholder="Nhập giá..."
+                                                       oninput="onMoneyInput('winningPrice'); updatePriceMeta('winningPrice');"/>
+                                                <span class="moneySuffix">VND</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="tickInfo" id="tickInfoWinner">
+                                            <span class="tickPill"><i class="ri-hashtag"></i> Tick: <b
+                                                    id="tickWinner">—</b></span>
+                                            <span class="tickPill"><i class="ri-arrow-up-line"></i> Bước: <b
+                                                    id="stepWinner">—</b></span>
+                                            <span class="tickPill"><i class="ri-check-line"></i> Hợp lệ: <b
+                                                    id="validWinner">—</b></span>
+                                        </div>
+
+                                        <div class="pHelp" id="winnerHelp">
+                                            Auto-correct sẽ đưa giá về <b>giá thấp nhất hợp lệ</b> = Khởi điểm + N*bước
+                                            giá, sao cho ≥ giá đang nhập.
+                                            Nút +/- để nhập nhanh theo bước giá.
+                                        </div>
+
+                                        <div class="stepPad" id="stepPadWinner">
+                                            <button class="stepBtn neg" type="button"
+                                                    onclick="nudgePrice('winningPrice', -5)">-5
+                                            </button>
+                                            <button class="stepBtn neg" type="button"
+                                                    onclick="nudgePrice('winningPrice', -3)">-3
+                                            </button>
+                                            <button class="stepBtn neg" type="button"
+                                                    onclick="nudgePrice('winningPrice', -1)">-1
+                                            </button>
+                                            <button class="stepBtn pos" type="button"
+                                                    onclick="nudgePrice('winningPrice', +1)">+1
+                                            </button>
+                                            <button class="stepBtn pos" type="button"
+                                                    onclick="nudgePrice('winningPrice', +3)">+3
+                                            </button>
+                                            <button class="stepBtn pos" type="button"
+                                                    onclick="nudgePrice('winningPrice', +5)">+5
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="pStat">
+                                        <div class="k"><i class="ri-eye-line"></i> Hiển thị</div>
+                                        <div class="v muted" id="winningPricePretty">—</div>
+                                        <div class="pHelp">Preview tiền đã format.</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="picker">
+                                <div class="ph">
+                                    <b>Chọn người thắng (search)</b>
+                                    <input id="winnerSearch" placeholder="tìm theo tên/CCCD/SĐT (có/không dấu)..."
+                                           oninput="renderWinnerPicker()"/>
+                                </div>
+                                <div class="pb" id="winnerList"></div>
+                            </div>
+                            <input type="hidden" id="winnerCustomerId"/>
+
+                            <div class="field" style="margin-top:10px;">
+                                <label>Ghi chú</label>
+                                <textarea id="noteWinner" placeholder="Tuỳ chọn..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- MODE NEXT ROUND -->
+                        <div id="modeNext" style="display:none;">
+
+                            <!-- Smart price input (NEXT) -->
+                            <div class="priceBlock" id="nextPriceBlock">
+                                <div class="priceTop">
+                                    <div class="pStat">
+                                        <div class="k"><i class="ri-flag-2-line"></i> Giá khởi điểm vòng</div>
+                                        <div class="v" id="mStartPriceText2">—</div>
+                                        <div class="pHelp">Base để tính tick theo bước giá.</div>
+                                    </div>
+
+                                    <div class="pInputWrap">
+                                        <div class="pRow" style="justify-content:space-between;">
+                                            <div class="pLabel"><i class="ri-line-chart-line"></i> Giá cao nhất (để xét)
+                                            </div>
+                                            <button class="autoBtn primary" type="button"
+                                                    onclick="autoCorrectPrice('highestPrice')">
+                                                <i class="ri-magic-line"></i> Auto correct
+                                            </button>
+                                        </div>
+
+                                        <div class="pRow">
+                                            <div class="moneyWrap">
+                                                <input id="highestPrice" class="priceInput" inputmode="numeric"
+                                                       placeholder="Nhập giá..."
+                                                       oninput="onMoneyInput('highestPrice'); updatePriceMeta('highestPrice');"/>
+                                                <span class="moneySuffix">VND</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="tickInfo" id="tickInfoNext">
+                                            <span class="tickPill"><i class="ri-hashtag"></i> Tick: <b
+                                                    id="tickNext">—</b></span>
+                                            <span class="tickPill"><i class="ri-arrow-up-line"></i> Bước: <b
+                                                    id="stepNext">—</b></span>
+                                            <span class="tickPill"><i class="ri-check-line"></i> Hợp lệ: <b
+                                                    id="validNext">—</b></span>
+                                        </div>
+
+                                        <div class="pHelp">
+                                            Nếu textbox trống, bấm +1/+3/+5 sẽ lấy <b>khởi điểm</b> làm base rồi cộng
+                                            theo bước giá.
+                                            Giá này sẽ dùng làm <b>giá khởi điểm vòng sau</b>.
+                                        </div>
+
+                                        <div class="stepPad">
+                                            <button class="stepBtn neg" type="button"
+                                                    onclick="nudgePrice('highestPrice', -5)">-5
+                                            </button>
+                                            <button class="stepBtn neg" type="button"
+                                                    onclick="nudgePrice('highestPrice', -3)">-3
+                                            </button>
+                                            <button class="stepBtn neg" type="button"
+                                                    onclick="nudgePrice('highestPrice', -1)">-1
+                                            </button>
+                                            <button class="stepBtn pos" type="button"
+                                                    onclick="nudgePrice('highestPrice', +1)">+1
+                                            </button>
+                                            <button class="stepBtn pos" type="button"
+                                                    onclick="nudgePrice('highestPrice', +3)">+3
+                                            </button>
+                                            <button class="stepBtn pos" type="button"
+                                                    onclick="nudgePrice('highestPrice', +5)">+5
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="pStat">
+                                        <div class="k"><i class="ri-eye-line"></i> Hiển thị</div>
+                                        <div class="v muted" id="highestPricePretty">—</div>
+                                        <div class="pHelp">Preview tiền đã format.</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="dual">
+                                <div class="plist">
+                                    <div class="ph">
+                                        <b id="dualInTitle">Trong vòng này</b>
+                                        <input id="filterIn" placeholder="lọc (có/không dấu)..."
+                                               oninput="renderDualLists()"/>
+                                    </div>
+                                    <div class="pb" id="listIn"></div>
+                                </div>
+
+                                <div class="arrows">
+                                    <button class="iconbtn primary" type="button" onclick="moveAllToNext()"><i
+                                            class="ri-arrow-right-double-line"></i></button>
+                                    <button class="iconbtn" type="button" onclick="moveAllToIn()"><i
+                                            class="ri-arrow-left-double-line"></i></button>
+                                </div>
+
+                                <div class="plist">
+                                    <div class="ph">
+                                        <b id="dualNextTitle">Vào vòng sau</b>
+                                        <input id="filterNext" placeholder="lọc (có/không dấu)..."
+                                               oninput="renderDualLists()"/>
+                                    </div>
+                                    <div class="pb" id="listNext"></div>
+                                </div>
+                            </div>
+
+                            <div class="field" style="margin-top:10px;">
+                                <label>Ghi chú</label>
+                                <textarea id="noteNext" placeholder="Tuỳ chọn..."></textarea>
+                            </div>
+
+                            <div class="hint">
+                                Vòng sau sẽ lấy <b>giá khởi điểm = giá cao nhất vòng này</b> (theo API
+                                create_next_round).
+                            </div>
+                        </div>
+
+                        <!-- MODE NO VALID -->
+                        <div id="modeNoValid" style="display:none;">
+                            <div class="hint">Chọn khi lô không có phiếu hợp lệ / không đủ điều kiện.</div>
+                            <div class="field" style="margin-top:10px;">
+                                <label>Ghi chú</label>
+                                <textarea id="noteNoValid" placeholder="Tuỳ chọn..."></textarea>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
             </div>
-
-            <!-- MODE WINNER -->
-            <div id="modeWinner">
-
-              <div class="field prominent">
-                <label><i class="ri-award-line"></i> Hình thức thắng (quan trọng)</label>
-                <select id="winMethod" onchange="onWinMethodChange()">
-                  <option value="HIGHEST">Trả giá cao nhất (HIGHEST)</option>
-                  <option value="MANUAL">Nhập tay / quyết định (MANUAL)</option>
-                  <option value="LOTTERY">Bốc thăm (LOTTERY)</option>
-                </select>
-              </div>
-
-              <!-- Smart price input (WINNER) -->
-              <div class="priceBlock" id="winnerPriceBlock">
-                <div class="priceTop">
-                  <div class="pStat">
-                    <div class="k"><i class="ri-flag-2-line"></i> Giá khởi điểm vòng</div>
-                    <div class="v" id="mStartPriceText">—</div>
-                    <div class="pHelp">Base để tính tick theo bước giá.</div>
-                  </div>
-
-                  <div class="pInputWrap">
-                    <div class="pRow" style="justify-content:space-between;">
-                      <div class="pLabel"><i class="ri-money-dollar-circle-line"></i> Giá trúng (VND)</div>
-                      <button class="autoBtn primary" type="button" id="btnAutoCorrectWinner" onclick="autoCorrectPrice('winningPrice')">
-                        <i class="ri-magic-line"></i> Auto correct
-                      </button>
-                    </div>
-
-                    <div class="pRow">
-                      <div class="moneyWrap">
-                        <input id="winningPrice" class="priceInput" inputmode="numeric" placeholder="Nhập giá..."
-                               oninput="onMoneyInput('winningPrice'); updatePriceMeta('winningPrice');" />
-                        <span class="moneySuffix">VND</span>
-                      </div>
-                    </div>
-
-                    <div class="tickInfo" id="tickInfoWinner">
-                      <span class="tickPill"><i class="ri-hashtag"></i> Tick: <b id="tickWinner">—</b></span>
-                      <span class="tickPill"><i class="ri-arrow-up-line"></i> Bước: <b id="stepWinner">—</b></span>
-                      <span class="tickPill"><i class="ri-check-line"></i> Hợp lệ: <b id="validWinner">—</b></span>
-                    </div>
-
-                    <div class="pHelp" id="winnerHelp">
-                      Auto-correct sẽ đưa giá về <b>giá thấp nhất hợp lệ</b> = Khởi điểm + N*bước giá, sao cho ≥ giá đang nhập.
-                      Nút +/- để nhập nhanh theo bước giá.
-                    </div>
-
-                    <div class="stepPad" id="stepPadWinner">
-                      <button class="stepBtn neg" type="button" onclick="nudgePrice('winningPrice', -5)">-5</button>
-                      <button class="stepBtn neg" type="button" onclick="nudgePrice('winningPrice', -3)">-3</button>
-                      <button class="stepBtn neg" type="button" onclick="nudgePrice('winningPrice', -1)">-1</button>
-                      <button class="stepBtn pos" type="button" onclick="nudgePrice('winningPrice', +1)">+1</button>
-                      <button class="stepBtn pos" type="button" onclick="nudgePrice('winningPrice', +3)">+3</button>
-                      <button class="stepBtn pos" type="button" onclick="nudgePrice('winningPrice', +5)">+5</button>
-                    </div>
-                  </div>
-
-                  <div class="pStat">
-                    <div class="k"><i class="ri-eye-line"></i> Hiển thị</div>
-                    <div class="v muted" id="winningPricePretty">—</div>
-                    <div class="pHelp">Preview tiền đã format.</div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="picker">
-                <div class="ph">
-                  <b>Chọn người thắng (search)</b>
-                  <input id="winnerSearch" placeholder="tìm theo tên/CCCD/SĐT (có/không dấu)..." oninput="renderWinnerPicker()" />
-                </div>
-                <div class="pb" id="winnerList"></div>
-              </div>
-              <input type="hidden" id="winnerCustomerId" />
-
-              <div class="field" style="margin-top:10px;">
-                <label>Ghi chú</label>
-                <textarea id="noteWinner" placeholder="Tuỳ chọn..."></textarea>
-              </div>
-            </div>
-
-            <!-- MODE NEXT ROUND -->
-            <div id="modeNext" style="display:none;">
-
-              <!-- Smart price input (NEXT) -->
-              <div class="priceBlock" id="nextPriceBlock">
-                <div class="priceTop">
-                  <div class="pStat">
-                    <div class="k"><i class="ri-flag-2-line"></i> Giá khởi điểm vòng</div>
-                    <div class="v" id="mStartPriceText2">—</div>
-                    <div class="pHelp">Base để tính tick theo bước giá.</div>
-                  </div>
-
-                  <div class="pInputWrap">
-                    <div class="pRow" style="justify-content:space-between;">
-                      <div class="pLabel"><i class="ri-line-chart-line"></i> Giá cao nhất (để xét)</div>
-                      <button class="autoBtn primary" type="button" onclick="autoCorrectPrice('highestPrice')">
-                        <i class="ri-magic-line"></i> Auto correct
-                      </button>
-                    </div>
-
-                    <div class="pRow">
-                      <div class="moneyWrap">
-                        <input id="highestPrice" class="priceInput" inputmode="numeric" placeholder="Nhập giá..."
-                               oninput="onMoneyInput('highestPrice'); updatePriceMeta('highestPrice');" />
-                        <span class="moneySuffix">VND</span>
-                      </div>
-                    </div>
-
-                    <div class="tickInfo" id="tickInfoNext">
-                      <span class="tickPill"><i class="ri-hashtag"></i> Tick: <b id="tickNext">—</b></span>
-                      <span class="tickPill"><i class="ri-arrow-up-line"></i> Bước: <b id="stepNext">—</b></span>
-                      <span class="tickPill"><i class="ri-check-line"></i> Hợp lệ: <b id="validNext">—</b></span>
-                    </div>
-
-                    <div class="pHelp">
-                      Nếu textbox trống, bấm +1/+3/+5 sẽ lấy <b>khởi điểm</b> làm base rồi cộng theo bước giá.
-                      Giá này sẽ dùng làm <b>giá khởi điểm vòng sau</b>.
-                    </div>
-
-                    <div class="stepPad">
-                      <button class="stepBtn neg" type="button" onclick="nudgePrice('highestPrice', -5)">-5</button>
-                      <button class="stepBtn neg" type="button" onclick="nudgePrice('highestPrice', -3)">-3</button>
-                      <button class="stepBtn neg" type="button" onclick="nudgePrice('highestPrice', -1)">-1</button>
-                      <button class="stepBtn pos" type="button" onclick="nudgePrice('highestPrice', +1)">+1</button>
-                      <button class="stepBtn pos" type="button" onclick="nudgePrice('highestPrice', +3)">+3</button>
-                      <button class="stepBtn pos" type="button" onclick="nudgePrice('highestPrice', +5)">+5</button>
-                    </div>
-                  </div>
-
-                  <div class="pStat">
-                    <div class="k"><i class="ri-eye-line"></i> Hiển thị</div>
-                    <div class="v muted" id="highestPricePretty">—</div>
-                    <div class="pHelp">Preview tiền đã format.</div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="dual">
-                <div class="plist">
-                  <div class="ph">
-                    <b id="dualInTitle">Trong vòng này</b>
-                    <input id="filterIn" placeholder="lọc (có/không dấu)..." oninput="renderDualLists()" />
-                  </div>
-                  <div class="pb" id="listIn"></div>
-                </div>
-
-                <div class="arrows">
-                  <button class="iconbtn primary" type="button" onclick="moveAllToNext()"><i class="ri-arrow-right-double-line"></i></button>
-                  <button class="iconbtn" type="button" onclick="moveAllToIn()"><i class="ri-arrow-left-double-line"></i></button>
-                </div>
-
-                <div class="plist">
-                  <div class="ph">
-                    <b id="dualNextTitle">Vào vòng sau</b>
-                    <input id="filterNext" placeholder="lọc (có/không dấu)..." oninput="renderDualLists()" />
-                  </div>
-                  <div class="pb" id="listNext"></div>
-                </div>
-              </div>
-
-              <div class="field" style="margin-top:10px;">
-                <label>Ghi chú</label>
-                <textarea id="noteNext" placeholder="Tuỳ chọn..."></textarea>
-              </div>
-
-              <div class="hint">
-                Vòng sau sẽ lấy <b>giá khởi điểm = giá cao nhất vòng này</b> (theo API create_next_round).
-              </div>
-            </div>
-
-            <!-- MODE NO VALID -->
-            <div id="modeNoValid" style="display:none;">
-              <div class="hint">Chọn khi lô không có phiếu hợp lệ / không đủ điều kiện.</div>
-              <div class="field" style="margin-top:10px;">
-                <label>Ghi chú</label>
-                <textarea id="noteNoValid" placeholder="Tuỳ chọn..."></textarea>
-              </div>
-            </div>
-
-          </div>
         </div>
 
-      </div>
+        <div class="foot">
+            <div class="hint" id="mHint">
+                API: <code class="mono">/auction/sessions/api/round-lots/{id}/decide</code>. Nếu bị khoá, API trả <b>409
+                LOCKED_BY_...</b>.
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                <button class="btn danger" type="button" onclick="resetPending()"><i class="ri-restart-line"></i> Reset
+                    PENDING
+                </button>
+                <button class="btn primary" type="button" onclick="submitDecide()"><i class="ri-check-line"></i> Lưu kết
+                    quả
+                </button>
+            </div>
+        </div>
     </div>
-
-    <div class="foot">
-      <div class="hint" id="mHint">
-        API: <code class="mono">/auction/sessions/api/round-lots/{id}/decide</code>. Nếu bị khoá, API trả <b>409 LOCKED_BY_...</b>.
-      </div>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-        <button class="btn danger" type="button" onclick="resetPending()"><i class="ri-restart-line"></i> Reset PENDING</button>
-        <button class="btn primary" type="button" onclick="submitDecide()"><i class="ri-check-line"></i> Lưu kết quả</button>
-      </div>
-    </div>
-  </div>
 </div>
 
 <!-- =========================================================
      Custom Dialog (Confirm/Error)
 ========================================================== -->
 <div id="dlgBackdrop" class="dlg-backdrop" onclick="dlgClose(event)">
-  <div class="dlg" onclick="event.stopPropagation()">
-    <div class="dlg-h">
-      <b id="dlgTitle"><i class="ri-information-line"></i> Thông báo</b>
-      <button class="dlg-x" type="button" onclick="dlgClose()"><i class="ri-close-line"></i></button>
+    <div class="dlg" onclick="event.stopPropagation()">
+        <div class="dlg-h">
+            <b id="dlgTitle"><i class="ri-information-line"></i> Thông báo</b>
+            <button class="dlg-x" type="button" onclick="dlgClose()"><i class="ri-close-line"></i></button>
+        </div>
+        <div class="dlg-b">
+            <div class="dlg-msg" id="dlgMsg"></div>
+            <div class="dlg-sub" id="dlgSub" style="display:none;"></div>
+        </div>
+        <div class="dlg-f">
+            <button class="btn ghost" type="button" id="dlgCancel" onclick="dlgCancel()">
+                <i class="ri-close-line"></i> Huỷ
+            </button>
+            <button class="btn primary" type="button" id="dlgOk" onclick="dlgOk()">
+                <i class="ri-check-line"></i> Xác nhận
+            </button>
+        </div>
     </div>
-    <div class="dlg-b">
-      <div class="dlg-msg" id="dlgMsg"></div>
-      <div class="dlg-sub" id="dlgSub" style="display:none;"></div>
-    </div>
-    <div class="dlg-f">
-      <button class="btn ghost" type="button" id="dlgCancel" onclick="dlgCancel()">
-        <i class="ri-close-line"></i> Huỷ
-      </button>
-      <button class="btn primary" type="button" id="dlgOk" onclick="dlgOk()">
-        <i class="ri-check-line"></i> Xác nhận
-      </button>
-    </div>
-  </div>
 </div>
 
 <div id="toast" class="toast"></div>
 
 <script>
-  // =========================
-  // Boot data from server (SSR)
-  // =========================
-  const SESSION_ID = Number({{ session_id|int }});
-  let ROUND_NO = Number({{ round_no|int }});
+    // =========================
+    // Boot data from server (SSR)
+    // =========================
+    const SESSION_ID = Number({{ session_id|int }});
+    let ROUND_NO = Number({{ round_no|int }});
 
-  let UI = {{ ui|tojson }};
-  let SESSION = {{ session|tojson }};
-  let ROUNDS = {{ rounds|tojson }};
+    let UI = {{ ui|tojson }};
+    let SESSION = {{ session|tojson }};
+    let ROUNDS = {{ rounds|tojson }};
 
-  // results map by lot_id from /results
-  let RESULTS = [];
-  let RESULT_BY_LOT = {}; // lot_id => result row
+    // results map by lot_id from /results
+    let RESULTS = [];
+    let RESULT_BY_LOT = {}; // lot_id => result row
 
-  // modal state
-  let currentLot = null;            // round_lot object
-  let currentParticipants = [];
-  let dualIn = [];
-  let dualNext = [];
-  let selectedWinnerId = null;
+    // modal state
+    let currentLot = null;            // round_lot object
+    let currentParticipants = [];
+    let dualIn = [];
+    let dualNext = [];
+    let selectedWinnerId = null;
 
-  // =========================
-  // Toast
-  // =========================
-  function toast(msg){
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.style.display = 'block';
-    clearTimeout(window.__toastTimer);
-    window.__toastTimer = setTimeout(()=>{ t.style.display='none'; }, 3200);
-  }
-
-  // =========================
-  // Utils
-  // =========================
-  function fmtMoney(v){
-    const n = Number(v || 0);
-    if(!isFinite(n)) return '-';
-    return n.toLocaleString('vi-VN');
-  }
-
-  function safeText(s){
-    return (s === null || s === undefined) ? '' : String(s);
-  }
-
-  function escapeHtml(str){
-    return (str||'').toString()
-      .replaceAll('&','&amp;')
-      .replaceAll('<','&lt;')
-      .replaceAll('>','&gt;')
-      .replaceAll('"','&quot;')
-      .replaceAll("'","&#039;");
-  }
-
-  function pad3(n){
-    n = Number(n||0);
-    if(!isFinite(n) || n<=0) return '';
-    if(n < 100) return String(n).padStart(3,'0');
-    if(n < 1000) return String(n);
-    return String(n);
-  }
-
-  function fmtStt(stt){
-    const s = pad3(stt);
-    return s ? s : '';
-  }
-
-  function getLotSnapshot(lot){
-    const snap = (lot && (lot.lot_snapshot || (lot.extras && lot.extras.snapshot))) || {};
-    return snap || {};
-  }
-
-  function participantSnapshot(p){
-    return (p && (p.customer_snapshot || (p.extras && p.extras.snapshot))) || {};
-  }
-
-  function getStartPriceVnd(lot){
-    const snap = getLotSnapshot(lot);
-    const sp = (lot && lot.start_price_vnd != null) ? Number(lot.start_price_vnd) : Number(snap.starting_price_vnd || 0);
-    return isFinite(sp) ? sp : 0;
-  }
-
-  function getBidStepVnd(lot){
-    const snap = getLotSnapshot(lot);
-    const step = Number(snap.bid_step_vnd || 0);
-    return (isFinite(step) && step > 0) ? step : 0;
-  }
-
-  function stripToDigits(s){
-    return String(s||'').replace(/[^\d]/g,'');
-  }
-
-  function formatMoneyDigits(digits){
-    if(!digits) return '';
-    const n = Number(digits);
-    if(!isFinite(n)) return '';
-    return n.toLocaleString('vi-VN');
-  }
-
-  function onMoneyInput(id){
-    const el = document.getElementById(id);
-    if(!el) return;
-    const raw = el.value || '';
-    const digits = stripToDigits(raw);
-    const pretty = formatMoneyDigits(digits);
-    el.value = pretty;
-
-    if(id === 'winningPrice'){
-      const pp = document.getElementById('winningPricePretty');
-      pp.textContent = pretty || '—';
-      pp.className = 'v' + (pretty ? '' : ' muted');
-    }
-    if(id === 'highestPrice'){
-      const pp = document.getElementById('highestPricePretty');
-      pp.textContent = pretty || '—';
-      pp.className = 'v' + (pretty ? '' : ' muted');
-    }
-  }
-
-  function parseMoneyInput(id){
-    const el = document.getElementById(id);
-    if(!el) return null;
-    const digits = stripToDigits(el.value || '');
-    if(!digits) return null;
-    const n = Number(digits);
-    if(!isFinite(n)) return null;
-    return n;
-  }
-
-  // ===== Accent-insensitive Vietnamese folding (đ/Đ -> d), case-insensitive =====
-  function vnFold(s){
-    const t = safeText(s).toLowerCase();
-    // NFD splits diacritics -> remove combining marks, then normalize đ
-    return t.normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/đ/g, 'd')
-      .replace(/Đ/g, 'd');
-  }
-
-  function isConfirmTextOk(v){
-    return vnFold(v).trim() === 'toi xac nhan';
-  }
-
-
-  // =========================
-  // Custom Dialog (NO typing required)
-  // =========================
-  let __dlgResolve = null;
-
-  function dlgClose(ev){
-    if(ev && ev.target && ev.target.id !== 'dlgBackdrop') return;
-    document.getElementById('dlgBackdrop').style.display = 'none';
-  }
-  function dlgCancel(){
-    dlgClose();
-    if(__dlgResolve){ __dlgResolve(false); __dlgResolve = null; }
-  }
-  function dlgOk(){
-    dlgClose();
-    if(__dlgResolve){ __dlgResolve(true); __dlgResolve = null; }
-  }
-
-  function showDialog(opts){
-    const title = safeText(opts.title || 'Thông báo');
-    const sub = safeText(opts.sub || '');
-    const mode = opts.mode || 'confirm';
-    const okText = safeText(opts.okText || (mode==='alert' ? 'Đóng' : 'Xác nhận'));
-    const cancelText = safeText(opts.cancelText || 'Huỷ');
-
-    const b = document.getElementById('dlgBackdrop');
-    const t = document.getElementById('dlgTitle');
-    const m = document.getElementById('dlgMsg');
-    const s = document.getElementById('dlgSub');
-
-    const okBtn = document.getElementById('dlgOk');
-    const cancelBtn = document.getElementById('dlgCancel');
-
-    t.innerHTML = `<i class="${mode==='error' ? 'ri-error-warning-line' : 'ri-information-line'}"></i> ${escapeHtml(title)}`;
-
-    if(opts.html){
-      m.innerHTML = opts.message || '';
-    } else {
-      m.textContent = safeText(opts.message || '');
+    // =========================
+    // Toast
+    // =========================
+    function toast(msg){
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.style.display = 'block';
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(()=>{ t.style.display='none'; }, 3200);
     }
 
-    if(sub){
-      s.style.display = 'block';
-      s.textContent = sub;
-    } else {
-      s.style.display = 'none';
-      s.textContent = '';
+    // =========================
+    // Utils
+    // =========================
+    function fmtMoney(v){
+      const n = Number(v || 0);
+      if(!isFinite(n)) return '-';
+      return n.toLocaleString('vi-VN');
     }
 
-    okBtn.innerHTML = `<i class="ri-check-line"></i> ${escapeHtml(okText)}`;
-    cancelBtn.innerHTML = `<i class="ri-close-line"></i> ${escapeHtml(cancelText)}`;
-
-    if(mode === 'alert' || mode === 'error'){
-      cancelBtn.style.display = 'none';
-    } else {
-      cancelBtn.style.display = 'inline-flex';
+    function safeText(s){
+      return (s === null || s === undefined) ? '' : String(s);
     }
 
-    b.style.display = 'flex';
-
-    return new Promise((resolve)=>{
-      __dlgResolve = resolve;
-    });
-  }
-
-  async function showConfirm(title, htmlMessage, opts={}){
-    return await showDialog({
-      mode: 'confirm',
-      title,
-      message: htmlMessage,
-      html: true,
-      sub: opts.sub || '',
-      okText: opts.okText || 'Xác nhận',
-      cancelText: opts.cancelText || 'Huỷ'
-    });
-  }
-
-  function showError(title, message, sub=''){
-    showDialog({
-      mode: 'error',
-      title,
-      message: `<div class="cCard">
-        <div class="cTop">
-          <div class="cTitle"><i class="ri-error-warning-line"></i> ${escapeHtml(message || '')}</div>
-          <span class="pill bad"><i class="ri-close-circle-line"></i> ERROR</span>
-        </div>
-        ${sub ? `<div class="cWarn"><i class="ri-information-line"></i><div>${escapeHtml(sub)}</div></div>` : ``}
-      </div>`,
-      html: true,
-      okText: 'Đóng'
-    });
-  }
-
-  // =========================
-  // Round nav (JS render for many rounds)
-  // =========================
-  function renderRoundNav(){
-    const host = document.getElementById('roundTabs');
-    if(!host) return;
-    host.innerHTML = '';
-
-    const rs = Array.isArray(ROUNDS) ? ROUNDS.slice() : [];
-    const nums = rs
-      .map(r => Number((r && (r.round_no ?? r.roundNo ?? (r.get && r.get('round_no')))) || 0))
-      .filter(n => n > 0)
-      .sort((a,b)=>a-b);
-
-    if(nums.length === 0){
-      host.innerHTML = `<span class="pill warn"><i class="ri-information-line"></i> Chưa có vòng</span>`;
-      return;
+    function escapeHtml(str){
+      return (str||'').toString()
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'","&#039;");
     }
 
-    const MAX_SHOW = 10;
-    const showNums = nums.slice(0, MAX_SHOW);
-    const moreNums = nums.slice(MAX_SHOW);
-
-    const makeHref = (n)=> `/auction/sessions/${SESSION_ID}?round_no=${n}`;
-
-    for(const n of showNums){
-      const a = document.createElement('a');
-      a.className = 'tab' + (n===ROUND_NO ? ' active' : '');
-      a.href = makeHref(n);
-      a.textContent = `Vòng ${n}`;
-      host.appendChild(a);
+    function pad3(n){
+      n = Number(n||0);
+      if(!isFinite(n) || n<=0) return '';
+      if(n < 100) return String(n).padStart(3,'0');
+      if(n < 1000) return String(n);
+      return String(n);
     }
 
-    if(moreNums.length){
-      const sel = document.createElement('select');
-      sel.className = 'roundMore';
-
-      const opt0 = document.createElement('option');
-      opt0.value = '';
-      opt0.textContent = 'Chọn vòng...';
-      sel.appendChild(opt0);
-
-      for(const n of moreNums){
-        const o = document.createElement('option');
-        o.value = String(n);
-        o.textContent = `Vòng ${n}`;
-        if(n === ROUND_NO) o.selected = true;
-        sel.appendChild(o);
-      }
-
-      sel.addEventListener('change', ()=>{
-        const v = Number(sel.value||0);
-        if(v>0) window.location.href = makeHref(v);
-      });
-
-      host.appendChild(sel);
-    }
-  }
-
-  // =========================
-  // Load results + render
-  // =========================
-  async function fetchResults(){
-    const r = await fetch(`/auction/sessions/api/sessions/${SESSION_ID}/results`);
-    const js = await r.json().catch(()=> ({}));
-    if(!r.ok){
-      RESULTS = [];
-      RESULT_BY_LOT = {};
-      toast("Không tải được results: " + (js.detail || ("HTTP " + r.status)));
-      return;
-    }
-    RESULTS = (js.data || []);
-    RESULT_BY_LOT = {};
-    for(const row of RESULTS){
-      if(row && row.lot_id != null) RESULT_BY_LOT[String(row.lot_id)] = row;
-    }
-  }
-
-  function computeRoundSummary(){
-    const lots = (UI && UI.lots) ? UI.lots : [];
-    const totalLots = lots.length;
-
-    const setCus = new Set();
-    let wonLots = 0;
-    let nextLots = 0;
-    let pendingLots = 0;
-
-    for(const l of lots){
-      const rt = safeText(l.result_type || 'PENDING');
-      if(rt === 'WINNER') wonLots++;
-      else if(rt === 'NEXT_ROUND') nextLots++;
-      else if(rt === 'PENDING') pendingLots++;
-
-      const ps = (l.participants || []);
-      for(const p of ps){
-        const snap = participantSnapshot(p);
-        const cid = Number(p.customer_id || snap.customer_id || 0);
-        if(cid>0) setCus.add(cid);
-      }
+    function fmtStt(stt){
+      const s = pad3(stt);
+      return s ? s : '';
     }
 
-    document.getElementById('sumLots').textContent = String(totalLots);
-    document.getElementById('sumCustomers').textContent = String(setCus.size);
-    document.getElementById('sumWon').textContent = String(wonLots);
-    document.getElementById('sumNext').textContent = String(nextLots);
-    document.getElementById('sumPending').textContent = String(pendingLots);
-  }
+    function getLotSnapshot(lot){
+      const snap = (lot && (lot.lot_snapshot || (lot.extras && lot.extras.snapshot))) || {};
+      return snap || {};
+    }
 
-  function renderLots(){
-    const lots = (UI && UI.lots) ? UI.lots : [];
-    const qRaw = (document.getElementById('q').value || '').trim();
-    const q = vnFold(qRaw);
+    function participantSnapshot(p){
+      return (p && (p.customer_snapshot || (p.extras && p.extras.snapshot))) || {};
+    }
 
-    const tbody = document.getElementById('lotTbody');
-    tbody.innerHTML = '';
-
-    let shown = 0;
-
-    for(const lot of lots){
+    function getStartPriceVnd(lot){
       const snap = getLotSnapshot(lot);
-      const lotCode = safeText(lot.lot_code || snap.lot_code || '');
-      const desc = safeText(snap.lot_description || lot.lot_name || '');
-      const hay = vnFold(lotCode + ' ' + desc);
+      const sp = (lot && lot.start_price_vnd != null) ? Number(lot.start_price_vnd) : Number(snap.starting_price_vnd || 0);
+      return isFinite(sp) ? sp : 0;
+    }
 
-      if(q && !hay.includes(q)) continue;
+    function getBidStepVnd(lot){
+      const snap = getLotSnapshot(lot);
+      const step = Number(snap.bid_step_vnd || 0);
+      return (isFinite(step) && step > 0) ? step : 0;
+    }
 
-      const partCount = (lot.participants || []).length;
-      const rt = safeText(lot.result_type || 'PENDING');
-      const lotId = Number(lot.lot_id || lot.lotId || snap.lot_id || 0) || Number(lot.lot_id || 0);
-      const res = RESULT_BY_LOT[String(lotId || '')] || null;
+    function stripToDigits(s){
+      return String(s||'').replace(/[^\d]/g,'');
+    }
 
-      const area = (snap.area_m2 ?? lot.lot_area ?? '');
-      const startPrice = getStartPriceVnd(lot);
-      const step = (snap.bid_step_vnd ?? '');
-      const note = safeText(lot.note || '');
+    function formatMoneyDigits(digits){
+      if(!digits) return '';
+      const n = Number(digits);
+      if(!isFinite(n)) return '';
+      return n.toLocaleString('vi-VN');
+    }
 
-      let statusHtml = '';
-      if(rt === 'WINNER' && res && (safeText(res.status) === 'WON')){
-        const who = safeText(res.winner_name || '') || ('#' + safeText(res.winner_customer_id||''));
-        const roundLotId = Number(lot.id || 0);
+    function onMoneyInput(id){
+      const el = document.getElementById(id);
+      if(!el) return;
+      const raw = el.value || '';
+      const digits = stripToDigits(raw);
+      const pretty = formatMoneyDigits(digits);
+      el.value = pretty;
 
-        const printBtn = roundLotId
-          ? `<button class="printIcon" type="button" onclick="printWinnerOne(${roundLotId})" title="In phiếu trúng (lô này)">
-               <i class="ri-printer-line"></i>
-             </button>`
-          : ``;
+      if(id === 'winningPrice'){
+        const pp = document.getElementById('winningPricePretty');
+        pp.textContent = pretty || '—';
+        pp.className = 'v' + (pretty ? '' : ' muted');
+      }
+      if(id === 'highestPrice'){
+        const pp = document.getElementById('highestPricePretty');
+        pp.textContent = pretty || '—';
+        pp.className = 'v' + (pretty ? '' : ' muted');
+      }
+    }
 
-        statusHtml = `
-          <div class="pill ok"><i class="ri-trophy-line"></i> WON</div>
-          <div class="muted" style="margin-top:6px;">
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-              <b>${escapeHtml(who)}</b> ${printBtn}
-            </div>
-            <div>Giá: <b>${fmtMoney(res.winning_price_vnd)}</b> • Vòng: <b>#${escapeHtml(res.winning_round_no||'')}</b></div>
-          </div>
-        `;
-      } else if(rt === 'NEXT_ROUND'){
-        const nx = (lot.next_participants || []);
-        const roundLotId = Number(lot.id || 0);
-        const printBtn = roundLotId
-          ? `<button class="printIcon" type="button" onclick="printNextRoundOne(${roundLotId})" title="In danh sách vào vòng sau (lô này)">
-               <i class="ri-printer-line"></i>
-             </button>`
-          : ``;
+    function parseMoneyInput(id){
+      const el = document.getElementById(id);
+      if(!el) return null;
+      const digits = stripToDigits(el.value || '');
+      if(!digits) return null;
+      const n = Number(digits);
+      if(!isFinite(n)) return null;
+      return n;
+    }
 
-        statusHtml = `
-          <div class="pill warn"><i class="ri-arrow-right-up-line"></i> Vào vòng sau</div>
-          <div class="muted" style="margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            <span>Số người vào vòng sau: <b>${nx.length}</b></span>
-            ${printBtn}
-          </div>
-        `;
-      } else if(rt === 'NO_VALID'){
-        statusHtml = `
-          <div class="pill bad"><i class="ri-close-circle-line"></i> No valid</div>
-          <div class="muted">Không có phiếu hợp lệ.</div>
-        `;
+    // ===== Accent-insensitive Vietnamese folding (đ/Đ -> d), case-insensitive =====
+    function vnFold(s){
+      const t = safeText(s).toLowerCase();
+      // NFD splits diacritics -> remove combining marks, then normalize đ
+      return t.normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd')
+        .replace(/Đ/g, 'd');
+    }
+
+    function isConfirmTextOk(v){
+      return vnFold(v).trim() === 'toi xac nhan';
+    }
+
+
+    // =========================
+    // Custom Dialog (NO typing required)
+    // =========================
+    let __dlgResolve = null;
+
+    function dlgClose(ev){
+      if(ev && ev.target && ev.target.id !== 'dlgBackdrop') return;
+      document.getElementById('dlgBackdrop').style.display = 'none';
+    }
+    function dlgCancel(){
+      dlgClose();
+      if(__dlgResolve){ __dlgResolve(false); __dlgResolve = null; }
+    }
+    function dlgOk(){
+      dlgClose();
+      if(__dlgResolve){ __dlgResolve(true); __dlgResolve = null; }
+    }
+
+    function showDialog(opts){
+      const title = safeText(opts.title || 'Thông báo');
+      const sub = safeText(opts.sub || '');
+      const mode = opts.mode || 'confirm';
+      const okText = safeText(opts.okText || (mode==='alert' ? 'Đóng' : 'Xác nhận'));
+      const cancelText = safeText(opts.cancelText || 'Huỷ');
+
+      const b = document.getElementById('dlgBackdrop');
+      const t = document.getElementById('dlgTitle');
+      const m = document.getElementById('dlgMsg');
+      const s = document.getElementById('dlgSub');
+
+      const okBtn = document.getElementById('dlgOk');
+      const cancelBtn = document.getElementById('dlgCancel');
+
+      t.innerHTML = `<i class="${mode==='error' ? 'ri-error-warning-line' : 'ri-information-line'}"></i> ${escapeHtml(title)}`;
+
+      if(opts.html){
+        m.innerHTML = opts.message || '';
       } else {
-        statusHtml = `
-          <div class="pill"><i class="ri-time-line"></i> PENDING</div>
-          <div class="muted">${partCount} người tham gia vòng này.</div>
-        `;
+        m.textContent = safeText(opts.message || '');
       }
 
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>
-          <div class="lotcode">${escapeHtml(lotCode || '-')}</div>
-          <div class="muted">${escapeHtml(desc || '')}</div>
-        </td>
-
-        <td>
-          <div class="muted" style="display:flex;flex-wrap:wrap;gap:10px;">
-            <span><i class="ri-ruler-2-line"></i> Diện tích: <b>${escapeHtml(area)}</b></span>
-            <span><i class="ri-coins-line"></i> Giá khởi điểm: <b>${fmtMoney(startPrice)}</b></span>
-            <span><i class="ri-arrow-up-line"></i> Bước giá: <b>${fmtMoney(step)}</b></span>
-            <span><i class="ri-user-3-line"></i> Tham gia: <b>${partCount}</b></span>
-          </div>
-          ${note ? `<div class="muted" style="margin-top:6px;"><i class="ri-sticky-note-line"></i> ${escapeHtml(note)}</div>` : ``}
-        </td>
-
-        <td>${statusHtml}</td>
-
-        <td class="right">
-          <button class="miniBtn primary" type="button" onclick="openLotModal(${Number(lot.id)})">
-            <i class="ri-settings-3-line"></i> Xử lý
-          </button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-      shown++;
-    }
-
-    document.getElementById('emptyState').style.display = (shown===0) ? 'block' : 'none';
-    computeRoundSummary();
-  }
-
-  // =========================
-  // Refresh
-  // =========================
-  async function fetchRoundUI(roundNo){
-    const r = await fetch(`/auction/sessions/api/sessions/${SESSION_ID}/rounds/${roundNo}/ui`);
-    const js = await r.json().catch(()=> ({}));
-    if(!r.ok){
-      toast("Tải UI vòng lỗi: " + (js.detail || ("HTTP " + r.status)));
-      return;
-    }
-    UI = js;
-  }
-
-  async function refreshAll(){
-    await fetchResults();
-    await fetchRoundUI(ROUND_NO);
-    renderRoundNav();
-    renderLots();
-  }
-
-  // =========================
-  // Session actions
-  // =========================
-  async function startSessionIfNeeded(){
-    const html = `
-      <div class="cCard">
-        <div class="cTop">
-          <div class="cTitle"><i class="ri-rocket-line"></i> Start phiên đấu</div>
-          <span class="pill warn"><i class="ri-information-line"></i> ACTION</span>
-        </div>
-        <div class="cGrid">
-          <div class="cItem">
-            <div class="k"><i class="ri-stack-line"></i> Mục đích</div>
-            <div class="v">Đảm bảo Round 1 snapshot (lô + khách đủ điều kiện).</div>
-          </div>
-          <div class="cItem">
-            <div class="k"><i class="ri-shield-check-line"></i> An toàn</div>
-            <div class="v">Chỉ cần Start 1 lần. Start lại sẽ bỏ qua / trả trạng thái hiện tại.</div>
-          </div>
-        </div>
-      </div>
-    `;
-    const ok = await showConfirm("Xác nhận START", html, { okText: "Start", cancelText: "Huỷ" });
-    if(!ok) return;
-
-    try{
-      const r = await fetch("/auction/sessions/api/sessions/start", {
-        method:"POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({session_id: SESSION_ID})
-      });
-      const js = await r.json().catch(()=> ({}));
-      if(!r.ok){
-        showError("Start thất bại", safeText(js.detail || js.error || ("HTTP " + r.status)));
-        return;
+      if(sub){
+        s.style.display = 'block';
+        s.textContent = sub;
+      } else {
+        s.style.display = 'none';
+        s.textContent = '';
       }
-      toast("Đã start. Làm mới dữ liệu...");
-      await refreshAll();
-    }catch(e){
-      showError("Lỗi mạng", "Không thể gọi API start. Vui lòng thử lại.");
+
+      okBtn.innerHTML = `<i class="ri-check-line"></i> ${escapeHtml(okText)}`;
+      cancelBtn.innerHTML = `<i class="ri-close-line"></i> ${escapeHtml(cancelText)}`;
+
+      if(mode === 'alert' || mode === 'error'){
+        cancelBtn.style.display = 'none';
+      } else {
+        cancelBtn.style.display = 'inline-flex';
+      }
+
+      b.style.display = 'flex';
+
+      return new Promise((resolve)=>{
+        __dlgResolve = resolve;
+      });
     }
-  }
 
-  async function createNextRound(){
-    let inputEl = null;
-    let okBtn = null;
-
-    const html = `
-      <div class="cCard">
-        <div class="cTop">
-          <div class="cTitle"><i class="ri-skip-forward-line"></i> Tạo vòng sau</div>
-          <span class="pill warn"><i class="ri-alert-line"></i> QUAN TRỌNG</span>
-        </div>
-
-        <div class="cGrid">
-          <div class="cItem">
-            <div class="k"><i class="ri-stack-line"></i> Từ vòng</div>
-            <div class="v">#${escapeHtml(ROUND_NO)}</div>
-          </div>
-          <div class="cItem">
-            <div class="k"><i class="ri-arrow-right-up-line"></i> Dựa trên</div>
-            <div class="v">Các lô <b>NEXT_ROUND</b> của vòng hiện tại</div>
-          </div>
-        </div>
-
-        <div class="cWarn">
-          <i class="ri-information-line"></i>
-          <div>
-            Sau khi tạo vòng sau, vòng hiện tại sẽ <b>kết thúc nghiệp vụ</b>.
-            Hãy chắc chắn bạn đã chốt xong tất cả lô.
-          </div>
-        </div>
-
-        <div class="field" style="margin-top:12px;">
-          <label><b>Nhập xác nhận</b></label>
-          <input id="confirmNextRoundInput"
-                 placeholder="Nhập: tôi xác nhận"
-                 style="height:40px;font-weight:600;" />
-          <div class="muted" style="margin-top:4px;">
-            Bạn phải nhập đúng <b>“tôi xác nhận”</b> để tiếp tục.
-          </div>
-        </div>
-      </div>
-    `;
-
-    const p = showDialog({
-      mode: 'confirm',
-      title: 'Xác nhận tạo vòng sau',
-      message: html,
-      html: true,
-      okText: 'Tạo vòng sau',
-      cancelText: 'Huỷ'
-    });
-
-    // hook sau khi dialog render
-    setTimeout(() => {
-      inputEl = document.getElementById('confirmNextRoundInput');
-      okBtn = document.getElementById('dlgOk');
-      if(!inputEl || !okBtn) return;
-
-      okBtn.disabled = true;
-
-      inputEl.addEventListener('input', () => {
-        okBtn.disabled = !isConfirmTextOk(inputEl.value);
+    async function showConfirm(title, htmlMessage, opts={}){
+      return await showDialog({
+        mode: 'confirm',
+        title,
+        message: htmlMessage,
+        html: true,
+        sub: opts.sub || '',
+        okText: opts.okText || 'Xác nhận',
+        cancelText: opts.cancelText || 'Huỷ'
       });
-    }, 0);
+    }
 
-    const ok = await p;
-    if(!ok) return;
-
-    const payload = {
-      session_id: SESSION_ID,
-      from_round_no: ROUND_NO,
-      note: null
-    };
-
-    try{
-      const r = await fetch(`/auction/sessions/api/sessions/${SESSION_ID}/rounds/next`, {
-        method:"POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify(payload)
+    function showError(title, message, sub=''){
+      showDialog({
+        mode: 'error',
+        title,
+        message: `<div class="cCard">
+          <div class="cTop">
+            <div class="cTitle"><i class="ri-error-warning-line"></i> ${escapeHtml(message || '')}</div>
+            <span class="pill bad"><i class="ri-close-circle-line"></i> ERROR</span>
+          </div>
+          ${sub ? `<div class="cWarn"><i class="ri-information-line"></i><div>${escapeHtml(sub)}</div></div>` : ``}
+        </div>`,
+        html: true,
+        okText: 'Đóng'
       });
-      const js = await r.json().catch(()=> ({}));
+    }
 
-      if(!r.ok){
-        showError("Tạo vòng sau thất bại", safeText(js.detail || js.error || ("HTTP " + r.status)));
+    // =========================
+    // Round nav (JS render for many rounds)
+    // =========================
+    function renderRoundNav(){
+      const host = document.getElementById('roundTabs');
+      if(!host) return;
+      host.innerHTML = '';
+
+      const rs = Array.isArray(ROUNDS) ? ROUNDS.slice() : [];
+      const nums = rs
+        .map(r => Number((r && (r.round_no ?? r.roundNo ?? (r.get && r.get('round_no')))) || 0))
+        .filter(n => n > 0)
+        .sort((a,b)=>a-b);
+
+      if(nums.length === 0){
+        host.innerHTML = `<span class="pill warn"><i class="ri-information-line"></i> Chưa có vòng</span>`;
         return;
       }
 
-      toast("Đã tạo vòng #" + (js.created_round_no || ''));
-
-      if(js.created_round_no){
-        window.location.href = `/auction/sessions/${SESSION_ID}?round_no=${js.created_round_no}`;
-      } else {
-        await refreshAll();
-      }
-    }catch(e){
-      showError("Lỗi mạng", "Không thể gọi API tạo vòng sau.");
-    }
-  }
-
-
-  // =========================
-  // Print placeholders
-  // =========================
-  function printAllBidTickets(){ toast("Chưa nối endpoint in phiếu trả giá (admin)."); }
-  function printRoundWinners(){ toast("Chưa nối endpoint in phiếu trúng theo vòng (admin)."); }
-  function printWinnerOne(roundLotId){ toast("Chưa nối endpoint in phiếu trúng theo lô. round_lot_id=" + roundLotId); }
-  function printNextRoundOne(roundLotId){ toast("Chưa nối endpoint in DS vào vòng sau theo lô. round_lot_id=" + roundLotId); }
-
-  // =========================
-  // Modal open / close
-  // =========================
-  function closeModal(ev){
-    if(ev && ev.target && ev.target.id !== 'backdrop') return;
-    document.getElementById('backdrop').style.display = 'none';
-    currentLot = null;
-    currentParticipants = [];
-    dualIn = [];
-    dualNext = [];
-    selectedWinnerId = null;
-  }
-
-  async function openLotModal(roundLotId){
-    const lots = (UI && UI.lots) ? UI.lots : [];
-    currentLot = lots.find(x => Number(x.id) === Number(roundLotId));
-    if(!currentLot){
-      toast("Không tìm thấy round_lot_id=" + roundLotId);
-      return;
-    }
-
-    await tryLock(roundLotId);
-
-    currentParticipants = (currentLot.participants || []).map(p => {
-      const snap = participantSnapshot(p);
-      return {
-        customer_id: Number(p.customer_id || snap.customer_id || 0),
-        stt: Number(p.stt || snap.stt || 0),
-        name: safeText(snap.customer_full_name || ''),
-        phone: safeText(snap.phone || ''),
-        cccd: safeText(snap.cccd || ''),
-        email: safeText(snap.email || ''),
-        address: safeText(snap.address || '')
-      };
-    }).filter(x => x.customer_id > 0);
-
-    document.getElementById('noteWinner').value = '';
-    document.getElementById('noteNext').value = '';
-    document.getElementById('noteNoValid').value = '';
-    document.getElementById('winnerSearch').value = '';
-    document.getElementById('winnerCustomerId').value = '';
-    selectedWinnerId = null;
-
-    document.getElementById('winningPricePretty').textContent = '—';
-    document.getElementById('highestPricePretty').textContent = '—';
-
-    const rt = safeText(currentLot.result_type || 'PENDING');
-    if(rt === 'NEXT_ROUND') switchMode('NEXT');
-    else if(rt === 'NO_VALID') switchMode('NO_VALID');
-    else switchMode('WINNER');
-
-    document.getElementById('winMethod').value = safeText(currentLot.win_method || 'HIGHEST');
-    onWinMethodChange();
-
-    const sp = getStartPriceVnd(currentLot);
-    document.getElementById('mStartPriceText').textContent = fmtMoney(sp);
-    document.getElementById('mStartPriceText2').textContent = fmtMoney(sp);
-
-    const hp = (currentLot.highest_price_vnd != null) ? Number(currentLot.highest_price_vnd) : null;
-    document.getElementById('winningPrice').value = hp ? fmtMoney(hp) : '';
-    document.getElementById('highestPrice').value = hp ? fmtMoney(hp) : '';
-
-    onMoneyInput('winningPrice');
-    onMoneyInput('highestPrice');
-    updatePriceMeta('winningPrice');
-    updatePriceMeta('highestPrice');
-
-    const curWinner = Number(currentLot.winner_customer_id || 0);
-    if(curWinner){
-      selectedWinnerId = curWinner;
-      document.getElementById('winnerCustomerId').value = String(curWinner);
-    }
-
-    const nextIds = new Set((currentLot.next_participants||[]).map(x => Number(x.customer_id||0)).filter(Boolean));
-    dualNext = [];
-    dualIn = [];
-    for(const p of currentParticipants){
-      if(nextIds.has(p.customer_id)) dualNext.push(p);
-      else dualIn.push(p);
-    }
-
-    renderModalHeader();
-    renderModalLotInfo();
-    renderWinnerPicker();
-    renderDualLists();
-
-    document.getElementById('backdrop').style.display = 'flex';
-  }
-
-  function renderModalHeader(){
-    const snap = getLotSnapshot(currentLot);
-    const lotCode = safeText(currentLot.lot_code || snap.lot_code || '');
-    document.getElementById('mTitle').innerHTML = `<i class="ri-settings-3-line"></i> Xử lý ${escapeHtml(lotCode || 'Lô')}`;
-
-    const area = (snap.area_m2 ?? currentLot.lot_area ?? '');
-    const startPrice = getStartPriceVnd(currentLot);
-    const step = (snap.bid_step_vnd ?? '');
-    const partCount = (currentLot.participants || []).length;
-
-    document.getElementById('mMeta').innerHTML = `
-      <span class="pill"><i class="ri-stack-line"></i> Round #${escapeHtml(ROUND_NO)}</span>
-      <span class="pill"><i class="ri-ruler-2-line"></i> ${escapeHtml(area)} m²</span>
-      <span class="pill"><i class="ri-coins-line"></i> ${fmtMoney(startPrice)}</span>
-      <span class="pill"><i class="ri-arrow-up-line"></i> Step ${fmtMoney(step)}</span>
-      <span class="pill"><i class="ri-user-3-line"></i> ${partCount} người</span>
-    `;
-
-    const rt = safeText(currentLot.result_type || 'PENDING');
-    const statusPill = document.getElementById('mStatusPill');
-    statusPill.className = 'pill';
-    if(rt === 'WINNER') statusPill.classList.add('ok');
-    else if(rt === 'NEXT_ROUND') statusPill.classList.add('warn');
-    else if(rt === 'NO_VALID') statusPill.classList.add('bad');
-    statusPill.textContent = rt;
-  }
-
-  function renderModalLotInfo(){
-    const snap = getLotSnapshot(currentLot);
-    const lotCode = safeText(currentLot.lot_code || snap.lot_code || '');
-    const desc = safeText(snap.lot_description || currentLot.lot_name || '');
-    const area = (snap.area_m2 ?? currentLot.lot_area ?? '');
-    const startPrice = getStartPriceVnd(currentLot);
-    const step = (snap.bid_step_vnd ?? '');
-    const lock = (currentLot.extras && currentLot.extras.lock) ? currentLot.extras.lock : null;
-
-    const lockHtml = lock && lock.by
-      ? `<div class="pill warn"><i class="ri-lock-line"></i> LOCK: ${escapeHtml(lock.by)} • TTL ${escapeHtml(lock.ttl_seconds||'')}</div>`
-      : `<div class="pill"><i class="ri-lock-unlock-line"></i> Chưa lock</div>`;
-
-    document.getElementById('mLotInfo').innerHTML = `
-      <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <span class="pill"><i class="ri-barcode-line"></i> ${escapeHtml(lotCode||'-')}</span>
-        ${lockHtml}
-      </div>
-      <div style="margin-top:10px;">
-        <div style="font-weight:1100;color:var(--ink);">${escapeHtml(desc||'')}</div>
-        <div class="muted" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:10px;">
-          <span><i class="ri-ruler-2-line"></i> Diện tích: <b>${escapeHtml(area)}</b></span>
-          <span><i class="ri-coins-line"></i> Giá khởi điểm vòng: <b>${fmtMoney(startPrice)}</b></span>
-          <span><i class="ri-arrow-up-line"></i> Bước giá: <b>${fmtMoney(step)}</b></span>
-        </div>
-      </div>
-    `;
-  }
-
-  // =========================
-  // Lock best-effort
-  // =========================
-  async function tryLock(roundLotId){
-    const r = await fetch(`/auction/sessions/api/round-lots/${roundLotId}/lock`,{
-      method:"POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ttl_seconds: 900})
-    });
-    const js = await r.json().catch(()=> ({}));
-
-    const lp = document.getElementById('mLockPill');
-    if(lp) lp.style.display = 'none';
-
-    if(r.ok){
-      const data = js?.data || js;
-      if(currentLot && data && Number(data.id) === Number(currentLot.id)){
-        if(data.updated_at) currentLot.updated_at = data.updated_at;
-        if(data.extras) currentLot.extras = data.extras;
-      }
-      return true;
-    }
-
-    const msg = safeText(js.detail || js.error || '');
-    if(r.status === 409 && msg.startsWith("LOCKED_BY_")){
-      if(lp){
-        lp.style.display = 'inline-flex';
-        lp.className = 'pill warn';
-        lp.innerHTML = `<i class="ri-lock-line"></i> ${escapeHtml(msg)}`;
-      }
-      toast("Lô đang bị khoá: " + msg);
-    } else if(r.status !== 404){
-      showError("Lock thất bại", msg || ("HTTP " + r.status));
-    }
-    return false;
-  }
-
-  // =========================
-  // Mode switch
-  // =========================
-  function switchMode(mode){
-    document.getElementById('segWinner').classList.toggle('active', mode==='WINNER');
-    document.getElementById('segNext').classList.toggle('active', mode==='NEXT');
-    document.getElementById('segNoValid').classList.toggle('active', mode==='NO_VALID');
-
-    document.getElementById('modeWinner').style.display = (mode==='WINNER') ? 'block' : 'none';
-    document.getElementById('modeNext').style.display = (mode==='NEXT') ? 'block' : 'none';
-    document.getElementById('modeNoValid').style.display = (mode==='NO_VALID') ? 'block' : 'none';
-
-    window.__mode = mode;
-  }
-
-  function onWinMethodChange(){
-    const m = document.getElementById('winMethod').value;
-    const input = document.getElementById('winningPrice');
-    const pad = document.getElementById('stepPadWinner');
-    const btnAuto = document.getElementById('btnAutoCorrectWinner');
-    const help = document.getElementById('winnerHelp');
-
-    if(m === 'LOTTERY'){
-      help.innerHTML = 'Nếu <b>LOTTERY</b> thì hệ thống lấy <b>giá khởi điểm</b> của vòng. Không cần nhập.';
-      input.value = '';
-      input.disabled = true;
-      if(pad) pad.style.display = 'none';
-      if(btnAuto) btnAuto.style.display = 'none';
-      onMoneyInput('winningPrice');
-      updatePriceMeta('winningPrice');
-    } else {
-      input.disabled = false;
-      if(pad) pad.style.display = 'flex';
-      if(btnAuto) btnAuto.style.display = 'inline-flex';
-      help.innerHTML = 'Auto-correct sẽ đưa giá về <b>giá thấp nhất hợp lệ</b> theo bước giá. Nút +/- giúp nhập nhanh theo tick.';
-      updatePriceMeta('winningPrice');
-    }
-  }
-
-  // =========================
-  // Smart price logic
-  // =========================
-  function getBaseAndStep(){
-    const sp = currentLot ? getStartPriceVnd(currentLot) : 0;
-    const step = currentLot ? getBidStepVnd(currentLot) : 0;
-    return { sp, step };
-  }
-
-  function calcTick(sp, step, val){
-    if(!step || step <= 0) return { tick: null, valid: true, aligned: true };
-    const diff = Number(val) - Number(sp);
-    if(!isFinite(diff)) return { tick: null, valid: false, aligned: false };
-    if(diff < 0) return { tick: null, valid: false, aligned: false };
-
-    const raw = diff / step;
-    const tick = Math.round(raw);
-    const aligned = Math.abs(raw - tick) < 1e-9;
-    const valid = (diff >= 0);
-    return { tick, valid, aligned };
-  }
-
-  function updatePriceMeta(inputId){
-    if(!currentLot) return;
-    const { sp, step } = getBaseAndStep();
-    const val = parseMoneyInput(inputId);
-
-    const isWinner = (inputId === 'winningPrice');
-    const tickEl = document.getElementById(isWinner ? 'tickWinner' : 'tickNext');
-    const stepEl = document.getElementById(isWinner ? 'stepWinner' : 'stepNext');
-    const validEl = document.getElementById(isWinner ? 'validWinner' : 'validNext');
-
-    if(stepEl) stepEl.textContent = step ? fmtMoney(step) : '—';
-
-    if(val === null){
-      if(tickEl) tickEl.textContent = '—';
-      if(validEl) validEl.textContent = '—';
-      return;
-    }
-
-    if(!step){
-      if(tickEl) tickEl.textContent = '—';
-      if(validEl) validEl.textContent = (val >= sp) ? 'OK' : 'THẤP';
-      return;
-    }
-
-    const t = calcTick(sp, step, val);
-    if(tickEl) tickEl.textContent = (t.tick === null) ? '—' : String(t.tick);
-    if(validEl){
-      if(val < sp){
-        validEl.textContent = 'THẤP';
-      } else if(!t.aligned){
-        validEl.textContent = 'CHƯA CHUẨN TICK';
-      } else {
-        validEl.textContent = 'OK';
-      }
-    }
-  }
-
-  function autoCorrectPrice(inputId){
-    if(!currentLot) return;
-
-    const { sp, step } = getBaseAndStep();
-    if(!step){
-      toast("Không có bước giá hợp lệ để auto-correct.");
-      return;
-    }
-
-    const raw = parseMoneyInput(inputId);
-    const target = (raw === null) ? sp : raw;
-
-    let k = 0;
-    if(target <= sp) k = 0;
-    else k = Math.ceil((target - sp) / step);
-
-    let corrected = sp + k * step;
-    if(corrected < sp) corrected = sp;
-
-    const el = document.getElementById(inputId);
-    el.value = fmtMoney(corrected);
-    onMoneyInput(inputId);
-    updatePriceMeta(inputId);
-  }
-
-  function nudgePrice(inputId, deltaSteps){
-    if(!currentLot) return;
-
-    const { sp, step } = getBaseAndStep();
-    if(!step){
-      toast("Không có bước giá hợp lệ.");
-      return;
-    }
-
-    const cur = parseMoneyInput(inputId);
-    const base = (cur === null) ? sp : cur;
-
-    let next = base + Number(deltaSteps) * step;
-    if(next < sp) next = sp;
-
-    const el = document.getElementById(inputId);
-    el.value = fmtMoney(next);
-    onMoneyInput(inputId);
-    updatePriceMeta(inputId);
-  }
-
-  // =========================
-  // Winner picker (accent-insensitive search)
-  // =========================
-  function renderWinnerPicker(){
-    const host = document.getElementById('winnerList');
-    if(!host) return;
-    host.innerHTML = '';
-
-    const qRaw = (document.getElementById('winnerSearch').value || '').trim();
-    const q = vnFold(qRaw);
-
-    const list = Array.isArray(currentParticipants) ? currentParticipants : [];
-
-    for(const p of list){
-      const hay = vnFold(`${safeText(p.name)} ${safeText(p.cccd)} ${safeText(p.phone)} ${safeText(p.email)}`);
-      if(q && !hay.includes(q)) continue;
-
-      const div = document.createElement('div');
-      div.className = 'pitem' + ((Number(p.customer_id) === Number(selectedWinnerId)) ? ' selected' : '');
-      div.onclick = ()=> {
-        selectedWinnerId = Number(p.customer_id);
-        document.getElementById('winnerCustomerId').value = String(selectedWinnerId);
-        renderWinnerPicker();
-      };
-
-      const sttPrefix = fmtStt(p.stt);
-      const nameLine = `${sttPrefix ? (escapeHtml(sttPrefix) + " — ") : ""}${escapeHtml(p.name || ('#'+p.customer_id))}`;
-
-      div.innerHTML = `
-        <div>
-          <b>${nameLine}</b>
-          <div class="pm">
-            CCCD: <span class="mono">${escapeHtml(p.cccd)}</span>
-            • SĐT: <span class="mono">${escapeHtml(p.phone)}</span>
-            ${p.email ? `• Email: <span class="mono">${escapeHtml(p.email)}</span>` : ``}
-          </div>
-        </div>
-        <div><span class="tag"><i class="ri-check-line"></i> Chọn</span></div>
-      `;
-      host.appendChild(div);
-    }
-
-    if(!host.children.length){
-      host.innerHTML = `<div class="empty">Không có kết quả phù hợp.</div>`;
-    }
-  }
-
-  // =========================
-  // Dual list (NEXT ROUND) accent-insensitive filters
-  // =========================
-  function updateDualCounters(){
-    const N = (Array.isArray(currentParticipants) ? currentParticipants.length : 0);
-    const M = (Array.isArray(dualNext) ? dualNext.length : 0);
-
-    const inT = document.getElementById('dualInTitle');
-    const nxT = document.getElementById('dualNextTitle');
-
-    if(inT) inT.textContent = `Trong vòng này (${N})`;
-    if(nxT) nxT.textContent = `Vào vòng sau (${M}/${N})`;
-  }
-
-  function renderDualLists(){
-    updateDualCounters();
-
-    const fi = vnFold((document.getElementById('filterIn').value||'').trim());
-    const fn = vnFold((document.getElementById('filterNext').value||'').trim());
-
-    const inEl = document.getElementById('listIn');
-    const nxEl = document.getElementById('listNext');
-    inEl.innerHTML = '';
-    nxEl.innerHTML = '';
-
-    for(const p of dualIn){
-      const hay = vnFold(`${safeText(p.name)} ${safeText(p.cccd)} ${safeText(p.phone)} ${safeText(p.email)}`);
-      if(fi && !hay.includes(fi)) continue;
-
-      const sttPrefix = fmtStt(p.stt);
-      const nameLine = `${sttPrefix ? (escapeHtml(sttPrefix) + " — ") : ""}${escapeHtml(p.name || ('#'+p.customer_id))}`;
-
-      const div = document.createElement('div');
-      div.className = 'pitem2';
-      div.innerHTML = `
-        <div>
-          <b>${nameLine}</b>
-          <div class="pm">
-            CCCD: <span class="mono">${escapeHtml(p.cccd)}</span>
-            • SĐT: <span class="mono">${escapeHtml(p.phone)}</span>
-            ${p.email ? `• Email: <span class="mono">${escapeHtml(p.email)}</span>` : ``}
-          </div>
-        </div>
-        <div class="pact">
-          <button class="iconbtn primary" type="button" onclick="moveOneToNext(${p.customer_id})">
-            <i class="ri-arrow-right-line"></i> Chọn
-          </button>
-        </div>
-      `;
-      inEl.appendChild(div);
-    }
-
-    for(const p of dualNext){
-      const hay = vnFold(`${safeText(p.name)} ${safeText(p.cccd)} ${safeText(p.phone)} ${safeText(p.email)}`);
-      if(fn && !hay.includes(fn)) continue;
-
-      const sttPrefix = fmtStt(p.stt);
-      const nameLine = `${sttPrefix ? (escapeHtml(sttPrefix) + " — ") : ""}${escapeHtml(p.name || ('#'+p.customer_id))}`;
-
-      const div = document.createElement('div');
-      div.className = 'pitem2';
-      div.innerHTML = `
-        <div>
-          <b>${nameLine}</b>
-          <div class="pm">
-            CCCD: <span class="mono">${escapeHtml(p.cccd)}</span>
-            • SĐT: <span class="mono">${escapeHtml(p.phone)}</span>
-            ${p.email ? `• Email: <span class="mono">${escapeHtml(p.email)}</span>` : ``}
-          </div>
-        </div>
-        <div class="pact">
-          <button class="iconbtn danger" type="button" onclick="moveOneToIn(${p.customer_id})">
-            <i class="ri-arrow-left-line"></i> Bỏ
-          </button>
-        </div>
-      `;
-      nxEl.appendChild(div);
-    }
-  }
-
-  function moveOneToNext(customerId){
-    customerId = Number(customerId);
-    const idx = dualIn.findIndex(x => x.customer_id === customerId);
-    if(idx >= 0){
-      dualNext.push(dualIn[idx]);
-      dualIn.splice(idx,1);
-      renderDualLists();
-    }
-  }
-  function moveOneToIn(customerId){
-    customerId = Number(customerId);
-    const idx = dualNext.findIndex(x => x.customer_id === customerId);
-    if(idx >= 0){
-      dualIn.push(dualNext[idx]);
-      dualNext.splice(idx,1);
-      renderDualLists();
-    }
-  }
-  function moveAllToNext(){
-    dualNext = dualNext.concat(dualIn);
-    dualIn = [];
-    renderDualLists();
-  }
-  function moveAllToIn(){
-    dualIn = dualIn.concat(dualNext);
-    dualNext = [];
-    renderDualLists();
-  }
-
-  // =========================
-  // Confirm builders + submit decide (unchanged logic)
-  // =========================
-  function getCurrentLotCode(){
-    if(!currentLot) return '';
-    const snap = getLotSnapshot(currentLot);
-    return safeText(currentLot.lot_code || snap.lot_code || '');
-  }
-
-  function findParticipantById(cid){
-    cid = Number(cid||0);
-    if(!cid) return null;
-    return (currentParticipants || []).find(x => Number(x.customer_id) === cid) || null;
-  }
-
-  function buildConfirmHtml(mode, payload){
-    const lotCode = getCurrentLotCode() || '—';
-    const startPrice = getStartPriceVnd(currentLot);
-    const step = getBidStepVnd(currentLot);
-
-    if(mode === 'WINNER'){
-      const winner = findParticipantById(payload.winner_customer_id);
-      const stt = winner ? fmtStt(winner.stt) : '';
-      const who = winner ? `${stt ? (stt + " — ") : ""}${winner.name}` : (`#${payload.winner_customer_id}`);
-
-      let priceText = '';
-      let methodPill = '';
-      if(payload.win_method === 'LOTTERY'){
-        priceText = fmtMoney(startPrice);
-        methodPill = `<span class="pill warn"><i class="ri-shuffle-line"></i> LOTTERY</span>`;
-      } else if(payload.win_method === 'MANUAL'){
-        priceText = fmtMoney(payload.highest_price_vnd);
-        methodPill = `<span class="pill warn"><i class="ri-hand-line"></i> MANUAL</span>`;
-      } else {
-        priceText = fmtMoney(payload.highest_price_vnd);
-        methodPill = `<span class="pill ok"><i class="ri-trophy-line"></i> HIGHEST</span>`;
+      const MAX_SHOW = 10;
+      const showNums = nums.slice(0, MAX_SHOW);
+      const moreNums = nums.slice(MAX_SHOW);
+
+      const makeHref = (n)=> `/auction/sessions/${SESSION_ID}?round_no=${n}`;
+
+      for(const n of showNums){
+        const a = document.createElement('a');
+        a.className = 'tab' + (n===ROUND_NO ? ' active' : '');
+        a.href = makeHref(n);
+        a.textContent = `Vòng ${n}`;
+        host.appendChild(a);
       }
 
-      return `
-        <div class="cCard">
-          <div class="cTop">
-            <div class="cTitle"><i class="ri-checkbox-circle-line"></i> Xác nhận chốt <b>WON</b></div>
-            ${methodPill}
-          </div>
-          <div class="cGrid">
-            <div class="cItem">
-              <div class="k"><i class="ri-barcode-line"></i> Lô</div>
-              <div class="v mono">${escapeHtml(lotCode)}</div>
-            </div>
-            <div class="cItem">
-              <div class="k"><i class="ri-user-3-line"></i> Khách trúng</div>
-              <div class="v">${escapeHtml(who)}</div>
-              <div class="muted" style="margin-top:6px;">
-                ${winner ? `CCCD: <span class="mono">${escapeHtml(winner.cccd)}</span> • SĐT: <span class="mono">${escapeHtml(winner.phone)}</span>` : ``}
-              </div>
-            </div>
-            <div class="cItem">
-              <div class="k"><i class="ri-coins-line"></i> Giá khởi điểm</div>
-              <div class="v">${fmtMoney(startPrice)} VND</div>
-            </div>
-            <div class="cItem">
-              <div class="k"><i class="ri-money-dollar-circle-line"></i> Giá trúng</div>
-              <div class="v">${escapeHtml(priceText)} VND</div>
-              <div class="muted" style="margin-top:6px;">Bước giá: <b>${step ? fmtMoney(step) : '—'}</b></div>
-            </div>
-          </div>
-          ${payload.note ? `<div class="cWarn"><i class="ri-sticky-note-line"></i><div>Ghi chú: ${escapeHtml(payload.note)}</div></div>` : ``}
-        </div>
-      `;
-    }
+      if(moreNums.length){
+        const sel = document.createElement('select');
+        sel.className = 'roundMore';
 
-    if(mode === 'NEXT'){
-      const N = (Array.isArray(currentParticipants) ? currentParticipants.length : 0);
-      const M = (Array.isArray(dualNext) ? dualNext.length : 0);
-      return `
-        <div class="cCard">
-          <div class="cTop">
-            <div class="cTitle"><i class="ri-checkbox-circle-line"></i> Xác nhận chốt <b>VÀO VÒNG SAU</b></div>
-            <span class="pill warn"><i class="ri-arrow-right-up-line"></i> NEXT_ROUND</span>
-          </div>
-          <div class="cGrid">
-            <div class="cItem">
-              <div class="k"><i class="ri-barcode-line"></i> Lô</div>
-              <div class="v mono">${escapeHtml(lotCode)}</div>
-            </div>
-            <div class="cItem">
-              <div class="k"><i class="ri-user-3-line"></i> Người vào vòng sau</div>
-              <div class="v">${M}/${N} người</div>
-            </div>
-            <div class="cItem">
-              <div class="k"><i class="ri-flag-2-line"></i> Giá khởi điểm vòng</div>
-              <div class="v">${fmtMoney(startPrice)} VND</div>
-              <div class="muted" style="margin-top:6px;">Bước giá: <b>${step ? fmtMoney(step) : '—'}</b></div>
-            </div>
-            <div class="cItem">
-              <div class="k"><i class="ri-line-chart-line"></i> Giá cao nhất (base vòng sau)</div>
-              <div class="v">${fmtMoney(payload.highest_price_vnd)} VND</div>
-            </div>
-          </div>
-          ${payload.note ? `<div class="cWarn"><i class="ri-sticky-note-line"></i><div>Ghi chú: ${escapeHtml(payload.note)}</div></div>` : ``}
-        </div>
-      `;
-    }
+        const opt0 = document.createElement('option');
+        opt0.value = '';
+        opt0.textContent = 'Chọn vòng...';
+        sel.appendChild(opt0);
 
-    if(mode === 'NO_VALID'){
-      return `
-        <div class="cCard">
-          <div class="cTop">
-            <div class="cTitle"><i class="ri-checkbox-circle-line"></i> Xác nhận chốt <b>NO VALID</b></div>
-            <span class="pill bad"><i class="ri-close-circle-line"></i> NO_VALID</span>
-          </div>
-          <div class="cGrid">
-            <div class="cItem">
-              <div class="k"><i class="ri-barcode-line"></i> Lô</div>
-              <div class="v mono">${escapeHtml(lotCode)}</div>
-            </div>
-            <div class="cItem">
-              <div class="k"><i class="ri-information-line"></i> Ý nghĩa</div>
-              <div class="v">Không có phiếu hợp lệ / không đủ điều kiện.</div>
-            </div>
-          </div>
-          ${payload.note ? `<div class="cWarn"><i class="ri-sticky-note-line"></i><div>Ghi chú: ${escapeHtml(payload.note)}</div></div>` : ``}
-        </div>
-      `;
-    }
-
-    return `<div class="cCard"><div class="cTitle"><i class="ri-information-line"></i> Xác nhận thực hiện?</div></div>`;
-  }
-
-  async function resetPending(){
-    if(!currentLot) return;
-
-    const html = `
-      <div class="cCard">
-        <div class="cTop">
-          <div class="cTitle"><i class="ri-restart-line"></i> Reset về PENDING</div>
-          <span class="pill warn"><i class="ri-alert-line"></i> ACTION</span>
-        </div>
-        <div class="cWarn"><i class="ri-information-line"></i>
-          <div>Thao tác này cho phép chốt lại lô. Bạn chắc chắn muốn reset?</div>
-        </div>
-      </div>
-    `;
-    const ok = await showConfirm("Xác nhận RESET", html, { okText: "Reset", cancelText: "Huỷ" });
-    if(!ok) return;
-
-    const payload = {
-      result_type: "PENDING",
-      win_method: "HIGHEST",
-      highest_price_vnd: null,
-      winner_customer_id: null,
-      next_participants: [],
-      note: "RESET_TO_PENDING"
-    };
-
-    const roundLotId = Number(currentLot.id);
-
-    try{
-      const r = await fetch(`/auction/sessions/api/round-lots/${roundLotId}/decide`, {
-        method:"POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify(payload)
-      });
-      const js = await r.json().catch(()=> ({}));
-
-      if(!r.ok){
-        const msg = safeText(js.detail || js.error || ("HTTP " + r.status));
-        if(r.status === 409 && msg.startsWith("LOCKED_BY_")){
-          showError("Không thể reset", "Lô đang bị khoá bởi người khác.", msg);
-        } else {
-          showError("Reset thất bại", msg);
+        for(const n of moreNums){
+          const o = document.createElement('option');
+          o.value = String(n);
+          o.textContent = `Vòng ${n}`;
+          if(n === ROUND_NO) o.selected = true;
+          sel.appendChild(o);
         }
-        return;
-      }
 
-      toast("Đã reset về PENDING.");
-      await refreshAll();
-      await openLotModal(roundLotId);
-    }catch(e){
-      showError("Lỗi mạng", "Không thể gọi API reset. Vui lòng thử lại.");
+        sel.addEventListener('change', ()=>{
+          const v = Number(sel.value||0);
+          if(v>0) window.location.href = makeHref(v);
+        });
+
+        host.appendChild(sel);
+      }
     }
-  }
 
-  async function submitDecide(){
-    if(!currentLot) return;
-
-    const mode = window.__mode || 'WINNER';
-    const roundLotId = Number(currentLot.id);
-
-    await tryLock(roundLotId);
-
-    let payload = null;
-
-    if(mode === 'WINNER'){
-      const winMethod = safeText(document.getElementById('winMethod').value || 'HIGHEST');
-      const winnerId = Number(document.getElementById('winnerCustomerId').value || 0);
-      const note = (document.getElementById('noteWinner').value || '').trim() || null;
-
-      if(!winnerId){
-        showError("Thiếu thông tin", "Bạn chưa chọn người thắng.");
+    // =========================
+    // Load results + render
+    // =========================
+    async function fetchResults(){
+      const r = await fetch(`/auction/sessions/api/sessions/${SESSION_ID}/results`);
+      const js = await r.json().catch(()=> ({}));
+      if(!r.ok){
+        RESULTS = [];
+        RESULT_BY_LOT = {};
+        toast("Không tải được results: " + (js.detail || ("HTTP " + r.status)));
         return;
       }
+      RESULTS = (js.data || []);
+      RESULT_BY_LOT = {};
+      for(const row of RESULTS){
+        if(row && row.lot_id != null) RESULT_BY_LOT[String(row.lot_id)] = row;
+      }
+    }
 
-      if(winMethod === 'LOTTERY' && Number(ROUND_NO) === 1){
-        showError("Không hợp lệ", "Vòng #1 không được chốt LOTTERY (bốc thăm). Vui lòng chọn HIGHEST hoặc MANUAL.");
-        return;
+    function computeRoundSummary(){
+      const lots = (UI && UI.lots) ? UI.lots : [];
+      const totalLots = lots.length;
+
+      const setCus = new Set();
+      let wonLots = 0;
+      let nextLots = 0;
+      let pendingLots = 0;
+
+      for(const l of lots){
+        const rt = safeText(l.result_type || 'PENDING');
+        if(rt === 'WINNER') wonLots++;
+        else if(rt === 'NEXT_ROUND') nextLots++;
+        else if(rt === 'PENDING') pendingLots++;
+
+        const ps = (l.participants || []);
+        for(const p of ps){
+          const snap = participantSnapshot(p);
+          const cid = Number(p.customer_id || snap.customer_id || 0);
+          if(cid>0) setCus.add(cid);
+        }
       }
 
-      let price = null;
-      if(winMethod !== 'LOTTERY'){
-        price = parseMoneyInput('winningPrice');
-        if(price === null || price <= 0){
-          showError("Thiếu thông tin", "Bạn chưa nhập giá trúng hợp lệ.");
+      document.getElementById('sumLots').textContent = String(totalLots);
+      document.getElementById('sumCustomers').textContent = String(setCus.size);
+      document.getElementById('sumWon').textContent = String(wonLots);
+      document.getElementById('sumNext').textContent = String(nextLots);
+      document.getElementById('sumPending').textContent = String(pendingLots);
+    }
+
+    function renderLots(){
+      const lots = (UI && UI.lots) ? UI.lots : [];
+      const qRaw = (document.getElementById('q').value || '').trim();
+      const q = vnFold(qRaw);
+
+      const tbody = document.getElementById('lotTbody');
+      tbody.innerHTML = '';
+
+      let shown = 0;
+
+      for(const lot of lots){
+        const snap = getLotSnapshot(lot);
+        const lotCode = safeText(lot.lot_code || snap.lot_code || '');
+        const desc = safeText(snap.lot_description || lot.lot_name || '');
+        const hay = vnFold(lotCode + ' ' + desc);
+
+        if(q && !hay.includes(q)) continue;
+
+        const partCount = (lot.participants || []).length;
+        const rt = safeText(lot.result_type || 'PENDING');
+        const lotId = Number(lot.lot_id || lot.lotId || snap.lot_id || 0) || Number(lot.lot_id || 0);
+        const res = RESULT_BY_LOT[String(lotId || '')] || null;
+
+        const area = (snap.area_m2 ?? lot.lot_area ?? '');
+        const startPrice = getStartPriceVnd(lot);
+        const step = (snap.bid_step_vnd ?? '');
+        const note = safeText(lot.note || '');
+
+        let statusHtml = '';
+        if(rt === 'WINNER' && res && (safeText(res.status) === 'WON')){
+          const who = safeText(res.winner_name || '') || ('#' + safeText(res.winner_customer_id||''));
+          const roundLotId = Number(lot.id || 0);
+
+          const printBtn = roundLotId
+            ? `<button class="printIcon" type="button" onclick="printWinnerOne(${roundLotId})" title="In phiếu trúng (lô này)">
+                 <i class="ri-printer-line"></i>
+               </button>`
+            : ``;
+
+          statusHtml = `
+            <div class="pill ok"><i class="ri-trophy-line"></i> WON</div>
+            <div class="muted" style="margin-top:6px;">
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <b>${escapeHtml(who)}</b> ${printBtn}
+              </div>
+              <div>Giá: <b>${fmtMoney(res.winning_price_vnd)}</b> • Vòng: <b>#${escapeHtml(res.winning_round_no||'')}</b></div>
+            </div>
+          `;
+        } else if(rt === 'NEXT_ROUND'){
+          const nx = (lot.next_participants || []);
+          const roundLotId = Number(lot.id || 0);
+          const printBtn = roundLotId
+            ? `<button class="printIcon" type="button" onclick="printNextRoundOne(${roundLotId})" title="In danh sách vào vòng sau (lô này)">
+                 <i class="ri-printer-line"></i>
+               </button>`
+            : ``;
+
+          statusHtml = `
+            <div class="pill warn"><i class="ri-arrow-right-up-line"></i> Vào vòng sau</div>
+            <div class="muted" style="margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <span>Số người vào vòng sau: <b>${nx.length}</b></span>
+              ${printBtn}
+            </div>
+          `;
+        } else if(rt === 'NO_VALID'){
+          statusHtml = `
+            <div class="pill bad"><i class="ri-close-circle-line"></i> No valid</div>
+            <div class="muted">Không có phiếu hợp lệ.</div>
+          `;
+        } else {
+          statusHtml = `
+            <div class="pill"><i class="ri-time-line"></i> PENDING</div>
+            <div class="muted">${partCount} người tham gia vòng này.</div>
+          `;
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>
+            <div class="lotcode">${escapeHtml(lotCode || '-')}</div>
+            <div class="muted">${escapeHtml(desc || '')}</div>
+          </td>
+
+          <td>
+            <div class="muted" style="display:flex;flex-wrap:wrap;gap:10px;">
+              <span><i class="ri-ruler-2-line"></i> Diện tích: <b>${escapeHtml(area)}</b></span>
+              <span><i class="ri-coins-line"></i> Giá khởi điểm: <b>${fmtMoney(startPrice)}</b></span>
+              <span><i class="ri-arrow-up-line"></i> Bước giá: <b>${fmtMoney(step)}</b></span>
+              <span style="display:inline-flex;align-items:center;gap:6px;">
+                <i class="ri-user-3-line"></i> Tham gia: <b>${partCount}</b>
+
+                <div class="printDrop">
+                  <button class="printIcon" type="button" onclick="togglePrintMenu(this)">
+                    <i class="ri-printer-line"></i>
+                  </button>
+
+                  <div class="printMenu">
+                    <button type="button" onclick="printBidTicketsLot(${Number(lot.id)})">
+                      <i class="ri-printer-line"></i> In phiếu trả giá (lô)
+                    </button>
+                    <button type="button" onclick="openPrintOne(${Number(lot.id)})">
+                      <i class="ri-user-line"></i> In lẻ 1 phiếu
+                    </button>
+                  </div>
+                </div>
+              </span>
+            </div>
+            ${note ? `<div class="muted" style="margin-top:6px;"><i class="ri-sticky-note-line"></i> ${escapeHtml(note)}</div>` : ``}
+          </td>
+
+          <td>${statusHtml}</td>
+
+          <td class="right">
+            <button class="miniBtn primary" type="button" onclick="openLotModal(${Number(lot.id)})">
+              <i class="ri-settings-3-line"></i> Xử lý
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+        shown++;
+      }
+
+      document.getElementById('emptyState').style.display = (shown===0) ? 'block' : 'none';
+      computeRoundSummary();
+    }
+
+    // =========================
+    // Refresh
+    // =========================
+    async function fetchRoundUI(roundNo){
+      const r = await fetch(`/auction/sessions/api/sessions/${SESSION_ID}/rounds/${roundNo}/ui`);
+      const js = await r.json().catch(()=> ({}));
+      if(!r.ok){
+        toast("Tải UI vòng lỗi: " + (js.detail || ("HTTP " + r.status)));
+        return;
+      }
+      UI = js;
+    }
+
+    async function refreshAll(){
+      await fetchResults();
+      await fetchRoundUI(ROUND_NO);
+      renderRoundNav();
+      renderLots();
+    }
+
+    // =========================
+    // Session actions
+    // =========================
+    async function startSessionIfNeeded(){
+      const html = `
+        <div class="cCard">
+          <div class="cTop">
+            <div class="cTitle"><i class="ri-rocket-line"></i> Start phiên đấu</div>
+            <span class="pill warn"><i class="ri-information-line"></i> ACTION</span>
+          </div>
+          <div class="cGrid">
+            <div class="cItem">
+              <div class="k"><i class="ri-stack-line"></i> Mục đích</div>
+              <div class="v">Đảm bảo Round 1 snapshot (lô + khách đủ điều kiện).</div>
+            </div>
+            <div class="cItem">
+              <div class="k"><i class="ri-shield-check-line"></i> An toàn</div>
+              <div class="v">Chỉ cần Start 1 lần. Start lại sẽ bỏ qua / trả trạng thái hiện tại.</div>
+            </div>
+          </div>
+        </div>
+      `;
+      const ok = await showConfirm("Xác nhận START", html, { okText: "Start", cancelText: "Huỷ" });
+      if(!ok) return;
+
+      try{
+        const r = await fetch("/auction/sessions/api/sessions/start", {
+          method:"POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({session_id: SESSION_ID})
+        });
+        const js = await r.json().catch(()=> ({}));
+        if(!r.ok){
+          showError("Start thất bại", safeText(js.detail || js.error || ("HTTP " + r.status)));
           return;
         }
+        toast("Đã start. Làm mới dữ liệu...");
+        await refreshAll();
+      }catch(e){
+        showError("Lỗi mạng", "Không thể gọi API start. Vui lòng thử lại.");
       }
+    }
 
-      payload = {
-        result_type: "WINNER",
-        win_method: winMethod,
-        highest_price_vnd: (winMethod === 'LOTTERY') ? null : price,
-        winner_customer_id: winnerId,
-        next_participants: [],
-        note: note
+    async function createNextRound(){
+      let inputEl = null;
+      let okBtn = null;
+
+      const html = `
+        <div class="cCard">
+          <div class="cTop">
+            <div class="cTitle"><i class="ri-skip-forward-line"></i> Tạo vòng sau</div>
+            <span class="pill warn"><i class="ri-alert-line"></i> QUAN TRỌNG</span>
+          </div>
+
+          <div class="cGrid">
+            <div class="cItem">
+              <div class="k"><i class="ri-stack-line"></i> Từ vòng</div>
+              <div class="v">#${escapeHtml(ROUND_NO)}</div>
+            </div>
+            <div class="cItem">
+              <div class="k"><i class="ri-arrow-right-up-line"></i> Dựa trên</div>
+              <div class="v">Các lô <b>NEXT_ROUND</b> của vòng hiện tại</div>
+            </div>
+          </div>
+
+          <div class="cWarn">
+            <i class="ri-information-line"></i>
+            <div>
+              Sau khi tạo vòng sau, vòng hiện tại sẽ <b>kết thúc nghiệp vụ</b>.
+              Hãy chắc chắn bạn đã chốt xong tất cả lô.
+            </div>
+          </div>
+
+          <div class="field" style="margin-top:12px;">
+            <label><b>Nhập xác nhận</b></label>
+            <input id="confirmNextRoundInput"
+                   placeholder="Nhập: tôi xác nhận"
+                   style="height:40px;font-weight:600;" />
+            <div class="muted" style="margin-top:4px;">
+              Bạn phải nhập đúng <b>“tôi xác nhận”</b> để tiếp tục.
+            </div>
+          </div>
+        </div>
+      `;
+
+      const p = showDialog({
+        mode: 'confirm',
+        title: 'Xác nhận tạo vòng sau',
+        message: html,
+        html: true,
+        okText: 'Tạo vòng sau',
+        cancelText: 'Huỷ'
+      });
+
+      // hook sau khi dialog render
+      setTimeout(() => {
+        inputEl = document.getElementById('confirmNextRoundInput');
+        okBtn = document.getElementById('dlgOk');
+        if(!inputEl || !okBtn) return;
+
+        okBtn.disabled = true;
+
+        inputEl.addEventListener('input', () => {
+          okBtn.disabled = !isConfirmTextOk(inputEl.value);
+        });
+      }, 0);
+
+      const ok = await p;
+      if(!ok) return;
+
+      const payload = {
+        session_id: SESSION_ID,
+        from_round_no: ROUND_NO,
+        note: null
       };
 
-    } else if(mode === 'NEXT'){
-      const note = (document.getElementById('noteNext').value || '').trim() || null;
-      const hp = parseMoneyInput('highestPrice');
-      if(hp === null || hp <= 0){
-        showError("Thiếu thông tin", "Bạn chưa nhập giá cao nhất vòng này hợp lệ.");
+      try{
+        const r = await fetch(`/auction/sessions/api/sessions/${SESSION_ID}/rounds/next`, {
+          method:"POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify(payload)
+        });
+        const js = await r.json().catch(()=> ({}));
+
+        if(!r.ok){
+          showError("Tạo vòng sau thất bại", safeText(js.detail || js.error || ("HTTP " + r.status)));
+          return;
+        }
+
+        toast("Đã tạo vòng #" + (js.created_round_no || ''));
+
+        if(js.created_round_no){
+          window.location.href = `/auction/sessions/${SESSION_ID}?round_no=${js.created_round_no}`;
+        } else {
+          await refreshAll();
+        }
+      }catch(e){
+        showError("Lỗi mạng", "Không thể gọi API tạo vòng sau.");
+      }
+    }
+
+
+    // =========================
+    // Print placeholders
+    // =========================
+    function printAllBidTickets(){ toast("Chưa nối endpoint in phiếu trả giá (admin)."); }
+    function printRoundWinners(){ toast("Chưa nối endpoint in phiếu trúng theo vòng (admin)."); }
+    function printWinnerOne(roundLotId){ toast("Chưa nối endpoint in phiếu trúng theo lô. round_lot_id=" + roundLotId); }
+    function printNextRoundOne(roundLotId){ toast("Chưa nối endpoint in DS vào vòng sau theo lô. round_lot_id=" + roundLotId); }
+
+    // =========================
+    // Modal open / close
+    // =========================
+    function closeModal(ev){
+      if(ev && ev.target && ev.target.id !== 'backdrop') return;
+      document.getElementById('backdrop').style.display = 'none';
+      currentLot = null;
+      currentParticipants = [];
+      dualIn = [];
+      dualNext = [];
+      selectedWinnerId = null;
+    }
+
+    async function openLotModal(roundLotId){
+      const lots = (UI && UI.lots) ? UI.lots : [];
+      currentLot = lots.find(x => Number(x.id) === Number(roundLotId));
+      if(!currentLot){
+        toast("Không tìm thấy round_lot_id=" + roundLotId);
         return;
       }
 
-      const ids = (Array.isArray(dualNext) ? dualNext : [])
-        .map(x => Number(x.customer_id || 0))
-        .filter(x => x > 0);
+      await tryLock(roundLotId);
 
-      if(ids.length === 0){
-        showError("Thiếu thông tin", "Bạn chưa chọn ai vào vòng sau.");
+      currentParticipants = (currentLot.participants || []).map(p => {
+        const snap = participantSnapshot(p);
+        return {
+          customer_id: Number(p.customer_id || snap.customer_id || 0),
+          stt: Number(p.stt || snap.stt || 0),
+          name: safeText(snap.customer_full_name || ''),
+          phone: safeText(snap.phone || ''),
+          cccd: safeText(snap.cccd || ''),
+          email: safeText(snap.email || ''),
+          address: safeText(snap.address || '')
+        };
+      }).filter(x => x.customer_id > 0);
+
+      document.getElementById('noteWinner').value = '';
+      document.getElementById('noteNext').value = '';
+      document.getElementById('noteNoValid').value = '';
+      document.getElementById('winnerSearch').value = '';
+      document.getElementById('winnerCustomerId').value = '';
+      selectedWinnerId = null;
+
+      document.getElementById('winningPricePretty').textContent = '—';
+      document.getElementById('highestPricePretty').textContent = '—';
+
+      const rt = safeText(currentLot.result_type || 'PENDING');
+      if(rt === 'NEXT_ROUND') switchMode('NEXT');
+      else if(rt === 'NO_VALID') switchMode('NO_VALID');
+      else switchMode('WINNER');
+
+      document.getElementById('winMethod').value = safeText(currentLot.win_method || 'HIGHEST');
+      onWinMethodChange();
+
+      const sp = getStartPriceVnd(currentLot);
+      document.getElementById('mStartPriceText').textContent = fmtMoney(sp);
+      document.getElementById('mStartPriceText2').textContent = fmtMoney(sp);
+
+      const hp = (currentLot.highest_price_vnd != null) ? Number(currentLot.highest_price_vnd) : null;
+      document.getElementById('winningPrice').value = hp ? fmtMoney(hp) : '';
+      document.getElementById('highestPrice').value = hp ? fmtMoney(hp) : '';
+
+      onMoneyInput('winningPrice');
+      onMoneyInput('highestPrice');
+      updatePriceMeta('winningPrice');
+      updatePriceMeta('highestPrice');
+
+      const curWinner = Number(currentLot.winner_customer_id || 0);
+      if(curWinner){
+        selectedWinnerId = curWinner;
+        document.getElementById('winnerCustomerId').value = String(curWinner);
+      }
+
+      const nextIds = new Set((currentLot.next_participants||[]).map(x => Number(x.customer_id||0)).filter(Boolean));
+      dualNext = [];
+      dualIn = [];
+      for(const p of currentParticipants){
+        if(nextIds.has(p.customer_id)) dualNext.push(p);
+        else dualIn.push(p);
+      }
+
+      renderModalHeader();
+      renderModalLotInfo();
+      renderWinnerPicker();
+      renderDualLists();
+
+      document.getElementById('backdrop').style.display = 'flex';
+    }
+
+    function renderModalHeader(){
+      const snap = getLotSnapshot(currentLot);
+      const lotCode = safeText(currentLot.lot_code || snap.lot_code || '');
+      document.getElementById('mTitle').innerHTML = `<i class="ri-settings-3-line"></i> Xử lý ${escapeHtml(lotCode || 'Lô')}`;
+
+      const area = (snap.area_m2 ?? currentLot.lot_area ?? '');
+      const startPrice = getStartPriceVnd(currentLot);
+      const step = (snap.bid_step_vnd ?? '');
+      const partCount = (currentLot.participants || []).length;
+
+      document.getElementById('mMeta').innerHTML = `
+        <span class="pill"><i class="ri-stack-line"></i> Round #${escapeHtml(ROUND_NO)}</span>
+        <span class="pill"><i class="ri-ruler-2-line"></i> ${escapeHtml(area)} m²</span>
+        <span class="pill"><i class="ri-coins-line"></i> ${fmtMoney(startPrice)}</span>
+        <span class="pill"><i class="ri-arrow-up-line"></i> Step ${fmtMoney(step)}</span>
+        <span class="pill"><i class="ri-user-3-line"></i> ${partCount} người</span>
+      `;
+
+      const rt = safeText(currentLot.result_type || 'PENDING');
+      const statusPill = document.getElementById('mStatusPill');
+      statusPill.className = 'pill';
+      if(rt === 'WINNER') statusPill.classList.add('ok');
+      else if(rt === 'NEXT_ROUND') statusPill.classList.add('warn');
+      else if(rt === 'NO_VALID') statusPill.classList.add('bad');
+      statusPill.textContent = rt;
+    }
+
+    function renderModalLotInfo(){
+      const snap = getLotSnapshot(currentLot);
+      const lotCode = safeText(currentLot.lot_code || snap.lot_code || '');
+      const desc = safeText(snap.lot_description || currentLot.lot_name || '');
+      const area = (snap.area_m2 ?? currentLot.lot_area ?? '');
+      const startPrice = getStartPriceVnd(currentLot);
+      const step = (snap.bid_step_vnd ?? '');
+      const lock = (currentLot.extras && currentLot.extras.lock) ? currentLot.extras.lock : null;
+
+      const lockHtml = lock && lock.by
+        ? `<div class="pill warn"><i class="ri-lock-line"></i> LOCK: ${escapeHtml(lock.by)} • TTL ${escapeHtml(lock.ttl_seconds||'')}</div>`
+        : `<div class="pill"><i class="ri-lock-unlock-line"></i> Chưa lock</div>`;
+
+      document.getElementById('mLotInfo').innerHTML = `
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <span class="pill"><i class="ri-barcode-line"></i> ${escapeHtml(lotCode||'-')}</span>
+          ${lockHtml}
+        </div>
+        <div style="margin-top:10px;">
+          <div style="font-weight:1100;color:var(--ink);">${escapeHtml(desc||'')}</div>
+          <div class="muted" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:10px;">
+            <span><i class="ri-ruler-2-line"></i> Diện tích: <b>${escapeHtml(area)}</b></span>
+            <span><i class="ri-coins-line"></i> Giá khởi điểm vòng: <b>${fmtMoney(startPrice)}</b></span>
+            <span><i class="ri-arrow-up-line"></i> Bước giá: <b>${fmtMoney(step)}</b></span>
+          </div>
+        </div>
+      `;
+    }
+
+    // =========================
+    // Lock best-effort
+    // =========================
+    async function tryLock(roundLotId){
+      const r = await fetch(`/auction/sessions/api/round-lots/${roundLotId}/lock`,{
+        method:"POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ttl_seconds: 900})
+      });
+      const js = await r.json().catch(()=> ({}));
+
+      const lp = document.getElementById('mLockPill');
+      if(lp) lp.style.display = 'none';
+
+      if(r.ok){
+        const data = js?.data || js;
+        if(currentLot && data && Number(data.id) === Number(currentLot.id)){
+          if(data.updated_at) currentLot.updated_at = data.updated_at;
+          if(data.extras) currentLot.extras = data.extras;
+        }
+        return true;
+      }
+
+      const msg = safeText(js.detail || js.error || '');
+      if(r.status === 409 && msg.startsWith("LOCKED_BY_")){
+        if(lp){
+          lp.style.display = 'inline-flex';
+          lp.className = 'pill warn';
+          lp.innerHTML = `<i class="ri-lock-line"></i> ${escapeHtml(msg)}`;
+        }
+        toast("Lô đang bị khoá: " + msg);
+      } else if(r.status !== 404){
+        showError("Lock thất bại", msg || ("HTTP " + r.status));
+      }
+      return false;
+    }
+
+    // =========================
+    // Mode switch
+    // =========================
+    function switchMode(mode){
+      document.getElementById('segWinner').classList.toggle('active', mode==='WINNER');
+      document.getElementById('segNext').classList.toggle('active', mode==='NEXT');
+      document.getElementById('segNoValid').classList.toggle('active', mode==='NO_VALID');
+
+      document.getElementById('modeWinner').style.display = (mode==='WINNER') ? 'block' : 'none';
+      document.getElementById('modeNext').style.display = (mode==='NEXT') ? 'block' : 'none';
+      document.getElementById('modeNoValid').style.display = (mode==='NO_VALID') ? 'block' : 'none';
+
+      window.__mode = mode;
+    }
+
+    function onWinMethodChange(){
+      const m = document.getElementById('winMethod').value;
+      const input = document.getElementById('winningPrice');
+      const pad = document.getElementById('stepPadWinner');
+      const btnAuto = document.getElementById('btnAutoCorrectWinner');
+      const help = document.getElementById('winnerHelp');
+
+      if(m === 'LOTTERY'){
+        help.innerHTML = 'Nếu <b>LOTTERY</b> thì hệ thống lấy <b>giá khởi điểm</b> của vòng. Không cần nhập.';
+        input.value = '';
+        input.disabled = true;
+        if(pad) pad.style.display = 'none';
+        if(btnAuto) btnAuto.style.display = 'none';
+        onMoneyInput('winningPrice');
+        updatePriceMeta('winningPrice');
+      } else {
+        input.disabled = false;
+        if(pad) pad.style.display = 'flex';
+        if(btnAuto) btnAuto.style.display = 'inline-flex';
+        help.innerHTML = 'Auto-correct sẽ đưa giá về <b>giá thấp nhất hợp lệ</b> theo bước giá. Nút +/- giúp nhập nhanh theo tick.';
+        updatePriceMeta('winningPrice');
+      }
+    }
+
+    // =========================
+    // Smart price logic
+    // =========================
+    function getBaseAndStep(){
+      const sp = currentLot ? getStartPriceVnd(currentLot) : 0;
+      const step = currentLot ? getBidStepVnd(currentLot) : 0;
+      return { sp, step };
+    }
+
+    function calcTick(sp, step, val){
+      if(!step || step <= 0) return { tick: null, valid: true, aligned: true };
+      const diff = Number(val) - Number(sp);
+      if(!isFinite(diff)) return { tick: null, valid: false, aligned: false };
+      if(diff < 0) return { tick: null, valid: false, aligned: false };
+
+      const raw = diff / step;
+      const tick = Math.round(raw);
+      const aligned = Math.abs(raw - tick) < 1e-9;
+      const valid = (diff >= 0);
+      return { tick, valid, aligned };
+    }
+
+    function updatePriceMeta(inputId){
+      if(!currentLot) return;
+      const { sp, step } = getBaseAndStep();
+      const val = parseMoneyInput(inputId);
+
+      const isWinner = (inputId === 'winningPrice');
+      const tickEl = document.getElementById(isWinner ? 'tickWinner' : 'tickNext');
+      const stepEl = document.getElementById(isWinner ? 'stepWinner' : 'stepNext');
+      const validEl = document.getElementById(isWinner ? 'validWinner' : 'validNext');
+
+      if(stepEl) stepEl.textContent = step ? fmtMoney(step) : '—';
+
+      if(val === null){
+        if(tickEl) tickEl.textContent = '—';
+        if(validEl) validEl.textContent = '—';
         return;
       }
 
-      payload = {
-        result_type: "NEXT_ROUND",
-        win_method: "HIGHEST",
-        highest_price_vnd: hp,
-        winner_customer_id: null,
-        next_customer_ids: ids,
-        next_participants: ids.map(cid => ({ customer_id: cid })),
-        note: note
-      };
+      if(!step){
+        if(tickEl) tickEl.textContent = '—';
+        if(validEl) validEl.textContent = (val >= sp) ? 'OK' : 'THẤP';
+        return;
+      }
 
-    } else if(mode === 'NO_VALID'){
-      const note = (document.getElementById('noteNoValid').value || '').trim() || null;
-      payload = {
-        result_type: "NO_VALID",
+      const t = calcTick(sp, step, val);
+      if(tickEl) tickEl.textContent = (t.tick === null) ? '—' : String(t.tick);
+      if(validEl){
+        if(val < sp){
+          validEl.textContent = 'THẤP';
+        } else if(!t.aligned){
+          validEl.textContent = 'CHƯA CHUẨN TICK';
+        } else {
+          validEl.textContent = 'OK';
+        }
+      }
+    }
+
+    function autoCorrectPrice(inputId){
+      if(!currentLot) return;
+
+      const { sp, step } = getBaseAndStep();
+      if(!step){
+        toast("Không có bước giá hợp lệ để auto-correct.");
+        return;
+      }
+
+      const raw = parseMoneyInput(inputId);
+      const target = (raw === null) ? sp : raw;
+
+      let k = 0;
+      if(target <= sp) k = 0;
+      else k = Math.ceil((target - sp) / step);
+
+      let corrected = sp + k * step;
+      if(corrected < sp) corrected = sp;
+
+      const el = document.getElementById(inputId);
+      el.value = fmtMoney(corrected);
+      onMoneyInput(inputId);
+      updatePriceMeta(inputId);
+    }
+
+    function nudgePrice(inputId, deltaSteps){
+      if(!currentLot) return;
+
+      const { sp, step } = getBaseAndStep();
+      if(!step){
+        toast("Không có bước giá hợp lệ.");
+        return;
+      }
+
+      const cur = parseMoneyInput(inputId);
+      const base = (cur === null) ? sp : cur;
+
+      let next = base + Number(deltaSteps) * step;
+      if(next < sp) next = sp;
+
+      const el = document.getElementById(inputId);
+      el.value = fmtMoney(next);
+      onMoneyInput(inputId);
+      updatePriceMeta(inputId);
+    }
+
+    // =========================
+    // Winner picker (accent-insensitive search)
+    // =========================
+    function renderWinnerPicker(){
+      const host = document.getElementById('winnerList');
+      if(!host) return;
+      host.innerHTML = '';
+
+      const qRaw = (document.getElementById('winnerSearch').value || '').trim();
+      const q = vnFold(qRaw);
+
+      const list = Array.isArray(currentParticipants) ? currentParticipants : [];
+
+      for(const p of list){
+        const hay = vnFold(`${safeText(p.name)} ${safeText(p.cccd)} ${safeText(p.phone)} ${safeText(p.email)}`);
+        if(q && !hay.includes(q)) continue;
+
+        const div = document.createElement('div');
+        div.className = 'pitem' + ((Number(p.customer_id) === Number(selectedWinnerId)) ? ' selected' : '');
+        div.onclick = ()=> {
+          selectedWinnerId = Number(p.customer_id);
+          document.getElementById('winnerCustomerId').value = String(selectedWinnerId);
+          renderWinnerPicker();
+        };
+
+        const sttPrefix = fmtStt(p.stt);
+        const nameLine = `${sttPrefix ? (escapeHtml(sttPrefix) + " — ") : ""}${escapeHtml(p.name || ('#'+p.customer_id))}`;
+
+        div.innerHTML = `
+          <div>
+            <b>${nameLine}</b>
+            <div class="pm">
+              CCCD: <span class="mono">${escapeHtml(p.cccd)}</span>
+              • SĐT: <span class="mono">${escapeHtml(p.phone)}</span>
+              ${p.email ? `• Email: <span class="mono">${escapeHtml(p.email)}</span>` : ``}
+            </div>
+          </div>
+          <div><span class="tag"><i class="ri-check-line"></i> Chọn</span></div>
+        `;
+        host.appendChild(div);
+      }
+
+      if(!host.children.length){
+        host.innerHTML = `<div class="empty">Không có kết quả phù hợp.</div>`;
+      }
+    }
+
+    // =========================
+    // Dual list (NEXT ROUND) accent-insensitive filters
+    // =========================
+    function updateDualCounters(){
+      const N = (Array.isArray(currentParticipants) ? currentParticipants.length : 0);
+      const M = (Array.isArray(dualNext) ? dualNext.length : 0);
+
+      const inT = document.getElementById('dualInTitle');
+      const nxT = document.getElementById('dualNextTitle');
+
+      if(inT) inT.textContent = `Trong vòng này (${N})`;
+      if(nxT) nxT.textContent = `Vào vòng sau (${M}/${N})`;
+    }
+
+    function renderDualLists(){
+      updateDualCounters();
+
+      const fi = vnFold((document.getElementById('filterIn').value||'').trim());
+      const fn = vnFold((document.getElementById('filterNext').value||'').trim());
+
+      const inEl = document.getElementById('listIn');
+      const nxEl = document.getElementById('listNext');
+      inEl.innerHTML = '';
+      nxEl.innerHTML = '';
+
+      for(const p of dualIn){
+        const hay = vnFold(`${safeText(p.name)} ${safeText(p.cccd)} ${safeText(p.phone)} ${safeText(p.email)}`);
+        if(fi && !hay.includes(fi)) continue;
+
+        const sttPrefix = fmtStt(p.stt);
+        const nameLine = `${sttPrefix ? (escapeHtml(sttPrefix) + " — ") : ""}${escapeHtml(p.name || ('#'+p.customer_id))}`;
+
+        const div = document.createElement('div');
+        div.className = 'pitem2';
+        div.innerHTML = `
+          <div>
+            <b>${nameLine}</b>
+            <div class="pm">
+              CCCD: <span class="mono">${escapeHtml(p.cccd)}</span>
+              • SĐT: <span class="mono">${escapeHtml(p.phone)}</span>
+              ${p.email ? `• Email: <span class="mono">${escapeHtml(p.email)}</span>` : ``}
+            </div>
+          </div>
+          <div class="pact">
+            <button class="iconbtn primary" type="button" onclick="moveOneToNext(${p.customer_id})">
+              <i class="ri-arrow-right-line"></i> Chọn
+            </button>
+          </div>
+        `;
+        inEl.appendChild(div);
+      }
+
+      for(const p of dualNext){
+        const hay = vnFold(`${safeText(p.name)} ${safeText(p.cccd)} ${safeText(p.phone)} ${safeText(p.email)}`);
+        if(fn && !hay.includes(fn)) continue;
+
+        const sttPrefix = fmtStt(p.stt);
+        const nameLine = `${sttPrefix ? (escapeHtml(sttPrefix) + " — ") : ""}${escapeHtml(p.name || ('#'+p.customer_id))}`;
+
+        const div = document.createElement('div');
+        div.className = 'pitem2';
+        div.innerHTML = `
+          <div>
+            <b>${nameLine}</b>
+            <div class="pm">
+              CCCD: <span class="mono">${escapeHtml(p.cccd)}</span>
+              • SĐT: <span class="mono">${escapeHtml(p.phone)}</span>
+              ${p.email ? `• Email: <span class="mono">${escapeHtml(p.email)}</span>` : ``}
+            </div>
+          </div>
+          <div class="pact">
+            <button class="iconbtn danger" type="button" onclick="moveOneToIn(${p.customer_id})">
+              <i class="ri-arrow-left-line"></i> Bỏ
+            </button>
+          </div>
+        `;
+        nxEl.appendChild(div);
+      }
+    }
+
+    function moveOneToNext(customerId){
+      customerId = Number(customerId);
+      const idx = dualIn.findIndex(x => x.customer_id === customerId);
+      if(idx >= 0){
+        dualNext.push(dualIn[idx]);
+        dualIn.splice(idx,1);
+        renderDualLists();
+      }
+    }
+    function moveOneToIn(customerId){
+      customerId = Number(customerId);
+      const idx = dualNext.findIndex(x => x.customer_id === customerId);
+      if(idx >= 0){
+        dualIn.push(dualNext[idx]);
+        dualNext.splice(idx,1);
+        renderDualLists();
+      }
+    }
+    function moveAllToNext(){
+      dualNext = dualNext.concat(dualIn);
+      dualIn = [];
+      renderDualLists();
+    }
+    function moveAllToIn(){
+      dualIn = dualIn.concat(dualNext);
+      dualNext = [];
+      renderDualLists();
+    }
+
+    // =========================
+    // Confirm builders + submit decide (unchanged logic)
+    // =========================
+    function getCurrentLotCode(){
+      if(!currentLot) return '';
+      const snap = getLotSnapshot(currentLot);
+      return safeText(currentLot.lot_code || snap.lot_code || '');
+    }
+
+    function findParticipantById(cid){
+      cid = Number(cid||0);
+      if(!cid) return null;
+      return (currentParticipants || []).find(x => Number(x.customer_id) === cid) || null;
+    }
+
+    function buildConfirmHtml(mode, payload){
+      const lotCode = getCurrentLotCode() || '—';
+      const startPrice = getStartPriceVnd(currentLot);
+      const step = getBidStepVnd(currentLot);
+
+      if(mode === 'WINNER'){
+        const winner = findParticipantById(payload.winner_customer_id);
+        const stt = winner ? fmtStt(winner.stt) : '';
+        const who = winner ? `${stt ? (stt + " — ") : ""}${winner.name}` : (`#${payload.winner_customer_id}`);
+
+        let priceText = '';
+        let methodPill = '';
+        if(payload.win_method === 'LOTTERY'){
+          priceText = fmtMoney(startPrice);
+          methodPill = `<span class="pill warn"><i class="ri-shuffle-line"></i> LOTTERY</span>`;
+        } else if(payload.win_method === 'MANUAL'){
+          priceText = fmtMoney(payload.highest_price_vnd);
+          methodPill = `<span class="pill warn"><i class="ri-hand-line"></i> MANUAL</span>`;
+        } else {
+          priceText = fmtMoney(payload.highest_price_vnd);
+          methodPill = `<span class="pill ok"><i class="ri-trophy-line"></i> HIGHEST</span>`;
+        }
+
+        return `
+          <div class="cCard">
+            <div class="cTop">
+              <div class="cTitle"><i class="ri-checkbox-circle-line"></i> Xác nhận chốt <b>WON</b></div>
+              ${methodPill}
+            </div>
+            <div class="cGrid">
+              <div class="cItem">
+                <div class="k"><i class="ri-barcode-line"></i> Lô</div>
+                <div class="v mono">${escapeHtml(lotCode)}</div>
+              </div>
+              <div class="cItem">
+                <div class="k"><i class="ri-user-3-line"></i> Khách trúng</div>
+                <div class="v">${escapeHtml(who)}</div>
+                <div class="muted" style="margin-top:6px;">
+                  ${winner ? `CCCD: <span class="mono">${escapeHtml(winner.cccd)}</span> • SĐT: <span class="mono">${escapeHtml(winner.phone)}</span>` : ``}
+                </div>
+              </div>
+              <div class="cItem">
+                <div class="k"><i class="ri-coins-line"></i> Giá khởi điểm</div>
+                <div class="v">${fmtMoney(startPrice)} VND</div>
+              </div>
+              <div class="cItem">
+                <div class="k"><i class="ri-money-dollar-circle-line"></i> Giá trúng</div>
+                <div class="v">${escapeHtml(priceText)} VND</div>
+                <div class="muted" style="margin-top:6px;">Bước giá: <b>${step ? fmtMoney(step) : '—'}</b></div>
+              </div>
+            </div>
+            ${payload.note ? `<div class="cWarn"><i class="ri-sticky-note-line"></i><div>Ghi chú: ${escapeHtml(payload.note)}</div></div>` : ``}
+          </div>
+        `;
+      }
+
+      if(mode === 'NEXT'){
+        const N = (Array.isArray(currentParticipants) ? currentParticipants.length : 0);
+        const M = (Array.isArray(dualNext) ? dualNext.length : 0);
+        return `
+          <div class="cCard">
+            <div class="cTop">
+              <div class="cTitle"><i class="ri-checkbox-circle-line"></i> Xác nhận chốt <b>VÀO VÒNG SAU</b></div>
+              <span class="pill warn"><i class="ri-arrow-right-up-line"></i> NEXT_ROUND</span>
+            </div>
+            <div class="cGrid">
+              <div class="cItem">
+                <div class="k"><i class="ri-barcode-line"></i> Lô</div>
+                <div class="v mono">${escapeHtml(lotCode)}</div>
+              </div>
+              <div class="cItem">
+                <div class="k"><i class="ri-user-3-line"></i> Người vào vòng sau</div>
+                <div class="v">${M}/${N} người</div>
+              </div>
+              <div class="cItem">
+                <div class="k"><i class="ri-flag-2-line"></i> Giá khởi điểm vòng</div>
+                <div class="v">${fmtMoney(startPrice)} VND</div>
+                <div class="muted" style="margin-top:6px;">Bước giá: <b>${step ? fmtMoney(step) : '—'}</b></div>
+              </div>
+              <div class="cItem">
+                <div class="k"><i class="ri-line-chart-line"></i> Giá cao nhất (base vòng sau)</div>
+                <div class="v">${fmtMoney(payload.highest_price_vnd)} VND</div>
+              </div>
+            </div>
+            ${payload.note ? `<div class="cWarn"><i class="ri-sticky-note-line"></i><div>Ghi chú: ${escapeHtml(payload.note)}</div></div>` : ``}
+          </div>
+        `;
+      }
+
+      if(mode === 'NO_VALID'){
+        return `
+          <div class="cCard">
+            <div class="cTop">
+              <div class="cTitle"><i class="ri-checkbox-circle-line"></i> Xác nhận chốt <b>NO VALID</b></div>
+              <span class="pill bad"><i class="ri-close-circle-line"></i> NO_VALID</span>
+            </div>
+            <div class="cGrid">
+              <div class="cItem">
+                <div class="k"><i class="ri-barcode-line"></i> Lô</div>
+                <div class="v mono">${escapeHtml(lotCode)}</div>
+              </div>
+              <div class="cItem">
+                <div class="k"><i class="ri-information-line"></i> Ý nghĩa</div>
+                <div class="v">Không có phiếu hợp lệ / không đủ điều kiện.</div>
+              </div>
+            </div>
+            ${payload.note ? `<div class="cWarn"><i class="ri-sticky-note-line"></i><div>Ghi chú: ${escapeHtml(payload.note)}</div></div>` : ``}
+          </div>
+        `;
+      }
+
+      return `<div class="cCard"><div class="cTitle"><i class="ri-information-line"></i> Xác nhận thực hiện?</div></div>`;
+    }
+
+    async function resetPending(){
+      if(!currentLot) return;
+
+      const html = `
+        <div class="cCard">
+          <div class="cTop">
+            <div class="cTitle"><i class="ri-restart-line"></i> Reset về PENDING</div>
+            <span class="pill warn"><i class="ri-alert-line"></i> ACTION</span>
+          </div>
+          <div class="cWarn"><i class="ri-information-line"></i>
+            <div>Thao tác này cho phép chốt lại lô. Bạn chắc chắn muốn reset?</div>
+          </div>
+        </div>
+      `;
+      const ok = await showConfirm("Xác nhận RESET", html, { okText: "Reset", cancelText: "Huỷ" });
+      if(!ok) return;
+
+      const payload = {
+        result_type: "PENDING",
         win_method: "HIGHEST",
         highest_price_vnd: null,
         winner_customer_id: null,
         next_participants: [],
-        note: note
+        note: "RESET_TO_PENDING"
       };
 
-    } else {
-      showError("Lỗi", "Mode không hợp lệ: " + safeText(mode));
-      return;
+      const roundLotId = Number(currentLot.id);
+
+      try{
+        const r = await fetch(`/auction/sessions/api/round-lots/${roundLotId}/decide`, {
+          method:"POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify(payload)
+        });
+        const js = await r.json().catch(()=> ({}));
+
+        if(!r.ok){
+          const msg = safeText(js.detail || js.error || ("HTTP " + r.status));
+          if(r.status === 409 && msg.startsWith("LOCKED_BY_")){
+            showError("Không thể reset", "Lô đang bị khoá bởi người khác.", msg);
+          } else {
+            showError("Reset thất bại", msg);
+          }
+          return;
+        }
+
+        toast("Đã reset về PENDING.");
+        await refreshAll();
+        await openLotModal(roundLotId);
+      }catch(e){
+        showError("Lỗi mạng", "Không thể gọi API reset. Vui lòng thử lại.");
+      }
     }
 
-    const html = buildConfirmHtml(mode === 'NEXT' ? 'NEXT' : mode, payload);
+    async function submitDecide(){
+      if(!currentLot) return;
 
-    let okText = "Chốt";
-    if(mode === 'WINNER') okText = "Chốt WON";
-    else if(mode === 'NEXT') okText = "Chốt vào vòng sau";
-    else if(mode === 'NO_VALID') okText = "Chốt No valid";
+      const mode = window.__mode || 'WINNER';
+      const roundLotId = Number(currentLot.id);
 
-    const ok = await showConfirm(
-      "Xác nhận chốt kết quả",
-      html,
-      { okText, cancelText: "Huỷ", sub: "Vui lòng kiểm tra kỹ. Sau khi chốt sẽ ghi nhận kết quả và ảnh hưởng vòng sau / phiếu trúng." }
-    );
-    if(!ok) return;
+      await tryLock(roundLotId);
 
-    toast("Đang chốt kết quả...");
+      let payload = null;
 
-    try{
-      const r = await fetch(`/auction/sessions/api/round-lots/${roundLotId}/decide`, {
-        method:"POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify(payload)
-      });
-      const js = await r.json().catch(()=> ({}));
+      if(mode === 'WINNER'){
+        const winMethod = safeText(document.getElementById('winMethod').value || 'HIGHEST');
+        const winnerId = Number(document.getElementById('winnerCustomerId').value || 0);
+        const note = (document.getElementById('noteWinner').value || '').trim() || null;
 
-      if(!r.ok){
-        const msg = safeText(js.detail || js.error || ("HTTP " + r.status));
-        if(r.status === 409 && msg.startsWith("LOCKED_BY_")){
-          showError("Không thể chốt", "Lô đang bị khoá bởi người khác.", msg);
-        } else {
-          showError("Chốt thất bại", msg);
+        if(!winnerId){
+          showError("Thiếu thông tin", "Bạn chưa chọn người thắng.");
+          return;
         }
+
+        if(winMethod === 'LOTTERY' && Number(ROUND_NO) === 1){
+          showError("Không hợp lệ", "Vòng #1 không được chốt LOTTERY (bốc thăm). Vui lòng chọn HIGHEST hoặc MANUAL.");
+          return;
+        }
+
+        let price = null;
+        if(winMethod !== 'LOTTERY'){
+          price = parseMoneyInput('winningPrice');
+          if(price === null || price <= 0){
+            showError("Thiếu thông tin", "Bạn chưa nhập giá trúng hợp lệ.");
+            return;
+          }
+        }
+
+        payload = {
+          result_type: "WINNER",
+          win_method: winMethod,
+          highest_price_vnd: (winMethod === 'LOTTERY') ? null : price,
+          winner_customer_id: winnerId,
+          next_participants: [],
+          note: note
+        };
+
+      } else if(mode === 'NEXT'){
+        const note = (document.getElementById('noteNext').value || '').trim() || null;
+        const hp = parseMoneyInput('highestPrice');
+        if(hp === null || hp <= 0){
+          showError("Thiếu thông tin", "Bạn chưa nhập giá cao nhất vòng này hợp lệ.");
+          return;
+        }
+
+        const ids = (Array.isArray(dualNext) ? dualNext : [])
+          .map(x => Number(x.customer_id || 0))
+          .filter(x => x > 0);
+
+        if(ids.length === 0){
+          showError("Thiếu thông tin", "Bạn chưa chọn ai vào vòng sau.");
+          return;
+        }
+
+        payload = {
+          result_type: "NEXT_ROUND",
+          win_method: "HIGHEST",
+          highest_price_vnd: hp,
+          winner_customer_id: null,
+          next_customer_ids: ids,
+          next_participants: ids.map(cid => ({ customer_id: cid })),
+          note: note
+        };
+
+      } else if(mode === 'NO_VALID'){
+        const note = (document.getElementById('noteNoValid').value || '').trim() || null;
+        payload = {
+          result_type: "NO_VALID",
+          win_method: "HIGHEST",
+          highest_price_vnd: null,
+          winner_customer_id: null,
+          next_participants: [],
+          note: note
+        };
+
+      } else {
+        showError("Lỗi", "Mode không hợp lệ: " + safeText(mode));
         return;
       }
 
-      toast("Đã chốt kết quả thành công.");
-      closeModal();
-      await refreshAll();
+      const html = buildConfirmHtml(mode === 'NEXT' ? 'NEXT' : mode, payload);
 
-    }catch(e){
-      showError("Lỗi mạng", "Không thể gọi API chốt kết quả. Vui lòng thử lại.");
+      let okText = "Chốt";
+      if(mode === 'WINNER') okText = "Chốt WON";
+      else if(mode === 'NEXT') okText = "Chốt vào vòng sau";
+      else if(mode === 'NO_VALID') okText = "Chốt No valid";
+
+      const ok = await showConfirm(
+        "Xác nhận chốt kết quả",
+        html,
+        { okText, cancelText: "Huỷ", sub: "Vui lòng kiểm tra kỹ. Sau khi chốt sẽ ghi nhận kết quả và ảnh hưởng vòng sau / phiếu trúng." }
+      );
+      if(!ok) return;
+
+      toast("Đang chốt kết quả...");
+
+      try{
+        const r = await fetch(`/auction/sessions/api/round-lots/${roundLotId}/decide`, {
+          method:"POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify(payload)
+        });
+        const js = await r.json().catch(()=> ({}));
+
+        if(!r.ok){
+          const msg = safeText(js.detail || js.error || ("HTTP " + r.status));
+          if(r.status === 409 && msg.startsWith("LOCKED_BY_")){
+            showError("Không thể chốt", "Lô đang bị khoá bởi người khác.", msg);
+          } else {
+            showError("Chốt thất bại", msg);
+          }
+          return;
+        }
+
+        toast("Đã chốt kết quả thành công.");
+        closeModal();
+        await refreshAll();
+
+      }catch(e){
+        showError("Lỗi mạng", "Không thể gọi API chốt kết quả. Vui lòng thử lại.");
+      }
     }
+
+    // =========================
+    // Boot
+    // =========================
+    (function boot(){
+      renderRoundNav();
+      refreshAll();
+    })();
+    function togglePrintMenu(btn){
+    const menu = btn.nextElementSibling;
+    if(!menu) return;
+
+    document.querySelectorAll('.printMenu').forEach(m=>{
+      if(m !== menu) m.style.display = 'none';
+    });
+
+    menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
   }
 
-  // =========================
-  // Boot
-  // =========================
-  (function boot(){
-    renderRoundNav();
-    refreshAll();
-  })();
+  document.addEventListener('click', function(ev){
+    if(!ev.target.closest('.printDrop')){
+      document.querySelectorAll('.printMenu').forEach(m=> m.style.display='none');
+   }
+  });
+
 </script>
 {% endblock %}
