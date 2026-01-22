@@ -1039,6 +1039,32 @@
 </div>
 
 <div id="toast" class="toast"></div>
+<!-- =========================================================
+     Modal: Print One Bid Sheet (choose one customer)
+========================================================== -->
+<div id="printOneBackdrop" class="dlg-backdrop" onclick="printOneClose(event)">
+    <div class="dlg" onclick="event.stopPropagation()">
+        <div class="dlg-h">
+            <b><i class="ri-printer-line"></i> In lẻ phiếu trả giá</b>
+            <button class="dlg-x" type="button" onclick="printOneClose()"><i class="ri-close-line"></i></button>
+        </div>
+
+        <div class="dlg-b">
+            <div class="picker">
+                <div class="ph">
+                    <b>Chọn khách để in</b>
+                    <input id="printOneSearch" placeholder="Tìm theo tên / CCCD / SĐT..."
+                           oninput="printOneRenderList()"/>
+                </div>
+                <div class="pb" id="printOneList"></div>
+            </div>
+        </div>
+
+        <div class="dlg-f">
+            <span class="hint">Chọn 1 khách → hệ thống mở tab in đúng 1 phiếu.</span>
+        </div>
+    </div>
+</div>
 
 <script>
     // =========================
@@ -1336,6 +1362,11 @@
         host.appendChild(sel);
       }
     }
+    function getCurrentRoundId(){
+  const rs = Array.isArray(ROUNDS) ? ROUNDS : [];
+  const r = rs.find(x => Number(x.round_no ?? x.roundNo ?? (x.get && x.get('round_no'))) === Number(ROUND_NO));
+  return r ? Number(r.id || r.round_id || 0) : 0;
+}
 
     // =========================
     // Load results + render
@@ -1674,13 +1705,37 @@
     }
 
 
-    // =========================
-    // Print placeholders
-    // =========================
-    function printAllBidTickets(){ toast("Chưa nối endpoint in phiếu trả giá (admin)."); }
-    function printRoundWinners(){ toast("Chưa nối endpoint in phiếu trúng theo vòng (admin)."); }
-    function printWinnerOne(roundLotId){ toast("Chưa nối endpoint in phiếu trúng theo lô. round_lot_id=" + roundLotId); }
-    function printNextRoundOne(roundLotId){ toast("Chưa nối endpoint in DS vào vòng sau theo lô. round_lot_id=" + roundLotId); }
+// =========================
+// Print (CONNECTED to Service B bid-sheets APIs)
+// =========================
+
+// In toàn bộ phiếu trả giá của ROUND (tất cả lô trong vòng)
+function printAllBidTickets(){
+  const roundId = getCurrentRoundId();
+  if(!roundId){
+    toast("Không tìm thấy round_id của vòng hiện tại. Kiểm tra dữ liệu ROUNDS có field id/round_id.");
+    return;
+  }
+  window.open(`/auction-sessions/bid-sheets/print/rounds/${roundId}?sort_mode=STT_LOT`, '_blank');
+}
+
+
+// In phiếu trả giá của 1 LÔ (tất cả khách trong lô)
+function printBidTicketsLot(roundLotId){
+  if(!roundLotId) return;
+  window.open(`/auction-sessions/bid-sheets/print/round-lots/${roundLotId}?sort_mode=STT_LOT`, '_blank');
+}
+
+// In lẻ 1 phiếu (mở popup chọn khách)
+function openPrintOne(roundLotId){
+  // function này sẽ được định nghĩa ở phần (3)
+  __openPrintOne(roundLotId);
+}
+
+// Các nút này bạn đang có nhưng API chưa đưa cho mình (phiếu trúng / danh sách next)
+function printRoundWinners(){ toast("Chưa nối: in phiếu trúng theo vòng (chưa có API trong phần bid-sheets)."); }
+function printWinnerOne(roundLotId){ toast("Chưa nối: in phiếu trúng theo lô (chưa có API trong phần bid-sheets)."); }
+function printNextRoundOne(roundLotId){ toast("Chưa nối: in DS vào vòng sau theo lô (chưa có API trong phần bid-sheets)."); }
 
     // =========================
     // Modal open / close
@@ -2499,6 +2554,87 @@
       document.querySelectorAll('.printMenu').forEach(m=> m.style.display='none');
    }
   });
+
+    // =========================
+// Print ONE popup (choose customer in a lot)
+// =========================
+let __printOneRoundLotId = null;
+let __printOneParticipants = [];
+
+function __openPrintOne(roundLotId){
+  const lots = (UI && UI.lots) ? UI.lots : [];
+  const lot = lots.find(x => Number(x.id) === Number(roundLotId));
+  if(!lot){
+    toast("Không tìm thấy lô để in lẻ.");
+    return;
+  }
+
+  __printOneRoundLotId = Number(roundLotId);
+
+  __printOneParticipants = (lot.participants || []).map(p=>{
+    const snap = participantSnapshot(p);
+    return {
+      customer_id: Number(p.customer_id || snap.customer_id || 0),
+      stt: Number(p.stt || snap.stt || 0),
+      name: safeText(snap.customer_full_name || ''),
+      phone: safeText(snap.phone || ''),
+      cccd: safeText(snap.cccd || '')
+    };
+  }).filter(x => x.customer_id > 0);
+
+  document.getElementById('printOneSearch').value = '';
+  printOneRenderList();
+  document.getElementById('printOneBackdrop').style.display = 'flex';
+}
+
+function printOneClose(ev){
+  if(ev && ev.target && ev.target.id !== 'printOneBackdrop') return;
+  document.getElementById('printOneBackdrop').style.display = 'none';
+  __printOneRoundLotId = null;
+  __printOneParticipants = [];
+}
+
+function printOneRenderList(){
+  const host = document.getElementById('printOneList');
+  host.innerHTML = '';
+
+  const q = vnFold((document.getElementById('printOneSearch').value || '').trim());
+
+  for(const p of __printOneParticipants){
+    const hay = vnFold(`${p.name} ${p.cccd} ${p.phone}`);
+    if(q && !hay.includes(q)) continue;
+
+    const sttPrefix = fmtStt(p.stt);
+    const nameLine = `${sttPrefix ? (escapeHtml(sttPrefix) + " — ") : ""}${escapeHtml(p.name || ('#'+p.customer_id))}`;
+
+    const div = document.createElement('div');
+    div.className = 'pitem';
+    div.innerHTML = `
+      <div>
+        <b>${nameLine}</b>
+        <div class="pm">
+          CCCD: <span class="mono">${escapeHtml(p.cccd)}</span>
+          • SĐT: <span class="mono">${escapeHtml(p.phone)}</span>
+        </div>
+      </div>
+      <div><span class="tag"><i class="ri-printer-line"></i> In</span></div>
+    `;
+
+    div.onclick = ()=>{
+      window.open(
+        `/auction-sessions/bid-sheets/print/one?round_lot_id=${__printOneRoundLotId}&customer_id=${p.customer_id}&sort_mode=STT_LOT`,
+        '_blank'
+      );
+      printOneClose();
+    };
+
+    host.appendChild(div);
+  }
+
+  if(!host.children.length){
+    host.innerHTML = `<div class="empty">Không có khách phù hợp.</div>`;
+  }
+}
 
 </script>
 {% endblock %}
