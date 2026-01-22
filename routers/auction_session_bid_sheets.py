@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import os
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Optional, Dict, Any, List, Tuple, Union
 from urllib.parse import quote
 
 import httpx
@@ -23,11 +23,12 @@ PRINT_TEMPLATE = "pages/auction_session_documents/bid_sheet_print.html"
 # =========================================================
 # Helpers
 # =========================================================
-def _log(msg: str):
-    print(f"[AUCTION_BID_SHEETS_B] {msg}")
-
-
-async def _get_json(client: httpx.AsyncClient, url: str, headers: dict, params: dict | None = None):
+async def _get_json(
+    client: httpx.AsyncClient,
+    url: str,
+    headers: dict,
+    params: dict | None = None,
+):
     r = await client.get(url, headers=headers, params=params)
     try:
         return r.status_code, r.json()
@@ -35,7 +36,12 @@ async def _get_json(client: httpx.AsyncClient, url: str, headers: dict, params: 
         return r.status_code, None
 
 
-async def _post_json(client: httpx.AsyncClient, url: str, headers: dict, payload: dict):
+async def _post_json(
+    client: httpx.AsyncClient,
+    url: str,
+    headers: dict,
+    payload: dict,
+):
     r = await client.post(url, headers=headers, json=payload)
     try:
         return r.status_code, r.json()
@@ -43,14 +49,10 @@ async def _post_json(client: httpx.AsyncClient, url: str, headers: dict, payload
         return r.status_code, None
 
 
-def _require_login(request: Request, next_path: str) -> Tuple[str, Any] | Tuple[None, None]:
-    token = get_access_token(request)
-    if not token:
-        return None, None
-    return token, None
-
-
-async def _ensure_me_or_redirect(request: Request, next_path: str):
+async def _ensure_me_or_redirect(
+    request: Request,
+    next_path: str,
+) -> Tuple[Optional[Dict[str, Any]], Union[str, RedirectResponse]]:
     token = get_access_token(request)
     me = await fetch_me(token) if token else None
     if not me:
@@ -75,7 +77,7 @@ async def bid_sheets_home(request: Request):
     Trang entry đơn giản (có thể redirect về /auction/sessions).
     """
     me, token_or_redirect = await _ensure_me_or_redirect(request, "/auction-sessions/bid-sheets")
-    if token_or_redirect and isinstance(token_or_redirect, RedirectResponse):
+    if isinstance(token_or_redirect, RedirectResponse):
         return token_or_redirect
 
     return templates.TemplateResponse(
@@ -99,7 +101,7 @@ async def print_bid_sheets_for_round_lot(
 ):
     next_path = f"/auction-sessions/bid-sheets/print/round-lots/{int(round_lot_id)}"
     me, token_or_redirect = await _ensure_me_or_redirect(request, next_path)
-    if token_or_redirect and isinstance(token_or_redirect, RedirectResponse):
+    if isinstance(token_or_redirect, RedirectResponse):
         return token_or_redirect
     token = token_or_redirect
 
@@ -150,7 +152,7 @@ async def print_bid_sheets_for_round(
 ):
     next_path = f"/auction-sessions/bid-sheets/print/rounds/{int(round_id)}"
     me, token_or_redirect = await _ensure_me_or_redirect(request, next_path)
-    if token_or_redirect and isinstance(token_or_redirect, RedirectResponse):
+    if isinstance(token_or_redirect, RedirectResponse):
         return token_or_redirect
     token = token_or_redirect
 
@@ -201,7 +203,7 @@ async def print_bid_sheets_for_session(
 ):
     next_path = f"/auction-sessions/bid-sheets/print/sessions/{int(session_id)}"
     me, token_or_redirect = await _ensure_me_or_redirect(request, next_path)
-    if token_or_redirect and isinstance(token_or_redirect, RedirectResponse):
+    if isinstance(token_or_redirect, RedirectResponse):
         return token_or_redirect
     token = token_or_redirect
 
@@ -253,7 +255,7 @@ async def print_one_bid_sheet(
 ):
     next_path = "/auction-sessions/bid-sheets/print/one"
     me, token_or_redirect = await _ensure_me_or_redirect(request, next_path)
-    if token_or_redirect and isinstance(token_or_redirect, RedirectResponse):
+    if isinstance(token_or_redirect, RedirectResponse):
         return token_or_redirect
     token = token_or_redirect
 
@@ -324,7 +326,7 @@ async def print_selected_bid_sheets(
 ):
     next_path = "/auction-sessions/bid-sheets/print/selected"
     me, token_or_redirect = await _ensure_me_or_redirect(request, next_path)
-    if token_or_redirect and isinstance(token_or_redirect, RedirectResponse):
+    if isinstance(token_or_redirect, RedirectResponse):
         return token_or_redirect
     token = token_or_redirect
 

@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <title>Phiếu trả giá</title>
+  <style>
+    @page{
+      size: A4;
+      margin: 18mm 16mm;
+    }
+
+    html, body{
+      margin:0;
+      padding:0;
+      background:#e5e7eb;
+      font-family:"Times New Roman", Times, serif;
+      font-size:12.5pt;
+      color:#000;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* 1 page = 1 tờ A4, KHÔNG min-height 297mm (tránh tràn 2 trang) */
+    .page{
+      width:210mm;
+      margin:10px auto;
+      background:#fff;
+      box-shadow:0 0 6px rgba(0,0,0,0.18);
+      box-sizing:border-box;
+      position:relative;
+      page-break-after:always;
+      /* không padding nữa (đã dùng @page margin) */
+      padding:0;
+    }
+
+    @media print{
+      html, body{ background:#fff; }
+      .page{
+        margin:0;
+        box-shadow:none;
+        /* đảm bảo không bị “đếm đôi” */
+        padding:0;
+      }
+    }
+
+    .center { text-align:center; }
+    .bold { font-weight:700; }
+    .title { font-size:18pt; font-weight:800; text-transform:uppercase; }
+    .gov   { font-size:15pt; font-weight:800; text-transform:uppercase; }
+    .mt-1  { margin-top:3mm; }
+    .mt-2  { margin-top:4mm; }
+    .mt-3  { margin-top:6mm; }
+    .mb-2  { margin-bottom:4mm; }
+    .small { font-size:11pt; }
+    .note  { font-size:10.5pt; }
+
+    .divider{
+      text-align:center;
+      margin:2mm 0 6mm;
+    }
+
+    /* Box mã nhận dạng nhỏ ở góc trái trên
+       (top/left tính theo vùng in bên trong @page margin) */
+    .flag-box{
+      position:absolute;
+      top:0mm;
+      left:0mm;
+      font-size:9pt;
+      border:1px solid #444;
+      padding:2px 6px;
+      line-height:1.3;
+      background:#f9fafb;
+      text-align:center; /* để căn giữa nội dung trong khung */
+    }
+
+    /* Dòng "Lô: L-13" trong khung góc trái */
+    .flag-lot{
+      font-size:14pt;
+      font-weight:800;
+      line-height:1.1;
+      margin-bottom:1px;
+    }
+
+    .info-table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:2mm;
+      margin-bottom:2mm;
+    }
+    .info-table td{
+      padding:1mm 0;
+      vertical-align:top;
+    }
+    .info-label{
+      width:45mm;
+      white-space:nowrap;
+      font-weight:700;
+    }
+    .info-sep{ width:4mm; }
+
+    .dotline{
+      display:inline-block;
+      border-bottom:0.6pt dotted #888;
+      min-width:45mm;
+      line-height:1.6;
+    }
+    .dotline.long{ min-width:120mm; }
+
+    .textline-block{
+      margin-top:4mm;
+      margin-bottom:5mm;
+      line-height:1.8;
+    }
+
+    .signature-block{
+      width:60%;
+      margin-left:auto;
+      text-align:center;
+      margin-top:14mm; /* giảm nhẹ để chắc 1 trang */
+      page-break-inside:avoid;
+    }
+
+    /* tránh Chrome tự thêm header/footer đẩy trang */
+    @media print{
+      body { -webkit-print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+
+{% for t in tickets %}
+  {% set auction_mode = t.auction_mode or 'PER_LOT' %}
+  {% set is_per_sqm = (auction_mode == 'PER_SQM') %}
+  {% set unit_label = is_per_sqm and 'VND/m²' or 'VND/lô' %}
+  {% set price_unit = unit_label %}
+  {% set bid_unit = unit_label %}
+  {% set qty_lots = t.customer_lot_count or 1 %}
+  {% set lot_short = (t.lot_code or '').replace('-', '.') %}
+  {% set stt_code = t.stt_padded or (t.stt or '') %}
+  {% set show_price_step = (t.show_price_step if (t.show_price_step is not none) else true) %}
+
+  <div class="page">
+
+    <div class="flag-box">
+      <div class="flag-lot">Lô: {{ t.lot_code }}</div>
+      {{ stt_code }}-C{{ t.customer_id }}-S{{ qty_lots }}-{{ lot_short }}
+    </div>
+
+    <div class="center gov">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+    <div class="center bold">Độc lập – Tự do – Hạnh phúc</div>
+    <div class="divider">-----------------o0o-----------------</div>
+
+    <!-- ✅ CHỈ THÊM YẾU TỐ VÒNG ĐẤU (giữ nguyên mọi thứ khác) -->
+    <div class="center title">PHIẾU TRẢ GIÁ (VÒNG {{ t.round_no }})</div>
+
+    <div class="mt-3">
+      <span class="bold">Tài sản đấu giá:</span>
+      Quyền sử dụng đất thuộc dự án
+      "<span class="bold">{{ t.project_name }}</span>",
+      lô đất số <span class="bold">{{ t.lot_code }}</span>
+      {% if t.area_m2 is number %}
+        , diện tích <span class="bold">{{ "{:,.2f}".format(t.area_m2|float) }}</span> m².
+      {% else %}
+        .
+      {% endif %}
+    </div>
+
+    <!-- ✅ CHỈ THÊM 1 DÒNG THÔNG TIN VÒNG (nhẹ, không phá layout) -->
+    <div class="mt-1 small">
+      <span class="bold">Vòng đấu giá:</span> Vòng {{ t.round_no }}
+    </div>
+
+    <div class="mt-2">
+      <span class="bold">Kính gửi:</span>
+      {{ t.company_name or 'Công ty Đấu giá Hợp danh Kinh Đô' }}
+    </div>
+
+    <table class="info-table mt-2">
+      <tr><td class="info-label">Khách hàng tham gia ĐG</td><td class="info-sep">:</td><td>{{ t.customer_full_name }}</td></tr>
+      <tr><td class="info-label">Mã khách hàng</td><td class="info-sep">:</td><td>C{{ t.customer_id }}</td></tr>
+      <tr><td class="info-label">CCCD/Căn cước</td><td class="info-sep">:</td><td>{{ t.cccd }}</td></tr>
+      <tr><td class="info-label">Địa chỉ</td><td class="info-sep">:</td><td>{{ t.address }}</td></tr>
+      <tr><td class="info-label">Số điện thoại</td><td class="info-sep">:</td><td>{{ t.phone }}</td></tr>
+      <tr><td class="info-label">Người được uỷ quyền<br/>(nếu có)</td><td class="info-sep">:</td><td><span class="dotline long">&nbsp;</span></td></tr>
+      <tr><td class="info-label">CCCD người uỷ quyền</td><td class="info-sep">:</td><td><span class="dotline long">&nbsp;</span></td></tr>
+    </table>
+
+    <div class="mt-2 small" style="text-align: justify;">
+      Sau khi nghiên cứu kỹ hồ sơ mời tham gia đấu giá và xem tài sản đấu giá nêu trên,
+      tôi quyết định trả giá như sau:
+    </div>
+
+    <div class="center bold mt-3">NỘI DUNG TRẢ GIÁ</div>
+
+    <table class="info-table mt-1">
+      <tr>
+        <td class="info-label">Lô đất đăng ký ĐG</td><td class="info-sep">:</td>
+        <td class="bold">{{ t.lot_code }}</td>
+      </tr>
+
+      <tr>
+        <td class="info-label">Giá khởi điểm ({{ price_unit }})</td>
+        <td class="info-sep">:</td>
+        <td>
+          {% if is_per_sqm and t.starting_price_vnd is number %}
+            {% if t.area_m2 is number and t.area_m2 > 0 %}
+              {% set unit_price = ((t.starting_price_vnd|float) / (t.area_m2|float))|round(0, 'common') %}
+              {{ "{:,.0f}".format(unit_price) }}
+            {% else %}
+              0
+            {% endif %}
+          {% elif t.starting_price_vnd is number %}
+            {{ "{:,.0f}".format(t.starting_price_vnd|float) }}
+          {% endif %}
+        </td>
+      </tr>
+
+      {% if show_price_step %}
+      <tr>
+        <td class="info-label">Bước giá ({{ bid_unit }})</td>
+        <td class="info-sep">:</td>
+        <td>
+          {% if t.bid_step_vnd is number %}
+            {{ "{:,.0f}".format(t.bid_step_vnd|float) }}
+          {% endif %}
+        </td>
+      </tr>
+      {% endif %}
+
+      <tr>
+        <td class="info-label">Tôi xin trả giá là</td>
+        <td class="info-sep">:</td>
+        <td>
+          <span class="dotline" style="min-width:65mm;">&nbsp;</span>
+          &nbsp;{{ unit_label }}
+        </td>
+      </tr>
+    </table>
+
+    <div class="small textline-block">
+      Bằng chữ:
+      <span class="dotline long">&nbsp;</span>
+    </div>
+
+    <div class="small textline-block">
+      <span class="dotline long">&nbsp;</span> đồng.
+    </div>
+
+    <div class="mt-3 small" style="text-align: justify;">
+      Tôi cam kết hoàn toàn chịu trách nhiệm về mức giá đã trả trên Phiếu trả giá này
+      và thực hiện nghiêm túc Quy chế đấu giá tài sản cùng các quy định pháp luật có liên quan.
+    </div>
+
+    <div class="mt-3 note">
+      <span class="bold">Ghi chú:</span><br/>
+      - Phiếu trả giá hợp lệ là phiếu được phát hành bởi {{ t.company_name or 'Công ty Đấu giá Hợp danh Kinh Đô' }};<br/>
+      - Phiếu không bị rách, nát;<br/>
+      - Được điền đầy đủ các thông tin;<br/>
+      - Trường hợp sai lệch giữa giá trả bằng số với giá trả bằng chữ, thì sẽ lấy giá trả bằng chữ.
+    </div>
+
+    <div class="signature-block">
+      ................................, ngày ...... tháng ...... năm ......<br/><br/>
+      <span class="bold">Khách hàng tham gia đấu giá</span><br/>
+      <span class="note">(Ký và ghi rõ họ tên)</span>
+    </div>
+
+  </div>
+{% endfor %}
+
+<script>
+  window.addEventListener("load", function () {
+    // Tip: tắt "Headers and footers" trong hộp thoại in của Chrome để không bị đẩy trang.
+    window.print();
+  });
+</script>
+
+</body>
+</html>
