@@ -1092,6 +1092,11 @@
       .replace(/Đ/g, 'd');
   }
 
+  function isConfirmTextOk(v){
+    return vnFold(v).trim() === 'toi xac nhan';
+  }
+
+
   // =========================
   // Custom Dialog (NO typing required)
   // =========================
@@ -1466,12 +1471,16 @@
   }
 
   async function createNextRound(){
+    let inputEl = null;
+    let okBtn = null;
+
     const html = `
       <div class="cCard">
         <div class="cTop">
           <div class="cTitle"><i class="ri-skip-forward-line"></i> Tạo vòng sau</div>
           <span class="pill warn"><i class="ri-alert-line"></i> QUAN TRỌNG</span>
         </div>
+
         <div class="cGrid">
           <div class="cItem">
             <div class="k"><i class="ri-stack-line"></i> Từ vòng</div>
@@ -1479,19 +1488,60 @@
           </div>
           <div class="cItem">
             <div class="k"><i class="ri-arrow-right-up-line"></i> Dựa trên</div>
-            <div class="v">Các lô <span class="mono">NEXT_ROUND</span> của vòng hiện tại.</div>
+            <div class="v">Các lô <b>NEXT_ROUND</b> của vòng hiện tại</div>
           </div>
         </div>
-        <div class="cWarn"><i class="ri-information-line"></i>
-          <div>Hãy chắc chắn bạn đã chốt xong kết quả các lô. Sau khi tạo vòng sau, vòng hiện tại coi như kết thúc nghiệp vụ.</div>
+
+        <div class="cWarn">
+          <i class="ri-information-line"></i>
+          <div>
+            Sau khi tạo vòng sau, vòng hiện tại sẽ <b>kết thúc nghiệp vụ</b>.
+            Hãy chắc chắn bạn đã chốt xong tất cả lô.
+          </div>
+        </div>
+
+        <div class="field" style="margin-top:12px;">
+          <label><b>Nhập xác nhận</b></label>
+          <input id="confirmNextRoundInput"
+                 placeholder="Nhập: tôi xác nhận"
+                 style="height:40px;font-weight:600;" />
+          <div class="muted" style="margin-top:4px;">
+            Bạn phải nhập đúng <b>“tôi xác nhận”</b> để tiếp tục.
+          </div>
         </div>
       </div>
     `;
 
-    const ok = await showConfirm("Xác nhận tạo vòng sau", html, { okText: "Tạo vòng sau", cancelText: "Huỷ" });
+    const p = showDialog({
+      mode: 'confirm',
+      title: 'Xác nhận tạo vòng sau',
+      message: html,
+      html: true,
+      okText: 'Tạo vòng sau',
+      cancelText: 'Huỷ'
+    });
+
+    // hook sau khi dialog render
+    setTimeout(() => {
+      inputEl = document.getElementById('confirmNextRoundInput');
+      okBtn = document.getElementById('dlgOk');
+      if(!inputEl || !okBtn) return;
+
+      okBtn.disabled = true;
+
+      inputEl.addEventListener('input', () => {
+        okBtn.disabled = !isConfirmTextOk(inputEl.value);
+      });
+    }, 0);
+
+    const ok = await p;
     if(!ok) return;
 
-    const payload = { session_id: SESSION_ID, from_round_no: ROUND_NO, note: null };
+    const payload = {
+      session_id: SESSION_ID,
+      from_round_no: ROUND_NO,
+      note: null
+    };
 
     try{
       const r = await fetch(`/auction/sessions/api/sessions/${SESSION_ID}/rounds/next`, {
@@ -1500,20 +1550,24 @@
         body: JSON.stringify(payload)
       });
       const js = await r.json().catch(()=> ({}));
+
       if(!r.ok){
         showError("Tạo vòng sau thất bại", safeText(js.detail || js.error || ("HTTP " + r.status)));
         return;
       }
-      toast("Đã tạo vòng #" + (js.created_round_no || '') + " (" + (js.created_lot_count||0) + " lô)");
+
+      toast("Đã tạo vòng #" + (js.created_round_no || ''));
+
       if(js.created_round_no){
         window.location.href = `/auction/sessions/${SESSION_ID}?round_no=${js.created_round_no}`;
       } else {
         await refreshAll();
       }
     }catch(e){
-      showError("Lỗi mạng", "Không thể gọi API tạo vòng sau. Vui lòng thử lại.");
+      showError("Lỗi mạng", "Không thể gọi API tạo vòng sau.");
     }
   }
+
 
   // =========================
   // Print placeholders
