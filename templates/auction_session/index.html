@@ -201,7 +201,7 @@
     select, input{min-width: 180px;}
   }
 
-  /* ===== Modal ===== */
+  /* ===== Modal (Create Session) ===== */
   .modal-backdrop{
     position:fixed;inset:0;background:rgba(2,6,23,.55);
     display:none;align-items:flex-start;justify-content:center;
@@ -229,6 +229,36 @@
     font-size:13px;box-shadow:0 10px 30px rgba(2,6,23,.25);
     display:none;max-width:520px;line-height:1.35;
   }
+
+  /* ===== Custom Confirm / Alert (no browser confirm) ===== */
+  .cmodal-backdrop{
+    position:fixed;inset:0;background:rgba(2,6,23,.55);
+    display:none;align-items:center;justify-content:center;
+    padding:18px;z-index:10050;
+  }
+  .cmodal{
+    width:100%;max-width:520px;background:#fff;border-radius:18px;
+    border:1px solid rgba(226,232,240,1);box-shadow:0 18px 44px rgba(2,6,23,.18);
+    overflow:hidden;
+  }
+  .cmodal-h{
+    padding:14px 16px;border-bottom:1px solid var(--bd2);
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    background:linear-gradient(180deg, rgba(248,250,252,.95), #fff);
+  }
+  .cmodal-h b{font-size:14px;color:var(--ink);font-weight:1100;}
+  .cmodal-b{padding:14px 16px;color:var(--ink);font-size:13px;line-height:1.45;}
+  .cmodal-b .sub{margin-top:6px;color:var(--muted);font-size:12px;line-height:1.35;}
+  .cmodal-f{
+    display:flex;justify-content:flex-end;gap:10px;padding:14px 16px;
+    border-top:1px solid var(--bd2);background:rgba(248,250,252,.7);
+  }
+  .cicon{
+    width:34px;height:34px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;
+    border:1px solid var(--bd);background:#fff;color:var(--muted);flex:0 0 auto;
+  }
+  .crow{display:flex;gap:10px;align-items:flex-start;}
+  .cmodal-b p{margin:0;}
 </style>
 
 <div class="wrap">
@@ -352,13 +382,19 @@
                   </div>
                 </div>
                 <div class="actions">
-                  <button class="btn primary mini" type="button" onclick="openSessionSmart({{ s.id }}, '{{ (s.status or '')|e }}', {{ (s.current_round_no or 0) }})">
+                  <button class="btn primary mini" type="button"
+                          onclick="openSessionSmart({{ s.id }}, '{{ (s.status or '')|e }}', {{ (s.current_round_no or 0) }})">
                     <i class="ri-play-circle-line"></i> Mở
                   </button>
-                  <button class="btn mini" type="button" onclick="openStartSession({{ s.id }})">
-                    <i class="ri-rocket-line"></i> Start
-                  </button>
+
+                  {# ẨN Start nếu phiên đang OPEN #}
+                  {% if (s.status or '')|upper != 'OPEN' %}
+                    <button class="btn mini" type="button" onclick="openStartSession({{ s.id }})">
+                      <i class="ri-rocket-line"></i> Start
+                    </button>
+                  {% endif %}
                 </div>
+
               </div>
               <div class="note">
                 “Mở” vào màn xử lý lô theo vòng hiện tại / vòng mới nhất.
@@ -421,12 +457,17 @@
                       </div>
                     </div>
                     <div class="actions">
-                      <button class="btn primary mini" type="button" onclick="openSessionSmart({{ s.id }}, '{{ (s.status or '')|e }}', {{ (s.current_round_no or 0) }})">
+                      <button class="btn primary mini" type="button"
+                              onclick="openSessionSmart({{ s.id }}, '{{ (s.status or '')|e }}', {{ (s.current_round_no or 0) }})">
                         <i class="ri-play-circle-line"></i> Mở
                       </button>
-                      <button class="btn mini" type="button" onclick="openStartSession({{ s.id }})">
-                        <i class="ri-rocket-line"></i> Start
-                      </button>
+
+                      {# ẨN Start nếu phiên đang OPEN #}
+                      {% if (s.status or '')|upper != 'OPEN' %}
+                        <button class="btn mini" type="button" onclick="openStartSession({{ s.id }})">
+                          <i class="ri-rocket-line"></i> Start
+                        </button>
+                      {% endif %}
                     </div>
                   </div>
                 </div>
@@ -529,10 +570,33 @@
   </div>
 </div>
 
+<!-- ================= Custom Confirm / Alert ================= -->
+<div id="cBackdrop" class="cmodal-backdrop" onclick="closeCModal(event)">
+  <div class="cmodal" onclick="event.stopPropagation()">
+    <div class="cmodal-h">
+      <b id="cTitle">Xác nhận</b>
+      <button class="xbtn" type="button" onclick="closeCModal()"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="cmodal-b">
+      <div class="crow">
+        <div class="cicon" id="cIcon"><i class="ri-question-line"></i></div>
+        <div style="flex:1 1 auto; min-width:0;">
+          <p id="cMsg">Bạn có chắc chắn?</p>
+          <div class="sub" id="cSub" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="cmodal-f" id="cFooter">
+      <button class="btn" type="button" id="cCancel"><i class="ri-close-line"></i> Huỷ</button>
+      <button class="btn primary" type="button" id="cOk"><i class="ri-check-line"></i> OK</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
 
 <script>
-  // <editor-fold desc="Auction Sessions - UI Helpers (toast, storage, filters)">
+  // <editor-fold desc="Auction Sessions - UI Helpers (toast, storage, filters, custom modal)">
   // =========================
   // Toast
   // =========================
@@ -543,6 +607,151 @@
     t.style.display = 'block';
     clearTimeout(window.__toastTimer);
     window.__toastTimer = setTimeout(()=>{ t.style.display='none'; }, 2800);
+  }
+
+  // =========================
+  // Custom Confirm / Alert (no browser confirm)
+  // =========================
+  function closeCModal(ev){
+    if(ev && ev.target && ev.target.id !== 'cBackdrop') return;
+    const b = document.getElementById('cBackdrop');
+    if(!b) return;
+    b.style.display = 'none';
+
+    // cleanup listeners
+    const okBtn = document.getElementById('cOk');
+    const cancelBtn = document.getElementById('cCancel');
+    if(okBtn && okBtn.__handler){ okBtn.removeEventListener('click', okBtn.__handler); okBtn.__handler = null; }
+    if(cancelBtn && cancelBtn.__handler){ cancelBtn.removeEventListener('click', cancelBtn.__handler); cancelBtn.__handler = null; }
+
+    if(document.__cEscHandler){
+      document.removeEventListener('keydown', document.__cEscHandler);
+      document.__cEscHandler = null;
+    }
+  }
+
+  function _openCModal(opts){
+    const b = document.getElementById('cBackdrop');
+    if(!b) return;
+    const titleEl = document.getElementById('cTitle');
+    const msgEl   = document.getElementById('cMsg');
+    const subEl   = document.getElementById('cSub');
+    const iconEl  = document.getElementById('cIcon');
+    const okBtn   = document.getElementById('cOk');
+    const cancelBtn = document.getElementById('cCancel');
+    const footer  = document.getElementById('cFooter');
+
+    const title = (opts && opts.title) ? String(opts.title) : 'Xác nhận';
+    const message = (opts && opts.message) ? String(opts.message) : 'Bạn có chắc chắn?';
+    const sub = (opts && opts.sub) ? String(opts.sub) : '';
+    const mode = (opts && opts.mode) ? String(opts.mode) : 'confirm'; // confirm|alert
+    const tone = (opts && opts.tone) ? String(opts.tone) : 'question'; // question|warn|danger|info|ok
+    const okText = (opts && opts.okText) ? String(opts.okText) : 'OK';
+    const cancelText = (opts && opts.cancelText) ? String(opts.cancelText) : 'Huỷ';
+
+    if(titleEl) titleEl.textContent = title;
+    if(msgEl) msgEl.textContent = message;
+
+    if(subEl){
+      if(sub){
+        subEl.style.display = 'block';
+        subEl.textContent = sub;
+      }else{
+        subEl.style.display = 'none';
+        subEl.textContent = '';
+      }
+    }
+
+    // icon + style
+    if(iconEl){
+      let html = '<i class="ri-question-line"></i>';
+      let bd = '1px solid var(--bd)';
+      let bg = '#fff';
+      let color = 'var(--muted)';
+
+      if(tone === 'warn'){
+        html = '<i class="ri-alert-line"></i>';
+        bd = '1px solid rgba(245,158,11,.35)';
+        bg = 'rgba(245,158,11,.08)';
+        color = 'var(--warn)';
+      }else if(tone === 'danger'){
+        html = '<i class="ri-error-warning-line"></i>';
+        bd = '1px solid rgba(239,68,68,.35)';
+        bg = 'rgba(239,68,68,.08)';
+        color = 'var(--bad)';
+      }else if(tone === 'info'){
+        html = '<i class="ri-information-line"></i>';
+        bd = '1px solid rgba(14,165,233,.35)';
+        bg = 'rgba(14,165,233,.10)';
+        color = 'var(--pri2)';
+      }else if(tone === 'ok'){
+        html = '<i class="ri-checkbox-circle-line"></i>';
+        bd = '1px solid rgba(22,163,74,.30)';
+        bg = 'rgba(22,163,74,.08)';
+        color = 'var(--ok)';
+      }
+
+      iconEl.innerHTML = html;
+      iconEl.style.border = bd;
+      iconEl.style.background = bg;
+      iconEl.style.color = color;
+    }
+
+    // footer buttons
+    if(okBtn){
+      okBtn.innerHTML = '<i class="ri-check-line"></i> ' + okText;
+      okBtn.classList.remove('danger');
+      okBtn.classList.add('primary');
+      if(tone === 'danger'){
+        okBtn.classList.remove('primary');
+        okBtn.classList.add('danger');
+      }
+    }
+    if(cancelBtn){
+      cancelBtn.innerHTML = '<i class="ri-close-line"></i> ' + cancelText;
+    }
+    if(footer){
+      // alert mode: hide cancel
+      cancelBtn.style.display = (mode === 'alert') ? 'none' : '';
+    }
+
+    b.style.display = 'flex';
+  }
+
+  function confirmX({title='Xác nhận', message='Bạn có chắc chắn?', sub='', tone='question', okText='OK', cancelText='Huỷ'} = {}){
+    return new Promise((resolve)=>{
+      _openCModal({title, message, sub, tone, okText, cancelText, mode:'confirm'});
+
+      const okBtn = document.getElementById('cOk');
+      const cancelBtn = document.getElementById('cCancel');
+
+      const onOk = ()=>{ closeCModal(); resolve(true); };
+      const onCancel = ()=>{ closeCModal(); resolve(false); };
+
+      okBtn.__handler = onOk;
+      cancelBtn.__handler = onCancel;
+
+      okBtn.addEventListener('click', onOk);
+      cancelBtn.addEventListener('click', onCancel);
+
+      // esc to cancel
+      document.__cEscHandler = (e)=>{ if(e.key === 'Escape'){ onCancel(); } };
+      document.addEventListener('keydown', document.__cEscHandler);
+    });
+  }
+
+  function alertX({title='Thông báo', message='', sub='', tone='info', okText='Đã hiểu'} = {}){
+    return new Promise((resolve)=>{
+      _openCModal({title, message, sub, tone, okText, cancelText:'', mode:'alert'});
+
+      const okBtn = document.getElementById('cOk');
+      const onOk = ()=>{ closeCModal(); resolve(true); };
+      okBtn.__handler = onOk;
+      okBtn.addEventListener('click', onOk);
+
+      document.__cEscHandler = (e)=>{ if(e.key === 'Escape'){ onOk(); } };
+      document.addEventListener('keydown', document.__cEscHandler);
+    });
   }
 
   // =========================
@@ -563,10 +772,23 @@
     }catch(_){}
   }
 
+  // ✅ FIX: stop infinite reload when URL has ?project= (empty) + only submit when project is valid
   function restoreFiltersIfEmpty(){
-    // Chỉ auto-apply nếu URL chưa có project
     const u = new URL(window.location.href);
+
+    const hasProjectParam = u.searchParams.has('project');
     const urlProject = (u.searchParams.get('project') || '').trim();
+
+    // Case: URL contains project but empty ?project=
+    // => do NOT auto restore, user must choose project normally
+    if(hasProjectParam && !urlProject){
+      // Optional cleanup (commented):
+      // u.searchParams.delete('project');
+      // history.replaceState({}, '', u.toString());
+      return;
+    }
+
+    // If URL already has valid project -> do nothing
     if(urlProject) return;
 
     let savedProject = '';
@@ -578,23 +800,37 @@
 
     if(!savedProject) return;
 
-    // Set selects then submit filter
     const projectSel = document.getElementById('projectSel');
     const statusSel  = document.getElementById('statusSel');
     const form = document.getElementById('filterForm');
+    if(!projectSel || !form) return;
 
-    if(projectSel){
-      const exists = Array.from(projectSel.options).some(o => (o.value||'').toUpperCase() === savedProject.toUpperCase());
-      if(exists) projectSel.value = savedProject;
+    const exists = Array.from(projectSel.options).some(o =>
+      ((o.value||'').trim().toUpperCase() === savedProject.toUpperCase())
+    );
+
+    // If saved project not found in dropdown -> clear memory and stop (avoid loop)
+    if(!exists){
+      try{
+        localStorage.removeItem(LS_KEY_PROJECT);
+        // optional: also clear status if you want
+        // localStorage.removeItem(LS_KEY_STATUS);
+      }catch(_){}
+      return;
     }
+
+    projectSel.value = savedProject;
+
     if(statusSel && savedStatus){
       const ok = Array.from(statusSel.options).some(o => (o.value||'') === savedStatus);
       if(ok) statusSel.value = savedStatus;
     }
 
-    if(form){
-      form.submit();
-    }
+    // Only submit if we actually have a non-empty project selected
+    const v = (projectSel.value || '').trim();
+    if(!v) return;
+
+    form.submit();
   }
 
   // Save on change + on submit
@@ -670,7 +906,7 @@
     const cs = document.getElementById('csProject');
     const projectId = Number(cs?.value || 0);
     if(!projectId){
-      toast("Vui lòng chọn dự án.");
+      await alertX({ title: "Thiếu thông tin", message: "Vui lòng chọn dự án.", tone: "warn" });
       return;
     }
 
@@ -709,7 +945,7 @@
       try{ js = await r.json(); }catch(_){ js = null; }
 
       if(!r.ok){
-        toast("Tạo phiên lỗi: " + errText(js, r.status));
+        await alertX({ title: "Tạo phiên thất bại", message: "Tạo phiên lỗi: " + errText(js, r.status), tone: "danger" });
         return;
       }
 
@@ -740,7 +976,7 @@
       window.location.href = u.toString();
 
     }catch(e){
-      toast("Lỗi mạng khi tạo phiên: " + (e?.message || "unknown"));
+      await alertX({ title: "Lỗi mạng", message: "Lỗi mạng khi tạo phiên: " + (e?.message || "unknown"), tone: "danger" });
     }finally{
       btns.forEach(b => b.disabled = false);
     }
@@ -749,20 +985,29 @@
 
   // <editor-fold desc="Auction Sessions - Start Session">
   // =========================
-  // Modal: Start session confirm
+  // Start session (custom confirm)
   // =========================
-  function openStartSession(sessionId){
+  async function openStartSession(sessionId){
     sessionId = Number(sessionId||0);
     if(!sessionId){
-      toast("Thiếu sessionId");
+      await alertX({ title: "Thiếu dữ liệu", message: "Thiếu sessionId", tone: "warn" });
       return;
     }
-    const ok = confirm("Start phiên #" + sessionId + " để snapshot Round 1?");
+
+    const ok = await confirmX({
+      title: "Start phiên",
+      message: "Start phiên #" + sessionId + " để snapshot Round 1?",
+      sub: "Thao tác này sẽ tạo Round 1 (lô + khách đủ điều kiện) theo snapshot tại thời điểm hiện tại.",
+      tone: "warn",
+      okText: "Start",
+      cancelText: "Huỷ"
+    });
+
     if(!ok) return;
-    startSession(sessionId);
+    await startSession(sessionId);
   }
 
-    async function startSession(sessionId){
+  async function startSession(sessionId){
     try{
       const r = await fetch("/auction/sessions/api/sessions/start",{
         method:"POST",
@@ -771,24 +1016,31 @@
       });
       const js = await r.json().catch(()=> ({}));
       if(!r.ok){
-        toast("Start lỗi: " + (js.detail || js.error || ("HTTP " + r.status)));
+        await alertX({ title: "Start thất bại", message: "Start lỗi: " + (js.detail || js.error || ("HTTP " + r.status)), tone: "danger" });
         return;
       }
       toast("Đã start phiên #" + sessionId + ". Đang tải lại...");
       window.location.reload();
     }catch(e){
-      toast("Lỗi mạng khi start.");
+      await alertX({ title: "Lỗi mạng", message: "Lỗi mạng khi start.", tone: "danger" });
     }
   }
 
-  // ✅ Đặt ở đây (trước init)
+  // Open session smart (custom confirm)
   async function openSessionSmart(sessionId, status, currentRoundNo){
     sessionId = Number(sessionId||0);
     status = (status || '').toUpperCase();
     currentRoundNo = Number(currentRoundNo||0);
 
     if(status === 'DRAFT' || currentRoundNo === 0){
-      const ok = confirm("Phiên đang DRAFT / chưa snapshot. Hệ thống sẽ Start để tạo Round 1 rồi mở phiên. Tiếp tục?");
+      const ok = await confirmX({
+        title: "Phiên chưa snapshot",
+        message: "Phiên đang DRAFT / chưa snapshot. Hệ thống sẽ Start để tạo Round 1 rồi mở phiên. Tiếp tục?",
+        sub: "Nếu đồng ý, hệ thống sẽ gọi Start phiên trước, sau đó chuyển vào màn hình xử lý phiên.",
+        tone: "warn",
+        okText: "Tiếp tục",
+        cancelText: "Huỷ"
+      });
       if(!ok) return;
 
       try{
@@ -799,39 +1051,27 @@
         });
         const js = await r.json().catch(()=> ({}));
         if(!r.ok){
-          toast("Start lỗi: " + (js.detail || js.error || ("HTTP " + r.status)));
+          await alertX({ title: "Start thất bại", message: "Start lỗi: " + (js.detail || js.error || ("HTTP " + r.status)), tone: "danger" });
           return;
         }
       }catch(e){
-        toast("Lỗi mạng khi start.");
+        await alertX({ title: "Lỗi mạng", message: "Lỗi mạng khi start.", tone: "danger" });
         return;
       }
     }
 
     window.location.href = "/auction/sessions/" + sessionId;
   }
-
-  // <editor-fold desc="Auction Sessions - Init">
-  (function init(){
-    restoreFiltersIfEmpty();
-
-    document.addEventListener('keydown', (e)=>{
-      if(e.key === 'Escape'){
-        const b = document.getElementById('createBackdrop');
-        if(b && b.style.display === 'flex') closeCreateSession();
-      }
-    });
-  })();
   // </editor-fold>
 
   // <editor-fold desc="Auction Sessions - Init">
   // =========================
-  // Init
+  // Init (ONLY ONCE - remove duplicate init)
   // =========================
   (function init(){
     restoreFiltersIfEmpty();
 
-    // Esc to close modal
+    // Esc to close create modal
     document.addEventListener('keydown', (e)=>{
       if(e.key === 'Escape'){
         const b = document.getElementById('createBackdrop');
