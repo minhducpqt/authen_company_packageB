@@ -110,24 +110,25 @@
   }
   tbody tr:hover td{background:rgba(248,250,252,.65);}
 
-  /* LOT CODE prominent */
-  .lotcode{
-    font-weight:800;
+  /* LOT INFO (gọn 2 dòng) */
+  .lotTitle{
+    font-weight:1100;
     letter-spacing:.15px;
     font-size:15px;
     line-height:1.2;
     color:rgba(15,23,42,1);
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
   }
-  .lotcode::before{
-    content:"";
-    width:10px;height:10px;border-radius:999px;
+  .lotDot{
+    width:10px;height:10px;border-radius:999px;flex:0 0 auto;margin-top:3px;
     background:linear-gradient(180deg, rgba(14,165,233,.95), rgba(2,132,199,.95));
     box-shadow:0 8px 16px rgba(2,132,199,.25);
-    display:inline-block;
   }
+  .lotLines{display:flex;flex-direction:column;gap:4px;}
+  .lotCode{font-weight:1200;}
+  .lotDesc{color:var(--muted);font-size:12px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;}
 
   .muted{color:var(--muted);font-size:12px;line-height:1.25;margin-top:4px;}
   .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;}
@@ -151,6 +152,17 @@
   .printIcon:hover{transform:translateY(-1px);box-shadow:0 10px 18px rgba(2,6,23,.08);}
 
   .empty{padding:16px;color:var(--muted);font-size:13px;}
+
+  /* Big Next count */
+  .bigCount{
+    display:inline-flex;align-items:center;gap:8px;margin-top:8px;
+    padding:8px 10px;border-radius:14px;border:1px solid rgba(245,158,11,.25);
+    background:rgba(245,158,11,.08);
+  }
+  .bigCount .n{
+    font-size:18px;font-weight:1300;letter-spacing:.2px;color:#92400e;line-height:1;
+  }
+  .bigCount .t{font-size:12px;font-weight:1000;color:rgba(100,116,139,.95);line-height:1.2;}
 
   /* Modal — fixed viewport, body scroll, footer sticky */
   .backdrop{
@@ -453,8 +465,9 @@
     <div class="tright">
       <a class="btn ghost" href="/auction/sessions"><i class="ri-arrow-left-line"></i> Quay lại</a>
 
+      {# Start/Mở là 1 hành động, gọi start (A idempotent) #}
       <button class="btn" type="button" onclick="startSessionIfNeeded()">
-        <i class="ri-rocket-line"></i> Start
+        <i class="ri-rocket-line"></i> Mở phiên (Start)
       </button>
 
       <button class="btn primary" type="button" onclick="createNextRound()">
@@ -504,6 +517,7 @@
       <b>Danh sách lô — Round #{{ round_no }}</b>
       <div class="search">
         <input id="q" placeholder="Tìm theo mã lô / mô tả..." oninput="renderLots()" />
+        {# Các nút in: giữ chỗ, không làm impact nghiệp vụ nếu backend chưa nối #}
         <button class="miniBtn ghost" type="button" onclick="printAllBidTickets()">
           <i class="ri-printer-line"></i> In toàn bộ phiếu trả giá
         </button>
@@ -517,9 +531,9 @@
       <table>
         <thead>
           <tr>
-            <th style="width:190px;">Lô</th>
+            <th style="width:230px;">Lô</th>
             <th>Thông tin</th>
-            <th style="width:320px;">Kết quả vòng này</th>
+            <th style="width:340px;">Kết quả vòng này</th>
             <th class="right" style="width:170px;">Thao tác</th>
           </tr>
         </thead>
@@ -636,7 +650,7 @@
                            oninput="onMoneyInput('highestPrice')" />
                     <span class="moneySuffix">VND</span>
                   </div>
-                  <div class="priceHelp">Giá này sẽ dùng làm <b>giá khởi điểm vòng sau</b>.</div>
+                  <div class="priceHelp">Giá này sẽ dùng làm <b>giá khởi điểm vòng sau</b> (unit theo bid_price_unit).</div>
                 </div>
 
                 <div>
@@ -795,14 +809,19 @@
   function pad3(n){
     n = Number(n||0);
     if(!isFinite(n) || n<=0) return '';
-    if(n < 100) return String(n).padStart(3,'0');
-    if(n < 1000) return String(n);
-    return String(n);
+    return String(n).padStart(3,'0');
   }
 
   function fmtStt(stt){
     const s = pad3(stt);
     return s ? s : '';
+  }
+
+  function maskPhone(s){
+    const x = safeText(s).replace(/\s+/g,'');
+    if(!x) return '';
+    if(x.length <= 4) return '****';
+    return x.slice(0,2) + '****' + x.slice(-2);
   }
 
   function getLotSnapshot(lot){
@@ -1121,7 +1140,7 @@
 
       const partCount = (lot.participants || []).length;
       const rt = safeText(lot.result_type || 'PENDING');
-      const lotId = Number(lot.lot_id || lot.lotId || snap.lot_id || 0) || Number(lot.lot_id || 0);
+      const lotId = Number(lot.lot_id || snap.lot_id || 0);
       const res = RESULT_BY_LOT[String(lotId || '')] || null;
 
       const area = (snap.area_m2 ?? lot.lot_area ?? '');
@@ -1132,6 +1151,7 @@
       let statusHtml = '';
       if(rt === 'WINNER' && res && (safeText(res.status) === 'WON')){
         const who = safeText(res.winner_name || '') || ('#' + safeText(res.winner_customer_id||''));
+        const phoneMasked = maskPhone(res.winner_phone || '');
         const roundLotId = Number(lot.id || 0);
 
         const printBtn = roundLotId
@@ -1144,7 +1164,9 @@
           <div class="pill ok"><i class="ri-trophy-line"></i> WON</div>
           <div class="muted" style="margin-top:6px;">
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-              <b>${escapeHtml(who)}</b> ${printBtn}
+              <b>${escapeHtml(who)}</b>
+              ${phoneMasked ? `<span class="pill"><i class="ri-phone-line"></i> ${escapeHtml(phoneMasked)}</span>` : ``}
+              ${printBtn}
             </div>
             <div>Giá: <b>${fmtMoney(res.winning_price_vnd)}</b> • Vòng: <b>#${escapeHtml(res.winning_round_no||'')}</b></div>
           </div>
@@ -1153,7 +1175,10 @@
         const nx = (lot.next_participants || []);
         statusHtml = `
           <div class="pill warn"><i class="ri-arrow-right-up-line"></i> Vào vòng sau</div>
-          <div class="muted">Số người vào vòng sau: <b>${nx.length}</b></div>
+          <div class="bigCount">
+            <div class="n">${nx.length}</div>
+            <div class="t">người vào<br/>vòng sau</div>
+          </div>
         `;
       } else if(rt === 'NO_VALID'){
         statusHtml = `
@@ -1170,8 +1195,13 @@
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>
-          <div class="lotcode">${escapeHtml(lotCode || '-')}</div>
-          <div class="muted">${escapeHtml(desc || '')}</div>
+          <div class="lotTitle">
+            <span class="lotDot"></span>
+            <div class="lotLines">
+              <div class="lotCode">${escapeHtml(lotCode || '-')}</div>
+              <div class="lotDesc">${escapeHtml(desc || '')}</div>
+            </div>
+          </div>
         </td>
 
         <td>
@@ -1225,9 +1255,9 @@
   // =========================
   async function startSessionIfNeeded(){
     const ok = await showConfirm(
-      "Start phiên đấu",
-      "Thực hiện START phiên để đảm bảo Round 1 đã snapshot (lô + khách đủ điều kiện).",
-      { sub: "Chỉ cần Start 1 lần. Nếu đã Start trước đó, hệ thống sẽ bỏ qua hoặc trả về trạng thái hiện tại." }
+      "Mở phiên (Start)",
+      "Thực hiện START để đảm bảo Round 1 đã snapshot (lô + khách đủ điều kiện).",
+      { sub: "Start là idempotent: nếu đã start trước đó, hệ thống sẽ an toàn bỏ qua/không nhân đôi dữ liệu." }
     );
     if(!ok) return;
 
@@ -1254,7 +1284,7 @@
       "Tạo vòng sau",
       `Bạn sắp tạo vòng tiếp theo từ các lô NEXT_ROUND của vòng #${ROUND_NO}.`,
       {
-        sub: "Đây là thao tác chốt vòng. Vui lòng kiểm tra chắc chắn mọi kết quả của vòng hiện tại đã DONE.",
+        sub: "Đây là thao tác tạo vòng mới. Vui lòng kiểm tra chắc chắn đã chốt đầy đủ các lô cần thiết.",
         requireText: "tôi xác nhận",
         okText: "Tạo vòng sau",
         cancelText: "Huỷ"
@@ -1287,16 +1317,16 @@
   }
 
   // =========================
-  // Print (Service B route placeholders)
+  // Print (placeholders - không phá logic)
   // =========================
   function printAllBidTickets(){
-    toast("Chưa nối endpoint in phiếu trả giá (admin).");
+    toast("Chưa nối endpoint in phiếu trả giá cho phiên (placeholder).");
   }
   function printRoundWinners(){
-    toast("Chưa nối endpoint in phiếu trúng theo vòng (admin).");
+    toast("Chưa nối endpoint in phiếu trúng theo vòng (placeholder).");
   }
   function printWinnerOne(roundLotId){
-    toast("Chưa nối endpoint in phiếu trúng theo lô. round_lot_id=" + roundLotId);
+    toast("Chưa nối endpoint in phiếu trúng theo lô (placeholder). round_lot_id=" + roundLotId);
   }
 
   // =========================
@@ -1515,7 +1545,7 @@
   }
 
   // =========================
-  // Winner picker
+  // Winner picker (ẩn số điện thoại theo yêu cầu bảo mật)
   // =========================
   function renderWinnerPicker(){
     const host = document.getElementById('winnerList');
@@ -1539,13 +1569,14 @@
 
       const sttPrefix = fmtStt(p.stt);
       const nameLine = `${sttPrefix ? (escapeHtml(sttPrefix) + " — ") : ""}${escapeHtml(p.name || ('#'+p.customer_id))}`;
+      const phoneMasked = maskPhone(p.phone);
 
       div.innerHTML = `
         <div>
           <b>${nameLine}</b>
           <div class="pm">
             CCCD: <span class="mono">${escapeHtml(p.cccd)}</span>
-            • SĐT: <span class="mono">${escapeHtml(p.phone)}</span>
+            ${phoneMasked ? ` • SĐT: <span class="mono">${escapeHtml(phoneMasked)}</span>` : ``}
           </div>
         </div>
         <div><span class="tag"><i class="ri-check-line"></i> Chọn</span></div>
@@ -1559,7 +1590,7 @@
   }
 
   // =========================
-  // Dual list (NEXT ROUND) + counters
+  // Dual list (NEXT ROUND) + counters (ẩn sđt)
   // =========================
   function updateDualCounters(){
     const N = (Array.isArray(currentParticipants) ? currentParticipants.length : 0);
@@ -1589,6 +1620,7 @@
 
       const sttPrefix = fmtStt(p.stt);
       const nameLine = `${sttPrefix ? (escapeHtml(sttPrefix) + " — ") : ""}${escapeHtml(p.name || ('#'+p.customer_id))}`;
+      const phoneMasked = maskPhone(p.phone);
 
       const div = document.createElement('div');
       div.className = 'pitem2';
@@ -1597,7 +1629,7 @@
           <b>${nameLine}</b>
           <div class="pm">
             CCCD: <span class="mono">${escapeHtml(p.cccd)}</span>
-            • SĐT: <span class="mono">${escapeHtml(p.phone)}</span>
+            ${phoneMasked ? ` • SĐT: <span class="mono">${escapeHtml(phoneMasked)}</span>` : ``}
           </div>
         </div>
         <div class="pact">
@@ -1615,6 +1647,7 @@
 
       const sttPrefix = fmtStt(p.stt);
       const nameLine = `${sttPrefix ? (escapeHtml(sttPrefix) + " — ") : ""}${escapeHtml(p.name || ('#'+p.customer_id))}`;
+      const phoneMasked = maskPhone(p.phone);
 
       const div = document.createElement('div');
       div.className = 'pitem2';
@@ -1623,7 +1656,7 @@
           <b>${nameLine}</b>
           <div class="pm">
             CCCD: <span class="mono">${escapeHtml(p.cccd)}</span>
-            • SĐT: <span class="mono">${escapeHtml(p.phone)}</span>
+            ${phoneMasked ? ` • SĐT: <span class="mono">${escapeHtml(phoneMasked)}</span>` : ``}
           </div>
         </div>
         <div class="pact">
@@ -1666,7 +1699,7 @@
   }
 
   // =========================
-  // Confirm "biên bản" helpers
+  // Confirm text helpers
   // =========================
   function getCurrentLotCode(){
     if(!currentLot) return '';
@@ -1692,7 +1725,7 @@
       let priceText = '';
       let extraLine = '';
       if(payload.win_method === 'LOTTERY'){
-        extraLine = `Ghi chú: Bốc thăm (LOTTERY) — Giá trúng hiển thị theo giá khởi điểm vòng (${fmtMoney(startPrice)}).`;
+        extraLine = `Ghi chú: LOTTERY — Giá trúng theo giá khởi điểm vòng (${fmtMoney(startPrice)}).`;
         priceText = fmtMoney(startPrice);
       } else {
         priceText = fmtMoney(payload.highest_price_vnd);
@@ -1790,150 +1823,159 @@
   }
 
   async function submitDecide(){
-  if(!currentLot) return;
+    if(!currentLot) return;
 
-  const mode = window.__mode || 'WINNER';
-  const roundLotId = Number(currentLot.id);
+    const mode = window.__mode || 'WINNER';
+    const roundLotId = Number(currentLot.id);
 
-  // best-effort lock (không hard fail)
-  await tryLock(roundLotId);
+    // best-effort lock (không hard fail)
+    await tryLock(roundLotId);
 
-  let payload = null;
+    let payload = null;
 
-  if(mode === 'WINNER'){
-    const winMethod = safeText(document.getElementById('winMethod').value || 'HIGHEST');
-    const winnerId = Number(document.getElementById('winnerCustomerId').value || 0);
-    const note = (document.getElementById('noteWinner').value || '').trim() || null;
+    if(mode === 'WINNER'){
+      const winMethod = safeText(document.getElementById('winMethod').value || 'HIGHEST');
+      const winnerId = Number(document.getElementById('winnerCustomerId').value || 0);
+      const note = (document.getElementById('noteWinner').value || '').trim() || null;
 
-    if(!winnerId){
-      showError("Thiếu thông tin", "Bạn chưa chọn người thắng.");
-      return;
-    }
-
-    // Guard: Round 1 không cho LOTTERY (theo rule/trigger backend của bạn)
-    if(winMethod === 'LOTTERY' && Number(ROUND_NO) === 1){
-      showError("Không hợp lệ", "Vòng #1 không được chốt LOTTERY (bốc thăm). Vui lòng chọn HIGHEST hoặc MANUAL.");
-      return;
-    }
-
-    let price = null;
-    if(winMethod !== 'LOTTERY'){
-      price = parseMoneyInput('winningPrice');
-      if(price === null || price <= 0){
-        showError("Thiếu thông tin", "Bạn chưa nhập giá trúng hợp lệ.");
+      if(!winnerId){
+        showError("Thiếu thông tin", "Bạn chưa chọn người thắng.");
         return;
       }
-    }
 
-    payload = {
-      result_type: "WINNER",
-      win_method: winMethod,
-      highest_price_vnd: (winMethod === 'LOTTERY') ? null : price,
-      winner_customer_id: winnerId,
-      next_participants: [],
-      note: note
-    };
-
-  } else if(mode === 'NEXT'){
-    const note = (document.getElementById('noteNext').value || '').trim() || null;
-    const hp = parseMoneyInput('highestPrice');
-    if(hp === null || hp <= 0){
-      showError("Thiếu thông tin", "Bạn chưa nhập giá cao nhất vòng này hợp lệ.");
-      return;
-    }
-
-    const ids = (Array.isArray(dualNext) ? dualNext : [])
-      .map(x => Number(x.customer_id || 0))
-      .filter(x => x > 0);
-
-    if(ids.length === 0){
-      showError("Thiếu thông tin", "Bạn chưa chọn ai vào vòng sau.");
-      return;
-    }
-
-    const next = ids.map(cid => ({ customer_id: cid }));
-
-    payload = {
-      result_type: "NEXT_ROUND",
-      win_method: "HIGHEST",
-      highest_price_vnd: hp,
-      winner_customer_id: null,
-
-      // required by API
-      next_customer_ids: ids,
-
-      // optional (UI/backward)
-      next_participants: next,
-
-      note: note
-    };
-
-  } else if(mode === 'NO_VALID'){
-    const note = (document.getElementById('noteNoValid').value || '').trim() || null;
-    payload = {
-      result_type: "NO_VALID",
-      win_method: "HIGHEST",
-      highest_price_vnd: null,
-      winner_customer_id: null,
-      next_participants: [],
-      note: note
-    };
-
-  } else {
-    showError("Lỗi", "Mode không hợp lệ: " + safeText(mode));
-    return;
-  }
-
-  // ===== Confirm “biên bản” =====
-  const confirmText = buildConfirmText(mode === 'NEXT' ? 'NEXT' : mode, payload);
-
-  let requireText = null;
-  let okText = "Chốt";
-  if(mode === 'WINNER'){ requireText = "chot won"; okText = "Chốt WON"; }
-  else if(mode === 'NEXT'){ requireText = "chot vong sau"; okText = "Chốt vào vòng sau"; }
-  else if(mode === 'NO_VALID'){ requireText = "chot no valid"; okText = "Chốt No valid"; }
-
-  const ok = await showConfirm(
-    "Xác nhận chốt kết quả",
-    confirmText,
-    {
-      sub: "Vui lòng kiểm tra kỹ. Sau khi chốt sẽ ghi nhận kết quả và ảnh hưởng vòng sau / phiếu trúng.",
-      okText,
-      cancelText: "Huỷ",
-      requireText // ✅ truyền vào để bắt gõ xác nhận
-    }
-  );
-  if(!ok) return;
-
-  toast("Đang chốt kết quả...");
-
-  try{
-    const r = await fetch(`/auction/sessions/api/round-lots/${roundLotId}/decide`, {
-      method:"POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify(payload)
-    });
-    const js = await r.json().catch(()=> ({}));
-
-    if(!r.ok){
-      const msg = safeText(js.detail || js.error || ("HTTP " + r.status));
-      if(r.status === 409 && msg.startsWith("LOCKED_BY_")){
-        showError("Không thể chốt", "Lô đang bị khoá bởi người khác.", msg);
-      } else {
-        showError("Chốt thất bại", msg);
+      // Guard: Round 1 không cho LOTTERY (backend có trigger/guard)
+      if(winMethod === 'LOTTERY' && Number(ROUND_NO) === 1){
+        showError("Không hợp lệ", "Vòng #1 không được chốt LOTTERY (bốc thăm). Vui lòng chọn HIGHEST hoặc MANUAL.");
+        return;
       }
+
+      let price = null;
+      if(winMethod !== 'LOTTERY'){
+        price = parseMoneyInput('winningPrice');
+        if(price === null || price <= 0){
+          showError("Thiếu thông tin", "Bạn chưa nhập giá trúng hợp lệ.");
+          return;
+        }
+      }
+
+      payload = {
+        result_type: "WINNER",
+        win_method: winMethod,
+        highest_price_vnd: (winMethod === 'LOTTERY') ? null : price,
+        winner_customer_id: winnerId,
+        next_participants: [],
+        note: note
+      };
+
+      const confirmText = buildConfirmText('WINNER', payload);
+      const ok = await showConfirm(
+        "Xác nhận chốt WON",
+        confirmText,
+        {
+          sub: "Vui lòng kiểm tra kỹ. Sau khi chốt sẽ ghi nhận kết quả trúng.",
+          okText: "Chốt WON",
+          cancelText: "Huỷ",
+          requireText: "chot won"
+        }
+      );
+      if(!ok) return;
+
+    } else if(mode === 'NEXT'){
+      const note = (document.getElementById('noteNext').value || '').trim() || null;
+      const hp = parseMoneyInput('highestPrice');
+      if(hp === null || hp <= 0){
+        showError("Thiếu thông tin", "Bạn chưa nhập giá cao nhất vòng này hợp lệ.");
+        return;
+      }
+
+      const ids = (Array.isArray(dualNext) ? dualNext : [])
+        .map(x => Number(x.customer_id || 0))
+        .filter(x => x > 0);
+
+      if(ids.length === 0){
+        showError("Thiếu thông tin", "Bạn chưa chọn ai vào vòng sau.");
+        return;
+      }
+
+      payload = {
+        result_type: "NEXT_ROUND",
+        win_method: "HIGHEST",
+        highest_price_vnd: hp,
+        winner_customer_id: null,
+        next_customer_ids: ids,
+        note: note
+      };
+
+      const confirmText = buildConfirmText('NEXT', payload);
+      const ok = await showConfirm(
+        "Xác nhận chốt vào vòng sau",
+        confirmText,
+        {
+          sub: "Vui lòng kiểm tra danh sách M/N. Danh sách này sẽ được dùng để tạo vòng sau.",
+          okText: "Chốt vào vòng sau",
+          cancelText: "Huỷ",
+          requireText: "chot vong sau"
+        }
+      );
+      if(!ok) return;
+
+    } else if(mode === 'NO_VALID'){
+      const note = (document.getElementById('noteNoValid').value || '').trim() || null;
+
+      payload = {
+        result_type: "NO_VALID",
+        win_method: "HIGHEST",
+        highest_price_vnd: null,
+        winner_customer_id: null,
+        note: note
+      };
+
+      const confirmText = buildConfirmText('NO_VALID', payload);
+      const ok = await showConfirm(
+        "Xác nhận No valid",
+        confirmText,
+        {
+          sub: "Vui lòng chắc chắn lô không có phiếu hợp lệ.",
+          okText: "Chốt No valid",
+          cancelText: "Huỷ",
+          requireText: "chot no valid"
+        }
+      );
+      if(!ok) return;
+
+    } else {
+      showError("Lỗi", "Mode không hợp lệ: " + safeText(mode));
       return;
     }
 
-    toast("Đã chốt kết quả thành công.");
-    closeModal();
-    await refreshAll();
+    toast("Đang chốt kết quả...");
 
-  }catch(e){
-    showError("Lỗi mạng", "Không thể gọi API chốt kết quả. Vui lòng thử lại.");
+    try{
+      const r = await fetch(`/auction/sessions/api/round-lots/${roundLotId}/decide`, {
+        method:"POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify(payload)
+      });
+      const js = await r.json().catch(()=> ({}));
+
+      if(!r.ok){
+        const msg = safeText(js.detail || js.error || ("HTTP " + r.status));
+        if(r.status === 409 && msg.startsWith("LOCKED_BY_")){
+          showError("Không thể chốt", "Lô đang bị khoá bởi người khác.", msg);
+        } else {
+          showError("Chốt thất bại", msg);
+        }
+        return;
+      }
+
+      toast("Đã chốt kết quả thành công.");
+      closeModal();
+      await refreshAll();
+
+    }catch(e){
+      showError("Lỗi mạng", "Không thể gọi API chốt kết quả. Vui lòng thử lại.");
+    }
   }
-}
-
 
   // =========================
   // Boot
@@ -1944,4 +1986,3 @@
   })();
 </script>
 {% endblock %}
-
