@@ -72,12 +72,13 @@
     {% if project_id %}
       <button
         type="button"
-        class="h-10 px-4 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 inline-flex items-center gap-2"
-        title="Xem & in tất cả phiếu trúng trong dự án"
-        onclick="openPrintAllModal()"
+        class="h-10 px-4 rounded-xl bg-slate-200 text-slate-500 text-sm font-medium inline-flex items-center gap-2 cursor-not-allowed"
+        title="Đã tạm khóa chức năng in"
+        disabled
       >
         <i class="ri-printer-line"></i> In tất cả
       </button>
+
     {% endif %}
 
     {# ✅ Export #}
@@ -208,24 +209,27 @@
             {% if (r.result_status or '') == 'WON' %}
               <button
                 type="button"
-                class="h-9 w-9 rounded-xl bg-slate-900 text-white hover:bg-slate-800 inline-flex items-center justify-center"
-                title="In phiếu lô {{ r.lot_code }}"
-                onclick="openPrintModal('{{ r.lot_code|e }}')"
+                class="h-9 w-9 rounded-xl bg-slate-200 text-slate-500 inline-flex items-center justify-center cursor-not-allowed"
+                title="Đã tạm khóa chức năng in"
+                disabled
               >
                 <i class="ri-printer-line"></i>
               </button>
             {% else %}
               <span class="text-slate-300">—</span>
             {% endif %}
+
           </td>
 
           <td class="px-4 py-3 text-right whitespace-nowrap sticky right-0 bg-white">
             <button type="button"
-              class="h-9 px-3 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"
-              onclick="openResultModal(this)"
+              class="h-9 px-3 rounded-xl bg-slate-200 text-slate-500 text-sm font-medium cursor-not-allowed"
+              title="Đã tạm khóa nhập kết quả"
+              disabled
             >
               Nhập kết quả
             </button>
+
           </td>
         </tr>
       {% endfor %}
@@ -408,10 +412,12 @@
         <div class="text-lg font-bold text-slate-900" id="pTitle">—</div>
       </div>
       <div class="flex items-center gap-2">
-        <button class="h-9 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm"
-                onclick="triggerFramePrint()">
+        <button class="h-9 px-3 rounded-xl bg-slate-200 text-slate-500 text-sm cursor-not-allowed"
+                title="Đã tạm khóa chức năng in"
+                disabled>
           <i class="ri-printer-line"></i> In
         </button>
+
         <button class="h-9 w-9 rounded-xl border border-slate-200 hover:bg-slate-50" onclick="closePrintModal()">
           <i class="ri-close-line text-xl text-slate-700"></i>
         </button>
