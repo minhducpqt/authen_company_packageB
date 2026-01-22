@@ -90,6 +90,25 @@ def _redirect_login(request: Request) -> RedirectResponse:
         nxt = quote(f"{request.url.path}?{request.url.query}")
     return RedirectResponse(url=f"/login?next={nxt}", status_code=303)
 
+async def _put_json(path: str, token: str, payload: Dict[str, Any]):
+    url = f"{SERVICE_A_BASE_URL}{path}"
+    headers = {"Authorization": f"Bearer {token}"}
+    _log(f"→ PUT {url} body={_preview_body(payload)}")
+    async with httpx.AsyncClient(timeout=120.0) as c:
+        try:
+            r = await c.put(url, headers=headers, json=payload)
+        except Exception as e:
+            _log(f"← EXC {url} error={e}")
+            return 599, {"detail": str(e)}
+
+    try:
+        js = r.json()
+        _log(f"← {r.status_code} {url} json={_preview_body(js)}")
+        return r.status_code, js
+    except Exception:
+        body = (r.text or "")[:500]
+        _log(f"← {r.status_code} {url} non-json body={body}")
+        return r.status_code, {"detail": body}
 
 async def _get_json(
     path: str,
@@ -616,6 +635,19 @@ async def api_backfill_session_stt(
         token,
         {},
     )
+    return JSONResponse(js, status_code=_proxy_status(st))
+
+@router.put("/auction/sessions/api/sessions/{session_id}")
+async def api_update_session(
+    request: Request,
+    session_id: int = Path(..., ge=1),
+    payload: Dict[str, Any] = Body(...),
+):
+    token = get_access_token(request)
+    if not token:
+        return _unauth_json()
+
+    st, js = await _put_json(f"/api/v1/auction-sessions/sessions/{session_id}", token, payload)
     return JSONResponse(js, status_code=_proxy_status(st))
 
 # =========================================================

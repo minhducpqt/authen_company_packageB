@@ -153,6 +153,7 @@
   }
   .row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;}
   .item h3{margin:0;font-size:14px;color:var(--ink);font-weight:1100;}
+
   .meta{margin-top:6px;color:var(--muted);font-size:12px;display:flex;flex-wrap:wrap;gap:10px;line-height:1.3;}
   .actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
 
@@ -208,7 +209,7 @@
     padding:40px 14px;z-index:9999;
   }
   .modal{
-    width:100%;max-width:680px;background:#fff;border-radius:18px;
+    width:100%;max-width:720px;background:#fff;border-radius:18px;
     border:1px solid rgba(226,232,240,1);box-shadow:var(--shadow);overflow:hidden;
   }
   .modal-h{
@@ -219,16 +220,44 @@
   .modal-h b{font-size:14px;color:var(--ink);font-weight:1100;}
   .xbtn{width:36px;height:36px;border-radius:12px;border:1px solid var(--bd);background:#fff;cursor:pointer;font-weight:900;}
   .modal-b{padding:14px 16px;}
+
   .formgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
   .formgrid .full{grid-column:1/-1;}
   .help{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.35;}
   .foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 16px;border-top:1px solid var(--bd2);background:rgba(248,250,252,.7);}
+
   .toast{
     position:fixed;right:16px;bottom:16px;z-index:10000;
     background:#0f172a;color:#fff;border-radius:14px;padding:10px 12px;
     font-size:13px;box-shadow:0 10px 30px rgba(2,6,23,.25);
     display:none;max-width:520px;line-height:1.35;
   }
+
+  /* ===== Session one-line meta (NEW) ===== */
+  .meta-line{
+    margin-top:8px;
+    padding:8px 10px;
+    border:1px solid var(--bd2);
+    background:rgba(248,250,252,.7);
+    border-radius:12px;
+    font-size:12px;
+    color:var(--muted);
+    display:flex;
+    align-items:center;
+    gap:8px;
+    min-width:0;
+  }
+  .meta-line i{color:rgba(100,116,139,1);}
+  .meta-line .txt{
+    min-width:0;
+    overflow:hidden;
+    white-space:nowrap;
+    text-overflow:ellipsis;
+    flex:1 1 auto;
+  }
+  .meta-line b{color:var(--ink); font-weight:900;}
+  .dot{opacity:.55;}
+  .req{color:var(--bad); font-weight:1100; margin-left:6px;}
 
   /* ===== Custom Confirm / Alert (no browser confirm) ===== */
   .cmodal-backdrop{
@@ -259,7 +288,124 @@
   }
   .crow{display:flex;gap:10px;align-items:flex-start;}
   .cmodal-b p{margin:0;}
+  /* ===== Inline form warning (NEW) ===== */
+  .formwarn{
+    grid-column:1/-1;
+    border:1px solid rgba(245,158,11,.35);
+    background:rgba(245,158,11,.10);
+    border-radius:16px;
+    padding:10px 12px;
+    color:#7c2d12;
+    font-size:12px;
+    line-height:1.35;
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+  }
+  .formwarn .ic{
+    width:30px;height:30px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    border:1px solid rgba(245,158,11,.30);
+    background:rgba(255,255,255,.75);
+    flex:0 0 auto;
+    color:var(--warn);
+  }
+  .formwarn b{color:#7c2d12;}
+
+  /* ===== Start Loading Overlay (NEW) ===== */
+  .loading-backdrop{
+    position:fixed;inset:0;
+    background:rgba(2,6,23,.55);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    z-index:11000;
+  }
+  .loading-card{
+    width:100%;
+    max-width:560px;
+    background:#fff;
+    border-radius:18px;
+    border:1px solid rgba(226,232,240,1);
+    box-shadow:0 18px 44px rgba(2,6,23,.18);
+    overflow:hidden;
+  }
+  .loading-h{
+    padding:14px 16px;
+    border-bottom:1px solid var(--bd2);
+    background:linear-gradient(180deg, rgba(248,250,252,.95), #fff);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .loading-h b{font-size:14px;color:var(--ink);font-weight:1100;}
+  .loading-b{
+    padding:14px 16px;
+    color:var(--ink);
+    font-size:13px;
+    line-height:1.45;
+  }
+  .spinner{
+    width:18px;height:18px;
+    border-radius:999px;
+    border:3px solid rgba(100,116,139,.25);
+    border-top-color: rgba(14,165,233,.95);
+    animation: spin 1s linear infinite;
+    flex:0 0 auto;
+    margin-top:2px;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading-row{display:flex;gap:10px;align-items:flex-start;}
+  .loading-sub{margin-top:6px;color:var(--muted);font-size:12px;line-height:1.35;}
+  .loading-actions{
+    padding:14px 16px;
+    border-top:1px solid var(--bd2);
+    background:rgba(248,250,252,.7);
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+  }
+  .loading-actions .btn{height:36px;}
 </style>
+
+{# helpers in template only, no impact to logic #}
+{% macro _fmt_date(d) -%}
+  {%- if d -%}
+    {%- set s = (d|string) -%}
+    {%- if '-' in s and (s|length) >= 10 -%}
+      {%- set y = s[0:4] -%}
+      {%- set m = s[5:7] -%}
+      {%- set dd = s[8:10] -%}
+      {{ dd ~ '/' ~ m ~ '/' ~ y }}
+    {%- else -%}
+      {{ s }}
+    {%- endif -%}
+  {%- else -%}{%- endif -%}
+{%- endmacro %}
+
+{% macro _session_one_line(s) -%}
+  {%- set prov = (s.province or '') -%}
+  {%- set dist = (s.district or '') -%}
+  {%- set venue = (s.venue or '') -%}
+  {%- set ad = s.auction_date -%}
+  {%- set has_any = (prov or dist or venue or ad) -%}
+  {%- if has_any -%}
+    <div class="meta-line" title="{% if ad %}{{ _fmt_date(ad) }}{% endif %}{% if prov or dist %} • {{ (prov ~ (' - ' if (prov and dist) else '') ~ dist) }}{% endif %}{% if venue %} • {{ venue }}{% endif %}">
+      <i class="ri-map-pin-time-line"></i>
+      <div class="txt">
+        {% if ad %}<b>{{ _fmt_date(ad) }}</b>{% endif %}
+        {% if ad and (prov or dist or venue) %}<span class="dot"> • </span>{% endif %}
+        {% if prov or dist %}
+          {{ prov }}{% if prov and dist %} - {% endif %}{{ dist }}
+        {% endif %}
+        {% if (prov or dist) and venue %}<span class="dot"> • </span>{% endif %}
+        {% if venue %}{{ venue }}{% endif %}
+      </div>
+    </div>
+  {%- endif -%}
+{%- endmacro %}
 
 <div class="wrap">
   <div class="page">
@@ -366,7 +512,7 @@
             {% set s = active.primary_session %}
             <div class="item">
               <div class="row">
-                <div>
+                <div style="min-width:0; flex:1 1 auto;">
                   <h3>
                     #{{ s.id }} — {{ s.name or "Phiên đấu" }}
                     {% if s.status %}
@@ -375,6 +521,9 @@
                       </span>
                     {% endif %}
                   </h3>
+
+                  {{ _session_one_line(s) }}
+
                   <div class="meta">
                     <span><i class="ri-stack-line"></i> Round: <b>{{ s.current_round_no or 0 }}</b></span>
                     <span><i class="ri-checkbox-circle-line"></i> Tổng lô: <b>{{ s.total_lot_count or 0 }}</b></span>
@@ -387,7 +536,6 @@
                     <i class="ri-play-circle-line"></i> Mở
                   </button>
 
-                  {# ẨN Start nếu phiên đang OPEN #}
                   {% if (s.status or '')|upper != 'OPEN' %}
                     <button class="btn mini" type="button" onclick="openStartSession({{ s.id }})">
                       <i class="ri-rocket-line"></i> Start
@@ -441,7 +589,7 @@
               {% for s in cs %}
                 <div class="item">
                   <div class="row">
-                    <div>
+                    <div style="min-width:0; flex:1 1 auto;">
                       <h3>
                         #{{ s.id }} — {{ s.name or "Phiên đấu" }}
                         {% if s.status %}
@@ -450,6 +598,9 @@
                           </span>
                         {% endif %}
                       </h3>
+
+                      {{ _session_one_line(s) }}
+
                       <div class="meta">
                         <span><i class="ri-stack-line"></i> Round: <b>{{ s.current_round_no or 0 }}</b></span>
                         <span><i class="ri-checkbox-circle-line"></i> Tổng lô: <b>{{ s.total_lot_count or 0 }}</b></span>
@@ -462,7 +613,6 @@
                         <i class="ri-play-circle-line"></i> Mở
                       </button>
 
-                      {# ẨN Start nếu phiên đang OPEN #}
                       {% if (s.status or '')|upper != 'OPEN' %}
                         <button class="btn mini" type="button" onclick="openStartSession({{ s.id }})">
                           <i class="ri-rocket-line"></i> Start
@@ -523,8 +673,16 @@
 
     <div class="modal-b">
       <div class="formgrid">
+        <div class="formwarn">
+          <div class="ic"><i class="ri-alert-line"></i></div>
+          <div>
+            <b>Lưu ý quan trọng:</b> Ngày đấu giá, Tỉnh/Thành phố và Địa điểm sẽ được ghi vào <b>Biên bản xác nhận trúng đấu giá</b> in cho khách.
+            Vui lòng nhập <b>cẩn thận & chính xác</b> (đúng theo hồ sơ/biên bản).
+          </div>
+        </div>
+
         <div class="full">
-          <label>Dự án</label>
+          <label>Dự án <span class="req">*</span></label>
           <select id="csProject">
             <option value="">— Chọn dự án —</option>
             {% for p in projects %}
@@ -540,19 +698,35 @@
         </div>
 
         <div class="full">
-          <label>Tên phiên</label>
-          <input id="csName" placeholder="Ví dụ: KINHDO3 – 21/01/2026 – Sáng" />
-          <div class="help">Nếu bỏ trống, hệ thống vẫn tạo phiên nhưng nên đặt tên để dễ quản trị.</div>
+          <label>Ngày diễn ra <span class="req">*</span></label>
+          <input id="csAuctionDate" type="date" />
+          <div class="help">Bắt buộc. Dữ liệu sẽ gửi lên <span class="mono">auction_date</span> (YYYY-MM-DD).</div>
+        </div>
+
+        <div class="full">
+          <label>Tên phiên <span class="req">*</span></label>
+          <input id="csName" placeholder="Ví dụ: KINHDO3 – Sáng" />
+          <div class="help">Bắt buộc.</div>
         </div>
 
         <div>
-          <label>Địa điểm</label>
-          <input id="csLoc" placeholder="Hội trường..." />
+          <label>Tỉnh/Thành phố <span class="req">*</span></label>
+          <input id="csProvince" placeholder="Ví dụ: Hà Nội" />
         </div>
 
         <div>
+          <label>Địa điểm cụ thể <span class="req">*</span></label>
+          <input id="csVenue" placeholder="Ví dụ: Hội trường UBND..." />
+        </div>
+
+        <div class="full">
           <label>Ghi chú</label>
           <input id="csNote" placeholder="Tuỳ chọn" />
+        </div>
+
+        <div class="full" style="display:none;">
+          <label>Địa điểm</label>
+          <input id="csLoc" placeholder="Hội trường..." />
         </div>
 
         <div class="full">
@@ -589,6 +763,32 @@
     <div class="cmodal-f" id="cFooter">
       <button class="btn" type="button" id="cCancel"><i class="ri-close-line"></i> Huỷ</button>
       <button class="btn primary" type="button" id="cOk"><i class="ri-check-line"></i> OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= Start Loading Overlay (NEW) ================= -->
+<div id="startBackdrop" class="loading-backdrop" onclick="event.stopPropagation()">
+  <div class="loading-card" onclick="event.stopPropagation()">
+    <div class="loading-h">
+      <b id="startTitle">Đang Start phiên…</b>
+      <span class="pill warn" style="display:inline-flex;"><i class="ri-timer-2-line"></i> Vui lòng chờ</span>
+    </div>
+    <div class="loading-b">
+      <div class="loading-row">
+        <div class="spinner" aria-hidden="true"></div>
+        <div style="flex:1 1 auto; min-width:0;">
+          <div id="startMsg" style="font-weight:900;">Đang chuẩn bị dữ liệu cho phiên đấu…</div>
+          <div class="loading-sub" id="startSub">
+            Quá trình tạo phiên chuẩn bị danh sách cho phiên đấu có thể kéo dài đến 15s, vui lòng kiên nhẫn chờ đợi.
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="loading-actions">
+      <button class="btn ghost" type="button" onclick="toast('Hệ thống vẫn đang xử lý. Vui lòng chờ thêm…')">
+        <i class="ri-information-line"></i> Tôi đã hiểu
+      </button>
     </div>
   </div>
 </div>
@@ -711,7 +911,6 @@
       cancelBtn.innerHTML = '<i class="ri-close-line"></i> ' + cancelText;
     }
     if(footer){
-      // alert mode: hide cancel
       cancelBtn.style.display = (mode === 'alert') ? 'none' : '';
     }
 
@@ -734,7 +933,6 @@
       okBtn.addEventListener('click', onOk);
       cancelBtn.addEventListener('click', onCancel);
 
-      // esc to cancel
       document.__cEscHandler = (e)=>{ if(e.key === 'Escape'){ onCancel(); } };
       document.addEventListener('keydown', document.__cEscHandler);
     });
@@ -772,23 +970,15 @@
     }catch(_){}
   }
 
-  // ✅ FIX: stop infinite reload when URL has ?project= (empty) + only submit when project is valid
   function restoreFiltersIfEmpty(){
     const u = new URL(window.location.href);
 
     const hasProjectParam = u.searchParams.has('project');
     const urlProject = (u.searchParams.get('project') || '').trim();
 
-    // Case: URL contains project but empty ?project=
-    // => do NOT auto restore, user must choose project normally
     if(hasProjectParam && !urlProject){
-      // Optional cleanup (commented):
-      // u.searchParams.delete('project');
-      // history.replaceState({}, '', u.toString());
       return;
     }
-
-    // If URL already has valid project -> do nothing
     if(urlProject) return;
 
     let savedProject = '';
@@ -809,13 +999,8 @@
       ((o.value||'').trim().toUpperCase() === savedProject.toUpperCase())
     );
 
-    // If saved project not found in dropdown -> clear memory and stop (avoid loop)
     if(!exists){
-      try{
-        localStorage.removeItem(LS_KEY_PROJECT);
-        // optional: also clear status if you want
-        // localStorage.removeItem(LS_KEY_STATUS);
-      }catch(_){}
+      try{ localStorage.removeItem(LS_KEY_PROJECT); }catch(_){}
       return;
     }
 
@@ -826,14 +1011,12 @@
       if(ok) statusSel.value = savedStatus;
     }
 
-    // Only submit if we actually have a non-empty project selected
     const v = (projectSel.value || '').trim();
     if(!v) return;
 
     form.submit();
   }
 
-  // Save on change + on submit
   (function bindFilterMemory(){
     const projectSel = document.getElementById('projectSel');
     const statusSel  = document.getElementById('statusSel');
@@ -842,11 +1025,8 @@
     if(projectSel){
       projectSel.addEventListener('change', ()=>{
         rememberFilters();
-        // UX: nếu đã chọn dự án thì auto submit để load luôn
         const v = (projectSel.value||'').trim();
-        if(v){
-          form?.submit();
-        }
+        if(v){ form?.submit(); }
       });
     }
     if(statusSel){
@@ -858,26 +1038,51 @@
   })();
   // </editor-fold>
 
+  // <editor-fold desc="Auction Sessions - Start Loading Overlay (NEW)">
+  function showStartLoading(sessionId){
+    const b = document.getElementById('startBackdrop');
+    if(!b) return;
+
+    const title = document.getElementById('startTitle');
+    const msg = document.getElementById('startMsg');
+    const sub = document.getElementById('startSub');
+
+    if(title) title.textContent = "Đang Start phiên #" + (sessionId || "") + "…";
+    if(msg) msg.textContent = "Đang chuẩn bị dữ liệu cho phiên đấu…";
+    if(sub) sub.textContent = "Quá trình tạo phiên chuẩn bị danh sách cho phiên đấu có thể kéo dài đến 15s, vui lòng kiên nhẫn chờ đợi.";
+
+    b.style.display = 'flex';
+  }
+  function hideStartLoading(){
+    const b = document.getElementById('startBackdrop');
+    if(!b) return;
+    b.style.display = 'none';
+  }
+  // </editor-fold>
+
   // <editor-fold desc="Auction Sessions - Modal Create Session">
-  // =========================
-  // Modal: Create session
-  // =========================
   function openCreateSession(){
     const backdrop = document.getElementById('createBackdrop');
     if(!backdrop) return;
     backdrop.style.display='flex';
 
-    // Prefill name if empty
+    // ✅ Requirement #2: Prefill name ONLY with project code (no date)
     const n = document.getElementById('csName');
     if(n && !n.value){
       const sel = document.getElementById('projectSel');
       const opt = sel && sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex] : null;
       const code = opt ? (opt.value || '').trim() : '';
+      n.value = code ? (code + " – ") : "";
+    }
+
+    // Prefill auction date = today if empty (safe)
+    const ad = document.getElementById('csAuctionDate');
+    if(ad && !ad.value){
       const d = new Date();
-      const dd = String(d.getDate()).padStart(2,'0');
+      const yyyy = d.getFullYear();
       const mm = String(d.getMonth()+1).padStart(2,'0');
-      const yy = d.getFullYear();
-      n.value = (code ? (code + " – ") : "") + dd + "/" + mm + "/" + yy;
+      const dd = String(d.getDate()).padStart(2,'0');
+      ad.value = `${yyyy}-${mm}-${dd}`;
     }
 
     // Sync modal project with current top select if possible (by code)
@@ -910,17 +1115,42 @@
       return;
     }
 
+    const auctionDate = (document.getElementById('csAuctionDate')?.value || '').trim();
+    const name = (document.getElementById('csName')?.value || '').trim();
+    const province = (document.getElementById('csProvince')?.value || '').trim();
+    const venue = (document.getElementById('csVenue')?.value || '').trim();
+    const note = (document.getElementById('csNote')?.value || '').trim();
+
+    if(!auctionDate){
+      await alertX({ title: "Thiếu thông tin", message: "Vui lòng chọn ngày diễn ra.", tone: "warn" });
+      return;
+    }
+    if(!name){
+      await alertX({ title: "Thiếu thông tin", message: "Vui lòng nhập tên phiên.", tone: "warn" });
+      return;
+    }
+    if(!province){
+      await alertX({ title: "Thiếu thông tin", message: "Vui lòng nhập tỉnh/thành phố diễn ra.", tone: "warn" });
+      return;
+    }
+    if(!venue){
+      await alertX({ title: "Thiếu thông tin", message: "Vui lòng nhập địa điểm cụ thể.", tone: "warn" });
+      return;
+    }
+
     const opt = cs.options[cs.selectedIndex];
     const projectCode = (opt?.getAttribute('data-project-code') || '').trim();
 
     const payload = {
       project_id: projectId,
-      name: (document.getElementById('csName')?.value || "").trim() || null,
-      location: (document.getElementById('csLoc')?.value || "").trim() || null,
-      note: (document.getElementById('csNote')?.value || "").trim() || null
+      name: name || null,
+      location: venue || null,
+      note: note || null,
+      auction_date: auctionDate || null,
+      province: province || null,
+      venue: venue || null
     };
 
-    // disable buttons to prevent double submit
     const btns = Array.from(document.querySelectorAll('#createBackdrop .btn'));
     btns.forEach(b => b.disabled = true);
 
@@ -944,7 +1174,7 @@
       let js = null;
       try{ js = await r.json(); }catch(_){ js = null; }
 
-      if(!r.ok){
+            if(!r.ok){
         await alertX({ title: "Tạo phiên thất bại", message: "Tạo phiên lỗi: " + errText(js, r.status), tone: "danger" });
         return;
       }
@@ -1008,20 +1238,34 @@
   }
 
   async function startSession(sessionId){
+    sessionId = Number(sessionId||0);
+    if(!sessionId){
+      await alertX({ title: "Thiếu dữ liệu", message: "Thiếu sessionId", tone: "warn" });
+      return;
+    }
+
+    // ✅ Requirement #1: show loading overlay during start
+    showStartLoading(sessionId);
+
     try{
       const r = await fetch("/auction/sessions/api/sessions/start",{
         method:"POST",
         headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({session_id: Number(sessionId)})
+        body: JSON.stringify({session_id: sessionId})
       });
+
       const js = await r.json().catch(()=> ({}));
       if(!r.ok){
+        hideStartLoading();
         await alertX({ title: "Start thất bại", message: "Start lỗi: " + (js.detail || js.error || ("HTTP " + r.status)), tone: "danger" });
         return;
       }
+
+      // keep overlay for a tiny beat so user sees it
       toast("Đã start phiên #" + sessionId + ". Đang tải lại...");
       window.location.reload();
     }catch(e){
+      hideStartLoading();
       await alertX({ title: "Lỗi mạng", message: "Lỗi mạng khi start.", tone: "danger" });
     }
   }
@@ -1031,6 +1275,11 @@
     sessionId = Number(sessionId||0);
     status = (status || '').toUpperCase();
     currentRoundNo = Number(currentRoundNo||0);
+
+    if(!sessionId){
+      await alertX({ title: "Thiếu dữ liệu", message: "Thiếu sessionId", tone: "warn" });
+      return;
+    }
 
     if(status === 'DRAFT' || currentRoundNo === 0){
       const ok = await confirmX({
@@ -1043,6 +1292,9 @@
       });
       if(!ok) return;
 
+      // ✅ Requirement #1: show loading overlay during start
+      showStartLoading(sessionId);
+
       try{
         const r = await fetch("/auction/sessions/api/sessions/start",{
           method:"POST",
@@ -1051,15 +1303,21 @@
         });
         const js = await r.json().catch(()=> ({}));
         if(!r.ok){
+          hideStartLoading();
           await alertX({ title: "Start thất bại", message: "Start lỗi: " + (js.detail || js.error || ("HTTP " + r.status)), tone: "danger" });
           return;
         }
       }catch(e){
+        hideStartLoading();
         await alertX({ title: "Lỗi mạng", message: "Lỗi mạng khi start.", tone: "danger" });
         return;
+      }finally{
+        // Hide only if we are not navigating (we are navigating below)
+        // We'll keep it visible until navigation begins.
       }
     }
 
+    // Move to session page
     window.location.href = "/auction/sessions/" + sessionId;
   }
   // </editor-fold>
@@ -1076,6 +1334,14 @@
       if(e.key === 'Escape'){
         const b = document.getElementById('createBackdrop');
         if(b && b.style.display === 'flex') closeCreateSession();
+
+        // allow ESC to dismiss loading overlay (optional UX)
+        // NOTE: doesn't cancel backend start, only hides overlay
+        const sb = document.getElementById('startBackdrop');
+        if(sb && sb.style.display === 'flex'){
+          hideStartLoading();
+          toast("Hệ thống vẫn đang xử lý Start ở nền. Vui lòng chờ/refresh sau.");
+        }
       }
     });
   })();
@@ -1083,3 +1349,4 @@
 </script>
 
 {% endblock %}
+
