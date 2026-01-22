@@ -110,25 +110,24 @@
   }
   tbody tr:hover td{background:rgba(248,250,252,.65);}
 
-  /* LOT INFO (gọn 2 dòng) */
-  .lotTitle{
-    font-weight:1100;
+  /* LOT CODE prominent */
+  .lotcode{
+    font-weight:800;
     letter-spacing:.15px;
     font-size:15px;
     line-height:1.2;
     color:rgba(15,23,42,1);
-    display:flex;
-    align-items:flex-start;
-    gap:10px;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
   }
-  .lotDot{
-    width:10px;height:10px;border-radius:999px;flex:0 0 auto;margin-top:3px;
+  .lotcode::before{
+    content:"";
+    width:10px;height:10px;border-radius:999px;
     background:linear-gradient(180deg, rgba(14,165,233,.95), rgba(2,132,199,.95));
     box-shadow:0 8px 16px rgba(2,132,199,.25);
+    display:inline-block;
   }
-  .lotLines{display:flex;flex-direction:column;gap:4px;}
-  .lotCode{font-weight:1200;}
-  .lotDesc{color:var(--muted);font-size:12px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;}
 
   .muted{color:var(--muted);font-size:12px;line-height:1.25;margin-top:4px;}
   .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;}
@@ -152,17 +151,6 @@
   .printIcon:hover{transform:translateY(-1px);box-shadow:0 10px 18px rgba(2,6,23,.08);}
 
   .empty{padding:16px;color:var(--muted);font-size:13px;}
-
-  /* Big Next count */
-  .bigCount{
-    display:inline-flex;align-items:center;gap:8px;margin-top:8px;
-    padding:8px 10px;border-radius:14px;border:1px solid rgba(245,158,11,.25);
-    background:rgba(245,158,11,.08);
-  }
-  .bigCount .n{
-    font-size:18px;font-weight:1300;letter-spacing:.2px;color:#92400e;line-height:1;
-  }
-  .bigCount .t{font-size:12px;font-weight:1000;color:rgba(100,116,139,.95);line-height:1.2;}
 
   /* Modal — fixed viewport, body scroll, footer sticky */
   .backdrop{
@@ -239,25 +227,43 @@
     color:#075985;
   }
 
-  /* Price block */
-  .priceCard{
-    border:1px solid rgba(14,165,233,.22);
-    background:linear-gradient(180deg, rgba(14,165,233,.05), rgba(248,250,252,.82));
-    border-radius:16px;
+  /* ===== Smart price block (like your screenshot) ===== */
+  .priceBlock{
+    border:1px solid rgba(14,165,233,.20);
+    background:linear-gradient(180deg, rgba(14,165,233,.05), rgba(248,250,252,.90));
+    border-radius:18px;
     padding:12px 12px;
-    display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;
     margin:10px 0 12px;
   }
-  .priceCard .plabel{
-    font-size:12px;color:var(--muted);font-weight:1000;
-    display:flex;align-items:center;gap:8px;
+  .priceTop{
+    display:grid;
+    grid-template-columns: 1.1fr 2fr 1.1fr;
+    gap:12px;
+    align-items:stretch;
   }
-  .priceCard .pvalue{
-    font-size:26px;font-weight:1200;letter-spacing:.3px;color:var(--ink);line-height:1.05;
+  .pStat{
+    border:1px solid var(--bd);
+    border-radius:14px;
+    background:#fff;
+    padding:10px 12px;
+    display:flex;flex-direction:column;gap:6px;
   }
-  .priceCard .pvalue.muted{color:rgba(15,23,42,.55);}
-  .priceCard .pinput{min-width:300px;display:flex;flex-direction:column;gap:6px;}
-  .moneyWrap{position:relative;}
+  .pStat .k{font-size:12px;color:var(--muted);font-weight:1000;display:flex;gap:8px;align-items:center;}
+  .pStat .v{font-size:24px;font-weight:1200;color:var(--ink);line-height:1.05;letter-spacing:.3px;}
+  .pStat .v.muted{color:rgba(15,23,42,.55);}
+
+  .pInputWrap{
+    border:1px solid rgba(2,132,199,.18);
+    border-radius:16px;
+    background:rgba(255,255,255,.82);
+    padding:10px 10px;
+    display:flex;flex-direction:column;gap:10px;
+    box-shadow:0 2px 10px rgba(2,6,23,.04);
+  }
+  .pRow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .pLabel{font-size:12px;color:var(--muted);font-weight:1000;display:flex;gap:8px;align-items:center;}
+
+  .moneyWrap{position:relative;flex:1 1 auto;min-width:260px;}
   .moneySuffix{
     position:absolute;right:12px;top:50%;transform:translateY(-50%);
     font-size:12px;font-weight:1100;color:rgba(100,116,139,.9);
@@ -266,20 +272,64 @@
     background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.9));
   }
   .priceInput{
-    height:46px !important;
+    width:100%;
+    height:48px !important;
     border-radius:14px !important;
-    font-size:18px !important;
+    font-size:20px !important;
     font-weight:1200 !important;
     letter-spacing:.3px;
-    padding:0 48px 0 12px !important;
+    padding:0 56px 0 12px !important;
     background:rgba(255,255,255,.92) !important;
-    border-color:rgba(2,132,199,.22) !important;
+    border:1px solid rgba(2,132,199,.22) !important;
+    outline:none;
   }
   .priceInput:focus{
     border-color:rgba(14,165,233,.6) !important;
     box-shadow:0 0 0 4px rgba(14,165,233,.16) !important;
   }
-  .priceHelp{font-size:12px;color:var(--muted);line-height:1.35;}
+  .priceInput:disabled{
+    opacity:.7;cursor:not-allowed;
+    background:rgba(248,250,252,1) !important;
+  }
+
+  .autoBtn{
+    height:40px;border-radius:14px;border:1px solid var(--bd);
+    background:#fff;padding:0 14px;font-size:13px;font-weight:1100;cursor:pointer;
+    display:inline-flex;align-items:center;gap:8px;
+    transition:.15s ease;white-space:nowrap;
+  }
+  .autoBtn:hover{transform:translateY(-1px);box-shadow:0 10px 18px rgba(2,6,23,.08);}
+  .autoBtn.primary{
+    background:rgba(14,165,233,.10);
+    border-color:rgba(14,165,233,.28);
+    color:#075985;
+  }
+
+  .stepPad{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  .stepBtn{
+    height:42px;min-width:66px;
+    border-radius:16px;border:1px solid var(--bd);
+    background:#fff;
+    font-weight:1200;font-size:14px;
+    cursor:pointer;
+    transition:.15s ease;
+  }
+  .stepBtn:hover{transform:translateY(-1px);box-shadow:0 10px 18px rgba(2,6,23,.08);}
+  .stepBtn.neg{color:#7f1d1d;background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.25);}
+  .stepBtn.pos{color:#075985;background:rgba(14,165,233,.08);border-color:rgba(14,165,233,.25);}
+
+  .pHelp{font-size:12px;color:var(--muted);line-height:1.35;margin-top:2px;}
+  .tickInfo{font-size:12px;color:rgba(51,65,85,1);display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  .tickPill{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:4px 10px;border-radius:999px;
+    border:1px solid var(--bd);background:#fff;
+    font-weight:1100;color:rgba(30,41,59,1);
+  }
+  .tickPill b{font-weight:1200;}
+  .tickPill.ok{border-color:rgba(22,163,74,.25);background:rgba(22,163,74,.06);color:#166534;}
+  .tickPill.warn{border-color:rgba(245,158,11,.25);background:rgba(245,158,11,.08);color:#92400e;}
+  .tickPill.bad{border-color:rgba(239,68,68,.25);background:rgba(239,68,68,.06);color:#991b1b;}
 
   /* Winner picker */
   .picker{
@@ -391,7 +441,7 @@
     padding:18px 14px;z-index:11000;
   }
   .dlg{
-    width:100%;max-width:640px;background:#fff;border-radius:18px;
+    width:100%;max-width:720px;background:#fff;border-radius:18px;
     border:1px solid rgba(226,232,240,1);box-shadow:var(--shadow);overflow:hidden;
   }
   .dlg-h{
@@ -405,20 +455,50 @@
     background:#fff;cursor:pointer;font-weight:900;
   }
   .dlg-b{padding:14px;}
-  .dlg-msg{color:var(--ink);font-size:13px;line-height:1.45;white-space:pre-wrap;}
-  .dlg-sub{margin-top:8px;color:var(--muted);font-size:12px;line-height:1.35;}
-  .dlg-in{ margin-top:12px; display:none; }
-  .dlg-in label{display:block;font-size:12px;color:var(--muted);font-weight:1000;margin-bottom:6px;}
-  .dlg-in input{
-    width:100%;
-    height:38px;border-radius:12px;border:1px solid var(--bd);
-    padding:0 10px;font-size:13px;outline:none;background:#fff;color:var(--ink);
-  }
-  .dlg-in input:focus{border-color:rgba(14,165,233,.6); box-shadow:0 0 0 3px rgba(14,165,233,.15);}
+  .dlg-msg{color:var(--ink);font-size:13px;line-height:1.45;}
+  .dlg-sub{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.35;}
   .dlg-f{
     padding:12px 14px;border-top:1px solid var(--bd2);
     background:rgba(248,250,252,.9);
     display:flex;justify-content:flex-end;gap:10px;align-items:center;flex-wrap:wrap;
+  }
+
+  /* pretty confirm card */
+  .cCard{
+    border:1px solid var(--bd);
+    border-radius:16px;
+    background:linear-gradient(180deg, rgba(248,250,252,.9), #fff);
+    padding:12px;
+    box-shadow:0 2px 10px rgba(2,6,23,.04);
+  }
+  .cTop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;}
+  .cTitle{font-size:13px;font-weight:1200;color:var(--ink);display:flex;gap:8px;align-items:center;}
+  .cGrid{
+    margin-top:10px;
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:10px;
+  }
+  .cItem{
+    border:1px solid var(--bd2);
+    background:#fff;
+    border-radius:14px;
+    padding:10px 10px;
+  }
+  .cItem .k{font-size:12px;color:var(--muted);font-weight:1000;display:flex;gap:8px;align-items:center;}
+  .cItem .v{margin-top:6px;font-size:14px;font-weight:1200;color:var(--ink);line-height:1.2;}
+  .cItem .v.mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;}
+  .cWarn{
+    margin-top:10px;
+    border:1px solid rgba(245,158,11,.25);
+    background:rgba(245,158,11,.08);
+    color:#92400e;
+    border-radius:14px;
+    padding:10px 10px;
+    font-size:12px;
+    line-height:1.35;
+    font-weight:1000;
+    display:flex;gap:8px;align-items:flex-start;
   }
 
   @media (max-width: 1040px){
@@ -430,7 +510,8 @@
     tbody td{border-bottom:0;}
     tbody tr{border-bottom:1px solid var(--bd2);}
     .right{justify-content:flex-start;}
-    .priceCard .pinput{min-width:100%;}
+    .priceTop{grid-template-columns:1fr;}
+    .cGrid{grid-template-columns:1fr;}
   }
 </style>
 
@@ -465,9 +546,8 @@
     <div class="tright">
       <a class="btn ghost" href="/auction/sessions"><i class="ri-arrow-left-line"></i> Quay lại</a>
 
-      {# Start/Mở là 1 hành động, gọi start (A idempotent) #}
       <button class="btn" type="button" onclick="startSessionIfNeeded()">
-        <i class="ri-rocket-line"></i> Mở phiên (Start)
+        <i class="ri-rocket-line"></i> Start
       </button>
 
       <button class="btn primary" type="button" onclick="createNextRound()">
@@ -517,7 +597,6 @@
       <b>Danh sách lô — Round #{{ round_no }}</b>
       <div class="search">
         <input id="q" placeholder="Tìm theo mã lô / mô tả..." oninput="renderLots()" />
-        {# Các nút in: giữ chỗ, không làm impact nghiệp vụ nếu backend chưa nối #}
         <button class="miniBtn ghost" type="button" onclick="printAllBidTickets()">
           <i class="ri-printer-line"></i> In toàn bộ phiếu trả giá
         </button>
@@ -531,9 +610,9 @@
       <table>
         <thead>
           <tr>
-            <th style="width:230px;">Lô</th>
+            <th style="width:190px;">Lô</th>
             <th>Thông tin</th>
-            <th style="width:340px;">Kết quả vòng này</th>
+            <th style="width:320px;">Kết quả vòng này</th>
             <th class="right" style="width:170px;">Thao tác</th>
           </tr>
         </thead>
@@ -597,25 +676,57 @@
                 </select>
               </div>
 
-              <div class="priceCard" id="winnerPriceCard">
-                <div>
-                  <div class="plabel"><i class="ri-flag-2-line"></i> Giá khởi điểm vòng</div>
-                  <div class="pvalue" id="mStartPriceText">—</div>
-                </div>
-
-                <div class="pinput">
-                  <div class="plabel" id="winningPriceLabel"><i class="ri-money-dollar-circle-line"></i> Giá trúng (VND)</div>
-                  <div class="moneyWrap">
-                    <input id="winningPrice" class="priceInput" inputmode="numeric" placeholder="Nhập giá trúng..."
-                           oninput="onMoneyInput('winningPrice')" />
-                    <span class="moneySuffix">VND</span>
+              <!-- Smart price input (WINNER) -->
+              <div class="priceBlock" id="winnerPriceBlock">
+                <div class="priceTop">
+                  <div class="pStat">
+                    <div class="k"><i class="ri-flag-2-line"></i> Giá khởi điểm vòng</div>
+                    <div class="v" id="mStartPriceText">—</div>
+                    <div class="pHelp">Base để tính tick theo bước giá.</div>
                   </div>
-                  <div class="priceHelp" id="winningPriceHelp">Nhập số, hệ thống sẽ tự format dạng tiền (1.234.567).</div>
-                </div>
 
-                <div>
-                  <div class="plabel"><i class="ri-eye-line"></i> Hiển thị</div>
-                  <div class="pvalue muted" id="winningPricePretty">—</div>
+                  <div class="pInputWrap">
+                    <div class="pRow" style="justify-content:space-between;">
+                      <div class="pLabel"><i class="ri-money-dollar-circle-line"></i> Giá trúng (VND)</div>
+                      <button class="autoBtn primary" type="button" id="btnAutoCorrectWinner" onclick="autoCorrectPrice('winningPrice')">
+                        <i class="ri-magic-line"></i> Auto correct
+                      </button>
+                    </div>
+
+                    <div class="pRow">
+                      <div class="moneyWrap">
+                        <input id="winningPrice" class="priceInput" inputmode="numeric" placeholder="Nhập giá..."
+                               oninput="onMoneyInput('winningPrice'); updatePriceMeta('winningPrice');" />
+                        <span class="moneySuffix">VND</span>
+                      </div>
+                    </div>
+
+                    <div class="tickInfo" id="tickInfoWinner">
+                      <span class="tickPill"><i class="ri-hashtag"></i> Tick: <b id="tickWinner">—</b></span>
+                      <span class="tickPill"><i class="ri-arrow-up-line"></i> Bước: <b id="stepWinner">—</b></span>
+                      <span class="tickPill"><i class="ri-check-line"></i> Hợp lệ: <b id="validWinner">—</b></span>
+                    </div>
+
+                    <div class="pHelp" id="winnerHelp">
+                      Auto-correct sẽ đưa giá về <b>giá thấp nhất hợp lệ</b> = Khởi điểm + N*bước giá, sao cho ≥ giá đang nhập.
+                      Nút +/- để nhập nhanh theo bước giá.
+                    </div>
+
+                    <div class="stepPad" id="stepPadWinner">
+                      <button class="stepBtn neg" type="button" onclick="nudgePrice('winningPrice', -5)">-5</button>
+                      <button class="stepBtn neg" type="button" onclick="nudgePrice('winningPrice', -3)">-3</button>
+                      <button class="stepBtn neg" type="button" onclick="nudgePrice('winningPrice', -1)">-1</button>
+                      <button class="stepBtn pos" type="button" onclick="nudgePrice('winningPrice', +1)">+1</button>
+                      <button class="stepBtn pos" type="button" onclick="nudgePrice('winningPrice', +3)">+3</button>
+                      <button class="stepBtn pos" type="button" onclick="nudgePrice('winningPrice', +5)">+5</button>
+                    </div>
+                  </div>
+
+                  <div class="pStat">
+                    <div class="k"><i class="ri-eye-line"></i> Hiển thị</div>
+                    <div class="v muted" id="winningPricePretty">—</div>
+                    <div class="pHelp">Preview tiền đã format.</div>
+                  </div>
                 </div>
               </div>
 
@@ -637,25 +748,57 @@
             <!-- MODE NEXT ROUND -->
             <div id="modeNext" style="display:none;">
 
-              <div class="priceCard" id="nextPriceCard">
-                <div>
-                  <div class="plabel"><i class="ri-flag-2-line"></i> Giá khởi điểm vòng</div>
-                  <div class="pvalue" id="mStartPriceText2">—</div>
-                </div>
-
-                <div class="pinput">
-                  <div class="plabel"><i class="ri-line-chart-line"></i> Giá cao nhất vòng này (VND)</div>
-                  <div class="moneyWrap">
-                    <input id="highestPrice" class="priceInput" inputmode="numeric" placeholder="Nhập giá cao nhất..."
-                           oninput="onMoneyInput('highestPrice')" />
-                    <span class="moneySuffix">VND</span>
+              <!-- Smart price input (NEXT) -->
+              <div class="priceBlock" id="nextPriceBlock">
+                <div class="priceTop">
+                  <div class="pStat">
+                    <div class="k"><i class="ri-flag-2-line"></i> Giá khởi điểm vòng</div>
+                    <div class="v" id="mStartPriceText2">—</div>
+                    <div class="pHelp">Base để tính tick theo bước giá.</div>
                   </div>
-                  <div class="priceHelp">Giá này sẽ dùng làm <b>giá khởi điểm vòng sau</b> (unit theo bid_price_unit).</div>
-                </div>
 
-                <div>
-                  <div class="plabel"><i class="ri-eye-line"></i> Hiển thị</div>
-                  <div class="pvalue muted" id="highestPricePretty">—</div>
+                  <div class="pInputWrap">
+                    <div class="pRow" style="justify-content:space-between;">
+                      <div class="pLabel"><i class="ri-line-chart-line"></i> Giá cao nhất (để xét)</div>
+                      <button class="autoBtn primary" type="button" onclick="autoCorrectPrice('highestPrice')">
+                        <i class="ri-magic-line"></i> Auto correct
+                      </button>
+                    </div>
+
+                    <div class="pRow">
+                      <div class="moneyWrap">
+                        <input id="highestPrice" class="priceInput" inputmode="numeric" placeholder="Nhập giá..."
+                               oninput="onMoneyInput('highestPrice'); updatePriceMeta('highestPrice');" />
+                        <span class="moneySuffix">VND</span>
+                      </div>
+                    </div>
+
+                    <div class="tickInfo" id="tickInfoNext">
+                      <span class="tickPill"><i class="ri-hashtag"></i> Tick: <b id="tickNext">—</b></span>
+                      <span class="tickPill"><i class="ri-arrow-up-line"></i> Bước: <b id="stepNext">—</b></span>
+                      <span class="tickPill"><i class="ri-check-line"></i> Hợp lệ: <b id="validNext">—</b></span>
+                    </div>
+
+                    <div class="pHelp">
+                      Nếu textbox trống, bấm +1/+3/+5 sẽ lấy <b>khởi điểm</b> làm base rồi cộng theo bước giá.
+                      Giá này sẽ dùng làm <b>giá khởi điểm vòng sau</b>.
+                    </div>
+
+                    <div class="stepPad">
+                      <button class="stepBtn neg" type="button" onclick="nudgePrice('highestPrice', -5)">-5</button>
+                      <button class="stepBtn neg" type="button" onclick="nudgePrice('highestPrice', -3)">-3</button>
+                      <button class="stepBtn neg" type="button" onclick="nudgePrice('highestPrice', -1)">-1</button>
+                      <button class="stepBtn pos" type="button" onclick="nudgePrice('highestPrice', +1)">+1</button>
+                      <button class="stepBtn pos" type="button" onclick="nudgePrice('highestPrice', +3)">+3</button>
+                      <button class="stepBtn pos" type="button" onclick="nudgePrice('highestPrice', +5)">+5</button>
+                    </div>
+                  </div>
+
+                  <div class="pStat">
+                    <div class="k"><i class="ri-eye-line"></i> Hiển thị</div>
+                    <div class="v muted" id="highestPricePretty">—</div>
+                    <div class="pHelp">Preview tiền đã format.</div>
+                  </div>
                 </div>
               </div>
 
@@ -688,7 +831,7 @@
               </div>
 
               <div class="hint">
-                Vòng sau sẽ lấy <b>giá khởi điểm = giá cao nhất vòng này</b> (theo API create_next_round).
+                Vòng sau sẽ lấy <b>giá khởi điểm = giá cao nhất vòng này</b>
               </div>
             </div>
 
@@ -709,7 +852,7 @@
 
     <div class="foot">
       <div class="hint" id="mHint">
-        API: <code class="mono">/auction/sessions/api/round-lots/{id}/decide</code>. Nếu bị khoá, API trả <b>409 LOCKED_BY_...</b>.
+        API: Nếu bị khoá, API trả <b>409 LOCKED_BY_...</b>.
       </div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
         <button class="btn danger" type="button" onclick="resetPending()"><i class="ri-restart-line"></i> Reset PENDING</button>
@@ -731,18 +874,12 @@
     <div class="dlg-b">
       <div class="dlg-msg" id="dlgMsg"></div>
       <div class="dlg-sub" id="dlgSub" style="display:none;"></div>
-
-      <div class="dlg-in" id="dlgInputWrap">
-        <label id="dlgInputLabel">Nhập xác nhận</label>
-        <input id="dlgInput" placeholder="" />
-        <div class="dlg-sub" id="dlgInputHint" style="margin-top:6px;display:block;"></div>
-      </div>
     </div>
     <div class="dlg-f">
       <button class="btn ghost" type="button" id="dlgCancel" onclick="dlgCancel()">
         <i class="ri-close-line"></i> Huỷ
       </button>
-      <button class="btn primary" type="button" id="dlgOk" onclick="dlgOk()" disabled>
+      <button class="btn primary" type="button" id="dlgOk" onclick="dlgOk()">
         <i class="ri-check-line"></i> Xác nhận
       </button>
     </div>
@@ -809,19 +946,14 @@
   function pad3(n){
     n = Number(n||0);
     if(!isFinite(n) || n<=0) return '';
-    return String(n).padStart(3,'0');
+    if(n < 100) return String(n).padStart(3,'0');
+    if(n < 1000) return String(n);
+    return String(n);
   }
 
   function fmtStt(stt){
     const s = pad3(stt);
     return s ? s : '';
-  }
-
-  function maskPhone(s){
-    const x = safeText(s).replace(/\s+/g,'');
-    if(!x) return '';
-    if(x.length <= 4) return '****';
-    return x.slice(0,2) + '****' + x.slice(-2);
   }
 
   function getLotSnapshot(lot){
@@ -837,6 +969,12 @@
     const snap = getLotSnapshot(lot);
     const sp = (lot && lot.start_price_vnd != null) ? Number(lot.start_price_vnd) : Number(snap.starting_price_vnd || 0);
     return isFinite(sp) ? sp : 0;
+  }
+
+  function getBidStepVnd(lot){
+    const snap = getLotSnapshot(lot);
+    const step = Number(snap.bid_step_vnd || 0);
+    return (isFinite(step) && step > 0) ? step : 0;
   }
 
   function stripToDigits(s){
@@ -861,12 +999,12 @@
     if(id === 'winningPrice'){
       const pp = document.getElementById('winningPricePretty');
       pp.textContent = pretty || '—';
-      pp.className = 'pvalue' + (pretty ? '' : ' muted');
+      pp.className = 'v' + (pretty ? '' : ' muted');
     }
     if(id === 'highestPrice'){
       const pp = document.getElementById('highestPricePretty');
       pp.textContent = pretty || '—';
-      pp.className = 'pvalue' + (pretty ? '' : ' muted');
+      pp.className = 'v' + (pretty ? '' : ' muted');
     }
   }
 
@@ -881,10 +1019,9 @@
   }
 
   // =========================
-  // Custom Dialog
+  // Custom Dialog (NO typing required)
   // =========================
   let __dlgResolve = null;
-  let __dlgRequireText = null;
 
   function dlgClose(ev){
     if(ev && ev.target && ev.target.id !== 'dlgBackdrop') return;
@@ -895,49 +1032,33 @@
     if(__dlgResolve){ __dlgResolve(false); __dlgResolve = null; }
   }
   function dlgOk(){
-    const okBtn = document.getElementById('dlgOk');
-    if(okBtn && okBtn.disabled) return;
-
-    if(__dlgRequireText){
-      const ii = document.getElementById('dlgInput');
-      const v = (ii.value || '').trim();
-      if(v !== __dlgRequireText){
-        const ih = document.getElementById('dlgInputHint');
-        ih.textContent = `Sai xác nhận. Bạn phải nhập đúng: "${__dlgRequireText}".`;
-        ih.style.color = '#991b1b';
-        okBtn.disabled = true;
-        return;
-      }
-    }
-
     dlgClose();
     if(__dlgResolve){ __dlgResolve(true); __dlgResolve = null; }
   }
 
   function showDialog(opts){
     const title = safeText(opts.title || 'Thông báo');
-    const msg = safeText(opts.message || '');
     const sub = safeText(opts.sub || '');
     const mode = opts.mode || 'confirm';
     const okText = safeText(opts.okText || (mode==='alert' ? 'Đóng' : 'Xác nhận'));
     const cancelText = safeText(opts.cancelText || 'Huỷ');
-
-    __dlgRequireText = (opts.requireText || null);
 
     const b = document.getElementById('dlgBackdrop');
     const t = document.getElementById('dlgTitle');
     const m = document.getElementById('dlgMsg');
     const s = document.getElementById('dlgSub');
 
-    const iw = document.getElementById('dlgInputWrap');
-    const ii = document.getElementById('dlgInput');
-    const ih = document.getElementById('dlgInputHint');
-
     const okBtn = document.getElementById('dlgOk');
     const cancelBtn = document.getElementById('dlgCancel');
 
     t.innerHTML = `<i class="${mode==='error' ? 'ri-error-warning-line' : 'ri-information-line'}"></i> ${escapeHtml(title)}`;
-    m.textContent = msg;
+
+    // message can be HTML
+    if(opts.html){
+      m.innerHTML = opts.message || '';
+    } else {
+      m.textContent = safeText(opts.message || '');
+    }
 
     if(sub){
       s.style.display = 'block';
@@ -950,43 +1071,10 @@
     okBtn.innerHTML = `<i class="ri-check-line"></i> ${escapeHtml(okText)}`;
     cancelBtn.innerHTML = `<i class="ri-close-line"></i> ${escapeHtml(cancelText)}`;
 
-    if(__dlgRequireText){
-      iw.style.display = 'block';
-      ii.value = '';
-      ii.placeholder = __dlgRequireText;
-
-      ih.style.color = '';
-      ih.textContent = `Bạn phải nhập đúng: "${__dlgRequireText}" để bật nút xác nhận.`;
-
-      okBtn.disabled = true;
-
-      ii.oninput = ()=>{
-        const v = (ii.value || '').trim();
-        ih.style.color = '';
-        ih.textContent = `Bạn phải nhập đúng: "${__dlgRequireText}" để bật nút xác nhận.`;
-        okBtn.disabled = (v !== __dlgRequireText);
-      };
-      ii.onkeydown = (e)=>{
-        if(e.key === 'Enter'){
-          e.preventDefault();
-          if(!okBtn.disabled) dlgOk();
-        }
-      };
-      setTimeout(()=> ii.focus(), 0);
-    } else {
-      iw.style.display = 'none';
-      ii.value = '';
-      ii.oninput = null;
-      ii.onkeydown = null;
-      okBtn.disabled = false;
-    }
-
     if(mode === 'alert' || mode === 'error'){
       cancelBtn.style.display = 'none';
-      okBtn.disabled = false;
     } else {
       cancelBtn.style.display = 'inline-flex';
-      if(!__dlgRequireText) okBtn.disabled = false;
     }
 
     b.style.display = 'flex';
@@ -996,15 +1084,15 @@
     });
   }
 
-  async function showConfirm(title, message, opts={}){
+  async function showConfirm(title, htmlMessage, opts={}){
     return await showDialog({
       mode: 'confirm',
       title,
-      message,
+      message: htmlMessage,
+      html: true,
       sub: opts.sub || '',
       okText: opts.okText || 'Xác nhận',
-      cancelText: opts.cancelText || 'Huỷ',
-      requireText: opts.requireText || null
+      cancelText: opts.cancelText || 'Huỷ'
     });
   }
 
@@ -1012,8 +1100,14 @@
     showDialog({
       mode: 'error',
       title,
-      message,
-      sub,
+      message: `<div class="cCard">
+        <div class="cTop">
+          <div class="cTitle"><i class="ri-error-warning-line"></i> ${escapeHtml(message || '')}</div>
+          <span class="pill bad"><i class="ri-close-circle-line"></i> ERROR</span>
+        </div>
+        ${sub ? `<div class="cWarn"><i class="ri-information-line"></i><div>${escapeHtml(sub)}</div></div>` : ``}
+      </div>`,
+      html: true,
       okText: 'Đóng'
     });
   }
@@ -1140,7 +1234,7 @@
 
       const partCount = (lot.participants || []).length;
       const rt = safeText(lot.result_type || 'PENDING');
-      const lotId = Number(lot.lot_id || snap.lot_id || 0);
+      const lotId = Number(lot.lot_id || lot.lotId || snap.lot_id || 0) || Number(lot.lot_id || 0);
       const res = RESULT_BY_LOT[String(lotId || '')] || null;
 
       const area = (snap.area_m2 ?? lot.lot_area ?? '');
@@ -1151,7 +1245,6 @@
       let statusHtml = '';
       if(rt === 'WINNER' && res && (safeText(res.status) === 'WON')){
         const who = safeText(res.winner_name || '') || ('#' + safeText(res.winner_customer_id||''));
-        const phoneMasked = maskPhone(res.winner_phone || '');
         const roundLotId = Number(lot.id || 0);
 
         const printBtn = roundLotId
@@ -1164,20 +1257,25 @@
           <div class="pill ok"><i class="ri-trophy-line"></i> WON</div>
           <div class="muted" style="margin-top:6px;">
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-              <b>${escapeHtml(who)}</b>
-              ${phoneMasked ? `<span class="pill"><i class="ri-phone-line"></i> ${escapeHtml(phoneMasked)}</span>` : ``}
-              ${printBtn}
+              <b>${escapeHtml(who)}</b> ${printBtn}
             </div>
             <div>Giá: <b>${fmtMoney(res.winning_price_vnd)}</b> • Vòng: <b>#${escapeHtml(res.winning_round_no||'')}</b></div>
           </div>
         `;
       } else if(rt === 'NEXT_ROUND'){
         const nx = (lot.next_participants || []);
+        const roundLotId = Number(lot.id || 0);
+        const printBtn = roundLotId
+          ? `<button class="printIcon" type="button" onclick="printNextRoundOne(${roundLotId})" title="In danh sách vào vòng sau (lô này)">
+               <i class="ri-printer-line"></i>
+             </button>`
+          : ``;
+
         statusHtml = `
           <div class="pill warn"><i class="ri-arrow-right-up-line"></i> Vào vòng sau</div>
-          <div class="bigCount">
-            <div class="n">${nx.length}</div>
-            <div class="t">người vào<br/>vòng sau</div>
+          <div class="muted" style="margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <span>Số người vào vòng sau: <b>${nx.length}</b></span>
+            ${printBtn}
           </div>
         `;
       } else if(rt === 'NO_VALID'){
@@ -1195,13 +1293,8 @@
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>
-          <div class="lotTitle">
-            <span class="lotDot"></span>
-            <div class="lotLines">
-              <div class="lotCode">${escapeHtml(lotCode || '-')}</div>
-              <div class="lotDesc">${escapeHtml(desc || '')}</div>
-            </div>
-          </div>
+          <div class="lotcode">${escapeHtml(lotCode || '-')}</div>
+          <div class="muted">${escapeHtml(desc || '')}</div>
         </td>
 
         <td>
@@ -1254,11 +1347,25 @@
   // Session actions
   // =========================
   async function startSessionIfNeeded(){
-    const ok = await showConfirm(
-      "Mở phiên (Start)",
-      "Thực hiện START để đảm bảo Round 1 đã snapshot (lô + khách đủ điều kiện).",
-      { sub: "Start là idempotent: nếu đã start trước đó, hệ thống sẽ an toàn bỏ qua/không nhân đôi dữ liệu." }
-    );
+    const html = `
+      <div class="cCard">
+        <div class="cTop">
+          <div class="cTitle"><i class="ri-rocket-line"></i> Start phiên đấu</div>
+          <span class="pill warn"><i class="ri-information-line"></i> ACTION</span>
+        </div>
+        <div class="cGrid">
+          <div class="cItem">
+            <div class="k"><i class="ri-stack-line"></i> Mục đích</div>
+            <div class="v">Đảm bảo Round 1 snapshot (lô + khách đủ điều kiện).</div>
+          </div>
+          <div class="cItem">
+            <div class="k"><i class="ri-shield-check-line"></i> An toàn</div>
+            <div class="v">Chỉ cần Start 1 lần. Start lại sẽ bỏ qua / trả trạng thái hiện tại.</div>
+          </div>
+        </div>
+      </div>
+    `;
+    const ok = await showConfirm("Xác nhận START", html, { okText: "Start", cancelText: "Huỷ" });
     if(!ok) return;
 
     try{
@@ -1280,16 +1387,29 @@
   }
 
   async function createNextRound(){
-    const ok = await showConfirm(
-      "Tạo vòng sau",
-      `Bạn sắp tạo vòng tiếp theo từ các lô NEXT_ROUND của vòng #${ROUND_NO}.`,
-      {
-        sub: "Đây là thao tác tạo vòng mới. Vui lòng kiểm tra chắc chắn đã chốt đầy đủ các lô cần thiết.",
-        requireText: "tôi xác nhận",
-        okText: "Tạo vòng sau",
-        cancelText: "Huỷ"
-      }
-    );
+    const html = `
+      <div class="cCard">
+        <div class="cTop">
+          <div class="cTitle"><i class="ri-skip-forward-line"></i> Tạo vòng sau</div>
+          <span class="pill warn"><i class="ri-alert-line"></i> QUAN TRỌNG</span>
+        </div>
+        <div class="cGrid">
+          <div class="cItem">
+            <div class="k"><i class="ri-stack-line"></i> Từ vòng</div>
+            <div class="v">#${escapeHtml(ROUND_NO)}</div>
+          </div>
+          <div class="cItem">
+            <div class="k"><i class="ri-arrow-right-up-line"></i> Dựa trên</div>
+            <div class="v">Các lô <span class="mono">NEXT_ROUND</span> của vòng hiện tại.</div>
+          </div>
+        </div>
+        <div class="cWarn"><i class="ri-information-line"></i>
+          <div>Hãy chắc chắn bạn đã chốt xong kết quả các lô. Sau khi tạo vòng sau, vòng hiện tại coi như kết thúc nghiệp vụ.</div>
+        </div>
+      </div>
+    `;
+
+    const ok = await showConfirm("Xác nhận tạo vòng sau", html, { okText: "Tạo vòng sau", cancelText: "Huỷ" });
     if(!ok) return;
 
     const payload = { session_id: SESSION_ID, from_round_no: ROUND_NO, note: null };
@@ -1317,16 +1437,19 @@
   }
 
   // =========================
-  // Print (placeholders - không phá logic)
+  // Print (Service B route placeholders)
   // =========================
   function printAllBidTickets(){
-    toast("Chưa nối endpoint in phiếu trả giá cho phiên (placeholder).");
+    toast("Chưa nối endpoint in phiếu trả giá (admin).");
   }
   function printRoundWinners(){
-    toast("Chưa nối endpoint in phiếu trúng theo vòng (placeholder).");
+    toast("Chưa nối endpoint in phiếu trúng theo vòng (admin).");
   }
   function printWinnerOne(roundLotId){
-    toast("Chưa nối endpoint in phiếu trúng theo lô (placeholder). round_lot_id=" + roundLotId);
+    toast("Chưa nối endpoint in phiếu trúng theo lô. round_lot_id=" + roundLotId);
+  }
+  function printNextRoundOne(roundLotId){
+    toast("Chưa nối endpoint in DS vào vòng sau theo lô. round_lot_id=" + roundLotId);
   }
 
   // =========================
@@ -1352,6 +1475,7 @@
 
     await tryLock(roundLotId);
 
+    // Admin page: NO MASKING (show full info)
     currentParticipants = (currentLot.participants || []).map(p => {
       const snap = participantSnapshot(p);
       return {
@@ -1393,6 +1517,8 @@
 
     onMoneyInput('winningPrice');
     onMoneyInput('highestPrice');
+    updatePriceMeta('winningPrice');
+    updatePriceMeta('highestPrice');
 
     const curWinner = Number(currentLot.winner_customer_id || 0);
     if(curWinner){
@@ -1526,26 +1652,137 @@
 
   function onWinMethodChange(){
     const m = document.getElementById('winMethod').value;
-    const label = document.getElementById('winningPriceLabel');
-    const help = document.getElementById('winningPriceHelp');
     const input = document.getElementById('winningPrice');
+    const pad = document.getElementById('stepPadWinner');
+    const btnAuto = document.getElementById('btnAutoCorrectWinner');
+    const help = document.getElementById('winnerHelp');
 
     if(m === 'LOTTERY'){
-      label.innerHTML = `<i class="ri-money-dollar-circle-line"></i> Giá trúng (tự lấy giá khởi điểm vòng)`;
       help.innerHTML = 'Nếu <b>LOTTERY</b> thì hệ thống lấy <b>giá khởi điểm</b> của vòng. Không cần nhập.';
       input.value = '';
       input.disabled = true;
+      if(pad) pad.style.display = 'none';
+      if(btnAuto) btnAuto.style.display = 'none';
       onMoneyInput('winningPrice');
-
+      updatePriceMeta('winningPrice');
     } else {
       input.disabled = false;
-      label.innerHTML = `<i class="ri-money-dollar-circle-line"></i> Giá trúng (VND)`;
-      help.textContent = 'Nhập số, hệ thống sẽ tự format dạng tiền (1.234.567).';
+      if(pad) pad.style.display = 'flex';
+      if(btnAuto) btnAuto.style.display = 'inline-flex';
+      help.innerHTML = 'Auto-correct sẽ đưa giá về <b>giá thấp nhất hợp lệ</b> theo bước giá. Nút +/- giúp nhập nhanh theo tick.';
+      updatePriceMeta('winningPrice');
     }
   }
 
   // =========================
-  // Winner picker (ẩn số điện thoại theo yêu cầu bảo mật)
+  // Smart price logic: tick + valid + autocorrect + nudge
+  // =========================
+  function getBaseAndStep(){
+    const sp = currentLot ? getStartPriceVnd(currentLot) : 0;
+    const step = currentLot ? getBidStepVnd(currentLot) : 0;
+    return { sp, step };
+  }
+
+  function calcTick(sp, step, val){
+    if(!step || step <= 0) return { tick: null, valid: true, aligned: true };
+    const diff = Number(val) - Number(sp);
+    if(!isFinite(diff)) return { tick: null, valid: false, aligned: false };
+    if(diff < 0) return { tick: null, valid: false, aligned: false };
+
+    const raw = diff / step;
+    const tick = Math.round(raw);
+    const aligned = Math.abs(raw - tick) < 1e-9;
+    const valid = (diff >= 0);
+    return { tick, valid, aligned };
+  }
+
+  function updatePriceMeta(inputId){
+    if(!currentLot) return;
+    const { sp, step } = getBaseAndStep();
+    const val = parseMoneyInput(inputId);
+
+    // targets for UI
+    const isWinner = (inputId === 'winningPrice');
+    const tickEl = document.getElementById(isWinner ? 'tickWinner' : 'tickNext');
+    const stepEl = document.getElementById(isWinner ? 'stepWinner' : 'stepNext');
+    const validEl = document.getElementById(isWinner ? 'validWinner' : 'validNext');
+
+    if(stepEl) stepEl.textContent = step ? fmtMoney(step) : '—';
+
+    if(val === null){
+      if(tickEl) tickEl.textContent = '—';
+      if(validEl) validEl.textContent = '—';
+      return;
+    }
+
+    if(!step){
+      if(tickEl) tickEl.textContent = '—';
+      if(validEl) validEl.textContent = (val >= sp) ? 'OK' : 'THẤP';
+      return;
+    }
+
+    const t = calcTick(sp, step, val);
+    if(tickEl) tickEl.textContent = (t.tick === null) ? '—' : String(t.tick);
+    if(validEl){
+      if(val < sp){
+        validEl.textContent = 'THẤP';
+      } else if(!t.aligned){
+        validEl.textContent = 'CHƯA CHUẨN TICK';
+      } else {
+        validEl.textContent = 'OK';
+      }
+    }
+  }
+
+  function autoCorrectPrice(inputId){
+    if(!currentLot) return;
+
+    const { sp, step } = getBaseAndStep();
+    if(!step){
+      toast("Không có bước giá hợp lệ để auto-correct.");
+      return;
+    }
+
+    const raw = parseMoneyInput(inputId);
+    const target = (raw === null) ? sp : raw;
+
+    // smallest sp + k*step >= target
+    let k = 0;
+    if(target <= sp) k = 0;
+    else k = Math.ceil((target - sp) / step);
+
+    let corrected = sp + k * step;
+    if(corrected < sp) corrected = sp;
+
+    const el = document.getElementById(inputId);
+    el.value = fmtMoney(corrected);
+    onMoneyInput(inputId);
+    updatePriceMeta(inputId);
+  }
+
+  function nudgePrice(inputId, deltaSteps){
+    if(!currentLot) return;
+
+    const { sp, step } = getBaseAndStep();
+    if(!step){
+      toast("Không có bước giá hợp lệ.");
+      return;
+    }
+
+    const cur = parseMoneyInput(inputId);
+    const base = (cur === null) ? sp : cur;
+
+    let next = base + Number(deltaSteps) * step;
+    if(next < sp) next = sp;
+
+    const el = document.getElementById(inputId);
+    el.value = fmtMoney(next);
+    onMoneyInput(inputId);
+    updatePriceMeta(inputId);
+  }
+
+  // =========================
+  // Winner picker (NO MASKING)
   // =========================
   function renderWinnerPicker(){
     const host = document.getElementById('winnerList');
@@ -1569,14 +1806,14 @@
 
       const sttPrefix = fmtStt(p.stt);
       const nameLine = `${sttPrefix ? (escapeHtml(sttPrefix) + " — ") : ""}${escapeHtml(p.name || ('#'+p.customer_id))}`;
-      const phoneMasked = maskPhone(p.phone);
 
       div.innerHTML = `
         <div>
           <b>${nameLine}</b>
           <div class="pm">
             CCCD: <span class="mono">${escapeHtml(p.cccd)}</span>
-            ${phoneMasked ? ` • SĐT: <span class="mono">${escapeHtml(phoneMasked)}</span>` : ``}
+            • SĐT: <span class="mono">${escapeHtml(p.phone)}</span>
+            ${p.email ? `• Email: <span class="mono">${escapeHtml(p.email)}</span>` : ``}
           </div>
         </div>
         <div><span class="tag"><i class="ri-check-line"></i> Chọn</span></div>
@@ -1590,7 +1827,7 @@
   }
 
   // =========================
-  // Dual list (NEXT ROUND) + counters (ẩn sđt)
+  // Dual list (NEXT ROUND) + counters (NO MASKING)
   // =========================
   function updateDualCounters(){
     const N = (Array.isArray(currentParticipants) ? currentParticipants.length : 0);
@@ -1620,7 +1857,6 @@
 
       const sttPrefix = fmtStt(p.stt);
       const nameLine = `${sttPrefix ? (escapeHtml(sttPrefix) + " — ") : ""}${escapeHtml(p.name || ('#'+p.customer_id))}`;
-      const phoneMasked = maskPhone(p.phone);
 
       const div = document.createElement('div');
       div.className = 'pitem2';
@@ -1629,7 +1865,8 @@
           <b>${nameLine}</b>
           <div class="pm">
             CCCD: <span class="mono">${escapeHtml(p.cccd)}</span>
-            ${phoneMasked ? ` • SĐT: <span class="mono">${escapeHtml(phoneMasked)}</span>` : ``}
+            • SĐT: <span class="mono">${escapeHtml(p.phone)}</span>
+            ${p.email ? `• Email: <span class="mono">${escapeHtml(p.email)}</span>` : ``}
           </div>
         </div>
         <div class="pact">
@@ -1647,7 +1884,6 @@
 
       const sttPrefix = fmtStt(p.stt);
       const nameLine = `${sttPrefix ? (escapeHtml(sttPrefix) + " — ") : ""}${escapeHtml(p.name || ('#'+p.customer_id))}`;
-      const phoneMasked = maskPhone(p.phone);
 
       const div = document.createElement('div');
       div.className = 'pitem2';
@@ -1656,7 +1892,8 @@
           <b>${nameLine}</b>
           <div class="pm">
             CCCD: <span class="mono">${escapeHtml(p.cccd)}</span>
-            ${phoneMasked ? ` • SĐT: <span class="mono">${escapeHtml(phoneMasked)}</span>` : ``}
+            • SĐT: <span class="mono">${escapeHtml(p.phone)}</span>
+            ${p.email ? `• Email: <span class="mono">${escapeHtml(p.email)}</span>` : ``}
           </div>
         </div>
         <div class="pact">
@@ -1699,7 +1936,7 @@
   }
 
   // =========================
-  // Confirm text helpers
+  // Pretty confirm builders
   // =========================
   function getCurrentLotCode(){
     if(!currentLot) return '';
@@ -1713,9 +1950,10 @@
     return (currentParticipants || []).find(x => Number(x.customer_id) === cid) || null;
   }
 
-  function buildConfirmText(mode, payload){
+  function buildConfirmHtml(mode, payload){
     const lotCode = getCurrentLotCode() || '—';
     const startPrice = getStartPriceVnd(currentLot);
+    const step = getBidStepVnd(currentLot);
 
     if(mode === 'WINNER'){
       const winner = findParticipantById(payload.winner_customer_id);
@@ -1723,53 +1961,109 @@
       const who = winner ? `${stt ? (stt + " — ") : ""}${winner.name}` : (`#${payload.winner_customer_id}`);
 
       let priceText = '';
-      let extraLine = '';
+      let methodPill = '';
       if(payload.win_method === 'LOTTERY'){
-        extraLine = `Ghi chú: LOTTERY — Giá trúng theo giá khởi điểm vòng (${fmtMoney(startPrice)}).`;
         priceText = fmtMoney(startPrice);
+        methodPill = `<span class="pill warn"><i class="ri-shuffle-line"></i> LOTTERY</span>`;
+      } else if(payload.win_method === 'MANUAL'){
+        priceText = fmtMoney(payload.highest_price_vnd);
+        methodPill = `<span class="pill warn"><i class="ri-hand-line"></i> MANUAL</span>`;
       } else {
         priceText = fmtMoney(payload.highest_price_vnd);
+        methodPill = `<span class="pill ok"><i class="ri-trophy-line"></i> HIGHEST</span>`;
       }
 
-      return [
-        "BIÊN BẢN XÁC NHẬN KẾT QUẢ",
-        "-------------------------",
-        `Lô: ${lotCode}`,
-        `Kết quả: Trúng đấu giá`,
-        `Hình thức: ${payload.win_method}`,
-        `Khách trúng: ${who}`,
-        `Giá trúng: ${priceText} VND`,
-        payload.note ? `Ghi chú: ${payload.note}` : "",
-        extraLine
-      ].filter(Boolean).join("\n");
+      return `
+        <div class="cCard">
+          <div class="cTop">
+            <div class="cTitle"><i class="ri-checkbox-circle-line"></i> Xác nhận chốt <b>WON</b></div>
+            ${methodPill}
+          </div>
+          <div class="cGrid">
+            <div class="cItem">
+              <div class="k"><i class="ri-barcode-line"></i> Lô</div>
+              <div class="v mono">${escapeHtml(lotCode)}</div>
+            </div>
+            <div class="cItem">
+              <div class="k"><i class="ri-user-3-line"></i> Khách trúng</div>
+              <div class="v">${escapeHtml(who)}</div>
+              <div class="muted" style="margin-top:6px;">
+                ${winner ? `CCCD: <span class="mono">${escapeHtml(winner.cccd)}</span> • SĐT: <span class="mono">${escapeHtml(winner.phone)}</span>` : ``}
+              </div>
+            </div>
+            <div class="cItem">
+              <div class="k"><i class="ri-coins-line"></i> Giá khởi điểm</div>
+              <div class="v">${fmtMoney(startPrice)} VND</div>
+            </div>
+            <div class="cItem">
+              <div class="k"><i class="ri-money-dollar-circle-line"></i> Giá trúng</div>
+              <div class="v">${escapeHtml(priceText)} VND</div>
+              <div class="muted" style="margin-top:6px;">
+                Bước giá: <b>${step ? fmtMoney(step) : '—'}</b>
+              </div>
+            </div>
+          </div>
+          ${payload.note ? `<div class="cWarn"><i class="ri-sticky-note-line"></i><div>Ghi chú: ${escapeHtml(payload.note)}</div></div>` : ``}
+        </div>
+      `;
     }
 
     if(mode === 'NEXT'){
       const N = (Array.isArray(currentParticipants) ? currentParticipants.length : 0);
       const M = (Array.isArray(dualNext) ? dualNext.length : 0);
-      return [
-        "BIÊN BẢN XÁC NHẬN KẾT QUẢ",
-        "-------------------------",
-        `Lô: ${lotCode}`,
-        `Kết quả: Vào vòng sau`,
-        `Trong vòng này (N): ${N}`,
-        `Vào vòng sau (M/N): ${M}/${N}`,
-        `Giá cao nhất vòng này: ${fmtMoney(payload.highest_price_vnd)} VND`,
-        payload.note ? `Ghi chú: ${payload.note}` : ""
-      ].filter(Boolean).join("\n");
+      return `
+        <div class="cCard">
+          <div class="cTop">
+            <div class="cTitle"><i class="ri-checkbox-circle-line"></i> Xác nhận chốt <b>VÀO VÒNG SAU</b></div>
+            <span class="pill warn"><i class="ri-arrow-right-up-line"></i> NEXT_ROUND</span>
+          </div>
+          <div class="cGrid">
+            <div class="cItem">
+              <div class="k"><i class="ri-barcode-line"></i> Lô</div>
+              <div class="v mono">${escapeHtml(lotCode)}</div>
+            </div>
+            <div class="cItem">
+              <div class="k"><i class="ri-user-3-line"></i> Người vào vòng sau</div>
+              <div class="v">${M}/${N} người</div>
+            </div>
+            <div class="cItem">
+              <div      <div class="k"><i class="ri-flag-2-line"></i> Giá khởi điểm vòng</div>
+              <div class="v">${fmtMoney(startPrice)} VND</div>
+              <div class="muted" style="margin-top:6px;">Bước giá: <b>${step ? fmtMoney(step) : '—'}</b></div>
+            </div>
+            <div class="cItem">
+              <div class="k"><i class="ri-line-chart-line"></i> Giá cao nhất (dùng làm base vòng sau)</div>
+              <div class="v">${fmtMoney(payload.highest_price_vnd)} VND</div>
+            </div>
+          </div>
+          ${payload.note ? `<div class="cWarn"><i class="ri-sticky-note-line"></i><div>Ghi chú: ${escapeHtml(payload.note)}</div></div>` : ``}
+        </div>
+      `;
     }
 
     if(mode === 'NO_VALID'){
-      return [
-        "BIÊN BẢN XÁC NHẬN KẾT QUẢ",
-        "-------------------------",
-        `Lô: ${lotCode}`,
-        `Kết quả: No valid`,
-        payload.note ? `Ghi chú: ${payload.note}` : ""
-      ].filter(Boolean).join("\n");
+      return `
+        <div class="cCard">
+          <div class="cTop">
+            <div class="cTitle"><i class="ri-checkbox-circle-line"></i> Xác nhận chốt <b>NO VALID</b></div>
+            <span class="pill bad"><i class="ri-close-circle-line"></i> NO_VALID</span>
+          </div>
+          <div class="cGrid">
+            <div class="cItem">
+              <div class="k"><i class="ri-barcode-line"></i> Lô</div>
+              <div class="v mono">${escapeHtml(lotCode)}</div>
+            </div>
+            <div class="cItem">
+              <div class="k"><i class="ri-information-line"></i> Ý nghĩa</div>
+              <div class="v">Không có phiếu hợp lệ / không đủ điều kiện.</div>
+            </div>
+          </div>
+          ${payload.note ? `<div class="cWarn"><i class="ri-sticky-note-line"></i><div>Ghi chú: ${escapeHtml(payload.note)}</div></div>` : ``}
+        </div>
+      `;
     }
 
-    return "Xác nhận thực hiện?";
+    return `<div class="cCard"><div class="cTitle"><i class="ri-information-line"></i> Xác nhận thực hiện?</div></div>`;
   }
 
   // =========================
@@ -1778,11 +2072,18 @@
   async function resetPending(){
     if(!currentLot) return;
 
-    const ok = await showConfirm(
-      "Reset PENDING",
-      "Reset lô về PENDING? (Cho phép chốt lại)",
-      { requireText: "reset", okText: "Reset", cancelText: "Huỷ" }
-    );
+    const html = `
+      <div class="cCard">
+        <div class="cTop">
+          <div class="cTitle"><i class="ri-restart-line"></i> Reset về PENDING</div>
+          <span class="pill warn"><i class="ri-alert-line"></i> ACTION</span>
+        </div>
+        <div class="cWarn"><i class="ri-information-line"></i>
+          <div>Thao tác này cho phép chốt lại lô. Bạn chắc chắn muốn reset?</div>
+        </div>
+      </div>
+    `;
+    const ok = await showConfirm("Xác nhận RESET", html, { okText: "Reset", cancelText: "Huỷ" });
     if(!ok) return;
 
     const payload = {
@@ -1843,7 +2144,7 @@
         return;
       }
 
-      // Guard: Round 1 không cho LOTTERY (backend có trigger/guard)
+      // Guard: Round 1 không cho LOTTERY (theo rule/trigger backend của bạn)
       if(winMethod === 'LOTTERY' && Number(ROUND_NO) === 1){
         showError("Không hợp lệ", "Vòng #1 không được chốt LOTTERY (bốc thăm). Vui lòng chọn HIGHEST hoặc MANUAL.");
         return;
@@ -1867,19 +2168,6 @@
         note: note
       };
 
-      const confirmText = buildConfirmText('WINNER', payload);
-      const ok = await showConfirm(
-        "Xác nhận chốt WON",
-        confirmText,
-        {
-          sub: "Vui lòng kiểm tra kỹ. Sau khi chốt sẽ ghi nhận kết quả trúng.",
-          okText: "Chốt WON",
-          cancelText: "Huỷ",
-          requireText: "chot won"
-        }
-      );
-      if(!ok) return;
-
     } else if(mode === 'NEXT'){
       const note = (document.getElementById('noteNext').value || '').trim() || null;
       const hp = parseMoneyInput('highestPrice');
@@ -1897,56 +2185,53 @@
         return;
       }
 
+      const next = ids.map(cid => ({ customer_id: cid }));
+
       payload = {
         result_type: "NEXT_ROUND",
         win_method: "HIGHEST",
         highest_price_vnd: hp,
         winner_customer_id: null,
+
+        // required by API
         next_customer_ids: ids,
+
+        // optional (UI/backward)
+        next_participants: next,
+
         note: note
       };
 
-      const confirmText = buildConfirmText('NEXT', payload);
-      const ok = await showConfirm(
-        "Xác nhận chốt vào vòng sau",
-        confirmText,
-        {
-          sub: "Vui lòng kiểm tra danh sách M/N. Danh sách này sẽ được dùng để tạo vòng sau.",
-          okText: "Chốt vào vòng sau",
-          cancelText: "Huỷ",
-          requireText: "chot vong sau"
-        }
-      );
-      if(!ok) return;
-
     } else if(mode === 'NO_VALID'){
       const note = (document.getElementById('noteNoValid').value || '').trim() || null;
-
       payload = {
         result_type: "NO_VALID",
         win_method: "HIGHEST",
         highest_price_vnd: null,
         winner_customer_id: null,
+        next_participants: [],
         note: note
       };
-
-      const confirmText = buildConfirmText('NO_VALID', payload);
-      const ok = await showConfirm(
-        "Xác nhận No valid",
-        confirmText,
-        {
-          sub: "Vui lòng chắc chắn lô không có phiếu hợp lệ.",
-          okText: "Chốt No valid",
-          cancelText: "Huỷ",
-          requireText: "chot no valid"
-        }
-      );
-      if(!ok) return;
 
     } else {
       showError("Lỗi", "Mode không hợp lệ: " + safeText(mode));
       return;
     }
+
+    // ===== Confirm (NO typing, pretty UI) =====
+    const html = buildConfirmHtml(mode === 'NEXT' ? 'NEXT' : mode, payload);
+
+    let okText = "Chốt";
+    if(mode === 'WINNER') okText = "Chốt WON";
+    else if(mode === 'NEXT') okText = "Chốt vào vòng sau";
+    else if(mode === 'NO_VALID') okText = "Chốt No valid";
+
+    const ok = await showConfirm(
+      "Xác nhận chốt kết quả",
+      html,
+      { okText, cancelText: "Huỷ", sub: "Vui lòng kiểm tra kỹ. Sau khi chốt sẽ ghi nhận kết quả và ảnh hưởng vòng sau / phiếu trúng." }
+    );
+    if(!ok) return;
 
     toast("Đang chốt kết quả...");
 
