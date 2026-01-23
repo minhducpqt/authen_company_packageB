@@ -430,49 +430,46 @@
     .chip.ok{ background: rgba(52,211,153,.10); border-color: rgba(52,211,153,.25); }
     .chip.warn{ background: rgba(251,191,36,.10); border-color: rgba(251,191,36,.25); }
 
-    /* CENTER: hero + recent strip */
-    .center{
-      display:flex;
-      flex-direction:column;
-      gap: var(--gap);
-      min-height:0;
-    }
-
-    .hero{
-  flex: 1.05;
-  border: 1px solid rgba(148,163,184,.18);
-  border-radius: var(--radius);
-  background:
-    radial-gradient(900px 420px at 50% 0%, rgba(34,211,238,.20), transparent 60%),
-    radial-gradient(700px 340px at 100% 35%, rgba(52,211,153,.10), transparent 60%),
-    linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-  box-shadow: var(--shadow);
-  position:relative;
-  overflow:hidden;
-  min-height:0;
+    /* CENTER: hero + recent strip  (FIX: HERO không kéo full màn hình) */
+.center{
+  display:grid;
+  grid-template-rows: minmax(260px, 0.62fr) minmax(220px, 0.38fr);
+  gap: var(--gap);
+  min-height: 0;
 }
+
+/* === HERO RE-LAYOUT: status full width, then 2-column main === */
+/* NOTE: block này để HERO KHÔNG PHÌNH và KHÔNG ẢNH HƯỞNG RECENT */
+.hero{
+  position: relative;  /* BẮT BUỘC vì hero-inner dùng absolute */
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .hero-inner{
-  position:absolute; inset: 14px;
+  position:absolute;
+  inset: 14px;
   display:flex;
   flex-direction:column;
-  gap: 10px;
-  min-height:0;
+  gap: 12px;
+  min-height: 0;
+  overflow: hidden;
 }
 
-/* === HERO NEW LAYOUT ===
-   - Status + subline ở trên cùng
-   - Dưới: trái = mã lô (chỉ mã), phải = giá cao nhất + người trúng
-*/
+/* status + main stack */
 .hero-top{
   display:flex;
   flex-direction:column;
   gap: 12px;
-  align-items:stretch;
-  min-height:0;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
 }
 
-/* status bar on top */
+/* ===== STATUS BAR ===== */
 .hero-status{
+  flex: 0 0 auto;
   display:flex;
   flex-direction:column;
   gap: 8px;
@@ -516,51 +513,39 @@
   font-weight:800;
   letter-spacing:.06em;
   line-height:1.35;
+  min-width: 0;
 }
 
-/* main row inside hero */
+/* ===== MAIN GRID (PHẢI CO ĐƯỢC) ===== */
 .hero-main{
+  flex: 1 1 auto;
+  min-height: 0;     /* BẮT BUỘC: cho phép grid co lại */
+  overflow: hidden;  /* BẮT BUỘC: không đẩy RECENT */
   display:grid;
-  grid-template-columns: 1.55fr 1fr;
+  grid-template-columns: 1.18fr 1fr;
   gap: 12px;
-  align-items:stretch;
-  min-height:0;
+  align-items: stretch;
 }
 
-/* HERO LOT - chỉ còn MÃ LÔ + lot-code, canh trái + đẩy xuống nhẹ */
+/* LEFT: LOT (chỉ mã lô) */
 .hero-lot{
+  min-width:0;
+  min-height:0;
+  overflow:hidden;
+
   display:flex;
   flex-direction:column;
-  align-items:flex-start;     /* sát lề trái */
-  justify-content:flex-start; /* nội dung lên phía trên của box */
-  gap: 8px;
-  text-align:left;
-  min-width:0;
-  padding: 14px 14px 10px 16px; /* đẩy xuống + sát lề trái */
+  align-items:flex-start;
+  justify-content:flex-start;
+  gap: 10px;
+
+  padding: 14px 14px 10px 16px;
   border-radius: 18px;
   border: 1px solid rgba(148,163,184,.16);
   background: rgba(0,0,0,.14);
   box-shadow: inset 0 0 0 1px rgba(0,0,0,.15);
-  overflow:hidden;
 }
 
-/* Ensure lot code ALWAYS 1 line and readable for at least 6 chars */
-.lot-code{
-  font-size: clamp(58px, 6.2vw, 82px);
-  font-weight: 900;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  text-shadow: 0 0 26px rgba(34,211,238,.20), 0 0 48px rgba(96,165,250,.14);
-  line-height: 1;
-  white-space:nowrap;
-  word-break:keep-all;
-  display:inline-block;
-  max-width: 100%;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  padding: 0;         /* bỏ padding để sát trái */
-  margin-top: 6px;    /* đẩy xuống nhẹ */
-}
 .lot-kicker{
   font-size: 11px;
   font-weight: 900;
@@ -571,18 +556,92 @@
   white-space:nowrap;
 }
 
-/* Ẩn info dưới mã lô (giữ element trong HTML để JS không lỗi) */
-.lot-name,
-.lot-desc{
-  display:none !important;
+.lot-code{
+  font-size: clamp(58px, 6.2vw, 82px);
+  font-weight: 900;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 26px rgba(34,211,238,.20),
+    0 0 48px rgba(96,165,250,.14);
+  line-height: 1;
+  white-space:nowrap;
+  word-break:keep-all;
+  display:inline-block;
+  max-width: 100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  padding: 0;
+  margin-top: 4px;
 }
 
+/* Ẩn info dưới mã lô (giữ DOM cho JS) */
+.lot-name,
+.lot-desc{ display:none !important; }
+
+/* RIGHT: stack dọc - KHÔNG được phình */
+.hero-right{
+  min-width:0;
+  min-height:0;     /* BẮT BUỘC */
+  overflow:hidden;  /* BẮT BUỘC */
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+}
+
+/* meta (badge + price + winner) không ăn hết chiều cao */
 .hero-meta{
-  min-width: 0;
+  flex: 0 0 auto;
+  min-width:0;
+  min-height:0;
   display:flex;
   flex-direction:column;
   gap: 10px;
   align-items:stretch;
+}
+.hero-meta-tight{ gap: 10px; }
+
+/* price bigger (chỉ là modifier, giữ .price-wrap / .price-val gốc) */
+.price-wrap-big{ padding: 16px 16px; }
+.price-val-big{
+  font-size: clamp(46px, 4.6vw, 66px);
+  line-height: 1.02;
+}
+
+/* winner compact */
+.winner-wrap-compact{
+  min-height: 78px;
+  padding: 12px 14px;
+}
+
+/* NEXT list: ăn phần còn lại trong cột phải (không override style gốc) */
+.next-wrap-fill{
+  display:none;      /* JS sẽ bật khi NEXT_ROUND */
+  flex: 1 1 auto;
+  min-height:0;
+  overflow:hidden;
+}
+
+/* marquee phải co trong next-wrap */
+.marquee-flex{
+  height: 100%;
+  min-height:0;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+}
+
+/* responsive: nhỏ thì stack 1 cột */
+@media (max-width: 1220px){
+  .center{ grid-template-rows: minmax(260px, 0.60fr) minmax(220px, 0.40fr); }
+  .hero-main{ grid-template-columns: 1fr; }
+  .price-val-big{ font-size: 48px; }
+}
+
+/* responsive: stack columns */
+@media (max-width: 1220px){
+  .hero-main{ grid-template-columns: 1fr; }
+  .price-val-big{ font-size: 48px; }
 }
 
     .meta-row{
@@ -776,15 +835,11 @@
 
     /* recent strip */
     .recent{
-      flex: .65;
-      border: 1px solid rgba(148,163,184,.16);
-      border-radius: var(--radius);
-      background: rgba(255,255,255,.04);
-      box-shadow: var(--shadow);
-      overflow:hidden;
-      min-height:0;
-      position:relative;
-    }
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
     .recent .head{
       padding: 12px 12px 10px 12px;
       border-bottom: 1px solid rgba(148,163,184,.15);
@@ -1324,63 +1379,69 @@
         <div class="hero">
           <div class="hero-inner">
             <div class="hero-top">
-              <!-- STATUS BAR ON TOP -->
-              <div class="hero-status hero-statusbar">
-                <div class="status-pill pri" id="statusPill">
-                  <span class="s-dot" id="statusDot"></span>
-                  <span id="statusText">ĐANG KIỂM</span>
-                </div>
-                <div class="status-sub" id="statusSub">
-                  Hệ thống đang cập nhật kết quả theo thời gian thực.
-                </div>
-              </div>
+  <!-- STATUS FULL WIDTH -->
+  <div class="hero-status hero-statusbar">
+    <div class="status-pill pri" id="statusPill">
+      <span class="s-dot" id="statusDot"></span>
+      <span id="statusText">ĐANG KIỂM</span>
+    </div>
+    <div class="status-sub" id="statusSub">
+      Hệ thống đang cập nhật kết quả theo thời gian thực.
+    </div>
+  </div>
 
-              <!-- MAIN ROW: LEFT LOT CODE / RIGHT PRICE + WINNER -->
-              <div class="hero-main">
-                <div class="hero-lot hero-lot-left">
-                  <div class="lot-kicker" id="heroLotKicker">MÃ LÔ</div>
-                  <div class="lot-code" id="heroLotCode">—</div>
+  <!-- MAIN GRID -->
+  <div class="hero-main">
+    <!-- LEFT: LOT -->
+    <div class="hero-lot hero-lot-left">
+      <div class="lot-kicker" id="heroLotKicker">MÃ LÔ</div>
+      <div class="lot-code" id="heroLotCode">—</div>
 
-                  <!-- Giữ lại element để JS không lỗi, nhưng sẽ bị ẩn bằng CSS -->
-                  <div class="lot-name" id="heroLotName">—</div>
-                  <div class="lot-desc" id="heroLotDesc">—</div>
-                </div>
+      <!-- giữ element để JS không lỗi, nhưng sẽ ẩn bằng CSS -->
+      <div class="lot-name" id="heroLotName">—</div>
+      <div class="lot-desc" id="heroLotDesc">—</div>
+    </div>
 
-                <div class="hero-meta">
-                  <div class="meta-row">
-                    <span class="pill pri" id="heroBadge1">KẾT QUẢ MỚI</span>
-                    <span class="pill soft" id="heroBadge2">#—</span>
-                  </div>
+    <!-- RIGHT: PRICE + WINNER + NEXT LIST -->
+    <div class="hero-right">
+      <div class="hero-meta hero-meta-tight">
+        <div class="meta-row">
+          <span class="pill pri" id="heroBadge1">KẾT QUẢ MỚI</span>
+          <span class="pill soft" id="heroBadge2">#—</span>
+        </div>
 
-                  <div class="price-wrap">
-                    <div class="price-label">
-                      <span id="priceLabel">GIÁ CAO NHẤT</span>
-                      <span class="pill soft" id="priceUnit">VNĐ</span>
-                    </div>
-                    <div class="price-val" id="heroPrice">—</div>
-                  </div>
+        <div class="price-wrap price-wrap-big">
+          <div class="price-label">
+            <span id="priceLabel">GIÁ CAO NHẤT</span>
+            <span class="pill soft" id="priceUnit">VNĐ</span>
+          </div>
+          <div class="price-val price-val-big" id="heroPrice">—</div>
+        </div>
 
-                  <div class="winner-wrap bad" id="winnerWrap">
-                    <div class="winner-topline">
-                      <div class="winner-label" id="winnerLabel">NGƯỜI TRÚNG</div>
-                      <div class="winner-badge bad" id="winnerBadge">CHƯA CÓ</div>
-                    </div>
-                    <div class="winner-name masked" id="winnerName">—<span class="caret">|</span></div>
-                  </div>
-                </div>
-              </div>
-            </div>
+        <div class="winner-wrap bad winner-wrap-compact" id="winnerWrap">
+          <div class="winner-topline">
+            <div class="winner-label" id="winnerLabel">NGƯỜI TRÚNG</div>
+            <div class="winner-badge bad" id="winnerBadge">CHƯA CÓ</div>
+          </div>
+          <div class="winner-name masked" id="winnerName">—<span class="caret">|</span></div>
+        </div>
+      </div>
+
+      <!-- NEXT LIST takes remaining height -->
+      <div class="next-wrap warn next-wrap-fill" id="heroNextWrap">
+        <div class="next-head">
+          <div class="next-title" id="nextTitle">KHÁCH VÀO VÒNG SAU</div>
+          <div class="next-count" id="heroNextCount">0</div>
+        </div>
+        <div class="marquee marquee-flex" id="nextMarquee">
+          <div class="track" id="nextTrack"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 
-            <div class="next-wrap warn" id="heroNextWrap">
-              <div class="next-head">
-                <div class="next-title" id="nextTitle">KHÁCH VÀO VÒNG SAU</div>
-                <div class="next-count" id="heroNextCount">0</div>
-              </div>
-              <div class="marquee" id="nextMarquee">
-                <div class="track" id="nextTrack"></div>
-              </div>
-            </div>
           </div>
         </div>
 
