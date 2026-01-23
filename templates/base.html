@@ -83,14 +83,7 @@
 
     {# Ẩn sidebar riêng trang /login, còn lại luôn hiển thị #}
     {% if not request.url.path.startswith('/login') %}
-    <!--
-      NOTE:
-      - KHÔNG scroll trong sidebar: bỏ overflow-y-auto + bỏ height cố định
-      - Nếu menu dài => trang scroll (tự nhiên), không phải sidebar scroll
-      - Sticky để menu bám khi cuộn trang
-    -->
-    <aside id="appSidebarScroll"
-           class="app-sidebar w-64 bg-white rounded-xl border border-slate-200 sticky top-5 self-start">
+    <aside id="appSidebarScroll" class="app-sidebar w-64 bg-white rounded-xl border border-slate-200 h-[84vh] overflow-y-auto">
       <ul class="p-2">
 
         {# === DASHBOARD TRÊN CÙNG === #}
@@ -159,13 +152,13 @@
           </a>
         </li>
         <li>
-          <a class="side-link {% if request.url.path.startswith('/_admin/customer-documents') %}active{% endif %}"
-             href="/_admin/customer-documents">
-            <i class="ri-file-shield-2-line"></i> 4.1 Giấy tờ phải nộp
-          </a>
+            <a class="side-link {% if request.url.path.startswith('/_admin/customer-documents') %}active{% endif %}"
+               href="/_admin/customer-documents">
+              <i class="ri-file-shield-2-line"></i> 4.1 Giấy tờ phải nộp
+            </a>
         </li>
 
-        {# ===== 5: PHIÊN ĐẤU GIÁ ===== #}
+                {# ===== 5: PHIÊN ĐẤU GIÁ ===== #}
         <li class="side-title mt-4">5. Phiên Đấu Giá</li>
 
         <li>
@@ -182,6 +175,7 @@
           </a>
         </li>
 
+        {# 5.3 GIỮ BẢN HIỆN TẠI #}
         <li>
           <a class="side-link {% if request.url.path.startswith('/auction/sessions') %}active{% endif %}"
              href="/auction/sessions">
@@ -189,6 +183,7 @@
           </a>
         </li>
 
+        {# 5.4 THÊM LẠI THEO BASE CŨ #}
         <li>
           <a class="side-link {% if request.url.path.startswith('/auction/results') %}active{% endif %}"
              href="/auction/results">
@@ -196,6 +191,7 @@
           </a>
         </li>
 
+        {# 5.5 GIỮ THEO BASE CŨ #}
         <li>
           <a class="side-link {% if request.url.path.startswith('/auction/refunds') %}active{% endif %}"
              href="/auction/refunds">
@@ -315,11 +311,46 @@
     })();
   </script>
 
-  <!-- ===== Sidebar scroll persist (DISABLE) =====
-       Sidebar không còn scroll riêng => bỏ cơ chế lưu scrollTop để tránh lỗi/giật
-  -->
+  <!-- ===== Sidebar scroll persist (FIX) ===== -->
   <script>
-  // Intentionally left blank (sidebar no longer scrolls independently)
+  (function () {
+    var el = document.getElementById("appSidebarScroll");
+    if (!el) return;
+
+    var project = (new URLSearchParams(location.search)).get("project_code") || "";
+    var key = "ADMIN_SIDEBAR_SCROLL:" + project;
+
+    function restore() {
+      try {
+        var v = sessionStorage.getItem(key);
+        if (v != null) {
+          var n = parseInt(v, 10);
+          if (!isNaN(n)) el.scrollTop = n;
+        }
+      } catch (e) {}
+    }
+
+    if (history.scrollRestoration) history.scrollRestoration = "manual";
+
+    document.addEventListener("DOMContentLoaded", function () {
+      restore();
+      requestAnimationFrame(restore);
+      setTimeout(restore, 60);
+    });
+
+    var t = null;
+    el.addEventListener("scroll", function () {
+      if (t) return;
+      t = setTimeout(function () {
+        try { sessionStorage.setItem(key, String(el.scrollTop || 0)); } catch (e) {}
+        t = null;
+      }, 120);
+    }, { passive: true });
+
+    window.addEventListener("beforeunload", function () {
+      try { sessionStorage.setItem(key, String(el.scrollTop || 0)); } catch (e) {}
+    });
+  })();
   </script>
 
   <!-- Force layout for sidebar + main, tránh bị CSS cũ phá -->
@@ -332,9 +363,6 @@
     .app-shell .app-sidebar {
       display: block !important;
       flex: 0 0 16rem; /* w-64 */
-      overflow: visible !important; /* không tạo scroll riêng */
-      height: auto !important;
-      max-height: none !important;
     }
     .app-shell .app-main {
       flex: 1 1 auto;
