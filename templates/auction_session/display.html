@@ -604,7 +604,7 @@
 /* price bigger (chỉ là modifier, giữ .price-wrap / .price-val gốc) */
 .price-wrap-big{ padding: 16px 16px; }
 .price-val-big{
-  font-size: clamp(46px, 4.6vw, 66px);
+  font-size: clamp(42px, 4.2vw, 58px);
   line-height: 1.02;
 }
 
@@ -1594,7 +1594,7 @@
         const stt = safeText(it.stt || it.snapshot_stt || it.no || it.order || "—");
         const chips = [];
         if(it.lot_code) chips.push(`<span class="chip ${cls}">${safeText(it.lot_code)}</span>`);
-        if(it.price_vnd || it.winning_price_vnd || it.highest_price_vnd) chips.push(`<span class="chip ${cls}">${fmtMoney(it.price_vnd||it.winning_price_vnd||it.highest_price_vnd)} VNĐ</span>`);
+        if(it.price_vnd || it.winning_price_vnd || it.highest_price_vnd) chips.push(`<span class="chip ${cls}">${fmtMoney(it.price_vnd||it.winning_price_vnd||it.highest_price_vnd)}</span>`);
         html += `
           <div class="crow ${cls}">
             <div class="r1">
@@ -1783,7 +1783,7 @@
   $("heroLotDesc").textContent = lotDesc || "—";
 
   const price = newest?.price_vnd;
-  $("heroPrice").textContent = (!price || Number(price) <= 0) ? "—" : `${fmtMoney(price)} VNĐ`;
+  $("heroPrice").textContent = fmtHeroMoney(price);
 
   const rt = newest?.result_type || "";
   const label = resultLabel(rt);
@@ -1897,7 +1897,7 @@
         const code = safeText(it?.lot?.lot_code || it?.lot_code || "—").toUpperCase();
 
         const price = Number(it?.price_vnd || 0) || 0;
-        const priceText = price > 0 ? `${fmtMoney(price)} VNĐ` : "—";
+        const priceText = price > 0 ? `${fmtMoney(price)}` : "—";
 
         const nextCustomers = Array.isArray(it?.next_customers) ? it.next_customers : [];
         const nextCount = Number(it?.next_count ?? nextCustomers.length ?? 0) || 0;
@@ -2001,7 +2001,7 @@
         const winnerStt = it?.winner?.stt || "";
         const nextCount = Number(it?.next_count ?? (it?.next_customers?.length ?? 0)) || 0;
 
-        const priceText = (!price || Number(price)<=0) ? "—" : (fmtMoney(price) + " VNĐ");
+        const priceText = fmtHeroMoney(price);
 
         // recent card: WINNER => show winner name; NEXT_ROUND => show "N khách"
         const whoText = (lab==="TRÚNG")
@@ -2064,7 +2064,7 @@
       const label = resultLabel(rt);
 
       const price = newest?.price_vnd;
-      const priceText = (!price || Number(price)<=0) ? "—" : (fmtMoney(price) + " VNĐ");
+      const priceText = (!price || Number(price)<=0) ? "—" : (fmtMoney(price) + "");
 
       if(label === "TRÚNG"){
         const winName = safeText(newest?.winner?.name || newest?.winner_name || newest?.customer_name || "");
@@ -2156,8 +2156,24 @@
       setTimeout(mainLoop, POLL_MS);
     }
 
+    function fmtHeroMoney(n){
+      const v = Number(n||0);
+      if(!isFinite(v) || v <= 0) return "—";
+
+      // > 1 tỷ => hiển thị dạng "xxx.xxx.xxxk" (tức chia 1.000)
+      // Ví dụ: 1.000.000.000 => 1.000.000k
+      if(v >= 1_000_000_000){
+        const k = Math.round(v / 1000);
+        return k.toLocaleString("vi-VN") + "k";
+      }
+
+      // còn lại giữ bình thường
+      return v.toLocaleString("vi-VN");
+    }
+
     // boot
     mainLoop();
+
   </script>
 </body>
 </html>
