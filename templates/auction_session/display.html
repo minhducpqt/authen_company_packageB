@@ -13,23 +13,29 @@
     :root{
       --bg0:#070A12;
       --bg1:#0A1022;
+
       --card: rgba(255,255,255,.06);
       --card2: rgba(255,255,255,.09);
+
       --bd: rgba(148,163,184,.18);
       --bd2: rgba(148,163,184,.28);
+
       --txt: rgba(226,232,240,1);
       --muted: rgba(148,163,184,1);
       --muted2: rgba(148,163,184,.75);
+
       --pri:#22d3ee;
       --pri2:#60a5fa;
-      --ok:#34d399;
-      --warn:#fbbf24;
-      --bad:#fb7185;
+
+      --ok:#34d399;    /* TRÚNG */
+      --warn:#fbbf24;  /* VÒNG SAU */
+      --bad:#fb7185;   /* KHÔNG HỢP LỆ / CHƯA CÓ */
+
       --shadow: 0 18px 60px rgba(0,0,0,.55);
       --glow: 0 0 22px rgba(34,211,238,.25);
       --glow2: 0 0 34px rgba(96,165,250,.18);
-      --radius: 18px;
 
+      --radius: 18px;
       --font: "Oxanium", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 
       /* 16:9 safe sizing */
@@ -95,45 +101,34 @@
       gap: var(--gap);
     }
 
-    /* top bar */
+    /* top bar: 3 columns to avoid overlap */
     .topbar{
-      display:flex;
+      display:grid;
+      grid-template-columns: minmax(320px, 1fr) minmax(360px, 1.15fr) minmax(420px, 1.15fr);
       align-items:center;
-      justify-content:space-between;
       gap: 12px;
       padding: 10px 12px;
       border: 1px solid var(--bd);
       border-radius: var(--radius);
       background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.04));
       box-shadow: var(--shadow);
+      overflow:hidden;
     }
+
     .top-left{
+      min-width: 0;
       display:flex;
       flex-direction:column;
-      gap: 6px;
-      min-width: 280px;
+      gap: 8px;
     }
-    .clock{
+    .brand-row{
       display:flex;
       align-items:center;
-      gap: 10px;
-      font-weight:700;
-      letter-spacing:.06em;
-    }
-    .dot{
-      width:9px;height:9px;border-radius:99px;
-      background: var(--ok);
-      box-shadow: 0 0 18px rgba(52,211,153,.55);
-    }
-    .brand{
-      display:flex;
       gap:10px;
-      align-items:center;
+      min-width:0;
       flex-wrap:wrap;
-      font-weight:800;
-      font-size: 16px;
     }
-    .brand .pill{
+    .brand-row .pill{
       padding: 6px 10px;
       border:1px solid var(--bd2);
       border-radius: 999px;
@@ -143,37 +138,75 @@
       letter-spacing:.06em;
       color: rgba(226,232,240,1);
       white-space:nowrap;
+      max-width: 100%;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
+    .pill.soft{
+      background: rgba(255,255,255,.04);
+      box-shadow:none;
+    }
+    .pill.blue{ background: rgba(96,165,250,.10); }
+    .brand-title{
+      font-weight:900;
+      letter-spacing:.12em;
+      font-size: 11px;
+      text-transform:uppercase;
+      color: var(--muted2);
+    }
+
     .top-mid{
-      flex:1;
+      min-width:0;
+      text-align:center;
       display:flex;
       align-items:center;
       justify-content:center;
-      gap:10px;
-      text-align:center;
-      min-width: 420px;
+    }
+    .top-mid .wrap{
+      min-width:0;
+      max-width: 100%;
     }
     .project-name{
-      font-weight:800;
+      font-weight:900;
       font-size: 18px;
-      letter-spacing:.06em;
+      letter-spacing:.08em;
       text-transform:uppercase;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
     .subline{
-      font-weight:600;
+      font-weight:800;
       font-size: 12px;
       color: var(--muted);
       margin-top: 3px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
+
     .top-right{
+      min-width:0;
       display:flex;
       gap: 10px;
+      align-items:center;
+      justify-content:flex-end;
+      overflow:hidden;
+    }
+
+    .kpis{
+      display:flex;
+      gap:10px;
       align-items:stretch;
       justify-content:flex-end;
-      min-width: 360px;
+      min-width:0;
+      flex: 1;
+      overflow:hidden;
     }
     .kpi{
-      min-width: 112px;
+      min-width: 104px;
       padding: 8px 10px;
       border:1px solid var(--bd);
       border-radius: 14px;
@@ -182,23 +215,47 @@
       flex-direction:column;
       gap: 3px;
       box-shadow: var(--shadow);
+      flex: 0 0 auto;
     }
     .kpi .label{
       font-size:11px;
       color: var(--muted2);
-      font-weight:700;
-      letter-spacing:.08em;
+      font-weight:800;
+      letter-spacing:.10em;
       text-transform:uppercase;
+      white-space:nowrap;
     }
     .kpi .val{
       font-size:18px;
-      font-weight:800;
+      font-weight:900;
       letter-spacing:.04em;
     }
     .kpi.ok .val{ color: var(--ok); text-shadow: 0 0 16px rgba(52,211,153,.22); }
     .kpi.pri .val{ color: var(--pri); text-shadow: 0 0 16px rgba(34,211,238,.25); }
     .kpi.warn .val{ color: var(--warn); text-shadow: 0 0 16px rgba(251,191,36,.20); }
     .kpi.bad .val{ color: var(--bad); text-shadow: 0 0 16px rgba(251,113,133,.18); }
+
+    .btn{
+      border:1px solid rgba(148,163,184,.22);
+      background: rgba(0,0,0,.20);
+      color: rgba(226,232,240,.95);
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-weight:900;
+      letter-spacing:.10em;
+      text-transform:uppercase;
+      cursor:pointer;
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      white-space:nowrap;
+      box-shadow: var(--shadow);
+      user-select:none;
+    }
+    .btn:hover{ border-color: rgba(34,211,238,.35); box-shadow: var(--shadow), var(--glow); }
+    .btn:active{ transform: translateY(1px); }
+    .btn .ico{ width:10px;height:10px;border-radius:999px;background:var(--pri); box-shadow:0 0 16px rgba(34,211,238,.45); }
+    .btn.ok .ico{ background: var(--ok); box-shadow:0 0 16px rgba(52,211,153,.45); }
 
     /* main 3 columns */
     .main{
@@ -228,23 +285,25 @@
     }
     .h-title{
       font-weight:900;
-      letter-spacing:.10em;
+      letter-spacing:.12em;
       font-size: 12px;
       text-transform:uppercase;
       color: rgba(226,232,240,.92);
       display:flex;
       align-items:center;
       gap: 8px;
+      white-space:nowrap;
     }
     .h-badge{
-      font-weight:800;
+      font-weight:900;
       font-size: 11px;
       padding: 4px 8px;
       border-radius: 999px;
       border: 1px solid var(--bd2);
       background: rgba(96,165,250,.12);
       color: rgba(226,232,240,.95);
-      letter-spacing:.08em;
+      letter-spacing:.10em;
+      white-space:nowrap;
     }
 
     /* LEFT: customer lists */
@@ -253,7 +312,7 @@
       display:flex;
       flex-direction:column;
       gap: 10px;
-      height: calc(100% - 48px);
+      height: 100%;
       min-height:0;
     }
     .box{
@@ -264,37 +323,48 @@
       min-height:0;
       display:flex;
       flex-direction:column;
+      flex: 1;
     }
+    .box.won{ border-color: rgba(52,211,153,.22); }
+    .box.next{ border-color: rgba(251,191,36,.22); }
+
     .box .box-head{
       padding: 10px 10px;
       display:flex;
       align-items:center;
       justify-content:space-between;
       border-bottom: 1px solid rgba(148,163,184,.14);
+      background: rgba(0,0,0,.10);
+      flex: 0 0 auto;
     }
     .box .box-head .t{
       font-weight:900;
-      letter-spacing:.08em;
+      letter-spacing:.10em;
       text-transform:uppercase;
       font-size: 12px;
       display:flex;
       align-items:center;
       gap: 8px;
+      white-space:nowrap;
     }
     .tag{
       font-size: 11px;
-      font-weight:800;
+      font-weight:900;
       padding: 3px 8px;
       border-radius:999px;
       border:1px solid rgba(148,163,184,.18);
       background: rgba(255,255,255,.04);
       color: var(--muted);
+      white-space:nowrap;
     }
+    .tag.ok{ color: rgba(226,232,240,.95); border-color: rgba(52,211,153,.25); background: rgba(52,211,153,.10); }
+    .tag.warn{ color: rgba(226,232,240,.95); border-color: rgba(251,191,36,.25); background: rgba(251,191,36,.10); }
+
     .box .box-body{
       position:relative;
       padding: 8px 8px 10px 8px;
       min-height:0;
-      flex:1;
+      flex:1 1 auto;
       overflow:hidden;
     }
 
@@ -307,22 +377,6 @@
       position:absolute; left:0; top:0; right:0;
       will-change: transform;
     }
-    .end-signal{
-      position:absolute;
-      left: 10px; right:10px; bottom:10px;
-      display:none;
-      padding: 10px 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(148,163,184,.20);
-      background: rgba(0,0,0,.45);
-      text-align:center;
-      font-weight:900;
-      letter-spacing:.10em;
-      text-transform:uppercase;
-      color: rgba(226,232,240,.92);
-      box-shadow: var(--shadow);
-    }
-    .end-signal.show{ display:block; }
 
     /* item rows */
     .crow{
@@ -332,6 +386,9 @@
       border-radius: 14px;
       margin-bottom: 8px;
     }
+    .crow.won{ border-color: rgba(52,211,153,.18); background: rgba(52,211,153,.06); }
+    .crow.next{ border-color: rgba(251,191,36,.18); background: rgba(251,191,36,.06); }
+
     .crow .r1{
       display:flex; align-items:center; justify-content:space-between; gap:10px;
     }
@@ -343,14 +400,17 @@
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
-      max-width: 70%;
+      max-width: 74%;
     }
     .crow .stt{
       font-weight:900;
       font-size: 12px;
-      color: var(--pri);
-      letter-spacing:.12em;
+      letter-spacing:.14em;
+      white-space:nowrap;
     }
+    .crow.won .stt{ color: var(--ok); }
+    .crow.next .stt{ color: var(--warn); }
+
     .crow .r2{
       margin-top: 6px;
       display:flex;
@@ -359,16 +419,18 @@
     }
     .chip{
       font-size: 11px;
-      font-weight:800;
+      font-weight:900;
       padding: 4px 8px;
       border-radius: 999px;
       border:1px solid rgba(148,163,184,.18);
       background: rgba(96,165,250,.10);
       color: rgba(226,232,240,.9);
       letter-spacing:.06em;
+      text-transform:uppercase;
+      white-space:nowrap;
     }
-    .chip.ok{ background: rgba(52,211,153,.10); }
-    .chip.warn{ background: rgba(251,191,36,.10); }
+    .chip.ok{ background: rgba(52,211,153,.10); border-color: rgba(52,211,153,.25); }
+    .chip.warn{ background: rgba(251,191,36,.10); border-color: rgba(251,191,36,.25); }
 
     /* CENTER: hero + recent strip */
     .center{
@@ -377,6 +439,7 @@
       gap: var(--gap);
       min-height:0;
     }
+
     .hero{
       flex: 1.05;
       border: 1px solid rgba(148,163,184,.18);
@@ -394,6 +457,7 @@
       display:flex;
       flex-direction:column;
       gap: 10px;
+      min-height:0;
     }
 
     .hero-top{
@@ -401,13 +465,16 @@
       align-items:flex-start;
       justify-content:space-between;
       gap: 10px;
+      min-height:0;
     }
+
     .hero-status{
       display:flex;
       flex-direction:column;
       gap: 6px;
       min-width: 220px;
     }
+
     .status-pill{
       display:inline-flex;
       align-items:center;
@@ -421,17 +488,26 @@
       text-transform:uppercase;
       font-size: 12px;
       width: fit-content;
+      white-space:nowrap;
     }
     .status-pill .s-dot{
       width:10px;height:10px;border-radius:99px;
       background: var(--pri);
       box-shadow: 0 0 16px rgba(34,211,238,.42);
     }
+    .status-pill.ok{ border-color: rgba(52,211,153,.25); }
+    .status-pill.ok .s-dot{ background: var(--ok); box-shadow: 0 0 16px rgba(52,211,153,.45); }
+    .status-pill.warn{ border-color: rgba(251,191,36,.25); }
+    .status-pill.warn .s-dot{ background: var(--warn); box-shadow: 0 0 16px rgba(251,191,36,.45); }
+    .status-pill.bad{ border-color: rgba(251,113,133,.25); }
+    .status-pill.bad .s-dot{ background: var(--bad); box-shadow: 0 0 16px rgba(251,113,133,.45); }
+
     .status-sub{
       color: var(--muted);
       font-size: 12px;
-      font-weight:700;
+      font-weight:800;
       letter-spacing:.06em;
+      line-height:1.35;
     }
 
     .hero-lot{
@@ -440,19 +516,28 @@
       flex-direction:column;
       gap: 6px;
       text-align:center;
+      min-width:0;
     }
+
+    /* Ensure lot code ALWAYS 1 line and readable for at least 6 chars */
     .lot-code{
-      font-size: 60px;
+      font-size: clamp(48px, 5.5vw, 64px);
       font-weight: 900;
-      letter-spacing: .12em;
+      letter-spacing: .06em;   /* reduced to avoid 'L-1' wrap visual */
       text-transform: uppercase;
       text-shadow: var(--glow), var(--glow2);
       line-height: 1;
+      white-space:nowrap;
+      word-break:keep-all;
+      display:inline-block;
+      max-width: 100%;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
     .lot-name{
       font-size: 15px;
       color: rgba(226,232,240,.9);
-      font-weight:800;
+      font-weight:900;
       letter-spacing:.06em;
       text-transform:uppercase;
       opacity:.95;
@@ -463,7 +548,7 @@
     .lot-desc{
       font-size: 12px;
       color: var(--muted);
-      font-weight: 600;
+      font-weight: 700;
       letter-spacing:.05em;
       line-height:1.35;
       display:-webkit-box;
@@ -482,6 +567,7 @@
     .meta-row{
       display:flex; gap: 8px; align-items:center; justify-content:flex-end;
       flex-wrap:wrap;
+      max-width: 100%;
     }
     .pill{
       padding: 6px 10px;
@@ -489,15 +575,19 @@
       border-radius: 999px;
       background: rgba(255,255,255,.05);
       font-size: 11px;
-      font-weight: 800;
+      font-weight: 900;
       letter-spacing:.08em;
       text-transform:uppercase;
       color: rgba(226,232,240,.92);
+      white-space:nowrap;
+      max-width: 100%;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
-    .pill.pri{ background: rgba(34,211,238,.10); }
-    .pill.ok{ background: rgba(52,211,153,.10); }
-    .pill.warn{ background: rgba(251,191,36,.10); }
-    .pill.bad{ background: rgba(251,113,133,.10); }
+    .pill.pri{ background: rgba(34,211,238,.10); border-color: rgba(34,211,238,.22); }
+    .pill.ok{ background: rgba(52,211,153,.10); border-color: rgba(52,211,153,.22); }
+    .pill.warn{ background: rgba(251,191,36,.10); border-color: rgba(251,191,36,.22); }
+    .pill.bad{ background: rgba(251,113,133,.10); border-color: rgba(251,113,133,.22); }
 
     /* Price big */
     .price-wrap{
@@ -516,6 +606,8 @@
       color: rgba(226,232,240,.85);
       display:flex; align-items:center; justify-content:space-between;
       margin-bottom: 6px;
+      white-space:nowrap;
+      gap:10px;
     }
     .price-val{
       font-size: 44px;
@@ -553,6 +645,10 @@
       gap: 12px;
       min-height: 66px;
     }
+    .winner-wrap.ok{ border-color: rgba(52,211,153,.25); background: rgba(52,211,153,.06); }
+    .winner-wrap.warn{ border-color: rgba(251,191,36,.25); background: rgba(251,191,36,.06); }
+    .winner-wrap.bad{ border-color: rgba(251,113,133,.25); background: rgba(251,113,133,.05); }
+
     .winner-label{
       font-size: 12px;
       font-weight: 900;
@@ -590,6 +686,8 @@
       padding: 10px 12px;
       overflow:hidden;
     }
+    .next-wrap.warn{ border-color: rgba(251,191,36,.22); background: rgba(251,191,36,.05); }
+
     .next-head{
       display:flex;
       align-items:center;
@@ -603,6 +701,10 @@
       letter-spacing:.12em;
       text-transform:uppercase;
       color: rgba(226,232,240,.86);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width: 75%;
     }
     .next-count{
       font-size: 11px;
@@ -611,10 +713,11 @@
       text-transform:uppercase;
       padding: 4px 8px;
       border-radius:999px;
-      border: 1px solid rgba(148,163,184,.20);
+      border: 1px solid rgba(251,191,36,.25);
       background: rgba(251,191,36,.10);
       color: rgba(226,232,240,.9);
       white-space:nowrap;
+      flex: 0 0 auto;
     }
     .marquee{
       position:relative;
@@ -638,8 +741,9 @@
       font-size: 12px;
       letter-spacing:.08em;
       text-transform:uppercase;
+      white-space:nowrap;
     }
-    .marquee-item .m-stt{ color: var(--pri); letter-spacing:.14em; }
+    .marquee-item .m-stt{ color: var(--warn); letter-spacing:.14em; }
     .marquee-item .m-name{ color: rgba(226,232,240,.92); }
 
     /* recent strip */
@@ -664,9 +768,10 @@
       display:grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 10px;
-      height: calc(100% - 48px);
+      height: 100%;
       min-height: 0;
     }
+
     .rslot{
       border: 1px solid rgba(148,163,184,.16);
       border-radius: 16px;
@@ -677,7 +782,12 @@
       flex-direction:column;
       gap: 8px;
       position:relative;
+      min-height:0;
     }
+    .rslot.win{ border-color: rgba(52,211,153,.22); background: rgba(52,211,153,.05); }
+    .rslot.next{ border-color: rgba(251,191,36,.22); background: rgba(251,191,36,.05); }
+    .rslot.no{ border-color: rgba(251,113,133,.20); background: rgba(251,113,133,.045); }
+
     .rslot .lc{
       font-size: 20px;
       font-weight: 900;
@@ -694,32 +804,38 @@
       letter-spacing:.12em;
       text-transform:uppercase;
       color: var(--muted);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      white-space:nowrap;
     }
     .rslot .rv{
       margin-top:auto;
       display:flex;
-      align-items:center;
+      align-items:flex-end;
       justify-content:space-between;
       gap: 10px;
     }
     .rslot .price{
       font-weight: 900;
-      letter-spacing:.08em;
+      letter-spacing:.06em;
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
-      max-width: 60%;
+      max-width: 64%;
+      font-size: 13px;
     }
     .rslot .who{
       font-weight: 900;
       font-size: 12px;
-      letter-spacing:.08em;
+      letter-spacing:.10em;
       text-transform:uppercase;
-      color: rgba(226,232,240,.90);
+      color: rgba(226,232,240,.92);
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
-      max-width: 38%;
+      max-width: 40%;
       text-align:right;
     }
     .badge-rt{
@@ -733,10 +849,37 @@
       border-radius:999px;
       border: 1px solid rgba(148,163,184,.18);
       background: rgba(255,255,255,.04);
+      white-space:nowrap;
     }
-    .badge-rt.win{ background: rgba(52,211,153,.12); }
-    .badge-rt.next{ background: rgba(251,191,36,.12); }
-    .badge-rt.no{ background: rgba(251,113,133,.10); }
+    .badge-rt.win{ background: rgba(52,211,153,.12); border-color: rgba(52,211,153,.25); }
+    .badge-rt.next{ background: rgba(251,191,36,.12); border-color: rgba(251,191,36,.25); }
+    .badge-rt.no{ background: rgba(251,113,133,.10); border-color: rgba(251,113,133,.22); }
+
+    .minirow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing:.10em;
+      text-transform:uppercase;
+      color: rgba(226,232,240,.86);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .minirow .mini-badge{
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,.18);
+      background: rgba(255,255,255,.04);
+      color: rgba(226,232,240,.92);
+      flex: 0 0 auto;
+    }
+    .minirow .mini-badge.win{ border-color: rgba(52,211,153,.25); background: rgba(52,211,153,.10); }
+    .minirow .mini-badge.next{ border-color: rgba(251,191,36,.25); background: rgba(251,191,36,.10); }
+    .minirow .mini-badge.no{ border-color: rgba(251,113,133,.25); background: rgba(251,113,133,.08); }
 
     .tease-overlay{
       position:absolute; inset:0;
@@ -768,7 +911,7 @@
     /* RIGHT: next lots cards ticker */
     .right-body{
       padding: 10px;
-      height: calc(100% - 48px);
+      height: 100%;
       min-height:0;
     }
     .cards-viewport{
@@ -789,6 +932,7 @@
       margin-bottom: 10px;
       overflow:hidden;
     }
+    .lotcard.next{ border-color: rgba(251,191,36,.22); background: rgba(251,191,36,.05); }
     .lotcard .top{
       display:flex; align-items:center; justify-content:space-between; gap:10px;
       margin-bottom: 8px;
@@ -799,6 +943,10 @@
       letter-spacing:.12em;
       text-transform:uppercase;
       text-shadow: 0 0 18px rgba(34,211,238,.14);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width: 70%;
     }
     .lotcard .flag{
       font-weight: 900;
@@ -807,13 +955,14 @@
       text-transform:uppercase;
       padding: 4px 8px;
       border-radius:999px;
-      border: 1px solid rgba(148,163,184,.18);
+      border: 1px solid rgba(251,191,36,.25);
       background: rgba(251,191,36,.10);
       white-space:nowrap;
+      flex:0 0 auto;
     }
     .lotcard .price{
       font-weight: 900;
-      letter-spacing:.08em;
+      letter-spacing:.06em;
       font-size: 14px;
       white-space:nowrap;
       overflow:hidden;
@@ -822,7 +971,7 @@
     .lotcard .mini{
       color: var(--muted);
       font-size: 11px;
-      font-weight: 700;
+      font-weight: 800;
       letter-spacing:.06em;
       margin-bottom: 8px;
       display:-webkit-box;
@@ -833,7 +982,7 @@
     .lotcard .plist{
       position:relative;
       border-radius: 14px;
-      border: 1px solid rgba(148,163,184,.14);
+      border: 1px solid rgba(251,191,36,.18);
       background: rgba(255,255,255,.03);
       padding: 8px;
       overflow:hidden;
@@ -872,11 +1021,11 @@
       font-weight: 900;
       font-size: 11px;
       letter-spacing:.12em;
-      color: var(--pri);
+      color: var(--warn);
       white-space:nowrap;
     }
 
-    /* overlay for round change / errors */
+    /* overlay for round change / errors / toast */
     .overlay{
       position:fixed; inset:0;
       display:none;
@@ -914,68 +1063,109 @@
       text-transform:uppercase;
       color: var(--pri);
       text-shadow: var(--glow), var(--glow2);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
     .overlay-card .sub{
       margin-top: 10px;
-      color: var(--muted);
-      font-weight: 700;
+      color: rgba(226,232,240,.90);
+      font-weight: 800;
       letter-spacing:.06em;
       font-size: 13px;
+      line-height: 1.35;
     }
 
-    /* responsive safety (still 16:9) */
-    @media (max-width: 1100px){
+    /* footer marquee */
+    .footer{
+      border: 1px solid rgba(148,163,184,.16);
+      border-radius: var(--radius);
+      background: rgba(0,0,0,.18);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      padding: 8px 10px;
+    }
+    .footer .marquee{
+      overflow:hidden;
+      white-space:nowrap;
+    }
+    .footer .track{
+      display:inline-block;
+      will-change: transform;
+      font-weight: 900;
+      letter-spacing:.10em;
+      text-transform:uppercase;
+      color: rgba(226,232,240,.88);
+    }
+    .footer .item{
+      display:inline-block;
+      padding: 6px 10px;
+      margin-right: 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,.16);
+      background: rgba(255,255,255,.04);
+    }
+
+    /* responsive safety */
+    @media (max-width: 1200px){
+      .topbar{ grid-template-columns: 1fr; gap:10px; }
+      .top-right{ justify-content:space-between; }
+      .kpis{ flex-wrap:wrap; justify-content:flex-start; }
       .main{ grid-template-columns: 1fr; }
-      .top-right{ display:none; }
-      .lot-code{ font-size: 52px; }
     }
   </style>
 </head>
 
 <body>
   <div class="stage gridbg scan">
+
     <!-- TOP BAR -->
     <div class="topbar">
+      <!-- LEFT -->
       <div class="top-left">
-        <div class="clock">
-          <span class="dot" id="liveDot"></span>
-          <span id="clockText">--:--:--</span>
-          <span style="color:var(--muted); font-weight:800; letter-spacing:.10em;" id="dateText">--/--/----</span>
-        </div>
-        <div class="brand">
-          <span class="pill" id="companyName">—</span>
-          <span class="pill" style="background:rgba(96,165,250,.10)" id="projectCode">—</span>
-          <span class="pill" style="background:rgba(255,255,255,.04)" id="projectName">—</span>
+        <div class="brand-title">ĐƠN VỊ • DỰ ÁN</div>
+        <div class="brand-row">
+          <span class="pill" id="companyName" title="">—</span>
+          <span class="pill blue" id="projectCode" title="">—</span>
+          <span class="pill soft" id="projectName" title="">—</span>
         </div>
       </div>
 
+      <!-- MID -->
       <div class="top-mid">
-        <div>
+        <div class="wrap">
           <div class="project-name" id="centerTitle">TRÌNH CHIẾU KIỂM PHIẾU</div>
           <div class="subline" id="roundLine">VÒNG — • TRẠNG THÁI —</div>
         </div>
       </div>
 
+      <!-- RIGHT -->
       <div class="top-right">
-        <div class="kpi pri">
-          <div class="label">Tổng lô</div>
-          <div class="val" id="kpiTotalLots">0</div>
-        </div>
-        <div class="kpi pri">
-          <div class="label">Tổng khách</div>
-          <div class="val" id="kpiTotalCustomers">0</div>
-        </div>
-        <div class="kpi ok">
-          <div class="label">Đã trúng</div>
-          <div class="val" id="kpiWon">0</div>
-        </div>
-        <div class="kpi warn">
-          <div class="label">Vào vòng sau</div>
-          <div class="val" id="kpiNext">0</div>
-        </div>
-        <div class="kpi bad">
-          <div class="label">Chưa kiểm</div>
-          <div class="val" id="kpiPending">0</div>
+        <button class="btn" id="btnFullscreen" type="button" title="Toàn màn hình">
+          <span class="ico"></span><span id="fsText">TOÀN MÀN HÌNH</span>
+        </button>
+
+        <div class="kpis">
+          <div class="kpi pri">
+            <div class="label">Tổng lô</div>
+            <div class="val" id="kpiTotalLots">0</div>
+          </div>
+          <div class="kpi pri">
+            <div class="label">Tổng khách</div>
+            <div class="val" id="kpiTotalCustomers">0</div>
+          </div>
+          <div class="kpi ok">
+            <div class="label">Đã trúng</div>
+            <div class="val" id="kpiWon">0</div>
+          </div>
+          <div class="kpi warn">
+            <div class="label">Vòng sau</div>
+            <div class="val" id="kpiNext">0</div>
+          </div>
+          <div class="kpi bad">
+            <div class="label">Chưa kiểm</div>
+            <div class="val" id="kpiPending">0</div>
+          </div>
         </div>
       </div>
     </div>
@@ -987,35 +1177,33 @@
       <div class="panel">
         <div class="head">
           <div class="h-title">👥 THEO KHÁCH</div>
-          <div class="h-badge" id="leftBadge">STT ↑</div>
+          <div class="h-badge">STT ↑</div>
         </div>
 
         <div class="left-body">
           <!-- Winners -->
-          <div class="box">
+          <div class="box won">
             <div class="box-head">
-              <div class="t">🏆 KHÁCH TRÚNG VÒNG NÀY</div>
-              <div class="tag" id="winnersCount">0</div>
+              <div class="t">🏆 KHÁCH TRÚNG</div>
+              <div class="tag ok" id="winnersCount">0</div>
             </div>
             <div class="box-body">
               <div class="ticker-viewport" id="winnersViewport">
                 <div class="ticker-inner" id="winnersInner"></div>
               </div>
-              <div class="end-signal" id="winnersEnd">⏹ HẾT DANH SÁCH • ↻ QUAY LẠI</div>
             </div>
           </div>
 
           <!-- Next round customers -->
-          <div class="box" style="flex:1.05;">
+          <div class="box next">
             <div class="box-head">
-              <div class="t">🔁 KHÁCH VÀO VÒNG SAU</div>
-              <div class="tag" id="nextCustCount">0</div>
+              <div class="t">🔁 VÀO VÒNG SAU</div>
+              <div class="tag warn" id="nextCustCount">0</div>
             </div>
             <div class="box-body">
               <div class="ticker-viewport" id="nextCustViewport">
                 <div class="ticker-inner" id="nextCustInner"></div>
               </div>
-              <div class="end-signal" id="nextCustEnd">⏹ HẾT DANH SÁCH • ↻ QUAY LẠI</div>
             </div>
           </div>
         </div>
@@ -1061,14 +1249,14 @@
               <div class="price-val masked" id="heroPrice">—</div>
             </div>
 
-            <div class="winner-wrap">
+            <div class="winner-wrap" id="heroWinnerWrap">
               <div class="winner-label" id="heroWinnerLabel">NGƯỜI TRÚNG</div>
               <div class="winner-name masked" id="heroWinnerName">—</div>
             </div>
 
-            <div class="next-wrap" id="heroNextWrap" style="display:none;">
+            <div class="next-wrap warn" id="heroNextWrap" style="display:none;">
               <div class="next-head">
-                <div class="next-title">🔁 DANH SÁCH KHÁCH VÀO VÒNG SAU</div>
+                <div class="next-title">🔁 DANH SÁCH VÀO VÒNG SAU</div>
                 <div class="next-count" id="heroNextCount">0 KHÁCH</div>
               </div>
               <div class="marquee" id="heroMarquee">
@@ -1081,14 +1269,17 @@
         <!-- RECENT STRIP -->
         <div class="recent">
           <div class="head">
-            <div class="h-title">🔥 3 LÔ KIỂM GẦN NHẤT</div>
-            <div class="h-badge">TỰ ĐỘNG • 5s</div>
+            <div class="h-title">🔥 3 LÔ GẦN NHẤT</div>
+            <div class="h-badge">TỰ ĐỘNG • 5S</div>
           </div>
           <div class="recent-body">
-            <div class="rslot">
+            <div class="rslot" id="rs0Card">
               <div class="badge-rt" id="rs0Badge">—</div>
               <div class="lc" id="rs0Lot">—</div>
-              <div class="rt" id="rs0Type">—</div>
+              <div class="minirow">
+                <span id="rs0Type">—</span>
+                <span class="mini-badge" id="rs0Extra">—</span>
+              </div>
               <div class="rv">
                 <div class="price" id="rs0Price">—</div>
                 <div class="who" id="rs0Who">—</div>
@@ -1101,20 +1292,26 @@
               </div>
             </div>
 
-            <div class="rslot">
+            <div class="rslot" id="rs1Card">
               <div class="badge-rt" id="rs1Badge">—</div>
               <div class="lc" id="rs1Lot">—</div>
-              <div class="rt" id="rs1Type">—</div>
+              <div class="minirow">
+                <span id="rs1Type">—</span>
+                <span class="mini-badge" id="rs1Extra">—</span>
+              </div>
               <div class="rv">
                 <div class="price" id="rs1Price">—</div>
                 <div class="who" id="rs1Who">—</div>
               </div>
             </div>
 
-            <div class="rslot">
+            <div class="rslot" id="rs2Card">
               <div class="badge-rt" id="rs2Badge">—</div>
               <div class="lc" id="rs2Lot">—</div>
-              <div class="rt" id="rs2Type">—</div>
+              <div class="minirow">
+                <span id="rs2Type">—</span>
+                <span class="mini-badge" id="rs2Extra">—</span>
+              </div>
               <div class="rv">
                 <div class="price" id="rs2Price">—</div>
                 <div class="who" id="rs2Who">—</div>
@@ -1127,8 +1324,8 @@
       <!-- RIGHT COLUMN -->
       <div class="panel">
         <div class="head">
-          <div class="h-title">4️⃣ 🔁 THEO LÔ VÀO VÒNG SAU</div>
-          <div class="h-badge" id="rightBadge">LOT ↑ • STT ↑</div>
+          <div class="h-title">🔁 THEO LÔ VÒNG SAU</div>
+          <div class="h-badge">LÔ ↑ • STT ↑</div>
         </div>
 
         <div class="right-body">
@@ -1139,6 +1336,14 @@
       </div>
 
     </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+      <div class="marquee" id="footerMarquee">
+        <div class="track" id="footerTrack"></div>
+      </div>
+    </div>
+
   </div>
 
   <!-- overlays -->
@@ -1177,13 +1382,6 @@
         if(!x || x<=0) return "—";
         return (x.toLocaleString("vi-VN", {maximumFractionDigits:2})) + " m²";
       }
-      function fmtISOToTime(iso){
-        try{
-          const d = new Date(iso);
-          if(isNaN(d.getTime())) return "—";
-          return d.toLocaleTimeString("vi-VN", {hour12:false});
-        }catch(_){ return "—"; }
-      }
       function fmtISOToFull(iso){
         try{
           const d = new Date(iso);
@@ -1195,8 +1393,6 @@
       // ---------- DOM refs ----------
       const el = (id)=>document.getElementById(id);
 
-      const clockText = el("clockText");
-      const dateText = el("dateText");
       const companyName = el("companyName");
       const projectCode = el("projectCode");
       const projectName = el("projectName");
@@ -1210,17 +1406,16 @@
 
       // left lists
       const winnersInner = el("winnersInner");
-      const winnersEnd = el("winnersEnd");
       const winnersCount = el("winnersCount");
 
       const nextCustInner = el("nextCustInner");
-      const nextCustEnd = el("nextCustEnd");
       const nextCustCount = el("nextCustCount");
 
       // right cards
       const nextLotsInner = el("nextLotsInner");
 
       // hero
+      const heroStatusPill = el("heroStatusPill");
       const heroStatusText = el("heroStatusText");
       const heroStatusSub = el("heroStatusSub");
       const heroLotCode = el("heroLotCode");
@@ -1233,6 +1428,7 @@
 
       const heroPrice = el("heroPrice");
       const heroPriceHint = el("heroPriceHint");
+      const heroWinnerWrap = el("heroWinnerWrap");
       const heroWinnerLabel = el("heroWinnerLabel");
       const heroWinnerName = el("heroWinnerName");
 
@@ -1242,9 +1438,9 @@
 
       // recent
       const rs = [
-        { badge: el("rs0Badge"), lot: el("rs0Lot"), type: el("rs0Type"), price: el("rs0Price"), who: el("rs0Who"), tease: el("rs0Tease"), teaseLot: el("rs0TeaseLot") },
-        { badge: el("rs1Badge"), lot: el("rs1Lot"), type: el("rs1Type"), price: el("rs1Price"), who: el("rs1Who") },
-        { badge: el("rs2Badge"), lot: el("rs2Lot"), type: el("rs2Type"), price: el("rs2Price"), who: el("rs2Who") },
+        { card: el("rs0Card"), badge: el("rs0Badge"), lot: el("rs0Lot"), type: el("rs0Type"), extra: el("rs0Extra"), price: el("rs0Price"), who: el("rs0Who"), tease: el("rs0Tease"), teaseLot: el("rs0TeaseLot") },
+        { card: el("rs1Card"), badge: el("rs1Badge"), lot: el("rs1Lot"), type: el("rs1Type"), extra: el("rs1Extra"), price: el("rs1Price"), who: el("rs1Who") },
+        { card: el("rs2Card"), badge: el("rs2Badge"), lot: el("rs2Lot"), type: el("rs2Type"), extra: el("rs2Extra"), price: el("rs2Price"), who: el("rs2Who") },
       ];
 
       // overlay
@@ -1253,7 +1449,15 @@
       const overlayBig = el("overlayBig");
       const overlaySub = el("overlaySub");
 
-      function showOverlay(top, big, sub, ms=2200){
+      // fullscreen
+      const btnFullscreen = el("btnFullscreen");
+      const fsText = el("fsText");
+
+      // footer
+      const footerMarquee = el("footerMarquee");
+      const footerTrack = el("footerTrack");
+
+      function showOverlay(top, big, sub, ms=2600){
         overlayTop.textContent = safeText(top||"THÔNG BÁO");
         overlayBig.textContent = safeText(big||"—");
         overlaySub.textContent = safeText(sub||"");
@@ -1261,18 +1465,36 @@
         setTimeout(()=>overlay.classList.remove("show"), ms);
       }
 
-      // ---------- clock ----------
-      function tickClock(){
-        const now = new Date();
-        clockText.textContent = now.toLocaleTimeString("vi-VN",{hour12:false});
-        dateText.textContent = now.toLocaleDateString("vi-VN");
+      // ---------- fullscreen ----------
+      function isFs(){
+        return !!(document.fullscreenElement || document.webkitFullscreenElement);
       }
-      setInterval(tickClock, 500);
-      tickClock();
+      async function toggleFs(){
+        try{
+          if(!isFs()){
+            const root = document.documentElement;
+            if(root.requestFullscreen) await root.requestFullscreen();
+            else if(root.webkitRequestFullscreen) await root.webkitRequestFullscreen();
+          }else{
+            if(document.exitFullscreen) await document.exitFullscreen();
+            else if(document.webkitExitFullscreen) await document.webkitExitFullscreen();
+          }
+        }catch(e){
+          console.error(e);
+        }finally{
+          updateFsLabel();
+        }
+      }
+      function updateFsLabel(){
+        fsText.textContent = isFs() ? "THOÁT TOÀN MÀN HÌNH" : "TOÀN MÀN HÌNH";
+      }
+      btnFullscreen?.addEventListener("click", toggleFs);
+      document.addEventListener("fullscreenchange", updateFsLabel);
+      document.addEventListener("webkitfullscreenchange", updateFsLabel);
+      updateFsLabel();
 
       // ---------- state / animation control ----------
       let lastRoundId = null;
-      let lastRoundNo = null;
 
       // “seen” result ids to detect new checked lots
       const seenRoundLotIds = new Set();
@@ -1289,18 +1511,58 @@
         if(heroTypingTimer){ clearInterval(heroTypingTimer); heroTypingTimer=null; }
       }
 
+      // ---------- utils ----------
+      function escapeHtml(s){
+        s = safeText(s);
+        return s.replace(/[&<>"']/g, (m)=>({
+          "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+        }[m]));
+      }
+
+      function vnResultLabel(rt){
+        if(rt === "WINNER") return "TRÚNG";
+        if(rt === "NEXT_ROUND") return "VÒNG SAU";
+        if(rt === "NO_VALID") return "KHÔNG HỢP LỆ";
+        if(rt === "PENDING") return "CHƯA KIỂM";
+        return safeText(rt||"—");
+      }
+
+      function applyHeroResultPills(rt){
+        heroResultType.textContent = vnResultLabel(rt);
+
+        // reset
+        heroResultType.className = "pill pri";
+        heroStatusPill.className = "status-pill";
+
+        if(rt === "WINNER"){
+          heroResultType.className = "pill ok";
+          heroStatusPill.classList.add("ok");
+        }else if(rt === "NEXT_ROUND"){
+          heroResultType.className = "pill warn";
+          heroStatusPill.classList.add("warn");
+        }else if(rt === "NO_VALID"){
+          heroResultType.className = "pill bad";
+          heroStatusPill.classList.add("bad");
+        }else{
+          heroResultType.className = "pill pri";
+        }
+
+        // winner box color
+        heroWinnerWrap.classList.remove("ok","warn","bad");
+        if(rt === "WINNER") heroWinnerWrap.classList.add("ok");
+        else if(rt === "NEXT_ROUND") heroWinnerWrap.classList.add("warn");
+        else if(rt === "NO_VALID") heroWinnerWrap.classList.add("bad");
+      }
+
+
       function setHeroBase(item){
-        // item shape: {round_lot_id, checked_at, lot:{...}, result_type, price_vnd, winner?, next_count, next_customers}
         const lot = item?.lot || {};
         heroLotCode.textContent = (safeText(lot.lot_code) || "—").toUpperCase();
         heroLotName.textContent = safeText(lot.lot_name || "");
         heroLotDesc.textContent = safeText(lot.lot_description || "");
 
-        heroResultType.textContent = safeText(item?.result_type || "—");
-        heroResultType.className = "pill pri";
-        if(item?.result_type === "WINNER") heroResultType.className = "pill ok";
-        if(item?.result_type === "NEXT_ROUND") heroResultType.className = "pill warn";
-        if(item?.result_type === "NO_VALID") heroResultType.className = "pill bad";
+        const rt = safeText(item?.result_type || "—");
+        applyHeroResultPills(rt);
 
         heroArea.textContent = "Diện tích: " + fmtArea(lot.area_m2);
         heroStart.textContent = "Khởi điểm: " + fmtMoney(lot.start_price_vnd || 0);
@@ -1309,34 +1571,37 @@
         // reset reveal fields
         heroPrice.textContent = item?.price_vnd ? fmtNum(item.price_vnd) : "—";
         heroWinnerName.textContent = "—";
-        heroWinnerLabel.textContent = (item?.result_type === "NEXT_ROUND") ? "KẾT QUẢ" : "NGƯỜI TRÚNG";
 
         heroNextWrap.style.display = "none";
         heroMarqueeTrack.innerHTML = "";
         heroNextCount.textContent = "0 KHÁCH";
 
-        // status text
-        if(item?.result_type === "WINNER"){
+        // status text / hint
+        if(rt === "WINNER"){
           heroStatusText.textContent = "CÔNG BỐ KẾT QUẢ";
           heroStatusSub.textContent = "Đang xác nhận trúng đấu giá…";
           heroPriceHint.textContent = "GIÁ TRÚNG";
-        }else if(item?.result_type === "NEXT_ROUND"){
-          heroStatusText.textContent = "CÔNG BỐ VÀO VÒNG SAU";
+          heroWinnerLabel.textContent = "NGƯỜI TRÚNG";
+        }else if(rt === "NEXT_ROUND"){
+          heroStatusText.textContent = "CÔNG BỐ VÒNG SAU";
           heroStatusSub.textContent = "Đồng giá • chọn khách vào vòng trong…";
           heroPriceHint.textContent = "MỨC GIÁ";
-        }else if(item?.result_type === "NO_VALID"){
+          heroWinnerLabel.textContent = "KẾT QUẢ";
+        }else if(rt === "NO_VALID"){
           heroStatusText.textContent = "KẾT QUẢ KHÔNG HỢP LỆ";
           heroStatusSub.textContent = "Không có phiếu hợp lệ…";
           heroPriceHint.textContent = "—";
+          heroWinnerLabel.textContent = "KẾT QUẢ";
         }else{
           heroStatusText.textContent = "ĐANG KIỂM PHIẾU";
           heroStatusSub.textContent = "Chờ kết quả mới nhất…";
           heroPriceHint.textContent = "—";
+          heroWinnerLabel.textContent = "TRẠNG THÁI";
         }
       }
 
       function maskHero(){
-        // lot is NEVER masked. Only price + winner fields.
+        // lot NEVER masked. Only price + winner fields.
         heroPrice.classList.remove("reveal");
         heroWinnerName.classList.remove("reveal");
         heroPrice.classList.add("masked");
@@ -1352,25 +1617,28 @@
       }
 
       function setHeroNextList(item){
-        if(item?.result_type !== "NEXT_ROUND") return;
-        const list = item?.next_customers || [];
+        const rt = safeText(item?.result_type || "");
+        if(rt !== "NEXT_ROUND") return;
+
+        const list = Array.isArray(item?.next_customers) ? item.next_customers : [];
         heroNextWrap.style.display = "block";
         heroNextCount.textContent = `${list.length} KHÁCH`;
 
-        if(list.length === 0){
-          heroMarqueeTrack.innerHTML = `<span class="marquee-item"><span class="m-stt">—</span><span class="m-name">CHƯA CÓ DỮ LIỆU</span></span>`;
-          return;
-        }
-
+        // Build track items (mask name -> show STT only in marquee? (still ok to show name here, but you didn't ask to mask in hero marquee)
+        // We'll show: STT + tên rút gọn (không nhạy cảm). Nếu muốn ẩn, đổi name = "KHÁCH".
         const chips = list.map(c=>{
           const stt = Number(c.stt||0);
           const name = safeText(c.name||"").toUpperCase();
           return `<span class="marquee-item"><span class="m-stt">STT ${stt||"—"}</span><span class="m-name">${escapeHtml(name)}</span></span>`;
         }).join("");
 
-        // duplicate for seamless loop
-        heroMarqueeTrack.innerHTML = chips + chips;
-        startMarquee(el("heroMarquee"), heroMarqueeTrack, 42);
+        // duplicate only when overflow (measured later)
+        heroMarqueeTrack.innerHTML = chips;
+
+        // start marquee after layout
+        setTimeout(()=>{
+          startMarqueeConditional(el("heroMarquee"), heroMarqueeTrack, 42);
+        }, 0);
       }
 
       function setHeroWinnerTextTyping(finalText){
@@ -1387,12 +1655,31 @@
           if(i >= finalText.length){
             clearInterval(heroTypingTimer);
             heroTypingTimer = null;
-            // remove caret after a short delay
-            setTimeout(()=>{
-              heroWinnerName.textContent = finalText;
-            }, 700);
+            setTimeout(()=>{ heroWinnerName.textContent = finalText; }, 600);
           }
         }, 45);
+      }
+
+      function animatePriceReveal(target, ms, done){
+        const t = Number(target||0);
+        if(!t || t<=0){
+          heroPrice.textContent = "—";
+          if(done) done();
+          return;
+        }
+        const start = Math.floor(t * 0.75);
+        const st = performance.now();
+        const dur = Math.max(800, ms||1200);
+
+        function step(now){
+          const p = Math.min(1, (now - st)/dur);
+          const e = 1 - Math.pow(1-p, 3); // easeOutCubic
+          const v = Math.floor(start + (t-start)*e);
+          heroPrice.textContent = fmtNum(v);
+          if(p<1) requestAnimationFrame(step);
+          else { heroPrice.textContent = fmtNum(t); if(done) done(); }
+        }
+        requestAnimationFrame(step);
       }
 
       function startHeroReveal(item){
@@ -1403,39 +1690,24 @@
         setHeroBase(item);
         maskHero();
 
-        // During TEASE: show lot only, and "sắp có kết quả"
+        // TEASE
         heroStatusSub.textContent = "⏳ SẮP CÓ KẾT QUẢ MỚI NHẤT…";
-        // keep price+winner masked
 
-        // after 3.2s -> reveal price (count-up feel)
         heroTimer = setTimeout(()=>{
           heroMode = "REVEAL_PRICE";
-          // reveal price gradually: animate number from 0 to final or from 80% to final
+
           animatePriceReveal(item?.price_vnd || 0, 1300, ()=>{
             revealHeroPrice();
 
-            // Next: show either NEXT list or WINNER typing
             heroTimer = setTimeout(()=>{
-              if(item?.result_type === "NEXT_ROUND"){
-                // show next list immediately (can't be missing)
+              const rt = safeText(item?.result_type || "");
+
+              if(rt === "NEXT_ROUND"){
                 setHeroNextList(item);
-                // keep winner masked (not important here), but show "Danh sách vào vòng sau"
                 heroWinnerLabel.textContent = "KẾT QUẢ";
-                heroWinnerName.textContent = "ĐỒNG GIÁ • CHỌN KHÁCH VÀO VÒNG SAU";
+                heroWinnerName.textContent = `VÀO VÒNG SAU • ${Number(item?.next_count||0)} KHÁCH`;
                 revealHeroWinner();
 
-                heroMode = "CONGRATS";
-                heroTimer = setTimeout(()=>{
-                  heroMode = "IDLE";
-                  heroStatusSub.textContent = "Tiếp tục kiểm phiếu…";
-                }, 1600);
-                return;
-              }
-
-              if(item?.result_type === "NO_VALID"){
-                heroWinnerLabel.textContent = "KẾT QUẢ";
-                heroWinnerName.textContent = "KHÔNG CÓ PHIẾU HỢP LỆ";
-                revealHeroWinner();
                 heroMode = "CONGRATS";
                 heroTimer = setTimeout(()=>{
                   heroMode = "IDLE";
@@ -1444,14 +1716,26 @@
                 return;
               }
 
-              // WINNER: typing reveal
+              if(rt === "NO_VALID"){
+                heroWinnerLabel.textContent = "KẾT QUẢ";
+                heroWinnerName.textContent = "KHÔNG CÓ PHIẾU HỢP LỆ";
+                revealHeroWinner();
+
+                heroMode = "CONGRATS";
+                heroTimer = setTimeout(()=>{
+                  heroMode = "IDLE";
+                  heroStatusSub.textContent = "Tiếp tục kiểm phiếu…";
+                }, 1500);
+                return;
+              }
+
+              // WINNER
               heroMode = "TYPE_NAME";
               const win = item?.winner || {};
               const stt = Number(win.stt||0);
               const nm = safeText(win.name||"").toUpperCase();
               const finalText = (stt>0 ? `STT ${stt} — ${nm}` : nm) || "—";
 
-              // show typing in masked -> reveal
               heroWinnerName.classList.remove("masked");
               heroWinnerName.classList.add("reveal");
               setHeroWinnerTextTyping(finalText);
@@ -1460,263 +1744,57 @@
                 heroMode = "CONGRATS";
                 heroStatusText.textContent = "🎉 CHÚC MỪNG";
                 heroStatusSub.textContent = "Trúng đấu giá!";
-                // small overlay
-                showOverlay("🎉 CHÚC MỪNG", `TRÚNG ĐẤU GIÁ ${safeText(item?.lot?.lot_code||"")}`.toUpperCase(), "Xin chúc mừng khách hàng!", 1600);
+
+                const lotCode = safeText(item?.lot?.lot_code||item?.lot_code||"—").toUpperCase();
+                // Toast (overlay) longer + contains "Xin chúc mừng" + name + lot code
+                showOverlay(
+                  "🎉 XIN CHÚC MỪNG",
+                  `TRÚNG LÔ ${lotCode}`,
+                  `${nm ? nm : "KHÁCH HÀNG"}${nm ? "" : ""}`,
+                  3400
+                );
 
                 heroTimer = setTimeout(()=>{
                   heroMode = "IDLE";
                   heroStatusText.textContent = "ĐANG KIỂM PHIẾU";
                   heroStatusSub.textContent = "Chờ kết quả mới nhất…";
-                }, 1400);
-              }, 2500);
+                }, 1600);
+              }, 2400);
             }, 650);
           });
+
         }, 3200);
       }
 
-      function animatePriceReveal(target, ms, done){
-        // We NEVER hide lot; this only animates price text.
-        const t = Number(target||0);
-        if(!t || t<=0){
-          heroPrice.textContent = "—";
-          if(done) done();
-          return;
-        }
-        // animate from ~75% to 100% for drama
-        const start = Math.floor(t * 0.75);
-        const st = performance.now();
-        const dur = Math.max(800, ms||1200);
-
-        function step(now){
-          const p = Math.min(1, (now - st)/dur);
-          // easeOutCubic
-          const e = 1 - Math.pow(1-p, 3);
-          const v = Math.floor(start + (t-start)*e);
-          heroPrice.textContent = fmtNum(v);
-          if(p<1) requestAnimationFrame(step);
-          else { heroPrice.textContent = fmtNum(t); if(done) done(); }
-        }
-        requestAnimationFrame(step);
-      }
-
-      // ---------- recent strip rendering with "pretend newest" ----------
-      function setRecentSlots(recentList){
-        // recentList is DESC (0 newest)
-        const list = Array.isArray(recentList) ? recentList.slice(0,3) : [];
-
-        // rule: if we are currently teasing/revealing newest item (list[0]) => show placeholder in slot0
-        const newest = list[0];
-        const isAnimatingNewest = newest && heroCurrent && (Number(newest.round_lot_id) === Number(heroCurrent.round_lot_id)) && (heroMode !== "IDLE");
-
-        const slot0 = rs[0];
-        if(isAnimatingNewest){
-          // show tease overlay, but KEEP LOT visible
-          slot0.lot.textContent = safeText(newest.lot?.lot_code||newest.lot_code||"—").toUpperCase();
-          slot0.type.textContent = "—";
-          slot0.price.textContent = "—";
-          slot0.who.textContent = "—";
-          slot0.badge.textContent = "SẮP CÓ";
-          slot0.badge.className = "badge-rt next";
-          slot0.teaseLot.textContent = safeText(newest.lot?.lot_code||newest.lot_code||"—").toUpperCase();
-          slot0.tease.classList.add("show");
-
-          // shift other two slots to show the next ones (1 and 2)
-          const a = list[1] || null;
-          const b = list[2] || null;
-          fillRecentSlot(rs[1], a);
-          fillRecentSlot(rs[2], b);
-          return;
-        }
-
-        // normal
-        slot0.tease?.classList?.remove("show");
-        fillRecentSlot(rs[0], list[0] || null);
-        fillRecentSlot(rs[1], list[1] || null);
-        fillRecentSlot(rs[2], list[2] || null);
-      }
-
-      function fillRecentSlot(slot, item){
-        if(!slot) return;
-        if(!item){
-          slot.badge.textContent = "—";
-          slot.badge.className = "badge-rt";
-          slot.lot.textContent = "—";
-          slot.type.textContent = "—";
-          slot.price.textContent = "—";
-          slot.who.textContent = "—";
-          if(slot.tease) slot.tease.classList.remove("show");
-          return;
-        }
-        if(slot.tease) slot.tease.classList.remove("show");
-
-        const rt = safeText(item.result_type || "—");
-        const lotCode = safeText(item.lot?.lot_code || item.lot_code || "—").toUpperCase();
-
-        slot.lot.textContent = lotCode;
-        slot.type.textContent = rt;
-
-        // Show price & who (recent strip is allowed to show full info,
-        // but if you want the newest to be teased, we already handled in setRecentSlots).
-        slot.price.textContent = item.price_vnd ? fmtMoney(item.price_vnd) : "—";
-        if(rt === "WINNER"){
-          const w = item.winner || {};
-          const name = safeText(w.name||"").toUpperCase();
-          slot.who.textContent = name ? name : "—";
-        }else if(rt === "NEXT_ROUND"){
-          slot.who.textContent = `${Number(item.next_count||0)} KHÁCH`;
-        }else{
-          slot.who.textContent = "—";
-        }
-
-        slot.badge.textContent = rt;
-        if(rt === "WINNER"){ slot.badge.className = "badge-rt win"; }
-        else if(rt === "NEXT_ROUND"){ slot.badge.className = "badge-rt next"; }
-        else if(rt === "NO_VALID"){ slot.badge.className = "badge-rt no"; }
-        else { slot.badge.className = "badge-rt"; }
-      }
-
-      // ---------- build left lists from by_customer ----------
-      function buildCustomerLists(byCustomer){
-        const arr = Array.isArray(byCustomer) ? byCustomer : [];
-
-        // winners: has won_lots length > 0
-        const winners = arr.filter(x => (x?.won_lots||[]).length > 0);
-        // next: has next_lots length > 0
-        const nexts = arr.filter(x => (x?.next_lots||[]).length > 0);
-
-        winnersCount.textContent = String(winners.length);
-        nextCustCount.textContent = String(nexts.length);
-
-        winnersInner.innerHTML = winners.map(x=>{
-          const c = x.customer || {};
-          const stt = Number(c.stt||0);
-          const name = safeText(c.name||"").toUpperCase();
-          const lots = (x.won_lots||[]).map(l => `<span class="chip ok">${escapeHtml(safeText(l.lot_code||""))}</span>`).join("");
-          return `
-            <div class="crow">
-              <div class="r1">
-                <div class="name">${escapeHtml(name || "—")}</div>
-                <div class="stt">STT ${stt||"—"}</div>
-              </div>
-              <div class="r2">
-                <span class="chip ok">TRÚNG ${(x.won_lots||[]).length} LÔ</span>
-                ${lots}
-              </div>
-            </div>
-          `;
-        }).join("") || `<div class="crow"><div class="r1"><div class="name">CHƯA CÓ KẾT QUẢ</div><div class="stt">—</div></div></div>`;
-
-        nextCustInner.innerHTML = nexts.map(x=>{
-          const c = x.customer || {};
-          const stt = Number(c.stt||0);
-          const name = safeText(c.name||"").toUpperCase();
-          const lots = (x.next_lots||[]).map(l => `<span class="chip warn">${escapeHtml(safeText(l.lot_code||""))}</span>`).join("");
-          return `
-            <div class="crow">
-              <div class="r1">
-                <div class="name">${escapeHtml(name || "—")}</div>
-                <div class="stt">STT ${stt||"—"}</div>
-              </div>
-              <div class="r2">
-                <span class="chip warn">VÀO VÒNG SAU ${(x.next_lots||[]).length} LÔ</span>
-                ${lots}
-              </div>
-            </div>
-          `;
-        }).join("") || `<div class="crow"><div class="r1"><div class="name">CHƯA CÓ DS VÀO VÒNG SAU</div><div class="stt">—</div></div></div>`;
-
-        // start/restart tickers
-        makeVerticalTicker(el("winnersViewport"), winnersInner, winnersEnd, 22);
-        makeVerticalTicker(el("nextCustViewport"), nextCustInner, nextCustEnd, 22);
-      }
-
-      // ---------- build right cards from by_status.next_this_round ----------
-      function buildNextLotCards(byStatus){
-        const nextLots = (byStatus && Array.isArray(byStatus.next_this_round)) ? byStatus.next_this_round : [];
-        nextLotsInner.innerHTML = nextLots.map(x=>{
-          const lot = x.lot || {};
-          const code = safeText(lot.lot_code||"—").toUpperCase();
-          const desc = safeText(lot.lot_description||"");
-          const price = x.price_vnd ? fmtMoney(x.price_vnd) : "—";
-          const list = Array.isArray(x.next_customers) ? x.next_customers : [];
-          const plistId = "plist_" + Number(x.round_lot_id||0);
-
-          const rows = list.map(c=>{
-            const stt = Number(c.stt||0);
-            const nm = safeText(c.name||"").toUpperCase();
-            return `
-              <div class="prow">
-                <div class="pname">${escapeHtml(nm||"—")}</div>
-                <div class="pstt">STT ${stt||"—"}</div>
-              </div>
-            `;
-          }).join("") || `<div class="prow"><div class="pname">CHƯA CÓ DS</div><div class="pstt">—</div></div>`;
-
-          return `
-            <div class="lotcard">
-              <div class="top">
-                <div class="code">${escapeHtml(code)}</div>
-                <div class="flag">🔁 NEXT</div>
-              </div>
-              <div class="price">${escapeHtml(price)}</div>
-              <div class="mini">${escapeHtml(desc || "")}</div>
-
-              <div class="plist" id="${plistId}">
-                <div class="p-viewport">
-                  <div class="p-inner">${rows}</div>
-                </div>
-              </div>
-            </div>
-          `;
-        }).join("") || `<div class="lotcard"><div class="top"><div class="code">—</div><div class="flag">🔁 NEXT</div></div><div class="price">CHƯA CÓ LÔ VÀO VÒNG SAU</div></div>`;
-
-        // outer ticker for cards
-        makeCardsTicker(el("nextLotsViewport"), nextLotsInner, 16);
-
-        // inner tickers for each card participant list
-        setTimeout(()=>{
-          nextLots.forEach(x=>{
-            const id = "plist_" + Number(x.round_lot_id||0);
-            const box = document.getElementById(id);
-            if(!box) return;
-            const viewport = box.querySelector(".p-viewport");
-            const inner = box.querySelector(".p-inner");
-            if(!viewport || !inner) return;
-            makeSimpleTicker(viewport, inner, 24);
-          });
-        }, 50);
-      }
-
-      // ---------- hero default (when no new queue) ----------
+      // ---------- hero idle ----------
       function setHeroIdleFromPayload(payload){
-        // If we have recent_checked_lots, use newest item as base display (but no reveal)
+        if(heroMode !== "IDLE") return;
+
         const recent = Array.isArray(payload?.recent_checked_lots) ? payload.recent_checked_lots : [];
         const newest = recent[0] || null;
-
-        if(heroMode !== "IDLE") return; // don't override during animation
 
         if(newest){
           heroCurrent = newest;
           setHeroBase(newest);
 
-          // IDLE show: keep price+winner visible but softly masked? user wants not to hide unless effect
-          // We'll show fully for already-known items:
-                    heroPrice.classList.remove("masked"); // show normal in idle
+          // show in idle (no masking)
+          heroPrice.classList.remove("masked");
           heroPrice.classList.add("reveal");
           heroWinnerName.classList.remove("masked");
           heroWinnerName.classList.add("reveal");
 
-          if(newest.result_type === "WINNER"){
+          const rt = safeText(newest?.result_type || "");
+          if(rt === "WINNER"){
             const w = newest.winner || {};
             const stt = Number(w.stt||0);
             const nm = safeText(w.name||"").toUpperCase();
             heroWinnerLabel.textContent = "NGƯỜI TRÚNG";
             heroWinnerName.textContent = (stt>0 && nm) ? `STT ${stt} — ${nm}` : (nm || "—");
-          }else if(newest.result_type === "NEXT_ROUND"){
+          }else if(rt === "NEXT_ROUND"){
             heroWinnerLabel.textContent = "KẾT QUẢ";
-            heroWinnerName.textContent = `ĐỒNG GIÁ • ${Number(newest.next_count||0)} KHÁCH VÀO VÒNG SAU`;
+            heroWinnerName.textContent = `VÀO VÒNG SAU • ${Number(newest.next_count||0)} KHÁCH`;
             setHeroNextList(newest);
-          }else if(newest.result_type === "NO_VALID"){
+          }else if(rt === "NO_VALID"){
             heroWinnerLabel.textContent = "KẾT QUẢ";
             heroWinnerName.textContent = "KHÔNG CÓ PHIẾU HỢP LỆ";
           }else{
@@ -1739,141 +1817,388 @@
         }
       }
 
-      // ---------- queue: detect newest checked lots and "pretend" ----------
+      // ---------- queue: new checked lots ----------
       function enqueueNewCheckedLots(payload){
         const recent = Array.isArray(payload?.recent_checked_lots) ? payload.recent_checked_lots : [];
-        // ensure newest first (API already DESC)
         for(const item of recent){
           const id = Number(item.round_lot_id||0);
           if(!id) continue;
           if(seenRoundLotIds.has(id)) continue;
           seenRoundLotIds.add(id);
-
-          // push NEW items into queue (newest first)
           queue.push(item);
         }
       }
 
       function maybeStartNextReveal(payload){
-        // only start if hero idle and queue has something "fresh"
         if(heroMode !== "IDLE") return;
 
         if(queue.length > 0){
-          // take newest queued item
-          // NOTE: because polling 5s, we want to "pretend" newest is not fully public instantly
           const item = queue.shift();
           startHeroReveal(item);
           return;
         }
-
-        // otherwise show idle latest base
         setHeroIdleFromPayload(payload);
       }
 
-      // ---------- tickers ----------
-      function makeVerticalTicker(viewport, inner, endEl, speedPxPerSec){
-        if(!viewport || !inner) return;
-        inner.style.transform = "translateY(0px)";
-        const h = inner.scrollHeight;
-        const vh = viewport.clientHeight;
+      // ---------- recent strip rendering ----------
+      function setRecentSlots(recentList){
+        const list = Array.isArray(recentList) ? recentList.slice(0,3) : [];
 
-        // if not overflow, stop
-        if(h <= vh + 2){
-          if(endEl) endEl.classList.remove("show");
+        const newest = list[0];
+        const isAnimatingNewest = newest && heroCurrent && (Number(newest.round_lot_id) === Number(heroCurrent.round_lot_id)) && (heroMode !== "IDLE");
+
+        if(isAnimatingNewest){
+          const slot0 = rs[0];
+          slot0.lot.textContent = safeText(newest.lot?.lot_code||newest.lot_code||"—").toUpperCase();
+          slot0.type.textContent = "—";
+          slot0.extra.textContent = "—";
+          slot0.price.textContent = "—";
+          slot0.who.textContent = "—";
+          slot0.badge.textContent = "SẮP CÓ";
+          slot0.badge.className = "badge-rt next";
+          slot0.card.className = "rslot next";
+          slot0.teaseLot.textContent = safeText(newest.lot?.lot_code||newest.lot_code||"—").toUpperCase();
+          slot0.tease.classList.add("show");
+
+          fillRecentSlot(rs[1], list[1] || null);
+          fillRecentSlot(rs[2], list[2] || null);
           return;
         }
 
-        // animate down (content goes up => negative translate)
-        const dist = h - vh + 20; // padding
-        const duration = (dist / Math.max(10, speedPxPerSec||22)) * 1000;
+        rs[0].tease?.classList?.remove("show");
+        fillRecentSlot(rs[0], list[0] || null);
+        fillRecentSlot(rs[1], list[1] || null);
+        fillRecentSlot(rs[2], list[2] || null);
+      }
 
-        // use rAF loop for stable motion
-        let start = null;
-        let doneShown = false;
+      function fillRecentSlot(slot, item){
+        if(!slot) return;
+        if(!item){
+          slot.card.className = "rslot";
+          slot.badge.textContent = "—";
+          slot.badge.className = "badge-rt";
+          slot.lot.textContent = "—";
+          slot.type.textContent = "—";
+          slot.extra.textContent = "—";
+          slot.extra.className = "mini-badge";
+          slot.price.textContent = "—";
+          slot.who.textContent = "—";
+          if(slot.tease) slot.tease.classList.remove("show");
+          return;
+        }
+        if(slot.tease) slot.tease.classList.remove("show");
 
-        function step(ts){
-          if(start === null) start = ts;
-          const t = ts - start;
-          const p = Math.min(1, t / duration);
-          const y = -Math.floor(dist * p);
-          inner.style.transform = `translateY(${y}px)`;
+        const rt = safeText(item.result_type || "—");
+        const lotCode = safeText(item.lot?.lot_code || item.lot_code || "—").toUpperCase();
 
-          if(p < 1){
-            requestAnimationFrame(step);
-          }else{
-            // show end signal then restart
-            if(endEl && !doneShown){
-              doneShown = true;
-              endEl.classList.add("show");
-            }
-            setTimeout(()=>{
-              if(endEl) endEl.classList.remove("show");
-              inner.style.transform = "translateY(0px)";
-              start = null;
-              doneShown = false;
-              requestAnimationFrame(step);
-            }, 1200);
-          }
+        slot.lot.textContent = lotCode;
+
+        // REQUIRED 4 things:
+        // 1) Trạng thái (màu)
+        // 2) Giá trúng / giá cao nhất
+        // 3) Người trúng: MASK = STT
+        // 4) Nếu vào vòng sau: số lượng khách vào vòng sau
+
+        const label = vnResultLabel(rt);
+        slot.type.textContent = label;
+
+        slot.badge.textContent = label;
+
+        if(rt === "WINNER"){
+          slot.card.className = "rslot win";
+          slot.badge.className = "badge-rt win";
+          slot.extra.className = "mini-badge win";
+          slot.extra.textContent = "TRÚNG";
+          slot.price.textContent = item.price_vnd ? fmtMoney(item.price_vnd) : "—";
+
+          const w = item.winner || {};
+          const stt = Number(w.stt||0);
+          slot.who.textContent = stt ? `STT ${stt}` : "STT —";
+        }else if(rt === "NEXT_ROUND"){
+          slot.card.className = "rslot next";
+          slot.badge.className = "badge-rt next";
+          slot.extra.className = "mini-badge next";
+          const cnt = Number(item.next_count||0);
+          slot.extra.textContent = `${cnt} KHÁCH`;
+          slot.price.textContent = item.price_vnd ? fmtMoney(item.price_vnd) : "—";
+          slot.who.textContent = cnt ? `${cnt} KHÁCH` : "—";
+        }else if(rt === "NO_VALID"){
+          slot.card.className = "rslot no";
+          slot.badge.className = "badge-rt no";
+          slot.extra.className = "mini-badge no";
+          slot.extra.textContent = "KHÔNG HỢP LỆ";
+          slot.price.textContent = "—";
+          slot.who.textContent = "—";
+        }else{
+          slot.card.className = "rslot";
+          slot.badge.className = "badge-rt";
+          slot.extra.className = "mini-badge";
+          slot.extra.textContent = "CHƯA KIỂM";
+          slot.price.textContent = item.price_vnd ? fmtMoney(item.price_vnd) : "—";
+          slot.who.textContent = "—";
+        }
+      }
+
+      // ---------- build customer lists ----------
+      function buildCustomerLists(byCustomer){
+        const arr = Array.isArray(byCustomer) ? byCustomer : [];
+
+        const winners = arr.filter(x => (x?.won_lots||[]).length > 0);
+        const nexts = arr.filter(x => (x?.next_lots||[]).length > 0);
+
+        winnersCount.textContent = String(winners.length);
+        nextCustCount.textContent = String(nexts.length);
+
+        const winnersHtml = winners.map(x=>{
+          const c = x.customer || {};
+          const stt = Number(c.stt||0);
+          const name = safeText(c.name||"").toUpperCase();
+          const lots = (x.won_lots||[]).map(l => `<span class="chip ok">${escapeHtml(safeText(l.lot_code||""))}</span>`).join("");
+          return `
+            <div class="crow won">
+              <div class="r1">
+                <div class="name">${escapeHtml(name || "—")}</div>
+                <div class="stt">STT ${stt||"—"}</div>
+              </div>
+              <div class="r2">
+                <span class="chip ok">TRÚNG ${(x.won_lots||[]).length} LÔ</span>
+                ${lots}
+              </div>
+            </div>
+          `;
+        }).join("") || `<div class="crow won"><div class="r1"><div class="name">CHƯA CÓ KẾT QUẢ</div><div class="stt">—</div></div></div>`;
+
+        const nextsHtml = nexts.map(x=>{
+          const c = x.customer || {};
+          const stt = Number(c.stt||0);
+          const name = safeText(c.name||"").toUpperCase();
+          const lots = (x.next_lots||[]).map(l => `<span class="chip warn">${escapeHtml(safeText(l.lot_code||""))}</span>`).join("");
+          return `
+            <div class="crow next">
+              <div class="r1">
+                <div class="name">${escapeHtml(name || "—")}</div>
+                <div class="stt">STT ${stt||"—"}</div>
+              </div>
+              <div class="r2">
+                <span class="chip warn">VÒNG SAU ${(x.next_lots||[]).length} LÔ</span>
+                ${lots}
+              </div>
+            </div>
+          `;
+        }).join("") || `<div class="crow next"><div class="r1"><div class="name">CHƯA CÓ DS VÀO VÒNG SAU</div><div class="stt">—</div></div></div>`;
+
+        winnersInner.innerHTML = winnersHtml;
+        nextCustInner.innerHTML = nextsHtml;
+
+        // Smooth tickers:
+        // - If overflow => duplicate xN then scroll
+        // - If not overflow => no duplication, no scroll
+        makeVerticalTickerConditional(el("winnersViewport"), winnersInner, 22, 10);
+        makeVerticalTickerConditional(el("nextCustViewport"), nextCustInner, 22, 10);
+      }
+
+      // ---------- build right cards from by_status.next_this_round ----------
+      function buildNextLotCards(byStatus){
+        const nextLots = (byStatus && Array.isArray(byStatus.next_this_round)) ? byStatus.next_this_round : [];
+        nextLotsInner.innerHTML = nextLots.map(x=>{
+          const lot = x.lot || {};
+          const code = safeText(lot.lot_code||"—").toUpperCase();
+          const desc = safeText(lot.lot_description||"");
+          const price = x.price_vnd ? fmtMoney(x.price_vnd) : "—";
+          const list = Array.isArray(x.next_customers) ? x.next_customers : [];
+          const plistId = "plist_" + Number(x.round_lot_id||0);
+
+          // rows (show full name here OK; requirement to mask applies to "3 lô gần nhất" cards)
+          const rows = list.map(c=>{
+            const stt = Number(c.stt||0);
+            const nm = safeText(c.name||"").toUpperCase();
+            return `
+              <div class="prow">
+                <div class="pname">${escapeHtml(nm||"—")}</div>
+                <div class="pstt">STT ${stt||"—"}</div>
+              </div>
+            `;
+          }).join("") || `<div class="prow"><div class="pname">CHƯA CÓ DS</div><div class="pstt">—</div></div>`;
+
+          return `
+            <div class="lotcard next">
+              <div class="top">
+                <div class="code">${escapeHtml(code)}</div>
+                <div class="flag">VÒNG SAU</div>
+              </div>
+              <div class="price">${escapeHtml(price)}</div>
+              <div class="mini">${escapeHtml(desc || "")}</div>
+
+              <div class="plist" id="${plistId}">
+                <div class="p-viewport">
+                  <div class="p-inner">${rows}</div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join("") || `<div class="lotcard next"><div class="top"><div class="code">—</div><div class="flag">VÒNG SAU</div></div><div class="price">CHƯA CÓ LÔ VÀO VÒNG SAU</div></div>`;
+
+        // outer cards: conditional duplicate + scroll
+        makeCardsTickerConditional(el("nextLotsViewport"), nextLotsInner, 16, 8);
+
+        // inner tickers for each card participant list (conditional)
+        setTimeout(()=>{
+          nextLots.forEach(x=>{
+            const id = "plist_" + Number(x.round_lot_id||0);
+            const box = document.getElementById(id);
+            if(!box) return;
+            const viewport = box.querySelector(".p-viewport");
+            const inner = box.querySelector(".p-inner");
+            if(!viewport || !inner) return;
+            makeSimpleTickerConditional(viewport, inner, 24, 8);
+          });
+        }, 50);
+      }
+
+      // ---------- tickers (conditional duplicate) ----------
+      function shouldScrollY(viewport, inner){
+        if(!viewport || !inner) return false;
+        return inner.scrollHeight > viewport.clientHeight + 2;
+      }
+
+      function duplicateInnerHtml(inner, times){
+        if(!inner) return;
+        const base = inner.getAttribute("data-base-html");
+        if(base === null){
+          inner.setAttribute("data-base-html", inner.innerHTML || "");
+        }
+        const html = inner.getAttribute("data-base-html") || "";
+        const t = Math.max(1, Number(times||1));
+        let out = "";
+        for(let i=0;i<t;i++) out += html;
+        inner.innerHTML = out;
+      }
+
+      function resetInnerBase(inner){
+        if(!inner) return;
+        const base = inner.getAttribute("data-base-html");
+        if(base !== null){
+          inner.innerHTML = base;
+        }
+      }
+
+      function makeVerticalTickerConditional(viewport, inner, speedPxPerSec, dupTimes){
+        if(!viewport || !inner) return;
+
+        // restore base first
+        resetInnerBase(inner);
+
+        // if overflow -> duplicate & scroll; else stop
+        const overflow = shouldScrollY(viewport, inner);
+        if(!overflow){
+          inner.style.transform = "translateY(0px)";
+          return;
+        }
+
+        duplicateInnerHtml(inner, dupTimes || 10);
+        makeVerticalTickerSeamless(viewport, inner, speedPxPerSec || 22);
+      }
+
+      function makeSimpleTickerConditional(viewport, inner, speedPxPerSec, dupTimes){
+        if(!viewport || !inner) return;
+
+        resetInnerBase(inner);
+        const overflow = shouldScrollY(viewport, inner);
+        if(!overflow){
+          inner.style.transform = "translateY(0px)";
+          return;
+        }
+
+        duplicateInnerHtml(inner, dupTimes || 8);
+        makeVerticalTickerSeamless(viewport, inner, speedPxPerSec || 24);
+      }
+
+      function makeCardsTickerConditional(viewport, inner, speedPxPerSec, dupTimes){
+        if(!viewport || !inner) return;
+
+        resetInnerBase(inner);
+        const overflow = shouldScrollY(viewport, inner);
+        if(!overflow){
+          inner.style.transform = "translateY(0px)";
+          return;
+        }
+
+        duplicateInnerHtml(inner, dupTimes || 8);
+        makeVerticalTickerSeamless(viewport, inner, speedPxPerSec || 16);
+      }
+
+      // Seamless loop: duplicate content (already done) then translate continuously with modulo
+      function makeVerticalTickerSeamless(viewport, inner, speedPxPerSec){
+        inner.style.transform = "translateY(0px)";
+        const totalH = inner.scrollHeight;
+        const vh = viewport.clientHeight;
+        if(totalH <= vh + 2) return;
+
+        // because duplicated N times, we can loop over 1/N of height if we want.
+        // We'll loop over 1/2 height (safe) by using "base height" derived from stored base content.
+        const baseHtml = inner.getAttribute("data-base-html") || "";
+        let baseH = null;
+
+        // measure base height by temporary swap (fast, once)
+        try{
+          const tmp = document.createElement("div");
+          tmp.style.position = "absolute";
+          tmp.style.visibility = "hidden";
+          tmp.style.pointerEvents = "none";
+          tmp.style.left = "-99999px";
+          tmp.style.top = "0";
+          tmp.style.width = viewport.clientWidth + "px";
+          tmp.innerHTML = baseHtml;
+          document.body.appendChild(tmp);
+          baseH = tmp.scrollHeight || null;
+          document.body.removeChild(tmp);
+        }catch(_){ baseH = null; }
+
+        const loopDist = Math.max(10, (baseH && baseH > vh) ? baseH : (totalH - vh + 20));
+        const pxPerMs = Math.max(10, speedPxPerSec||22) / 1000;
+
+        let last = performance.now();
+        let offset = 0;
+
+        function step(now){
+          const dt = now - last;
+          last = now;
+          offset += dt * pxPerMs;
+
+          // loop modulo
+          if(offset >= loopDist) offset = offset % loopDist;
+
+          inner.style.transform = `translateY(${-Math.floor(offset)}px)`;
+          requestAnimationFrame(step);
         }
         requestAnimationFrame(step);
       }
 
-      function makeSimpleTicker(viewport, inner, speedPxPerSec){
-        if(!viewport || !inner) return;
-        inner.style.transform = "translateY(0px)";
-        const h = inner.scrollHeight;
-        const vh = viewport.clientHeight;
-        if(h <= vh + 2) return;
+      // ---------- marquee (conditional duplicate) ----------
+      function startMarqueeConditional(container, track, speedPxPerSec){
+        if(!container || !track) return;
 
-        const dist = h - vh + 10;
-        const duration = (dist / Math.max(10, speedPxPerSec||24)) * 1000;
-
-        let start = null;
-        function step(ts){
-          if(start === null) start = ts;
-          const t = ts - start;
-          const p = Math.min(1, t / duration);
-          const y = -Math.floor(dist * p);
-          inner.style.transform = `translateY(${y}px)`;
-          if(p < 1) requestAnimationFrame(step);
-          else{
-            setTimeout(()=>{
-              inner.style.transform = "translateY(0px)";
-              start = null;
-              requestAnimationFrame(step);
-            }, 1000);
-          }
+        // restore base
+        const base = track.getAttribute("data-base-html");
+        if(base === null){
+          track.setAttribute("data-base-html", track.innerHTML || "");
+        }else{
+          track.innerHTML = base;
         }
-        requestAnimationFrame(step);
-      }
 
-      function makeCardsTicker(viewport, inner, speedPxPerSec){
-        if(!viewport || !inner) return;
-        inner.style.transform = "translateY(0px)";
-        const h = inner.scrollHeight;
-        const vh = viewport.clientHeight;
-        if(h <= vh + 2) return;
+        const cW = container.clientWidth;
+        const tW = track.scrollWidth;
 
-        const dist = h - vh + 18;
-        const duration = (dist / Math.max(10, speedPxPerSec||16)) * 1000;
-
-        let start = null;
-        function step(ts){
-          if(start === null) start = ts;
-          const t = ts - start;
-          const p = Math.min(1, t / duration);
-          const y = -Math.floor(dist * p);
-          inner.style.transform = `translateY(${y}px)`;
-          if(p < 1) requestAnimationFrame(step);
-          else{
-            setTimeout(()=>{
-              inner.style.transform = "translateY(0px)";
-              start = null;
-              requestAnimationFrame(step);
-            }, 1000);
-          }
+        if(tW <= cW + 10){
+          track.style.transform = "translateX(0px)";
+          return; // no overflow => no duplication, no scroll
         }
-        requestAnimationFrame(step);
+
+        // duplicate to make it long (seamless)
+        const baseHtml = track.getAttribute("data-base-html") || track.innerHTML || "";
+        track.innerHTML = baseHtml + baseHtml + baseHtml; // x3 enough for smooth
+
+        startMarquee(container, track, speedPxPerSec || 42);
       }
 
       function startMarquee(container, track, speedPxPerSec){
@@ -1882,7 +2207,8 @@
         const tW = track.scrollWidth;
         if(tW <= cW + 10) return;
 
-        const dist = tW / 2; // because duplicated
+        // loop over 1/3 width (since duplicated x3) or half width safely
+        const dist = Math.floor(tW / 3);
         const duration = (dist / Math.max(10, speedPxPerSec||42)) * 1000;
         let start = null;
 
@@ -1897,19 +2223,21 @@
         requestAnimationFrame(step);
       }
 
-      // ---------- utils ----------
-      function escapeHtml(s){
-        s = safeText(s);
-        return s.replace(/[&<>"']/g, (m)=>({
-          "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-        }[m]));
-      }
-
       // ---------- apply context ----------
       function applyContext(ctx){
-        companyName.textContent = safeText(ctx.company_name || ctx.company_code || "—");
-        projectCode.textContent = safeText(ctx.project_code || "—");
-        projectName.textContent = safeText(ctx.project_name || "—");
+        // truncation: keep title attr full
+        const cn = safeText(ctx.company_name || ctx.company_code || "—");
+        const pc = safeText(ctx.project_code || "—");
+        const pn = safeText(ctx.project_name || "—");
+
+        companyName.textContent = cn;
+        companyName.title = cn;
+
+        projectCode.textContent = pc;
+        projectCode.title = pc;
+
+        projectName.textContent = pn;
+        projectName.title = pn;
 
         const rn = Number(ctx.round_no||0);
         const st = safeText(ctx.round_status||"—");
@@ -1922,10 +2250,8 @@
         kpiNext.textContent = fmtNum(stats.next_lots||0);
         kpiPending.textContent = fmtNum(stats.pending_lots||0);
 
-        // round change overlay
         if(lastRoundId !== null && Number(ctx.round_id||0) !== Number(lastRoundId||0)){
-          showOverlay("🔄 CHUYỂN VÒNG", `VÒNG ${Number(ctx.round_no||0)}`, "Đang tải dữ liệu vòng mới…", 2000);
-          // reset “seen” for new round
+          showOverlay("🔄 CHUYỂN VÒNG", `VÒNG ${Number(ctx.round_no||0)}`, "Đang tải dữ liệu vòng mới…", 2200);
           seenRoundLotIds.clear();
           queue.length = 0;
           heroMode = "IDLE";
@@ -1933,7 +2259,6 @@
           clearTimers();
         }
         lastRoundId = Number(ctx.round_id||0);
-        lastRoundNo = Number(ctx.round_no||0);
       }
 
       // ---------- fetch loop ----------
@@ -1953,38 +2278,42 @@
         try{
           const payload = await fetchPayload();
 
-          // context
           applyContext(payload.context || {});
 
-          // render lists
           buildCustomerLists(payload.by_customer || []);
           buildNextLotCards(payload.by_status || {});
 
-          // detect new checked lots -> queue
           enqueueNewCheckedLots(payload);
 
-          // recent strip (with "pretend newest" if we are animating it)
           setRecentSlots(payload.recent_checked_lots || []);
-
-          // start hero reveal if needed
           maybeStartNextReveal(payload);
 
         }catch(err){
           console.error(err);
-          showOverlay("⚠️ LỖI KẾT NỐI", "KHÔNG LẤY ĐƯỢC DỮ LIỆU", "Sẽ tự thử lại…", 1800);
+          showOverlay("⚠️ LỖI KẾT NỐI", "KHÔNG LẤY ĐƯỢC DỮ LIỆU", "Sẽ tự thử lại…", 2000);
         }finally{
           inFlight = false;
         }
       }
 
+      // ---------- footer marquee init ----------
+      function initFooter(){
+        const msg = "Đơn vị phần mềm: VNTECHX – Nền tảng vận hành đấu giá đất (tự động hoá & minh bạch).";
+        footerTrack.innerHTML = `
+          <span class="item">${escapeHtml(msg.toUpperCase())}</span>
+          <span class="item">${escapeHtml(msg.toUpperCase())}</span>
+          <span class="item">${escapeHtml(msg.toUpperCase())}</span>
+        `;
+        // always scroll footer (it is intended), but still seamless
+        startMarquee(footerMarquee, footerTrack, 32);
+      }
+
       // ---------- init ----------
-      // first poll immediately
+      initFooter();
       poll();
-      // poll every 5s
       setInterval(poll, POLL_MS);
 
     })();
   </script>
 </body>
 </html>
-
