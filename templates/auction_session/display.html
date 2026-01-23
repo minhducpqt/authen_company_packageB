@@ -112,7 +112,6 @@
       border-radius: var(--radius);
       background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.04));
       box-shadow: var(--shadow);
-      /* FIX #6: không cắt KPI */
       overflow: visible;
     }
 
@@ -188,7 +187,6 @@
       gap: 10px;
       align-items:center;
       justify-content:flex-end;
-      /* FIX #6: không cắt KPI */
       overflow: visible;
     }
 
@@ -199,7 +197,6 @@
       justify-content:flex-end;
       min-width:0;
       flex: 1;
-      /* FIX #6 */
       overflow: visible;
       flex-wrap: nowrap;
     }
@@ -233,7 +230,6 @@
     .kpi.warn .val{ color: var(--warn); text-shadow: 0 0 16px rgba(251,191,36,.20); }
     .kpi.bad .val{ color: var(--bad); text-shadow: 0 0 16px rgba(251,113,133,.18); }
 
-    /* FIX #5: fullscreen icon nhỏ */
     .fsbtn{
       width: 38px;
       height: 38px;
@@ -447,7 +443,8 @@
       border: 1px solid rgba(148,163,184,.18);
       border-radius: var(--radius);
       background:
-        radial-gradient(800px 360px at 50% 0%, rgba(34,211,238,.18), transparent 55%),
+        radial-gradient(900px 420px at 50% 0%, rgba(34,211,238,.20), transparent 60%),
+        radial-gradient(700px 340px at 100% 35%, rgba(52,211,153,.10), transparent 60%),
         linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
       box-shadow: var(--shadow);
       position:relative;
@@ -463,18 +460,18 @@
     }
 
     .hero-top{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap: 10px;
+      display:grid;
+      grid-template-columns: minmax(220px, 0.95fr) minmax(260px, 1.5fr) minmax(260px, 1.05fr);
+      gap: 12px;
+      align-items:stretch;
       min-height:0;
     }
 
     .hero-status{
       display:flex;
       flex-direction:column;
-      gap: 6px;
-      min-width: 220px;
+      gap: 8px;
+      min-width: 0;
     }
 
     .status-pill{
@@ -512,22 +509,30 @@
       line-height:1.35;
     }
 
+    /* HERO LOT - make lot code the main focus */
     .hero-lot{
-      flex:1;
       display:flex;
       flex-direction:column;
-      gap: 6px;
+      align-items:center;
+      justify-content:center;
+      gap: 8px;
       text-align:center;
       min-width:0;
+      padding: 6px 6px 2px 6px;
+      border-radius: 18px;
+      border: 1px solid rgba(148,163,184,.16);
+      background: rgba(0,0,0,.14);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.15);
+      overflow:hidden;
     }
 
     /* Ensure lot code ALWAYS 1 line and readable for at least 6 chars */
     .lot-code{
-      font-size: clamp(52px, 5.8vw, 70px);
+      font-size: clamp(58px, 6.2vw, 82px);
       font-weight: 900;
-      letter-spacing: .05em;
+      letter-spacing: .06em;
       text-transform: uppercase;
-      text-shadow: var(--glow), var(--glow2);
+      text-shadow: 0 0 26px rgba(34,211,238,.20), 0 0 48px rgba(96,165,250,.14);
       line-height: 1;
       white-space:nowrap;
       word-break:keep-all;
@@ -535,17 +540,28 @@
       max-width: 100%;
       overflow:hidden;
       text-overflow:ellipsis;
+      padding: 0 8px;
+    }
+    .lot-kicker{
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      color: rgba(226,232,240,.82);
+      opacity:.9;
+      white-space:nowrap;
     }
     .lot-name{
       font-size: 15px;
-      color: rgba(226,232,240,.9);
+      color: rgba(226,232,240,.92);
       font-weight:900;
       letter-spacing:.06em;
       text-transform:uppercase;
-      opacity:.95;
+      opacity:.98;
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
+      max-width: 100%;
     }
     .lot-desc{
       font-size: 12px;
@@ -557,14 +573,16 @@
       -webkit-line-clamp:2;
       -webkit-box-orient:vertical;
       overflow:hidden;
+      padding: 0 10px 8px 10px;
+      width: 100%;
     }
 
     .hero-meta{
-      min-width: 250px; /* FIX #1: bớt chiếm chỗ */
+      min-width: 0;
       display:flex;
       flex-direction:column;
-      align-items:flex-end;
       gap: 10px;
+      align-items:stretch;
     }
     .meta-row{
       display:flex; gap: 8px; align-items:center; justify-content:flex-end;
@@ -593,12 +611,12 @@
 
     /* Price big */
     .price-wrap{
-      margin-top: 8px;
       border-radius: 18px;
       border: 1px solid rgba(148,163,184,.18);
-      background: rgba(0,0,0,.22);
+      background: rgba(0,0,0,.24);
       padding: 14px 14px;
       box-shadow: inset 0 0 0 1px rgba(0,0,0,.15);
+      overflow:hidden;
     }
     .price-label{
       font-size: 12px;
@@ -612,9 +630,9 @@
       gap:10px;
     }
     .price-val{
-      font-size: 44px;
+      font-size: 46px;
       font-weight: 900;
-      letter-spacing:.08em;
+      letter-spacing:.06em;
       text-transform:uppercase;
       line-height: 1.05;
       text-shadow: 0 0 22px rgba(34,211,238,.18);
@@ -623,26 +641,29 @@
       text-overflow:ellipsis;
     }
 
-    /* Mask / Reveal */
-    .masked{ filter: blur(10px); opacity: .22; transform: translateZ(0); }
-    .reveal{ filter: blur(0); opacity: 1; transition: filter .6s ease, opacity .6s ease; }
-
+    /* Winner panel */
     .winner-wrap{
-      margin-top: 8px;
       border-radius: 18px;
       border: 1px solid rgba(148,163,184,.18);
-      background: rgba(0,0,0,.18);
+      background: rgba(0,0,0,.20);
       padding: 12px 14px;
       display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 12px;
-      min-height: 66px;
+      flex-direction:column;
+      gap: 8px;
+      min-height: 88px;
+      overflow:hidden;
     }
     .winner-wrap.ok{ border-color: rgba(52,211,153,.25); background: rgba(52,211,153,.06); }
     .winner-wrap.warn{ border-color: rgba(251,191,36,.25); background: rgba(251,191,36,.06); }
     .winner-wrap.bad{ border-color: rgba(251,113,133,.25); background: rgba(251,113,133,.05); }
 
+    .winner-topline{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
     .winner-label{
       font-size: 12px;
       font-weight: 900;
@@ -651,34 +672,53 @@
       color: rgba(226,232,240,.85);
       white-space:nowrap;
     }
-    .winner-name{
-      flex:1;
-      text-align:right;
-      font-size: 20px;
+    .winner-badge{
+      font-size: 10px;
       font-weight: 900;
-      letter-spacing:.08em;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      padding: 4px 8px;
+      border-radius:999px;
+      border: 1px solid rgba(148,163,184,.18);
+      background: rgba(255,255,255,.04);
+      white-space:nowrap;
+    }
+    .winner-badge.ok{ border-color: rgba(52,211,153,.26); background: rgba(52,211,153,.12); }
+    .winner-badge.warn{ border-color: rgba(251,191,36,.26); background: rgba(251,191,36,.12); }
+    .winner-badge.bad{ border-color: rgba(251,113,133,.26); background: rgba(251,113,133,.10); }
+
+    .winner-name{
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing:.06em;
       text-transform:uppercase;
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
       text-shadow: 0 0 18px rgba(96,165,250,.15);
     }
+
+    /* Mask / Reveal */
+    .masked{ filter: blur(11px); opacity: .18; transform: translateZ(0); }
+    .reveal{ filter: blur(0); opacity: 1; transition: filter .6s ease, opacity .6s ease; }
+
     .caret{
       display:inline-block;
       width:10px;
       animation: caretblink .8s infinite;
       opacity:.85;
+      margin-left:2px;
     }
     @keyframes caretblink{ 50%{ opacity:.15; } }
 
     /* hero next list (marquee) */
     .next-wrap{
-      margin-top: 10px;
       border-radius: 18px;
       border: 1px solid rgba(148,163,184,.18);
       background: rgba(0,0,0,.14);
       padding: 10px 12px;
       overflow:hidden;
+      display:none; /* only show when NEXT_ROUND */
     }
     .next-wrap.warn{ border-color: rgba(251,191,36,.22); background: rgba(251,191,36,.05); }
 
@@ -719,7 +759,7 @@
       display:inline-flex;
       align-items:center;
       gap: 8px;
-      margin-right: 26px;
+      margin-right: 18px;
       padding: 7px 10px;
       border-radius: 999px;
       border: 1px solid rgba(148,163,184,.18);
@@ -759,7 +799,7 @@
       min-height: 0;
     }
 
-    /* FIX #3: card recent hiển thị to rõ */
+    /* Recent cards: show lot + price + winner name clearly */
     .rslot{
       border: 1px solid rgba(148,163,184,.16);
       border-radius: 16px;
@@ -785,7 +825,7 @@
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
-      padding-right: 90px;
+      padding-right: 92px;
     }
     .badge-rt{
       position:absolute;
@@ -825,6 +865,10 @@
       background: rgba(255,255,255,.04);
       color: rgba(226,232,240,.92);
       flex: 0 0 auto;
+      max-width: 65%;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
     }
     .minirow .mini-badge.win{ border-color: rgba(52,211,153,.25); background: rgba(52,211,153,.10); }
     .minirow .mini-badge.next{ border-color: rgba(251,191,36,.25); background: rgba(251,191,36,.10); }
@@ -838,22 +882,23 @@
       align-items:center;
       justify-content:flex-end;
       text-align:center;
+      padding-top: 4px;
     }
     .rslot .price{
       font-weight: 900;
-      letter-spacing:.06em;
+      letter-spacing:.05em;
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
       max-width: 100%;
-      font-size: 30px;            /* GIÁ TO Ở GIỮA */
+      font-size: 28px;
       line-height: 1.05;
       text-shadow: 0 0 22px rgba(34,211,238,.18);
     }
     .rslot .who{
       font-weight: 900;
-      font-size: 15px;            /* NGƯỜI TRÚNG / SỐ KHÁCH TO RÕ */
-      letter-spacing:.12em;
+      font-size: 14px;
+      letter-spacing:.08em;
       text-transform:uppercase;
       color: rgba(226,232,240,.92);
       white-space:nowrap;
@@ -861,32 +906,9 @@
       text-overflow:ellipsis;
       max-width: 100%;
     }
-
-    .tease-overlay{
-      position:absolute; inset:0;
-      background: radial-gradient(600px 260px at 50% 0%, rgba(34,211,238,.18), rgba(0,0,0,.55));
-      display:none;
-      align-items:center;
-      justify-content:center;
-      text-align:center;
-      padding: 12px;
-    }
-    .tease-overlay.show{ display:flex; }
-    .tease-overlay .t1{
-      font-weight: 900;
-      letter-spacing:.14em;
-      text-transform:uppercase;
-      font-size: 12px;
-      color: rgba(226,232,240,.9);
-    }
-    .tease-overlay .t2{
-      margin-top: 8px;
-      font-weight: 900;
-      font-size: 16px;
-      letter-spacing:.10em;
-      text-transform:uppercase;
-      color: var(--pri);
-      text-shadow: var(--glow);
+    .rslot .who .stt{
+      color: rgba(226,232,240,.88);
+      opacity:.95;
     }
 
     /* RIGHT: next lots cards ticker */
@@ -914,6 +936,8 @@
       overflow:hidden;
     }
     .lotcard.next{ border-color: rgba(251,191,36,.22); background: rgba(251,191,36,.05); }
+    .lotcard.win{ border-color: rgba(52,211,153,.22); background: rgba(52,211,153,.05); }
+
     .lotcard .top{
       display:flex; align-items:center; justify-content:space-between; gap:10px;
       margin-bottom: 8px;
@@ -936,8 +960,8 @@
       text-transform:uppercase;
       padding: 4px 8px;
       border-radius:999px;
-      border: 1px solid rgba(251,191,36,.25);
-            background: rgba(251,191,36,.10);
+      border: 1px solid rgba(148,163,184,.18);
+      background: rgba(255,255,255,.04);
       color: rgba(226,232,240,.92);
       white-space:nowrap;
       flex: 0 0 auto;
@@ -946,6 +970,11 @@
       border-color: rgba(52,211,153,.25);
       background: rgba(52,211,153,.12);
     }
+    .lotcard .flag.next{
+      border-color: rgba(251,191,36,.25);
+      background: rgba(251,191,36,.12);
+      color: rgba(226,232,240,.95);
+    }
     .lotcard .flag.no{
       border-color: rgba(251,113,133,.25);
       background: rgba(251,113,133,.10);
@@ -953,7 +982,7 @@
 
     .lotcard .mid{
       display:flex;
-      align-items:center;
+      align-items:flex-start;
       justify-content:space-between;
       gap: 10px;
       margin-bottom: 8px;
@@ -964,7 +993,7 @@
       flex-wrap:wrap;
       gap: 6px;
       min-width:0;
-      max-width: 72%;
+      max-width: 78%;
     }
     .lotcard .meta .pill{
       padding: 5px 8px;
@@ -978,14 +1007,19 @@
     .lotcard .meta .pill.ok{ border-color: rgba(52,211,153,.25); background: rgba(52,211,153,.10); }
     .lotcard .meta .pill.bad{ border-color: rgba(251,113,133,.25); background: rgba(251,113,133,.08); }
 
+    .lotcard .countbox{
+      text-align:right;
+      flex: 0 0 auto;
+      min-width: 64px;
+    }
     .lotcard .count{
       font-weight: 900;
       font-size: 26px;
       letter-spacing:.08em;
-      text-shadow: 0 0 18px rgba(251,191,36,.18);
       white-space:nowrap;
-      flex: 0 0 auto;
     }
+    .lotcard.next .count{ color: var(--warn); text-shadow: 0 0 18px rgba(251,191,36,.18); }
+    .lotcard.win .count{ color: var(--ok); text-shadow: 0 0 18px rgba(52,211,153,.18); }
     .lotcard .sub{
       margin-top: 2px;
       color: var(--muted);
@@ -996,6 +1030,63 @@
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
+    }
+
+    /* NEW: next-customer list inside right cards */
+    .nlist{
+      margin-top: 6px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(148,163,184,.12);
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+    }
+    .nrow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      padding: 7px 8px;
+      border-radius: 12px;
+      border: 1px solid rgba(251,191,36,.18);
+      background: rgba(251,191,36,.06);
+      overflow:hidden;
+    }
+    .nrow .nleft{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      min-width:0;
+    }
+    .nrow .nstt{
+      font-weight: 900;
+      letter-spacing:.14em;
+      font-size: 11px;
+      color: rgba(226,232,240,.95);
+      border: 1px solid rgba(251,191,36,.22);
+      background: rgba(251,191,36,.10);
+      padding: 3px 7px;
+      border-radius: 999px;
+      white-space:nowrap;
+    }
+    .nrow .nname{
+      font-weight: 900;
+      letter-spacing:.06em;
+      font-size: 12px;
+      text-transform:uppercase;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      min-width:0;
+    }
+    .nrow .ntail{
+      font-weight: 900;
+      font-size: 10px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color: rgba(226,232,240,.8);
+      white-space:nowrap;
+      flex: 0 0 auto;
     }
 
     /* footer marquee */
@@ -1017,19 +1108,31 @@
       color: rgba(226,232,240,.82);
     }
 
-    /* toast */
+    /* TOAST OVERLAY (blur whole page) */
+    .toast-overlay{
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.58);
+      backdrop-filter: blur(14px);
+      z-index: 48;
+      display:none;
+    }
+    .toast-overlay.show{ display:block; }
+
+    /* toast (center big) */
     .toast{
       position: fixed;
-      left: 18px;
-      bottom: 18px;
+      left: 50%;
+      top: 50%;
+      bottom: auto;
       z-index: 50;
-      width: min(520px, calc(100vw - 36px));
-      border-radius: 18px;
+      width: min(820px, calc(100vw - 48px));
+      border-radius: 22px;
       border: 1px solid rgba(148,163,184,.18);
-      background: rgba(0,0,0,.55);
-      box-shadow: var(--shadow), 0 0 32px rgba(34,211,238,.12);
+      background: rgba(0,0,0,.62);
+      box-shadow: var(--shadow), 0 0 44px rgba(34,211,238,.14);
       overflow:hidden;
-      transform: translateY(20px);
+      transform: translate(-50%, -50%) scale(.94);
       opacity: 0;
       pointer-events:none;
       transition: opacity .25s ease, transform .25s ease;
@@ -1037,79 +1140,92 @@
     }
     .toast.show{
       opacity: 1;
-      transform: translateY(0);
+      transform: translate(-50%, -50%) scale(1);
     }
     .toast .t-head{
       display:flex;
       align-items:center;
       justify-content:space-between;
       gap: 10px;
-      padding: 10px 12px;
+      padding: 12px 14px;
       border-bottom: 1px solid rgba(148,163,184,.14);
-      background: rgba(255,255,255,.04);
+      background: rgba(255,255,255,.05);
       font-weight: 900;
-      letter-spacing:.12em;
+      letter-spacing:.14em;
       text-transform:uppercase;
       font-size: 12px;
-      color: rgba(226,232,240,.92);
+      color: rgba(226,232,240,.95);
     }
     .toast .t-head .badge{
       font-size: 10px;
-      padding: 4px 8px;
+      padding: 5px 10px;
       border-radius: 999px;
       border: 1px solid rgba(148,163,184,.18);
       background: rgba(255,255,255,.04);
       white-space:nowrap;
     }
     .toast .t-body{
-      padding: 10px 12px 12px 12px;
+      padding: 14px 14px 16px 14px;
       display:flex;
       flex-direction:column;
-      gap: 6px;
+      gap: 10px;
+      text-align:center;
     }
     .toast .line1{
       font-weight: 900;
-      font-size: 14px;
-      letter-spacing:.08em;
+      font-size: 16px;
+      letter-spacing:.10em;
       text-transform:uppercase;
       color: rgba(226,232,240,.92);
     }
     .toast .line2{
       font-weight: 900;
-      font-size: 18px;
-      letter-spacing:.08em;
+      font-size: 34px;
+      letter-spacing:.06em;
       text-transform:uppercase;
-      text-shadow: 0 0 18px rgba(34,211,238,.18);
+      text-shadow: 0 0 22px rgba(34,211,238,.22);
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
     }
-    .toast.ok{ border-color: rgba(52,211,153,.25); box-shadow: var(--shadow), 0 0 36px rgba(52,211,153,.16); }
-    .toast.ok .t-head{ background: rgba(52,211,153,.10); }
-    .toast.ok .t-head .badge{ border-color: rgba(52,211,153,.25); background: rgba(52,211,153,.12); }
+    .toast .line3{
+      font-weight: 900;
+      font-size: 18px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      color: rgba(226,232,240,.92);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      opacity:.96;
+    }
 
-    .toast.warn{ border-color: rgba(251,191,36,.25); box-shadow: var(--shadow), 0 0 36px rgba(251,191,36,.15); }
-    .toast.warn .t-head{ background: rgba(251,191,36,.10); }
-    .toast.warn .t-head .badge{ border-color: rgba(251,191,36,.25); background: rgba(251,191,36,.12); }
+    .toast.ok{ border-color: rgba(52,211,153,.28); box-shadow: var(--shadow), 0 0 48px rgba(52,211,153,.18); }
+    .toast.ok .t-head{ background: rgba(52,211,153,.12); }
+    .toast.ok .t-head .badge{ border-color: rgba(52,211,153,.26); background: rgba(52,211,153,.14); }
 
-    .toast.bad{ border-color: rgba(251,113,133,.25); box-shadow: var(--shadow), 0 0 36px rgba(251,113,133,.12); }
-    .toast.bad .t-head{ background: rgba(251,113,133,.08); }
-    .toast.bad .t-head .badge{ border-color: rgba(251,113,133,.25); background: rgba(251,113,133,.10); }
+    .toast.warn{ border-color: rgba(251,191,36,.28); box-shadow: var(--shadow), 0 0 48px rgba(251,191,36,.16); }
+    .toast.warn .t-head{ background: rgba(251,191,36,.12); }
+    .toast.warn .t-head .badge{ border-color: rgba(251,191,36,.26); background: rgba(251,191,36,.14); }
+
+    .toast.bad{ border-color: rgba(251,113,133,.28); box-shadow: var(--shadow), 0 0 48px rgba(251,113,133,.14); }
+    .toast.bad .t-head{ background: rgba(251,113,133,.10); }
+    .toast.bad .t-head .badge{ border-color: rgba(251,113,133,.26); background: rgba(251,113,133,.12); }
 
     /* responsiveness */
     @media (max-width: 1220px){
-      .topbar{
-        grid-template-columns: 1.2fr 1.2fr 1fr;
-      }
+      .topbar{ grid-template-columns: 1.2fr 1.2fr 1fr; }
       .kpi{ min-width: 96px; }
+      .hero-top{ grid-template-columns: 1fr; }
+      .hero-lot{ padding: 10px; }
+      .price-val{ font-size: 42px; }
     }
     @media (max-width: 1060px){
-      .main{
-        grid-template-columns: 1fr;
-      }
+      .main{ grid-template-columns: 1fr; }
       body{ overflow:auto; }
       .stage{ height:auto; min-height:100vh; }
       .center{ order: 1; }
+      .toast .line2{ font-size: 28px; }
     }
   </style>
 </head>
@@ -1121,7 +1237,6 @@
       <div class="top-left">
         <div class="brand-title">TRÌNH CHIẾU KIỂM PHIẾU</div>
         <div class="brand-row">
-          <!-- FIX #4: truncate company/project to protect KPI area -->
           <span class="pill" id="companyName" title=""></span>
           <span class="pill soft blue" id="sessionCode" title=""></span>
         </div>
@@ -1130,7 +1245,6 @@
       <div class="top-mid">
         <div class="wrap">
           <div class="project-name" id="projectName" title=""></div>
-          <!-- FIX #5: tránh overlap: subline luôn ellipsis trong vùng mid -->
           <div class="subline" id="roundLine">VÒNG 1 • TRẠNG THÁI ĐANG KIỂM</div>
         </div>
       </div>
@@ -1155,7 +1269,6 @@
           </div>
         </div>
 
-        <!-- FIX #1: fullscreen button -->
         <button class="fsbtn" id="fsBtn" type="button" title="Toàn màn hình">
           <span class="sr-only">Toàn màn hình</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1178,7 +1291,6 @@
         </div>
 
         <div class="left-body">
-          <!-- winners list -->
           <div class="box won">
             <div class="box-head">
               <div class="t">TRÚNG</div>
@@ -1191,7 +1303,6 @@
             </div>
           </div>
 
-          <!-- next round list -->
           <div class="box next">
             <div class="box-head">
               <div class="t">VÀO VÒNG SAU</div>
@@ -1223,27 +1334,31 @@
               </div>
 
               <div class="hero-lot">
+                <div class="lot-kicker" id="heroLotKicker">MÃ LÔ</div>
                 <div class="lot-code" id="heroLotCode">—</div>
-                <div class="lot-name" id="heroLotName">Mã lô</div>
+                <div class="lot-name" id="heroLotName">—</div>
                 <div class="lot-desc" id="heroLotDesc">—</div>
               </div>
 
               <div class="hero-meta">
                 <div class="meta-row">
-                  <span class="pill pri" id="heroBadge1">LÔ MỚI</span>
+                  <span class="pill pri" id="heroBadge1">KẾT QUẢ MỚI</span>
                   <span class="pill soft" id="heroBadge2">#—</span>
                 </div>
 
                 <div class="price-wrap">
                   <div class="price-label">
-                    <span id="priceLabel">GIÁ</span>
+                    <span id="priceLabel">GIÁ CAO NHẤT</span>
                     <span class="pill soft" id="priceUnit">VNĐ</span>
                   </div>
                   <div class="price-val" id="heroPrice">—</div>
                 </div>
 
                 <div class="winner-wrap bad" id="winnerWrap">
-                  <div class="winner-label" id="winnerLabel">NGƯỜI TRÚNG</div>
+                  <div class="winner-topline">
+                    <div class="winner-label" id="winnerLabel">NGƯỜI TRÚNG</div>
+                    <div class="winner-badge bad" id="winnerBadge">CHƯA CÓ</div>
+                  </div>
                   <div class="winner-name masked" id="winnerName">—<span class="caret">|</span></div>
                 </div>
               </div>
@@ -1258,7 +1373,6 @@
                 <div class="track" id="nextTrack"></div>
               </div>
             </div>
-
           </div>
         </div>
 
@@ -1268,9 +1382,7 @@
             <div class="h-title">KẾT QUẢ GẦN NHẤT</div>
             <div class="h-badge" id="recentHint">3 LÔ</div>
           </div>
-          <div class="recent-body" id="recentBody">
-            <!-- JS fill 3 slots -->
-          </div>
+          <div class="recent-body" id="recentBody"></div>
         </div>
       </div>
 
@@ -1296,7 +1408,9 @@
     </div>
   </div>
 
-  <!-- TOAST -->
+  <!-- TOAST OVERLAY + TOAST -->
+  <div class="toast-overlay" id="toastOverlay"></div>
+
   <div class="toast" id="toast">
     <div class="t-head">
       <span id="toastTitle">CHÚC MỪNG</span>
@@ -1305,6 +1419,7 @@
     <div class="t-body">
       <div class="line1" id="toastLine1">Kết quả đã được xác nhận</div>
       <div class="line2" id="toastLine2">—</div>
+      <div class="line3" id="toastLine3">—</div>
     </div>
   </div>
 
@@ -1316,7 +1431,6 @@
     const ROUND_NO   = {{ (round_no or 1)|tojson }};
 
     const POLL_MS = 5000;
-
     const API_URL = `/auction/sessions/api/display/sessions/${SESSION_ID}?round_no=${ROUND_NO}`;
 
     // =========================================================
@@ -1340,7 +1454,6 @@
 
     function shortStatus(s){
       const x = (safeText(s)||'').toUpperCase();
-      // map from backend statuses -> Vietnamese short
       if(x.includes("ISSU")) return "ĐANG KIỂM";
       if(x.includes("OPEN")) return "ĐANG MỞ";
       if(x.includes("CLOSE")) return "ĐÃ CHỐT";
@@ -1371,7 +1484,6 @@
     }
 
     function maskSTT(stt){
-      // yêu cầu: recent show "masked winner as STT"
       const v = safeText(stt).trim();
       if(!v) return "STT —";
       return `STT ${v}`;
@@ -1381,6 +1493,11 @@
       const s = safeText(str);
       if(s.length <= max) return s;
       return s.slice(0, Math.max(0, max-1)) + "…";
+    }
+
+    function upperName(x){
+      const s = safeText(x).trim();
+      return s ? s.toUpperCase() : "—";
     }
 
     // =========================================================
@@ -1404,7 +1521,7 @@
       if(!items || !items.length) return `<div class="crow ${cls}"><div class="r1"><div class="name">—</div><div class="stt">STT —</div></div></div>`;
       let html = "";
       for(const it of items){
-        const nm = safeText(it.name || it.customer_name || it.full_name || it.display_name || "—").toUpperCase();
+        const nm = upperName(it.name || it.customer_name || it.full_name || it.display_name || "—");
         const stt = safeText(it.stt || it.snapshot_stt || it.no || it.order || "—");
         const chips = [];
         if(it.lot_code) chips.push(`<span class="chip ${cls}">${safeText(it.lot_code)}</span>`);
@@ -1423,14 +1540,12 @@
     }
 
     function startVerticalTicker(viewportEl, innerEl){
-      // innerEl already filled. We animate by translating Y continuously.
-      // We'll duplicate content (x10) for seamless loop.
       const base = innerEl.innerHTML;
       innerEl.innerHTML = base.repeat(10);
 
       let y = 0;
       let last = performance.now();
-      const speed = 18; // px/s (slow smooth)
+      const speed = 18;
 
       function tick(now){
         const dt = (now - last)/1000;
@@ -1475,7 +1590,6 @@
     }
 
     function startMarquee(trackEl, speedPxPerSec){
-      // duplicate content for seamless
       const base = trackEl.innerHTML;
       trackEl.innerHTML = base.repeat(10);
 
@@ -1495,7 +1609,7 @@
         }
 
         x += speedPxPerSec * dt;
-        if(x > w/10) x = 0; // because repeated 10 times
+        if(x > w/10) x = 0;
         trackEl.style.transform = `translateX(${-x}px)`;
         requestAnimationFrame(tick);
       }
@@ -1510,59 +1624,78 @@
     let _teaseTimer = null;
 
     function setTopTexts(payload){
-  const c = payload?.context || {};
+      const c = payload?.context || {};
 
-  const company = safeText(c.company_name || "");
-  const project = safeText(c.project_name || "");
-  const sessionCode = safeText(c.project_code || c.session_id || "");
+      const company = safeText(c.company_name || "");
+      const project = safeText(c.project_name || "");
+      const sessionCode = safeText(c.project_code || c.session_id || "");
 
-  $("companyName").textContent = truncate(company.toUpperCase(), 26);
-  $("companyName").title = company;
+      $("companyName").textContent = truncate(company.toUpperCase(), 26);
+      $("companyName").title = company;
 
-  $("projectName").textContent = truncate(project.toUpperCase(), 34);
-  $("projectName").title = project;
+      $("projectName").textContent = truncate(project.toUpperCase(), 34);
+      $("projectName").title = project;
 
-  $("sessionCode").textContent = sessionCode ? `PHIÊN ${String(sessionCode).toUpperCase()}` : "PHIÊN —";
-  $("sessionCode").title = sessionCode;
+      $("sessionCode").textContent = sessionCode ? `PHIÊN ${String(sessionCode).toUpperCase()}` : "PHIÊN —";
+      $("sessionCode").title = sessionCode;
 
-  const roundNo = c.round_no ?? ROUND_NO;
-  const st = shortStatus(c.round_status || "");
-  $("roundLine").textContent = `VÒNG ${roundNo} • TRẠNG THÁI ${st}`;
-}
-
+      const roundNo = c.round_no ?? ROUND_NO;
+      const st = shortStatus(c.round_status || "");
+      $("roundLine").textContent = `VÒNG ${roundNo} • TRẠNG THÁI ${st}`;
+    }
 
     function setKpis(payload){
-  const s = payload?.context?.stats || {};
+      const s = payload?.context?.stats || {};
 
-  $("kpiTotalLots").textContent = fmtInt(s.total_lots ?? 0);
-  $("kpiWon").textContent      = fmtInt(s.won_lots ?? 0);
-  $("kpiNext").textContent     = fmtInt(s.next_lots ?? 0);
-  $("kpiPending").textContent  = fmtInt(s.pending_lots ?? 0);
+      $("kpiTotalLots").textContent = fmtInt(s.total_lots ?? 0);
+      $("kpiWon").textContent      = fmtInt(s.won_lots ?? 0);
+      $("kpiNext").textContent     = fmtInt(s.next_lots ?? 0);
+      $("kpiPending").textContent  = fmtInt(s.pending_lots ?? 0);
 
-  // tags ở box trái
-  $("wonCountTag").textContent  = fmtInt(s.won_lots ?? 0);
-  $("nextCountTag").textContent = fmtInt(s.next_lots ?? 0);
-}
-
+      $("wonCountTag").textContent  = fmtInt(s.won_lots ?? 0);
+      $("nextCountTag").textContent = fmtInt(s.next_lots ?? 0);
+    }
 
     function setStatus(payload){
-  const st = payload?.context?.round_status || "";
-  const cls = statusClass(st);
+      const st = payload?.context?.round_status || "";
+      const cls = statusClass(st);
 
-  const pill = $("statusPill");
-  pill.classList.remove("ok","pri","warn","bad");
-  pill.classList.add(cls);
+      const pill = $("statusPill");
+      pill.classList.remove("ok","pri","warn","bad");
+      pill.classList.add(cls);
 
-  $("statusText").textContent = shortStatus(st);
+      $("statusText").textContent = shortStatus(st);
 
-  const dot = $("statusDot");
-  dot.style.background = (cls==="ok")
-    ? "var(--ok)"
-    : (cls==="pri" ? "var(--pri)" : "var(--bad)");
+      const dot = $("statusDot");
+      dot.style.background = (cls==="ok") ? "var(--ok)" : (cls==="pri" ? "var(--pri)" : "var(--bad)");
 
-  $("statusSub").textContent = "Hệ thống đang cập nhật kết quả theo thời gian thực.";
-}
+      $("statusSub").textContent = "Hệ thống đang cập nhật kết quả theo thời gian thực.";
+    }
 
+    function setWinnerPanel(label){
+      const wrap = $("winnerWrap");
+      const badge = $("winnerBadge");
+
+      wrap.classList.remove("ok","warn","bad");
+      badge.classList.remove("ok","warn","bad");
+
+      if(label === "TRÚNG"){
+        wrap.classList.add("ok");
+        badge.classList.add("ok");
+        badge.textContent = "TRÚNG";
+        $("winnerLabel").textContent = "NGƯỜI TRÚNG";
+      }else if(label === "VÒNG SAU"){
+        wrap.classList.add("warn");
+        badge.classList.add("warn");
+        badge.textContent = "VÒNG SAU";
+        $("winnerLabel").textContent = "CHUYỂN VÒNG SAU";
+      }else{
+        wrap.classList.add("bad");
+        badge.classList.add("bad");
+        badge.textContent = "CHƯA CÓ";
+        $("winnerLabel").textContent = "CHƯA CÓ KẾT QUẢ";
+      }
+    }
 
     function renderHeroNewest(payload){
   const newest = (payload?.recent_checked_lots && payload.recent_checked_lots[0])
@@ -1572,11 +1705,12 @@
   const lot = newest?.lot || null;
 
   const lotCode = safeText(lot?.lot_code || "—").toUpperCase();
-  const lotName = safeText(lot?.lot_name || "Mã lô");
+  const lotName = safeText(lot?.lot_name || "");
   const lotDesc = safeText(lot?.lot_description || "—");
 
+  $("heroLotKicker").textContent = "MÃ LÔ";
   $("heroLotCode").textContent = lotCode || "—";
-  $("heroLotName").textContent = lotName ? truncate(lotName.toUpperCase(), 28) : "MÃ LÔ";
+  $("heroLotName").textContent = lotName ? truncate(lotName.toUpperCase(), 28) : "—";
   $("heroLotDesc").textContent = lotDesc || "—";
 
   const price = newest?.price_vnd;
@@ -1587,34 +1721,24 @@
   $("heroBadge1").textContent = "KẾT QUẢ MỚI";
   $("heroBadge2").textContent = label;
 
-  const winnerWrap = $("winnerWrap");
-  const winnerLabel = $("winnerLabel");
-  const winnerName = $("winnerName");
+  setWinnerPanel(label);
+
+  const winnerNameEl = $("winnerName");
+  winnerNameEl.classList.add("masked");
+  winnerNameEl.classList.remove("reveal");
+
   const nextWrap = $("heroNextWrap");
 
-  winnerWrap.classList.remove("ok","warn","bad");
-  winnerName.classList.add("masked");
-  winnerName.classList.remove("reveal");
-
   if(label==="TRÚNG"){
-    winnerWrap.classList.add("ok");
-    winnerLabel.textContent = "NGƯỜI TRÚNG";
     const winName = safeText(newest?.winner?.name || "");
-    winnerName.textContent = (winName ? winName.toUpperCase() : "—") + " ";
-    winnerName.insertAdjacentHTML("beforeend", `<span class="caret">|</span>`);
-    nextWrap.style.display = "none";
+    winnerNameEl.innerHTML = `${upperName(winName)}<span class="caret">|</span>`;
+    nextWrap.style.display = "none"; // ẩn danh sách vòng sau ở HERO khi đã TRÚNG
   }else if(label==="VÒNG SAU"){
-    winnerWrap.classList.add("warn");
-    winnerLabel.textContent = "CHỜ VÒNG SAU";
-    winnerName.textContent = "ĐANG CHỌN… ";
-    winnerName.insertAdjacentHTML("beforeend", `<span class="caret">|</span>`);
-    nextWrap.style.display = "";
+    winnerNameEl.innerHTML = `ĐANG CHỌN…<span class="caret">|</span>`;
+    nextWrap.style.display = ""; // show danh sách vào vòng sau
   }else{
-    winnerWrap.classList.add("bad");
-    winnerLabel.textContent = "CHƯA CÓ KQ";
-    winnerName.textContent = "— ";
-    winnerName.insertAdjacentHTML("beforeend", `<span class="caret">|</span>`);
-    nextWrap.style.display = "";
+    winnerNameEl.innerHTML = `—<span class="caret">|</span>`;
+    nextWrap.style.display = ""; // vẫn show (trống) cho thống nhất
   }
 
   const nexts = newest?.next_customers || [];
@@ -1622,7 +1746,7 @@
 
   $("nextTrack").innerHTML = nexts.length
     ? nexts.map(p=>{
-        const nm = safeText(p.name||"—").toUpperCase();
+        const nm = upperName(p.name||"—");
         const stt = safeText(p.stt||"—");
         return `<span class="marquee-item"><span class="m-stt">STT ${stt}</span><span class="m-name">${nm}</span></span>`;
       }).join("")
@@ -1630,153 +1754,223 @@
 
   clearTimeout(_teaseTimer);
   _teaseTimer = setTimeout(()=>{
-    winnerName.classList.remove("masked");
-    winnerName.classList.add("reveal");
-  }, 1800);
+    winnerNameEl.classList.remove("masked");
+    winnerNameEl.classList.add("reveal");
+  }, 1600);
 
   const key = safeText(newest?.round_lot_id || lotCode);
   if(key && key !== _lastNewestKey){
     _lastNewestKey = key;
-    showToastFromNewest({
-      result_type: newest?.result_type,
-      winner_name: newest?.winner?.name,
-      next_customers: newest?.next_customers || []
-    }, lotCode);
+    showToastFromNewest(newest, lotCode);
   }
 }
-
 
     function renderLeftLists(payload){
-  const w = payload?.by_status?.won_this_round || [];
-  const n = payload?.by_status?.next_this_round || [];
+      const w = payload?.by_status?.won_this_round || [];
+      const n = payload?.by_status?.next_this_round || [];
 
-  const winners = w.map(x=>({
-    name: x?.winner?.name,
-    stt: x?.winner?.stt,
-    lot_code: x?.lot?.lot_code,
-    price_vnd: x?.price_vnd
-  }));
+      const winners = w.map(x=>({
+        name: x?.winner?.name,
+        stt: x?.winner?.stt,
+        lot_code: x?.lot?.lot_code,
+        price_vnd: x?.price_vnd
+      }));
 
-  const nexts = n.flatMap(x=>{
-    const lotCode = x?.lot?.lot_code;
-    const price = x?.price_vnd;
-    return (x?.next_customers||[]).map(c=>({
-      name: c?.name,
-      stt: c?.stt,
-      lot_code: lotCode,
-      price_vnd: price
-    }));
-  });
+      const nexts = n.flatMap(x=>{
+        const lotCode = x?.lot?.lot_code;
+        const price = x?.price_vnd;
+        return (x?.next_customers||[]).map(c=>({
+          name: c?.name,
+          stt: c?.stt,
+          lot_code: lotCode,
+          price_vnd: price
+        }));
+      });
 
-  $("wonTicker").innerHTML  = buildTickerHTML(winners, "won");
-  $("nextTicker").innerHTML = buildTickerHTML(nexts, "next");
-}
-
-
-    function renderRightLots(payload){
-  const lotsAll = payload?.by_lot || [];
-  const lots = lotsAll.filter(x => {
-    const rt = safeText(x?.result_type).toUpperCase();
-    return rt === "PENDING" || rt === "NEXT_ROUND";
-  });
-
-  if(!lots.length){
-    $("lotCards").innerHTML = `
-      <div class="lotcard next">
-        <div class="top">
-          <div class="code">—</div>
-          <div class="flag">CHỜ</div>
-        </div>
-        <div class="mid">
-          <div class="meta"><span class="pill warn">CHƯA CÓ DỮ LIỆU</span></div>
-          <div><div class="count">0</div><div class="sub">KHÁCH</div></div>
-        </div>
-      </div>`;
-    return;
-  }
-
-  let html = "";
-  for(const it of lots){
-    const code = safeText(it?.lot?.lot_code || "—").toUpperCase();
-    const rt = resultLabel(it?.result_type || "");
-    const flagCls = (rt==="TRÚNG") ? "win" : (rt==="CHƯA CÓ" ? "no" : "");
-    const cnt = Number(it?.next_count ?? 0) || 0;
-
-    html += `
-      <div class="lotcard next">
-        <div class="top">
-          <div class="code" title="${safeText(code)}">${safeText(code)}</div>
-          <div class="flag ${flagCls}">${rt}</div>
-        </div>
-        <div class="mid">
-          <div class="meta">
-            <span class="pill warn">VÒNG ${safeText(payload?.context?.round_no ?? ROUND_NO)}</span>
-            <span class="pill ${cnt>=2 ? "ok":"bad"}">${cnt>=2 ? "ĐỦ KHÁCH" : "THIẾU KHÁCH"}</span>
-          </div>
-          <div>
-            <div class="count">${fmtInt(cnt)}</div>
-            <div class="sub">KHÁCH</div>
-          </div>
-        </div>
-      </div>`;
-  }
-  $("lotCards").innerHTML = html;
-}
-
-
-    function renderRecent(payload){
-  const rec = payload?.recent_checked_lots || [];
-  const arr = rec.slice(0,3);
-  while(arr.length < 3) arr.push(null);
-
-  const html = arr.map((it)=>{
-    if(!it){
-      return `
-        <div class="rslot no">
-          <div class="lc">—</div>
-          <div class="badge-rt no">CHƯA CÓ</div>
-          <div class="minirow"><span>TRẠNG THÁI</span><span class="mini-badge no">—</span></div>
-          <div class="minirow"><span>GIÁ</span><span class="mini-badge no">—</span></div>
-          <div class="minirow"><span>NGƯỜI</span><span class="mini-badge no">STT —</span></div>
-          <div class="minirow"><span>VÒNG SAU</span><span class="mini-badge no">0</span></div>
-          <div class="rv"><div class="price">—</div><div class="who">STT —</div></div>
-        </div>`;
+      $("wonTicker").innerHTML  = buildTickerHTML(winners, "won");
+      $("nextTicker").innerHTML = buildTickerHTML(nexts, "next");
     }
 
-    const code = safeText(it?.lot?.lot_code || "—").toUpperCase();
-    const rt = it?.result_type || "";
-    const cls = resultClass(rt);
-    const lab = resultLabel(rt);
+    // RIGHT: cards show lot + highest price + list top 5 next customers (if NEXT_ROUND)
+    function renderRightLots(payload){
+      const src = Array.isArray(payload?.by_lot) ? payload.by_lot : [];
 
-    const price = it?.price_vnd;
-    const winnerStt = it?.winner?.stt || "";
-    const nextCount = Number(it?.next_count ?? (it?.next_customers?.length ?? 0)) || 0;
+      const lots = src.filter(it => {
+        const rt = (safeText(it?.result_type || "")).toUpperCase();
+        return rt && rt !== "PENDING";
+      });
 
-    const priceText = (!price || Number(price)<=0) ? "—" : (fmtMoney(price) + " VNĐ");
+      if(!lots.length){
+        $("lotCards").innerHTML = `
+          <div class="lotcard next">
+            <div class="top">
+              <div class="code">—</div>
+              <div class="flag no">CHƯA CÓ</div>
+            </div>
+            <div class="mid">
+              <div class="meta"><span class="pill warn">CHƯA CÓ LÔ TRÚNG / VÒNG SAU</span></div>
+              <div class="countbox">
+                <div class="count">0</div>
+                <div class="sub">VÒNG SAU</div>
+              </div>
+            </div>
+          </div>
+        `;
+        return;
+      }
 
-    return `
-      <div class="rslot ${cls}">
-        <div class="lc" title="${safeText(code)}">${safeText(code)}</div>
-        <div class="badge-rt ${cls}">${lab}</div>
+      let html = "";
+      for(const it of lots){
+        const rt = safeText(it?.result_type || "").toUpperCase();
+        const isWin  = (rt === "WINNER" || rt.includes("WIN"));
+        const isNext = (rt === "NEXT_ROUND" || rt.includes("NEXT"));
 
-        <div class="minirow"><span>TRẠNG THÁI</span><span class="mini-badge ${cls}">${lab}</span></div>
-        <div class="minirow"><span>GIÁ</span><span class="mini-badge ${cls}">${priceText}</span></div>
-        <div class="minirow"><span>NGƯỜI</span><span class="mini-badge ${cls}">${maskSTT(winnerStt)}</span></div>
-        <div class="minirow"><span>VÒNG SAU</span><span class="mini-badge ${cls}">${fmtInt(nextCount)}</span></div>
+        const code = safeText(it?.lot?.lot_code || it?.lot_code || "—").toUpperCase();
 
-        <div class="rv">
-          <div class="price">${priceText}</div>
-          <div class="who">${maskSTT(winnerStt)}</div>
-        </div>
-      </div>`;
-  }).join("");
+        const price = Number(it?.price_vnd || 0) || 0;
+        const priceText = price > 0 ? `${fmtMoney(price)} VNĐ` : "—";
 
-  $("recentBody").innerHTML = html;
-}
+        const nextCustomers = Array.isArray(it?.next_customers) ? it.next_customers : [];
+        const nextCount = Number(it?.next_count ?? nextCustomers.length ?? 0) || 0;
 
+        const winnerStt = it?.winner?.stt;
+        const winnerName = it?.winner?.name;
 
-    function showToast(type, title, badge, line1, line2){
+        const cardClass = isWin ? "win" : (isNext ? "next" : "");
+        const flagCls   = isWin ? "win" : (isNext ? "next" : "no");
+        const flagText  = isWin ? "TRÚNG" : (isNext ? "VÒNG SAU" : "CHƯA CÓ");
+
+        // top 5 names
+        const top5 = nextCustomers.slice(0,5);
+        const extra = Math.max(0, nextCustomers.length - top5.length);
+
+        const nlistHtml = isNext
+          ? `
+            <div class="nlist">
+              ${top5.map((c, idx)=>{
+                const stt = safeText(c?.stt || "—");
+                const nm = upperName(c?.name || "—");
+                return `
+                  <div class="nrow">
+                    <div class="nleft">
+                      <span class="nstt">STT ${stt}</span>
+                      <span class="nname" title="${safeText(nm)}">${safeText(nm)}</span>
+                    </div>
+                    <span class="ntail">#${idx+1}</span>
+                  </div>
+                `;
+              }).join("")}
+              ${extra > 0 ? `<div class="nrow"><div class="nleft"><span class="nstt">+${extra}</span><span class="nname">KHÁCH KHÁC</span></div><span class="ntail">…</span></div>` : ``}
+            </div>
+          `
+          : ``;
+
+        html += `
+          <div class="lotcard ${cardClass}">
+            <div class="top">
+              <div class="code" title="${safeText(code)}">${safeText(code)}</div>
+              <div class="flag ${flagCls}">${flagText}</div>
+            </div>
+
+            <div class="mid">
+              <div class="meta">
+                <span class="pill ${isWin ? "ok" : "warn"}">${priceText}</span>
+                ${
+                  isWin
+                    ? `<span class="pill ok">${maskSTT(winnerStt)}</span>
+                       <span class="pill ok">${truncate(upperName(winnerName), 18)}</span>`
+                    : `<span class="pill warn">${fmtInt(nextCount)} KHÁCH</span>`
+                }
+              </div>
+
+              <div class="countbox">
+                <div class="count">${isWin ? "0" : fmtInt(nextCount)}</div>
+                <div class="sub">VÒNG SAU</div>
+              </div>
+            </div>
+
+            ${nlistHtml}
+          </div>
+        `;
+      }
+
+      $("lotCards").innerHTML = html;
+    }
+
+    function renderRecent(payload){
+      const rec = payload?.recent_checked_lots || [];
+      const arr = rec.slice(0,3);
+      while(arr.length < 3) arr.push(null);
+
+      const html = arr.map((it)=>{
+        if(!it){
+          return `
+            <div class="rslot no">
+              <div class="lc">—</div>
+              <div class="badge-rt no">CHƯA CÓ</div>
+
+              <div class="minirow"><span>TRẠNG THÁI</span><span class="mini-badge no">—</span></div>
+              <div class="minirow"><span>GIÁ</span><span class="mini-badge no">—</span></div>
+              <div class="minirow"><span>NGƯỜI</span><span class="mini-badge no">—</span></div>
+              <div class="minirow"><span>VÒNG SAU</span><span class="mini-badge no">0</span></div>
+
+              <div class="rv">
+                <div class="price">—</div>
+                <div class="who">—</div>
+              </div>
+            </div>
+          `;
+        }
+
+        const code = safeText(it?.lot?.lot_code || "—").toUpperCase();
+        const rt = it?.result_type || "";
+        const cls = resultClass(rt);
+        const lab = resultLabel(rt);
+
+        const price = it?.price_vnd;
+        const winnerName = safeText(it?.winner?.name || "");
+        const winnerStt = it?.winner?.stt || "";
+        const nextCount = Number(it?.next_count ?? (it?.next_customers?.length ?? 0)) || 0;
+
+        const priceText = (!price || Number(price)<=0) ? "—" : (fmtMoney(price) + " VNĐ");
+
+        // recent card: WINNER => show winner name; NEXT_ROUND => show "N khách"
+        const whoText = (lab==="TRÚNG")
+          ? truncate(upperName(winnerName || (winnerStt ? `STT ${winnerStt}` : "—")), 20)
+          : (lab==="VÒNG SAU" ? `${fmtInt(nextCount)} KHÁCH` : "—");
+
+        const whoBadge = (lab==="TRÚNG")
+          ? truncate(upperName(winnerName), 18) || maskSTT(winnerStt)
+          : (lab==="VÒNG SAU" ? `${fmtInt(nextCount)} KHÁCH` : "—");
+
+        return `
+          <div class="rslot ${cls}">
+            <div class="lc" title="${safeText(code)}">${safeText(code)}</div>
+            <div class="badge-rt ${cls}">${lab}</div>
+
+            <div class="minirow"><span>TRẠNG THÁI</span><span class="mini-badge ${cls}">${lab}</span></div>
+            <div class="minirow"><span>GIÁ</span><span class="mini-badge ${cls}">${priceText}</span></div>
+            <div class="minirow"><span>NGƯỜI</span><span class="mini-badge ${cls}">${whoBadge}</span></div>
+            <div class="minirow"><span>VÒNG SAU</span><span class="mini-badge ${cls}">${fmtInt(nextCount)}</span></div>
+
+            <div class="rv">
+              <div class="price">${priceText}</div>
+              <div class="who">${whoText}</div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      $("recentBody").innerHTML = html;
+    }
+
+    // =========================================================
+    // TOAST (blur whole page + big popup)
+    // =========================================================
+    function showToast(type, title, badge, line1, line2, line3){
       const toast = $("toast");
+      const ov = $("toastOverlay");
+
       toast.classList.remove("ok","warn","bad","show");
       toast.classList.add(type);
 
@@ -1784,41 +1978,53 @@
       $("toastBadge").textContent = safeText(badge);
       $("toastLine1").textContent = safeText(line1);
       $("toastLine2").textContent = safeText(line2);
+      $("toastLine3").textContent = safeText(line3);
 
-      // FIX #7: extend duration + congratulatory
+      ov.classList.add("show");
       toast.classList.add("show");
+
       clearTimeout(showToast._t);
-      showToast._t = setTimeout(()=> toast.classList.remove("show"), 9500);
+      showToast._t = setTimeout(()=>{
+        toast.classList.remove("show");
+        ov.classList.remove("show");
+      }, 9500);
     }
 
     function showToastFromNewest(newest, lotCode){
       const rt = newest?.result_type || newest?.result || "";
       const label = resultLabel(rt);
 
+      const price = newest?.price_vnd;
+      const priceText = (!price || Number(price)<=0) ? "—" : (fmtMoney(price) + " VNĐ");
+
       if(label === "TRÚNG"){
-        const winName = safeText(newest?.winner_name || newest?.winner?.name || newest?.customer_name || newest?.customer || "");
+        const winName = safeText(newest?.winner?.name || newest?.winner_name || newest?.customer_name || "");
         showToast(
           "ok",
           "CHÚC MỪNG",
           "TRÚNG",
-          "Chúc mừng khách hàng trúng đấu giá",
-          `${(winName ? winName.toUpperCase() : "—")} • LÔ ${safeText(lotCode)}`
+          "CHÚC MỪNG KHÁCH HÀNG TRÚNG ĐẤU GIÁ",
+          `LÔ ${safeText(lotCode)} • ${priceText}`,
+          upperName(winName)
         );
       }else if(label === "VÒNG SAU"){
+        const nextCount = Number(newest?.next_count ?? (newest?.next_customers?.length ?? 0)) || 0;
         showToast(
           "warn",
           "THÔNG BÁO",
           "VÒNG SAU",
-          "Lô này chuyển sang vòng sau",
-          `LÔ ${safeText(lotCode)} • ${fmtInt((newest?.next_participants||[]).length)} KHÁCH`
+          "LÔ NÀY CHUYỂN SANG VÒNG SAU",
+          `LÔ ${safeText(lotCode)} • ${priceText}`,
+          `${fmtInt(nextCount)} KHÁCH VÀO VÒNG SAU`
         );
       }else{
         showToast(
           "bad",
           "THÔNG BÁO",
           "CHƯA CÓ",
-          "Chưa có kết quả cho lô này",
-          `LÔ ${safeText(lotCode)}`
+          "CHƯA CÓ KẾT QUẢ CHO LÔ NÀY",
+          `LÔ ${safeText(lotCode)} • ${priceText}`,
+          "—"
         );
       }
     }
@@ -1853,7 +2059,6 @@
     async function mainLoop(){
       const payload = await pollOnce();
       if(payload){
-        // render
         setTopTexts(payload);
         setKpis(payload);
         setStatus(payload);
@@ -1863,24 +2068,19 @@
         renderRightLots(payload);
         renderRecent(payload);
 
-        // init tickers once (after content exists)
         if(!_initedTickers){
           _initedTickers = true;
 
-          // left tickers
           const wonVp = $("wonTicker").closest(".ticker-viewport");
           const nextVp = $("nextTicker").closest(".ticker-viewport");
           startVerticalTicker(wonVp, $("wonTicker"));
           startVerticalTicker(nextVp, $("nextTicker"));
 
-          // right cards ticker
           const cvp = $("lotCards").closest(".cards-viewport");
           startCardsTicker(cvp, $("lotCards"));
 
-          // hero marquee
           startMarquee($("nextTrack"), 58);
 
-          // footer
           initFooter();
         }
       }
