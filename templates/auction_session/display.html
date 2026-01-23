@@ -104,7 +104,7 @@
     /* top bar: 3 columns to avoid overlap */
     .topbar{
       display:grid;
-      grid-template-columns: minmax(320px, 1fr) minmax(360px, 1.15fr) minmax(420px, 1.15fr);
+      grid-template-columns: minmax(320px, 1fr) minmax(340px, 1.05fr) minmax(520px, 1.35fr);
       align-items:center;
       gap: 12px;
       padding: 10px 12px;
@@ -112,7 +112,8 @@
       border-radius: var(--radius);
       background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.04));
       box-shadow: var(--shadow);
-      overflow:hidden;
+      /* FIX #6: không cắt KPI */
+      overflow: visible;
     }
 
     .top-left{
@@ -142,10 +143,7 @@
       overflow:hidden;
       text-overflow:ellipsis;
     }
-    .pill.soft{
-      background: rgba(255,255,255,.04);
-      box-shadow:none;
-    }
+    .pill.soft{ background: rgba(255,255,255,.04); box-shadow:none; }
     .pill.blue{ background: rgba(96,165,250,.10); }
     .brand-title{
       font-weight:900;
@@ -162,10 +160,7 @@
       align-items:center;
       justify-content:center;
     }
-    .top-mid .wrap{
-      min-width:0;
-      max-width: 100%;
-    }
+    .top-mid .wrap{ min-width:0; max-width: 100%; }
     .project-name{
       font-weight:900;
       font-size: 18px;
@@ -193,7 +188,8 @@
       gap: 10px;
       align-items:center;
       justify-content:flex-end;
-      overflow:hidden;
+      /* FIX #6: không cắt KPI */
+      overflow: visible;
     }
 
     .kpis{
@@ -203,7 +199,9 @@
       justify-content:flex-end;
       min-width:0;
       flex: 1;
-      overflow:hidden;
+      /* FIX #6 */
+      overflow: visible;
+      flex-wrap: nowrap;
     }
     .kpi{
       min-width: 104px;
@@ -235,27 +233,31 @@
     .kpi.warn .val{ color: var(--warn); text-shadow: 0 0 16px rgba(251,191,36,.20); }
     .kpi.bad .val{ color: var(--bad); text-shadow: 0 0 16px rgba(251,113,133,.18); }
 
-    .btn{
+    /* FIX #5: fullscreen icon nhỏ */
+    .fsbtn{
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
       border:1px solid rgba(148,163,184,.22);
       background: rgba(0,0,0,.20);
-      color: rgba(226,232,240,.95);
-      border-radius: 14px;
-      padding: 10px 12px;
-      font-weight:900;
-      letter-spacing:.10em;
-      text-transform:uppercase;
-      cursor:pointer;
       display:inline-flex;
-      gap:8px;
       align-items:center;
-      white-space:nowrap;
+      justify-content:center;
+      cursor:pointer;
       box-shadow: var(--shadow);
       user-select:none;
+      flex: 0 0 auto;
     }
-    .btn:hover{ border-color: rgba(34,211,238,.35); box-shadow: var(--shadow), var(--glow); }
-    .btn:active{ transform: translateY(1px); }
-    .btn .ico{ width:10px;height:10px;border-radius:999px;background:var(--pri); box-shadow:0 0 16px rgba(34,211,238,.45); }
-    .btn.ok .ico{ background: var(--ok); box-shadow:0 0 16px rgba(52,211,153,.45); }
+    .fsbtn:hover{ border-color: rgba(34,211,238,.35); box-shadow: var(--shadow), var(--glow); }
+    .fsbtn:active{ transform: translateY(1px); }
+    .fsbtn svg{ width:18px; height:18px; opacity:.92; }
+    .sr-only{
+      position:absolute !important;
+      width:1px;height:1px;
+      padding:0;margin:-1px;
+      overflow:hidden;clip:rect(0,0,0,0);
+      white-space:nowrap;border:0;
+    }
 
     /* main 3 columns */
     .main{
@@ -521,9 +523,9 @@
 
     /* Ensure lot code ALWAYS 1 line and readable for at least 6 chars */
     .lot-code{
-      font-size: clamp(48px, 5.5vw, 64px);
+      font-size: clamp(52px, 5.8vw, 70px);
       font-weight: 900;
-      letter-spacing: .06em;   /* reduced to avoid 'L-1' wrap visual */
+      letter-spacing: .05em;
       text-transform: uppercase;
       text-shadow: var(--glow), var(--glow2);
       line-height: 1;
@@ -558,7 +560,7 @@
     }
 
     .hero-meta{
-      min-width: 280px;
+      min-width: 250px; /* FIX #1: bớt chiếm chỗ */
       display:flex;
       flex-direction:column;
       align-items:flex-end;
@@ -622,16 +624,8 @@
     }
 
     /* Mask / Reveal */
-    .masked{
-      filter: blur(10px);
-      opacity: .22;
-      transform: translateZ(0);
-    }
-    .reveal{
-      filter: blur(0);
-      opacity: 1;
-      transition: filter .6s ease, opacity .6s ease;
-    }
+    .masked{ filter: blur(10px); opacity: .22; transform: translateZ(0); }
+    .reveal{ filter: blur(0); opacity: 1; transition: filter .6s ease, opacity .6s ease; }
 
     .winner-wrap{
       margin-top: 8px;
@@ -719,15 +713,8 @@
       white-space:nowrap;
       flex: 0 0 auto;
     }
-    .marquee{
-      position:relative;
-      overflow:hidden;
-      white-space:nowrap;
-    }
-    .marquee .track{
-      display:inline-block;
-      will-change: transform;
-    }
+    .marquee{ position:relative; overflow:hidden; white-space:nowrap; }
+    .marquee .track{ display:inline-block; will-change: transform; }
     .marquee-item{
       display:inline-flex;
       align-items:center;
@@ -772,6 +759,7 @@
       min-height: 0;
     }
 
+    /* FIX #3: card recent hiển thị to rõ */
     .rslot{
       border: 1px solid rgba(148,163,184,.16);
       border-radius: 16px;
@@ -789,7 +777,7 @@
     .rslot.no{ border-color: rgba(251,113,133,.20); background: rgba(251,113,133,.045); }
 
     .rslot .lc{
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 900;
       letter-spacing:.10em;
       text-transform:uppercase;
@@ -797,46 +785,7 @@
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
-    }
-    .rslot .rt{
-      font-size: 11px;
-      font-weight: 900;
-      letter-spacing:.12em;
-      text-transform:uppercase;
-      color: var(--muted);
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      white-space:nowrap;
-    }
-    .rslot .rv{
-      margin-top:auto;
-      display:flex;
-      align-items:flex-end;
-      justify-content:space-between;
-      gap: 10px;
-    }
-    .rslot .price{
-      font-weight: 900;
-      letter-spacing:.06em;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      max-width: 64%;
-      font-size: 13px;
-    }
-    .rslot .who{
-      font-weight: 900;
-      font-size: 12px;
-      letter-spacing:.10em;
-      text-transform:uppercase;
-      color: rgba(226,232,240,.92);
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      max-width: 40%;
-      text-align:right;
+      padding-right: 90px;
     }
     .badge-rt{
       position:absolute;
@@ -880,6 +829,38 @@
     .minirow .mini-badge.win{ border-color: rgba(52,211,153,.25); background: rgba(52,211,153,.10); }
     .minirow .mini-badge.next{ border-color: rgba(251,191,36,.25); background: rgba(251,191,36,.10); }
     .minirow .mini-badge.no{ border-color: rgba(251,113,133,.25); background: rgba(251,113,133,.08); }
+
+    .rslot .rv{
+      margin-top:auto;
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+      align-items:center;
+      justify-content:flex-end;
+      text-align:center;
+    }
+    .rslot .price{
+      font-weight: 900;
+      letter-spacing:.06em;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width: 100%;
+      font-size: 30px;            /* GIÁ TO Ở GIỮA */
+      line-height: 1.05;
+      text-shadow: 0 0 22px rgba(34,211,238,.18);
+    }
+    .rslot .who{
+      font-weight: 900;
+      font-size: 15px;            /* NGƯỜI TRÚNG / SỐ KHÁCH TO RÕ */
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color: rgba(226,232,240,.92);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width: 100%;
+    }
 
     .tease-overlay{
       position:absolute; inset:0;
@@ -956,1364 +937,959 @@
       padding: 4px 8px;
       border-radius:999px;
       border: 1px solid rgba(251,191,36,.25);
-      background: rgba(251,191,36,.10);
+            background: rgba(251,191,36,.10);
+      color: rgba(226,232,240,.92);
       white-space:nowrap;
-      flex:0 0 auto;
+      flex: 0 0 auto;
     }
-    .lotcard .price{
-      font-weight: 900;
-      letter-spacing:.06em;
-      font-size: 14px;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
+    .lotcard .flag.win{
+      border-color: rgba(52,211,153,.25);
+      background: rgba(52,211,153,.12);
     }
-    .lotcard .mini{
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing:.06em;
-      margin-bottom: 8px;
-      display:-webkit-box;
-      -webkit-line-clamp:2;
-      -webkit-box-orient:vertical;
-      overflow:hidden;
+    .lotcard .flag.no{
+      border-color: rgba(251,113,133,.25);
+      background: rgba(251,113,133,.10);
     }
-    .lotcard .plist{
-      position:relative;
-      border-radius: 14px;
-      border: 1px solid rgba(251,191,36,.18);
-      background: rgba(255,255,255,.03);
-      padding: 8px;
-      overflow:hidden;
-      height: 120px;
-    }
-    .plist .p-viewport{
-      position:absolute; inset:8px;
-      overflow:hidden;
-    }
-    .plist .p-inner{
-      position:absolute; left:0; right:0; top:0;
-      will-change: transform;
-    }
-    .prow{
-      padding: 8px 10px;
-      border: 1px solid rgba(148,163,184,.12);
-      background: rgba(0,0,0,.16);
-      border-radius: 12px;
-      margin-bottom: 8px;
+
+    .lotcard .mid{
       display:flex;
       align-items:center;
       justify-content:space-between;
       gap: 10px;
+      margin-bottom: 8px;
+      min-width:0;
     }
-    .prow .pname{
-      font-weight: 900;
-      font-size: 12px;
-      letter-spacing:.08em;
-      text-transform:uppercase;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
+    .lotcard .meta{
+      display:flex;
+      flex-wrap:wrap;
+      gap: 6px;
+      min-width:0;
       max-width: 72%;
     }
-    .prow .pstt{
-      font-weight: 900;
-      font-size: 11px;
-      letter-spacing:.12em;
-      color: var(--warn);
-      white-space:nowrap;
+    .lotcard .meta .pill{
+      padding: 5px 8px;
+      font-size: 10px;
+      border-radius: 999px;
+      border-color: rgba(148,163,184,.18);
+      background: rgba(255,255,255,.04);
+      max-width: 100%;
     }
+    .lotcard .meta .pill.warn{ border-color: rgba(251,191,36,.25); background: rgba(251,191,36,.10); }
+    .lotcard .meta .pill.ok{ border-color: rgba(52,211,153,.25); background: rgba(52,211,153,.10); }
+    .lotcard .meta .pill.bad{ border-color: rgba(251,113,133,.25); background: rgba(251,113,133,.08); }
 
-    /* overlay for round change / errors / toast */
-    .overlay{
-      position:fixed; inset:0;
-      display:none;
-      align-items:center;
-      justify-content:center;
-      padding: 20px;
-      background: rgba(0,0,0,.55);
-      backdrop-filter: blur(6px);
-      z-index: 50;
-    }
-    .overlay.show{ display:flex; }
-    .overlay-card{
-      width:min(860px, 92vw);
-      border-radius: 22px;
-      border: 1px solid rgba(148,163,184,.22);
-      background:
-        radial-gradient(800px 320px at 50% 0%, rgba(34,211,238,.22), rgba(0,0,0,.55)),
-        linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-      box-shadow: var(--shadow);
-      padding: 18px 18px;
-      text-align:center;
-    }
-    .overlay-card .t{
+    .lotcard .count{
       font-weight: 900;
-      letter-spacing:.16em;
-      text-transform:uppercase;
-      font-size: 14px;
-      color: rgba(226,232,240,.9);
+      font-size: 26px;
+      letter-spacing:.08em;
+      text-shadow: 0 0 18px rgba(251,191,36,.18);
+      white-space:nowrap;
+      flex: 0 0 auto;
     }
-    .overlay-card .big{
-      margin-top: 10px;
+    .lotcard .sub{
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 11px;
       font-weight: 900;
-      font-size: 34px;
-      letter-spacing:.14em;
+      letter-spacing:.10em;
       text-transform:uppercase;
-      color: var(--pri);
-      text-shadow: var(--glow), var(--glow2);
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
-    }
-    .overlay-card .sub{
-      margin-top: 10px;
-      color: rgba(226,232,240,.90);
-      font-weight: 800;
-      letter-spacing:.06em;
-      font-size: 13px;
-      line-height: 1.35;
     }
 
     /* footer marquee */
     .footer{
-      border: 1px solid rgba(148,163,184,.16);
-      border-radius: var(--radius);
+      margin-top: -4px;
+      border: 1px solid rgba(148,163,184,.14);
+      border-radius: 16px;
       background: rgba(0,0,0,.18);
-      box-shadow: var(--shadow);
-      overflow:hidden;
       padding: 8px 10px;
+      overflow:hidden;
+      position:relative;
+      box-shadow: var(--shadow);
     }
     .footer .marquee{
-      overflow:hidden;
-      white-space:nowrap;
-    }
-    .footer .track{
-      display:inline-block;
-      will-change: transform;
       font-weight: 900;
       letter-spacing:.10em;
       text-transform:uppercase;
-      color: rgba(226,232,240,.88);
-    }
-    .footer .item{
-      display:inline-block;
-      padding: 6px 10px;
-      margin-right: 18px;
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,.16);
-      background: rgba(255,255,255,.04);
+      font-size: 11px;
+      color: rgba(226,232,240,.82);
     }
 
-    /* responsive safety */
-    @media (max-width: 1200px){
-      .topbar{ grid-template-columns: 1fr; gap:10px; }
-      .top-right{ justify-content:space-between; }
-      .kpis{ flex-wrap:wrap; justify-content:flex-start; }
-      .main{ grid-template-columns: 1fr; }
+    /* toast */
+    .toast{
+      position: fixed;
+      left: 18px;
+      bottom: 18px;
+      z-index: 50;
+      width: min(520px, calc(100vw - 36px));
+      border-radius: 18px;
+      border: 1px solid rgba(148,163,184,.18);
+      background: rgba(0,0,0,.55);
+      box-shadow: var(--shadow), 0 0 32px rgba(34,211,238,.12);
+      overflow:hidden;
+      transform: translateY(20px);
+      opacity: 0;
+      pointer-events:none;
+      transition: opacity .25s ease, transform .25s ease;
+      backdrop-filter: blur(10px);
+    }
+    .toast.show{
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .toast .t-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(148,163,184,.14);
+      background: rgba(255,255,255,.04);
+      font-weight: 900;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      font-size: 12px;
+      color: rgba(226,232,240,.92);
+    }
+    .toast .t-head .badge{
+      font-size: 10px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,.18);
+      background: rgba(255,255,255,.04);
+      white-space:nowrap;
+    }
+    .toast .t-body{
+      padding: 10px 12px 12px 12px;
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+    }
+    .toast .line1{
+      font-weight: 900;
+      font-size: 14px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      color: rgba(226,232,240,.92);
+    }
+    .toast .line2{
+      font-weight: 900;
+      font-size: 18px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      text-shadow: 0 0 18px rgba(34,211,238,.18);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .toast.ok{ border-color: rgba(52,211,153,.25); box-shadow: var(--shadow), 0 0 36px rgba(52,211,153,.16); }
+    .toast.ok .t-head{ background: rgba(52,211,153,.10); }
+    .toast.ok .t-head .badge{ border-color: rgba(52,211,153,.25); background: rgba(52,211,153,.12); }
+
+    .toast.warn{ border-color: rgba(251,191,36,.25); box-shadow: var(--shadow), 0 0 36px rgba(251,191,36,.15); }
+    .toast.warn .t-head{ background: rgba(251,191,36,.10); }
+    .toast.warn .t-head .badge{ border-color: rgba(251,191,36,.25); background: rgba(251,191,36,.12); }
+
+    .toast.bad{ border-color: rgba(251,113,133,.25); box-shadow: var(--shadow), 0 0 36px rgba(251,113,133,.12); }
+    .toast.bad .t-head{ background: rgba(251,113,133,.08); }
+    .toast.bad .t-head .badge{ border-color: rgba(251,113,133,.25); background: rgba(251,113,133,.10); }
+
+    /* responsiveness */
+    @media (max-width: 1220px){
+      .topbar{
+        grid-template-columns: 1.2fr 1.2fr 1fr;
+      }
+      .kpi{ min-width: 96px; }
+    }
+    @media (max-width: 1060px){
+      .main{
+        grid-template-columns: 1fr;
+      }
+      body{ overflow:auto; }
+      .stage{ height:auto; min-height:100vh; }
+      .center{ order: 1; }
     }
   </style>
 </head>
 
-<body>
-  <div class="stage gridbg scan">
-
+<body class="gridbg scan">
+  <div class="stage" id="stage">
     <!-- TOP BAR -->
     <div class="topbar">
-      <!-- LEFT -->
       <div class="top-left">
-        <div class="brand-title">ĐƠN VỊ • DỰ ÁN</div>
+        <div class="brand-title">TRÌNH CHIẾU KIỂM PHIẾU</div>
         <div class="brand-row">
-          <span class="pill" id="companyName" title="">—</span>
-          <span class="pill blue" id="projectCode" title="">—</span>
-          <span class="pill soft" id="projectName" title="">—</span>
+          <!-- FIX #4: truncate company/project to protect KPI area -->
+          <span class="pill" id="companyName" title=""></span>
+          <span class="pill soft blue" id="sessionCode" title=""></span>
         </div>
       </div>
 
-      <!-- MID -->
       <div class="top-mid">
         <div class="wrap">
-          <div class="project-name" id="centerTitle">TRÌNH CHIẾU KIỂM PHIẾU</div>
-          <div class="subline" id="roundLine">VÒNG — • TRẠNG THÁI —</div>
+          <div class="project-name" id="projectName" title=""></div>
+          <!-- FIX #5: tránh overlap: subline luôn ellipsis trong vùng mid -->
+          <div class="subline" id="roundLine">VÒNG 1 • TRẠNG THÁI ĐANG KIỂM</div>
         </div>
       </div>
 
-      <!-- RIGHT -->
       <div class="top-right">
-        <button class="btn" id="btnFullscreen" type="button" title="Toàn màn hình">
-          <span class="ico"></span><span id="fsText">TOÀN MÀN HÌNH</span>
-        </button>
-
         <div class="kpis">
           <div class="kpi pri">
-            <div class="label">Tổng lô</div>
+            <div class="label">TỔNG LÔ</div>
             <div class="val" id="kpiTotalLots">0</div>
           </div>
-          <div class="kpi pri">
-            <div class="label">Tổng khách</div>
-            <div class="val" id="kpiTotalCustomers">0</div>
-          </div>
           <div class="kpi ok">
-            <div class="label">Đã trúng</div>
+            <div class="label">TRÚNG</div>
             <div class="val" id="kpiWon">0</div>
           </div>
           <div class="kpi warn">
-            <div class="label">Vòng sau</div>
+            <div class="label">VÒNG SAU</div>
             <div class="val" id="kpiNext">0</div>
           </div>
           <div class="kpi bad">
-            <div class="label">Chưa kiểm</div>
+            <div class="label">CHƯA CÓ</div>
             <div class="val" id="kpiPending">0</div>
           </div>
         </div>
+
+        <!-- FIX #1: fullscreen button -->
+        <button class="fsbtn" id="fsBtn" type="button" title="Toàn màn hình">
+          <span class="sr-only">Toàn màn hình</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
+            <path d="M16 3h3a2 2 0 0 1 2 2v3"/>
+            <path d="M8 21H5a2 2 0 0 1-2-2v-3"/>
+            <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
+          </svg>
+        </button>
       </div>
     </div>
 
     <!-- MAIN -->
     <div class="main">
-
-      <!-- LEFT COLUMN -->
+      <!-- LEFT -->
       <div class="panel">
         <div class="head">
-          <div class="h-title">👥 THEO KHÁCH</div>
-          <div class="h-badge">STT ↑</div>
+          <div class="h-title">DANH SÁCH KHÁCH</div>
+          <div class="h-badge" id="leftHint">TỰ ĐỘNG</div>
         </div>
 
         <div class="left-body">
-          <!-- Winners -->
+          <!-- winners list -->
           <div class="box won">
             <div class="box-head">
-              <div class="t">🏆 KHÁCH TRÚNG</div>
-              <div class="tag ok" id="winnersCount">0</div>
+              <div class="t">TRÚNG</div>
+              <span class="tag ok" id="wonCountTag">0</span>
             </div>
             <div class="box-body">
-              <div class="ticker-viewport" id="winnersViewport">
-                <div class="ticker-inner" id="winnersInner"></div>
+              <div class="ticker-viewport">
+                <div class="ticker-inner" id="wonTicker"></div>
               </div>
             </div>
           </div>
 
-          <!-- Next round customers -->
+          <!-- next round list -->
           <div class="box next">
             <div class="box-head">
-              <div class="t">🔁 VÀO VÒNG SAU</div>
-              <div class="tag warn" id="nextCustCount">0</div>
+              <div class="t">VÀO VÒNG SAU</div>
+              <span class="tag warn" id="nextCountTag">0</span>
             </div>
             <div class="box-body">
-              <div class="ticker-viewport" id="nextCustViewport">
-                <div class="ticker-inner" id="nextCustInner"></div>
+              <div class="ticker-viewport">
+                <div class="ticker-inner" id="nextTicker"></div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- CENTER COLUMN -->
+      <!-- CENTER -->
       <div class="center">
         <!-- HERO -->
         <div class="hero">
           <div class="hero-inner">
             <div class="hero-top">
               <div class="hero-status">
-                <div class="status-pill" id="heroStatusPill">
-                  <span class="s-dot" id="heroDot"></span>
-                  <span id="heroStatusText">ĐANG KIỂM PHIẾU</span>
+                <div class="status-pill pri" id="statusPill">
+                  <span class="s-dot" id="statusDot"></span>
+                  <span id="statusText">ĐANG KIỂM</span>
                 </div>
-                <div class="status-sub" id="heroStatusSub">Chờ kết quả mới nhất…</div>
+                <div class="status-sub" id="statusSub">
+                  Hệ thống đang cập nhật kết quả theo thời gian thực.
+                </div>
               </div>
 
               <div class="hero-lot">
                 <div class="lot-code" id="heroLotCode">—</div>
-                <div class="lot-name" id="heroLotName">—</div>
+                <div class="lot-name" id="heroLotName">Mã lô</div>
                 <div class="lot-desc" id="heroLotDesc">—</div>
               </div>
 
               <div class="hero-meta">
                 <div class="meta-row">
-                  <span class="pill pri" id="heroResultType">—</span>
-                  <span class="pill" id="heroArea">—</span>
-                  <span class="pill" id="heroStart">Khởi điểm: —</span>
+                  <span class="pill pri" id="heroBadge1">LÔ MỚI</span>
+                  <span class="pill soft" id="heroBadge2">#—</span>
                 </div>
-                <div class="meta-row">
-                  <span class="pill" id="heroCheckedAt">—</span>
+
+                <div class="price-wrap">
+                  <div class="price-label">
+                    <span id="priceLabel">GIÁ</span>
+                    <span class="pill soft" id="priceUnit">VNĐ</span>
+                  </div>
+                  <div class="price-val" id="heroPrice">—</div>
+                </div>
+
+                <div class="winner-wrap bad" id="winnerWrap">
+                  <div class="winner-label" id="winnerLabel">NGƯỜI TRÚNG</div>
+                  <div class="winner-name masked" id="winnerName">—<span class="caret">|</span></div>
                 </div>
               </div>
             </div>
 
-            <div class="price-wrap">
-              <div class="price-label">
-                <span>GIÁ (VND)</span>
-                <span id="heroPriceHint" style="color:var(--muted); font-weight:900; letter-spacing:.12em; text-transform:uppercase;">—</span>
-              </div>
-              <div class="price-val masked" id="heroPrice">—</div>
-            </div>
-
-            <div class="winner-wrap" id="heroWinnerWrap">
-              <div class="winner-label" id="heroWinnerLabel">NGƯỜI TRÚNG</div>
-              <div class="winner-name masked" id="heroWinnerName">—</div>
-            </div>
-
-            <div class="next-wrap warn" id="heroNextWrap" style="display:none;">
+            <div class="next-wrap warn" id="heroNextWrap">
               <div class="next-head">
-                <div class="next-title">🔁 DANH SÁCH VÀO VÒNG SAU</div>
-                <div class="next-count" id="heroNextCount">0 KHÁCH</div>
+                <div class="next-title" id="nextTitle">KHÁCH VÀO VÒNG SAU</div>
+                <div class="next-count" id="heroNextCount">0</div>
               </div>
-              <div class="marquee" id="heroMarquee">
-                <div class="track" id="heroMarqueeTrack"></div>
+              <div class="marquee" id="nextMarquee">
+                <div class="track" id="nextTrack"></div>
               </div>
             </div>
+
           </div>
         </div>
 
-        <!-- RECENT STRIP -->
+        <!-- RECENT -->
         <div class="recent">
           <div class="head">
-            <div class="h-title">🔥 3 LÔ GẦN NHẤT</div>
-            <div class="h-badge">TỰ ĐỘNG • 5S</div>
+            <div class="h-title">KẾT QUẢ GẦN NHẤT</div>
+            <div class="h-badge" id="recentHint">3 LÔ</div>
           </div>
-          <div class="recent-body">
-            <div class="rslot" id="rs0Card">
-              <div class="badge-rt" id="rs0Badge">—</div>
-              <div class="lc" id="rs0Lot">—</div>
-              <div class="minirow">
-                <span id="rs0Type">—</span>
-                <span class="mini-badge" id="rs0Extra">—</span>
-              </div>
-              <div class="rv">
-                <div class="price" id="rs0Price">—</div>
-                <div class="who" id="rs0Who">—</div>
-              </div>
-              <div class="tease-overlay" id="rs0Tease">
-                <div>
-                  <div class="t1">⏳ SẮP CÓ KẾT QUẢ</div>
-                  <div class="t2" id="rs0TeaseLot">—</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="rslot" id="rs1Card">
-              <div class="badge-rt" id="rs1Badge">—</div>
-              <div class="lc" id="rs1Lot">—</div>
-              <div class="minirow">
-                <span id="rs1Type">—</span>
-                <span class="mini-badge" id="rs1Extra">—</span>
-              </div>
-              <div class="rv">
-                <div class="price" id="rs1Price">—</div>
-                <div class="who" id="rs1Who">—</div>
-              </div>
-            </div>
-
-            <div class="rslot" id="rs2Card">
-              <div class="badge-rt" id="rs2Badge">—</div>
-              <div class="lc" id="rs2Lot">—</div>
-              <div class="minirow">
-                <span id="rs2Type">—</span>
-                <span class="mini-badge" id="rs2Extra">—</span>
-              </div>
-              <div class="rv">
-                <div class="price" id="rs2Price">—</div>
-                <div class="who" id="rs2Who">—</div>
-              </div>
-            </div>
+          <div class="recent-body" id="recentBody">
+            <!-- JS fill 3 slots -->
           </div>
         </div>
       </div>
 
-      <!-- RIGHT COLUMN -->
+      <!-- RIGHT -->
       <div class="panel">
         <div class="head">
-          <div class="h-title">🔁 THEO LÔ VÒNG SAU</div>
-          <div class="h-badge">LÔ ↑ • STT ↑</div>
+          <div class="h-title">LÔ TIẾP THEO</div>
+          <div class="h-badge" id="rightHint">THEO THỨ TỰ</div>
         </div>
-
         <div class="right-body">
-          <div class="cards-viewport" id="nextLotsViewport">
-            <div class="cards-inner" id="nextLotsInner"></div>
+          <div class="cards-viewport">
+            <div class="cards-inner" id="lotCards"></div>
           </div>
         </div>
       </div>
-
     </div>
 
-    <!-- FOOTER -->
+    <!-- FOOTER MARQUEE -->
     <div class="footer">
       <div class="marquee" id="footerMarquee">
         <div class="track" id="footerTrack"></div>
       </div>
     </div>
-
   </div>
 
-  <!-- overlays -->
-  <div class="overlay" id="overlay">
-    <div class="overlay-card">
-      <div class="t" id="overlayTop">THÔNG BÁO</div>
-      <div class="big" id="overlayBig">—</div>
-      <div class="sub" id="overlaySub">—</div>
+  <!-- TOAST -->
+  <div class="toast" id="toast">
+    <div class="t-head">
+      <span id="toastTitle">CHÚC MỪNG</span>
+      <span class="badge" id="toastBadge">TRÚNG</span>
+    </div>
+    <div class="t-body">
+      <div class="line1" id="toastLine1">Kết quả đã được xác nhận</div>
+      <div class="line2" id="toastLine2">—</div>
     </div>
   </div>
 
   <script>
-    (function(){
-      "use strict";
+    // =========================================================
+    // DO NOT CHANGE FETCH LOGIC (keep as existing behavior)
+    // =========================================================
+    const SESSION_ID = {{ session_id|tojson }};
+    const ROUND_NO   = {{ (round_no or 1)|tojson }};
 
-      const SESSION_ID = {{ session_id|int }};
-      const POLL_MS = Math.max(5000, Number({{ poll_ms|default(5000)|int }} || 5000)); // ưu tiên 5s theo yêu cầu
+    const POLL_MS = 5000;
 
-      const ROUND_NO = Number({{ (round_no or 1)|int }});  // mặc định 1
-      const API_URL = `/auction/sessions/api/display/sessions/${SESSION_ID}?round_no=${ROUND_NO}`;
+    const API_URL = `/auction/sessions/api/display/sessions/${SESSION_ID}?round_no=${ROUND_NO}`;
 
-      // ---------- formatting ----------
-      function safeText(s){ return (s===null || s===undefined) ? "" : String(s); }
+    // =========================================================
+    // Helpers
+    // =========================================================
+    const $ = (id) => document.getElementById(id);
 
-      function fmtMoney(n){
-        try{
-          const x = Number(n||0);
-          return x.toLocaleString("vi-VN") + " đ";
-        }catch(_){ return (n||0) + " đ"; }
-      }
-      function fmtNum(n){
-        try{ return Number(n||0).toLocaleString("vi-VN"); }catch(_){ return String(n||0); }
-      }
-      function fmtArea(a){
-        const x = Number(a||0);
-        if(!x || x<=0) return "—";
-        return (x.toLocaleString("vi-VN", {maximumFractionDigits:2})) + " m²";
-      }
-      function fmtISOToFull(iso){
-        try{
-          const d = new Date(iso);
-          if(isNaN(d.getTime())) return "—";
-          return d.toLocaleString("vi-VN", {hour12:false});
-        }catch(_){ return "—"; }
-      }
+    function safeText(x){
+      return (x===null || x===undefined) ? '' : String(x);
+    }
+    function fmtInt(n){
+      const v = Number(n||0);
+      if(!isFinite(v)) return "0";
+      return v.toLocaleString("vi-VN");
+    }
+    function fmtMoney(n){
+      const v = Number(n||0);
+      if(!isFinite(v)) return "—";
+      return v.toLocaleString("vi-VN");
+    }
 
-      // ---------- DOM refs ----------
-      const el = (id)=>document.getElementById(id);
+    function shortStatus(s){
+      const x = (safeText(s)||'').toUpperCase();
+      // map from backend statuses -> Vietnamese short
+      if(x.includes("ISSU")) return "ĐANG KIỂM";
+      if(x.includes("OPEN")) return "ĐANG MỞ";
+      if(x.includes("CLOSE")) return "ĐÃ CHỐT";
+      if(x.includes("DONE")) return "HOÀN TẤT";
+      if(!x) return "—";
+      return x;
+    }
 
-      const companyName = el("companyName");
-      const projectCode = el("projectCode");
-      const projectName = el("projectName");
-      const roundLine = el("roundLine");
+    function statusClass(s){
+      const x = (safeText(s)||'').toUpperCase();
+      if(x.includes("DONE") || x.includes("CLOSE")) return "ok";
+      if(x.includes("ISSU") || x.includes("OPEN")) return "pri";
+      return "bad";
+    }
 
-      const kpiTotalLots = el("kpiTotalLots");
-      const kpiTotalCustomers = el("kpiTotalCustomers");
-      const kpiWon = el("kpiWon");
-      const kpiNext = el("kpiNext");
-      const kpiPending = el("kpiPending");
+    function resultClass(rt){
+      const x = (safeText(rt)||'').toUpperCase();
+      if(x === "WINNER" || x.includes("WIN")) return "win";
+      if(x === "NEXT_ROUND" || x.includes("NEXT")) return "next";
+      return "no";
+    }
 
-      // left lists
-      const winnersInner = el("winnersInner");
-      const winnersCount = el("winnersCount");
+    function resultLabel(rt){
+      const x = (safeText(rt)||'').toUpperCase();
+      if(x === "WINNER" || x.includes("WIN")) return "TRÚNG";
+      if(x === "NEXT_ROUND" || x.includes("NEXT")) return "VÒNG SAU";
+      return "CHƯA CÓ";
+    }
 
-      const nextCustInner = el("nextCustInner");
-      const nextCustCount = el("nextCustCount");
+    function maskSTT(stt){
+      // yêu cầu: recent show "masked winner as STT"
+      const v = safeText(stt).trim();
+      if(!v) return "STT —";
+      return `STT ${v}`;
+    }
 
-      // right cards
-      const nextLotsInner = el("nextLotsInner");
+    function truncate(str, max){
+      const s = safeText(str);
+      if(s.length <= max) return s;
+      return s.slice(0, Math.max(0, max-1)) + "…";
+    }
 
-      // hero
-      const heroStatusPill = el("heroStatusPill");
-      const heroStatusText = el("heroStatusText");
-      const heroStatusSub = el("heroStatusSub");
-      const heroLotCode = el("heroLotCode");
-      const heroLotName = el("heroLotName");
-      const heroLotDesc = el("heroLotDesc");
-      const heroResultType = el("heroResultType");
-      const heroArea = el("heroArea");
-      const heroStart = el("heroStart");
-      const heroCheckedAt = el("heroCheckedAt");
-
-      const heroPrice = el("heroPrice");
-      const heroPriceHint = el("heroPriceHint");
-      const heroWinnerWrap = el("heroWinnerWrap");
-      const heroWinnerLabel = el("heroWinnerLabel");
-      const heroWinnerName = el("heroWinnerName");
-
-      const heroNextWrap = el("heroNextWrap");
-      const heroNextCount = el("heroNextCount");
-      const heroMarqueeTrack = el("heroMarqueeTrack");
-
-      // recent
-      const rs = [
-        { card: el("rs0Card"), badge: el("rs0Badge"), lot: el("rs0Lot"), type: el("rs0Type"), extra: el("rs0Extra"), price: el("rs0Price"), who: el("rs0Who"), tease: el("rs0Tease"), teaseLot: el("rs0TeaseLot") },
-        { card: el("rs1Card"), badge: el("rs1Badge"), lot: el("rs1Lot"), type: el("rs1Type"), extra: el("rs1Extra"), price: el("rs1Price"), who: el("rs1Who") },
-        { card: el("rs2Card"), badge: el("rs2Badge"), lot: el("rs2Lot"), type: el("rs2Type"), extra: el("rs2Extra"), price: el("rs2Price"), who: el("rs2Who") },
-      ];
-
-      // overlay
-      const overlay = el("overlay");
-      const overlayTop = el("overlayTop");
-      const overlayBig = el("overlayBig");
-      const overlaySub = el("overlaySub");
-
-      // fullscreen
-      const btnFullscreen = el("btnFullscreen");
-      const fsText = el("fsText");
-
-      // footer
-      const footerMarquee = el("footerMarquee");
-      const footerTrack = el("footerTrack");
-
-      function showOverlay(top, big, sub, ms=2600){
-        overlayTop.textContent = safeText(top||"THÔNG BÁO");
-        overlayBig.textContent = safeText(big||"—");
-        overlaySub.textContent = safeText(sub||"");
-        overlay.classList.add("show");
-        setTimeout(()=>overlay.classList.remove("show"), ms);
-      }
-
-      // ---------- fullscreen ----------
-      function isFs(){
-        return !!(document.fullscreenElement || document.webkitFullscreenElement);
-      }
-      async function toggleFs(){
-        try{
-          if(!isFs()){
-            const root = document.documentElement;
-            if(root.requestFullscreen) await root.requestFullscreen();
-            else if(root.webkitRequestFullscreen) await root.webkitRequestFullscreen();
-          }else{
-            if(document.exitFullscreen) await document.exitFullscreen();
-            else if(document.webkitExitFullscreen) await document.webkitExitFullscreen();
-          }
-        }catch(e){
-          console.error(e);
-        }finally{
-          updateFsLabel();
-        }
-      }
-      function updateFsLabel(){
-        fsText.textContent = isFs() ? "THOÁT TOÀN MÀN HÌNH" : "TOÀN MÀN HÌNH";
-      }
-      btnFullscreen?.addEventListener("click", toggleFs);
-      document.addEventListener("fullscreenchange", updateFsLabel);
-      document.addEventListener("webkitfullscreenchange", updateFsLabel);
-      updateFsLabel();
-
-      // ---------- state / animation control ----------
-      let lastRoundId = null;
-
-      // “seen” result ids to detect new checked lots
-      const seenRoundLotIds = new Set();
-      const queue = [];
-
-      // hero state machine
-      let heroMode = "IDLE"; // IDLE | TEASE | REVEAL_PRICE | TYPE_NAME | CONGRATS
-      let heroCurrent = null;
-      let heroTimer = null;
-      let heroTypingTimer = null;
-
-      function clearTimers(){
-        if(heroTimer){ clearTimeout(heroTimer); heroTimer=null; }
-        if(heroTypingTimer){ clearInterval(heroTypingTimer); heroTypingTimer=null; }
-      }
-
-      // ---------- utils ----------
-      function escapeHtml(s){
-        s = safeText(s);
-        return s.replace(/[&<>"']/g, (m)=>({
-          "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-        }[m]));
-      }
-
-      function vnResultLabel(rt){
-        if(rt === "WINNER") return "TRÚNG";
-        if(rt === "NEXT_ROUND") return "VÒNG SAU";
-        if(rt === "NO_VALID") return "KHÔNG HỢP LỆ";
-        if(rt === "PENDING") return "CHƯA KIỂM";
-        return safeText(rt||"—");
-      }
-
-      function applyHeroResultPills(rt){
-        heroResultType.textContent = vnResultLabel(rt);
-
-        // reset
-        heroResultType.className = "pill pri";
-        heroStatusPill.className = "status-pill";
-
-        if(rt === "WINNER"){
-          heroResultType.className = "pill ok";
-          heroStatusPill.classList.add("ok");
-        }else if(rt === "NEXT_ROUND"){
-          heroResultType.className = "pill warn";
-          heroStatusPill.classList.add("warn");
-        }else if(rt === "NO_VALID"){
-          heroResultType.className = "pill bad";
-          heroStatusPill.classList.add("bad");
+    // =========================================================
+    // Fullscreen
+    // =========================================================
+    function toggleFullscreen(){
+      try{
+        if(!document.fullscreenElement){
+          document.documentElement.requestFullscreen?.();
         }else{
-          heroResultType.className = "pill pri";
+          document.exitFullscreen?.();
         }
+      }catch(_){}
+    }
+    $("fsBtn").addEventListener("click", toggleFullscreen);
 
-        // winner box color
-        heroWinnerWrap.classList.remove("ok","warn","bad");
-        if(rt === "WINNER") heroWinnerWrap.classList.add("ok");
-        else if(rt === "NEXT_ROUND") heroWinnerWrap.classList.add("warn");
-        else if(rt === "NO_VALID") heroWinnerWrap.classList.add("bad");
-      }
-
-
-      function setHeroBase(item){
-        const lot = item?.lot || {};
-        heroLotCode.textContent = (safeText(lot.lot_code) || "—").toUpperCase();
-        heroLotName.textContent = safeText(lot.lot_name || "");
-        heroLotDesc.textContent = safeText(lot.lot_description || "");
-
-        const rt = safeText(item?.result_type || "—");
-        applyHeroResultPills(rt);
-
-        heroArea.textContent = "Diện tích: " + fmtArea(lot.area_m2);
-        heroStart.textContent = "Khởi điểm: " + fmtMoney(lot.start_price_vnd || 0);
-        heroCheckedAt.textContent = "Cập nhật: " + fmtISOToFull(item?.checked_at || item?.checkedAt || item?.checked_at);
-
-        // reset reveal fields
-        heroPrice.textContent = item?.price_vnd ? fmtNum(item.price_vnd) : "—";
-        heroWinnerName.textContent = "—";
-
-        heroNextWrap.style.display = "none";
-        heroMarqueeTrack.innerHTML = "";
-        heroNextCount.textContent = "0 KHÁCH";
-
-        // status text / hint
-        if(rt === "WINNER"){
-          heroStatusText.textContent = "CÔNG BỐ KẾT QUẢ";
-          heroStatusSub.textContent = "Đang xác nhận trúng đấu giá…";
-          heroPriceHint.textContent = "GIÁ TRÚNG";
-          heroWinnerLabel.textContent = "NGƯỜI TRÚNG";
-        }else if(rt === "NEXT_ROUND"){
-          heroStatusText.textContent = "CÔNG BỐ VÒNG SAU";
-          heroStatusSub.textContent = "Đồng giá • chọn khách vào vòng trong…";
-          heroPriceHint.textContent = "MỨC GIÁ";
-          heroWinnerLabel.textContent = "KẾT QUẢ";
-        }else if(rt === "NO_VALID"){
-          heroStatusText.textContent = "KẾT QUẢ KHÔNG HỢP LỆ";
-          heroStatusSub.textContent = "Không có phiếu hợp lệ…";
-          heroPriceHint.textContent = "—";
-          heroWinnerLabel.textContent = "KẾT QUẢ";
-        }else{
-          heroStatusText.textContent = "ĐANG KIỂM PHIẾU";
-          heroStatusSub.textContent = "Chờ kết quả mới nhất…";
-          heroPriceHint.textContent = "—";
-          heroWinnerLabel.textContent = "TRẠNG THÁI";
-        }
-      }
-
-      function maskHero(){
-        // lot NEVER masked. Only price + winner fields.
-        heroPrice.classList.remove("reveal");
-        heroWinnerName.classList.remove("reveal");
-        heroPrice.classList.add("masked");
-        heroWinnerName.classList.add("masked");
-      }
-      function revealHeroPrice(){
-        heroPrice.classList.remove("masked");
-        heroPrice.classList.add("reveal");
-      }
-      function revealHeroWinner(){
-        heroWinnerName.classList.remove("masked");
-        heroWinnerName.classList.add("reveal");
-      }
-
-      function setHeroNextList(item){
-        const rt = safeText(item?.result_type || "");
-        if(rt !== "NEXT_ROUND") return;
-
-        const list = Array.isArray(item?.next_customers) ? item.next_customers : [];
-        heroNextWrap.style.display = "block";
-        heroNextCount.textContent = `${list.length} KHÁCH`;
-
-        // Build track items (mask name -> show STT only in marquee? (still ok to show name here, but you didn't ask to mask in hero marquee)
-        // We'll show: STT + tên rút gọn (không nhạy cảm). Nếu muốn ẩn, đổi name = "KHÁCH".
-        const chips = list.map(c=>{
-          const stt = Number(c.stt||0);
-          const name = safeText(c.name||"").toUpperCase();
-          return `<span class="marquee-item"><span class="m-stt">STT ${stt||"—"}</span><span class="m-name">${escapeHtml(name)}</span></span>`;
-        }).join("");
-
-        // duplicate only when overflow (measured later)
-        heroMarqueeTrack.innerHTML = chips;
-
-        // start marquee after layout
-        setTimeout(()=>{
-          startMarqueeConditional(el("heroMarquee"), heroMarqueeTrack, 42);
-        }, 0);
-      }
-
-      function setHeroWinnerTextTyping(finalText){
-        let i=0;
-        heroWinnerName.innerHTML = `<span id="typingText"></span><span class="caret">▍</span>`;
-        const t = document.getElementById("typingText");
-        if(!t) return;
-
-        if(heroTypingTimer) clearInterval(heroTypingTimer);
-
-        heroTypingTimer = setInterval(()=>{
-          i++;
-          t.textContent = finalText.slice(0, i);
-          if(i >= finalText.length){
-            clearInterval(heroTypingTimer);
-            heroTypingTimer = null;
-            setTimeout(()=>{ heroWinnerName.textContent = finalText; }, 600);
-          }
-        }, 45);
-      }
-
-      function animatePriceReveal(target, ms, done){
-        const t = Number(target||0);
-        if(!t || t<=0){
-          heroPrice.textContent = "—";
-          if(done) done();
-          return;
-        }
-        const start = Math.floor(t * 0.75);
-        const st = performance.now();
-        const dur = Math.max(800, ms||1200);
-
-        function step(now){
-          const p = Math.min(1, (now - st)/dur);
-          const e = 1 - Math.pow(1-p, 3); // easeOutCubic
-          const v = Math.floor(start + (t-start)*e);
-          heroPrice.textContent = fmtNum(v);
-          if(p<1) requestAnimationFrame(step);
-          else { heroPrice.textContent = fmtNum(t); if(done) done(); }
-        }
-        requestAnimationFrame(step);
-      }
-
-      function startHeroReveal(item){
-        clearTimers();
-        heroCurrent = item;
-        heroMode = "TEASE";
-
-        setHeroBase(item);
-        maskHero();
-
-        // TEASE
-        heroStatusSub.textContent = "⏳ SẮP CÓ KẾT QUẢ MỚI NHẤT…";
-
-        heroTimer = setTimeout(()=>{
-          heroMode = "REVEAL_PRICE";
-
-          animatePriceReveal(item?.price_vnd || 0, 1300, ()=>{
-            revealHeroPrice();
-
-            heroTimer = setTimeout(()=>{
-              const rt = safeText(item?.result_type || "");
-
-              if(rt === "NEXT_ROUND"){
-                setHeroNextList(item);
-                heroWinnerLabel.textContent = "KẾT QUẢ";
-                heroWinnerName.textContent = `VÀO VÒNG SAU • ${Number(item?.next_count||0)} KHÁCH`;
-                revealHeroWinner();
-
-                heroMode = "CONGRATS";
-                heroTimer = setTimeout(()=>{
-                  heroMode = "IDLE";
-                  heroStatusSub.textContent = "Tiếp tục kiểm phiếu…";
-                }, 1500);
-                return;
-              }
-
-              if(rt === "NO_VALID"){
-                heroWinnerLabel.textContent = "KẾT QUẢ";
-                heroWinnerName.textContent = "KHÔNG CÓ PHIẾU HỢP LỆ";
-                revealHeroWinner();
-
-                heroMode = "CONGRATS";
-                heroTimer = setTimeout(()=>{
-                  heroMode = "IDLE";
-                  heroStatusSub.textContent = "Tiếp tục kiểm phiếu…";
-                }, 1500);
-                return;
-              }
-
-              // WINNER
-              heroMode = "TYPE_NAME";
-              const win = item?.winner || {};
-              const stt = Number(win.stt||0);
-              const nm = safeText(win.name||"").toUpperCase();
-              const finalText = (stt>0 ? `STT ${stt} — ${nm}` : nm) || "—";
-
-              heroWinnerName.classList.remove("masked");
-              heroWinnerName.classList.add("reveal");
-              setHeroWinnerTextTyping(finalText);
-
-              heroTimer = setTimeout(()=>{
-                heroMode = "CONGRATS";
-                heroStatusText.textContent = "🎉 CHÚC MỪNG";
-                heroStatusSub.textContent = "Trúng đấu giá!";
-
-                const lotCode = safeText(item?.lot?.lot_code||item?.lot_code||"—").toUpperCase();
-                // Toast (overlay) longer + contains "Xin chúc mừng" + name + lot code
-                showOverlay(
-                  "🎉 XIN CHÚC MỪNG",
-                  `TRÚNG LÔ ${lotCode}`,
-                  `${nm ? nm : "KHÁCH HÀNG"}${nm ? "" : ""}`,
-                  3400
-                );
-
-                heroTimer = setTimeout(()=>{
-                  heroMode = "IDLE";
-                  heroStatusText.textContent = "ĐANG KIỂM PHIẾU";
-                  heroStatusSub.textContent = "Chờ kết quả mới nhất…";
-                }, 1600);
-              }, 2400);
-            }, 650);
-          });
-
-        }, 3200);
-      }
-
-      // ---------- hero idle ----------
-      function setHeroIdleFromPayload(payload){
-        if(heroMode !== "IDLE") return;
-
-        const recent = Array.isArray(payload?.recent_checked_lots) ? payload.recent_checked_lots : [];
-        const newest = recent[0] || null;
-
-        if(newest){
-          heroCurrent = newest;
-          setHeroBase(newest);
-
-          // show in idle (no masking)
-          heroPrice.classList.remove("masked");
-          heroPrice.classList.add("reveal");
-          heroWinnerName.classList.remove("masked");
-          heroWinnerName.classList.add("reveal");
-
-          const rt = safeText(newest?.result_type || "");
-          if(rt === "WINNER"){
-            const w = newest.winner || {};
-            const stt = Number(w.stt||0);
-            const nm = safeText(w.name||"").toUpperCase();
-            heroWinnerLabel.textContent = "NGƯỜI TRÚNG";
-            heroWinnerName.textContent = (stt>0 && nm) ? `STT ${stt} — ${nm}` : (nm || "—");
-          }else if(rt === "NEXT_ROUND"){
-            heroWinnerLabel.textContent = "KẾT QUẢ";
-            heroWinnerName.textContent = `VÀO VÒNG SAU • ${Number(newest.next_count||0)} KHÁCH`;
-            setHeroNextList(newest);
-          }else if(rt === "NO_VALID"){
-            heroWinnerLabel.textContent = "KẾT QUẢ";
-            heroWinnerName.textContent = "KHÔNG CÓ PHIẾU HỢP LỆ";
-          }else{
-            heroWinnerLabel.textContent = "TRẠNG THÁI";
-            heroWinnerName.textContent = "ĐANG KIỂM PHIẾU…";
-          }
-        }else{
-          heroLotCode.textContent = "—";
-          heroLotName.textContent = "—";
-          heroLotDesc.textContent = "—";
-          heroResultType.textContent = "—";
-          heroArea.textContent = "—";
-          heroStart.textContent = "Khởi điểm: —";
-          heroCheckedAt.textContent = "—";
-          heroPrice.textContent = "—";
-          heroWinnerName.textContent = "—";
-          heroStatusText.textContent = "ĐANG KIỂM PHIẾU";
-          heroStatusSub.textContent = "Chờ kết quả mới nhất…";
-          heroNextWrap.style.display = "none";
-        }
-      }
-
-      // ---------- queue: new checked lots ----------
-      function enqueueNewCheckedLots(payload){
-        const recent = Array.isArray(payload?.recent_checked_lots) ? payload.recent_checked_lots : [];
-        for(const item of recent){
-          const id = Number(item.round_lot_id||0);
-          if(!id) continue;
-          if(seenRoundLotIds.has(id)) continue;
-          seenRoundLotIds.add(id);
-          queue.push(item);
-        }
-      }
-
-      function maybeStartNextReveal(payload){
-        if(heroMode !== "IDLE") return;
-
-        if(queue.length > 0){
-          const item = queue.shift();
-          startHeroReveal(item);
-          return;
-        }
-        setHeroIdleFromPayload(payload);
-      }
-
-      // ---------- recent strip rendering ----------
-      function setRecentSlots(recentList){
-        const list = Array.isArray(recentList) ? recentList.slice(0,3) : [];
-
-        const newest = list[0];
-        const isAnimatingNewest = newest && heroCurrent && (Number(newest.round_lot_id) === Number(heroCurrent.round_lot_id)) && (heroMode !== "IDLE");
-
-        if(isAnimatingNewest){
-          const slot0 = rs[0];
-          slot0.lot.textContent = safeText(newest.lot?.lot_code||newest.lot_code||"—").toUpperCase();
-          slot0.type.textContent = "—";
-          slot0.extra.textContent = "—";
-          slot0.price.textContent = "—";
-          slot0.who.textContent = "—";
-          slot0.badge.textContent = "SẮP CÓ";
-          slot0.badge.className = "badge-rt next";
-          slot0.card.className = "rslot next";
-          slot0.teaseLot.textContent = safeText(newest.lot?.lot_code||newest.lot_code||"—").toUpperCase();
-          slot0.tease.classList.add("show");
-
-          fillRecentSlot(rs[1], list[1] || null);
-          fillRecentSlot(rs[2], list[2] || null);
-          return;
-        }
-
-        rs[0].tease?.classList?.remove("show");
-        fillRecentSlot(rs[0], list[0] || null);
-        fillRecentSlot(rs[1], list[1] || null);
-        fillRecentSlot(rs[2], list[2] || null);
-      }
-
-      function fillRecentSlot(slot, item){
-        if(!slot) return;
-        if(!item){
-          slot.card.className = "rslot";
-          slot.badge.textContent = "—";
-          slot.badge.className = "badge-rt";
-          slot.lot.textContent = "—";
-          slot.type.textContent = "—";
-          slot.extra.textContent = "—";
-          slot.extra.className = "mini-badge";
-          slot.price.textContent = "—";
-          slot.who.textContent = "—";
-          if(slot.tease) slot.tease.classList.remove("show");
-          return;
-        }
-        if(slot.tease) slot.tease.classList.remove("show");
-
-        const rt = safeText(item.result_type || "—");
-        const lotCode = safeText(item.lot?.lot_code || item.lot_code || "—").toUpperCase();
-
-        slot.lot.textContent = lotCode;
-
-        // REQUIRED 4 things:
-        // 1) Trạng thái (màu)
-        // 2) Giá trúng / giá cao nhất
-        // 3) Người trúng: MASK = STT
-        // 4) Nếu vào vòng sau: số lượng khách vào vòng sau
-
-        const label = vnResultLabel(rt);
-        slot.type.textContent = label;
-
-        slot.badge.textContent = label;
-
-        if(rt === "WINNER"){
-          slot.card.className = "rslot win";
-          slot.badge.className = "badge-rt win";
-          slot.extra.className = "mini-badge win";
-          slot.extra.textContent = "TRÚNG";
-          slot.price.textContent = item.price_vnd ? fmtMoney(item.price_vnd) : "—";
-
-          const w = item.winner || {};
-          const stt = Number(w.stt||0);
-          slot.who.textContent = stt ? `STT ${stt}` : "STT —";
-        }else if(rt === "NEXT_ROUND"){
-          slot.card.className = "rslot next";
-          slot.badge.className = "badge-rt next";
-          slot.extra.className = "mini-badge next";
-          const cnt = Number(item.next_count||0);
-          slot.extra.textContent = `${cnt} KHÁCH`;
-          slot.price.textContent = item.price_vnd ? fmtMoney(item.price_vnd) : "—";
-          slot.who.textContent = cnt ? `${cnt} KHÁCH` : "—";
-        }else if(rt === "NO_VALID"){
-          slot.card.className = "rslot no";
-          slot.badge.className = "badge-rt no";
-          slot.extra.className = "mini-badge no";
-          slot.extra.textContent = "KHÔNG HỢP LỆ";
-          slot.price.textContent = "—";
-          slot.who.textContent = "—";
-        }else{
-          slot.card.className = "rslot";
-          slot.badge.className = "badge-rt";
-          slot.extra.className = "mini-badge";
-          slot.extra.textContent = "CHƯA KIỂM";
-          slot.price.textContent = item.price_vnd ? fmtMoney(item.price_vnd) : "—";
-          slot.who.textContent = "—";
-        }
-      }
-
-      // ---------- build customer lists ----------
-      function buildCustomerLists(byCustomer){
-        const arr = Array.isArray(byCustomer) ? byCustomer : [];
-
-        const winners = arr.filter(x => (x?.won_lots||[]).length > 0);
-        const nexts = arr.filter(x => (x?.next_lots||[]).length > 0);
-
-        winnersCount.textContent = String(winners.length);
-        nextCustCount.textContent = String(nexts.length);
-
-        const winnersHtml = winners.map(x=>{
-          const c = x.customer || {};
-          const stt = Number(c.stt||0);
-          const name = safeText(c.name||"").toUpperCase();
-          const lots = (x.won_lots||[]).map(l => `<span class="chip ok">${escapeHtml(safeText(l.lot_code||""))}</span>`).join("");
-          return `
-            <div class="crow won">
-              <div class="r1">
-                <div class="name">${escapeHtml(name || "—")}</div>
-                <div class="stt">STT ${stt||"—"}</div>
-              </div>
-              <div class="r2">
-                <span class="chip ok">TRÚNG ${(x.won_lots||[]).length} LÔ</span>
-                ${lots}
-              </div>
+    // =========================================================
+    // Tickers (smooth): duplicate content many times
+    // =========================================================
+    function buildTickerHTML(items, cls){
+      if(!items || !items.length) return `<div class="crow ${cls}"><div class="r1"><div class="name">—</div><div class="stt">STT —</div></div></div>`;
+      let html = "";
+      for(const it of items){
+        const nm = safeText(it.name || it.customer_name || it.full_name || it.display_name || "—").toUpperCase();
+        const stt = safeText(it.stt || it.snapshot_stt || it.no || it.order || "—");
+        const chips = [];
+        if(it.lot_code) chips.push(`<span class="chip ${cls}">${safeText(it.lot_code)}</span>`);
+        if(it.price_vnd || it.winning_price_vnd || it.highest_price_vnd) chips.push(`<span class="chip ${cls}">${fmtMoney(it.price_vnd||it.winning_price_vnd||it.highest_price_vnd)} VNĐ</span>`);
+        html += `
+          <div class="crow ${cls}">
+            <div class="r1">
+              <div class="name" title="${safeText(nm)}">${safeText(nm)}</div>
+              <div class="stt">STT ${safeText(stt)}</div>
             </div>
-          `;
-        }).join("") || `<div class="crow won"><div class="r1"><div class="name">CHƯA CÓ KẾT QUẢ</div><div class="stt">—</div></div></div>`;
-
-        const nextsHtml = nexts.map(x=>{
-          const c = x.customer || {};
-          const stt = Number(c.stt||0);
-          const name = safeText(c.name||"").toUpperCase();
-          const lots = (x.next_lots||[]).map(l => `<span class="chip warn">${escapeHtml(safeText(l.lot_code||""))}</span>`).join("");
-          return `
-            <div class="crow next">
-              <div class="r1">
-                <div class="name">${escapeHtml(name || "—")}</div>
-                <div class="stt">STT ${stt||"—"}</div>
-              </div>
-              <div class="r2">
-                <span class="chip warn">VÒNG SAU ${(x.next_lots||[]).length} LÔ</span>
-                ${lots}
-              </div>
-            </div>
-          `;
-        }).join("") || `<div class="crow next"><div class="r1"><div class="name">CHƯA CÓ DS VÀO VÒNG SAU</div><div class="stt">—</div></div></div>`;
-
-        winnersInner.innerHTML = winnersHtml;
-        nextCustInner.innerHTML = nextsHtml;
-
-        // Smooth tickers:
-        // - If overflow => duplicate xN then scroll
-        // - If not overflow => no duplication, no scroll
-        makeVerticalTickerConditional(el("winnersViewport"), winnersInner, 22, 10);
-        makeVerticalTickerConditional(el("nextCustViewport"), nextCustInner, 22, 10);
-      }
-
-      // ---------- build right cards from by_status.next_this_round ----------
-      function buildNextLotCards(byStatus){
-        const nextLots = (byStatus && Array.isArray(byStatus.next_this_round)) ? byStatus.next_this_round : [];
-        nextLotsInner.innerHTML = nextLots.map(x=>{
-          const lot = x.lot || {};
-          const code = safeText(lot.lot_code||"—").toUpperCase();
-          const desc = safeText(lot.lot_description||"");
-          const price = x.price_vnd ? fmtMoney(x.price_vnd) : "—";
-          const list = Array.isArray(x.next_customers) ? x.next_customers : [];
-          const plistId = "plist_" + Number(x.round_lot_id||0);
-
-          // rows (show full name here OK; requirement to mask applies to "3 lô gần nhất" cards)
-          const rows = list.map(c=>{
-            const stt = Number(c.stt||0);
-            const nm = safeText(c.name||"").toUpperCase();
-            return `
-              <div class="prow">
-                <div class="pname">${escapeHtml(nm||"—")}</div>
-                <div class="pstt">STT ${stt||"—"}</div>
-              </div>
-            `;
-          }).join("") || `<div class="prow"><div class="pname">CHƯA CÓ DS</div><div class="pstt">—</div></div>`;
-
-          return `
-            <div class="lotcard next">
-              <div class="top">
-                <div class="code">${escapeHtml(code)}</div>
-                <div class="flag">VÒNG SAU</div>
-              </div>
-              <div class="price">${escapeHtml(price)}</div>
-              <div class="mini">${escapeHtml(desc || "")}</div>
-
-              <div class="plist" id="${plistId}">
-                <div class="p-viewport">
-                  <div class="p-inner">${rows}</div>
-                </div>
-              </div>
-            </div>
-          `;
-        }).join("") || `<div class="lotcard next"><div class="top"><div class="code">—</div><div class="flag">VÒNG SAU</div></div><div class="price">CHƯA CÓ LÔ VÀO VÒNG SAU</div></div>`;
-
-        // outer cards: conditional duplicate + scroll
-        makeCardsTickerConditional(el("nextLotsViewport"), nextLotsInner, 16, 8);
-
-        // inner tickers for each card participant list (conditional)
-        setTimeout(()=>{
-          nextLots.forEach(x=>{
-            const id = "plist_" + Number(x.round_lot_id||0);
-            const box = document.getElementById(id);
-            if(!box) return;
-            const viewport = box.querySelector(".p-viewport");
-            const inner = box.querySelector(".p-inner");
-            if(!viewport || !inner) return;
-            makeSimpleTickerConditional(viewport, inner, 24, 8);
-          });
-        }, 50);
-      }
-
-      // ---------- tickers (conditional duplicate) ----------
-      function shouldScrollY(viewport, inner){
-        if(!viewport || !inner) return false;
-        return inner.scrollHeight > viewport.clientHeight + 2;
-      }
-
-      function duplicateInnerHtml(inner, times){
-        if(!inner) return;
-        const base = inner.getAttribute("data-base-html");
-        if(base === null){
-          inner.setAttribute("data-base-html", inner.innerHTML || "");
-        }
-        const html = inner.getAttribute("data-base-html") || "";
-        const t = Math.max(1, Number(times||1));
-        let out = "";
-        for(let i=0;i<t;i++) out += html;
-        inner.innerHTML = out;
-      }
-
-      function resetInnerBase(inner){
-        if(!inner) return;
-        const base = inner.getAttribute("data-base-html");
-        if(base !== null){
-          inner.innerHTML = base;
-        }
-      }
-
-      function makeVerticalTickerConditional(viewport, inner, speedPxPerSec, dupTimes){
-        if(!viewport || !inner) return;
-
-        // restore base first
-        resetInnerBase(inner);
-
-        // if overflow -> duplicate & scroll; else stop
-        const overflow = shouldScrollY(viewport, inner);
-        if(!overflow){
-          inner.style.transform = "translateY(0px)";
-          return;
-        }
-
-        duplicateInnerHtml(inner, dupTimes || 10);
-        makeVerticalTickerSeamless(viewport, inner, speedPxPerSec || 22);
-      }
-
-      function makeSimpleTickerConditional(viewport, inner, speedPxPerSec, dupTimes){
-        if(!viewport || !inner) return;
-
-        resetInnerBase(inner);
-        const overflow = shouldScrollY(viewport, inner);
-        if(!overflow){
-          inner.style.transform = "translateY(0px)";
-          return;
-        }
-
-        duplicateInnerHtml(inner, dupTimes || 8);
-        makeVerticalTickerSeamless(viewport, inner, speedPxPerSec || 24);
-      }
-
-      function makeCardsTickerConditional(viewport, inner, speedPxPerSec, dupTimes){
-        if(!viewport || !inner) return;
-
-        resetInnerBase(inner);
-        const overflow = shouldScrollY(viewport, inner);
-        if(!overflow){
-          inner.style.transform = "translateY(0px)";
-          return;
-        }
-
-        duplicateInnerHtml(inner, dupTimes || 8);
-        makeVerticalTickerSeamless(viewport, inner, speedPxPerSec || 16);
-      }
-
-      // Seamless loop: duplicate content (already done) then translate continuously with modulo
-      function makeVerticalTickerSeamless(viewport, inner, speedPxPerSec){
-        inner.style.transform = "translateY(0px)";
-        const totalH = inner.scrollHeight;
-        const vh = viewport.clientHeight;
-        if(totalH <= vh + 2) return;
-
-        // because duplicated N times, we can loop over 1/N of height if we want.
-        // We'll loop over 1/2 height (safe) by using "base height" derived from stored base content.
-        const baseHtml = inner.getAttribute("data-base-html") || "";
-        let baseH = null;
-
-        // measure base height by temporary swap (fast, once)
-        try{
-          const tmp = document.createElement("div");
-          tmp.style.position = "absolute";
-          tmp.style.visibility = "hidden";
-          tmp.style.pointerEvents = "none";
-          tmp.style.left = "-99999px";
-          tmp.style.top = "0";
-          tmp.style.width = viewport.clientWidth + "px";
-          tmp.innerHTML = baseHtml;
-          document.body.appendChild(tmp);
-          baseH = tmp.scrollHeight || null;
-          document.body.removeChild(tmp);
-        }catch(_){ baseH = null; }
-
-        const loopDist = Math.max(10, (baseH && baseH > vh) ? baseH : (totalH - vh + 20));
-        const pxPerMs = Math.max(10, speedPxPerSec||22) / 1000;
-
-        let last = performance.now();
-        let offset = 0;
-
-        function step(now){
-          const dt = now - last;
-          last = now;
-          offset += dt * pxPerMs;
-
-          // loop modulo
-          if(offset >= loopDist) offset = offset % loopDist;
-
-          inner.style.transform = `translateY(${-Math.floor(offset)}px)`;
-          requestAnimationFrame(step);
-        }
-        requestAnimationFrame(step);
-      }
-
-      // ---------- marquee (conditional duplicate) ----------
-      function startMarqueeConditional(container, track, speedPxPerSec){
-        if(!container || !track) return;
-
-        // restore base
-        const base = track.getAttribute("data-base-html");
-        if(base === null){
-          track.setAttribute("data-base-html", track.innerHTML || "");
-        }else{
-          track.innerHTML = base;
-        }
-
-        const cW = container.clientWidth;
-        const tW = track.scrollWidth;
-
-        if(tW <= cW + 10){
-          track.style.transform = "translateX(0px)";
-          return; // no overflow => no duplication, no scroll
-        }
-
-        // duplicate to make it long (seamless)
-        const baseHtml = track.getAttribute("data-base-html") || track.innerHTML || "";
-        track.innerHTML = baseHtml + baseHtml + baseHtml; // x3 enough for smooth
-
-        startMarquee(container, track, speedPxPerSec || 42);
-      }
-
-      function startMarquee(container, track, speedPxPerSec){
-        if(!container || !track) return;
-        const cW = container.clientWidth;
-        const tW = track.scrollWidth;
-        if(tW <= cW + 10) return;
-
-        // loop over 1/3 width (since duplicated x3) or half width safely
-        const dist = Math.floor(tW / 3);
-        const duration = (dist / Math.max(10, speedPxPerSec||42)) * 1000;
-        let start = null;
-
-        function step(ts){
-          if(start === null) start = ts;
-          const t = ts - start;
-          const p = (t % duration) / duration;
-          const x = -Math.floor(dist * p);
-          track.style.transform = `translateX(${x}px)`;
-          requestAnimationFrame(step);
-        }
-        requestAnimationFrame(step);
-      }
-
-      // ---------- apply context ----------
-      function applyContext(ctx){
-        // truncation: keep title attr full
-        const cn = safeText(ctx.company_name || ctx.company_code || "—");
-        const pc = safeText(ctx.project_code || "—");
-        const pn = safeText(ctx.project_name || "—");
-
-        companyName.textContent = cn;
-        companyName.title = cn;
-
-        projectCode.textContent = pc;
-        projectCode.title = pc;
-
-        projectName.textContent = pn;
-        projectName.title = pn;
-
-        const rn = Number(ctx.round_no||0);
-        const st = safeText(ctx.round_status||"—");
-        roundLine.textContent = `VÒNG ${rn || "—"} • TRẠNG THÁI ${st}`;
-
-        const stats = ctx.stats || {};
-        kpiTotalLots.textContent = fmtNum(stats.total_lots||0);
-        kpiTotalCustomers.textContent = fmtNum(stats.total_customers||0);
-        kpiWon.textContent = fmtNum(stats.won_lots||0);
-        kpiNext.textContent = fmtNum(stats.next_lots||0);
-        kpiPending.textContent = fmtNum(stats.pending_lots||0);
-
-        if(lastRoundId !== null && Number(ctx.round_id||0) !== Number(lastRoundId||0)){
-          showOverlay("🔄 CHUYỂN VÒNG", `VÒNG ${Number(ctx.round_no||0)}`, "Đang tải dữ liệu vòng mới…", 2200);
-          seenRoundLotIds.clear();
-          queue.length = 0;
-          heroMode = "IDLE";
-          heroCurrent = null;
-          clearTimers();
-        }
-        lastRoundId = Number(ctx.round_id||0);
-      }
-
-      // ---------- fetch loop ----------
-      async function fetchPayload(){
-        const r = await fetch(API_URL, {headers:{ "Accept":"application/json" }});
-        if(!r.ok){
-          const txt = await r.text().catch(()=>null);
-          throw new Error(`HTTP ${r.status} ${txt||""}`.trim());
-        }
-        return await r.json();
-      }
-
-      let inFlight = false;
-      async function poll(){
-        if(inFlight) return;
-        inFlight = true;
-        try{
-          const payload = await fetchPayload();
-
-          applyContext(payload.context || {});
-
-          buildCustomerLists(payload.by_customer || []);
-          buildNextLotCards(payload.by_status || {});
-
-          enqueueNewCheckedLots(payload);
-
-          setRecentSlots(payload.recent_checked_lots || []);
-          maybeStartNextReveal(payload);
-
-        }catch(err){
-          console.error(err);
-          showOverlay("⚠️ LỖI KẾT NỐI", "KHÔNG LẤY ĐƯỢC DỮ LIỆU", "Sẽ tự thử lại…", 2000);
-        }finally{
-          inFlight = false;
-        }
-      }
-
-      // ---------- footer marquee init ----------
-      function initFooter(){
-        const msg = "Đơn vị phần mềm: VNTECHX – Nền tảng vận hành đấu giá đất (tự động hoá & minh bạch).";
-        footerTrack.innerHTML = `
-          <span class="item">${escapeHtml(msg.toUpperCase())}</span>
-          <span class="item">${escapeHtml(msg.toUpperCase())}</span>
-          <span class="item">${escapeHtml(msg.toUpperCase())}</span>
+            ${chips.length ? `<div class="r2">${chips.join("")}</div>` : ``}
+          </div>
         `;
-        // always scroll footer (it is intended), but still seamless
-        startMarquee(footerMarquee, footerTrack, 32);
       }
+      return html;
+    }
 
-      // ---------- init ----------
-      initFooter();
-      poll();
-      setInterval(poll, POLL_MS);
+    function startVerticalTicker(viewportEl, innerEl){
+      // innerEl already filled. We animate by translating Y continuously.
+      // We'll duplicate content (x10) for seamless loop.
+      const base = innerEl.innerHTML;
+      innerEl.innerHTML = base.repeat(10);
 
-    })();
+      let y = 0;
+      let last = performance.now();
+      const speed = 18; // px/s (slow smooth)
+
+      function tick(now){
+        const dt = (now - last)/1000;
+        last = now;
+        const maxScroll = Math.max(0, innerEl.scrollHeight - viewportEl.clientHeight);
+        if(maxScroll <= 0){
+          innerEl.style.transform = `translateY(0px)`;
+          requestAnimationFrame(tick);
+          return;
+        }
+        y += speed * dt;
+        if(y > maxScroll) y = 0;
+        innerEl.style.transform = `translateY(${-y}px)`;
+        requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function startCardsTicker(viewportEl, innerEl){
+      const base = innerEl.innerHTML;
+      innerEl.innerHTML = base.repeat(6);
+
+      let y = 0;
+      let last = performance.now();
+      const speed = 16;
+
+      function tick(now){
+        const dt = (now - last)/1000;
+        last = now;
+        const maxScroll = Math.max(0, innerEl.scrollHeight - viewportEl.clientHeight);
+        if(maxScroll <= 0){
+          innerEl.style.transform = `translateY(0px)`;
+          requestAnimationFrame(tick);
+          return;
+        }
+        y += speed * dt;
+        if(y > maxScroll) y = 0;
+        innerEl.style.transform = `translateY(${-y}px)`;
+        requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function startMarquee(trackEl, speedPxPerSec){
+      // duplicate content for seamless
+      const base = trackEl.innerHTML;
+      trackEl.innerHTML = base.repeat(10);
+
+      let x = 0;
+      let last = performance.now();
+
+      function tick(now){
+        const dt = (now - last)/1000;
+        last = now;
+
+        const w = trackEl.scrollWidth;
+        const vw = trackEl.parentElement.clientWidth;
+        if(w <= vw){
+          trackEl.style.transform = `translateX(0px)`;
+          requestAnimationFrame(tick);
+          return;
+        }
+
+        x += speedPxPerSec * dt;
+        if(x > w/10) x = 0; // because repeated 10 times
+        trackEl.style.transform = `translateX(${-x}px)`;
+        requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    // =========================================================
+    // UI render (keep content logic consistent)
+    // =========================================================
+    let _initedTickers = false;
+    let _lastNewestKey = null;
+    let _teaseTimer = null;
+
+    function setTopTexts(payload){
+  const c = payload?.context || {};
+
+  const company = safeText(c.company_name || "");
+  const project = safeText(c.project_name || "");
+  const sessionCode = safeText(c.project_code || c.session_id || "");
+
+  $("companyName").textContent = truncate(company.toUpperCase(), 26);
+  $("companyName").title = company;
+
+  $("projectName").textContent = truncate(project.toUpperCase(), 34);
+  $("projectName").title = project;
+
+  $("sessionCode").textContent = sessionCode ? `PHIÊN ${String(sessionCode).toUpperCase()}` : "PHIÊN —";
+  $("sessionCode").title = sessionCode;
+
+  const roundNo = c.round_no ?? ROUND_NO;
+  const st = shortStatus(c.round_status || "");
+  $("roundLine").textContent = `VÒNG ${roundNo} • TRẠNG THÁI ${st}`;
+}
+
+
+    function setKpis(payload){
+  const s = payload?.context?.stats || {};
+
+  $("kpiTotalLots").textContent = fmtInt(s.total_lots ?? 0);
+  $("kpiWon").textContent      = fmtInt(s.won_lots ?? 0);
+  $("kpiNext").textContent     = fmtInt(s.next_lots ?? 0);
+  $("kpiPending").textContent  = fmtInt(s.pending_lots ?? 0);
+
+  // tags ở box trái
+  $("wonCountTag").textContent  = fmtInt(s.won_lots ?? 0);
+  $("nextCountTag").textContent = fmtInt(s.next_lots ?? 0);
+}
+
+
+    function setStatus(payload){
+  const st = payload?.context?.round_status || "";
+  const cls = statusClass(st);
+
+  const pill = $("statusPill");
+  pill.classList.remove("ok","pri","warn","bad");
+  pill.classList.add(cls);
+
+  $("statusText").textContent = shortStatus(st);
+
+  const dot = $("statusDot");
+  dot.style.background = (cls==="ok")
+    ? "var(--ok)"
+    : (cls==="pri" ? "var(--pri)" : "var(--bad)");
+
+  $("statusSub").textContent = "Hệ thống đang cập nhật kết quả theo thời gian thực.";
+}
+
+
+    function renderHeroNewest(payload){
+  const newest = (payload?.recent_checked_lots && payload.recent_checked_lots[0])
+    ? payload.recent_checked_lots[0]
+    : null;
+
+  const lot = newest?.lot || null;
+
+  const lotCode = safeText(lot?.lot_code || "—").toUpperCase();
+  const lotName = safeText(lot?.lot_name || "Mã lô");
+  const lotDesc = safeText(lot?.lot_description || "—");
+
+  $("heroLotCode").textContent = lotCode || "—";
+  $("heroLotName").textContent = lotName ? truncate(lotName.toUpperCase(), 28) : "MÃ LÔ";
+  $("heroLotDesc").textContent = lotDesc || "—";
+
+  const price = newest?.price_vnd;
+  $("heroPrice").textContent = (!price || Number(price) <= 0) ? "—" : `${fmtMoney(price)} VNĐ`;
+
+  const rt = newest?.result_type || "";
+  const label = resultLabel(rt);
+  $("heroBadge1").textContent = "KẾT QUẢ MỚI";
+  $("heroBadge2").textContent = label;
+
+  const winnerWrap = $("winnerWrap");
+  const winnerLabel = $("winnerLabel");
+  const winnerName = $("winnerName");
+  const nextWrap = $("heroNextWrap");
+
+  winnerWrap.classList.remove("ok","warn","bad");
+  winnerName.classList.add("masked");
+  winnerName.classList.remove("reveal");
+
+  if(label==="TRÚNG"){
+    winnerWrap.classList.add("ok");
+    winnerLabel.textContent = "NGƯỜI TRÚNG";
+    const winName = safeText(newest?.winner?.name || "");
+    winnerName.textContent = (winName ? winName.toUpperCase() : "—") + " ";
+    winnerName.insertAdjacentHTML("beforeend", `<span class="caret">|</span>`);
+    nextWrap.style.display = "none";
+  }else if(label==="VÒNG SAU"){
+    winnerWrap.classList.add("warn");
+    winnerLabel.textContent = "CHỜ VÒNG SAU";
+    winnerName.textContent = "ĐANG CHỌN… ";
+    winnerName.insertAdjacentHTML("beforeend", `<span class="caret">|</span>`);
+    nextWrap.style.display = "";
+  }else{
+    winnerWrap.classList.add("bad");
+    winnerLabel.textContent = "CHƯA CÓ KQ";
+    winnerName.textContent = "— ";
+    winnerName.insertAdjacentHTML("beforeend", `<span class="caret">|</span>`);
+    nextWrap.style.display = "";
+  }
+
+  const nexts = newest?.next_customers || [];
+  $("heroNextCount").textContent = fmtInt(nexts.length);
+
+  $("nextTrack").innerHTML = nexts.length
+    ? nexts.map(p=>{
+        const nm = safeText(p.name||"—").toUpperCase();
+        const stt = safeText(p.stt||"—");
+        return `<span class="marquee-item"><span class="m-stt">STT ${stt}</span><span class="m-name">${nm}</span></span>`;
+      }).join("")
+    : `<span class="marquee-item"><span class="m-stt">STT —</span><span class="m-name">—</span></span>`;
+
+  clearTimeout(_teaseTimer);
+  _teaseTimer = setTimeout(()=>{
+    winnerName.classList.remove("masked");
+    winnerName.classList.add("reveal");
+  }, 1800);
+
+  const key = safeText(newest?.round_lot_id || lotCode);
+  if(key && key !== _lastNewestKey){
+    _lastNewestKey = key;
+    showToastFromNewest({
+      result_type: newest?.result_type,
+      winner_name: newest?.winner?.name,
+      next_customers: newest?.next_customers || []
+    }, lotCode);
+  }
+}
+
+
+    function renderLeftLists(payload){
+  const w = payload?.by_status?.won_this_round || [];
+  const n = payload?.by_status?.next_this_round || [];
+
+  const winners = w.map(x=>({
+    name: x?.winner?.name,
+    stt: x?.winner?.stt,
+    lot_code: x?.lot?.lot_code,
+    price_vnd: x?.price_vnd
+  }));
+
+  const nexts = n.flatMap(x=>{
+    const lotCode = x?.lot?.lot_code;
+    const price = x?.price_vnd;
+    return (x?.next_customers||[]).map(c=>({
+      name: c?.name,
+      stt: c?.stt,
+      lot_code: lotCode,
+      price_vnd: price
+    }));
+  });
+
+  $("wonTicker").innerHTML  = buildTickerHTML(winners, "won");
+  $("nextTicker").innerHTML = buildTickerHTML(nexts, "next");
+}
+
+
+    function renderRightLots(payload){
+  const lotsAll = payload?.by_lot || [];
+  const lots = lotsAll.filter(x => {
+    const rt = safeText(x?.result_type).toUpperCase();
+    return rt === "PENDING" || rt === "NEXT_ROUND";
+  });
+
+  if(!lots.length){
+    $("lotCards").innerHTML = `
+      <div class="lotcard next">
+        <div class="top">
+          <div class="code">—</div>
+          <div class="flag">CHỜ</div>
+        </div>
+        <div class="mid">
+          <div class="meta"><span class="pill warn">CHƯA CÓ DỮ LIỆU</span></div>
+          <div><div class="count">0</div><div class="sub">KHÁCH</div></div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  let html = "";
+  for(const it of lots){
+    const code = safeText(it?.lot?.lot_code || "—").toUpperCase();
+    const rt = resultLabel(it?.result_type || "");
+    const flagCls = (rt==="TRÚNG") ? "win" : (rt==="CHƯA CÓ" ? "no" : "");
+    const cnt = Number(it?.next_count ?? 0) || 0;
+
+    html += `
+      <div class="lotcard next">
+        <div class="top">
+          <div class="code" title="${safeText(code)}">${safeText(code)}</div>
+          <div class="flag ${flagCls}">${rt}</div>
+        </div>
+        <div class="mid">
+          <div class="meta">
+            <span class="pill warn">VÒNG ${safeText(payload?.context?.round_no ?? ROUND_NO)}</span>
+            <span class="pill ${cnt>=2 ? "ok":"bad"}">${cnt>=2 ? "ĐỦ KHÁCH" : "THIẾU KHÁCH"}</span>
+          </div>
+          <div>
+            <div class="count">${fmtInt(cnt)}</div>
+            <div class="sub">KHÁCH</div>
+          </div>
+        </div>
+      </div>`;
+  }
+  $("lotCards").innerHTML = html;
+}
+
+
+    function renderRecent(payload){
+  const rec = payload?.recent_checked_lots || [];
+  const arr = rec.slice(0,3);
+  while(arr.length < 3) arr.push(null);
+
+  const html = arr.map((it)=>{
+    if(!it){
+      return `
+        <div class="rslot no">
+          <div class="lc">—</div>
+          <div class="badge-rt no">CHƯA CÓ</div>
+          <div class="minirow"><span>TRẠNG THÁI</span><span class="mini-badge no">—</span></div>
+          <div class="minirow"><span>GIÁ</span><span class="mini-badge no">—</span></div>
+          <div class="minirow"><span>NGƯỜI</span><span class="mini-badge no">STT —</span></div>
+          <div class="minirow"><span>VÒNG SAU</span><span class="mini-badge no">0</span></div>
+          <div class="rv"><div class="price">—</div><div class="who">STT —</div></div>
+        </div>`;
+    }
+
+    const code = safeText(it?.lot?.lot_code || "—").toUpperCase();
+    const rt = it?.result_type || "";
+    const cls = resultClass(rt);
+    const lab = resultLabel(rt);
+
+    const price = it?.price_vnd;
+    const winnerStt = it?.winner?.stt || "";
+    const nextCount = Number(it?.next_count ?? (it?.next_customers?.length ?? 0)) || 0;
+
+    const priceText = (!price || Number(price)<=0) ? "—" : (fmtMoney(price) + " VNĐ");
+
+    return `
+      <div class="rslot ${cls}">
+        <div class="lc" title="${safeText(code)}">${safeText(code)}</div>
+        <div class="badge-rt ${cls}">${lab}</div>
+
+        <div class="minirow"><span>TRẠNG THÁI</span><span class="mini-badge ${cls}">${lab}</span></div>
+        <div class="minirow"><span>GIÁ</span><span class="mini-badge ${cls}">${priceText}</span></div>
+        <div class="minirow"><span>NGƯỜI</span><span class="mini-badge ${cls}">${maskSTT(winnerStt)}</span></div>
+        <div class="minirow"><span>VÒNG SAU</span><span class="mini-badge ${cls}">${fmtInt(nextCount)}</span></div>
+
+        <div class="rv">
+          <div class="price">${priceText}</div>
+          <div class="who">${maskSTT(winnerStt)}</div>
+        </div>
+      </div>`;
+  }).join("");
+
+  $("recentBody").innerHTML = html;
+}
+
+
+    function showToast(type, title, badge, line1, line2){
+      const toast = $("toast");
+      toast.classList.remove("ok","warn","bad","show");
+      toast.classList.add(type);
+
+      $("toastTitle").textContent = safeText(title);
+      $("toastBadge").textContent = safeText(badge);
+      $("toastLine1").textContent = safeText(line1);
+      $("toastLine2").textContent = safeText(line2);
+
+      // FIX #7: extend duration + congratulatory
+      toast.classList.add("show");
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(()=> toast.classList.remove("show"), 9500);
+    }
+
+    function showToastFromNewest(newest, lotCode){
+      const rt = newest?.result_type || newest?.result || "";
+      const label = resultLabel(rt);
+
+      if(label === "TRÚNG"){
+        const winName = safeText(newest?.winner_name || newest?.winner?.name || newest?.customer_name || newest?.customer || "");
+        showToast(
+          "ok",
+          "CHÚC MỪNG",
+          "TRÚNG",
+          "Chúc mừng khách hàng trúng đấu giá",
+          `${(winName ? winName.toUpperCase() : "—")} • LÔ ${safeText(lotCode)}`
+        );
+      }else if(label === "VÒNG SAU"){
+        showToast(
+          "warn",
+          "THÔNG BÁO",
+          "VÒNG SAU",
+          "Lô này chuyển sang vòng sau",
+          `LÔ ${safeText(lotCode)} • ${fmtInt((newest?.next_participants||[]).length)} KHÁCH`
+        );
+      }else{
+        showToast(
+          "bad",
+          "THÔNG BÁO",
+          "CHƯA CÓ",
+          "Chưa có kết quả cho lô này",
+          `LÔ ${safeText(lotCode)}`
+        );
+      }
+    }
+
+    // =========================================================
+    // Footer marquee text
+    // =========================================================
+    function initFooter(){
+      $("footerTrack").innerHTML = `
+        <span class="marquee-item">
+          ĐƠN VỊ PHẦN MỀM: VNTECHX – NỀN TẢNG VẬN HÀNH ĐẤU GIÁ ĐẤT (TỰ ĐỘNG HOÁ & MINH BẠCH).
+        </span>
+      `;
+      startMarquee($("footerTrack"), 48);
+    }
+
+    // =========================================================
+    // Polling
+    // =========================================================
+    async function pollOnce(){
+      let r, js;
+      try{
+        r = await fetch(API_URL, {method:"GET", headers: {"Accept":"application/json"}});
+      }catch(err){
+        return null;
+      }
+      try{ js = await r.json(); }catch(_){ js = null; }
+      if(!r || !r.ok) return js || null;
+      return js;
+    }
+
+    async function mainLoop(){
+      const payload = await pollOnce();
+      if(payload){
+        // render
+        setTopTexts(payload);
+        setKpis(payload);
+        setStatus(payload);
+
+        renderLeftLists(payload);
+        renderHeroNewest(payload);
+        renderRightLots(payload);
+        renderRecent(payload);
+
+        // init tickers once (after content exists)
+        if(!_initedTickers){
+          _initedTickers = true;
+
+          // left tickers
+          const wonVp = $("wonTicker").closest(".ticker-viewport");
+          const nextVp = $("nextTicker").closest(".ticker-viewport");
+          startVerticalTicker(wonVp, $("wonTicker"));
+          startVerticalTicker(nextVp, $("nextTicker"));
+
+          // right cards ticker
+          const cvp = $("lotCards").closest(".cards-viewport");
+          startCardsTicker(cvp, $("lotCards"));
+
+          // hero marquee
+          startMarquee($("nextTrack"), 58);
+
+          // footer
+          initFooter();
+        }
+      }
+      setTimeout(mainLoop, POLL_MS);
+    }
+
+    // boot
+    mainLoop();
   </script>
 </body>
 </html>
+
