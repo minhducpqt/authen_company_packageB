@@ -628,12 +628,18 @@
         <div class="tright">
             <a class="btn ghost" href="/auction/sessions"><i class="ri-arrow-left-line"></i> Quay lại</a>
 
+            <a class="btn"
+               href="/auction/sessions/{{ session_id }}/display?round_no={{ (round_no or 1) }}"
+               target="_blank" rel="noopener">
+              <i class="ri-slideshow-3-line"></i> Trình chiếu
+            </a>
+
+
             {% if not is_open %}
             <button class="btn" type="button" onclick="startSessionIfNeeded()">
                 <i class="ri-rocket-line"></i> Start
             </button>
             {% endif %}
-
 
             <button class="btn primary" type="button" onclick="createNextRound()">
                 <i class="ri-skip-forward-line"></i> Tạo vòng sau
@@ -643,6 +649,7 @@
                 <i class="ri-refresh-line"></i> Làm mới
             </button>
         </div>
+
     </div>
 
     {% if error %}

@@ -45,6 +45,7 @@ from routers.announcements import router as announcements_router
 from routers.auction_results import router as auction_results_router
 from routers import deposit_refunds
 from routers.auction_prints import router as auction_prints_router
+from routers import auction_session_display
 
 
 def _dump_bank_routes(app: FastAPI) -> None:
@@ -112,6 +113,7 @@ app.include_router(auction_counting_router)
 app.include_router(auction_sessions_router)
 app.include_router(auction_session_bid_sheets_router)
 app.include_router(auction_session_winner_prints_router)
+app.include_router(auction_session_display.router)
 
 @app.get("/healthz")
 def healthz():
