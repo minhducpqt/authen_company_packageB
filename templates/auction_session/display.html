@@ -1456,16 +1456,18 @@
       text-overflow:ellipsis;
     }
     .toast .line3{
-      font-weight: 900;
-      font-size: 18px;
-      letter-spacing:.08em;
-      text-transform:uppercase;
-      color: rgba(226,232,240,.92);
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      opacity:.96;
-    }
+  font-weight: 900;
+  font-size: 28px;              /* ✅ TO HƠN */
+  letter-spacing:.10em;         /* ✅ rõ hơn */
+  text-transform:uppercase;
+  color: rgba(226,232,240,.98);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  opacity:1;
+  text-shadow: 0 0 26px rgba(34,211,238,.20);
+}
+
 
     .toast.ok{ border-color: rgba(52,211,153,.28); box-shadow: var(--shadow), 0 0 48px rgba(52,211,153,.18); }
     .toast.ok .t-head{ background: rgba(52,211,153,.12); }
@@ -2476,16 +2478,21 @@ function renderRecent(payload){
       const priceText = (!price || Number(price)<=0) ? "—" : (fmtMoney(price) + "");
 
       if(label === "TRÚNG"){
-        const winName = safeText(newest?.winner?.name || newest?.winner_name || newest?.customer_name || "");
-        showToast(
-          "ok",
-          "CHÚC MỪNG",
-          "TRÚNG",
-          "CHÚC MỪNG KHÁCH HÀNG TRÚNG ĐẤU GIÁ",
-          `LÔ ${safeText(lotCode)} • ${priceText}`,
-          upperName(winName)
-        );
-      }else if(label === "VÒNG SAU"){
+  const winName = safeText(newest?.winner?.name || newest?.winner_name || newest?.customer_name || "");
+  const winStt  = safeText(newest?.winner?.stt  || newest?.winner_stt  || "").trim();
+
+  const sttText = winStt ? `STT ${winStt}` : "STT —";
+  const nameText = upperName(winName);
+
+  showToast(
+    "ok",
+    "CHÚC MỪNG",
+    "TRÚNG",
+    "CHÚC MỪNG KHÁCH HÀNG TRÚNG ĐẤU GIÁ",
+    `LÔ ${safeText(lotCode)} • ${priceText}`,
+    `${sttText} • ${nameText}`   // ✅ line3 = STT + TÊN (to hơn nhờ CSS line3)
+  );
+}else if(label === "VÒNG SAU"){
         const nextCount = Number(newest?.next_count ?? (newest?.next_customers?.length ?? 0)) || 0;
         showToast(
           "warn",
