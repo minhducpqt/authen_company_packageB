@@ -410,11 +410,14 @@
     .crow.next .stt{ color: var(--warn); }
 
     .crow .r2{
-      margin-top: 6px;
-      display:flex;
-      gap: 8px;
-      flex-wrap:wrap;
-    }
+  margin-top: 6px;
+  display:flex;
+  gap: 8px;
+  flex-wrap: nowrap;     /* ✅ chỉ 1 dòng */
+  overflow: hidden;      /* ✅ dư thì ẩn */
+  white-space: nowrap;
+}
+
     .chip{
       font-size: 11px;
       font-weight:900;
@@ -1855,28 +1858,52 @@ function setMarqueeRepeat(trackEl, baseHtml, times){
   trackEl.style.transform = "translateX(0px)";
 }
 
+function buildLotChips(lotCodes, cls, maxShow){
+  const arr = (lotCodes || []).map(x => safeText(x).toUpperCase()).filter(Boolean);
+  if(!arr.length) return "";
 
-    function buildTickerHTML(items, cls){
-      if(!items || !items.length) return `<div class="crow ${cls}"><div class="r1"><div class="name">—</div><div class="stt">STT —</div></div></div>`;
-      let html = "";
-      for(const it of items){
-        const nm = upperName(it.name || it.customer_name || it.full_name || it.display_name || "—");
-        const stt = safeText(it.stt || it.snapshot_stt || it.no || it.order || "—");
-        const chips = [];
-        if(it.lot_code) chips.push(`<span class="chip ${cls}">${safeText(it.lot_code)}</span>`);
-        if(it.price_vnd || it.winning_price_vnd || it.highest_price_vnd) chips.push(`<span class="chip ${cls}">${fmtMoney(it.price_vnd||it.winning_price_vnd||it.highest_price_vnd)}</span>`);
-        html += `
-          <div class="crow ${cls}">
-            <div class="r1">
-              <div class="name" title="${safeText(nm)}">${safeText(nm)}</div>
-              <div class="stt">STT ${safeText(stt)}</div>
-            </div>
-            ${chips.length ? `<div class="r2">${chips.join("")}</div>` : ``}
-          </div>
-        `;
-      }
-      return html;
-    }
+  const limit = Math.max(1, Number(maxShow || 4)); // default 4 chip
+  // Nếu vượt limit => chừa 1 slot cho +N
+  if(arr.length > limit){
+    const shown = arr.slice(0, limit - 1);
+    const rest = arr.length - shown.length; // số còn lại
+    // chỉ show +N nếu N>=2 theo yêu cầu
+    const plus = (rest >= 2) ? [`+${rest}`] : arr.slice(0, limit);
+    const finalList = (rest >= 2) ? shown.concat(plus) : plus;
+
+    return finalList.map(code => `<span class="chip ${cls}">${code}</span>`).join("");
+  }
+
+  // không dư
+  return arr.map(code => `<span class="chip ${cls}">${code}</span>`).join("");
+}
+
+
+    function buildTickerHTML(items, cls, maxShowChips){
+  if(!items || !items.length){
+    return `<div class="crow ${cls}"><div class="r1"><div class="name">—</div><div class="stt">STT —</div></div></div>`;
+  }
+
+  let html = "";
+  for(const it of items){
+    const nm  = upperName(it.name || "—");
+    const stt = safeText(it.stt || "—");
+
+    const chipsHtml = buildLotChips(it.lot_codes || [], cls, maxShowChips);
+
+    html += `
+      <div class="crow ${cls}">
+        <div class="r1">
+          <div class="name" title="${safeText(nm)}">${safeText(nm)}</div>
+          <div class="stt">STT ${safeText(stt)}</div>
+        </div>
+        ${chipsHtml ? `<div class="r2">${chipsHtml}</div>` : ``}
+      </div>
+    `;
+  }
+  return html;
+}
+
 
     function startVerticalTicker(viewportEl, innerEl){
   // state lưu trên element để update không cần restart RAF
@@ -2053,9 +2080,6 @@ function updateCardsTicker(viewportEl, innerEl, baseHtml, itemCount, speed){
       $("kpiWon").textContent      = fmtInt(s.won_lots ?? 0);
       $("kpiNext").textContent     = fmtInt(s.next_lots ?? 0);
       $("kpiPending").textContent  = fmtInt(s.pending_lots ?? 0);
-
-      $("wonCountTag").textContent  = fmtInt(s.won_lots ?? 0);
-      $("nextCountTag").textContent = fmtInt(s.next_lots ?? 0);
     }
 
     function setStatus(payload){
@@ -2174,48 +2198,50 @@ function updateCardsTicker(viewportEl, innerEl, baseHtml, itemCount, speed){
   }
 }
 
-    function renderLeftLists(payload){
-  const w = payload?.by_status?.won_this_round || [];
-  const n = payload?.by_status?.next_this_round || [];
+function renderLeftLists(payload){
+  const bc = Array.isArray(payload?.by_customer) ? payload.by_customer : [];
 
-  const winners = w.map(x=>({
-    name: x?.winner?.name,
-    stt: x?.winner?.stt,
-    lot_code: x?.lot?.lot_code,
-    price_vnd: x?.price_vnd
-  }));
-
-  const nexts = n.flatMap(x=>{
-    const lotCode = x?.lot?.lot_code;
-    const price = x?.price_vnd;
-    return (x?.next_customers||[]).map(c=>({
-      name: c?.name,
-      stt: c?.stt,
-      lot_code: lotCode,
-      price_vnd: price
+  // ✅ TRÚNG: mỗi row = 1 khách, chips = list lô trúng
+  const winners = bc
+    .filter(x => Array.isArray(x?.won_lots) && x.won_lots.length > 0)
+    .map(x => ({
+      name: x?.customer?.name,
+      stt:  x?.customer?.stt,
+      lot_codes: (x.won_lots || []).map(l => l?.lot_code).filter(Boolean)
     }));
-  });
+
+  // ✅ VÒNG SAU: mỗi row = 1 khách, chips = list lô vào vòng sau
+  const nexts = bc
+    .filter(x => Array.isArray(x?.next_lots) && x.next_lots.length > 0)
+    .map(x => ({
+      name: x?.customer?.name,
+      stt:  x?.customer?.stt,
+      lot_codes: (x.next_lots || []).map(l => l?.lot_code).filter(Boolean)
+    }));
+
+  // ✅ badge trên box = số người (không phải số lô)
+  $("wonCountTag").textContent  = fmtInt(winners.length);
+  $("nextCountTag").textContent = fmtInt(nexts.length);
 
   const wonEl  = $("wonTicker");
   const nextEl = $("nextTicker");
 
-  const wonHtml  = buildTickerHTML(winners, "won");
-  const nextHtml = buildTickerHTML(nexts, "next");
+  // max chip 1 dòng: bạn chỉnh tuỳ ý
+  const wonHtml  = buildTickerHTML(winners, "won", 4);
+  const nextHtml = buildTickerHTML(nexts, "next", 4);
 
-  // lưu số lượng “thật” để init tickers dùng (không bị dính count sau khi duplicate)
   wonEl.dataset.realCount  = String(winners.length);
   nextEl.dataset.realCount = String(nexts.length);
 
   if(!_initedTickers){
-    // chưa init ticker: render bình thường để nhìn thấy dữ liệu ngay
     wonEl.innerHTML  = wonHtml;
     nextEl.innerHTML = nextHtml;
     return;
   }
 
-  // đã init: update theo kiểu seamless (không bị giật)
   const wonVp  = wonEl.closest(".ticker-viewport");
   const nextVp = nextEl.closest(".ticker-viewport");
+
   updateVerticalTicker(wonVp, wonEl, wonHtml, winners.length, 18);
   updateVerticalTicker(nextVp, nextEl, nextHtml, nexts.length, 18);
 }
