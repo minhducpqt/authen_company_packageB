@@ -1625,6 +1625,19 @@
       const s = safeText(x).trim();
       return s ? s.toUpperCase() : "—";
     }
+    // =========================================================
+// Smart repeat count for marquee (avoid blind x10)
+// =========================================================
+function calcRepeatN(realCount){
+  const TARGET = 50;   // muốn tối thiểu ~50 item để chạy mượt
+  const MAX_N  = 10;   // không cho nhân quá 10 lần
+
+  const c = Number(realCount || 0);
+  if(c <= 0) return 1;
+
+  const n = Math.ceil(TARGET / c);
+  return Math.max(1, Math.min(n, MAX_N));
+}
 
     // =========================================================
     // Fullscreen
@@ -1726,31 +1739,31 @@ function setMarqueeRepeat(trackEl, baseHtml, times){
     }
 
     function startMarquee(trackEl, speedPxPerSec){
-      const base = trackEl.innerHTML;
-      trackEl.innerHTML = base.repeat(10);
+  let x = 0;
+  let last = performance.now();
 
-      let x = 0;
-      let last = performance.now();
+  function tick(now){
+    const dt = (now - last)/1000;
+    last = now;
 
-      function tick(now){
-        const dt = (now - last)/1000;
-        last = now;
+    const w = trackEl.scrollWidth;
+    const vw = trackEl.parentElement.clientWidth;
 
-        const w = trackEl.scrollWidth;
-        const vw = trackEl.parentElement.clientWidth;
-        if(w <= vw){
-          trackEl.style.transform = `translateX(0px)`;
-          requestAnimationFrame(tick);
-          return;
-        }
-
-        x += speedPxPerSec * dt;
-        if(x > w/10) x = 0;
-        trackEl.style.transform = `translateX(${-x}px)`;
-        requestAnimationFrame(tick);
-      }
+    if(w <= vw){
+      trackEl.style.transform = `translateX(0px)`;
       requestAnimationFrame(tick);
+      return;
     }
+
+    x += speedPxPerSec * dt;
+    if(x > w / 2) x = 0;   // reset nửa track là đủ
+    trackEl.style.transform = `translateX(${-x}px)`;
+    requestAnimationFrame(tick);
+  }
+
+  requestAnimationFrame(tick);
+}
+
 
     // =========================================================
     // UI render (keep content logic consistent)
@@ -1892,7 +1905,8 @@ function setMarqueeRepeat(trackEl, baseHtml, times){
     }).join("")
   : `<span class="marquee-item"><span class="m-stt">STT —</span><span class="m-name">—</span></span>`;
 
-  setMarqueeRepeat($("nextTrack"), baseHtml, 10);
+  const repeatN = calcRepeatN(nexts.length);
+  setMarqueeRepeat($("nextTrack"), baseHtml, repeatN);
 
   clearTimeout(_teaseTimer);
   _teaseTimer = setTimeout(()=>{
