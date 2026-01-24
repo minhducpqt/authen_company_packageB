@@ -1084,6 +1084,73 @@
       overflow:hidden;
       text-overflow:ellipsis;
     }
+    /* ===== RIGHT CARD NEW LAYOUT (WIN / NEXT) ===== */
+.lotcard .row2{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin: 6px 0 6px 0;
+}
+
+.lotcard .pricebig{
+  font-weight: 900;
+  font-size: 22px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  text-shadow: 0 0 18px rgba(34,211,238,.16);
+}
+
+.lotcard .winnerline{
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(148,163,184,.12);
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+}
+
+.lotcard .winnerline .wstt{
+  font-weight: 900;
+  font-size: 11px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border:1px solid rgba(52,211,153,.26);
+  background: rgba(52,211,153,.10);
+  white-space:nowrap;
+  flex: 0 0 auto;
+}
+
+.lotcard .winnerline .wname{
+  font-weight: 900;
+  font-size: 13px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  min-width:0;
+}
+
+/* NEXT: countbox đặt góc phải dưới rõ ràng hơn */
+.lotcard .countbox{
+  text-align:right;
+  flex: 0 0 auto;
+  min-width: 78px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  justify-content:flex-end;
+  gap: 2px;
+}
+.lotcard .sub{ opacity:.9; }
+
 
     /* NEW: next-customer list inside right cards */
     .nlist{
@@ -1448,8 +1515,8 @@
       <!-- RIGHT -->
       <div class="panel">
         <div class="head">
-          <div class="h-title">LÔ TIẾP THEO</div>
-          <div class="h-badge" id="rightHint">THEO THỨ TỰ</div>
+          <div class="h-title">LÔ ĐÃ KIỂM</div>
+          <div class="h-badge" id="rightHint">THEO MÃ LÔ</div>
         </div>
         <div class="right-body">
           <div class="cards-viewport">
@@ -1797,6 +1864,8 @@ function setMarqueeRepeat(trackEl, baseHtml, times){
   winnerNameEl.classList.remove("reveal");
 
   const nextWrap = $("heroNextWrap");
+  const nexts = newest?.next_customers || [];
+
 
   if(label==="TRÚNG"){
     const winName = safeText(newest?.winner?.name || "");
@@ -1811,8 +1880,9 @@ function setMarqueeRepeat(trackEl, baseHtml, times){
     nextWrap.style.display = "none"; // PENDING thì ẩn list vòng sau
   }
 
-  const nexts = newest?.next_customers || [];
-  $("heroNextCount").textContent = fmtInt(nexts.length);
+  const heroNextN = Number(newest?.next_count ?? nexts.length ?? 0) || 0;
+  $("heroNextCount").textContent = fmtInt(heroNextN);
+
 
   const baseHtml = nexts.length
   ? nexts.map(p=>{
@@ -1937,33 +2007,49 @@ function setMarqueeRepeat(trackEl, baseHtml, times){
           `
           : ``;
 
-        html += `
-          <div class="lotcard ${cardClass}">
-            <div class="top">
-              <div class="code" title="${safeText(code)}">${safeText(code)}</div>
-              <div class="flag ${flagCls}">${flagText}</div>
-            </div>
+                const winnerSttText = safeText(winnerStt || "—");
+        const winnerNameText = upperName(winnerName || "—");
 
-            <div class="mid">
-              <div class="meta">
-                <span class="pill ${isWin ? "ok" : "warn"}">${priceText}</span>
-                ${
-                  isWin
-                    ? `<span class="pill ok">${maskSTT(winnerStt)}</span>
-                       <span class="pill ok">${truncate(upperName(winnerName), 18)}</span>`
-                    : `<span class="pill warn">${fmtInt(nextCount)} KHÁCH</span>`
-                }
+        if(isWin){
+          html += `
+            <div class="lotcard win">
+              <div class="top">
+                <div class="code" title="${safeText(code)}">${safeText(code)}</div>
+                <div class="flag win">TRÚNG</div>
               </div>
 
-              <div class="countbox">
-                <div class="count">${isWin ? "0" : fmtInt(nextCount)}</div>
-                <div class="sub">VÒNG SAU</div>
+              <div class="row2">
+                <div class="pricebig">${priceText}</div>
+              </div>
+
+              <div class="winnerline">
+                <span class="wstt">STT ${winnerSttText}</span>
+                <span class="wname" title="${safeText(winnerNameText)}">${safeText(winnerNameText)}</span>
               </div>
             </div>
+          `;
+        } else if(isNext){
+          html += `
+            <div class="lotcard next">
+              <div class="top">
+                <div class="code" title="${safeText(code)}">${safeText(code)}</div>
+                <div class="flag next">VÒNG SAU</div>
+              </div>
 
-            ${nlistHtml}
-          </div>
-        `;
+              <div class="row2">
+                <div class="pricebig">${priceText}</div>
+
+                <div class="countbox">
+                  <div class="count">${fmtInt(nextCount)}</div>
+                  <div class="sub">VÒNG SAU</div>
+                </div>
+              </div>
+
+              ${nlistHtml}
+            </div>
+          `;
+        }
+
       }
 
       $("lotCards").innerHTML = html;
