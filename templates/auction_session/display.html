@@ -693,10 +693,11 @@
       overflow: visible;
       text-overflow: clip;
 
-      /* ✅ ổn định render khi tràn */
+      /* ✅ ổn định render */
       display: block;
       position: relative;
-      }
+    }
+
 
       /* Winner panel */
       .winner-wrap{
@@ -2118,9 +2119,13 @@
       // UI render (keep content logic consistent)
       // =========================================================
       let _initedTickers = false;
-      let _lastNewestKey = null;
+
+      // 👇 bỏ kiểu “key đơn” dễ nhảy, chuyển sang “event signature”
+      let _lastEventSig = null;
+
       let _teaseTimer = null;
-      let _hasBootstrapped = false;   // 👈 đã load lần đầu chưa
+      let _hasBootstrapped = false;   // đã load lần đầu chưa
+      let _toastShowing = false;      // chặn spam khi toast đang hiện
 
       function setTopTexts(payload){
         const c = payload?.context || {};
@@ -2267,16 +2272,36 @@
       winnerNameEl.classList.add("reveal");
       }, 1600);
 
-      const key = safeText(newest?.round_lot_id || lotCode);
+      // ✅ CHỈ trigger khi có round_lot_id thật + kết quả là TRÚNG / VÒNG SAU
+      const rid = newest?.round_lot_id;
+
+      // label bạn đã tính ở trên: resultLabel(rt) => "TRÚNG" / "VÒNG SAU" / "CHƯA CÓ"
+      const shouldNotify = (label === "TRÚNG" || label === "VÒNG SAU");
+
+      // tạo “event signature” ổn định: cùng 1 lô + cùng kết quả + cùng giá/winner/next_count thì KHÔNG coi là mới
+      const sig = rid ? [
+        String(rid),
+        String((newest?.result_type || newest?.result || "")).toUpperCase(),
+        String(Number(newest?.price_vnd || 0) || 0),
+        String(newest?.winner?.stt || ""),
+        String(Number(newest?.next_count ?? (newest?.next_customers?.length ?? 0)) || 0),
+      ].join("|") : "";
+
+      // bootstrap: chỉ ghi nhớ, không kêu
       if(!_hasBootstrapped){
-      // lần đầu: chỉ ghi nhớ, KHÔNG phát âm thanh
-      _lastNewestKey = key;
-      _hasBootstrapped = true;
+        _lastEventSig = sig || null;
+        _hasBootstrapped = true;
+      } else {
+        // ✅ bỏ qua nếu:
+        // - không có rid (dữ liệu thiếu) => tránh “nhảy key”
+        // - không phải TRÚNG/VÒNG SAU
+        // - đang show toast (chặn spam)
+        if(rid && shouldNotify && sig && sig !== _lastEventSig && !_toastShowing){
+          _lastEventSig = sig;
+          handleNewEventWithSound(newest, lotCode);
+        }
       }
-      else if(key && key !== _lastNewestKey){
-      _lastNewestKey = key;
-      handleNewEventWithSound(newest, lotCode);
-      }
+
 
       }
 
@@ -2556,47 +2581,50 @@
       // TOAST (blur whole page + big popup)
       // =========================================================
       function showToast(type, title, badge, line1, line2, line3, line4, line5){
-      const toast = $("toast");
-      const ov = $("toastOverlay");
+        const toast = $("toast");
+        const ov = $("toastOverlay");
 
-      toast.classList.remove("ok","warn","bad","show");
-      toast.classList.add(type);
+        _toastShowing = true; // ✅ lock
 
-      $("toastTitle").textContent = safeText(title);
-      $("toastBadge").textContent = safeText(badge);
+        toast.classList.remove("ok","warn","bad","show");
+        toast.classList.add(type);
 
-      $("toastLine1").textContent = safeText(line1);
-      $("toastLine2").textContent = safeText(line2);
-      $("toastLine3").textContent = safeText(line3);
-      $("toastLine4").textContent = safeText(line4);
+        $("toastTitle").textContent = safeText(title);
+        $("toastBadge").textContent = safeText(badge);
 
-      // line5 là pill (to)
-      const line5El = $("toastLine5");
-      const pill = line5El.querySelector(".pillbig");
-      if(pill){
-      pill.textContent = safeText(line5);
+        $("toastLine1").textContent = safeText(line1);
+        $("toastLine2").textContent = safeText(line2);
+        $("toastLine3").textContent = safeText(line3);
+        $("toastLine4").textContent = safeText(line4);
 
-      // đổi màu pill theo type
-      pill.style.borderColor = (type === "warn") ? "rgba(251,191,36,.35)" : "rgba(52,211,153,.35)";
-      pill.style.background  = (type === "warn") ? "rgba(251,191,36,.14)" : "rgba(52,211,153,.14)";
-      pill.style.boxShadow   = (type === "warn") ? "0 0 18px rgba(251,191,36,.22)" : "0 0 18px rgba(52,211,153,.25)";
+        const line5El = $("toastLine5");
+        const pill = line5El.querySelector(".pillbig");
+        if(pill){
+          pill.textContent = safeText(line5);
+
+          pill.style.borderColor = (type === "warn") ? "rgba(251,191,36,.35)" : "rgba(52,211,153,.35)";
+          pill.style.background  = (type === "warn") ? "rgba(251,191,36,.14)" : "rgba(52,211,153,.14)";
+          pill.style.boxShadow   = (type === "warn") ? "0 0 18px rgba(251,191,36,.22)" : "0 0 18px rgba(52,211,153,.25)";
+        }
+
+        ov.classList.add("show");
+        toast.classList.add("show");
+
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(()=>{
+          toast.classList.remove("show");
+          ov.classList.remove("show");
+
+          _safeStop(audio.win);
+          _safeStop(audio.next);
+          _safeStop(audio.bell);
+
+          playBackground();
+
+          _toastShowing = false; // ✅ unlock
+        }, 10000);
       }
 
-      ov.classList.add("show");
-      toast.classList.add("show");
-
-      clearTimeout(showToast._t);
-      showToast._t = setTimeout(()=>{
-      toast.classList.remove("show");
-      ov.classList.remove("show");
-
-      _safeStop(audio.win);
-      _safeStop(audio.next);
-      _safeStop(audio.bell);
-
-      playBackground();
-      }, 10000);
-      }
 
 
       function handleNewEventWithSound(newest, lotCode){
