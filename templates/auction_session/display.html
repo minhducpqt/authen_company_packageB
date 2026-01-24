@@ -1489,27 +1489,63 @@
       color: rgba(226,232,240,.92);
     }
     .toast .line2{
-      font-weight: 900;
-      font-size: 34px;
-      letter-spacing:.06em;
-      text-transform:uppercase;
-      text-shadow: 0 0 22px rgba(34,211,238,.22);
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-    .toast .line3{
   font-weight: 900;
-  font-size: 28px;              /* ✅ TO HƠN */
-  letter-spacing:.10em;         /* ✅ rõ hơn */
+  font-size: 56px;            /* ✅ TO NHẤT: MÃ LÔ */
+  letter-spacing:.10em;
+  text-transform:uppercase;
+  text-shadow: 0 0 22px rgba(34,211,238,.22);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.toast .line3{
+  font-weight: 900;
+  font-size: 46px;            /* ✅ TO THỨ 2: GIÁ */
+  letter-spacing:.06em;
   text-transform:uppercase;
   color: rgba(226,232,240,.98);
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
-  opacity:1;
-  text-shadow: 0 0 26px rgba(34,211,238,.20);
+  text-shadow: 0 0 26px rgba(34,211,238,.18);
 }
+.toast .line4{
+  font-weight: 900;
+  font-size: 30px;            /* ✅ KHÁCH HÀNG / SỐ KHÁCH */
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color: rgba(226,232,240,.95);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.toast .line5{
+  margin-top: 6px;
+  display:flex;
+  justify-content:center;
+}
+
+.pillbig{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+
+  font-weight: 900;
+  font-size: 30px;            /* ✅ PILL CŨNG TO */
+  letter-spacing:.08em;
+  text-transform:uppercase;
+
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(52,211,153,.35);
+  background: rgba(52,211,153,.14);
+  box-shadow: 0 0 18px rgba(52,211,153,.25);
+
+  white-space:nowrap;
+}
+
 
 
     .toast.ok{ border-color: rgba(52,211,153,.28); box-shadow: var(--shadow), 0 0 48px rgba(52,211,153,.18); }
@@ -1742,6 +1778,9 @@
       <div class="line1" id="toastLine1">Kết quả đã được xác nhận</div>
       <div class="line2" id="toastLine2">—</div>
       <div class="line3" id="toastLine3">—</div>
+      <div class="line4" id="toastLine4">—</div>
+      <div class="line5" id="toastLine5"><span class="pillbig">—</span></div>
+
     </div>
   </div>
 
@@ -1857,6 +1896,12 @@ function unlockAudioOnce(){
       if(!isFinite(v)) return "—";
       return v.toLocaleString("vi-VN");
     }
+    function fmtMoneyVND(n){
+  const v = Number(n||0);
+  if(!isFinite(v) || v <= 0) return "—";
+  return v.toLocaleString("vi-VN") + " VNĐ";   // ✅ full số + VNĐ
+}
+
 
     function shortStatus(s){
       const x = (safeText(s)||'').toUpperCase();
@@ -2216,6 +2261,7 @@ function updateCardsTicker(viewportEl, innerEl, baseHtml, itemCount, speed){
     let _initedTickers = false;
     let _lastNewestKey = null;
     let _teaseTimer = null;
+    let _hasBootstrapped = false;   // 👈 đã load lần đầu chưa
 
     function setTopTexts(payload){
       const c = payload?.context || {};
@@ -2363,10 +2409,16 @@ function updateCardsTicker(viewportEl, innerEl, baseHtml, itemCount, speed){
   }, 1600);
 
   const key = safeText(newest?.round_lot_id || lotCode);
-  if(key && key !== _lastNewestKey){
-    _lastNewestKey = key;
-    handleNewEventWithSound(newest, lotCode);
-  }
+  if(!_hasBootstrapped){
+  // lần đầu: chỉ ghi nhớ, KHÔNG phát âm thanh
+  _lastNewestKey = key;
+  _hasBootstrapped = true;
+}
+else if(key && key !== _lastNewestKey){
+  _lastNewestKey = key;
+  handleNewEventWithSound(newest, lotCode);
+}
+
 }
 
 function renderLeftLists(payload){
@@ -2644,37 +2696,49 @@ function renderRecent(payload){
     // =========================================================
     // TOAST (blur whole page + big popup)
     // =========================================================
-    function showToast(type, title, badge, line1, line2, line3){
-      const toast = $("toast");
-      const ov = $("toastOverlay");
+    function showToast(type, title, badge, line1, line2, line3, line4, line5){
+  const toast = $("toast");
+  const ov = $("toastOverlay");
 
-      toast.classList.remove("ok","warn","bad","show");
-      toast.classList.add(type);
+  toast.classList.remove("ok","warn","bad","show");
+  toast.classList.add(type);
 
-      $("toastTitle").textContent = safeText(title);
-      $("toastBadge").textContent = safeText(badge);
-      $("toastLine1").textContent = safeText(line1);
-      $("toastLine2").textContent = safeText(line2);
-      $("toastLine3").textContent = safeText(line3);
+  $("toastTitle").textContent = safeText(title);
+  $("toastBadge").textContent = safeText(badge);
 
-      ov.classList.add("show");
-      toast.classList.add("show");
+  $("toastLine1").textContent = safeText(line1);
+  $("toastLine2").textContent = safeText(line2);
+  $("toastLine3").textContent = safeText(line3);
+  $("toastLine4").textContent = safeText(line4);
 
-      clearTimeout(showToast._t);
-      showToast._t = setTimeout(()=>{
-  toast.classList.remove("show");
-  ov.classList.remove("show");
+  // line5 là pill (to)
+  const line5El = $("toastLine5");
+  const pill = line5El.querySelector(".pillbig");
+  if(pill){
+    pill.textContent = safeText(line5);
 
-  // audio after toast close
-  _safeStop(audio.win);
-  _safeStop(audio.next);
-  // bell thường đã ngắn, nhưng stop luôn cho sạch
-  _safeStop(audio.bell);
+    // đổi màu pill theo type
+    pill.style.borderColor = (type === "warn") ? "rgba(251,191,36,.35)" : "rgba(52,211,153,.35)";
+    pill.style.background  = (type === "warn") ? "rgba(251,191,36,.14)" : "rgba(52,211,153,.14)";
+    pill.style.boxShadow   = (type === "warn") ? "0 0 18px rgba(251,191,36,.22)" : "0 0 18px rgba(52,211,153,.25)";
+  }
 
-  playBackground();
-}, 10000);
+  ov.classList.add("show");
+  toast.classList.add("show");
 
-    }
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>{
+    toast.classList.remove("show");
+    ov.classList.remove("show");
+
+    _safeStop(audio.win);
+    _safeStop(audio.next);
+    _safeStop(audio.bell);
+
+    playBackground();
+  }, 10000);
+}
+
 
     function handleNewEventWithSound(newest, lotCode){
   // 1) quyết định loại kết quả
@@ -2716,44 +2780,40 @@ function renderRecent(payload){
       const label = resultLabel(rt);
 
       const price = newest?.price_vnd;
-      const priceText = (!price || Number(price)<=0) ? "—" : (fmtMoney(price) + "");
+      const priceText = fmtMoneyVND(price); // ✅ full số + VNĐ
+
 
       if(label === "TRÚNG"){
   const winName = safeText(newest?.winner?.name || newest?.winner_name || newest?.customer_name || "");
   const winStt  = safeText(newest?.winner?.stt  || newest?.winner_stt  || "").trim();
 
-  const sttText = winStt ? `STT ${winStt}` : "STT —";
-  const nameText = upperName(winName);
-
   showToast(
     "ok",
     "CHÚC MỪNG",
     "TRÚNG",
-    "CHÚC MỪNG KHÁCH HÀNG TRÚNG ĐẤU GIÁ",
-    `LÔ ${safeText(lotCode)} • ${priceText}`,
-    `${sttText} • ${nameText}`   // ✅ line3 = STT + TÊN (to hơn nhờ CSS line3)
+    "CHÚC MỪNG KHÁCH HÀNG TRÚNG ĐẤU GIÁ",           // Line 1
+    `MÃ LÔ: ${safeText(lotCode)}`,                  // Line 2
+    `GIÁ TRẢ: ${priceText}`,               // Line 3
+    `KHÁCH HÀNG: ${upperName(winName)}`,            // Line 4
+    `STT KHÁCH HÀNG TRÚNG: ${winStt || "—"}`        // Line 5 (pill to)
   );
-}else if(label === "VÒNG SAU"){
-        const nextCount = Number(newest?.next_count ?? (newest?.next_customers?.length ?? 0)) || 0;
-        showToast(
-          "warn",
-          "THÔNG BÁO",
-          "VÒNG SAU",
-          "LÔ NÀY CHUYỂN SANG VÒNG SAU",
-          `LÔ ${safeText(lotCode)} • ${priceText}`,
-          `${fmtInt(nextCount)} KHÁCH VÀO VÒNG SAU`
-        );
-      }else{
-        showToast(
-          "bad",
-          "THÔNG BÁO",
-          "CHƯA CÓ",
-          "CHƯA CÓ KẾT QUẢ CHO LÔ NÀY",
-          `LÔ ${safeText(lotCode)} • ${priceText}`,
-          "—"
-        );
-      }
-    }
+}
+else if(label === "VÒNG SAU"){
+  const nextCount = Number(newest?.next_count ?? (newest?.next_customers?.length ?? 0)) || 0;
+
+  showToast(
+    "warn",
+    "THÔNG BÁO",
+    "VÒNG SAU",
+    "THÔNG BÁO KẾT QUẢ KIỂM PHIẾU",                 // Line 1
+    `MÃ LÔ: ${safeText(lotCode)}`,                  // Line 2
+    `GIÁ TRẢ: ${priceText}`,               // Line 3
+    "CHUYỂN SANG VÒNG TIẾP",                         // Line 4 (ngắn)
+    `SỐ KHÁCH VÀO VÒNG TIẾP: ${fmtInt(nextCount)} KHÁCH` // Line 5 pill (to)
+  );
+  }
+}
+
 
     // =========================================================
     // Footer marquee text
