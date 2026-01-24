@@ -1793,6 +1793,14 @@
         if(x === "NEXT_ROUND" || x.includes("NEXT")) return "VÒNG SAU";
         return "CHƯA CÓ";
       }
+      function priceLabelForResultLabel(lbl){
+        // WINNER => GIÁ TRÚNG, còn lại => GIÁ CAO NHẤT
+        const x = (safeText(lbl)||"").toUpperCase();
+        if(x === "TRÚNG" || x.includes("TRÚNG")) return "GIÁ TRÚNG";
+        return "GIÁ CAO NHẤT";
+      }
+
+
 
       function maskSTT(stt){
         const v = safeText(stt).trim();
@@ -2225,6 +2233,7 @@
 
       const rt = newest?.result_type || "";
       const label = resultLabel(rt);
+      $("priceLabel").textContent = priceLabelForResultLabel(label);
       $("heroBadge1").textContent = "KẾT QUẢ MỚI";
       $("heroBadge2").textContent = label;
 
@@ -2668,6 +2677,8 @@
 
         const price = newest?.price_vnd;
         const priceText = fmtMoneyVND(price); // ✅ full số + VNĐ
+        const priceLbl = priceLabelForResultLabel(label);
+
 
 
         if(label === "TRÚNG"){
@@ -2680,7 +2691,7 @@
       "TRÚNG",
       "CHÚC MỪNG KHÁCH HÀNG TRÚNG ĐẤU GIÁ",           // Line 1
       `MÃ LÔ: ${safeText(lotCode)}`,                  // Line 2
-      `GIÁ TRẢ: ${priceText}`,               // Line 3
+      `${priceLbl}: ${priceText}`,               // Line 3
       `KHÁCH : ${upperName(winName)}`,            // Line 4
       `STT : ${winStt || "—"}`        // Line 5 (pill to)
       );
