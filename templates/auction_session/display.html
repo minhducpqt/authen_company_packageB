@@ -254,6 +254,45 @@
       overflow:hidden;clip:rect(0,0,0,0);
       white-space:nowrap;border:0;
     }
+    /* ===== SOUND TOGGLE (tiny, top-left) ===== */
+.soundbtn{
+  position: fixed;
+  left: 12px;
+  top: 12px;
+  z-index: 60;
+
+  width: 34px;
+  height: 34px;
+  border-radius: 14px;
+  border:1px solid rgba(148,163,184,.22);
+  background: rgba(0,0,0,.25);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  box-shadow: var(--shadow);
+  user-select:none;
+}
+
+.soundbtn:hover{
+  border-color: rgba(34,211,238,.35);
+  box-shadow: var(--shadow), var(--glow);
+}
+
+.soundbtn:active{ transform: translateY(1px); }
+
+.soundbtn .ico{
+  font-size: 16px;
+  line-height: 1;
+  opacity: .95;
+}
+
+.soundbtn.off{
+  opacity: .55;
+  border-color: rgba(251,113,133,.25);
+  box-shadow: var(--shadow);
+}
+
 
     /* main 3 columns */
     .main{
@@ -1497,6 +1536,11 @@
 </head>
 
 <body class="gridbg scan">
+  <button class="soundbtn" id="soundBtn" type="button" title="Âm thanh: Bật/Tắt">
+  <span class="sr-only">Âm thanh</span>
+  <span class="ico" id="soundIco">🔊</span>
+  </button>
+
   <div class="stage" id="stage">
     <!-- TOP BAR -->
     <div class="topbar">
@@ -1712,6 +1756,90 @@
     const API_URL = `/auction/sessions/api/display/sessions/${SESSION_ID}?round_no=${ROUND_NO}`;
 
     // =========================================================
+// AUDIO (Background + Bell + Win + NextRound)
+// =========================================================
+const AUDIO_URLS = {
+  bell: "https://pub-0963cdac24ac4ec3a94d2bf5c523be29.r2.dev/daugia/uploads/public/file/bell_ting.mp3",
+  next: "https://pub-0963cdac24ac24ac4ec3a94d2bf5c523be29.r2.dev/daugia/uploads/public/file/win.mp3".replace("ac24ac24","ac24ac4e"), // safety if paste glitch
+  win: "https://pub-0963cdac24ac4ec3a94d2bf5c523be29.r2.dev/daugia/uploads/public/file/nextround.mp3",
+  bg: "https://pub-0963cdac24ac4ec3a94d2bf5c523be29.r2.dev/daugia/uploads/public/file/nhacnen2.mp3",
+};
+
+let SOUND_ENABLED = true;
+let _audioUnlocked = false;
+
+const audio = {
+  bg: new Audio(AUDIO_URLS.bg),
+  bell: new Audio(AUDIO_URLS.bell),
+  win: new Audio(AUDIO_URLS.win),
+  next: new Audio(AUDIO_URLS.next),
+};
+
+// setup
+audio.bg.loop = true;
+audio.bg.volume = 0.30;    // nền dịu nhẹ
+audio.bell.volume = 1.00;
+audio.win.volume = 1.00;
+audio.next.volume = 1.00;
+
+function _safePlay(a){
+  if(!SOUND_ENABLED) return;
+  if(!_audioUnlocked) return;
+  try{
+    a.play?.().catch(()=>{});
+  }catch(_){}
+}
+
+function _safePause(a){
+  try{ a.pause?.(); }catch(_){}
+}
+
+function _safeStop(a){
+  try{
+    a.pause?.();
+    a.currentTime = 0;
+  }catch(_){}
+}
+
+function stopAllAudio(){
+  _safeStop(audio.bg);
+  _safeStop(audio.bell);
+  _safeStop(audio.win);
+  _safeStop(audio.next);
+}
+
+function playBackground(){
+  if(!SOUND_ENABLED) return;
+  if(!_audioUnlocked) return;
+  _safeStop(audio.win);
+  _safeStop(audio.next);
+  _safeStop(audio.bell);
+  // bg chỉ play nếu chưa chạy
+  _safePlay(audio.bg);
+}
+
+function pauseBackground(){
+  _safePause(audio.bg);
+}
+
+function unlockAudioOnce(){
+  if(_audioUnlocked) return;
+  _audioUnlocked = true;
+  // prime: play/pause cực nhanh để unlock trên một số browser
+  try{
+    audio.bg.muted = true;
+    audio.bg.play?.().then(()=>{
+      audio.bg.pause?.();
+      audio.bg.currentTime = 0;
+      audio.bg.muted = false;
+      if(SOUND_ENABLED) playBackground();
+    }).catch(()=>{
+      audio.bg.muted = false;
+    });
+  }catch(_){}
+}
+
+    // =========================================================
     // Helpers
     // =========================================================
     const $ = (id) => document.getElementById(id);
@@ -1844,6 +1972,42 @@ function measureBaseHeight(innerEl, baseHtml){
       }catch(_){}
     }
     $("fsBtn").addEventListener("click", toggleFullscreen);
+    // =========================================================
+// Sound toggle button
+// =========================================================
+function renderSoundBtn(){
+  const btn = $("soundBtn");
+  const ico = $("soundIco");
+  if(!btn || !ico) return;
+
+  if(SOUND_ENABLED){
+    btn.classList.remove("off");
+    ico.textContent = "🔊";
+    btn.title = "Âm thanh: BẬT (bấm để tắt)";
+  }else{
+    btn.classList.add("off");
+    ico.textContent = "🔇";
+    btn.title = "Âm thanh: TẮT (bấm để bật)";
+  }
+}
+
+$("soundBtn").addEventListener("click", ()=>{
+  unlockAudioOnce();
+  SOUND_ENABLED = !SOUND_ENABLED;
+
+  if(!SOUND_ENABLED){
+    stopAllAudio();
+  }else{
+    playBackground();
+  }
+  renderSoundBtn();
+});
+
+// unlock audio khi user fullscreen (một click hợp lệ)
+$("fsBtn").addEventListener("click", ()=>{
+  unlockAudioOnce();
+});
+
 
     // =========================================================
     // Tickers (smooth): duplicate content many times
@@ -2201,7 +2365,7 @@ function updateCardsTicker(viewportEl, innerEl, baseHtml, itemCount, speed){
   const key = safeText(newest?.round_lot_id || lotCode);
   if(key && key !== _lastNewestKey){
     _lastNewestKey = key;
-    showToastFromNewest(newest, lotCode);
+    handleNewEventWithSound(newest, lotCode);
   }
 }
 
@@ -2498,10 +2662,54 @@ function renderRecent(payload){
 
       clearTimeout(showToast._t);
       showToast._t = setTimeout(()=>{
-        toast.classList.remove("show");
-        ov.classList.remove("show");
-      }, 6000);
+  toast.classList.remove("show");
+  ov.classList.remove("show");
+
+  // audio after toast close
+  _safeStop(audio.win);
+  _safeStop(audio.next);
+  // bell thường đã ngắn, nhưng stop luôn cho sạch
+  _safeStop(audio.bell);
+
+  playBackground();
+}, 10000);
+
     }
+
+    function handleNewEventWithSound(newest, lotCode){
+  // 1) quyết định loại kết quả
+  const rt = newest?.result_type || newest?.result || "";
+  const label = resultLabel(rt); // "TRÚNG" / "VÒNG SAU" / "CHƯA CÓ"
+
+  // 2) nếu sound OFF => chỉ show toast
+  if(!SOUND_ENABLED){
+    showToastFromNewest(newest, lotCode);
+    return;
+  }
+
+  // 3) sound ON => dừng nền, bell 1s rồi phát win/next song song toast
+  unlockAudioOnce();
+  pauseBackground();
+
+  // reset trước khi phát
+  _safeStop(audio.bell);
+  _safeStop(audio.win);
+  _safeStop(audio.next);
+
+  _safePlay(audio.bell);
+
+  // bell ~1s, delay 900ms cho chắc
+  setTimeout(()=>{
+    if(!SOUND_ENABLED) return;
+
+    if(label === "TRÚNG"){
+      _safePlay(audio.win);
+    }else if(label === "VÒNG SAU"){
+      _safePlay(audio.next);
+    }
+    showToastFromNewest(newest, lotCode);
+  }, 900);
+}
 
     function showToastFromNewest(newest, lotCode){
       const rt = newest?.result_type || newest?.result || "";
@@ -2662,6 +2870,9 @@ function renderRecent(payload){
 
     // boot
     mainLoop();
+    renderSoundBtn();
+    playBackground();
+
 
   </script>
 </body>
