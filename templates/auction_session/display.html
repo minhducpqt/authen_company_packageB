@@ -605,8 +605,9 @@
 }
 
 /* Ẩn info dưới mã lô (giữ DOM cho JS) */
-.lot-name,
-.lot-desc{ display:none !important; }
+.lot-name{ display:none !important; }
+.lot-desc{ display:block !important; }
+
 
 /* RIGHT: stack dọc - KHÔNG được phình */
 .hero-right{
@@ -2133,11 +2134,17 @@ function updateCardsTicker(viewportEl, innerEl, baseHtml, itemCount, speed){
   const lotCode = safeText(lot?.lot_code || "—").toUpperCase();
   const lotName = safeText(lot?.lot_name || "");
   const lotDesc = safeText(lot?.lot_description || "—");
+  const areaText = fmtAreaM2(lot?.area_m2);
+  const desc = safeText(lot?.lot_description || "").trim();
+
 
   $("heroLotKicker").textContent = "MÃ LÔ";
   $("heroLotCode").textContent = lotCode || "—";
   $("heroLotName").textContent = lotName ? truncate(lotName.toUpperCase(), 28) : "—";
-  $("heroLotDesc").textContent = lotDesc || "—";
+  $("heroLotDesc").textContent = desc
+    ? `DIỆN TÍCH: ${areaText} • ${desc}`
+    : `DIỆN TÍCH: ${areaText}`;
+
 
   const price = newest?.price_vnd;
   $("heroPrice").textContent = fmtHeroMoney(price);
@@ -2626,6 +2633,17 @@ function renderRecent(payload){
       }
       setTimeout(mainLoop, POLL_MS);
     }
+
+    function fmtAreaM2(x){
+  const v = Number(x);
+  if(!isFinite(v) || v <= 0) return "—";
+
+  // nếu là số nguyên -> không có thập phân
+  if(Number.isInteger(v)) return `${v.toLocaleString("vi-VN")} m²`;
+
+  // nếu có thập phân -> 2 chữ số
+  return `${v.toFixed(2).replace(".", ",")} m²`;
+}
 
     function fmtHeroMoney(n){
       const v = Number(n||0);
