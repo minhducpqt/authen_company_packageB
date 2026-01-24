@@ -614,22 +614,7 @@
   padding: 12px 14px;
 }
 
-/* NEXT list: ăn phần còn lại trong cột phải (không override style gốc) */
-.next-wrap-fill{
-  display:none;      /* JS sẽ bật khi NEXT_ROUND */
-  flex: 1 1 auto;
-  min-height:0;
-  overflow:hidden;
-}
 
-/* marquee phải co trong next-wrap */
-.marquee-flex{
-  height: 100%;
-  min-height:0;
-  overflow:hidden;
-  display:flex;
-  align-items:center;
-}
 
 /* responsive: nhỏ thì stack 1 cột */
 @media (max-width: 1220px){
@@ -771,16 +756,28 @@
     }
     @keyframes caretblink{ 50%{ opacity:.15; } }
 
-    /* hero next list (marquee) */
-    .next-wrap{
-      border-radius: 18px;
-      border: 1px solid rgba(148,163,184,.18);
-      background: rgba(0,0,0,.14);
-      padding: 10px 12px;
-      overflow:hidden;
-      display:none; /* only show when NEXT_ROUND */
-    }
-    .next-wrap.warn{ border-color: rgba(251,191,36,.22); background: rgba(251,191,36,.05); }
+    /* ===== HERO NEXT: FULL WIDTH (only show when NEXT_ROUND) ===== */
+#heroNextWrap{
+  width:100%;
+  margin-top:10px;
+  padding: 10px 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(251,191,36,.20);
+  background: rgba(251,191,36,.06);
+  overflow:hidden;
+}
+
+
+/* đảm bảo track chạy ngang mượt */
+#heroNextWrap .marquee{
+  overflow:hidden;
+  white-space:nowrap;
+}
+#heroNextWrap .track{
+  display:inline-block;
+  will-change: transform;
+}
+
 
     .next-head{
       display:flex;
@@ -1269,13 +1266,6 @@
     .toast.bad .t-head .badge{ border-color: rgba(251,113,133,.26); background: rgba(251,113,133,.12); }
 
     /* responsiveness */
-    @media (max-width: 1220px){
-      .topbar{ grid-template-columns: 1.2fr 1.2fr 1fr; }
-      .kpi{ min-width: 96px; }
-      .hero-top{ grid-template-columns: 1fr; }
-      .hero-lot{ padding: 10px; }
-      .price-val{ font-size: 42px; }
-    }
     @media (max-width: 1060px){
       .main{ grid-template-columns: 1fr; }
       body{ overflow:auto; }
@@ -1402,7 +1392,7 @@
       <div class="lot-desc" id="heroLotDesc">—</div>
     </div>
 
-    <!-- RIGHT: PRICE + WINNER + NEXT LIST -->
+    <!-- RIGHT: PRICE + WINNER (TRÚNG giữ như cũ) -->
     <div class="hero-right">
       <div class="hero-meta hero-meta-tight">
         <div class="meta-row">
@@ -1426,17 +1416,17 @@
           <div class="winner-name masked" id="winnerName">—<span class="caret">|</span></div>
         </div>
       </div>
+    </div>
+  </div>
 
-      <!-- NEXT LIST takes remaining height -->
-      <div class="next-wrap warn next-wrap-fill" id="heroNextWrap">
-        <div class="next-head">
-          <div class="next-title" id="nextTitle">KHÁCH VÀO VÒNG SAU</div>
-          <div class="next-count" id="heroNextCount">0</div>
-        </div>
-        <div class="marquee marquee-flex" id="nextMarquee">
-          <div class="track" id="nextTrack"></div>
-        </div>
-      </div>
+  <!-- ✅ NEXT LIST FULL WIDTH (nằm NGANG full phía dưới hero-main) -->
+  <div class="next-wrap warn hero-next-full" id="heroNextWrap">
+    <div class="next-head">
+      <div class="next-title" id="nextTitle">KHÁCH VÀO VÒNG SAU</div>
+      <div class="next-count" id="heroNextCount">0</div>
+    </div>
+    <div class="marquee" id="nextMarquee">
+      <div class="track" id="nextTrack"></div>
     </div>
   </div>
 </div>
@@ -1586,6 +1576,16 @@
     // =========================================================
     // Tickers (smooth): duplicate content many times
     // =========================================================
+    // helper: set marquee content and duplicate x N times (for smooth scrolling)
+function setMarqueeRepeat(trackEl, baseHtml, times){
+  const n = Math.max(1, Number(times) || 1);
+  const base = (baseHtml || "").trim()
+    || `<span class="marquee-item"><span class="m-stt">STT —</span><span class="m-name">—</span></span>`;
+
+  trackEl.innerHTML = base.repeat(n);
+  trackEl.style.transform = "translateX(0px)"; // reset position to avoid jump
+}
+
     function buildTickerHTML(items, cls){
       if(!items || !items.length) return `<div class="crow ${cls}"><div class="r1"><div class="name">—</div><div class="stt">STT —</div></div></div>`;
       let html = "";
@@ -1803,23 +1803,26 @@
     winnerNameEl.innerHTML = `${upperName(winName)}<span class="caret">|</span>`;
     nextWrap.style.display = "none"; // ẩn danh sách vòng sau ở HERO khi đã TRÚNG
   }else if(label==="VÒNG SAU"){
-    winnerNameEl.innerHTML = `ĐANG CHỌN…<span class="caret">|</span>`;
-    nextWrap.style.display = ""; // show danh sách vào vòng sau
-  }else{
+  const n = Number(newest?.next_count ?? nexts.length ?? 0) || 0;
+  winnerNameEl.innerHTML = `${fmtInt(n)} KHÁCH`;
+  nextWrap.style.display = "";
+}else{
     winnerNameEl.innerHTML = `—<span class="caret">|</span>`;
-    nextWrap.style.display = ""; // vẫn show (trống) cho thống nhất
+    nextWrap.style.display = "none"; // PENDING thì ẩn list vòng sau
   }
 
   const nexts = newest?.next_customers || [];
   $("heroNextCount").textContent = fmtInt(nexts.length);
 
-  $("nextTrack").innerHTML = nexts.length
-    ? nexts.map(p=>{
-        const nm = upperName(p.name||"—");
-        const stt = safeText(p.stt||"—");
-        return `<span class="marquee-item"><span class="m-stt">STT ${stt}</span><span class="m-name">${nm}</span></span>`;
-      }).join("")
-    : `<span class="marquee-item"><span class="m-stt">STT —</span><span class="m-name">—</span></span>`;
+  const baseHtml = nexts.length
+  ? nexts.map(p=>{
+      const nm = upperName(p.name||"—");
+      const stt = safeText(p.stt||"—");
+      return `<span class="marquee-item"><span class="m-stt">STT ${stt}</span><span class="m-name">${nm}</span></span>`;
+    }).join("")
+  : `<span class="marquee-item"><span class="m-stt">STT —</span><span class="m-name">—</span></span>`;
+
+  setMarqueeRepeat($("nextTrack"), baseHtml, 10);
 
   clearTimeout(_teaseTimer);
   _teaseTimer = setTimeout(()=>{
@@ -2056,7 +2059,7 @@
       showToast._t = setTimeout(()=>{
         toast.classList.remove("show");
         ov.classList.remove("show");
-      }, 9500);
+      }, 6000);
     }
 
     function showToastFromNewest(newest, lotCode){
