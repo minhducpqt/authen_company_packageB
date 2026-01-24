@@ -1300,6 +1300,42 @@
       font-size: 11px;
       color: rgba(226,232,240,.82);
     }
+    /* ===== Footer marquee: brand đẹp + chuyên nghiệp ===== */
+.footer-item{
+  display:inline-flex;
+  align-items:center;
+  gap: 12px;
+  padding-right: 44px;  /* khoảng cách giữa các block lặp */
+  white-space: nowrap;
+}
+
+.ft-label{
+  opacity:.70;
+  font-weight:800;
+  letter-spacing:.16em;
+}
+
+.ft-sep{
+  opacity:.35;
+}
+
+.ft-brand{
+  font-weight:900;
+  letter-spacing:.08em;
+  color: var(--ok);
+  text-shadow: 0 0 14px rgba(52,211,153,.30);
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(52,211,153,.28);
+  background: rgba(52,211,153,.10);
+}
+
+.ft-desc{
+  opacity:.88;
+  font-weight:800;
+  letter-spacing:.06em;
+}
+
 
     /* TOAST OVERLAY (blur whole page) */
     .toast-overlay{
@@ -2402,17 +2438,23 @@ function renderRecent(payload){
     // Footer marquee text
     // =========================================================
     function initFooter(){
-  const baseHtml = `
-    <span class="marquee-item">
-      ĐƠN VỊ PHẦN MỀM: DauGiaThongMinh.vn – NỀN TẢNG VẬN HÀNH ĐẤU GIÁ ĐẤT (TỰ ĐỘNG HOÁ & MINH BẠCH).
+  const base = `
+    <span class="footer-item">
+      <span class="ft-label">ĐƠN VỊ PHẦN MỀM</span>
+      <span class="ft-sep">•</span>
+      <span class="ft-brand">DauGiaThongMinh.vn</span>
+      <span class="ft-sep">•</span>
+      <span class="ft-desc">NỀN TẢNG VẬN HÀNH ĐẤU GIÁ ĐẤT (TỰ ĐỘNG HOÁ &amp; MINH BẠCH)</span>
     </span>
   `;
 
-  // nhân nội dung để chắc chắn dài hơn viewport (và double để seamless)
-  setMarqueeRepeat($("footerTrack"), baseHtml, 8);
+  // ✅ lặp nhiều lần để chắc chắn luôn dài hơn viewport => marquee luôn chạy
+  $("footerTrack").innerHTML = base.repeat(12);
 
-  startMarquee($("footerTrack"), 48);
+  // ✅ chạy chậm hơn hero để sang hơn
+  startMarquee($("footerTrack"), 36);
 }
+
 
 
     // =========================================================
