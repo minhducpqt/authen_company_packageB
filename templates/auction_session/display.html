@@ -838,6 +838,11 @@
   height: 100%;
   min-height: 0;
   overflow: hidden;
+
+  display: flex;            /* ✅ */
+  flex-direction: column;   /* ✅ */
+}
+
 }
 
     .recent .head{
@@ -847,13 +852,17 @@
       background: rgba(0,0,0,.10);
     }
     .recent-body{
-      padding: 10px;
-      display:grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      height: 100%;
-      min-height: 0;
-    }
+  padding: 10px;
+  padding-bottom: 14px;
+  display:grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+
+  flex: 1 1 auto;   /* ✅ */
+  min-height: 0;    /* ✅ */
+  height: auto;     /* ✅ thay vì height:100% */
+}
+
 
     /* Recent cards: show lot + price + winner name clearly */
     .rslot{
@@ -966,6 +975,67 @@
       color: rgba(226,232,240,.88);
       opacity:.95;
     }
+    /* ===== RECENT: winner line đẹp như mẫu (STT pill + Tên) ===== */
+.rslot .who-line{
+  display:flex;
+  align-items:center;
+  gap: 12px;
+  min-width:0;
+}
+
+.rslot .stt-pill{
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(52,211,153,.35);
+  background: rgba(52,211,153,.14);
+  font-weight: 900;
+  font-size: 12px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 0 14px rgba(52,211,153,.25);
+  flex: 0 0 auto;
+}
+
+.rslot .winner-name{
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width:0;
+}
+
+/* Giá to hơn trong card recent */
+.rslot .price-big{
+  margin-top:auto;
+  font-weight: 900;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  font-size: 34px;
+  line-height: 1.05;
+  text-shadow: 0 0 22px rgba(34,211,238,.18);
+}
+
+/* NEXT: pill số khách */
+.rslot .next-pill{
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(251,191,36,.30);
+  background: rgba(251,191,36,.12);
+  font-weight: 900;
+  font-size: 12px;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  white-space:nowrap;
+  flex: 0 0 auto;
+}
+
 
     /* RIGHT: next lots cards ticker */
     .right-body{
@@ -1214,7 +1284,7 @@
 
     /* footer marquee */
     .footer{
-      margin-top: -4px;
+      margin-top: 0px;
       border: 1px solid rgba(148,163,184,.14);
       border-radius: 16px;
       background: rgba(0,0,0,.18);
@@ -1509,7 +1579,7 @@
         <div class="recent">
           <div class="head">
             <div class="h-title">KẾT QUẢ GẦN NHẤT</div>
-            <div class="h-badge" id="recentHint">3 LÔ</div>
+            <div class="h-badge" id="recentHint">2 LÔ</div>
           </div>
           <div class="recent-body" id="recentBody"></div>
         </div>
@@ -2170,72 +2240,98 @@ if(_initedTickers){
 
     }
 
-    function renderRecent(payload){
-      const rec = payload?.recent_checked_lots || [];
-      const arr = rec.slice(0,3);
-      while(arr.length < 3) arr.push(null);
+function renderRecent(payload){
+  const rec = payload?.recent_checked_lots || [];
 
-      const html = arr.map((it)=>{
-        if(!it){
-          return `
-            <div class="rslot no">
-              <div class="lc">—</div>
-              <div class="badge-rt no">CHƯA CÓ</div>
+  // ✅ BỎ HERO (hero đang dùng rec[0]) => recent lấy từ rec[1], rec[2]
+  const arr = rec.slice(1, 3); // đúng 2 item
+  while(arr.length < 2) arr.push(null);
 
-              <div class="minirow"><span>TRẠNG THÁI</span><span class="mini-badge no">—</span></div>
-              <div class="minirow"><span>GIÁ</span><span class="mini-badge no">—</span></div>
-              <div class="minirow"><span>NGƯỜI</span><span class="mini-badge no">—</span></div>
-              <div class="minirow"><span>VÒNG SAU</span><span class="mini-badge no">0</span></div>
+  // badge góc phải: 2 lô
+  $("recentHint").textContent = "2 LÔ";
 
-              <div class="rv">
-                <div class="price">—</div>
-                <div class="who">—</div>
-              </div>
-            </div>
-          `;
-        }
-
-        const code = safeText(it?.lot?.lot_code || "—").toUpperCase();
-        const rt = it?.result_type || "";
-        const cls = resultClass(rt);
-        const lab = resultLabel(rt);
-
-        const price = it?.price_vnd;
-        const winnerName = safeText(it?.winner?.name || "");
-        const winnerStt = it?.winner?.stt || "";
-        const nextCount = Number(it?.next_count ?? (it?.next_customers?.length ?? 0)) || 0;
-
-        const priceText = fmtHeroMoney(price);
-
-        // recent card: WINNER => show winner name; NEXT_ROUND => show "N khách"
-        const whoText = (lab==="TRÚNG")
-          ? truncate(upperName(winnerName || (winnerStt ? `STT ${winnerStt}` : "—")), 20)
-          : (lab==="VÒNG SAU" ? `${fmtInt(nextCount)} KHÁCH` : "—");
-
-        const whoBadge = (lab==="TRÚNG")
-          ? truncate(upperName(winnerName), 18) || maskSTT(winnerStt)
-          : (lab==="VÒNG SAU" ? `${fmtInt(nextCount)} KHÁCH` : "—");
-
-        return `
-          <div class="rslot ${cls}">
-            <div class="lc" title="${safeText(code)}">${safeText(code)}</div>
-            <div class="badge-rt ${cls}">${lab}</div>
-
-            <div class="minirow"><span>TRẠNG THÁI</span><span class="mini-badge ${cls}">${lab}</span></div>
-            <div class="minirow"><span>GIÁ</span><span class="mini-badge ${cls}">${priceText}</span></div>
-            <div class="minirow"><span>NGƯỜI</span><span class="mini-badge ${cls}">${whoBadge}</span></div>
-            <div class="minirow"><span>VÒNG SAU</span><span class="mini-badge ${cls}">${fmtInt(nextCount)}</span></div>
-
-            <div class="rv">
-              <div class="price">${priceText}</div>
-              <div class="who">${whoText}</div>
-            </div>
+  const html = arr.map((it)=>{
+    if(!it){
+      return `
+        <div class="rslot no">
+          <div class="lc">—</div>
+          <div class="badge-rt no">CHƯA CÓ</div>
+          <div class="price-big">—</div>
+          <div class="who-line">
+            <span class="stt-pill">STT —</span>
+            <span class="winner-name">—</span>
           </div>
-        `;
-      }).join("");
-
-      $("recentBody").innerHTML = html;
+        </div>
+      `;
     }
+
+    const code = safeText(it?.lot?.lot_code || "—").toUpperCase();
+    const rt = it?.result_type || "";
+    const cls = resultClass(rt);
+    const lab = resultLabel(rt);
+
+    const price = it?.price_vnd;
+    const priceText = fmtHeroMoney(price);
+
+    const winnerName = upperName(it?.winner?.name || "—");
+    const winnerStt  = safeText(it?.winner?.stt || "—");
+
+    const nextCount = Number(it?.next_count ?? (it?.next_customers?.length ?? 0)) || 0;
+
+    // ✅ Layout mới:
+    // - Không còn dòng "TRẠNG THÁI"
+    // - TRÚNG: STT pill + Tên
+    // - VÒNG SAU: pill "N KHÁCH"
+    if(lab === "TRÚNG"){
+      return `
+        <div class="rslot ${cls}">
+          <div class="lc" title="${safeText(code)}">${safeText(code)}</div>
+          <div class="badge-rt ${cls}">${lab}</div>
+
+          <div class="who-line" title="${safeText(winnerName)}">
+            <span class="stt-pill">STT ${winnerStt}</span>
+            <span class="winner-name">${safeText(winnerName)}</span>
+          </div>
+
+          <div class="price-big">${priceText}</div>
+        </div>
+      `;
+    }
+
+    if(lab === "VÒNG SAU"){
+      return `
+        <div class="rslot ${cls}">
+          <div class="lc" title="${safeText(code)}">${safeText(code)}</div>
+          <div class="badge-rt ${cls}">${lab}</div>
+
+          <div class="who-line">
+            <span class="next-pill">${fmtInt(nextCount)} KHÁCH</span>
+            <span class="winner-name">CHUYỂN VÒNG SAU</span>
+          </div>
+
+          <div class="price-big">${priceText}</div>
+        </div>
+      `;
+    }
+
+    // CHƯA CÓ
+    return `
+      <div class="rslot ${cls}">
+        <div class="lc" title="${safeText(code)}">${safeText(code)}</div>
+        <div class="badge-rt ${cls}">${lab}</div>
+
+        <div class="who-line">
+          <span class="stt-pill">STT —</span>
+          <span class="winner-name">CHƯA CÓ KẾT QUẢ</span>
+        </div>
+
+        <div class="price-big">${priceText}</div>
+      </div>
+    `;
+  }).join("");
+
+  $("recentBody").innerHTML = html;
+}
 
     // =========================================================
     // TOAST (blur whole page + big popup)
@@ -2306,13 +2402,18 @@ if(_initedTickers){
     // Footer marquee text
     // =========================================================
     function initFooter(){
-      $("footerTrack").innerHTML = `
-        <span class="marquee-item">
-          ĐƠN VỊ PHẦN MỀM: VNTECHX – NỀN TẢNG VẬN HÀNH ĐẤU GIÁ ĐẤT (TỰ ĐỘNG HOÁ & MINH BẠCH).
-        </span>
-      `;
-      startMarquee($("footerTrack"), 48);
-    }
+  const baseHtml = `
+    <span class="marquee-item">
+      ĐƠN VỊ PHẦN MỀM: DauGiaThongMinh.vn – NỀN TẢNG VẬN HÀNH ĐẤU GIÁ ĐẤT (TỰ ĐỘNG HOÁ & MINH BẠCH).
+    </span>
+  `;
+
+  // nhân nội dung để chắc chắn dài hơn viewport (và double để seamless)
+  setMarqueeRepeat($("footerTrack"), baseHtml, 8);
+
+  startMarquee($("footerTrack"), 48);
+}
+
 
     // =========================================================
     // Polling
