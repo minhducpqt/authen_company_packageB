@@ -519,13 +519,14 @@
 /* ===== MAIN GRID (PHẢI CO ĐƯỢC) ===== */
 .hero-main{
   flex: 1 1 auto;
-  min-height: 0;     /* BẮT BUỘC: cho phép grid co lại */
-  overflow: hidden;  /* BẮT BUỘC: không đẩy RECENT */
+  min-height: 0;
+  overflow: visible;
   display:grid;
   grid-template-columns: 1.18fr 1fr;
   gap: 12px;
   align-items: stretch;
 }
+
 
 /* LEFT: LOT (chỉ mã lô) */
 .hero-lot{
@@ -583,7 +584,7 @@
 .hero-right{
   min-width:0;
   min-height:0;     /* BẮT BUỘC */
-  overflow:hidden;  /* BẮT BUỘC */
+  overflow:visible;  /* BẮT BUỘC */
   display:flex;
   flex-direction:column;
   gap: 10px;
@@ -661,7 +662,7 @@
       background: rgba(0,0,0,.24);
       padding: 14px 14px;
       box-shadow: inset 0 0 0 1px rgba(0,0,0,.15);
-      overflow:hidden;
+      overflow:visible;
     }
     .price-label{
       font-size: 12px;
@@ -675,16 +676,18 @@
       gap:10px;
     }
     .price-val{
-      font-size: 46px;
-      font-weight: 900;
-      letter-spacing:.06em;
-      text-transform:uppercase;
-      line-height: 1.05;
-      text-shadow: 0 0 22px rgba(34,211,238,.18);
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
+  font-size: 46px;
+  font-weight: 900;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  line-height: 1.05;
+  text-shadow: 0 0 22px rgba(34,211,238,.18);
+  white-space:nowrap;
+  overflow: visible;
+  text-overflow: clip;
+  text-align: right;
+}
+
 
     /* Winner panel */
     .winner-wrap{
