@@ -1815,6 +1815,16 @@ function setVerticalSeamless(innerEl, baseHtml, repeatTimes){
   return blockHeight || 0;
 }
 
+// =========================================================
+// Measure base (non-duplicated) height to decide scroll or not
+// =========================================================
+function measureBaseHeight(innerEl, baseHtml){
+  // render đúng 1 lần để đo "chiều cao thật"
+  innerEl.innerHTML = (baseHtml || "").trim()
+    || `<div class="crow"><div class="r1"><div class="name">—</div><div class="stt">STT —</div></div></div>`;
+  return innerEl.scrollHeight || 0;
+}
+
     // =========================================================
     // Fullscreen
     // =========================================================
@@ -1894,17 +1904,31 @@ function setMarqueeRepeat(trackEl, baseHtml, times){
 }
 
 /** update content cho ticker dọc (won/next) */
+/** update content cho ticker dọc (won/next) */
 function updateVerticalTicker(viewportEl, innerEl, baseHtml, itemCount, speed){
   const st = innerEl._vtState || { y: 0, last: performance.now(), speed: 18, blockH: 0 };
   innerEl._vtState = st;
 
   if(Number(speed) > 0) st.speed = Number(speed);
 
+  const vh = viewportEl.clientHeight;
+
+  // ✅ 1) đo chiều cao THẬT (không duplicate)
+  const baseH = measureBaseHeight(innerEl, baseHtml);
+
+  // ✅ 2) nếu danh sách thật lọt khung => KHÔNG scroll, KHÔNG duplicate
+  if(baseH <= vh + 2){
+    st.blockH = 0;
+    st.y = 0;
+    innerEl.style.transform = `translateY(0px)`;
+    return;
+  }
+
+  // ✅ 3) nếu không lọt => mới seamless (repeat + double)
   const times = calcRepeatTimesByMax(itemCount, 28, 50);
   st.blockH = setVerticalSeamless(innerEl, baseHtml, times);
 
-  // KHÔNG reset st.y mỗi lần poll để tránh giựt.
-  // Nếu blockH thay đổi quá mạnh (vd: từ 0 -> có data), thì chỉ reset khi st.y vượt blockH.
+  // giữ y để tránh giật
   if(st.blockH > 0 && st.y > st.blockH) st.y = 0;
 }
 
@@ -1942,12 +1966,26 @@ function updateCardsTicker(viewportEl, innerEl, baseHtml, itemCount, speed){
 
   if(Number(speed) > 0) st.speed = Number(speed);
 
+  const vh = viewportEl.clientHeight;
+
+  // ✅ đo chiều cao THẬT (không duplicate)
+  const baseH = measureBaseHeight(innerEl, baseHtml);
+
+  // ✅ fit => đứng yên (không lặp)
+  if(baseH <= vh + 2){
+    st.blockH = 0;
+    st.y = 0;
+    innerEl.style.transform = `translateY(0px)`;
+    return;
+  }
+
+  // ✅ không fit => seamless
   const times = calcRepeatTimesByMax(itemCount, 24, 50);
   st.blockH = setVerticalSeamless(innerEl, baseHtml, times);
 
-  // KHÔNG reset st.y mỗi lần poll để tránh giựt
   if(st.blockH > 0 && st.y > st.blockH) st.y = 0;
 }
+
 
 
 
