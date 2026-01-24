@@ -441,11 +441,29 @@
 /* === HERO RE-LAYOUT: status full width, then 2-column main === */
 /* NOTE: block này để HERO KHÔNG PHÌNH và KHÔNG ẢNH HƯỞNG RECENT */
 .hero{
-  position: relative;  /* BẮT BUỘC vì hero-inner dùng absolute */
+  position: relative;
   height: 100%;
   min-height: 0;
   overflow: hidden;
+
+  border-radius: 22px;
+
+  /* khung rất nhẹ */
+  border: 1px solid rgba(148,163,184,.14);
+
+  /* cảm giác tách nền */
+  background:
+    linear-gradient(180deg,
+      rgba(255,255,255,.03),
+      rgba(0,0,0,.12)
+    );
+
+  /* inset viền công nghệ */
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,.35),
+    0 0 0 rgba(0,0,0,0);
 }
+
 
 .hero-inner{
   position:absolute;
@@ -478,6 +496,13 @@
 .hero-status.hero-statusbar{
   width:100%;
   padding: 2px 2px 0 2px;
+}
+
+/* Hero nổi hơn khi đang kiểm */
+.hero:has(.status-pill.pri){
+  box-shadow:
+    inset 0 0 0 1px rgba(34,211,238,.22),
+    0 0 32px rgba(34,211,238,.10);
 }
 
 .status-pill{
@@ -843,7 +868,6 @@
   flex-direction: column;   /* ✅ */
 }
 
-}
 
     /* ===== RECENT HEADER – gọn & cao cấp ===== */
 .recent .head{
@@ -893,17 +917,19 @@
     .rslot.next{ border-color: rgba(251,191,36,.22); background: rgba(251,191,36,.05); }
     .rslot.no{ border-color: rgba(251,113,133,.20); background: rgba(251,113,133,.045); }
 
-    .rslot .lc{
-      font-size: 22px;
-      font-weight: 900;
-      letter-spacing:.10em;
-      text-transform:uppercase;
-      text-shadow: 0 0 18px rgba(34,211,238,.16);
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      padding-right: 92px;
-    }
+    /* ===== RECENT: LOT CODE PHẢI LÀ MINI-HERO ===== */
+.rslot .lc{
+  font-size: 34px;              /* ⬅ TO HƠN RÕ RỆT */
+  font-weight: 900;
+  letter-spacing: .14em;
+  line-height: 1.05;
+  margin-bottom: 6px;           /* kéo nội dung lên */
+  text-shadow: 0 0 22px rgba(34,211,238,.22);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
     .badge-rt{
       position:absolute;
       top:10px; right:10px;
