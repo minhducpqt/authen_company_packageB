@@ -1799,7 +1799,26 @@
         if(x === "TRÚNG" || x.includes("TRÚNG")) return "GIÁ TRÚNG";
         return "GIÁ CAO NHẤT";
       }
+      function winMethodLabel(wm){
+        const x = (safeText(wm)||"").toUpperCase();
+        if(x === "LOTTERY") return "BỐC THĂM";
+        if(!x) return "";
+        return "TRẢ GIÁ";
+      }
 
+      function priceLabelFor(label, winMethod){
+        // VÒNG SAU => luôn là GIÁ CAO NHẤT
+        if(label === "VÒNG SAU") return "GIÁ CAO NHẤT";
+
+        // TRÚNG => tuỳ win_method
+        if(label === "TRÚNG"){
+          const wm = (safeText(winMethod)||"").toUpperCase();
+          if(wm === "LOTTERY") return "GIÁ TRÚNG (BỐC THĂM)";
+          return "GIÁ TRÚNG";
+        }
+
+        return "GIÁ CAO NHẤT";
+      }
 
 
       function maskSTT(stt){
@@ -2207,9 +2226,10 @@
       }
 
       function renderHeroNewest(payload){
-      const newest = (payload?.recent_checked_lots && payload.recent_checked_lots[0])
-      ? payload.recent_checked_lots[0]
-      : null;
+      const newest =
+      (payload?.recent_checked_lots && payload.recent_checked_lots[0])
+        ? payload.recent_checked_lots[0]
+        : (Array.isArray(payload?.by_lot) ? (payload.by_lot[0] || null) : null);
 
       const lot = newest?.lot || null;
 
@@ -2228,14 +2248,25 @@
       : `DIỆN TÍCH: ${areaText}`;
 
 
-      const price = newest?.price_vnd;
-      $("heroPrice").textContent = fmtHeroMoney(price);
-
       const rt = newest?.result_type || "";
       const label = resultLabel(rt);
-      $("priceLabel").textContent = priceLabelForResultLabel(label);
+
+      const wm = newest?.win_method || "";                 // NEW
+      const displayPrice =
+        (label === "TRÚNG")
+          ? (newest?.winning_price_vnd ?? newest?.price_vnd ?? 0)
+          : (newest?.price_vnd ?? 0);
+
+      $("priceLabel").textContent = priceLabelFor(label, wm);
+      $("heroPrice").textContent  = fmtHeroMoney(displayPrice);
+
+      // badge kết quả: thêm win method nếu TRÚNG
+      const methodText = winMethodLabel(wm);
+      $("heroBadge2").textContent = (label === "TRÚNG" && methodText)
+        ? `${label} • ${methodText}`
+        : label;
+
       $("heroBadge1").textContent = "KẾT QUẢ MỚI";
-      $("heroBadge2").textContent = label;
 
       setWinnerPanel(label);
 
@@ -2399,8 +2430,16 @@
 
           const code = safeText(it?.lot?.lot_code || it?.lot_code || "—").toUpperCase();
 
-          const price = Number(it?.price_vnd || 0) || 0;
+          const wm = it?.win_method || "";
+          const methodText = winMethodLabel(wm);
+
+          const price =
+            isWin
+              ? (Number(it?.winning_price_vnd ?? it?.price_vnd ?? 0) || 0)
+              : (Number(it?.price_vnd ?? 0) || 0);
+
           const priceText = price > 0 ? `${fmtMoney(price)}` : "—";
+
 
           const nextCustomers = Array.isArray(it?.next_customers) ? it.next_customers : [];
           const nextCount = Number(it?.next_count ?? nextCustomers.length ?? 0) || 0;
@@ -2445,7 +2484,7 @@
               <div class="lotcard win">
                 <div class="top">
                   <div class="code" title="${safeText(code)}">${safeText(code)}</div>
-                  <div class="flag win">TRÚNG</div>
+                  <div class="flag win">${methodText ? `TRÚNG • ${methodText}` : "TRÚNG"}</div>
                 </div>
 
                 <div class="row2">
@@ -2523,8 +2562,16 @@
       const cls = resultClass(rt);
       const lab = resultLabel(rt);
 
-      const price = it?.price_vnd;
-      const priceText = fmtHeroMoney(price);
+      const wm = it?.win_method || "";
+      const methodText = winMethodLabel(wm);
+
+      const displayPrice =
+        (lab === "TRÚNG")
+          ? (it?.winning_price_vnd ?? it?.price_vnd ?? 0)
+          : (it?.price_vnd ?? 0);
+
+      const priceText = fmtHeroMoney(displayPrice);
+
 
       const winnerName = upperName(it?.winner?.name || "—");
       const winnerStt  = safeText(it?.winner?.stt || "—");
@@ -2539,7 +2586,7 @@
         return `
           <div class="rslot ${cls}">
             <div class="lc" title="${safeText(code)}">${safeText(code)}</div>
-            <div class="badge-rt ${cls}">${lab}</div>
+            <div class="badge-rt ${cls}">${methodText ? `TRÚNG • ${methodText}` : "TRÚNG"}</div>
 
             <div class="who-line" title="${safeText(winnerName)}">
               <span class="stt-pill">STT ${winnerStt}</span>
@@ -2675,9 +2722,16 @@
         const rt = newest?.result_type || newest?.result || "";
         const label = resultLabel(rt);
 
-        const price = newest?.price_vnd;
-        const priceText = fmtMoneyVND(price); // ✅ full số + VNĐ
-        const priceLbl = priceLabelForResultLabel(label);
+        const wm = newest?.win_method || "";
+        const priceLbl = priceLabelFor(label, wm);
+
+        const displayPrice =
+          (label === "TRÚNG")
+            ? (newest?.winning_price_vnd ?? newest?.price_vnd ?? 0)
+            : (newest?.price_vnd ?? 0);
+
+        const priceText = fmtMoneyVND(displayPrice); // ✅ full số + VNĐ
+
 
 
 
@@ -2705,7 +2759,7 @@
       "VÒNG SAU",
       "THÔNG BÁO KẾT QUẢ KIỂM PHIẾU",                 // Line 1
       `MÃ LÔ: ${safeText(lotCode)}`,                  // Line 2
-      `GIÁ TRẢ: ${priceText}`,               // Line 3
+      `${priceLbl}: ${priceText}`,              // Line 3
       "CHUYỂN SANG VÒNG TIẾP",                         // Line 4 (ngắn)
       `SỐ KHÁCH VÀO VÒNG TIẾP: ${fmtInt(nextCount)} KHÁCH` // Line 5 pill (to)
       );
