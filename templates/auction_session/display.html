@@ -2095,13 +2095,21 @@
          // Footer marquee text
          // =========================================================
          function initFooter(){
-           $("footerTrack").innerHTML = `
-             <span class="marquee-item">
-               ĐƠN VỊ PHẦN MỀM: VNTECHX – NỀN TẢNG VẬN HÀNH ĐẤU GIÁ ĐẤT (TỰ ĐỘNG HOÁ & MINH BẠCH).
-             </span>
-           `;
-           startMarquee($("footerTrack"), 48);
-         }
+          const base = `
+            <span class="marquee-item">
+              ĐƠN VỊ PHẦN MỀM: DauGiaThongMinh.vn – NỀN TẢNG VẬN HÀNH ĐẤU GIÁ ĐẤT (TỰ ĐỘNG HOÁ & MINH BẠCH).
+            </span>
+          `;
+
+          // QUAN TRỌNG: phải repeat số CHẴN để reset w/2 không bị giật
+          const REPEAT = 5; // 2, 4, 6, 8, 10... đều OK
+          const track = $("footerTrack");
+          track.innerHTML = base.repeat(REPEAT);
+          track.style.transform = "translateX(0px)";
+
+          startMarquee(track, 48);
+        }
+
 
          // =========================================================
          // Polling
