@@ -1426,6 +1426,74 @@
       overflow:hidden;
       text-overflow:ellipsis;
       }
+      /* ===== TOAST: label mờ, value nổi bật ===== */
+.toast .line1{
+  font-weight: 900;
+  font-size: 14px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: rgba(226,232,240,.78);
+}
+
+.toast .line2, .toast .line3, .toast .line4{
+  display:flex;
+  align-items:baseline;
+  justify-content:center;
+  gap: 12px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* label nhỏ + mờ */
+.toast .k-lbl{
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: rgba(148,163,184,.70);
+  opacity: .9;
+  flex: 0 0 auto;
+}
+
+/* value nổi bật */
+.toast .k-val{
+  font-weight: 900;
+  text-transform: uppercase;
+  color: rgba(226,232,240,.98);
+  letter-spacing: .08em;
+  text-shadow: 0 0 22px rgba(34,211,238,.18);
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* MÃ LÔ là spotlight số 1 */
+.toast .k-val.lot{
+  font-size: 58px;
+  letter-spacing: .12em;
+  text-shadow: 0 0 28px rgba(34,211,238,.26);
+}
+
+/* Tên khách spotlight số 2 */
+.toast .k-val.name{
+  font-size: 34px;
+  letter-spacing: .08em;
+  text-shadow: 0 0 22px rgba(96,165,250,.18);
+}
+
+/* STT / Số khách spotlight dạng pill */
+.toast .pillbig{
+  font-size: 32px;
+}
+
+/* giá vẫn to nhưng đứng sau mã lô + tên */
+.toast .k-val.price{
+  font-size: 44px;
+  letter-spacing: .06em;
+  text-shadow: 0 0 26px rgba(34,211,238,.18);
+}
+
       .toast .line5{
       margin-top: 6px;
       display:flex;
@@ -2704,9 +2772,10 @@ const baseHtml = nexts.length
         $("toastBadge").textContent = safeText(badge);
 
         $("toastLine1").textContent = safeText(line1);
-        $("toastLine2").textContent = safeText(line2);
-        $("toastLine3").textContent = safeText(line3);
-        $("toastLine4").textContent = safeText(line4);
+$("toastLine2").innerHTML = safeText(line2);
+$("toastLine3").innerHTML = safeText(line3);
+$("toastLine4").innerHTML = safeText(line4);
+
 
         const line5El = $("toastLine5");
         const pill = line5El.querySelector(".pillbig");
@@ -2828,34 +2897,44 @@ if(label === "TRÚNG"){
 
 
         if(label === "TRÚNG"){
-      const winName = safeText(newest?.winner?.name || newest?.winner_name || newest?.customer_name || "");
-      const winStt  = safeText(newest?.winner?.stt  || newest?.winner_stt  || "").trim();
+  const winName = safeText(newest?.winner?.name || newest?.winner_name || newest?.customer_name || "");
+  const winStt  = safeText(newest?.winner?.stt  || newest?.winner_stt  || "").trim();
 
-      showToast(
-      "ok",
-      "CHÚC MỪNG",
-      "TRÚNG",
-      "CHÚC MỪNG KHÁCH HÀNG TRÚNG ĐẤU GIÁ",           // Line 1
-      `MÃ LÔ: ${safeText(lotCode)}`,                  // Line 2
-      `${priceLbl}: ${priceText}`,               // Line 3
-      `KHÁCH : ${upperName(winName)}`,            // Line 4
-      `STT : ${winStt || "—"}`        // Line 5 (pill to)
-      );
-      }
+  showToast(
+    "ok",
+    "CHÚC MỪNG",
+    "TRÚNG",
+    "KẾT QUẢ ĐÃ ĐƯỢC XÁC NHẬN",
+    // line2: MÃ LÔ (value cực nổi)
+    `<span class="k-lbl">MÃ LÔ</span><span class="k-val lot">${safeText(lotCode)}</span>`,
+    // line3: GIÁ (label mờ + value rõ)
+    `<span class="k-lbl">${safeText(priceLbl)}</span><span class="k-val price">${priceText}</span>`,
+    // line4: TÊN KHÁCH (spotlight thứ 2)
+    `<span class="k-lbl">KHÁCH</span><span class="k-val name">${upperName(winName)}</span>`,
+    // line5: STT (pill)
+    `STT : ${winStt || "—"}`
+  );
+}
+
       else if(label === "VÒNG SAU"){
-      const nextCount = Number(newest?.next_count ?? (newest?.next_customers?.length ?? 0)) || 0;
+  const nextCount = Number(newest?.next_count ?? (newest?.next_customers?.length ?? 0)) || 0;
 
-      showToast(
-      "warn",
-      "THÔNG BÁO",
-      "VÒNG SAU",
-      "THÔNG BÁO KẾT QUẢ KIỂM PHIẾU",                 // Line 1
-      `MÃ LÔ: ${safeText(lotCode)}`,                  // Line 2
-      `${priceLbl}: ${priceText}`,              // Line 3
-      "CHUYỂN SANG VÒNG TIẾP",                         // Line 4 (ngắn)
-      `SỐ KHÁCH VÀO VÒNG TIẾP: ${fmtInt(nextCount)} KHÁCH` // Line 5 pill (to)
-      );
-      }
+  showToast(
+    "warn",
+    "THÔNG BÁO",
+    "VÒNG SAU",
+    "THÔNG BÁO KẾT QUẢ KIỂM PHIẾU",
+    // line2: MÃ LÔ
+    `<span class="k-lbl">MÃ LÔ</span><span class="k-val lot">${safeText(lotCode)}</span>`,
+    // line3: GIÁ CAO NHẤT (label mờ)
+    `<span class="k-lbl">${safeText(priceLbl)}</span><span class="k-val price">${priceText}</span>`,
+    // line4: nhấn vào “SỐ KHÁCH”
+    `<span class="k-lbl">VÀO VÒNG TIẾP</span><span class="k-val name">${fmtInt(nextCount)} KHÁCH</span>`,
+    // line5: pill cũng nhấn mạnh
+    `SỐ KHÁCH : ${fmtInt(nextCount)}`
+  );
+}
+
       }
 
 
