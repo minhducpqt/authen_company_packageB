@@ -93,30 +93,39 @@
     .info-sep{ width:4mm; }
 
     /* =============================
-       LINE NGUYÊN TẮC CHUNG (...... rất mờ)
-       - dùng lại cho: Uỷ quyền, Giá bằng chữ, và Line viết Giá bằng số
+       ✅ CHỈ CHỈNH PHẦN LINE: TẤT CẢ CÁC LINE GIỐNG NHAU
+       - rất nhỏ, mịn, mờ (như đường line nhưng bằng dấu chấm)
+       - áp dụng chung cho: .line-dotted, .dotline::before, .price-number-write::before
        ============================= */
+    :root{
+      --line-dots: "................................................................................................................................................................................";
+      --line-fs: 9.2pt;             /* ✅ rất nhỏ */
+      --line-ls: 0.55mm;            /* ✅ mịn */
+      --line-color: rgba(0,0,0,0.14);/* ✅ rất mờ */
+    }
+
     .line-dotted{
       height:10mm;
       position:relative;
     }
     .line-dotted::before{
-      content:"........................................................................";
+      content: var(--line-dots);
       position:absolute;
       left:0;
       right:0;
-      bottom:2mm;
-      font-size:13.5pt;
-      letter-spacing:1.1mm;
-      color:rgba(0,0,0,0.22); /* ✅ rất mờ, nhẹ hơn */
+      bottom:2.1mm;
+      font-size:var(--line-fs);
+      letter-spacing:var(--line-ls);
+      color:var(--line-color);
       white-space:nowrap;
       overflow:hidden;
+      pointer-events:none;
     }
     .line-dotted + .line-dotted{
       margin-top:2.6mm;
     }
 
-    /* dotline cũ (uỷ quyền) -> đổi sang nguyên tắc line-dotted */
+    /* Uỷ quyền: giữ nguyên HTML, chỉ đổi style line giống hệt */
     .dotline{
       display:block;
       position:relative;
@@ -126,16 +135,17 @@
     }
     .dotline.long{ min-width:120mm; }
     .dotline::before{
-      content:"........................................................................";
+      content: var(--line-dots);
       position:absolute;
       left:0;
       right:0;
-      bottom:1.6mm;
-      font-size:13.5pt;
-      letter-spacing:1.1mm;
-      color:rgba(0,0,0,0.22); /* ✅ rất mờ */
+      bottom:1.9mm;
+      font-size:var(--line-fs);
+      letter-spacing:var(--line-ls);
+      color:var(--line-color);
       white-space:nowrap;
       overflow:hidden;
+      pointer-events:none;
     }
 
     .signature-block{
@@ -148,8 +158,6 @@
 
     /* =============================
        BOX GIÁ TRẢ (SỐ + MÃ LÔ + CHỮ TRONG 1 KHUNG)
-       - Hàng GIÁ (SỐ) chia 70/30: 70% chỗ viết giá, 30% hiển thị mã lô to rõ
-       - GIÁ (CHỮ) dùng 2 dòng "......" mờ
        ============================= */
     .price-wrap{
       border:1.6pt solid #111;
@@ -196,7 +204,7 @@
       box-sizing:border-box;
     }
 
-    /* ✅ line viết giá bằng số: bỏ dashed đậm, thay bằng "......" mờ */
+    /* ✅ line viết giá bằng số: dùng CHUNG style line */
     .price-number-write{
       flex:1;
       position:relative;
@@ -207,14 +215,16 @@
       min-height:11mm;
     }
     .price-number-write::before{
-      content:"........................................................................";
+      content: var(--line-dots);
       position:absolute;
       left:0;
       right:0;
-      bottom:0.8mm;
-      font-size:16pt;            /* line nhỏ hơn số để không rối */
-      letter-spacing:1.15mm;
-      color:rgba(0,0,0,0.22);    /* ✅ rất mờ */
+      bottom:1.05mm;
+
+      font-size:var(--line-fs);
+      letter-spacing:var(--line-ls);
+      color:var(--line-color);
+
       white-space:nowrap;
       overflow:hidden;
       pointer-events:none;
