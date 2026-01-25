@@ -93,17 +93,21 @@
     .info-sep{ width:4mm; }
 
     /* =============================
-       ✅ CHỈ CHỈNH PHẦN LINE: TẤT CẢ CÁC LINE GIỐNG NHAU
-       - rất nhỏ, mịn, mờ (như đường line nhưng bằng dấu chấm)
-       - áp dụng chung cho: .line-dotted, .dotline::before, .price-number-write::before
+       ✅ CHỈ CHỈNH LINE THEO YÊU CẦU MỚI
+       - Giá trả (số): GIỮ NGUYÊN như hiện tại
+       - Uỷ quyền: ĐẬM HƠN (dễ nhìn)
+       - Giá trả (chữ): ĐẬM HƠN (vì nằm trên nền xám)
        ============================= */
     :root{
       --line-dots: "................................................................................................................................................................................";
-      --line-fs: 9.2pt;             /* ✅ rất nhỏ */
-      --line-ls: 0.55mm;            /* ✅ mịn */
-      --line-color: rgba(0,0,0,0.14);/* ✅ rất mờ */
+      --line-fs: 9.2pt;          /* nhỏ, mịn */
+      --line-ls: 0.55mm;         /* mịn */
+      --line-num: rgba(0,0,0,0.14);  /* ✅ GIỮ NGUYÊN cho giá trả (số) */
+      --line-auth: rgba(0,0,0,0.22); /* ✅ uỷ quyền: đậm hơn */
+      --line-text: rgba(0,0,0,0.22); /* ✅ giá trả (chữ): đậm hơn vì nền xám */
     }
 
+    /* Giá bằng chữ: 2 dòng line */
     .line-dotted{
       height:10mm;
       position:relative;
@@ -116,7 +120,7 @@
       bottom:2.1mm;
       font-size:var(--line-fs);
       letter-spacing:var(--line-ls);
-      color:var(--line-color);
+      color:var(--line-text); /* ✅ đậm hơn */
       white-space:nowrap;
       overflow:hidden;
       pointer-events:none;
@@ -125,7 +129,7 @@
       margin-top:2.6mm;
     }
 
-    /* Uỷ quyền: giữ nguyên HTML, chỉ đổi style line giống hệt */
+    /* Uỷ quyền: dùng line rõ hơn */
     .dotline{
       display:block;
       position:relative;
@@ -142,7 +146,7 @@
       bottom:1.9mm;
       font-size:var(--line-fs);
       letter-spacing:var(--line-ls);
-      color:var(--line-color);
+      color:var(--line-auth); /* ✅ dễ nhìn hơn */
       white-space:nowrap;
       overflow:hidden;
       pointer-events:none;
@@ -204,7 +208,7 @@
       box-sizing:border-box;
     }
 
-    /* ✅ line viết giá bằng số: dùng CHUNG style line */
+    /* ✅ GIỮ NGUYÊN line giá trả (số) như hiện tại (mịn, nhỏ, mờ) */
     .price-number-write{
       flex:1;
       position:relative;
@@ -220,11 +224,9 @@
       left:0;
       right:0;
       bottom:1.05mm;
-
       font-size:var(--line-fs);
       letter-spacing:var(--line-ls);
-      color:var(--line-color);
-
+      color:var(--line-num); /* ✅ giữ nguyên */
       white-space:nowrap;
       overflow:hidden;
       pointer-events:none;
