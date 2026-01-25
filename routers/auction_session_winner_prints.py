@@ -119,7 +119,8 @@ async def api_get_round_winners_json(
     round_no: int = Path(..., ge=1),
 ):
     data = await _svc_get(
-        request, f"/api/v1/auction-sessions/print/sessions/{session_id}/rounds/{round_no}/winners"
+        request,
+        f"/api/v1/auction-sessions/print/sessions/{session_id}/rounds/{round_no}/winners",
     )
     return JSONResponse(content=data)
 
@@ -175,15 +176,6 @@ async def api_get_selected_winners_json(
 
 # =========================================================
 # B) PRINT PAGES (SSR HTML) — gọi Service A, render template
-#
-# Template gợi ý bạn tạo:
-#   templates/pages/auction_session_documents/winner_print.html
-#
-# Context thống nhất:
-#   - mode: "ROUND" | "SESSION" | "CUSTOMER" | "ROUND_LOT" | "SELECTED"
-#   - session, project, round(optional), customer(optional)
-#   - items: list (mỗi item là 1 phiếu)
-#   - winner (khi in lẻ)
 # =========================================================
 @router.get("/auction/sessions/{session_id}/winners/print", response_class=HTMLResponse)
 async def page_print_session_winners(
@@ -204,7 +196,7 @@ async def page_print_session_winners(
             "customer": None,
             "items": data.get("items") or [],
             "total_items": _as_int(data.get("total_winners"), 0),
-            "raw": data,  # nếu template muốn debug
+            "raw": data,
         },
     )
 
@@ -216,7 +208,8 @@ async def page_print_round_winners(
     round_no: int = Path(..., ge=1),
 ):
     data = await _svc_get(
-        request, f"/api/v1/auction-sessions/print/sessions/{session_id}/rounds/{round_no}/winners"
+        request,
+        f"/api/v1/auction-sessions/print/sessions/{session_id}/rounds/{round_no}/winners",
     )
 
     return templates.TemplateResponse(
@@ -274,7 +267,6 @@ async def page_print_by_round_lot_id(
 ):
     data = await _svc_get(request, f"/api/v1/auction-sessions/print/round-lots/{round_lot_id}/winner")
 
-    # Service A trả winner dạng object
     return templates.TemplateResponse(
         "pages/auction_session_documents/winner_print.html",
         {
@@ -307,7 +299,6 @@ async def page_print_selected_winners_post(
         json_body=payload.model_dump(),
     )
 
-    # data.groups = [{session, project, total_winners, items}, ...]
     groups = data.get("groups") or []
     total_items = _as_int(data.get("total_items"), 0)
 
@@ -330,15 +321,12 @@ async def page_print_selected_winners_get(
     request: Request,
     items: str = Query("", description="Format: SID:LOTID,SID:LOTID,..."),
 ):
-    # Parse query -> payload
     parsed: List[Dict[str, int]] = []
     raw = (items or "").strip()
     if raw:
         for part in raw.split(","):
             part = part.strip()
-            if not part:
-                continue
-            if ":" not in part:
+            if not part or ":" not in part:
                 continue
             sid_s, lot_s = part.split(":", 1)
             sid = _as_int(sid_s, 0)

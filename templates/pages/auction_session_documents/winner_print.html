@@ -132,39 +132,34 @@
     .keep{ break-inside: avoid; page-break-inside: avoid; }
     .nowrap{ white-space:nowrap; }
 
-   /* ✅ STT badge – nhỏ gọn, sát góc, rất nhẹ */
-  .stt-badge{
-    position:absolute;
-    top: 1.5mm;          /* sát góc trên hơn */
-    left: 1.5mm;         /* sát góc trái hơn */
+    /* ✅ STT badge – nhỏ gọn, sát góc, rất nhẹ */
+    .stt-badge{
+      position:absolute;
+      top: 1.5mm;
+      left: 1.5mm;
 
-    border: 0.8px solid rgba(17,24,39,.25); /* viền rất mờ */
-    border-radius: 6px;  /* bo nhẹ */
+      border: 0.8px solid rgba(17,24,39,.25);
+      border-radius: 6px;
 
-    padding: 3px 6px;    /* giảm padding mạnh */
-    min-width: auto;     /* bỏ min-width để không phình */
+      padding: 3px 6px;
+      min-width: auto;
 
-    background: rgba(255,255,255,.95);
-    text-align:center;
-  }
-
-  /* chữ STT: rất nhỏ, mờ */
-  .stt-badge .lbl{
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: .6px;
-    opacity: .4;
-    line-height: 1;
-    margin-bottom: 1px;
-  }
-
-  /* số STT: nổi bật, gọn */
-  .stt-badge .val{
-    font-size: 18px;     /* vẫn rõ nhưng không chiếm chỗ */
-    font-weight: 900;
-    line-height: 1;
-  }
-
+      background: rgba(255,255,255,.95);
+      text-align:center;
+    }
+    .stt-badge .lbl{
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .6px;
+      opacity: .4;
+      line-height: 1;
+      margin-bottom: 1px;
+    }
+    .stt-badge .val{
+      font-size: 18px;
+      font-weight: 900;
+      line-height: 1;
+    }
 
     /* optional: số biên bản (nếu bạn muốn show) */
     .doc-no{
@@ -244,8 +239,16 @@
   {%- set company_name = (p.get('company_name') or '') -%}
   {%- set company_upper = (company_name | upper) -%}
 
-  {%- set start_total = (lot.get('starting_price_total_vnd') or 0) -%}
-  {%- set start_per = (lot.get('starting_price_per_sqm_vnd') or 0) -%}
+  {# ✅ Giá khởi điểm: PHẢI LÀ GIÁ BAN ĐẦU (initial)
+     Fallback: nếu chưa có field mới thì dùng field cũ starting_price_* để không vỡ template #}
+  {%- set start_total_initial = (lot.get('starting_price_initial_total_vnd')
+                                if lot.get('starting_price_initial_total_vnd') is not none
+                                else (lot.get('starting_price_total_vnd') or 0)) -%}
+  {%- set start_per_initial = (lot.get('starting_price_initial_per_sqm_vnd')
+                              if lot.get('starting_price_initial_per_sqm_vnd') is not none
+                              else (lot.get('starting_price_per_sqm_vnd') or 0)) -%}
+
+  {# Giá trúng: giữ nguyên #}
   {%- set win_total = (w.get('winning_price_total_vnd') or 0) -%}
   {%- set win_per = (w.get('winning_price_per_sqm_vnd') or 0) -%}
 
@@ -270,7 +273,6 @@
         <div class="val">{{ stt }}</div>
       </div>
       {% endif %}
-
 
       <div class="center keep">
         <h1 class="h1">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</h1>
@@ -337,10 +339,10 @@
           <td class="label"><strong>Giá khởi điểm:</strong></td>
           <td class="value">
             {% if is_per_sqm %}
-              {{ numfmt(start_per) }} <span class="nowrap">đồng/m²</span>
-              <div class="subnote">({{ numfmt(start_total) }} đồng/lô)</div>
+              {{ numfmt(start_per_initial) }} <span class="nowrap">đồng/m²</span>
+              <div class="subnote">({{ numfmt(start_total_initial) }} đồng/lô)</div>
             {% else %}
-              {{ numfmt(start_total) }} <span class="nowrap">đồng/lô</span>
+              {{ numfmt(start_total_initial) }} <span class="nowrap">đồng/lô</span>
             {% endif %}
           </td>
         </tr>
@@ -402,7 +404,6 @@
   </div>
 {%- endmacro %}
 
-
 {# ===============================
    Render theo mode Service B
    - Nếu SELECTED: groups[].items[]
@@ -434,16 +435,11 @@
 
 <script>
   (function(){
-    // giống phiếu trả giá: auto mở hộp thoại in khi load trang
     function doPrint(){
       try { window.focus(); } catch(e){}
       window.print();
     }
-
-    // Tránh auto-print lại khi render print preview / back-forward cache
     if (window.matchMedia && window.matchMedia('print').matches) return;
-
-    // Delay nhẹ để font/layout ổn định
     window.addEventListener('load', function(){
       setTimeout(doPrint, 250);
     });
