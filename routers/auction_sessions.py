@@ -813,6 +813,73 @@ async def api_session_attendance(
     return JSONResponse(out, status_code=200)
 
 # =========================================================
+# DELETE LAST ROUND (B -> A proxy)
+# - Check endpoint + Delete endpoint
+# - Pass-through status codes
+# =========================================================
+
+@router.get("/auction/sessions/api/sessions/{session_id}/rounds/{round_no}/delete-check")
+async def api_delete_round_check(
+    request: Request,
+    session_id: int = Path(..., ge=1),
+    round_no: int = Path(..., ge=1),
+):
+    """
+    Proxy to Service A:
+      GET /api/v1/auction-sessions/sessions/{session_id}/rounds/{round_no}/delete-check
+    """
+    token = get_access_token(request)
+    if not token:
+        return _unauth_json()
+
+    st, js = await _get_json(
+        f"/api/v1/auction-sessions/sessions/{session_id}/rounds/{round_no}/delete-check",
+        token,
+        None,
+    )
+    return JSONResponse(js, status_code=_proxy_status(st))
+
+
+@router.delete("/auction/sessions/api/sessions/{session_id}/rounds/{round_no}")
+async def api_delete_last_round(
+    request: Request,
+    session_id: int = Path(..., ge=1),
+    round_no: int = Path(..., ge=1),
+):
+    """
+    Proxy to Service A:
+      DELETE /api/v1/auction-sessions/sessions/{session_id}/rounds/{round_no}
+
+    Notes:
+      - Only deletes last round and round_no > 1 (enforced by Service A).
+      - Will rollback auction_session_lot_results of lots in that round => PENDING.
+    """
+    token = get_access_token(request)
+    if not token:
+        return _unauth_json()
+
+    path = f"/api/v1/auction-sessions/sessions/{session_id}/rounds/{round_no}"
+    url = f"{SERVICE_A_BASE_URL}{path}"
+    headers = {"Authorization": f"Bearer {token}"}
+
+    _log(f"→ DELETE {url}")
+    async with httpx.AsyncClient(timeout=120.0) as c:
+        try:
+            r = await c.delete(url, headers=headers)
+        except Exception as e:
+            _log(f"← EXC {url} error={e}")
+            return JSONResponse({"detail": str(e)}, status_code=503)
+
+    try:
+        js = r.json()
+        _log(f"← {r.status_code} {url} json={_preview_body(js)}")
+        return JSONResponse(js, status_code=_proxy_status(r.status_code))
+    except Exception:
+        body = (r.text or "")[:500]
+        _log(f"← {r.status_code} {url} non-json body={body}")
+        return JSONResponse({"detail": body}, status_code=_proxy_status(r.status_code))
+
+# =========================================================
 # Wiring note (Service B)
 # - Add to your main/app include_router area:
 #     from routers.auction_sessions import router as auction_sessions_router

@@ -50,6 +50,36 @@
     .pill.warn{color:var(--warn);border-color:rgba(245,158,11,.25);background:rgba(245,158,11,.08);}
     .pill.bad{color:var(--bad);border-color:rgba(239,68,68,.25);background:rgba(239,68,68,.06);}
 
+/* ===== Danger mini delete button (rare action) ===== */
+.dangerMiniBtn{
+  width:28px;height:28px;
+  border-radius:999px;
+  border:1px solid rgba(239,68,68,.20);
+  background:rgba(239,68,68,.06);
+  color:#991b1b;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:.15s ease;
+  box-shadow:none;
+}
+.dangerMiniBtn:hover{
+  transform:translateY(-1px);
+  border-color:rgba(239,68,68,.35);
+  background:rgba(239,68,68,.10);
+  box-shadow:0 10px 18px rgba(2,6,23,.08);
+}
+.dangerMiniBtn:active{
+  transform:translateY(0px);
+}
+.dangerMiniBtn:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+  transform:none;
+  box-shadow:none;
+}
+
     /* Round tabs */
     .tabs{ margin-top:12px; display:flex;gap:8px;flex-wrap:wrap;align-items:center; }
     .tab{
@@ -606,8 +636,23 @@
         <span class="pill {% if (session.status or '')=='OPEN' %}ok{% elif (session.status or '') in ['DRAFT','PAUSED'] %}warn{% else %}bad{% endif %}">
           <i class="ri-pulse-line"></i> {{ session.status or "—" }}
         </span>
-                <span><i class="ri-building-2-line"></i> Project: <b>{{ session.project_code or "-" }}</b></span>
-                <span><i class="ri-stack-line"></i> Round: <b>#{{ round_no or 1 }}</b></span>
+<span><i class="ri-building-2-line"></i> Project: <b>{{ session.project_code or "-" }}</b></span>
+
+<span style="display:inline-flex;align-items:center;gap:8px;">
+  <i class="ri-stack-line"></i> Round: <b>#{{ round_no or 1 }}</b>
+
+  {# Nút xoá vòng (cực hiếm) - chỉ hiện khi round_no > 1 #}
+  {% if (round_no or 1) > 1 %}
+    <button
+      class="dangerMiniBtn"
+      type="button"
+      onclick="deleteLastRoundFlow()"
+      title="Xoá vòng cuối (nguy hiểm)">
+      <i class="ri-delete-bin-6-line"></i>
+    </button>
+  {% endif %}
+</span>
+
             </div>
 
             <div class="tabs" id="roundTabs">
@@ -1221,6 +1266,13 @@
       return vnFold(v).trim() === 'toi xac nhan';
     }
 
+// confirm phrase for DELETE LAST ROUND (must match exactly)
+const __DELETE_CONFIRM_PHRASE = "tôi xác nhận và đồng ý xoá vòng cuối cùng do thao tác sai";
+
+function isDeleteConfirmTextOk(v){
+  return vnFold(v).trim() === vnFold(__DELETE_CONFIRM_PHRASE).trim();
+}
+
 
     // =========================
     // Custom Dialog (NO typing required)
@@ -1715,6 +1767,188 @@
       }
     }
 
+// =========================
+// DELETE LAST ROUND (rare, dangerous)
+// =========================
+async function deleteLastRoundFlow(){
+  const rn = Number(ROUND_NO || 0);
+  if(!SESSION_ID || rn <= 0){
+    showError("Thiếu thông tin", "Thiếu session_id / round_no.");
+    return;
+  }
+
+  // UI guard: never allow round 1 from UI (Service A also enforces)
+  if(rn <= 1){
+    showError("Không hợp lệ", "Không thể xoá vòng #1.");
+    return;
+  }
+
+  // 1) delete-check
+  let chk = null;
+  try{
+    const r = await fetch(`/auction/sessions/api/sessions/${SESSION_ID}/rounds/${rn}/delete-check`);
+    const js = await r.json().catch(()=> ({}));
+    if(!r.ok){
+      const msg = safeText(js.detail || js.error || ("HTTP " + r.status));
+      showError("Không thể kiểm tra xoá vòng", msg);
+      return;
+    }
+    chk = js;
+  }catch(e){
+    showError("Lỗi mạng", "Không thể gọi API delete-check.");
+    return;
+  }
+
+  // expected shape from Service A: { ok, can_delete, reasons, ... }
+  const canDelete = !!chk?.can_delete;
+
+  if(!canDelete){
+    const reasons = Array.isArray(chk?.reasons) ? chk.reasons : [];
+    const html = `
+      <div class="cCard">
+        <div class="cTop">
+          <div class="cTitle"><i class="ri-error-warning-line"></i> Không thể xoá vòng</div>
+          <span class="pill bad"><i class="ri-close-circle-line"></i> BLOCKED</span>
+        </div>
+
+        <div class="cWarn">
+          <i class="ri-information-line"></i>
+          <div>
+            Hệ thống từ chối thao tác xoá. Lý do:
+            <div style="margin-top:6px;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
+              ${escapeHtml(reasons.join(" • ") || "UNKNOWN")}
+            </div>
+          </div>
+        </div>
+
+        <div class="muted" style="margin-top:10px;">
+          Điều kiện bắt buộc:
+          <b>chỉ được xoá VÒNG CUỐI</b> và <b>round_no &gt; 1</b>.
+        </div>
+      </div>
+    `;
+    showDialog({
+      mode: 'error',
+      title: 'Không thể xoá vòng',
+      message: html,
+      html: true,
+      okText: 'Đóng'
+    });
+    return;
+  }
+
+  // 2) confirm dangerous action + typing phrase to enable delete
+  const willRollback = Number(chk?.will_rollback_lot_results || 0);
+  const del = chk?.will_delete || {};
+  const cntRoundLots = Number(del?.round_lots || 0);
+  const cntParts = Number(del?.participants || 0);
+  const cntNext = Number(del?.next_participants || 0);
+
+  const html = `
+    <div class="cCard">
+      <div class="cTop">
+        <div class="cTitle"><i class="ri-delete-bin-6-line"></i> XOÁ VÒNG CUỐI CÙNG</div>
+        <span class="pill bad"><i class="ri-alert-line"></i> CỰC KỲ NGUY HIỂM</span>
+      </div>
+
+      <div class="cWarn">
+        <i class="ri-alert-line"></i>
+        <div>
+          Thao tác này <b>KHÔNG KHÔI PHỤC ĐƯỢC</b>. Chỉ dùng khi <b>tạo nhầm vòng</b>.
+          Hệ thống sẽ <b>rollback kết quả</b> và <b>xoá toàn bộ dữ liệu</b> thuộc vòng này.
+        </div>
+      </div>
+
+      <div class="cGrid" style="margin-top:10px;">
+        <div class="cItem">
+          <div class="k"><i class="ri-stack-line"></i> Vòng cần xoá</div>
+          <div class="v">#${escapeHtml(rn)}</div>
+        </div>
+
+        <div class="cItem">
+          <div class="k"><i class="ri-restart-line"></i> Rollback kết quả</div>
+          <div class="v">${escapeHtml(willRollback)} lô → <span class="mono">PENDING</span></div>
+        </div>
+
+        <div class="cItem">
+          <div class="k"><i class="ri-file-list-3-line"></i> Sẽ xoá</div>
+          <div class="v">
+            round_lots: <b>${escapeHtml(cntRoundLots)}</b><br/>
+            participants: <b>${escapeHtml(cntParts)}</b><br/>
+            next_participants: <b>${escapeHtml(cntNext)}</b>
+          </div>
+        </div>
+
+        <div class="cItem">
+          <div class="k"><i class="ri-shield-check-line"></i> Điều kiện</div>
+          <div class="v">Chỉ xoá được <b>VÒNG CUỐI</b></div>
+          <div class="muted" style="margin-top:6px;">max_round_no: <b>${escapeHtml(chk?.max_round_no ?? '')}</b></div>
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:12px;">
+        <label><b>Nhập đúng câu xác nhận</b></label>
+        <input id="confirmDeleteRoundInput"
+               placeholder="Dán/nhập đúng câu xác nhận để mở nút XOÁ"
+               style="height:40px;font-weight:700;" />
+        <div class="muted" style="margin-top:6px;">
+          Bạn phải nhập đúng: <b>“${escapeHtml(__DELETE_CONFIRM_PHRASE)}”</b>
+        </div>
+      </div>
+    </div>
+  `;
+
+  let inputEl = null;
+  let okBtn = null;
+
+  const p = showDialog({
+    mode: 'confirm',
+    title: 'Xác nhận XOÁ VÒNG CUỐI',
+    message: html,
+    html: true,
+    okText: 'XOÁ VÒNG (NGUY HIỂM)',
+    cancelText: 'Huỷ'
+  });
+
+  // after render: hook input => enable OK only when phrase matches
+  setTimeout(()=>{
+    inputEl = document.getElementById('confirmDeleteRoundInput');
+    okBtn = document.getElementById('dlgOk');
+    if(!inputEl || !okBtn) return;
+
+    okBtn.disabled = true;
+
+    inputEl.addEventListener('input', ()=>{
+      okBtn.disabled = !isDeleteConfirmTextOk(inputEl.value);
+    });
+  }, 0);
+
+  const ok = await p;
+  if(!ok) return;
+
+  // 3) DELETE
+  toast("Đang xoá vòng...");
+
+  try{
+    const r = await fetch(`/auction/sessions/api/sessions/${SESSION_ID}/rounds/${rn}`, {
+      method: "DELETE"
+    });
+    const js = await r.json().catch(()=> ({}));
+
+    if(!r.ok){
+      const msg = safeText(js.detail || js.error || ("HTTP " + r.status));
+      showError("Xoá vòng thất bại", msg);
+      return;
+    }
+
+    const newRound = Number(js.current_round_no || (rn - 1));
+    toast(`Đã xoá vòng #${rn}. Quay về vòng #${newRound}...`);
+
+    window.location.href = `/auction/sessions/${SESSION_ID}?round_no=${newRound}`;
+  }catch(e){
+    showError("Lỗi mạng", "Không thể gọi API xoá vòng.");
+  }
+}
 
 // =========================
 // Print (CONNECTED to Service B bid-sheets APIs)
