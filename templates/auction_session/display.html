@@ -1681,6 +1681,14 @@
       audio.win.volume = 1.00;
       audio.next.volume = 1.00;
 
+  const DEFAULT_VOL = {
+  bg:   audio.bg.volume,
+  bell: audio.bell.volume,
+  win:  audio.win.volume,
+  next: audio.next.volume,
+};
+
+
       function _safePlay(a){
       if(!SOUND_ENABLED) return;
       if(!_audioUnlocked) return;
@@ -1706,6 +1714,39 @@
       _safeStop(audio.win);
       _safeStop(audio.next);
       }
+      function fadeAudioTo(a, targetVol, durationMs){
+  return new Promise((resolve)=>{
+    try{
+      if(!a) return resolve();
+      const start = Number(a.volume || 0);
+      const target = Math.max(0, Math.min(1, Number(targetVol)));
+      const dur = Math.max(0, Number(durationMs || 0));
+
+      if(dur <= 0){
+        a.volume = target;
+        return resolve();
+      }
+
+      const t0 = performance.now();
+      const tick = (now)=>{
+        const p = Math.min(1, (now - t0) / dur);
+        a.volume = start + (target - start) * p;
+        if(p >= 1) return resolve();
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }catch(_){ resolve(); }
+  });
+}
+
+async function fadeOutAndStop(a, durationMs){
+  try{
+    if(!a) return;
+    await fadeAudioTo(a, 0, durationMs);
+    _safeStop(a);
+  }catch(_){}
+}
+
 
       function playBackground(){
       if(!SOUND_ENABLED) return;
@@ -2666,19 +2707,47 @@
         ov.classList.add("show");
         toast.classList.add("show");
 
-        clearTimeout(showToast._t);
-        showToast._t = setTimeout(()=>{
-          toast.classList.remove("show");
-          ov.classList.remove("show");
+        const TOAST_MS = 10000;          // đang dùng 10s
+const PRE_FADE_MS = 3000;        // ✅ 3s trước khi đóng toast
+const FADE_OUT_MS = 2500;        // ✅ fade trong 2.5s (êm)
+const BG_FADE_IN_MS = 1200;      // ✅ bg vào lại 1.2s
 
-          _safeStop(audio.win);
-          _safeStop(audio.next);
-          _safeStop(audio.bell);
+clearTimeout(showToast._t);
+clearTimeout(showToast._preFadeT);
 
-          playBackground();
+// ✅ hẹn fade 3s trước khi toast đóng
+showToast._preFadeT = setTimeout(()=>{
+  if(!SOUND_ENABLED) return;
 
-          _toastShowing = false; // ✅ unlock
-        }, 10000);
+  // fade nhẹ win/next về gần im (không stop ngay)
+  // (gọi cả 2 cái vẫn ok)
+  fadeAudioTo(audio.win,  0.06, FADE_OUT_MS);
+  fadeAudioTo(audio.next, 0.06, FADE_OUT_MS);
+
+}, Math.max(0, TOAST_MS - PRE_FADE_MS));
+
+// ✅ tới lúc đóng toast: tắt hẳn rồi bg quay lại mượt
+showToast._t = setTimeout(async ()=>{
+  toast.classList.remove("show");
+  ov.classList.remove("show");
+
+  // fade về im hẳn rồi stop
+await Promise.all([
+  fadeOutAndStop(audio.win,  250),
+  fadeOutAndStop(audio.next, 250),
+]);
+// nếu vẫn muốn chắc chắn bell tắt thì chỉ stop thôi:
+_safeStop(audio.bell);
+
+
+  // bg quay lại từ từ (không bật "rụp")
+  try{ audio.bg.volume = 0; }catch(_){}
+  playBackground();
+  await fadeAudioTo(audio.bg, 0.30, BG_FADE_IN_MS);
+
+  _toastShowing = false;
+}, TOAST_MS);
+
       }
 
 
@@ -2699,21 +2768,30 @@
       pauseBackground();
 
       // reset trước khi phát
-      _safeStop(audio.bell);
-      _safeStop(audio.win);
-      _safeStop(audio.next);
+_safeStop(audio.bell);
+_safeStop(audio.win);
+_safeStop(audio.next);
 
-      _safePlay(audio.bell);
+// ✅ IMPORTANT: bell có thể đã bị fade về 0 ở lần trước
+try{ audio.bell.volume = DEFAULT_VOL.bell; }catch(_){}
+try{ audio.win.volume  = DEFAULT_VOL.win;  }catch(_){}
+try{ audio.next.volume = DEFAULT_VOL.next; }catch(_){}
+
+_safePlay(audio.bell);
+
 
       // bell ~1s, delay 900ms cho chắc
       setTimeout(()=>{
       if(!SOUND_ENABLED) return;
 
-      if(label === "TRÚNG"){
-        _safePlay(audio.win);
-      }else if(label === "VÒNG SAU"){
-        _safePlay(audio.next);
-      }
+if(label === "TRÚNG"){
+  try{ audio.win.volume = 1.00; }catch(_){}
+  _safePlay(audio.win);
+}else if(label === "VÒNG SAU"){
+  try{ audio.next.volume = 1.00; }catch(_){}
+  _safePlay(audio.next);
+}
+
       showToastFromNewest(newest, lotCode);
       }, 900);
       }
