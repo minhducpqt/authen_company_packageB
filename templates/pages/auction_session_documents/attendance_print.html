@@ -360,18 +360,34 @@
       Khách hàng kiểm tra đúng thông tin tài khoản nhận hoàn trước khi ký nhận.
     </div>
   </div>
-
   <script>
-    // Auto-print if opened with ?autoprint=1
-    // => từ trang admin, bạn chỉ cần open URL kèm autoprint=1 là bật popup in ngay
-    (function(){
+  (function(){
+    function shouldAutoPrint(){
       try{
         const sp = new URLSearchParams(location.search);
-        if(sp.get("autoprint") === "1"){
-          setTimeout(()=>window.print(), 200);
-        }
-      }catch(e){}
-    })();
-  </script>
+        return sp.get("autoprint") === "1";
+      }catch(e){
+        return false;
+      }
+    }
+
+    function doPrint(){
+      try{ window.focus(); }catch(e){}
+      try{ window.print(); }catch(e){}
+    }
+
+    if(!shouldAutoPrint()) return;
+
+    // Cách ổn định nhất: đợi load xong hẳn
+    window.addEventListener("load", function(){
+      // delay 1 nhịp để layout/font settle
+      setTimeout(doPrint, 250);
+
+      // retry 1 lần (Chrome đôi khi bỏ qua lần đầu)
+      setTimeout(doPrint, 900);
+    });
+  })();
+</script>
+
 </body>
 </html>

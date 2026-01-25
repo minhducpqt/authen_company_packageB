@@ -627,13 +627,9 @@
 
         <div class="tright">
             <a class="btn ghost" href="/auction/sessions"><i class="ri-arrow-left-line"></i> Quay lại</a>
-            <a class="btn"
-               href="/auction/sessions/{{ session_id }}/documents/attendance/print"
-               target="_blank" rel="noopener">
+            <button class="btn" type="button" onclick="openAttendancePrint()">
               <i class="ri-printer-line"></i> In điểm danh
-            </a>
-
-
+            </button>
             <a class="btn"
                href="/auction/sessions/{{ session_id }}/display?round_no={{ (round_no or 1) }}"
                target="_blank" rel="noopener">
@@ -2689,6 +2685,13 @@ function printOneRenderList(){
     host.innerHTML = `<div class="empty">Không có khách phù hợp.</div>`;
   }
 }
+
+function openAttendancePrint(){
+  const url = `/auction/sessions/${SESSION_ID}/documents/attendance/print?autoprint=1`;
+  const w = window.open(url, "_blank", "noopener,noreferrer");
+  if(w){ try{ w.focus(); }catch(e){} }
+}
+
 
 </script>
 {% endblock %}
