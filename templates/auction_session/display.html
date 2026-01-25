@@ -809,13 +809,20 @@
 }
 
 .winner-sttbox .stt-val{
-  font-size: 22px;              /* ✅ TO BẰNG cỡ chữ tên */
+  font-size: clamp(28px, 3.2vw, 38px);  /* ✅ TO HƠN – nhưng tự giới hạn */
   font-weight: 900;
-  letter-spacing:.10em;
+  letter-spacing:.12em;
   text-transform:uppercase;
   color: rgba(226,232,240,.98);
-  text-shadow: 0 0 18px rgba(52,211,153,.18);
+
+  /* nổi hơn nhưng không gắt */
+  text-shadow:
+    0 0 14px rgba(52,211,153,.22),
+    0 0 26px rgba(52,211,153,.12);
+
+  white-space: nowrap;
 }
+
 
       /* Mask / Reveal */
       .masked{ filter: blur(11px); opacity: .18; transform: translateZ(0); }
