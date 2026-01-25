@@ -766,14 +766,21 @@
       @keyframes caretblink{ 50%{ opacity:.15; } }
       /* ===== HERO NEXT: FULL WIDTH (only show when NEXT_ROUND) ===== */
       #heroNextWrap{
-      width:100%;
-      margin-top:10px;
-      padding: 10px 12px;
-      border-radius: 18px;
-      border: 1px solid rgba(251,191,36,.20);
-      background: rgba(251,191,36,.06);
-      overflow:hidden;
+        width:100%;
+        margin-top:10px;
+
+        /* ⬆️ tăng chiều cao tổng box */
+        padding: 14px 16px;
+
+        border-radius: 18px;
+        border: 1px solid rgba(251,191,36,.20);
+        background: rgba(251,191,36,.06);
+        overflow:hidden;
+
+        display:flex;
+        align-items:center;   /* ✅ ticker nằm giữa dọc */
       }
+
       /* đảm bảo track chạy ngang mượt */
       #heroNextWrap .marquee{
       overflow:hidden;
@@ -783,56 +790,60 @@
       display:inline-block;
       will-change: transform;
       }
-      .next-head{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 10px;
-      margin-bottom: 8px;
-      }
-      .next-title{
-      font-size: 12px;
-      font-weight: 900;
-      letter-spacing:.12em;
-      text-transform:uppercase;
-      color: rgba(226,232,240,.86);
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      max-width: 75%;
-      }
-      .next-count{
-      font-size: 11px;
-      font-weight: 900;
-      letter-spacing:.12em;
-      text-transform:uppercase;
-      padding: 4px 8px;
-      border-radius:999px;
-      border: 1px solid rgba(251,191,36,.25);
-      background: rgba(251,191,36,.10);
-      color: rgba(226,232,240,.9);
-      white-space:nowrap;
-      flex: 0 0 auto;
-      }
       .marquee{ position:relative; overflow:hidden; white-space:nowrap; }
       .marquee .track{ display:inline-block; will-change: transform; }
-      .marquee-item{
-      display:inline-flex;
-      align-items:center;
-      gap: 8px;
-      margin-right: 18px;
-      padding: 7px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,.18);
-      background: rgba(255,255,255,.04);
-      font-weight: 900;
-      font-size: 12px;
-      letter-spacing:.08em;
-      text-transform:uppercase;
-      white-space:nowrap;
-      }
-      .marquee-item .m-stt{ color: var(--warn); letter-spacing:.14em; }
-      .marquee-item .m-name{ color: rgba(226,232,240,.92); }
+.marquee-item{
+  display:inline-flex;
+  align-items:center;
+  gap: 12px;
+
+  margin-right: 22px;
+
+  /* ⬆️ CHIP TO HƠN */
+  padding: 12px 18px;
+  height: 44px;
+
+  border-radius: 999px;
+  border: 1px solid rgba(251,191,36,.35);
+  background: rgba(251,191,36,.12);
+
+  font-weight: 900;
+  font-size: 16px;          /* ⬅ TO RÕ */
+  letter-spacing:.10em;
+  text-transform:uppercase;
+  white-space:nowrap;
+
+  box-shadow: 0 0 14px rgba(251,191,36,.22);
+}
+
+.marquee-item .m-stt{
+  color: var(--warn);
+  font-size: 14px;
+  letter-spacing:.16em;
+}
+
+.marquee-item .m-name{
+  color: rgba(226,232,240,.95);
+  font-size: 16px;
+}
+
+.marquee-item .m-idx{
+  font-weight: 700;                  /* nhẹ hơn STT */
+  font-size: 13px;
+  letter-spacing: .08em;
+
+  padding: 0;                        /* ❌ không pill */
+  border: none;
+  background: transparent;           /* ❌ không nền */
+  box-shadow: none;
+
+  color: rgba(148,163,184,.70);      /* xám nhạt – không tranh spotlight */
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+
+
       /* recent strip */
       .recent{
       height: 100%;
@@ -1590,10 +1601,6 @@
                 </div>
                 <!-- ✅ NEXT LIST FULL WIDTH (nằm NGANG full phía dưới hero-main) -->
                 <div class="next-wrap warn hero-next-full" id="heroNextWrap">
-                  <div class="next-head">
-                    <div class="next-title" id="nextTitle">KHÁCH VÀO VÒNG SAU</div>
-                    <div class="next-count" id="heroNextCount">0</div>
-                  </div>
                   <div class="marquee" id="nextMarquee">
                     <div class="track" id="nextTrack"></div>
                   </div>
@@ -2333,16 +2340,23 @@ async function fadeOutAndStop(a, durationMs){
       }
 
       const heroNextN = Number(newest?.next_count ?? nexts.length ?? 0) || 0;
-      $("heroNextCount").textContent = fmtInt(heroNextN);
 
 
-      const baseHtml = nexts.length
-      ? nexts.map(p=>{
-        const nm = upperName(p.name||"—");
-        const stt = safeText(p.stt||"—");
-        return `<span class="marquee-item"><span class="m-stt">STT ${stt}</span><span class="m-name">${nm}</span></span>`;
-      }).join("")
-      : `<span class="marquee-item"><span class="m-stt">STT —</span><span class="m-name">—</span></span>`;
+const baseHtml = nexts.length
+? nexts.map((p, idx)=>{
+  const nm = upperName(p.name||"—");
+  const stt = safeText(p.stt||"—");
+  const no = idx + 1;
+  return `
+    <span class="marquee-item">
+      <span class="m-idx">#${no}</span>
+      <span class="m-stt">STT ${stt}</span>
+      <span class="m-name">${nm}</span>
+    </span>
+  `;
+}).join("")
+: `<span class="marquee-item"><span class="m-idx">#—</span><span class="m-stt">STT —</span><span class="m-name">—</span></span>`;
+
 
       const repeatN = calcRepeatN(nexts.length);
       setMarqueeRepeat($("nextTrack"), baseHtml, repeatN);
