@@ -444,19 +444,29 @@
       /* === HERO RE-LAYOUT: status full width, then 2-column main === */
       /* NOTE: block này để HERO KHÔNG PHÌNH và KHÔNG ẢNH HƯỞNG RECENT */
       .hero{
-        position: relative;
-        height: 100%;
-        min-height: 0;
+  position: relative;
+  height: 100%;
+  min-height: 0;
 
-        /* ✅ cho tràn ngang */
-        overflow-x: visible;
-        overflow-y: hidden;
+  overflow-x: visible;
+  overflow-y: hidden;
 
-        border-radius: 22px;
-        border: 1px solid rgba(148,163,184,.14);
-        background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(0,0,0,.12));
-        box-shadow: inset 0 0 0 1px rgba(0,0,0,.35), 0 0 0 rgba(0,0,0,0);
-      }
+  border-radius: 22px;
+
+  /* ✅ viền rõ hơn 1 chút */
+  border: 1px solid rgba(148,163,184,.22);
+
+  /* ✅ nền sâu hơn nhẹ */
+  background:
+    radial-gradient(900px 420px at 50% 0%, rgba(96,165,250,.10), transparent 60%),
+    linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.16));
+
+  /* ✅ tăng “độ sâu” */
+  box-shadow:
+    0 18px 70px rgba(0,0,0,.55),
+    inset 0 0 0 1px rgba(0,0,0,.35);
+}
+
 
       .hero-inner{
         position:absolute;
@@ -501,6 +511,24 @@
       inset 0 0 0 1px rgba(34,211,238,.22),
       0 0 32px rgba(34,211,238,.10);
       }
+      /* ✅ HERO nổi hơn khi TRÚNG */
+.hero:has(.status-pill.ok){
+  box-shadow:
+    0 22px 80px rgba(0,0,0,.60),
+    inset 0 0 0 1px rgba(52,211,153,.22),
+    0 0 44px rgba(52,211,153,.14);
+  border-color: rgba(52,211,153,.24);
+}
+
+/* ✅ HERO nổi hơn khi VÒNG SAU */
+.hero:has(.status-pill.warn){
+  box-shadow:
+    0 22px 80px rgba(0,0,0,.60),
+    inset 0 0 0 1px rgba(251,191,36,.22),
+    0 0 44px rgba(251,191,36,.12);
+  border-color: rgba(251,191,36,.24);
+}
+
       .status-pill{
       display:inline-flex;
       align-items:center;
@@ -753,6 +781,42 @@
       text-overflow:ellipsis;
       text-shadow: 0 0 18px rgba(96,165,250,.15);
       }
+
+      /* ===== HERO: STT BOX dưới tên người trúng (chỉ hiện khi TRÚNG) ===== */
+.winner-sttbox{
+  display:none;                 /* default ẩn */
+  border-radius: 16px;
+  border: 1px solid rgba(52,211,153,.26);
+  background: rgba(52,211,153,.08);
+  padding: 10px 12px;
+  overflow:hidden;
+}
+
+.winner-sttbox .sttline{
+  display:flex;
+  align-items:baseline;
+  justify-content:center;
+  gap: 10px;
+  white-space:nowrap;
+}
+
+.winner-sttbox .stt-lbl{
+  font-size: 10px;              /* label nhỏ + mờ */
+  font-weight: 900;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color: rgba(148,163,184,.75);
+}
+
+.winner-sttbox .stt-val{
+  font-size: 22px;              /* ✅ TO BẰNG cỡ chữ tên */
+  font-weight: 900;
+  letter-spacing:.10em;
+  text-transform:uppercase;
+  color: rgba(226,232,240,.98);
+  text-shadow: 0 0 18px rgba(52,211,153,.18);
+}
+
       /* Mask / Reveal */
       .masked{ filter: blur(11px); opacity: .18; transform: translateZ(0); }
       .reveal{ filter: blur(0); opacity: 1; transition: filter .6s ease, opacity .6s ease; }
@@ -1658,12 +1722,21 @@
                         <div class="price-val price-val-big" id="heroPrice">—</div>
                       </div>
                       <div class="winner-wrap bad winner-wrap-compact" id="winnerWrap">
-                        <div class="winner-topline">
-                          <div class="winner-label" id="winnerLabel">NGƯỜI TRÚNG</div>
-                          <div class="winner-badge bad" id="winnerBadge">CHƯA CÓ</div>
-                        </div>
-                        <div class="winner-name masked" id="winnerName">—<span class="caret">|</span></div>
-                      </div>
+  <div class="winner-topline">
+    <div class="winner-label" id="winnerLabel">NGƯỜI TRÚNG</div>
+    <div class="winner-badge bad" id="winnerBadge">CHƯA CÓ</div>
+  </div>
+
+  <div class="winner-name masked" id="winnerName">—<span class="caret">|</span></div>
+
+  <div class="winner-sttbox masked" id="heroWinnerSttBox">
+    <div class="sttline">
+<span class="stt-lbl">SỐ THỨ TỰ</span>
+      <span class="stt-val" id="heroWinnerSttVal">—</span>
+    </div>
+  </div>
+</div>
+
                     </div>
                   </div>
                 </div>
@@ -2390,22 +2463,49 @@ async function fadeOutAndStop(a, durationMs){
       winnerNameEl.classList.add("masked");
       winnerNameEl.classList.remove("reveal");
 
+      const winnerSttBoxEl = $("heroWinnerSttBox");
+      const winnerSttValEl = $("heroWinnerSttVal");
+
+
       const nextWrap = $("heroNextWrap");
       const nexts = newest?.next_customers || [];
 
 
       if(label==="TRÚNG"){
-      const winName = safeText(newest?.winner?.name || "");
-      winnerNameEl.innerHTML = `${upperName(winName)}<span class="caret">|</span>`;
-      nextWrap.style.display = "none"; // ẩn danh sách vòng sau ở HERO khi đã TRÚNG
-      }else if(label==="VÒNG SAU"){
-      const n = Number(newest?.next_count ?? nexts.length ?? 0) || 0;
-      winnerNameEl.innerHTML = `${fmtInt(n)} KHÁCH`;
-      nextWrap.style.display = "";
-      }else{
-      winnerNameEl.innerHTML = `—<span class="caret">|</span>`;
-      nextWrap.style.display = "none"; // PENDING thì ẩn list vòng sau
-      }
+  const winName = safeText(newest?.winner?.name || "");
+  const winStt  = safeText(newest?.winner?.stt  || "").trim();
+
+  winnerNameEl.innerHTML = `${upperName(winName)}<span class="caret">|</span>`;
+  nextWrap.style.display = "none"; // ẩn danh sách vòng sau ở HERO khi đã TRÚNG
+
+  // ✅ hiện STT box (cỡ chữ bằng tên)
+  if(winnerSttBoxEl && winnerSttValEl){
+    winnerSttValEl.textContent = winStt ? winStt : "—";
+    winnerSttBoxEl.style.display = "block";
+    winnerSttBoxEl.classList.add("masked");
+    winnerSttBoxEl.classList.remove("reveal");
+  }
+
+}else if(label==="VÒNG SAU"){
+  const n = Number(newest?.next_count ?? nexts.length ?? 0) || 0;
+  winnerNameEl.innerHTML = `${fmtInt(n)} KHÁCH`;
+  nextWrap.style.display = "";
+
+  // ✅ VÒNG SAU => ẩn STT box
+  if(winnerSttBoxEl){
+    winnerSttBoxEl.style.display = "none";
+  }
+
+}else{
+  winnerNameEl.innerHTML = `—<span class="caret">|</span>`;
+  nextWrap.style.display = "none"; // PENDING thì ẩn list vòng sau
+
+  // ✅ khác => ẩn STT box
+  if(winnerSttBoxEl){
+    winnerSttBoxEl.style.display = "none";
+  }
+}
+
 
       const heroNextN = Number(newest?.next_count ?? nexts.length ?? 0) || 0;
 
@@ -2430,10 +2530,17 @@ const baseHtml = nexts.length
       setMarqueeRepeat($("nextTrack"), baseHtml, repeatN);
 
       clearTimeout(_teaseTimer);
-      _teaseTimer = setTimeout(()=>{
-      winnerNameEl.classList.remove("masked");
-      winnerNameEl.classList.add("reveal");
-      }, 1600);
+_teaseTimer = setTimeout(()=>{
+  winnerNameEl.classList.remove("masked");
+  winnerNameEl.classList.add("reveal");
+
+  if(winnerSttBoxEl && getComputedStyle(winnerSttBoxEl).display !== "none"){
+    winnerSttBoxEl.classList.remove("masked");
+    winnerSttBoxEl.classList.add("reveal");
+  }
+
+}, 1600);
+
 
       // ✅ CHỈ trigger khi có round_lot_id thật + kết quả là TRÚNG / VÒNG SAU
       const rid = newest?.round_lot_id;
