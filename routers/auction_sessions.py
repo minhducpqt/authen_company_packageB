@@ -651,6 +651,168 @@ async def api_update_session(
     return JSONResponse(js, status_code=_proxy_status(st))
 
 # =========================================================
+# NEW: Attendance list (per session) + refund bank snapshot
+# - Returns: full session info + derived stats + attendance list sorted by stt
+# - Refund bank accounts: take from first participant snapshot seen for that customer
+#   (because snapshot stored per (customer_id, lot_id) but is same across pairs)
+# =========================================================
+@router.get("/auction/sessions/api/sessions/{session_id}/attendance")
+async def api_session_attendance(
+    request: Request,
+    session_id: int = Path(..., ge=1),
+):
+    token = get_access_token(request)
+    if not token:
+        return _unauth_json()
+
+    # 1) Load session detail (for project_name + session meta)
+    st_s, sess = await _get_json(f"/api/v1/auction-sessions/sessions/{session_id}", token, None)
+    if st_s != 200 or not isinstance(sess, dict):
+        return JSONResponse(sess, status_code=_proxy_status(st_s))
+
+    sess_data = (sess.get("data") or sess) if isinstance(sess, dict) else {}
+    project_name = sess_data.get("project_name") or sess_data.get("p_project_name")  # safe fallback
+    project_code = sess_data.get("project_code") or sess_data.get("p_project_code")
+
+    # 2) Determine a round_no to pull UI from (prefer current -> fallback 1)
+    st_c, cur = await _get_json(f"/api/v1/auction-sessions/sessions/{session_id}/current", token, None)
+    round_no = 1
+    if st_c == 200 and isinstance(cur, dict):
+        try:
+            rn = int(cur.get("current_round_no") or 0)
+            round_no = rn if rn > 0 else 1
+        except Exception:
+            round_no = 1
+
+    # 3) Load round UI (contains lots + participants snapshots)
+    st_ui, ui = await _get_json(
+        f"/api/v1/auction-sessions/sessions/{session_id}/rounds/{int(round_no)}/ui",
+        token,
+        None,
+    )
+    if st_ui != 200 or not isinstance(ui, dict):
+        return JSONResponse(
+            {"ok": False, "error": {"status": st_ui, "body": ui}},
+            status_code=_proxy_status(st_ui),
+        )
+
+    lots = ui.get("lots") or []
+    lot_count = len(lots)
+
+    # 4) Build attendance aggregated by customer_id
+    # - customer snapshot from p.extras.snapshot OR p.customer_snapshot (already added by A)
+    # - refund snapshot from p.extras.refund_bank_accounts (your new data)
+    # - lot_count per customer = distinct lot_id count across participants
+    by_cid: Dict[int, Dict[str, Any]] = {}
+    lotset_by_cid: Dict[int, set] = {}
+
+    for lot in lots:
+        lot_id = lot.get("lot_id")
+        parts = lot.get("participants") or []
+        for p in parts:
+            cid_raw = p.get("customer_id")
+            if cid_raw is None:
+                continue
+            try:
+                cid = int(cid_raw)
+                if cid <= 0:
+                    continue
+            except Exception:
+                continue
+
+            # initialize
+            if cid not in by_cid:
+                by_cid[cid] = {
+                    "customer_id": cid,
+                    "stt": p.get("stt"),
+                    "customer": None,
+                    "refund_bank_accounts": None,
+                }
+                lotset_by_cid[cid] = set()
+
+            # lot count
+            try:
+                if lot_id is not None:
+                    lotset_by_cid[cid].add(int(lot_id))
+            except Exception:
+                pass
+
+            # customer snapshot priority:
+            #  - A returns "customer_snapshot" alias (SELECT (p.extras->'snapshot') AS customer_snapshot)
+            #  - or nested extras.snapshot
+            snap = p.get("customer_snapshot")
+            if snap is None:
+                extras = p.get("extras") if isinstance(p.get("extras"), dict) else None
+                if extras and isinstance(extras.get("snapshot"), dict):
+                    snap = extras.get("snapshot")
+
+            if by_cid[cid]["customer"] is None and isinstance(snap, dict):
+                by_cid[cid]["customer"] = snap
+
+            # refund snapshot: p.extras.refund_bank_accounts (take the first one seen)
+            if by_cid[cid]["refund_bank_accounts"] is None:
+                extras = p.get("extras") if isinstance(p.get("extras"), dict) else None
+                if extras is not None:
+                    rba = extras.get("refund_bank_accounts")
+                    if rba is not None:
+                        by_cid[cid]["refund_bank_accounts"] = rba
+
+            # stt: keep the smallest non-null (safe)
+            stt0 = by_cid[cid].get("stt")
+            stt1 = p.get("stt")
+            try:
+                if stt0 is None and stt1 is not None:
+                    by_cid[cid]["stt"] = int(stt1)
+                elif stt0 is not None and stt1 is not None:
+                    by_cid[cid]["stt"] = min(int(stt0), int(stt1))
+            except Exception:
+                pass
+
+    # finalize list
+    data: List[Dict[str, Any]] = []
+    for cid, item in by_cid.items():
+        lots_of_c = lotset_by_cid.get(cid) or set()
+        item["lot_count"] = len(lots_of_c)
+        # optional: include lot_ids for debugging / export
+        # item["lot_ids"] = sorted(list(lots_of_c))
+        data.append(item)
+
+    # sort by stt ASC, nulls last, then customer_id
+    def _sort_key(x: Dict[str, Any]):
+        stt = x.get("stt")
+        try:
+            stt_int = int(stt)
+            return (0, stt_int, int(x.get("customer_id") or 0))
+        except Exception:
+            return (1, 10**18, int(x.get("customer_id") or 0))
+
+    data.sort(key=_sort_key)
+    customer_count = len(data)
+
+    out = {
+        "ok": True,
+        "session": {
+            "id": sess_data.get("id") or session_id,
+            "name": sess_data.get("name"),
+            "status": sess_data.get("status"),
+            "auction_date": sess_data.get("auction_date"),
+            "location": sess_data.get("location"),
+            "province": sess_data.get("province"),
+            "district": sess_data.get("district"),
+            "venue": sess_data.get("venue"),
+            "note": sess_data.get("note"),
+            "project_id": sess_data.get("project_id"),
+            "project_code": project_code,
+            "project_name": project_name,
+            "lot_count": lot_count,
+            "customer_count": customer_count,
+            "round_no": int(round_no),
+        },
+        "data": data,
+    }
+    return JSONResponse(out, status_code=200)
+
+# =========================================================
 # Wiring note (Service B)
 # - Add to your main/app include_router area:
 #     from routers.auction_sessions import router as auction_sessions_router

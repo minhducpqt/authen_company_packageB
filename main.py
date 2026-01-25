@@ -35,6 +35,7 @@ from routers.auction_counting import router as auction_counting_router
 from routers.auction_sessions import router as auction_sessions_router
 from routers.auction_session_bid_sheets import router as auction_session_bid_sheets_router
 from routers.auction_session_winner_prints import router as auction_session_winner_prints_router
+from routers.auction_documents_print import router as auction_documents_print_router
 
 # Bid attendance
 from routers import bid_attendance as bid_attendance_router
@@ -114,6 +115,8 @@ app.include_router(auction_sessions_router)
 app.include_router(auction_session_bid_sheets_router)
 app.include_router(auction_session_winner_prints_router)
 app.include_router(auction_session_display.router)
+app.include_router(auction_documents_print_router)  # <-- NEW (attendance, future docs)
+
 
 @app.get("/healthz")
 def healthz():
