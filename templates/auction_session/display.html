@@ -782,6 +782,31 @@
       text-shadow: 0 0 18px rgba(96,165,250,.15);
       }
 
+      /* ===== HERO WINNER: attention pulse (không phụ thuộc poll, không làm mất chữ) ===== */
+@keyframes heroAttnPulse{
+  0%   { opacity: 1;   transform: translateZ(0) scale(1);   filter: saturate(1); }
+  50%  { opacity: .78; transform: translateZ(0) scale(1.01); filter: saturate(1.15); }
+  100% { opacity: 1;   transform: translateZ(0) scale(1);   filter: saturate(1); }
+}
+
+/* nhấp nháy nhẹ, mắt đọc được */
+.hero-attn{
+  animation: heroAttnPulse 1.8s ease-in-out infinite;
+}
+
+/* chỉ “glow” thêm chút cho người trúng */
+.winner-wrap.ok .winner-name.hero-attn{
+  text-shadow:
+    0 0 18px rgba(52,211,153,.22),
+    0 0 34px rgba(52,211,153,.14);
+}
+
+/* STT box cũng pulse nhẹ */
+.winner-wrap.ok .winner-sttbox.hero-attn{
+  box-shadow: 0 0 22px rgba(52,211,153,.14);
+}
+
+
       /* ===== HERO: STT BOX dưới tên người trúng (chỉ hiện khi TRÚNG) ===== */
       .winner-sttbox{
       display:none;                 /* default ẩn */
@@ -2364,6 +2389,8 @@
 
       // 👇 bỏ kiểu “key đơn” dễ nhảy, chuyển sang “event signature”
       let _lastEventSig = null;
+      let _lastHeroSig = null;
+let _heroRevealTimer = null;
 
       let _teaseTimer = null;
       let _hasBootstrapped = false;   // đã load lần đầu chưa
@@ -2485,12 +2512,44 @@
 
       setWinnerPanel(label);
 
-      const winnerNameEl = $("winnerName");
-      winnerNameEl.classList.add("masked");
-      winnerNameEl.classList.remove("reveal");
+const winnerNameEl = $("winnerName");
+const winnerSttBoxEl = $("heroWinnerSttBox");
+const winnerSttValEl = $("heroWinnerSttVal");
 
-      const winnerSttBoxEl = $("heroWinnerSttBox");
-      const winnerSttValEl = $("heroWinnerSttVal");
+/* ===== HERO signature: chỉ coi là "mới" khi nội dung hero thật sự đổi ===== */
+const rid0 = newest?.round_lot_id || "";
+const rt0  = String((newest?.result_type || newest?.result || "")).toUpperCase();
+const wm0  = String((newest?.win_method || "")).toUpperCase();
+const p0   = Number(newest?.price_vnd || 0) || 0;
+const wp0  = Number(newest?.winning_price_vnd || 0) || 0;
+const wstt0= String(newest?.winner?.stt || "");
+const ncnt0= Number(newest?.next_count ?? (newest?.next_customers?.length ?? 0)) || 0;
+
+const heroSig = [String(rid0), rt0, wm0, String(p0), String(wp0), wstt0, String(ncnt0)].join("|");
+const heroChanged = (heroSig && heroSig !== _lastHeroSig);
+
+if(heroChanged){
+  _lastHeroSig = heroSig;
+  // chỉ khi đổi thật => mới mask rồi reveal
+  winnerNameEl.classList.add("masked");
+  winnerNameEl.classList.remove("reveal");
+
+  if(winnerSttBoxEl){
+    winnerSttBoxEl.classList.add("masked");
+    winnerSttBoxEl.classList.remove("reveal");
+  }
+
+  clearTimeout(_heroRevealTimer);
+} else {
+  // không đổi => luôn để trạng thái đọc được, tuyệt đối không nháy theo poll
+  winnerNameEl.classList.remove("masked");
+  winnerNameEl.classList.add("reveal");
+
+  if(winnerSttBoxEl){
+    winnerSttBoxEl.classList.remove("masked");
+    winnerSttBoxEl.classList.add("reveal");
+  }
+}
 
 
       const nextWrap = $("heroNextWrap");
@@ -2555,17 +2614,30 @@
       const repeatN = calcRepeatN(nexts.length);
       setMarqueeRepeat($("nextTrack"), baseHtml, repeatN);
 
-      clearTimeout(_teaseTimer);
-      _teaseTimer = setTimeout(()=>{
-      winnerNameEl.classList.remove("masked");
-      winnerNameEl.classList.add("reveal");
+      /* ===== reveal chỉ khi heroChanged (không phụ thuộc poll) ===== */
+if(heroChanged){
+  clearTimeout(_heroRevealTimer);
+  _heroRevealTimer = setTimeout(()=>{
+    winnerNameEl.classList.remove("masked");
+    winnerNameEl.classList.add("reveal");
 
-      if(winnerSttBoxEl && getComputedStyle(winnerSttBoxEl).display !== "none"){
+    if(winnerSttBoxEl && getComputedStyle(winnerSttBoxEl).display !== "none"){
       winnerSttBoxEl.classList.remove("masked");
       winnerSttBoxEl.classList.add("reveal");
-      }
+    }
+  }, 900); // ✅ nhanh hơn 1 chút để không “đợi lâu”
+}
 
-      }, 1600);
+/* ===== attention pulse: chạy bằng CSS (độc lập poll) ===== */
+if(label === "TRÚNG"){
+  winnerNameEl.classList.add("hero-attn");
+  if(winnerSttBoxEl && getComputedStyle(winnerSttBoxEl).display !== "none"){
+    winnerSttBoxEl.classList.add("hero-attn");
+  }
+} else {
+  winnerNameEl.classList.remove("hero-attn");
+  if(winnerSttBoxEl) winnerSttBoxEl.classList.remove("hero-attn");
+}
 
 
       // ✅ CHỈ trigger khi có round_lot_id thật + kết quả là TRÚNG / VÒNG SAU
