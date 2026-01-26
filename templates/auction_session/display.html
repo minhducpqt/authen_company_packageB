@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
       :root{
+      --hero-big: clamp(32px, 3.2vw, 52px); /* ✅ size chung cho GIÁ + TÊN */
       --bg0:#070A12;
       --bg1:#0A1022;
       --card: rgba(255,255,255,.06);
@@ -448,8 +449,8 @@
       height: 100%;
       min-height: 0;
 
-      overflow-x: visible;
-      overflow-y: hidden;
+      overflow: hidden; /* ✅ chặn mọi thứ tràn ra ngoài bo góc hero */
+
 
       border-radius: 22px;
 
@@ -569,11 +570,31 @@
       min-height: 0;
       overflow: visible;
       display:grid;
-      grid-template-columns: 1.18fr 1fr;
+
+      /* ✅ CHỐT CỨNG 30% */
+      grid-template-columns: 30% 70%;
+
       gap: 12px;
       align-items: stretch;
       }
-      /* LEFT: LOT (chỉ mã lô) */
+
+
+
+      /* ✅ TRÚNG: cột MÃ LÔ nhỏ lại để nhường chỗ cho GIÁ + TÊN */
+      .hero.mode-win .hero-main{
+      /* chọn 1 trong 2 cách dưới (mình khuyên cách A) */
+
+      /* (A) CHỐT THEO % — đúng ý “cố định theo hero” */
+      grid-template-columns: 24% 76%;
+
+      /* (B) CHỐT THEO PX NHƯNG KHÔNG BAO GIỜ LẤY NỬA HERO */
+      /* grid-template-columns: clamp(180px, 16vw, 240px) 1fr; */
+
+      gap: 12px;
+      }
+
+
+      /* LEFT: LOT */
       .hero-lot{
       min-width:0;
       min-height:0;
@@ -588,7 +609,15 @@
       border: 1px solid rgba(148,163,184,.16);
       background: rgba(0,0,0,.14);
       box-shadow: inset 0 0 0 1px rgba(0,0,0,.15);
+      container-type: inline-size; /* ✅ cho phép dùng cqw nếu browser hỗ trợ */
+
       }
+
+      /* ✅ TRÚNG: MÃ LÔ vẫn to rõ nhưng giảm “chiếm chỗ” */
+      .hero.mode-win .hero-lot{
+      padding: 14px 14px 12px 16px;
+      }
+
       .lot-kicker{
       font-size: 11px;
       font-weight: 900;
@@ -598,37 +627,48 @@
       opacity:.9;
       white-space:nowrap;
       }
+
       .lot-code{
-      font-size: clamp(58px, 6.2vw, 82px);
       font-weight: 900;
       letter-spacing: .06em;
       text-transform: uppercase;
-      text-shadow:
-      0 0 26px rgba(34,211,238,.20),
-      0 0 48px rgba(96,165,250,.14);
-      line-height: 1;
-      white-space:nowrap;
-      word-break:keep-all;
-      display:inline-block;
-      max-width: 100%;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      padding: 0;
-      margin-top: 4px;
+
+      /* ✅ cho phép xuống dòng tối đa 2 dòng */
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+
+      overflow: hidden;
+      line-height: 0.92;
+
+      /* ✅ fallback font (sẽ bị JS override theo ký tự + width) */
+      font-size: clamp(44px, 9cqw, 92px);
       }
-      /* Ẩn info dưới mã lô (giữ DOM cho JS) */
+
+
+      /* ✅ TRÚNG: giảm thêm 1 nấc để chắc chắn đủ 6 ký tự */
+      .hero.mode-win .lot-code{
+      font-size: clamp(44px, 5.2vw, 68px);
+      }
+
+
       .lot-name{ display:none !important; }
       .lot-desc{ display:block !important; }
-      /* RIGHT: stack dọc - KHÔNG được phình */
+
+      /* RIGHT: stack dọc */
       .hero-right{
       min-width:0;
-      min-height:0;     /* BẮT BUỘC */
-      overflow:visible;  /* BẮT BUỘC */
+      min-height:0;
+      overflow:visible;
       display:flex;
       flex-direction:column;
       gap: 10px;
       }
-      /* meta (badge + price + winner) không ăn hết chiều cao */
+
       .hero-meta{
       flex: 0 0 auto;
       min-width:0;
@@ -639,33 +679,17 @@
       align-items:stretch;
       }
       .hero-meta-tight{ gap: 10px; }
-      /* price bigger (chỉ là modifier, giữ .price-wrap / .price-val gốc) */
-      .price-wrap-big{ padding: 16px 16px; }
-      .price-val-big{
-      font-size: clamp(42px, 4.2vw, 58px);
-      line-height: 1.02;
-      }
-      /* winner compact */
-      .winner-wrap-compact{
-      min-height: 78px;
-      padding: 12px 14px;
-      }
-      /* responsive: nhỏ thì stack 1 cột */
-      @media (max-width: 1220px){
-      .center{ grid-template-rows: minmax(260px, 0.60fr) minmax(220px, 0.40fr); }
-      .hero-main{ grid-template-columns: 1fr; }
-      .price-val-big{ font-size: 48px; }
-      }
-      /* responsive: stack columns */
-      @media (max-width: 1220px){
-      .hero-main{ grid-template-columns: 1fr; }
-      .price-val-big{ font-size: 48px; }
-      }
+
       .meta-row{
       display:flex; gap: 8px; align-items:center; justify-content:flex-end;
       flex-wrap:wrap;
       max-width: 100%;
+      overflow: hidden;           /* ✅ không cho tràn ngang */
+
+
       }
+      .meta-row{ justify-content:flex-start; }
+
       .pill{
       padding: 6px 10px;
       border:1px solid rgba(148,163,184,.20);
@@ -685,7 +709,8 @@
       .pill.ok{ background: rgba(52,211,153,.10); border-color: rgba(52,211,153,.22); }
       .pill.warn{ background: rgba(251,191,36,.10); border-color: rgba(251,191,36,.22); }
       .pill.bad{ background: rgba(251,113,133,.10); border-color: rgba(251,113,133,.22); }
-      /* Price big */
+
+      /* Price */
       .price-wrap{
       border-radius: 18px;
       border: 1px solid rgba(148,163,184,.18);
@@ -694,6 +719,8 @@
       box-shadow: inset 0 0 0 1px rgba(0,0,0,.15);
       overflow:visible;
       }
+      .price-wrap-big{ padding: 16px 16px; }
+
       .price-label{
       font-size: 12px;
       font-weight: 900;
@@ -712,22 +739,24 @@
       text-transform: uppercase;
       line-height: 1.05;
       text-shadow: 0 0 22px rgba(34,211,238,.18);
-
-      /* ✅ giữ 1 dòng + canh phải */
       white-space: nowrap;
       text-align: right;
-
-      /* ✅ cho phép vẽ “tràn” (không cắt) */
       overflow: visible;
       text-overflow: clip;
-
-      /* ✅ ổn định render */
       display: block;
       position: relative;
       }
+      .price-val-big{
+      font-size: 46px;      /* ✅ GIÁ = 36 */
+      line-height: 1.05;
+      font-weight: 900;
+      letter-spacing: .06em;
+      white-space: nowrap;
+      }
 
 
-      /* Winner panel */
+
+      /* ===== WINNER PANEL (TRÚNG: ưu tiên full name + STT cùng hàng) ===== */
       .winner-wrap{
       border-radius: 18px;
       border: 1px solid rgba(148,163,184,.18);
@@ -736,12 +765,29 @@
       display:flex;
       flex-direction:column;
       gap: 8px;
-      min-height: 88px;
+      min-height: 110px;
       overflow:hidden;
       }
+      .winner-wrap-compact{ min-height: 92px; padding: 12px 14px; }
+
       .winner-wrap.ok{ border-color: rgba(52,211,153,.25); background: rgba(52,211,153,.06); }
       .winner-wrap.warn{ border-color: rgba(251,191,36,.25); background: rgba(251,191,36,.06); }
       .winner-wrap.bad{ border-color: rgba(251,113,133,.25); background: rgba(251,113,133,.05); }
+
+      /* ✅ Tên + STT xếp dọc để tên có đất */
+      .winner-maincol{
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+      min-width:0;
+      }
+
+      .winner-sttrow{
+      display:flex;
+      justify-content:flex-end; /* STT nằm góc phải như trước nhưng xuống dòng */
+      min-width:0;
+      }
+
       .winner-topline{
       display:flex;
       align-items:center;
@@ -771,83 +817,140 @@
       .winner-badge.ok{ border-color: rgba(52,211,153,.26); background: rgba(52,211,153,.12); }
       .winner-badge.warn{ border-color: rgba(251,191,36,.26); background: rgba(251,191,36,.12); }
       .winner-badge.bad{ border-color: rgba(251,113,133,.26); background: rgba(251,113,133,.10); }
+
+      /* ✅ hàng chính: TÊN (trái) + STT (phải) */
+      .winner-mainrow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      min-width:0;
+      }
+
+      /* TÊN: ưu tiên hiển thị đủ hơn (cho 2 dòng khi cần) */
       .winner-name{
-      font-size: 22px;
+      position: relative;
+      font-size: 40px;
       font-weight: 900;
       letter-spacing:.06em;
-      text-transform:uppercase;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      text-shadow: 0 0 18px rgba(96,165,250,.15);
+      text-transform: uppercase;
+
+      /* ✅ 1 dòng, thiếu thì ... */
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      min-width: 0;
+      flex: 1 1 auto;
       }
 
-      /* ===== HERO WINNER: attention pulse (không phụ thuộc poll, không làm mất chữ) ===== */
-@keyframes heroAttnPulse{
-  0%   { opacity: 1;   transform: translateZ(0) scale(1);   filter: saturate(1); }
-  50%  { opacity: .78; transform: translateZ(0) scale(1.01); filter: saturate(1.15); }
-  100% { opacity: 1;   transform: translateZ(0) scale(1);   filter: saturate(1); }
-}
-
-/* nhấp nháy nhẹ, mắt đọc được */
-.hero-attn{
-  animation: heroAttnPulse 1.8s ease-in-out infinite;
-}
-
-/* chỉ “glow” thêm chút cho người trúng */
-.winner-wrap.ok .winner-name.hero-attn{
-  text-shadow:
-    0 0 18px rgba(52,211,153,.22),
-    0 0 34px rgba(52,211,153,.14);
-}
-
-/* STT box cũng pulse nhẹ */
-.winner-wrap.ok .winner-sttbox.hero-attn{
-  box-shadow: 0 0 22px rgba(52,211,153,.14);
-}
 
 
-      /* ===== HERO: STT BOX dưới tên người trúng (chỉ hiện khi TRÚNG) ===== */
+      /* ===== HERO WINNER: attention pulse (không phụ thuộc poll) ===== */
+      @keyframes heroAttnPulse{
+      0%   { opacity: 1;   transform: translateZ(0) scale(1);    filter: saturate(1); }
+      50%  { opacity: .82; transform: translateZ(0) scale(1.01); filter: saturate(1.12); }
+      100% { opacity: 1;   transform: translateZ(0) scale(1);    filter: saturate(1); }
+      }
+      @keyframes heroShineSweep{
+      0%   { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
+      10%  { opacity: .85; }
+      50%  { opacity: .95; }
+      90%  { opacity: .70; }
+      100% { transform: translateX(140%) skewX(-18deg); opacity: 0; }
+      }
+      .winner-name::after{
+      content:"";
+      position:absolute;
+      top:-35%;
+      bottom:-35%;
+      left:-40%;
+      width: 55%;
+      pointer-events:none;
+      background: linear-gradient(
+      90deg,
+      rgba(255,255,255,0) 0%,
+      rgba(255,255,255,.10) 28%,
+      rgba(255,255,255,.52) 50%,
+      rgba(255,255,255,.12) 72%,
+      rgba(255,255,255,0) 100%
+      );
+      filter: blur(.2px);
+      mix-blend-mode: screen;
+      opacity: 0;
+      transform: translateX(-120%) skewX(-18deg);
+      animation: heroShineSweep 2.6s ease-in-out infinite;
+      animation-delay: .25s;
+      }
+      .hero-attn{ animation: heroAttnPulse 1.8s ease-in-out infinite; }
+
+      .winner-wrap.ok .winner-name{
+      text-shadow:
+      0 0 18px rgba(52,211,153,.28),
+      0 0 44px rgba(52,211,153,.16),
+      0 0 26px rgba(34,211,238,.14);
+      }
+      .winner-wrap.ok .winner-name::after{
+      background: linear-gradient(
+      90deg,
+      rgba(255,255,255,0) 0%,
+      rgba(52,211,153,.10) 26%,
+      rgba(255,255,255,.62) 50%,
+      rgba(34,211,238,.18) 72%,
+      rgba(255,255,255,0) 100%
+      );
+      opacity: .95;
+      }
+
+      /* ===== STT: đổi thành “pill” nhỏ nằm cạnh tên (chỉ hiện khi TRÚNG) ===== */
       .winner-sttbox{
       display:none;                 /* default ẩn */
-      border-radius: 16px;
-      border: 1px solid rgba(52,211,153,.26);
-      background: rgba(52,211,153,.08);
-      padding: 10px 12px;
+      flex: 0 0 auto;
+      border-radius: 999px;
+      border: 1px solid rgba(52,211,153,.28);
+      background: rgba(52,211,153,.10);
+      padding: 10px 14px;
       overflow:hidden;
+      box-shadow: 0 0 18px rgba(52,211,153,.16);
       }
-
       .winner-sttbox .sttline{
       display:flex;
       align-items:baseline;
-      justify-content:center;
       gap: 10px;
       white-space:nowrap;
       }
-
       .winner-sttbox .stt-lbl{
-      font-size: 10px;              /* label nhỏ + mờ */
+      font-size: 10px;
       font-weight: 900;
       letter-spacing:.16em;
       text-transform:uppercase;
-      color: rgba(148,163,184,.75);
+      color: rgba(148,163,184,.78);
       }
-
       .winner-sttbox .stt-val{
-      font-size: clamp(28px, 3.2vw, 38px);  /* ✅ TO HƠN – nhưng tự giới hạn */
+      font-size: clamp(24px, 2.4vw, 34px);
       font-weight: 900;
       letter-spacing:.12em;
       text-transform:uppercase;
       color: rgba(226,232,240,.98);
-
-      /* nổi hơn nhưng không gắt */
       text-shadow:
       0 0 14px rgba(52,211,153,.22),
       0 0 26px rgba(52,211,153,.12);
-
       white-space: nowrap;
       }
 
+      /* STT box cũng pulse nhẹ */
+      .winner-wrap.ok .winner-sttbox.hero-attn{
+      box-shadow: 0 0 22px rgba(52,211,153,.14);
+      }
+
+      /* responsive: nhỏ thì stack 1 cột */
+      @media (max-width: 1220px){
+      .center{ grid-template-rows: minmax(260px, 0.60fr) minmax(220px, 0.40fr); }
+      .hero-main{ grid-template-columns: 1fr; }
+      .price-val-big{ font-size: 48px; }
+      .winner-mainrow{ align-items:flex-start; }
+      .winner-sttbox{ padding: 10px 12px; }
+      }
 
       /* Mask / Reveal */
       .masked{ filter: blur(11px); opacity: .18; transform: translateZ(0); }
@@ -1432,218 +1535,218 @@
       display:none;
       }
       .toast-overlay.show{ display:block; }
-/* toast (center big) — AUTO FIT CONTENT (CÓ GIỚI HẠN MÀN HÌNH) */
-.toast{
-  position: fixed;
-  left: 50%;
-  top: 50%;
-  bottom: auto;
-  z-index: 50;
+      /* toast (center big) — AUTO FIT CONTENT (CÓ GIỚI HẠN MÀN HÌNH) */
+      .toast{
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      bottom: auto;
+      z-index: 50;
 
-  /* ✅ GIÃN THEO CONTENT */
-  display: inline-flex;        /* mấu chốt */
-  flex-direction: column;
-  width: max-content;          /* mấu chốt */
-  max-width: calc(100vw - 56px); /* chạm mép thì dừng */
-  max-height: calc(100vh - 70px);
+      /* ✅ GIÃN THEO CONTENT */
+      display: inline-flex;        /* mấu chốt */
+      flex-direction: column;
+      width: max-content;          /* mấu chốt */
+      max-width: calc(100vw - 56px); /* chạm mép thì dừng */
+      max-height: calc(100vh - 70px);
 
-  border-radius: 32px;
-  border: 1px solid rgba(148,163,184,.20);
-  background: rgba(0,0,0,.62);
-  box-shadow: var(--shadow), 0 0 80px rgba(34,211,238,.18);
-  overflow: hidden;
+      border-radius: 32px;
+      border: 1px solid rgba(148,163,184,.20);
+      background: rgba(0,0,0,.62);
+      box-shadow: var(--shadow), 0 0 80px rgba(34,211,238,.18);
+      overflow: hidden;
 
-  transform: translate(-50%, -50%) scale(.95);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .22s ease, transform .22s ease;
-  backdrop-filter: blur(12px);
-}
+      transform: translate(-50%, -50%) scale(.95);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .22s ease, transform .22s ease;
+      backdrop-filter: blur(12px);
+      }
 
-.toast.show{
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1.12);
-}
+      .toast.show{
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.12);
+      }
 
-.toast .t-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap: 12px;
-  padding: 18px 20px;
-  border-bottom: 1px solid rgba(148,163,184,.14);
-  background: rgba(255,255,255,.05);
-  font-weight: 900;
-  letter-spacing:.14em;
-  text-transform:uppercase;
-  font-size: 15px;
-  color: rgba(226,232,240,.95);
+      .toast .t-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      padding: 18px 20px;
+      border-bottom: 1px solid rgba(148,163,184,.14);
+      background: rgba(255,255,255,.05);
+      font-weight: 900;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      font-size: 15px;
+      color: rgba(226,232,240,.95);
 
-  /* ✅ header không làm toast hẹp */
-  min-width: 0;
-}
+      /* ✅ header không làm toast hẹp */
+      min-width: 0;
+      }
 
-.toast .t-head .badge{
-  font-size: 12px;
-  padding: 7px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(148,163,184,.18);
-  background: rgba(255,255,255,.04);
-  white-space:nowrap;
-}
+      .toast .t-head .badge{
+      font-size: 12px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,.18);
+      background: rgba(255,255,255,.04);
+      white-space:nowrap;
+      }
 
-/* ✅ body cũng “fit theo content” */
-.toast .t-body{
-  padding: 22px 22px 26px 22px;
-  display:flex;
-  flex-direction:column;
-  gap: 16px;
-  text-align:center;
+      /* ✅ body cũng “fit theo content” */
+      .toast .t-body{
+      padding: 22px 22px 26px 22px;
+      display:flex;
+      flex-direction:column;
+      gap: 16px;
+      text-align:center;
 
-  width: max-content;           /* mấu chốt */
-  max-width: calc(100vw - 56px);
-}
+      width: max-content;           /* mấu chốt */
+      max-width: calc(100vw - 56px);
+      }
 
-/* line1: mô tả nhỏ hơn */
-.toast .line1{
-  font-weight: 900;
-  font-size: 18px;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: rgba(226,232,240,.78);
+      /* line1: mô tả nhỏ hơn */
+      .toast .line1{
+      font-weight: 900;
+      font-size: 18px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: rgba(226,232,240,.78);
 
-  width: max-content;
-  max-width: calc(100vw - 56px);
-}
+      width: max-content;
+      max-width: calc(100vw - 56px);
+      }
 
-/* các dòng thông tin: label + value */
-.toast .line2, .toast .line3, .toast .line4{
-  display:flex;
-  align-items:baseline;
-  justify-content:center;
-  gap: 14px;
+      /* các dòng thông tin: label + value */
+      .toast .line2, .toast .line3, .toast .line4{
+      display:flex;
+      align-items:baseline;
+      justify-content:center;
+      gap: 14px;
 
-  /* ✅ fit content, nhưng chạm mép thì dừng */
-  width: max-content;
-  max-width: calc(100vw - 56px);
+      /* ✅ fit content, nhưng chạm mép thì dừng */
+      width: max-content;
+      max-width: calc(100vw - 56px);
 
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      }
 
-.toast .k-lbl{
-  font-size: 14px;
-  font-weight: 900;
-  letter-spacing: .16em;
-  text-transform: uppercase;
-  color: rgba(148,163,184,.70);
-  opacity: .95;
-  flex: 0 0 auto;
-  min-width: 120px;
-  text-align: right;
-}
+      .toast .k-lbl{
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: rgba(148,163,184,.70);
+      opacity: .95;
+      flex: 0 0 auto;
+      min-width: 120px;
+      text-align: right;
+      }
 
-/* ✅ VALUE: ưu tiên hiển thị đủ - không bị ép ellipsis sớm */
-.toast .k-val{
-  font-weight: 900;
-  text-transform: uppercase;
-  color: rgba(226,232,240,.98);
-  letter-spacing: .10em;
-  text-shadow: 0 0 22px rgba(34,211,238,.18);
+      /* ✅ VALUE: ưu tiên hiển thị đủ - không bị ép ellipsis sớm */
+      .toast .k-val{
+      font-weight: 900;
+      text-transform: uppercase;
+      color: rgba(226,232,240,.98);
+      letter-spacing: .10em;
+      text-shadow: 0 0 22px rgba(34,211,238,.18);
 
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: calc(100vw - 280px); /* chừa chỗ cho label + padding */
-}
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: calc(100vw - 280px); /* chừa chỗ cho label + padding */
+      }
 
-/* spotlight 1: MÃ LÔ */
-.toast .k-val.lot{
-  font-size: clamp(74px, 7.2vw, 118px);
-  letter-spacing: .14em;
-  text-shadow: 0 0 34px rgba(34,211,238,.26);
+      /* spotlight 1: MÃ LÔ */
+      .toast .k-val.lot{
+      font-size: clamp(74px, 7.2vw, 118px);
+      letter-spacing: .14em;
+      text-shadow: 0 0 34px rgba(34,211,238,.26);
 
-  width: max-content;
-  max-width: calc(100vw - 56px);
-}
+      width: max-content;
+      max-width: calc(100vw - 56px);
+      }
 
-/* spotlight 2: TÊN KHÁCH */
-.toast .k-val.name{
-  font-size: clamp(40px, 4.0vw, 68px);
-  letter-spacing: .10em;
-  text-shadow: 0 0 26px rgba(96,165,250,.18);
-  text-align:center;
+      /* spotlight 2: TÊN KHÁCH */
+      .toast .k-val.name{
+      font-size: clamp(40px, 4.0vw, 68px);
+      letter-spacing: .10em;
+      text-shadow: 0 0 26px rgba(96,165,250,.18);
+      text-align:center;
 
-  width: max-content;
-  max-width: calc(100vw - 56px);
-}
+      width: max-content;
+      max-width: calc(100vw - 56px);
+      }
 
-/* giá: to nhưng sau mã lô + tên */
-.toast .k-val.price{
-  font-size: clamp(48px, 4.8vw, 86px);
-  letter-spacing: .08em;
-  text-shadow: 0 0 26px rgba(34,211,238,.18);
+      /* giá: to nhưng sau mã lô + tên */
+      .toast .k-val.price{
+      font-size: clamp(48px, 4.8vw, 86px);
+      letter-spacing: .08em;
+      text-shadow: 0 0 26px rgba(34,211,238,.18);
 
-  width: max-content;
-  max-width: calc(100vw - 56px);
-}
+      width: max-content;
+      max-width: calc(100vw - 56px);
+      }
 
-.toast .line5{
-  margin-top: 6px;
-  display:flex;
-  justify-content:center;
-}
+      .toast .line5{
+      margin-top: 6px;
+      display:flex;
+      justify-content:center;
+      }
 
-.pillbig{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  font-weight: 900;
-  font-size: clamp(34px, 3.2vw, 62px);
-  letter-spacing:.10em;
-  text-transform:uppercase;
-  padding: 14px 26px;
-  border-radius: 999px;
-  border: 1px solid rgba(52,211,153,.35);
-  background: rgba(52,211,153,.14);
-  box-shadow: 0 0 18px rgba(52,211,153,.25);
-  white-space:nowrap;
+      .pillbig{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      font-weight: 900;
+      font-size: clamp(34px, 3.2vw, 62px);
+      letter-spacing:.10em;
+      text-transform:uppercase;
+      padding: 14px 26px;
+      border-radius: 999px;
+      border: 1px solid rgba(52,211,153,.35);
+      background: rgba(52,211,153,.14);
+      box-shadow: 0 0 18px rgba(52,211,153,.25);
+      white-space:nowrap;
 
-  max-width: calc(100vw - 56px);
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+      max-width: calc(100vw - 56px);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      }
 
-.toast.ok{ border-color: rgba(52,211,153,.28); box-shadow: var(--shadow), 0 0 56px rgba(52,211,153,.18); }
-.toast.ok .t-head{ background: rgba(52,211,153,.12); }
-.toast.ok .t-head .badge{ border-color: rgba(52,211,153,.26); background: rgba(52,211,153,.14); }
+      .toast.ok{ border-color: rgba(52,211,153,.28); box-shadow: var(--shadow), 0 0 56px rgba(52,211,153,.18); }
+      .toast.ok .t-head{ background: rgba(52,211,153,.12); }
+      .toast.ok .t-head .badge{ border-color: rgba(52,211,153,.26); background: rgba(52,211,153,.14); }
 
-.toast.warn{ border-color: rgba(251,191,36,.28); box-shadow: var(--shadow), 0 0 56px rgba(251,191,36,.16); }
-.toast.warn .t-head{ background: rgba(251,191,36,.12); }
-.toast.warn .t-head .badge{ border-color: rgba(251,191,36,.26); background: rgba(251,191,36,.14); }
+      .toast.warn{ border-color: rgba(251,191,36,.28); box-shadow: var(--shadow), 0 0 56px rgba(251,191,36,.16); }
+      .toast.warn .t-head{ background: rgba(251,191,36,.12); }
+      .toast.warn .t-head .badge{ border-color: rgba(251,191,36,.26); background: rgba(251,191,36,.14); }
 
-.toast.bad{ border-color: rgba(251,113,133,.28); box-shadow: var(--shadow), 0 0 56px rgba(251,113,133,.14); }
-.toast.bad .t-head{ background: rgba(251,113,133,.10); }
-.toast.bad .t-head .badge{ border-color: rgba(251,113,133,.26); background: rgba(251,113,133,.12); }
+      .toast.bad{ border-color: rgba(251,113,133,.28); box-shadow: var(--shadow), 0 0 56px rgba(251,113,133,.14); }
+      .toast.bad .t-head{ background: rgba(251,113,133,.10); }
+      .toast.bad .t-head .badge{ border-color: rgba(251,113,133,.26); background: rgba(251,113,133,.12); }
 
-/* responsiveness (giữ nguyên layout chính, chỉ giảm padding nhẹ) */
-@media (max-width: 1060px){
-  .main{ grid-template-columns: 1fr; }
-  body{ overflow:auto; }
-  .stage{ height:auto; min-height:100vh; }
-  .center{ order: 1; }
+      /* responsiveness (giữ nguyên layout chính, chỉ giảm padding nhẹ) */
+      @media (max-width: 1060px){
+      .main{ grid-template-columns: 1fr; }
+      body{ overflow:auto; }
+      .stage{ height:auto; min-height:100vh; }
+      .center{ order: 1; }
 
-  .toast{
-    max-width: calc(100vw - 40px);
-  }
-  .toast .t-body{
-    max-width: calc(100vw - 40px);
-  }
-  .toast.show{
-    transform: translate(-50%, -50%) scale(1.06);
-  }
-}
+      .toast{
+      max-width: calc(100vw - 40px);
+      }
+      .toast .t-body{
+      max-width: calc(100vw - 40px);
+      }
+      .toast.show{
+      transform: translate(-50%, -50%) scale(1.06);
+      }
+      }
 
 
     </style>
@@ -1778,14 +1881,21 @@
                           <div class="winner-badge bad" id="winnerBadge">CHƯA CÓ</div>
                         </div>
 
-                        <div class="winner-name masked" id="winnerName">—<span class="caret">|</span></div>
+                        <!-- ✅ TRÚNG: TÊN + STT cùng hàng -->
 
-                        <div class="winner-sttbox masked" id="heroWinnerSttBox">
-                          <div class="sttline">
-                            <span class="stt-lbl">SỐ THỨ TỰ</span>
-                            <span class="stt-val" id="heroWinnerSttVal">—</span>
+                        <div class="winner-maincol">
+                          <div class="winner-name masked" id="winnerName">—<span class="caret">|</span></div>
+
+                          <div class="winner-sttrow">
+                            <div class="winner-sttbox masked" id="heroWinnerSttBox">
+                              <div class="sttline">
+                                <span class="stt-lbl">SỐ THỨ TỰ</span>
+                                <span class="stt-val" id="heroWinnerSttVal">—</span>
+                              </div>
+                            </div>
                           </div>
                         </div>
+
                       </div>
 
                     </div>
@@ -2077,6 +2187,40 @@
       const s = safeText(x).trim();
       return s ? s.toUpperCase() : "—";
       }
+
+      function fitLotCodeFont(){
+      const el = $("heroLotCode");
+      if(!el) return;
+
+      const txt = (el.textContent || "").trim();
+      if(!txt) return;
+
+      // đo độ rộng thực tế của box MÃ LÔ (div hero-lot)
+      const box = el.closest(".hero-lot");
+      if(!box) return;
+
+      const w = box.clientWidth || 0;
+      if(w <= 0) return;
+
+      const len = txt.length;
+
+      // ✅ cho phép tối đa 2 dòng:
+      // nếu dài, coi như chia 2 dòng => số ký tự "tương đương mỗi dòng"
+      const perLine = Math.max(3, Math.ceil(len / 2));
+
+      // hệ số 0.78~0.9 tuỳ font; Oxanium hơi rộng nên dùng 0.78
+      let fs = Math.floor((w / perLine) * 0.78);
+
+      // ✅ không nhỏ hơn mức đủ nhìn, không quá to
+      const MIN = 46;     // bạn có thể nâng lên 50 nếu muốn
+      const MAX = 110;
+
+      fs = Math.max(MIN, Math.min(MAX, fs));
+
+      // apply
+      el.style.fontSize = fs + "px";
+      }
+
       // =========================================================
       // Smart repeat count for marquee (avoid blind x10)
       // =========================================================
@@ -2390,7 +2534,7 @@
       // 👇 bỏ kiểu “key đơn” dễ nhảy, chuyển sang “event signature”
       let _lastEventSig = null;
       let _lastHeroSig = null;
-let _heroRevealTimer = null;
+      let _heroRevealTimer = null;
 
       let _teaseTimer = null;
       let _hasBootstrapped = false;   // đã load lần đầu chưa
@@ -2484,6 +2628,9 @@ let _heroRevealTimer = null;
 
       $("heroLotKicker").textContent = "MÃ LÔ";
       $("heroLotCode").textContent = lotCode || "—";
+      $("heroLotCode").textContent = lotCode || "—";
+      requestAnimationFrame(fitLotCodeFont); // ✅ fit theo width + số ký tự
+
       $("heroLotName").textContent = lotName ? truncate(lotName.toUpperCase(), 28) : "—";
       $("heroLotDesc").textContent = desc
       ? `DIỆN TÍCH: ${areaText} • ${desc}`
@@ -2511,45 +2658,51 @@ let _heroRevealTimer = null;
       $("heroBadge1").textContent = "KẾT QUẢ MỚI";
 
       setWinnerPanel(label);
+      // ✅ bật layout TRÚNG riêng cho hero (không đụng VÒNG SAU)
+      const heroEl = document.querySelector(".hero");
+      if(heroEl){
+      heroEl.classList.toggle("mode-win", label === "TRÚNG");
+      }
 
-const winnerNameEl = $("winnerName");
-const winnerSttBoxEl = $("heroWinnerSttBox");
-const winnerSttValEl = $("heroWinnerSttVal");
 
-/* ===== HERO signature: chỉ coi là "mới" khi nội dung hero thật sự đổi ===== */
-const rid0 = newest?.round_lot_id || "";
-const rt0  = String((newest?.result_type || newest?.result || "")).toUpperCase();
-const wm0  = String((newest?.win_method || "")).toUpperCase();
-const p0   = Number(newest?.price_vnd || 0) || 0;
-const wp0  = Number(newest?.winning_price_vnd || 0) || 0;
-const wstt0= String(newest?.winner?.stt || "");
-const ncnt0= Number(newest?.next_count ?? (newest?.next_customers?.length ?? 0)) || 0;
+      const winnerNameEl = $("winnerName");
+      const winnerSttBoxEl = $("heroWinnerSttBox");
+      const winnerSttValEl = $("heroWinnerSttVal");
 
-const heroSig = [String(rid0), rt0, wm0, String(p0), String(wp0), wstt0, String(ncnt0)].join("|");
-const heroChanged = (heroSig && heroSig !== _lastHeroSig);
+      /* ===== HERO signature: chỉ coi là "mới" khi nội dung hero thật sự đổi ===== */
+      const rid0 = newest?.round_lot_id || "";
+      const rt0  = String((newest?.result_type || newest?.result || "")).toUpperCase();
+      const wm0  = String((newest?.win_method || "")).toUpperCase();
+      const p0   = Number(newest?.price_vnd || 0) || 0;
+      const wp0  = Number(newest?.winning_price_vnd || 0) || 0;
+      const wstt0= String(newest?.winner?.stt || "");
+      const ncnt0= Number(newest?.next_count ?? (newest?.next_customers?.length ?? 0)) || 0;
 
-if(heroChanged){
-  _lastHeroSig = heroSig;
-  // chỉ khi đổi thật => mới mask rồi reveal
-  winnerNameEl.classList.add("masked");
-  winnerNameEl.classList.remove("reveal");
+      const heroSig = [String(rid0), rt0, wm0, String(p0), String(wp0), wstt0, String(ncnt0)].join("|");
+      const heroChanged = (heroSig && heroSig !== _lastHeroSig);
 
-  if(winnerSttBoxEl){
-    winnerSttBoxEl.classList.add("masked");
-    winnerSttBoxEl.classList.remove("reveal");
-  }
+      if(heroChanged){
+      _lastHeroSig = heroSig;
+      // chỉ khi đổi thật => mới mask rồi reveal
+      winnerNameEl.classList.add("masked");
+      winnerNameEl.classList.remove("reveal");
 
-  clearTimeout(_heroRevealTimer);
-} else {
-  // không đổi => luôn để trạng thái đọc được, tuyệt đối không nháy theo poll
-  winnerNameEl.classList.remove("masked");
-  winnerNameEl.classList.add("reveal");
+      if(winnerSttBoxEl){
+      winnerSttBoxEl.classList.add("masked");
+      winnerSttBoxEl.classList.remove("reveal");
+      }
 
-  if(winnerSttBoxEl){
-    winnerSttBoxEl.classList.remove("masked");
-    winnerSttBoxEl.classList.add("reveal");
-  }
-}
+      clearTimeout(_heroRevealTimer);
+      } else {
+      // không đổi => luôn để trạng thái đọc được, tuyệt đối không nháy theo poll
+      winnerNameEl.classList.remove("masked");
+      winnerNameEl.classList.add("reveal");
+
+      if(winnerSttBoxEl){
+      winnerSttBoxEl.classList.remove("masked");
+      winnerSttBoxEl.classList.add("reveal");
+      }
+      }
 
 
       const nextWrap = $("heroNextWrap");
@@ -2615,29 +2768,29 @@ if(heroChanged){
       setMarqueeRepeat($("nextTrack"), baseHtml, repeatN);
 
       /* ===== reveal chỉ khi heroChanged (không phụ thuộc poll) ===== */
-if(heroChanged){
-  clearTimeout(_heroRevealTimer);
-  _heroRevealTimer = setTimeout(()=>{
-    winnerNameEl.classList.remove("masked");
-    winnerNameEl.classList.add("reveal");
+      if(heroChanged){
+      clearTimeout(_heroRevealTimer);
+      _heroRevealTimer = setTimeout(()=>{
+      winnerNameEl.classList.remove("masked");
+      winnerNameEl.classList.add("reveal");
 
-    if(winnerSttBoxEl && getComputedStyle(winnerSttBoxEl).display !== "none"){
+      if(winnerSttBoxEl && getComputedStyle(winnerSttBoxEl).display !== "none"){
       winnerSttBoxEl.classList.remove("masked");
       winnerSttBoxEl.classList.add("reveal");
-    }
-  }, 900); // ✅ nhanh hơn 1 chút để không “đợi lâu”
-}
+      }
+      }, 900); // ✅ nhanh hơn 1 chút để không “đợi lâu”
+      }
 
-/* ===== attention pulse: chạy bằng CSS (độc lập poll) ===== */
-if(label === "TRÚNG"){
-  winnerNameEl.classList.add("hero-attn");
-  if(winnerSttBoxEl && getComputedStyle(winnerSttBoxEl).display !== "none"){
-    winnerSttBoxEl.classList.add("hero-attn");
-  }
-} else {
-  winnerNameEl.classList.remove("hero-attn");
-  if(winnerSttBoxEl) winnerSttBoxEl.classList.remove("hero-attn");
-}
+      /* ===== attention pulse: chạy bằng CSS (độc lập poll) ===== */
+      if(label === "TRÚNG"){
+      winnerNameEl.classList.add("hero-attn");
+      if(winnerSttBoxEl && getComputedStyle(winnerSttBoxEl).display !== "none"){
+      winnerSttBoxEl.classList.add("hero-attn");
+      }
+      } else {
+      winnerNameEl.classList.remove("hero-attn");
+      if(winnerSttBoxEl) winnerSttBoxEl.classList.remove("hero-attn");
+      }
 
 
       // ✅ CHỈ trigger khi có round_lot_id thật + kết quả là TRÚNG / VÒNG SAU
