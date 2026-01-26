@@ -422,12 +422,14 @@
                       <form class="tools" method="get" action="/auction/sessions" id="filterForm">
                         <div class="field">
                           <label for="statusSel">Trạng thái</label>
-                          <select id="statusSel" name="status" style="min-width:160px;">
-                            <option value="" {% if not status %}selected{% endif %}>Tất cả</option>
-                            <option value="ACTIVE" {% if status=='ACTIVE' %}selected{% endif %}>ACTIVE</option>
-                            <option value="INACTIVE" {% if status=='INACTIVE' %}selected{% endif %}>INACTIVE</option>
-                            <option value="DRAFT" {% if status=='DRAFT' %}selected{% endif %}>DRAFT</option>
+                          <select id="statusSel" name="status" style="min-width:160px;" onchange="onStatusChange()">
+                            <option value="" {% if (status or '') == '' %}selected{% endif %}>Tất cả</option>
+                            <option value="ACTIVE" {% if status == 'ACTIVE' %}selected{% endif %}>ACTIVE</option>
+                            <option value="INACTIVE" {% if status == 'INACTIVE' %}selected{% endif %}>INACTIVE</option>
+                            <option value="DRAFT" {% if status == 'DRAFT' %}selected{% endif %}>DRAFT</option>
                           </select>
+
+
                         </div>
 
                         <div class="field">
@@ -796,6 +798,16 @@
             <div id="toast" class="toast"></div>
 
             <script>
+              function onStatusChange(){
+              // đổi status -> bỏ project để tránh giữ project không thuộc status mới
+              const projectSel = document.getElementById('projectSel');
+              if(projectSel) projectSel.value = '';
+
+              // submit form để SSR load lại danh sách dự án theo status
+              const form = document.getElementById('filterForm');
+              if(form) form.submit();
+              }
+
               // <editor-fold desc="Auction Sessions - UI Helpers (toast, storage, filters, custom modal)">
                 // =========================
                 // Toast
@@ -1030,8 +1042,15 @@
                 });
                 }
                 if(statusSel){
-                statusSel.addEventListener('change', ()=>{ rememberFilters(); });
+                statusSel.addEventListener('change', ()=>{
+                rememberFilters();
+                // reset project + submit để list dự án cập nhật theo status
+                const projectSel = document.getElementById('projectSel');
+                if(projectSel) projectSel.value = '';
+                form?.submit();
+                });
                 }
+
                 if(form){
                 form.addEventListener('submit', ()=>{ rememberFilters(); });
                 }

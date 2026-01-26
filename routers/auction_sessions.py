@@ -215,20 +215,35 @@ async def auction_sessions_page(
     project: Optional[str] = Query(None),
     status: Optional[str] = Query(
         None,
-        description="Project status filter. If omitted -> fetch FULL projects (no status param).",
+        description="Project status filter. If omitted -> default ACTIVE. If empty -> ALL.",
     ),
 ):
-    """
-    Trang điều phối:
-      - chọn dự án
-      - auto show phiên dở dang (primary) + list candidates
-      - có nút tạo phiên mới / start phiên / tiếp tục
-    """
     token = get_access_token(request)
     if not token:
         return _redirect_login(request)
 
-    projects, selected_code, selected_project = await _load_projects(token, project, status)
+    # =====================================================
+    # status_effective: gửi sang Service A
+    # status_ui: dùng cho dropdown UI
+    # - status is None        => default ACTIVE
+    # - status == "" / spaces => ALL (không truyền status sang A)
+    # - status == "ACTIVE"    => filter ACTIVE
+    # =====================================================
+    if status is None:
+        status_effective: Optional[str] = "ACTIVE"
+        status_ui: str = "ACTIVE"
+    else:
+        raw = (status or "").strip()
+        if raw == "":
+            status_effective = None      # ALL
+            status_ui = ""               # UI chọn "Tất cả"
+        else:
+            status_effective = raw.upper()
+            status_ui = status_effective
+
+    projects, selected_code, selected_project = await _load_projects(
+        token, project, status_effective
+    )
     project_id = _project_id_of(selected_project)
 
     active: Dict[str, Any] = {"has_active": False, "primary_session": None, "candidates": []}
@@ -250,9 +265,12 @@ async def auction_sessions_page(
         "project_id": project_id,
         "active": active,
         "error": error,
-        "status": status,
+        # quan trọng: status dùng cho UI dropdown
+        "status": status_ui,
     }
     return templates.TemplateResponse("auction_session/index.html", ctx)
+
+
 
 
 @router.get("/auction/sessions/{session_id}", response_class=HTMLResponse)
