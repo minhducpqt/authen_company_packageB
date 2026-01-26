@@ -45,7 +45,7 @@ async def page_projects_payment_accounts(
         projects = projects_resp.get("data", [])
 
         # 2) Company Bank Accounts (để render label & chọn)
-        url_cba = f"{API_BASE_URL}/api/v1/company_bank_accounts?size=200"
+        url_cba = f"{API_BASE_URL}/api/v1/company_bank_accounts?size=200&status=true"
         cba_page = await _fetch_json(client, url_cba, access)
         company_accounts = cba_page.get("data", [])
 
@@ -131,7 +131,15 @@ async def save_project_payment_accounts(
             timeout=20.0,
         )
         if r.status_code >= 400:
-            msg = r.text.replace("\n", " ")[:400]
+            msg = ""
+            try:
+                j = r.json()
+                msg = (j.get("detail") or j.get("message") or "").strip()
+            except Exception:
+                msg = ""
+            if not msg:
+                msg = r.text.replace("\n", " ").strip()
+            msg = msg[:400]
             return RedirectResponse(
                 url=f"/projects/payment-accounts?status=ERR:{msg}",
                 status_code=303
