@@ -1408,28 +1408,35 @@
       }
       .toast-overlay.show{ display:block; }
       /* toast (center big) */
+      /* toast (center big) */
       .toast{
       position: fixed;
       left: 50%;
       top: 50%;
       bottom: auto;
       z-index: 50;
-      width: min(820px, calc(100vw - 48px));
-      border-radius: 22px;
+
+      /* ✅ TO HƠN: chiếm > nửa màn hình */
+      width: min(1200px, calc(100vw - 56px));
+      max-height: calc(100vh - 80px);
+
+      border-radius: 26px;
       border: 1px solid rgba(148,163,184,.18);
       background: rgba(0,0,0,.62);
-      box-shadow: var(--shadow), 0 0 44px rgba(34,211,238,.14);
+      box-shadow: var(--shadow), 0 0 60px rgba(34,211,238,.16);
       overflow:hidden;
-      transform: translate(-50%, -50%) scale(.94);
+
+      transform: translate(-50%, -50%) scale(.92);
       opacity: 0;
       pointer-events:none;
-      transition: opacity .25s ease, transform .25s ease;
-      backdrop-filter: blur(10px);
+      transition: opacity .22s ease, transform .22s ease;
+      backdrop-filter: blur(12px);
       }
       .toast.show{
       opacity: 1;
-      transform: translate(-50%, -50%) scale(1);
+      transform: translate(-50%, -50%) scale(1.06); /* ✅ phóng tổng thể > nửa màn hình */
       }
+
       .toast .t-head{
       display:flex;
       align-items:center;
@@ -1806,7 +1813,7 @@
       const SESSION_ID = {{ session_id|tojson }};
       const ROUND_NO   = {{ (round_no or 1)|tojson }};
 
-      const POLL_MS = 5000;
+      const POLL_MS = 2000;
       const API_URL = `/auction/sessions/api/display/sessions/${SESSION_ID}?round_no=${ROUND_NO}`;
 
       // =========================================================
@@ -2573,10 +2580,11 @@
       // - không có rid (dữ liệu thiếu) => tránh “nhảy key”
       // - không phải TRÚNG/VÒNG SAU
       // - đang show toast (chặn spam)
-      if(rid && shouldNotify && sig && sig !== _lastEventSig && !_toastShowing){
+      if(rid && shouldNotify && sig && sig !== _lastEventSig){
       _lastEventSig = sig;
       handleNewEventWithSound(newest, lotCode);
       }
+
       }
 
 
@@ -2877,9 +2885,13 @@
       const toast = $("toast");
       const ov = $("toastOverlay");
 
-      _toastShowing = true; // ✅ lock
+      // ✅ nếu đang toast mà có toast mới -> huỷ timer cũ ngay
+      clearTimeout(showToast._t);
+      clearTimeout(showToast._preFadeT);
 
-      toast.classList.remove("ok","warn","bad","show");
+      _toastShowing = true;
+
+      toast.classList.remove("ok","warn","bad");
       toast.classList.add(type);
 
       $("toastTitle").textContent = safeText(title);
@@ -2890,66 +2902,78 @@
       $("toastLine3").innerHTML = safeText(line3);
       $("toastLine4").innerHTML = safeText(line4);
 
-
       const line5El = $("toastLine5");
       const pill = line5El.querySelector(".pillbig");
       if(pill){
       pill.textContent = safeText(line5);
-
       pill.style.borderColor = (type === "warn") ? "rgba(251,191,36,.35)" : "rgba(52,211,153,.35)";
       pill.style.background  = (type === "warn") ? "rgba(251,191,36,.14)" : "rgba(52,211,153,.14)";
       pill.style.boxShadow   = (type === "warn") ? "0 0 18px rgba(251,191,36,.22)" : "0 0 18px rgba(52,211,153,.25)";
       }
 
+      // ✅ nếu đang show rồi thì chỉ update nội dung (đỡ giật)
       ov.classList.add("show");
       toast.classList.add("show");
 
-      const TOAST_MS = 10000;          // đang dùng 10s
-      const PRE_FADE_MS = 3000;        // ✅ 3s trước khi đóng toast
-      const FADE_OUT_MS = 2500;        // ✅ fade trong 2.5s (êm)
-      const BG_FADE_IN_MS = 1200;      // ✅ bg vào lại 1.2s
+      const TOAST_MS = 10000;          // giữ 10s như bạn đang dùng
+      const PRE_FADE_MS = 3000;
+      const FADE_OUT_MS = 2500;
+      const BG_FADE_IN_MS = 1200;
 
-      clearTimeout(showToast._t);
-      clearTimeout(showToast._preFadeT);
-
-      // ✅ hẹn fade 3s trước khi toast đóng
+      // ✅ hẹn fade trước khi close
       showToast._preFadeT = setTimeout(()=>{
       if(!SOUND_ENABLED) return;
-
-      // fade nhẹ win/next về gần im (không stop ngay)
-      // (gọi cả 2 cái vẫn ok)
       fadeAudioTo(audio.win,  0.06, FADE_OUT_MS);
       fadeAudioTo(audio.next, 0.06, FADE_OUT_MS);
-
       }, Math.max(0, TOAST_MS - PRE_FADE_MS));
 
-      // ✅ tới lúc đóng toast: tắt hẳn rồi bg quay lại mượt
+      // ✅ close toast
       showToast._t = setTimeout(async ()=>{
       toast.classList.remove("show");
       ov.classList.remove("show");
 
-      // fade về im hẳn rồi stop
       await Promise.all([
       fadeOutAndStop(audio.win,  250),
       fadeOutAndStop(audio.next, 250),
       ]);
-      // nếu vẫn muốn chắc chắn bell tắt thì chỉ stop thôi:
       _safeStop(audio.bell);
 
-
-      // bg quay lại từ từ (không bật "rụp")
       try{ audio.bg.volume = 0; }catch(_){}
       playBackground();
       await fadeAudioTo(audio.bg, 0.30, BG_FADE_IN_MS);
 
       _toastShowing = false;
       }, TOAST_MS);
+      }
 
+
+      function interruptToastNow(){
+      // huỷ lịch đóng toast cũ (nếu có)
+      clearTimeout(showToast._t);
+      clearTimeout(showToast._preFadeT);
+
+      // stop âm của toast cũ ngay để toast mới sạch sẽ
+      _safeStop(audio.win);
+      _safeStop(audio.next);
+      _safeStop(audio.bell);
+
+      // KHÔNG bật lại bg ở đây.
+      // Toast cuối cùng sẽ tự close và tự fade-in bg như cũ trong showToast().
+      _toastShowing = false;
       }
 
 
 
+
       function handleNewEventWithSound(newest, lotCode){
+      // ✅ nếu đang toast mà có event mới -> cắt toast/âm cũ ngay
+      if(_toastShowing){
+      interruptToastNow();
+      }
+
+      // ✅ huỷ delay âm của event trước (nếu có) để tránh chồng tiếng
+      clearTimeout(handleNewEventWithSound._delayT);
+
       // 1) quyết định loại kết quả
       const rt = newest?.result_type || newest?.result || "";
       const label = resultLabel(rt); // "TRÚNG" / "VÒNG SAU" / "CHƯA CÓ"
@@ -2969,16 +2993,15 @@
       _safeStop(audio.win);
       _safeStop(audio.next);
 
-      // ✅ IMPORTANT: bell có thể đã bị fade về 0 ở lần trước
+      // ✅ restore volume mặc định (tránh bị fade từ lần trước)
       try{ audio.bell.volume = DEFAULT_VOL.bell; }catch(_){}
       try{ audio.win.volume  = DEFAULT_VOL.win;  }catch(_){}
       try{ audio.next.volume = DEFAULT_VOL.next; }catch(_){}
 
       _safePlay(audio.bell);
 
-
       // bell ~1s, delay 900ms cho chắc
-      setTimeout(()=>{
+      handleNewEventWithSound._delayT = setTimeout(()=>{
       if(!SOUND_ENABLED) return;
 
       if(label === "TRÚNG"){
@@ -2992,6 +3015,7 @@
       showToastFromNewest(newest, lotCode);
       }, 900);
       }
+
 
       function showToastFromNewest(newest, lotCode){
       const rt = newest?.result_type || newest?.result || "";
