@@ -2,2096 +2,1606 @@
 <!doctype html>
 <html lang="vi">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>{{ title or "Trình chiếu kiểm phiếu (Realtime)" }}</title>
     <!-- Technical font -->
     <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-      :root {
-        --bg0: #070A12;
-        --bg1: #0A1022;
-        --card: rgba(255, 255, 255, .06);
-        --card2: rgba(255, 255, 255, .09);
-        --bd: rgba(148, 163, 184, .18);
-        --bd2: rgba(148, 163, 184, .28);
-        --txt: rgba(226, 232, 240, 1);
-        --muted: rgba(148, 163, 184, 1);
-        --muted2: rgba(148, 163, 184, .75);
-        --pri: #22d3ee;
-        --pri2: #60a5fa;
-        --ok: #34d399;
-        /* TRÚNG */
-        --warn: #fbbf24;
-        /* VÒNG SAU */
-        --bad: #fb7185;
-        /* KHÔNG HỢP LỆ / CHƯA CÓ */
-        --shadow: 0 18px 60px rgba(0, 0, 0, .55);
-        --glow: 0 0 22px rgba(34, 211, 238, .25);
-        --glow2: 0 0 34px rgba(96, 165, 250, .18);
-        --radius: 18px;
-        --font: "Oxanium", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-        /* 16:9 safe sizing */
-        --pad: 16px;
-        --gap: 14px;
-        /* speed */
-        --scan-speed: 7s;
+      :root{
+      --bg0:#070A12;
+      --bg1:#0A1022;
+      --card: rgba(255,255,255,.06);
+      --card2: rgba(255,255,255,.09);
+      --bd: rgba(148,163,184,.18);
+      --bd2: rgba(148,163,184,.28);
+      --txt: rgba(226,232,240,1);
+      --muted: rgba(148,163,184,1);
+      --muted2: rgba(148,163,184,.75);
+      --pri:#22d3ee;
+      --pri2:#60a5fa;
+      --ok:#34d399;    /* TRÚNG */
+      --warn:#fbbf24;  /* VÒNG SAU */
+      --bad:#fb7185;   /* KHÔNG HỢP LỆ / CHƯA CÓ */
+      --shadow: 0 18px 60px rgba(0,0,0,.55);
+      --glow: 0 0 22px rgba(34,211,238,.25);
+      --glow2: 0 0 34px rgba(96,165,250,.18);
+      --radius: 18px;
+      --font: "Oxanium", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      /* 16:9 safe sizing */
+      --pad: 16px;
+      --gap: 14px;
+      /* speed */
+      --scan-speed: 7s;
       }
-
-      * {
-        box-sizing: border-box
+      *{box-sizing:border-box}
+      html,body{height:100%}
+      body{
+      margin:0;
+      font-family: var(--font);
+      color: var(--txt);
+      background:
+      radial-gradient(1200px 520px at 50% 0%, rgba(96,165,250,.22), transparent 60%),
+      radial-gradient(900px 420px at 0% 40%, rgba(34,211,238,.18), transparent 60%),
+      radial-gradient(900px 420px at 100% 40%, rgba(52,211,153,.12), transparent 55%),
+      linear-gradient(180deg, var(--bg0), var(--bg1));
+      letter-spacing: .03em;
+      overflow:hidden;
       }
-
-      html,
-      body {
-        height: 100%
-      }
-
-      body {
-        margin: 0;
-        font-family: var(--font);
-        color: var(--txt);
-        background:
-          radial-gradient(1200px 520px at 50% 0%, rgba(96, 165, 250, .22), transparent 60%),
-          radial-gradient(900px 420px at 0% 40%, rgba(34, 211, 238, .18), transparent 60%),
-          radial-gradient(900px 420px at 100% 40%, rgba(52, 211, 153, .12), transparent 55%),
-          linear-gradient(180deg, var(--bg0), var(--bg1));
-        letter-spacing: .03em;
-        overflow: hidden;
-      }
-
       /* subtle grid */
-      .gridbg::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background-image:
-          linear-gradient(to right, rgba(148, 163, 184, .06) 1px, transparent 1px),
-          linear-gradient(to bottom, rgba(148, 163, 184, .05) 1px, transparent 1px);
-        background-size: 48px 48px;
-        mask-image: radial-gradient(circle at 50% 30%, rgba(0, 0, 0, 1), rgba(0, 0, 0, 0) 70%);
-        pointer-events: none;
-        opacity: .55;
+      .gridbg::before{
+      content:"";
+      position:absolute; inset:0;
+      background-image:
+      linear-gradient(to right, rgba(148,163,184,.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(148,163,184,.05) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(circle at 50% 30%, rgba(0,0,0,1), rgba(0,0,0,0) 70%);
+      pointer-events:none;
+      opacity:.55;
       }
-
       /* scan line */
-      .scan::after {
-        content: "";
-        position: absolute;
-        inset: -30% 0 auto 0;
-        height: 140px;
-        background: linear-gradient(180deg, transparent, rgba(34, 211, 238, .12), transparent);
-        filter: blur(0.2px);
-        animation: scan var(--scan-speed) linear infinite;
-        pointer-events: none;
-        opacity: .7;
+      .scan::after{
+      content:"";
+      position:absolute; inset:-30% 0 auto 0;
+      height: 140px;
+      background: linear-gradient(180deg, transparent, rgba(34,211,238,.12), transparent);
+      filter: blur(0.2px);
+      animation: scan var(--scan-speed) linear infinite;
+      pointer-events:none;
+      opacity:.7;
       }
-
-      @keyframes scan {
-        0% {
-          transform: translateY(-160px);
-        }
-
-        100% {
-          transform: translateY(calc(100vh + 260px));
-        }
+      @keyframes scan{
+      0%{ transform: translateY(-160px); }
+      100%{ transform: translateY(calc(100vh + 260px)); }
       }
-
       /* 16:9 stage */
-      .stage {
-        position: relative;
-        width: 100vw;
-        height: 100vh;
-        padding: var(--pad);
-        display: flex;
-        flex-direction: column;
-        gap: var(--gap);
+      .stage{
+      position:relative;
+      width:100vw;
+      height:100vh;
+      padding: var(--pad);
+      display:flex;
+      flex-direction:column;
+      gap: var(--gap);
       }
-
       /* top bar: 3 columns to avoid overlap */
-      .topbar {
-        display: grid;
-        grid-template-columns: minmax(320px, 1fr) minmax(340px, 1.05fr) minmax(520px, 1.35fr);
-        align-items: center;
-        gap: 12px;
-        padding: 10px 12px;
-        border: 1px solid var(--bd);
-        border-radius: var(--radius);
-        background: linear-gradient(180deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .04));
-        box-shadow: var(--shadow);
-        overflow: visible;
+      .topbar{
+      display:grid;
+      grid-template-columns: minmax(320px, 1fr) minmax(340px, 1.05fr) minmax(520px, 1.35fr);
+      align-items:center;
+      gap: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--bd);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.04));
+      box-shadow: var(--shadow);
+      overflow: visible;
       }
-
-      .top-left {
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
+      .top-left{
+      min-width: 0;
+      display:flex;
+      flex-direction:column;
+      gap: 8px;
       }
-
-      .brand-row {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        min-width: 0;
-        flex-wrap: wrap;
+      .brand-row{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:0;
+      flex-wrap:wrap;
       }
-
-      .brand-row .pill {
-        padding: 6px 10px;
-        border: 1px solid var(--bd2);
-        border-radius: 999px;
-        background: rgba(34, 211, 238, .10);
-        box-shadow: var(--glow);
-        font-weight: 800;
-        letter-spacing: .06em;
-        color: rgba(226, 232, 240, 1);
-        white-space: nowrap;
-        max-width: 100%;
-        overflow: hidden;
-        text-overflow: ellipsis;
+      .brand-row .pill{
+      padding: 6px 10px;
+      border:1px solid var(--bd2);
+      border-radius: 999px;
+      background: rgba(34,211,238,.10);
+      box-shadow: var(--glow);
+      font-weight:800;
+      letter-spacing:.06em;
+      color: rgba(226,232,240,1);
+      white-space:nowrap;
+      max-width: 100%;
+      overflow:hidden;
+      text-overflow:ellipsis;
       }
-
-      .pill.soft {
-        background: rgba(255, 255, 255, .04);
-        box-shadow: none;
+      .pill.soft{ background: rgba(255,255,255,.04); box-shadow:none; }
+      .pill.blue{ background: rgba(96,165,250,.10); }
+      .brand-title{
+      font-weight:900;
+      letter-spacing:.12em;
+      font-size: 11px;
+      text-transform:uppercase;
+      color: var(--muted2);
       }
-
-      .pill.blue {
-        background: rgba(96, 165, 250, .10);
+      .top-mid{
+      min-width:0;
+      text-align:center;
+      display:flex;
+      align-items:center;
+      justify-content:center;
       }
-
-      .brand-title {
-        font-weight: 900;
-        letter-spacing: .12em;
-        font-size: 11px;
-        text-transform: uppercase;
-        color: var(--muted2);
+      .top-mid .wrap{ min-width:0; max-width: 100%; }
+      .project-name{
+      font-weight:900;
+      font-size: 18px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
       }
-
-      .top-mid {
-        min-width: 0;
-        text-align: center;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+      .subline{
+      font-weight:800;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 3px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
       }
-
-      .top-mid .wrap {
-        min-width: 0;
-        max-width: 100%;
+      .top-right{
+      min-width:0;
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      justify-content:flex-end;
+      overflow: visible;
       }
-
-      .project-name {
-        font-weight: 900;
-        font-size: 18px;
-        letter-spacing: .08em;
-        text-transform: uppercase;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+      .kpis{
+      display:flex;
+      gap:10px;
+      align-items:stretch;
+      justify-content:flex-end;
+      min-width:0;
+      flex: 1;
+      overflow: visible;
+      flex-wrap: nowrap;
       }
-
-      .subline {
-        font-weight: 800;
-        font-size: 12px;
-        color: var(--muted);
-        margin-top: 3px;
-        letter-spacing: .08em;
-        text-transform: uppercase;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+      .kpi{
+      min-width: 104px;
+      padding: 8px 10px;
+      border:1px solid var(--bd);
+      border-radius: 14px;
+      background: rgba(255,255,255,.05);
+      display:flex;
+      flex-direction:column;
+      gap: 3px;
+      box-shadow: var(--shadow);
+      flex: 0 0 auto;
       }
-
-      .top-right {
-        min-width: 0;
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        justify-content: flex-end;
-        overflow: visible;
+      .kpi .label{
+      font-size:11px;
+      color: var(--muted2);
+      font-weight:800;
+      letter-spacing:.10em;
+      text-transform:uppercase;
+      white-space:nowrap;
       }
-
-      .kpis {
-        display: flex;
-        gap: 10px;
-        align-items: stretch;
-        justify-content: flex-end;
-        min-width: 0;
-        flex: 1;
-        overflow: visible;
-        flex-wrap: nowrap;
+      .kpi .val{
+      font-size:18px;
+      font-weight:900;
+      letter-spacing:.04em;
       }
-
-      .kpi {
-        min-width: 104px;
-        padding: 8px 10px;
-        border: 1px solid var(--bd);
-        border-radius: 14px;
-        background: rgba(255, 255, 255, .05);
-        display: flex;
-        flex-direction: column;
-        gap: 3px;
-        box-shadow: var(--shadow);
-        flex: 0 0 auto;
+      .kpi.ok .val{ color: var(--ok); text-shadow: 0 0 16px rgba(52,211,153,.22); }
+      .kpi.pri .val{ color: var(--pri); text-shadow: 0 0 16px rgba(34,211,238,.25); }
+      .kpi.warn .val{ color: var(--warn); text-shadow: 0 0 16px rgba(251,191,36,.20); }
+      .kpi.bad .val{ color: var(--bad); text-shadow: 0 0 16px rgba(251,113,133,.18); }
+      .fsbtn{
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+      border:1px solid rgba(148,163,184,.22);
+      background: rgba(0,0,0,.20);
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      box-shadow: var(--shadow);
+      user-select:none;
+      flex: 0 0 auto;
       }
-
-      .kpi .label {
-        font-size: 11px;
-        color: var(--muted2);
-        font-weight: 800;
-        letter-spacing: .10em;
-        text-transform: uppercase;
-        white-space: nowrap;
+      .fsbtn:hover{ border-color: rgba(34,211,238,.35); box-shadow: var(--shadow), var(--glow); }
+      .fsbtn:active{ transform: translateY(1px); }
+      .fsbtn svg{ width:18px; height:18px; opacity:.92; }
+      .sr-only{
+      position:absolute !important;
+      width:1px;height:1px;
+      padding:0;margin:-1px;
+      overflow:hidden;clip:rect(0,0,0,0);
+      white-space:nowrap;border:0;
       }
-
-      .kpi .val {
-        font-size: 18px;
-        font-weight: 900;
-        letter-spacing: .04em;
-      }
-
-      .kpi.ok .val {
-        color: var(--ok);
-        text-shadow: 0 0 16px rgba(52, 211, 153, .22);
-      }
-
-      .kpi.pri .val {
-        color: var(--pri);
-        text-shadow: 0 0 16px rgba(34, 211, 238, .25);
-      }
-
-      .kpi.warn .val {
-        color: var(--warn);
-        text-shadow: 0 0 16px rgba(251, 191, 36, .20);
-      }
-
-      .kpi.bad .val {
-        color: var(--bad);
-        text-shadow: 0 0 16px rgba(251, 113, 133, .18);
-      }
-
-      .fsbtn {
-        width: 38px;
-        height: 38px;
-        border-radius: 14px;
-        border: 1px solid rgba(148, 163, 184, .22);
-        background: rgba(0, 0, 0, .20);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        box-shadow: var(--shadow);
-        user-select: none;
-        flex: 0 0 auto;
-      }
-
-      .fsbtn:hover {
-        border-color: rgba(34, 211, 238, .35);
-        box-shadow: var(--shadow), var(--glow);
-      }
-
-      .fsbtn:active {
-        transform: translateY(1px);
-      }
-
-      .fsbtn svg {
-        width: 18px;
-        height: 18px;
-        opacity: .92;
-      }
-
-      .sr-only {
-        position: absolute !important;
-        width: 1px;
-        height: 1px;
-        padding: 0;
-        margin: -1px;
-        overflow: hidden;
-        clip: rect(0, 0, 0, 0);
-        white-space: nowrap;
-        border: 0;
-      }
-
       /* ===== SOUND TOGGLE (tiny, top-left) ===== */
-      .soundbtn {
-        position: fixed;
-        left: 12px;
-        top: 12px;
-        z-index: 60;
-        width: 34px;
-        height: 34px;
-        border-radius: 14px;
-        border: 1px solid rgba(148, 163, 184, .22);
-        background: rgba(0, 0, 0, .25);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        box-shadow: var(--shadow);
-        user-select: none;
+      .soundbtn{
+      position: fixed;
+      left: 12px;
+      top: 12px;
+      z-index: 60;
+      width: 34px;
+      height: 34px;
+      border-radius: 14px;
+      border:1px solid rgba(148,163,184,.22);
+      background: rgba(0,0,0,.25);
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      box-shadow: var(--shadow);
+      user-select:none;
       }
-
-      .soundbtn:hover {
-        border-color: rgba(34, 211, 238, .35);
-        box-shadow: var(--shadow), var(--glow);
+      .soundbtn:hover{
+      border-color: rgba(34,211,238,.35);
+      box-shadow: var(--shadow), var(--glow);
       }
-
-      .soundbtn:active {
-        transform: translateY(1px);
+      .soundbtn:active{ transform: translateY(1px); }
+      .soundbtn .ico{
+      font-size: 16px;
+      line-height: 1;
+      opacity: .95;
       }
-
-      .soundbtn .ico {
-        font-size: 16px;
-        line-height: 1;
-        opacity: .95;
+      .soundbtn.off{
+      opacity: .55;
+      border-color: rgba(251,113,133,.25);
+      box-shadow: var(--shadow);
       }
-
-      .soundbtn.off {
-        opacity: .55;
-        border-color: rgba(251, 113, 133, .25);
-        box-shadow: var(--shadow);
-      }
-
       /* main 3 columns */
-      .main {
-        flex: 1;
-        display: grid;
-        grid-template-columns: 1.05fr 1.9fr 1.15fr;
-        gap: var(--gap);
-        min-height: 0;
+      .main{
+      flex:1;
+      display:grid;
+      grid-template-columns: 1.05fr 1.9fr 1.15fr;
+      gap: var(--gap);
+      min-height: 0;
       }
-
-      .panel {
-        border: 1px solid var(--bd);
-        border-radius: var(--radius);
-        background: linear-gradient(180deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .03));
-        box-shadow: var(--shadow);
-        min-height: 0;
-        overflow: hidden;
-        position: relative;
+      .panel{
+      border: 1px solid var(--bd);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      box-shadow: var(--shadow);
+      min-height:0;
+      overflow:hidden;
+      position:relative;
       }
-
-      .panel .head {
-        padding: 12px 12px 10px 12px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        border-bottom: 1px solid rgba(148, 163, 184, .15);
-        background: rgba(0, 0, 0, .10);
+      .panel .head{
+      padding: 12px 12px 10px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      border-bottom: 1px solid rgba(148,163,184,.15);
+      background: rgba(0,0,0,.10);
       }
-
-      .h-title {
-        font-weight: 900;
-        letter-spacing: .12em;
-        font-size: 12px;
-        text-transform: uppercase;
-        color: rgba(226, 232, 240, .92);
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        white-space: nowrap;
+      .h-title{
+      font-weight:900;
+      letter-spacing:.12em;
+      font-size: 12px;
+      text-transform:uppercase;
+      color: rgba(226,232,240,.92);
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      white-space:nowrap;
       }
-
-      .h-badge {
-        font-weight: 900;
-        font-size: 11px;
-        padding: 4px 8px;
-        border-radius: 999px;
-        border: 1px solid var(--bd2);
-        background: rgba(96, 165, 250, .12);
-        color: rgba(226, 232, 240, .95);
-        letter-spacing: .10em;
-        white-space: nowrap;
+      .h-badge{
+      font-weight:900;
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--bd2);
+      background: rgba(96,165,250,.12);
+      color: rgba(226,232,240,.95);
+      letter-spacing:.10em;
+      white-space:nowrap;
       }
-
       /* LEFT: customer lists */
-      .left-body {
-        padding: 10px 10px 12px 10px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        height: 100%;
-        min-height: 0;
+      .left-body{
+      padding: 10px 10px 12px 10px;
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+      height: 100%;
+      min-height:0;
       }
-
-      .box {
-        border: 1px solid rgba(148, 163, 184, .16);
-        border-radius: 16px;
-        background: rgba(0, 0, 0, .12);
-        overflow: hidden;
-        min-height: 0;
-        display: flex;
-        flex-direction: column;
-        flex: 1;
+      .box{
+      border: 1px solid rgba(148,163,184,.16);
+      border-radius: 16px;
+      background: rgba(0,0,0,.12);
+      overflow:hidden;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+      flex: 1;
       }
-
-      .box.won {
-        border-color: rgba(52, 211, 153, .22);
+      .box.won{ border-color: rgba(52,211,153,.22); }
+      .box.next{ border-color: rgba(251,191,36,.22); }
+      .box .box-head{
+      padding: 10px 10px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      border-bottom: 1px solid rgba(148,163,184,.14);
+      background: rgba(0,0,0,.10);
+      flex: 0 0 auto;
       }
-
-      .box.next {
-        border-color: rgba(251, 191, 36, .22);
+      .box .box-head .t{
+      font-weight:900;
+      letter-spacing:.10em;
+      text-transform:uppercase;
+      font-size: 12px;
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      white-space:nowrap;
       }
-
-      .box .box-head {
-        padding: 10px 10px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        border-bottom: 1px solid rgba(148, 163, 184, .14);
-        background: rgba(0, 0, 0, .10);
-        flex: 0 0 auto;
+      .tag{
+      font-size: 11px;
+      font-weight:900;
+      padding: 3px 8px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.18);
+      background: rgba(255,255,255,.04);
+      color: var(--muted);
+      white-space:nowrap;
       }
-
-      .box .box-head .t {
-        font-weight: 900;
-        letter-spacing: .10em;
-        text-transform: uppercase;
-        font-size: 12px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        white-space: nowrap;
+      .tag.ok{ color: rgba(226,232,240,.95); border-color: rgba(52,211,153,.25); background: rgba(52,211,153,.10); }
+      .tag.warn{ color: rgba(226,232,240,.95); border-color: rgba(251,191,36,.25); background: rgba(251,191,36,.10); }
+      .box .box-body{
+      position:relative;
+      padding: 8px 8px 10px 8px;
+      min-height:0;
+      flex:1 1 auto;
+      overflow:hidden;
       }
-
-      .tag {
-        font-size: 11px;
-        font-weight: 900;
-        padding: 3px 8px;
-        border-radius: 999px;
-        border: 1px solid rgba(148, 163, 184, .18);
-        background: rgba(255, 255, 255, .04);
-        color: var(--muted);
-        white-space: nowrap;
-      }
-
-      .tag.ok {
-        color: rgba(226, 232, 240, .95);
-        border-color: rgba(52, 211, 153, .25);
-        background: rgba(52, 211, 153, .10);
-      }
-
-      .tag.warn {
-        color: rgba(226, 232, 240, .95);
-        border-color: rgba(251, 191, 36, .25);
-        background: rgba(251, 191, 36, .10);
-      }
-
-      .box .box-body {
-        position: relative;
-        padding: 8px 8px 10px 8px;
-        min-height: 0;
-        flex: 1 1 auto;
-        overflow: hidden;
-      }
-
       /* ticker */
-      .ticker-viewport {
-        position: absolute;
-        inset: 8px 8px 10px 8px;
-        overflow: hidden;
+      .ticker-viewport{
+      position:absolute; inset: 8px 8px 10px 8px;
+      overflow:hidden;
       }
-
-      .ticker-inner {
-        position: absolute;
-        left: 0;
-        top: 0;
-        right: 0;
-        will-change: transform;
+      .ticker-inner{
+      position:absolute; left:0; top:0; right:0;
+      will-change: transform;
       }
-
       /* item rows */
-      .crow {
-        padding: 8px 10px;
-        border: 1px solid rgba(148, 163, 184, .12);
-        background: rgba(255, 255, 255, .03);
-        border-radius: 14px;
-        margin-bottom: 8px;
+      .crow{
+      padding: 8px 10px;
+      border: 1px solid rgba(148,163,184,.12);
+      background: rgba(255,255,255,.03);
+      border-radius: 14px;
+      margin-bottom: 8px;
       }
-
-      .crow.won {
-        border-color: rgba(52, 211, 153, .18);
-        background: rgba(52, 211, 153, .06);
+      .crow.won{ border-color: rgba(52,211,153,.18); background: rgba(52,211,153,.06); }
+      .crow.next{ border-color: rgba(251,191,36,.18); background: rgba(251,191,36,.06); }
+      .crow .r1{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
       }
-
-      .crow.next {
-        border-color: rgba(251, 191, 36, .18);
-        background: rgba(251, 191, 36, .06);
+      .crow .name{
+      font-weight:900;
+      font-size: 14px;
+      letter-spacing:.05em;
+      text-transform:uppercase;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width: 74%;
       }
-
-      .crow .r1 {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
+      .crow .stt{
+      font-weight:900;
+      font-size: 12px;
+      letter-spacing:.14em;
+      white-space:nowrap;
       }
-
-      .crow .name {
-        font-weight: 900;
-        font-size: 14px;
-        letter-spacing: .05em;
-        text-transform: uppercase;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 74%;
+      .crow.won .stt{ color: var(--ok); }
+      .crow.next .stt{ color: var(--warn); }
+      .crow .r2{
+      margin-top: 6px;
+      display:flex;
+      gap: 8px;
+      flex-wrap: nowrap;     /* ✅ chỉ 1 dòng */
+      overflow: hidden;      /* ✅ dư thì ẩn */
+      white-space: nowrap;
       }
-
-      .crow .stt {
-        font-weight: 900;
-        font-size: 12px;
-        letter-spacing: .14em;
-        white-space: nowrap;
+      .chip{
+      font-size: 11px;
+      font-weight:900;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border:1px solid rgba(148,163,184,.18);
+      background: rgba(96,165,250,.10);
+      color: rgba(226,232,240,.9);
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      white-space:nowrap;
       }
-
-      .crow.won .stt {
-        color: var(--ok);
-      }
-
-      .crow.next .stt {
-        color: var(--warn);
-      }
-
-      .crow .r2 {
-        margin-top: 6px;
-        display: flex;
-        gap: 8px;
-        flex-wrap: nowrap;
-        /* ✅ chỉ 1 dòng */
-        overflow: hidden;
-        /* ✅ dư thì ẩn */
-        white-space: nowrap;
-      }
-
-      .chip {
-        font-size: 11px;
-        font-weight: 900;
-        padding: 4px 8px;
-        border-radius: 999px;
-        border: 1px solid rgba(148, 163, 184, .18);
-        background: rgba(96, 165, 250, .10);
-        color: rgba(226, 232, 240, .9);
-        letter-spacing: .06em;
-        text-transform: uppercase;
-        white-space: nowrap;
-      }
-
-      .chip.ok {
-        background: rgba(52, 211, 153, .10);
-        border-color: rgba(52, 211, 153, .25);
-      }
-
-      .chip.warn {
-        background: rgba(251, 191, 36, .10);
-        border-color: rgba(251, 191, 36, .25);
-      }
-
+      .chip.ok{ background: rgba(52,211,153,.10); border-color: rgba(52,211,153,.25); }
+      .chip.warn{ background: rgba(251,191,36,.10); border-color: rgba(251,191,36,.25); }
       /* CENTER: hero + recent strip  (FIX: HERO không kéo full màn hình) */
-      .center {
-        display: grid;
-        grid-template-rows: minmax(260px, 0.62fr) minmax(220px, 0.38fr);
-        gap: var(--gap);
-        min-height: 0;
+      .center{
+      display:grid;
+      grid-template-rows: minmax(260px, 0.62fr) minmax(220px, 0.38fr);
+      gap: var(--gap);
+      min-height: 0;
       }
-
       /* === HERO RE-LAYOUT: status full width, then 2-column main === */
       /* NOTE: block này để HERO KHÔNG PHÌNH và KHÔNG ẢNH HƯỞNG RECENT */
-      .hero {
-        position: relative;
-        height: 100%;
-        min-height: 0;
-        overflow-x: visible;
-        overflow-y: hidden;
-        border-radius: 22px;
-        /* ✅ viền rõ hơn 1 chút */
-        border: 1px solid rgba(148, 163, 184, .22);
-        /* ✅ nền sâu hơn nhẹ */
-        background:
-          radial-gradient(900px 420px at 50% 0%, rgba(96, 165, 250, .10), transparent 60%),
-          linear-gradient(180deg, rgba(255, 255, 255, .04), rgba(0, 0, 0, .16));
-        /* ✅ tăng “độ sâu” */
-        box-shadow:
-          0 18px 70px rgba(0, 0, 0, .55),
-          inset 0 0 0 1px rgba(0, 0, 0, .35);
+      .hero{
+      position: relative;
+      height: 100%;
+      min-height: 0;
+
+      overflow-x: visible;
+      overflow-y: hidden;
+
+      border-radius: 22px;
+
+      /* ✅ viền rõ hơn 1 chút */
+      border: 1px solid rgba(148,163,184,.22);
+
+      /* ✅ nền sâu hơn nhẹ */
+      background:
+      radial-gradient(900px 420px at 50% 0%, rgba(96,165,250,.10), transparent 60%),
+      linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.16));
+
+      /* ✅ tăng “độ sâu” */
+      box-shadow:
+      0 18px 70px rgba(0,0,0,.55),
+      inset 0 0 0 1px rgba(0,0,0,.35);
       }
 
-      .hero-inner {
-        position: absolute;
-        inset: 14px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        min-height: 0;
-        /* ✅ cho tràn ngang */
-        overflow-x: visible;
-        overflow-y: hidden;
+
+      .hero-inner{
+      position:absolute;
+      inset: 14px;
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
+      min-height: 0;
+
+      /* ✅ cho tràn ngang */
+      overflow-x: visible;
+      overflow-y: hidden;
       }
 
-      .hero-top {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        min-height: 0;
-        flex: 1 1 auto;
-        /* ✅ cho tràn ngang */
-        overflow-x: visible;
-        overflow-y: hidden;
+      .hero-top{
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
+      min-height: 0;
+      flex: 1 1 auto;
+
+      /* ✅ cho tràn ngang */
+      overflow-x: visible;
+      overflow-y: hidden;
       }
 
       /* ===== STATUS BAR ===== */
-      .hero-status {
-        flex: 0 0 auto;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        min-width: 0;
+      .hero-status{
+      flex: 0 0 auto;
+      display:flex;
+      flex-direction:column;
+      gap: 8px;
+      min-width: 0;
       }
-
-      .hero-status.hero-statusbar {
-        width: 100%;
-        padding: 2px 2px 0 2px;
+      .hero-status.hero-statusbar{
+      width:100%;
+      padding: 2px 2px 0 2px;
       }
-
       /* Hero nổi hơn khi đang kiểm */
-      .hero:has(.status-pill.pri) {
-        box-shadow:
-          inset 0 0 0 1px rgba(34, 211, 238, .22),
-          0 0 32px rgba(34, 211, 238, .10);
+      .hero:has(.status-pill.pri){
+      box-shadow:
+      inset 0 0 0 1px rgba(34,211,238,.22),
+      0 0 32px rgba(34,211,238,.10);
       }
-
       /* ✅ HERO nổi hơn khi TRÚNG */
-      .hero:has(.status-pill.ok) {
-        box-shadow:
-          0 22px 80px rgba(0, 0, 0, .60),
-          inset 0 0 0 1px rgba(52, 211, 153, .22),
-          0 0 44px rgba(52, 211, 153, .14);
-        border-color: rgba(52, 211, 153, .24);
+      .hero:has(.status-pill.ok){
+      box-shadow:
+      0 22px 80px rgba(0,0,0,.60),
+      inset 0 0 0 1px rgba(52,211,153,.22),
+      0 0 44px rgba(52,211,153,.14);
+      border-color: rgba(52,211,153,.24);
       }
 
       /* ✅ HERO nổi hơn khi VÒNG SAU */
-      .hero:has(.status-pill.warn) {
-        box-shadow:
-          0 22px 80px rgba(0, 0, 0, .60),
-          inset 0 0 0 1px rgba(251, 191, 36, .22),
-          0 0 44px rgba(251, 191, 36, .12);
-        border-color: rgba(251, 191, 36, .24);
+      .hero:has(.status-pill.warn){
+      box-shadow:
+      0 22px 80px rgba(0,0,0,.60),
+      inset 0 0 0 1px rgba(251,191,36,.22),
+      0 0 44px rgba(251,191,36,.12);
+      border-color: rgba(251,191,36,.24);
       }
 
-      .status-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 10px;
-        border-radius: 999px;
-        border: 1px solid rgba(148, 163, 184, .20);
-        background: rgba(0, 0, 0, .22);
-        font-weight: 900;
-        letter-spacing: .12em;
-        text-transform: uppercase;
-        font-size: 12px;
-        width: fit-content;
-        white-space: nowrap;
+      .status-pill{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,.20);
+      background: rgba(0,0,0,.22);
+      font-weight:900;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      font-size: 12px;
+      width: fit-content;
+      white-space:nowrap;
       }
-
-      .status-pill .s-dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 99px;
-        background: var(--pri);
-        box-shadow: 0 0 16px rgba(34, 211, 238, .42);
+      .status-pill .s-dot{
+      width:10px;height:10px;border-radius:99px;
+      background: var(--pri);
+      box-shadow: 0 0 16px rgba(34,211,238,.42);
       }
-
-      .status-pill.ok {
-        border-color: rgba(52, 211, 153, .25);
+      .status-pill.ok{ border-color: rgba(52,211,153,.25); }
+      .status-pill.ok .s-dot{ background: var(--ok); box-shadow: 0 0 16px rgba(52,211,153,.45); }
+      .status-pill.warn{ border-color: rgba(251,191,36,.25); }
+      .status-pill.warn .s-dot{ background: var(--warn); box-shadow: 0 0 16px rgba(251,191,36,.45); }
+      .status-pill.bad{ border-color: rgba(251,113,133,.25); }
+      .status-pill.bad .s-dot{ background: var(--bad); box-shadow: 0 0 16px rgba(251,113,133,.45); }
+      .status-sub{
+      color: var(--muted);
+      font-size: 12px;
+      font-weight:800;
+      letter-spacing:.06em;
+      line-height:1.35;
+      min-width: 0;
       }
-
-      .status-pill.ok .s-dot {
-        background: var(--ok);
-        box-shadow: 0 0 16px rgba(52, 211, 153, .45);
-      }
-
-      .status-pill.warn {
-        border-color: rgba(251, 191, 36, .25);
-      }
-
-      .status-pill.warn .s-dot {
-        background: var(--warn);
-        box-shadow: 0 0 16px rgba(251, 191, 36, .45);
-      }
-
-      .status-pill.bad {
-        border-color: rgba(251, 113, 133, .25);
-      }
-
-      .status-pill.bad .s-dot {
-        background: var(--bad);
-        box-shadow: 0 0 16px rgba(251, 113, 133, .45);
-      }
-
-      .status-sub {
-        color: var(--muted);
-        font-size: 12px;
-        font-weight: 800;
-        letter-spacing: .06em;
-        line-height: 1.35;
-        min-width: 0;
-      }
-
       /* ===== MAIN GRID (PHẢI CO ĐƯỢC) ===== */
-      .hero-main {
-        flex: 1 1 auto;
-        min-height: 0;
-        overflow: visible;
-        display: grid;
-        grid-template-columns: 1.18fr 1fr;
-        gap: 12px;
-        align-items: stretch;
+      .hero-main{
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: visible;
+      display:grid;
+      grid-template-columns: 1.18fr 1fr;
+      gap: 12px;
+      align-items: stretch;
       }
-
       /* LEFT: LOT (chỉ mã lô) */
-      .hero-lot {
-        min-width: 0;
-        min-height: 0;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        justify-content: flex-start;
-        gap: 10px;
-        padding: 14px 14px 10px 16px;
-        border-radius: 18px;
-        border: 1px solid rgba(148, 163, 184, .16);
-        background: rgba(0, 0, 0, .14);
-        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .15);
+      .hero-lot{
+      min-width:0;
+      min-height:0;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      align-items:flex-start;
+      justify-content:flex-start;
+      gap: 10px;
+      padding: 14px 14px 10px 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(148,163,184,.16);
+      background: rgba(0,0,0,.14);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.15);
       }
-
-      .lot-kicker {
-        font-size: 11px;
-        font-weight: 900;
-        letter-spacing: .14em;
-        text-transform: uppercase;
-        color: rgba(226, 232, 240, .82);
-        opacity: .9;
-        white-space: nowrap;
+      .lot-kicker{
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      color: rgba(226,232,240,.82);
+      opacity:.9;
+      white-space:nowrap;
       }
-
-      .lot-code {
-        font-size: clamp(58px, 6.2vw, 82px);
-        font-weight: 900;
-        letter-spacing: .06em;
-        text-transform: uppercase;
-        text-shadow:
-          0 0 26px rgba(34, 211, 238, .20),
-          0 0 48px rgba(96, 165, 250, .14);
-        line-height: 1;
-        white-space: nowrap;
-        word-break: keep-all;
-        display: inline-block;
-        max-width: 100%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        padding: 0;
-        margin-top: 4px;
+      .lot-code{
+      font-size: clamp(58px, 6.2vw, 82px);
+      font-weight: 900;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      text-shadow:
+      0 0 26px rgba(34,211,238,.20),
+      0 0 48px rgba(96,165,250,.14);
+      line-height: 1;
+      white-space:nowrap;
+      word-break:keep-all;
+      display:inline-block;
+      max-width: 100%;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      padding: 0;
+      margin-top: 4px;
       }
-
       /* Ẩn info dưới mã lô (giữ DOM cho JS) */
-      .lot-name {
-        display: none !important;
-      }
-
-      .lot-desc {
-        display: block !important;
-      }
-
+      .lot-name{ display:none !important; }
+      .lot-desc{ display:block !important; }
       /* RIGHT: stack dọc - KHÔNG được phình */
-      .hero-right {
-        min-width: 0;
-        min-height: 0;
-        /* BẮT BUỘC */
-        overflow: visible;
-        /* BẮT BUỘC */
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
+      .hero-right{
+      min-width:0;
+      min-height:0;     /* BẮT BUỘC */
+      overflow:visible;  /* BẮT BUỘC */
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
       }
-
       /* meta (badge + price + winner) không ăn hết chiều cao */
-      .hero-meta {
-        flex: 0 0 auto;
-        min-width: 0;
-        min-height: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        align-items: stretch;
+      .hero-meta{
+      flex: 0 0 auto;
+      min-width:0;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+      align-items:stretch;
       }
-
-      .hero-meta-tight {
-        gap: 10px;
-      }
-
+      .hero-meta-tight{ gap: 10px; }
       /* price bigger (chỉ là modifier, giữ .price-wrap / .price-val gốc) */
-      .price-wrap-big {
-        padding: 16px 16px;
+      .price-wrap-big{ padding: 16px 16px; }
+      .price-val-big{
+      font-size: clamp(42px, 4.2vw, 58px);
+      line-height: 1.02;
       }
-
-      .price-val-big {
-        font-size: clamp(42px, 4.2vw, 58px);
-        line-height: 1.02;
-      }
-
       /* winner compact */
-      .winner-wrap-compact {
-        min-height: 78px;
-        padding: 12px 14px;
+      .winner-wrap-compact{
+      min-height: 78px;
+      padding: 12px 14px;
       }
-
       /* responsive: nhỏ thì stack 1 cột */
-      @media (max-width: 1220px) {
-        .center {
-          grid-template-rows: minmax(260px, 0.60fr) minmax(220px, 0.40fr);
-        }
-
-        .hero-main {
-          grid-template-columns: 1fr;
-        }
-
-        .price-val-big {
-          font-size: 48px;
-        }
+      @media (max-width: 1220px){
+      .center{ grid-template-rows: minmax(260px, 0.60fr) minmax(220px, 0.40fr); }
+      .hero-main{ grid-template-columns: 1fr; }
+      .price-val-big{ font-size: 48px; }
       }
-
       /* responsive: stack columns */
-      @media (max-width: 1220px) {
-        .hero-main {
-          grid-template-columns: 1fr;
-        }
-
-        .price-val-big {
-          font-size: 48px;
-        }
+      @media (max-width: 1220px){
+      .hero-main{ grid-template-columns: 1fr; }
+      .price-val-big{ font-size: 48px; }
       }
-
-      .meta-row {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-        justify-content: flex-end;
-        flex-wrap: wrap;
-        max-width: 100%;
+      .meta-row{
+      display:flex; gap: 8px; align-items:center; justify-content:flex-end;
+      flex-wrap:wrap;
+      max-width: 100%;
       }
-
-      .pill {
-        padding: 6px 10px;
-        border: 1px solid rgba(148, 163, 184, .20);
-        border-radius: 999px;
-        background: rgba(255, 255, 255, .05);
-        font-size: 11px;
-        font-weight: 900;
-        letter-spacing: .08em;
-        text-transform: uppercase;
-        color: rgba(226, 232, 240, .92);
-        white-space: nowrap;
-        max-width: 100%;
-        overflow: hidden;
-        text-overflow: ellipsis;
+      .pill{
+      padding: 6px 10px;
+      border:1px solid rgba(148,163,184,.20);
+      border-radius: 999px;
+      background: rgba(255,255,255,.05);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      color: rgba(226,232,240,.92);
+      white-space:nowrap;
+      max-width: 100%;
+      overflow:hidden;
+      text-overflow:ellipsis;
       }
-
-      .pill.pri {
-        background: rgba(34, 211, 238, .10);
-        border-color: rgba(34, 211, 238, .22);
-      }
-
-      .pill.ok {
-        background: rgba(52, 211, 153, .10);
-        border-color: rgba(52, 211, 153, .22);
-      }
-
-      .pill.warn {
-        background: rgba(251, 191, 36, .10);
-        border-color: rgba(251, 191, 36, .22);
-      }
-
-      .pill.bad {
-        background: rgba(251, 113, 133, .10);
-        border-color: rgba(251, 113, 133, .22);
-      }
-
+      .pill.pri{ background: rgba(34,211,238,.10); border-color: rgba(34,211,238,.22); }
+      .pill.ok{ background: rgba(52,211,153,.10); border-color: rgba(52,211,153,.22); }
+      .pill.warn{ background: rgba(251,191,36,.10); border-color: rgba(251,191,36,.22); }
+      .pill.bad{ background: rgba(251,113,133,.10); border-color: rgba(251,113,133,.22); }
       /* Price big */
-      .price-wrap {
-        border-radius: 18px;
-        border: 1px solid rgba(148, 163, 184, .18);
-        background: rgba(0, 0, 0, .24);
-        padding: 14px 14px;
-        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .15);
-        overflow: visible;
+      .price-wrap{
+      border-radius: 18px;
+      border: 1px solid rgba(148,163,184,.18);
+      background: rgba(0,0,0,.24);
+      padding: 14px 14px;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.15);
+      overflow:visible;
+      }
+      .price-label{
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color: rgba(226,232,240,.85);
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom: 6px;
+      white-space:nowrap;
+      gap:10px;
+      }
+      .price-val{
+      font-size: 46px;
+      font-weight: 900;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      line-height: 1.05;
+      text-shadow: 0 0 22px rgba(34,211,238,.18);
+
+      /* ✅ giữ 1 dòng + canh phải */
+      white-space: nowrap;
+      text-align: right;
+
+      /* ✅ cho phép vẽ “tràn” (không cắt) */
+      overflow: visible;
+      text-overflow: clip;
+
+      /* ✅ ổn định render */
+      display: block;
+      position: relative;
       }
 
-      .price-label {
-        font-size: 12px;
-        font-weight: 900;
-        letter-spacing: .12em;
-        text-transform: uppercase;
-        color: rgba(226, 232, 240, .85);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 6px;
-        white-space: nowrap;
-        gap: 10px;
-      }
-
-      .price-val {
-        font-size: 46px;
-        font-weight: 900;
-        letter-spacing: .06em;
-        text-transform: uppercase;
-        line-height: 1.05;
-        text-shadow: 0 0 22px rgba(34, 211, 238, .18);
-        /* ✅ giữ 1 dòng + canh phải */
-        white-space: nowrap;
-        text-align: right;
-        /* ✅ cho phép vẽ “tràn” (không cắt) */
-        overflow: visible;
-        text-overflow: clip;
-        /* ✅ ổn định render */
-        display: block;
-        position: relative;
-      }
 
       /* Winner panel */
-      .winner-wrap {
-        border-radius: 18px;
-        border: 1px solid rgba(148, 163, 184, .18);
-        background: rgba(0, 0, 0, .20);
-        padding: 12px 14px;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        min-height: 88px;
-        overflow: hidden;
+      .winner-wrap{
+      border-radius: 18px;
+      border: 1px solid rgba(148,163,184,.18);
+      background: rgba(0,0,0,.20);
+      padding: 12px 14px;
+      display:flex;
+      flex-direction:column;
+      gap: 8px;
+      min-height: 88px;
+      overflow:hidden;
       }
-
-      .winner-wrap.ok {
-        border-color: rgba(52, 211, 153, .25);
-        background: rgba(52, 211, 153, .06);
+      .winner-wrap.ok{ border-color: rgba(52,211,153,.25); background: rgba(52,211,153,.06); }
+      .winner-wrap.warn{ border-color: rgba(251,191,36,.25); background: rgba(251,191,36,.06); }
+      .winner-wrap.bad{ border-color: rgba(251,113,133,.25); background: rgba(251,113,133,.05); }
+      .winner-topline{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
       }
-
-      .winner-wrap.warn {
-        border-color: rgba(251, 191, 36, .25);
-        background: rgba(251, 191, 36, .06);
+      .winner-label{
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color: rgba(226,232,240,.85);
+      white-space:nowrap;
       }
-
-      .winner-wrap.bad {
-        border-color: rgba(251, 113, 133, .25);
-        background: rgba(251, 113, 133, .05);
+      .winner-badge{
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      padding: 4px 8px;
+      border-radius:999px;
+      border: 1px solid rgba(148,163,184,.18);
+      background: rgba(255,255,255,.04);
+      white-space:nowrap;
       }
-
-      .winner-topline {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        flex-wrap: wrap;
-      }
-
-      .winner-label {
-        font-size: 12px;
-        font-weight: 900;
-        letter-spacing: .12em;
-        text-transform: uppercase;
-        color: rgba(226, 232, 240, .85);
-        white-space: nowrap;
-      }
-
-      .winner-badge {
-        font-size: 10px;
-        font-weight: 900;
-        letter-spacing: .14em;
-        text-transform: uppercase;
-        padding: 4px 8px;
-        border-radius: 999px;
-        border: 1px solid rgba(148, 163, 184, .18);
-        background: rgba(255, 255, 255, .04);
-        white-space: nowrap;
-      }
-
-      .winner-badge.ok {
-        border-color: rgba(52, 211, 153, .26);
-        background: rgba(52, 211, 153, .12);
-      }
-
-      .winner-badge.warn {
-        border-color: rgba(251, 191, 36, .26);
-        background: rgba(251, 191, 36, .12);
-      }
-
-      .winner-badge.bad {
-        border-color: rgba(251, 113, 133, .26);
-        background: rgba(251, 113, 133, .10);
-      }
-
-      .winner-name {
-        font-size: 22px;
-        font-weight: 900;
-        letter-spacing: .06em;
-        text-transform: uppercase;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        text-shadow: 0 0 18px rgba(96, 165, 250, .15);
+      .winner-badge.ok{ border-color: rgba(52,211,153,.26); background: rgba(52,211,153,.12); }
+      .winner-badge.warn{ border-color: rgba(251,191,36,.26); background: rgba(251,191,36,.12); }
+      .winner-badge.bad{ border-color: rgba(251,113,133,.26); background: rgba(251,113,133,.10); }
+      .winner-name{
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      text-shadow: 0 0 18px rgba(96,165,250,.15);
       }
 
       /* ===== HERO: STT BOX dưới tên người trúng (chỉ hiện khi TRÚNG) ===== */
-      .winner-sttbox {
-        display: none;
-        /* default ẩn */
-        border-radius: 16px;
-        border: 1px solid rgba(52, 211, 153, .26);
-        background: rgba(52, 211, 153, .08);
-        padding: 10px 12px;
-        overflow: hidden;
+      .winner-sttbox{
+      display:none;                 /* default ẩn */
+      border-radius: 16px;
+      border: 1px solid rgba(52,211,153,.26);
+      background: rgba(52,211,153,.08);
+      padding: 10px 12px;
+      overflow:hidden;
       }
 
-      .winner-sttbox .sttline {
-        display: flex;
-        align-items: baseline;
-        justify-content: center;
-        gap: 10px;
-        white-space: nowrap;
+      .winner-sttbox .sttline{
+      display:flex;
+      align-items:baseline;
+      justify-content:center;
+      gap: 10px;
+      white-space:nowrap;
       }
 
-      .winner-sttbox .stt-lbl {
-        font-size: 10px;
-        /* label nhỏ + mờ */
-        font-weight: 900;
-        letter-spacing: .16em;
-        text-transform: uppercase;
-        color: rgba(148, 163, 184, .75);
+      .winner-sttbox .stt-lbl{
+      font-size: 10px;              /* label nhỏ + mờ */
+      font-weight: 900;
+      letter-spacing:.16em;
+      text-transform:uppercase;
+      color: rgba(148,163,184,.75);
       }
 
-      .winner-sttbox .stt-val {
-        font-size: clamp(28px, 3.2vw, 38px);
-        /* ✅ TO HƠN – nhưng tự giới hạn */
-        font-weight: 900;
-        letter-spacing: .12em;
-        text-transform: uppercase;
-        color: rgba(226, 232, 240, .98);
-        /* nổi hơn nhưng không gắt */
-        text-shadow:
-          0 0 14px rgba(52, 211, 153, .22),
-          0 0 26px rgba(52, 211, 153, .12);
-        white-space: nowrap;
+      .winner-sttbox .stt-val{
+      font-size: clamp(28px, 3.2vw, 38px);  /* ✅ TO HƠN – nhưng tự giới hạn */
+      font-weight: 900;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color: rgba(226,232,240,.98);
+
+      /* nổi hơn nhưng không gắt */
+      text-shadow:
+      0 0 14px rgba(52,211,153,.22),
+      0 0 26px rgba(52,211,153,.12);
+
+      white-space: nowrap;
       }
+
 
       /* Mask / Reveal */
-      .masked {
-        filter: blur(11px);
-        opacity: .18;
-        transform: translateZ(0);
+      .masked{ filter: blur(11px); opacity: .18; transform: translateZ(0); }
+      .reveal{ filter: blur(0); opacity: 1; transition: filter .6s ease, opacity .6s ease; }
+      .caret{
+      display:inline-block;
+      width:10px;
+      animation: caretblink .8s infinite;
+      opacity:.85;
+      margin-left:2px;
       }
-
-      .reveal {
-        filter: blur(0);
-        opacity: 1;
-        transition: filter .6s ease, opacity .6s ease;
-      }
-
-      .caret {
-        display: inline-block;
-        width: 10px;
-        animation: caretblink .8s infinite;
-        opacity: .85;
-        margin-left: 2px;
-      }
-
-      @keyframes caretblink {
-        50% {
-          opacity: .15;
-        }
-      }
-
+      @keyframes caretblink{ 50%{ opacity:.15; } }
       /* ===== HERO NEXT: FULL WIDTH (only show when NEXT_ROUND) ===== */
-      #heroNextWrap {
-        width: 100%;
-        margin-top: 10px;
-        /* ⬆️ tăng chiều cao tổng box */
-        padding: 14px 16px;
-        border-radius: 18px;
-        border: 1px solid rgba(251, 191, 36, .20);
-        background: rgba(251, 191, 36, .06);
-        overflow: hidden;
-        display: flex;
-        align-items: center;
-        /* ✅ ticker nằm giữa dọc */
+      #heroNextWrap{
+      width:100%;
+      margin-top:10px;
+
+      /* ⬆️ tăng chiều cao tổng box */
+      padding: 14px 16px;
+
+      border-radius: 18px;
+      border: 1px solid rgba(251,191,36,.20);
+      background: rgba(251,191,36,.06);
+      overflow:hidden;
+
+      display:flex;
+      align-items:center;   /* ✅ ticker nằm giữa dọc */
       }
 
       /* đảm bảo track chạy ngang mượt */
-      #heroNextWrap .marquee {
-        overflow: hidden;
-        white-space: nowrap;
+      #heroNextWrap .marquee{
+      overflow:hidden;
+      white-space:nowrap;
+      }
+      #heroNextWrap .track{
+      display:inline-block;
+      will-change: transform;
+      }
+      .marquee{ position:relative; overflow:hidden; white-space:nowrap; }
+      .marquee .track{ display:inline-block; will-change: transform; }
+      .marquee-item{
+      display:inline-flex;
+      align-items:center;
+      gap: 12px;
+
+      margin-right: 22px;
+
+      /* ⬆️ CHIP TO HƠN */
+      padding: 12px 18px;
+      height: 44px;
+
+      border-radius: 999px;
+      border: 1px solid rgba(251,191,36,.35);
+      background: rgba(251,191,36,.12);
+
+      font-weight: 900;
+      font-size: 16px;          /* ⬅ TO RÕ */
+      letter-spacing:.10em;
+      text-transform:uppercase;
+      white-space:nowrap;
+
+      box-shadow: 0 0 14px rgba(251,191,36,.22);
       }
 
-      #heroNextWrap .track {
-        display: inline-block;
-        will-change: transform;
+      .marquee-item .m-stt{
+      color: var(--warn);
+      font-size: 14px;
+      letter-spacing:.16em;
       }
 
-      .marquee {
-        position: relative;
-        overflow: hidden;
-        white-space: nowrap;
+      .marquee-item .m-name{
+      color: rgba(226,232,240,.95);
+      font-size: 16px;
       }
 
-      .marquee .track {
-        display: inline-block;
-        will-change: transform;
+      .marquee-item .m-idx{
+      font-weight: 700;                  /* nhẹ hơn STT */
+      font-size: 13px;
+      letter-spacing: .08em;
+
+      padding: 0;                        /* ❌ không pill */
+      border: none;
+      background: transparent;           /* ❌ không nền */
+      box-shadow: none;
+
+      color: rgba(148,163,184,.70);      /* xám nhạt – không tranh spotlight */
+      white-space: nowrap;
+      flex: 0 0 auto;
       }
 
-      .marquee-item {
-        display: inline-flex;
-        align-items: center;
-        gap: 12px;
-        margin-right: 22px;
-        /* ⬆️ CHIP TO HƠN */
-        padding: 12px 18px;
-        height: 44px;
-        border-radius: 999px;
-        border: 1px solid rgba(251, 191, 36, .35);
-        background: rgba(251, 191, 36, .12);
-        font-weight: 900;
-        font-size: 16px;
-        /* ⬅ TO RÕ */
-        letter-spacing: .10em;
-        text-transform: uppercase;
-        white-space: nowrap;
-        box-shadow: 0 0 14px rgba(251, 191, 36, .22);
-      }
 
-      .marquee-item .m-stt {
-        color: var(--warn);
-        font-size: 14px;
-        letter-spacing: .16em;
-      }
-
-      .marquee-item .m-name {
-        color: rgba(226, 232, 240, .95);
-        font-size: 16px;
-      }
-
-      .marquee-item .m-idx {
-        font-weight: 700;
-        /* nhẹ hơn STT */
-        font-size: 13px;
-        letter-spacing: .08em;
-        padding: 0;
-        /* ❌ không pill */
-        border: none;
-        background: transparent;
-        /* ❌ không nền */
-        box-shadow: none;
-        color: rgba(148, 163, 184, .70);
-        /* xám nhạt – không tranh spotlight */
-        white-space: nowrap;
-        flex: 0 0 auto;
-      }
 
       /* recent strip */
-      .recent {
-        height: 100%;
-        min-height: 0;
-        overflow: hidden;
-        display: flex;
-        /* ✅ */
-        flex-direction: column;
-        /* ✅ */
+      .recent{
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
+      display: flex;            /* ✅ */
+      flex-direction: column;   /* ✅ */
       }
-
       /* ===== RECENT HEADER – gọn & cao cấp ===== */
-      .recent .head {
-        padding: 8px 12px 6px 12px;
-        /* thấp lại */
-        border-bottom: 1px solid rgba(148, 163, 184, .12);
-        display: flex;
-        align-items: center;
-        justify-content: flex-start;
-        /* không cần space-between */
-        background: transparent;
-        /* bỏ nền tối */
+      .recent .head{
+      padding: 8px 12px 6px 12px;   /* thấp lại */
+      border-bottom: 1px solid rgba(148,163,184,.12);
+      display:flex;
+      align-items:center;
+      justify-content:flex-start;  /* không cần space-between */
+      background: transparent;     /* bỏ nền tối */
       }
-
-      .recent .head .h-title {
-        font-size: 12px;
-        font-weight: 900;
-        letter-spacing: .16em;
-        text-transform: uppercase;
-        color: rgba(226, 232, 240, .9);
+      .recent .head .h-title{
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: rgba(226,232,240,.9);
       }
-
-      .recent-body {
-        padding: 10px;
-        padding-bottom: 14px;
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-        flex: 1 1 auto;
-        /* ✅ */
-        min-height: 0;
-        /* ✅ */
-        height: auto;
-        /* ✅ thay vì height:100% */
+      .recent-body{
+      padding: 10px;
+      padding-bottom: 14px;
+      display:grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      flex: 1 1 auto;   /* ✅ */
+      min-height: 0;    /* ✅ */
+      height: auto;     /* ✅ thay vì height:100% */
       }
-
       /* Recent cards: show lot + price + winner name clearly */
-      .rslot {
-        border: 1px solid rgba(148, 163, 184, .16);
-        border-radius: 16px;
-        background: rgba(0, 0, 0, .14);
-        padding: 10px 10px;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        position: relative;
-        min-height: 0;
+      .rslot{
+      border: 1px solid rgba(148,163,184,.16);
+      border-radius: 16px;
+      background: rgba(0,0,0,.14);
+      padding: 10px 10px;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      gap: 8px;
+      position:relative;
+      min-height:0;
       }
-
-      .rslot.win {
-        border-color: rgba(52, 211, 153, .22);
-        background: rgba(52, 211, 153, .05);
-      }
-
-      .rslot.next {
-        border-color: rgba(251, 191, 36, .22);
-        background: rgba(251, 191, 36, .05);
-      }
-
-      .rslot.no {
-        border-color: rgba(251, 113, 133, .20);
-        background: rgba(251, 113, 133, .045);
-      }
-
+      .rslot.win{ border-color: rgba(52,211,153,.22); background: rgba(52,211,153,.05); }
+      .rslot.next{ border-color: rgba(251,191,36,.22); background: rgba(251,191,36,.05); }
+      .rslot.no{ border-color: rgba(251,113,133,.20); background: rgba(251,113,133,.045); }
       /* ===== RECENT: LOT CODE PHẢI LÀ MINI-HERO ===== */
-      .rslot .lc {
-        font-size: 34px;
-        /* ⬅ TO HƠN RÕ RỆT */
-        font-weight: 900;
-        letter-spacing: .14em;
-        line-height: 1.05;
-        margin-bottom: 6px;
-        /* kéo nội dung lên */
-        text-shadow: 0 0 22px rgba(34, 211, 238, .22);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+      .rslot .lc{
+      font-size: 34px;              /* ⬅ TO HƠN RÕ RỆT */
+      font-weight: 900;
+      letter-spacing: .14em;
+      line-height: 1.05;
+      margin-bottom: 6px;           /* kéo nội dung lên */
+      text-shadow: 0 0 22px rgba(34,211,238,.22);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
       }
-
-      .badge-rt {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        font-size: 10px;
-        font-weight: 900;
-        letter-spacing: .12em;
-        text-transform: uppercase;
-        padding: 4px 8px;
-        border-radius: 999px;
-        border: 1px solid rgba(148, 163, 184, .18);
-        background: rgba(255, 255, 255, .04);
-        white-space: nowrap;
+      .badge-rt{
+      position:absolute;
+      top:10px; right:10px;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      padding: 4px 8px;
+      border-radius:999px;
+      border: 1px solid rgba(148,163,184,.18);
+      background: rgba(255,255,255,.04);
+      white-space:nowrap;
       }
-
-      .badge-rt.win {
-        background: rgba(52, 211, 153, .12);
-        border-color: rgba(52, 211, 153, .25);
+      .badge-rt.win{ background: rgba(52,211,153,.12); border-color: rgba(52,211,153,.25); }
+      .badge-rt.next{ background: rgba(251,191,36,.12); border-color: rgba(251,191,36,.25); }
+      .badge-rt.no{ background: rgba(251,113,133,.10); border-color: rgba(251,113,133,.22); }
+      .minirow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing:.10em;
+      text-transform:uppercase;
+      color: rgba(226,232,240,.86);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
       }
-
-      .badge-rt.next {
-        background: rgba(251, 191, 36, .12);
-        border-color: rgba(251, 191, 36, .25);
+      .minirow .mini-badge{
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,.18);
+      background: rgba(255,255,255,.04);
+      color: rgba(226,232,240,.92);
+      flex: 0 0 auto;
+      max-width: 65%;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
       }
-
-      .badge-rt.no {
-        background: rgba(251, 113, 133, .10);
-        border-color: rgba(251, 113, 133, .22);
+      .minirow .mini-badge.win{ border-color: rgba(52,211,153,.25); background: rgba(52,211,153,.10); }
+      .minirow .mini-badge.next{ border-color: rgba(251,191,36,.25); background: rgba(251,191,36,.10); }
+      .minirow .mini-badge.no{ border-color: rgba(251,113,133,.25); background: rgba(251,113,133,.08); }
+      .rslot .rv{
+      margin-top:auto;
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+      align-items:center;
+      justify-content:flex-end;
+      text-align:center;
+      padding-top: 4px;
       }
-
-      .minirow {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        font-size: 11px;
-        font-weight: 900;
-        letter-spacing: .10em;
-        text-transform: uppercase;
-        color: rgba(226, 232, 240, .86);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+      .rslot .price{
+      font-weight: 900;
+      letter-spacing:.05em;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width: 100%;
+      font-size: 28px;
+      line-height: 1.05;
+      text-shadow: 0 0 22px rgba(34,211,238,.18);
       }
-
-      .minirow .mini-badge {
-        padding: 4px 8px;
-        border-radius: 999px;
-        border: 1px solid rgba(148, 163, 184, .18);
-        background: rgba(255, 255, 255, .04);
-        color: rgba(226, 232, 240, .92);
-        flex: 0 0 auto;
-        max-width: 65%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+      .rslot .who{
+      font-weight: 900;
+      font-size: 14px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      color: rgba(226,232,240,.92);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width: 100%;
       }
-
-      .minirow .mini-badge.win {
-        border-color: rgba(52, 211, 153, .25);
-        background: rgba(52, 211, 153, .10);
+      .rslot .who .stt{
+      color: rgba(226,232,240,.88);
+      opacity:.95;
       }
-
-      .minirow .mini-badge.next {
-        border-color: rgba(251, 191, 36, .25);
-        background: rgba(251, 191, 36, .10);
-      }
-
-      .minirow .mini-badge.no {
-        border-color: rgba(251, 113, 133, .25);
-        background: rgba(251, 113, 133, .08);
-      }
-
-      .rslot .rv {
-        margin-top: auto;
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        align-items: center;
-        justify-content: flex-end;
-        text-align: center;
-        padding-top: 4px;
-      }
-
-      .rslot .price {
-        font-weight: 900;
-        letter-spacing: .05em;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
-        font-size: 28px;
-        line-height: 1.05;
-        text-shadow: 0 0 22px rgba(34, 211, 238, .18);
-      }
-
-      .rslot .who {
-        font-weight: 900;
-        font-size: 14px;
-        letter-spacing: .08em;
-        text-transform: uppercase;
-        color: rgba(226, 232, 240, .92);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
-      }
-
-      .rslot .who .stt {
-        color: rgba(226, 232, 240, .88);
-        opacity: .95;
-      }
-
       /* ===== RECENT: winner line đẹp như mẫu (STT pill + Tên) ===== */
-      .rslot .who-line {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        min-width: 0;
+      .rslot .who-line{
+      display:flex;
+      align-items:center;
+      gap: 12px;
+      min-width:0;
       }
-
-      .rslot .stt-pill {
-        padding: 6px 14px;
-        border-radius: 999px;
-        border: 1px solid rgba(52, 211, 153, .35);
-        background: rgba(52, 211, 153, .14);
-        font-weight: 900;
-        font-size: 12px;
-        letter-spacing: .12em;
-        text-transform: uppercase;
-        white-space: nowrap;
-        box-shadow: 0 0 14px rgba(52, 211, 153, .25);
-        flex: 0 0 auto;
+      .rslot .stt-pill{
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(52,211,153,.35);
+      background: rgba(52,211,153,.14);
+      font-weight: 900;
+      font-size: 12px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      box-shadow: 0 0 14px rgba(52,211,153,.25);
+      flex: 0 0 auto;
       }
-
-      .rslot .winner-name {
-        font-size: 18px;
-        font-weight: 900;
-        letter-spacing: .08em;
-        text-transform: uppercase;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        min-width: 0;
+      .rslot .winner-name{
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width:0;
       }
-
       /* Giá to hơn trong card recent */
-      .rslot .price-big {
-        margin-top: auto;
-        font-weight: 900;
-        letter-spacing: .06em;
-        text-transform: uppercase;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        font-size: 34px;
-        line-height: 1.05;
-        text-shadow: 0 0 22px rgba(34, 211, 238, .18);
+      .rslot .price-big{
+      margin-top:auto;
+      font-weight: 900;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      font-size: 34px;
+      line-height: 1.05;
+      text-shadow: 0 0 22px rgba(34,211,238,.18);
       }
-
       /* NEXT: pill số khách */
-      .rslot .next-pill {
-        padding: 6px 12px;
-        border-radius: 999px;
-        border: 1px solid rgba(251, 191, 36, .30);
-        background: rgba(251, 191, 36, .12);
-        font-weight: 900;
-        font-size: 12px;
-        letter-spacing: .12em;
-        text-transform: uppercase;
-        white-space: nowrap;
-        flex: 0 0 auto;
+      .rslot .next-pill{
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(251,191,36,.30);
+      background: rgba(251,191,36,.12);
+      font-weight: 900;
+      font-size: 12px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      white-space:nowrap;
+      flex: 0 0 auto;
       }
-
       /* RIGHT: next lots cards ticker */
-      .right-body {
-        padding: 10px;
-        height: 100%;
-        min-height: 0;
+      .right-body{
+      padding: 10px;
+      height: 100%;
+      min-height:0;
       }
-
-      .cards-viewport {
-        position: relative;
-        height: 100%;
-        overflow: hidden;
+      .cards-viewport{
+      position:relative;
+      height:100%;
+      overflow:hidden;
       }
-
-      .cards-inner {
-        position: absolute;
-        left: 0;
-        right: 0;
-        top: 0;
-        will-change: transform;
+      .cards-inner{
+      position:absolute;
+      left:0; right:0; top:0;
+      will-change: transform;
       }
-
-      .lotcard {
-        padding: 10px;
-        border: 1px solid rgba(148, 163, 184, .16);
-        border-radius: 16px;
-        background: rgba(0, 0, 0, .14);
-        margin-bottom: 10px;
-        overflow: hidden;
+      .lotcard{
+      padding: 10px;
+      border: 1px solid rgba(148,163,184,.16);
+      border-radius: 16px;
+      background: rgba(0,0,0,.14);
+      margin-bottom: 10px;
+      overflow:hidden;
       }
-
-      .lotcard.next {
-        border-color: rgba(251, 191, 36, .22);
-        background: rgba(251, 191, 36, .05);
+      .lotcard.next{ border-color: rgba(251,191,36,.22); background: rgba(251,191,36,.05); }
+      .lotcard.win{ border-color: rgba(52,211,153,.22); background: rgba(52,211,153,.05); }
+      .lotcard .top{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      margin-bottom: 8px;
       }
-
-      .lotcard.win {
-        border-color: rgba(52, 211, 153, .22);
-        background: rgba(52, 211, 153, .05);
+      .lotcard .code{
+      font-weight: 900;
+      font-size: 18px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      text-shadow: 0 0 18px rgba(34,211,238,.14);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width: 70%;
       }
-
-      .lotcard .top {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        margin-bottom: 8px;
+      .lotcard .flag{
+      font-weight: 900;
+      font-size: 10px;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      padding: 4px 8px;
+      border-radius:999px;
+      border: 1px solid rgba(148,163,184,.18);
+      background: rgba(255,255,255,.04);
+      color: rgba(226,232,240,.92);
+      white-space:nowrap;
+      flex: 0 0 auto;
       }
-
-      .lotcard .code {
-        font-weight: 900;
-        font-size: 18px;
-        letter-spacing: .12em;
-        text-transform: uppercase;
-        text-shadow: 0 0 18px rgba(34, 211, 238, .14);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 70%;
+      .lotcard .flag.win{
+      border-color: rgba(52,211,153,.25);
+      background: rgba(52,211,153,.12);
       }
-
-      .lotcard .flag {
-        font-weight: 900;
-        font-size: 10px;
-        letter-spacing: .14em;
-        text-transform: uppercase;
-        padding: 4px 8px;
-        border-radius: 999px;
-        border: 1px solid rgba(148, 163, 184, .18);
-        background: rgba(255, 255, 255, .04);
-        color: rgba(226, 232, 240, .92);
-        white-space: nowrap;
-        flex: 0 0 auto;
+      .lotcard .flag.next{
+      border-color: rgba(251,191,36,.25);
+      background: rgba(251,191,36,.12);
+      color: rgba(226,232,240,.95);
       }
-
-      .lotcard .flag.win {
-        border-color: rgba(52, 211, 153, .25);
-        background: rgba(52, 211, 153, .12);
+      .lotcard .flag.no{
+      border-color: rgba(251,113,133,.25);
+      background: rgba(251,113,133,.10);
       }
-
-      .lotcard .flag.next {
-        border-color: rgba(251, 191, 36, .25);
-        background: rgba(251, 191, 36, .12);
-        color: rgba(226, 232, 240, .95);
+      .lotcard .mid{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+      min-width:0;
       }
-
-      .lotcard .flag.no {
-        border-color: rgba(251, 113, 133, .25);
-        background: rgba(251, 113, 133, .10);
+      .lotcard .meta{
+      display:flex;
+      flex-wrap:wrap;
+      gap: 6px;
+      min-width:0;
+      max-width: 78%;
       }
-
-      .lotcard .mid {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 10px;
-        margin-bottom: 8px;
-        min-width: 0;
+      .lotcard .meta .pill{
+      padding: 5px 8px;
+      font-size: 10px;
+      border-radius: 999px;
+      border-color: rgba(148,163,184,.18);
+      background: rgba(255,255,255,.04);
+      max-width: 100%;
       }
-
-      .lotcard .meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        min-width: 0;
-        max-width: 78%;
+      .lotcard .meta .pill.warn{ border-color: rgba(251,191,36,.25); background: rgba(251,191,36,.10); }
+      .lotcard .meta .pill.ok{ border-color: rgba(52,211,153,.25); background: rgba(52,211,153,.10); }
+      .lotcard .meta .pill.bad{ border-color: rgba(251,113,133,.25); background: rgba(251,113,133,.08); }
+      .lotcard .countbox{
+      text-align:right;
+      flex: 0 0 auto;
+      min-width: 64px;
       }
-
-      .lotcard .meta .pill {
-        padding: 5px 8px;
-        font-size: 10px;
-        border-radius: 999px;
-        border-color: rgba(148, 163, 184, .18);
-        background: rgba(255, 255, 255, .04);
-        max-width: 100%;
+      .lotcard .count{
+      font-weight: 900;
+      font-size: 26px;
+      letter-spacing:.08em;
+      white-space:nowrap;
       }
-
-      .lotcard .meta .pill.warn {
-        border-color: rgba(251, 191, 36, .25);
-        background: rgba(251, 191, 36, .10);
+      .lotcard.next .count{ color: var(--warn); text-shadow: 0 0 18px rgba(251,191,36,.18); }
+      .lotcard.win .count{ color: var(--ok); text-shadow: 0 0 18px rgba(52,211,153,.18); }
+      .lotcard .sub{
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing:.10em;
+      text-transform:uppercase;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
       }
-
-      .lotcard .meta .pill.ok {
-        border-color: rgba(52, 211, 153, .25);
-        background: rgba(52, 211, 153, .10);
-      }
-
-      .lotcard .meta .pill.bad {
-        border-color: rgba(251, 113, 133, .25);
-        background: rgba(251, 113, 133, .08);
-      }
-
-      .lotcard .countbox {
-        text-align: right;
-        flex: 0 0 auto;
-        min-width: 64px;
-      }
-
-      .lotcard .count {
-        font-weight: 900;
-        font-size: 26px;
-        letter-spacing: .08em;
-        white-space: nowrap;
-      }
-
-      .lotcard.next .count {
-        color: var(--warn);
-        text-shadow: 0 0 18px rgba(251, 191, 36, .18);
-      }
-
-      .lotcard.win .count {
-        color: var(--ok);
-        text-shadow: 0 0 18px rgba(52, 211, 153, .18);
-      }
-
-      .lotcard .sub {
-        margin-top: 2px;
-        color: var(--muted);
-        font-size: 11px;
-        font-weight: 900;
-        letter-spacing: .10em;
-        text-transform: uppercase;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
       /* ===== RIGHT CARD NEW LAYOUT (WIN / NEXT) ===== */
-      .lotcard .row2 {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        margin: 6px 0 6px 0;
+      .lotcard .row2{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin: 6px 0 6px 0;
       }
-
-      .lotcard .pricebig {
-        font-weight: 900;
-        font-size: 22px;
-        letter-spacing: .06em;
-        text-transform: uppercase;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        text-shadow: 0 0 18px rgba(34, 211, 238, .16);
+      .lotcard .pricebig{
+      font-weight: 900;
+      font-size: 22px;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      text-shadow: 0 0 18px rgba(34,211,238,.16);
       }
-
-      .lotcard .winnerline {
-        margin-top: 6px;
-        padding-top: 8px;
-        border-top: 1px solid rgba(148, 163, 184, .12);
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        min-width: 0;
+      .lotcard .winnerline{
+      margin-top: 6px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(148,163,184,.12);
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:0;
       }
-
-      .lotcard .winnerline .wstt {
-        font-weight: 900;
-        font-size: 11px;
-        letter-spacing: .14em;
-        text-transform: uppercase;
-        padding: 4px 8px;
-        border-radius: 999px;
-        border: 1px solid rgba(52, 211, 153, .26);
-        background: rgba(52, 211, 153, .10);
-        white-space: nowrap;
-        flex: 0 0 auto;
+      .lotcard .winnerline .wstt{
+      font-weight: 900;
+      font-size: 11px;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border:1px solid rgba(52,211,153,.26);
+      background: rgba(52,211,153,.10);
+      white-space:nowrap;
+      flex: 0 0 auto;
       }
-
-      .lotcard .winnerline .wname {
-        font-weight: 900;
-        font-size: 13px;
-        letter-spacing: .06em;
-        text-transform: uppercase;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        min-width: 0;
+      .lotcard .winnerline .wname{
+      font-weight: 900;
+      font-size: 13px;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      min-width:0;
       }
-
       /* NEXT: countbox đặt góc phải dưới rõ ràng hơn */
-      .lotcard .countbox {
-        text-align: right;
-        flex: 0 0 auto;
-        min-width: 78px;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        justify-content: flex-end;
-        gap: 2px;
+      .lotcard .countbox{
+      text-align:right;
+      flex: 0 0 auto;
+      min-width: 78px;
+      display:flex;
+      flex-direction:column;
+      align-items:flex-end;
+      justify-content:flex-end;
+      gap: 2px;
       }
-
-      .lotcard .sub {
-        opacity: .9;
-      }
-
+      .lotcard .sub{ opacity:.9; }
       /* NEW: next-customer list inside right cards */
-      .nlist {
-        margin-top: 6px;
-        padding-top: 8px;
-        border-top: 1px solid rgba(148, 163, 184, .12);
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
+      .nlist{
+      margin-top: 6px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(148,163,184,.12);
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
       }
-
-      .nrow {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        padding: 7px 8px;
-        border-radius: 12px;
-        border: 1px solid rgba(251, 191, 36, .18);
-        background: rgba(251, 191, 36, .06);
-        overflow: hidden;
+      .nrow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      padding: 7px 8px;
+      border-radius: 12px;
+      border: 1px solid rgba(251,191,36,.18);
+      background: rgba(251,191,36,.06);
+      overflow:hidden;
       }
-
-      .nrow .nleft {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        min-width: 0;
+      .nrow .nleft{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      min-width:0;
       }
-
-      .nrow .nstt {
-        font-weight: 900;
-        letter-spacing: .14em;
-        font-size: 11px;
-        color: rgba(226, 232, 240, .95);
-        border: 1px solid rgba(251, 191, 36, .22);
-        background: rgba(251, 191, 36, .10);
-        padding: 3px 7px;
-        border-radius: 999px;
-        white-space: nowrap;
+      .nrow .nstt{
+      font-weight: 900;
+      letter-spacing:.14em;
+      font-size: 11px;
+      color: rgba(226,232,240,.95);
+      border: 1px solid rgba(251,191,36,.22);
+      background: rgba(251,191,36,.10);
+      padding: 3px 7px;
+      border-radius: 999px;
+      white-space:nowrap;
       }
-
-      .nrow .nname {
-        font-weight: 900;
-        letter-spacing: .06em;
-        font-size: 12px;
-        text-transform: uppercase;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        min-width: 0;
+      .nrow .nname{
+      font-weight: 900;
+      letter-spacing:.06em;
+      font-size: 12px;
+      text-transform:uppercase;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      min-width:0;
       }
-
-      .nrow .ntail {
-        font-weight: 900;
-        font-size: 10px;
-        letter-spacing: .12em;
-        text-transform: uppercase;
-        color: rgba(226, 232, 240, .8);
-        white-space: nowrap;
-        flex: 0 0 auto;
+      .nrow .ntail{
+      font-weight: 900;
+      font-size: 10px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color: rgba(226,232,240,.8);
+      white-space:nowrap;
+      flex: 0 0 auto;
       }
-
       /* footer marquee */
-      .footer {
-        margin-top: 0px;
-        border: 1px solid rgba(148, 163, 184, .14);
-        border-radius: 16px;
-        background: rgba(0, 0, 0, .18);
-        padding: 8px 10px;
-        overflow: hidden;
-        position: relative;
-        box-shadow: var(--shadow);
+      .footer{
+      margin-top: 0px;
+      border: 1px solid rgba(148,163,184,.14);
+      border-radius: 16px;
+      background: rgba(0,0,0,.18);
+      padding: 8px 10px;
+      overflow:hidden;
+      position:relative;
+      box-shadow: var(--shadow);
       }
-
-      .footer .marquee {
-        font-weight: 900;
-        letter-spacing: .10em;
-        text-transform: uppercase;
-        font-size: 11px;
-        color: rgba(226, 232, 240, .82);
+      .footer .marquee{
+      font-weight: 900;
+      letter-spacing:.10em;
+      text-transform:uppercase;
+      font-size: 11px;
+      color: rgba(226,232,240,.82);
       }
-
       /* ===== Footer marquee: brand đẹp + chuyên nghiệp ===== */
-      .footer-item {
-        display: inline-flex;
-        align-items: center;
-        gap: 12px;
-        padding-right: 44px;
-        /* khoảng cách giữa các block lặp */
-        white-space: nowrap;
+      .footer-item{
+      display:inline-flex;
+      align-items:center;
+      gap: 12px;
+      padding-right: 44px;  /* khoảng cách giữa các block lặp */
+      white-space: nowrap;
       }
-
-      .ft-label {
-        opacity: .70;
-        font-weight: 800;
-        letter-spacing: .16em;
+      .ft-label{
+      opacity:.70;
+      font-weight:800;
+      letter-spacing:.16em;
       }
-
-      .ft-sep {
-        opacity: .35;
+      .ft-sep{
+      opacity:.35;
       }
-
-      .ft-brand {
-        font-weight: 900;
-        letter-spacing: .08em;
-        color: var(--ok);
-        text-shadow: 0 0 14px rgba(52, 211, 153, .30);
-        padding: 5px 10px;
-        border-radius: 999px;
-        border: 1px solid rgba(52, 211, 153, .28);
-        background: rgba(52, 211, 153, .10);
+      .ft-brand{
+      font-weight:900;
+      letter-spacing:.08em;
+      color: var(--ok);
+      text-shadow: 0 0 14px rgba(52,211,153,.30);
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(52,211,153,.28);
+      background: rgba(52,211,153,.10);
       }
-
-      .ft-desc {
-        opacity: .88;
-        font-weight: 800;
-        letter-spacing: .06em;
+      .ft-desc{
+      opacity:.88;
+      font-weight:800;
+      letter-spacing:.06em;
       }
-
       /* TOAST OVERLAY (blur whole page) */
-      .toast-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, .58);
-        backdrop-filter: blur(14px);
-        z-index: 48;
-        display: none;
+      .toast-overlay{
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.58);
+      backdrop-filter: blur(14px);
+      z-index: 48;
+      display:none;
       }
-
-      .toast-overlay.show {
-        display: block;
-      }
-
+      .toast-overlay.show{ display:block; }
       /* toast (center big) */
-      .toast {
-        position: fixed;
-        left: 50%;
-        top: 50%;
-        bottom: auto;
-        z-index: 50;
-        width: min(820px, calc(100vw - 48px));
-        border-radius: 22px;
-        border: 1px solid rgba(148, 163, 184, .18);
-        background: rgba(0, 0, 0, .62);
-        box-shadow: var(--shadow), 0 0 44px rgba(34, 211, 238, .14);
-        overflow: hidden;
-        transform: translate(-50%, -50%) scale(.94);
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity .25s ease, transform .25s ease;
-        backdrop-filter: blur(10px);
+      .toast{
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      bottom: auto;
+      z-index: 50;
+      width: min(820px, calc(100vw - 48px));
+      border-radius: 22px;
+      border: 1px solid rgba(148,163,184,.18);
+      background: rgba(0,0,0,.62);
+      box-shadow: var(--shadow), 0 0 44px rgba(34,211,238,.14);
+      overflow:hidden;
+      transform: translate(-50%, -50%) scale(.94);
+      opacity: 0;
+      pointer-events:none;
+      transition: opacity .25s ease, transform .25s ease;
+      backdrop-filter: blur(10px);
       }
-
-      .toast.show {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1);
+      .toast.show{
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
       }
-
-      .toast .t-head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        padding: 12px 14px;
-        border-bottom: 1px solid rgba(148, 163, 184, .14);
-        background: rgba(255, 255, 255, .05);
-        font-weight: 900;
-        letter-spacing: .14em;
-        text-transform: uppercase;
-        font-size: 12px;
-        color: rgba(226, 232, 240, .95);
+      .toast .t-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(148,163,184,.14);
+      background: rgba(255,255,255,.05);
+      font-weight: 900;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      font-size: 12px;
+      color: rgba(226,232,240,.95);
       }
-
-      .toast .t-head .badge {
-        font-size: 10px;
-        padding: 5px 10px;
-        border-radius: 999px;
-        border: 1px solid rgba(148, 163, 184, .18);
-        background: rgba(255, 255, 255, .04);
-        white-space: nowrap;
+      .toast .t-head .badge{
+      font-size: 10px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,.18);
+      background: rgba(255,255,255,.04);
+      white-space:nowrap;
       }
-
-      .toast .t-body {
-        padding: 14px 14px 16px 14px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        text-align: center;
+      .toast .t-body{
+      padding: 14px 14px 16px 14px;
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+      text-align:center;
       }
-
-      .toast .line1 {
-        font-weight: 900;
-        font-size: 16px;
-        letter-spacing: .10em;
-        text-transform: uppercase;
-        color: rgba(226, 232, 240, .92);
+      .toast .line1{
+      font-weight: 900;
+      font-size: 16px;
+      letter-spacing:.10em;
+      text-transform:uppercase;
+      color: rgba(226,232,240,.92);
       }
-
-      .toast .line2 {
-        font-weight: 900;
-        font-size: 56px;
-        /* ✅ TO NHẤT: MÃ LÔ */
-        letter-spacing: .10em;
-        text-transform: uppercase;
-        text-shadow: 0 0 22px rgba(34, 211, 238, .22);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+      .toast .line2{
+      font-weight: 900;
+      font-size: 56px;            /* ✅ TO NHẤT: MÃ LÔ */
+      letter-spacing:.10em;
+      text-transform:uppercase;
+      text-shadow: 0 0 22px rgba(34,211,238,.22);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
       }
-
-      .toast .line3 {
-        font-weight: 900;
-        font-size: 46px;
-        /* ✅ TO THỨ 2: GIÁ */
-        letter-spacing: .06em;
-        text-transform: uppercase;
-        color: rgba(226, 232, 240, .98);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        text-shadow: 0 0 26px rgba(34, 211, 238, .18);
+      .toast .line3{
+      font-weight: 900;
+      font-size: 46px;            /* ✅ TO THỨ 2: GIÁ */
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      color: rgba(226,232,240,.98);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      text-shadow: 0 0 26px rgba(34,211,238,.18);
       }
-
-      .toast .line4 {
-        font-weight: 900;
-        font-size: 30px;
-        /* ✅ KHÁCH HÀNG / SỐ KHÁCH */
-        letter-spacing: .06em;
-        text-transform: uppercase;
-        color: rgba(226, 232, 240, .95);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+      .toast .line4{
+      font-weight: 900;
+      font-size: 30px;            /* ✅ KHÁCH HÀNG / SỐ KHÁCH */
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      color: rgba(226,232,240,.95);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
       }
-
       /* ===== TOAST: label mờ, value nổi bật ===== */
-      .toast .line1 {
-        font-weight: 900;
-        font-size: 14px;
-        letter-spacing: .14em;
-        text-transform: uppercase;
-        color: rgba(226, 232, 240, .78);
+      .toast .line1{
+      font-weight: 900;
+      font-size: 14px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: rgba(226,232,240,.78);
       }
 
-      .toast .line2,
-      .toast .line3,
-      .toast .line4 {
-        display: flex;
-        align-items: baseline;
-        justify-content: center;
-        gap: 12px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+      .toast .line2, .toast .line3, .toast .line4{
+      display:flex;
+      align-items:baseline;
+      justify-content:center;
+      gap: 12px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
       }
 
       /* label nhỏ + mờ */
-      .toast .k-lbl {
-        font-size: 12px;
-        font-weight: 900;
-        letter-spacing: .16em;
-        text-transform: uppercase;
-        color: rgba(148, 163, 184, .70);
-        opacity: .9;
-        flex: 0 0 auto;
+      .toast .k-lbl{
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: rgba(148,163,184,.70);
+      opacity: .9;
+      flex: 0 0 auto;
       }
 
       /* value nổi bật */
-      .toast .k-val {
-        font-weight: 900;
-        text-transform: uppercase;
-        color: rgba(226, 232, 240, .98);
-        letter-spacing: .08em;
-        text-shadow: 0 0 22px rgba(34, 211, 238, .18);
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
+      .toast .k-val{
+      font-weight: 900;
+      text-transform: uppercase;
+      color: rgba(226,232,240,.98);
+      letter-spacing: .08em;
+      text-shadow: 0 0 22px rgba(34,211,238,.18);
+      min-width:0;
+      overflow:hidden;
+      text-overflow:ellipsis;
       }
 
       /* MÃ LÔ là spotlight số 1 */
-      .toast .k-val.lot {
-        font-size: 58px;
-        letter-spacing: .12em;
-        text-shadow: 0 0 28px rgba(34, 211, 238, .26);
+      .toast .k-val.lot{
+      font-size: 58px;
+      letter-spacing: .12em;
+      text-shadow: 0 0 28px rgba(34,211,238,.26);
       }
 
       /* Tên khách spotlight số 2 */
-      .toast .k-val.name {
-        font-size: 34px;
-        letter-spacing: .08em;
-        text-shadow: 0 0 22px rgba(96, 165, 250, .18);
+      .toast .k-val.name{
+      font-size: 34px;
+      letter-spacing: .08em;
+      text-shadow: 0 0 22px rgba(96,165,250,.18);
       }
 
       /* STT / Số khách spotlight dạng pill */
-      .toast .pillbig {
-        font-size: 32px;
+      .toast .pillbig{
+      font-size: 32px;
       }
 
       /* giá vẫn to nhưng đứng sau mã lô + tên */
-      .toast .k-val.price {
-        font-size: 44px;
-        letter-spacing: .06em;
-        text-shadow: 0 0 26px rgba(34, 211, 238, .18);
+      .toast .k-val.price{
+      font-size: 44px;
+      letter-spacing: .06em;
+      text-shadow: 0 0 26px rgba(34,211,238,.18);
       }
 
-      .toast .line5 {
-        margin-top: 6px;
-        display: flex;
-        justify-content: center;
+      .toast .line5{
+      margin-top: 6px;
+      display:flex;
+      justify-content:center;
       }
-
-      .pillbig {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 900;
-        font-size: 30px;
-        /* ✅ PILL CŨNG TO */
-        letter-spacing: .08em;
-        text-transform: uppercase;
-        padding: 10px 18px;
-        border-radius: 999px;
-        border: 1px solid rgba(52, 211, 153, .35);
-        background: rgba(52, 211, 153, .14);
-        box-shadow: 0 0 18px rgba(52, 211, 153, .25);
-        white-space: nowrap;
+      .pillbig{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      font-weight: 900;
+      font-size: 30px;            /* ✅ PILL CŨNG TO */
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      padding: 10px 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(52,211,153,.35);
+      background: rgba(52,211,153,.14);
+      box-shadow: 0 0 18px rgba(52,211,153,.25);
+      white-space:nowrap;
       }
-
-      .toast.ok {
-        border-color: rgba(52, 211, 153, .28);
-        box-shadow: var(--shadow), 0 0 48px rgba(52, 211, 153, .18);
-      }
-
-      .toast.ok .t-head {
-        background: rgba(52, 211, 153, .12);
-      }
-
-      .toast.ok .t-head .badge {
-        border-color: rgba(52, 211, 153, .26);
-        background: rgba(52, 211, 153, .14);
-      }
-
-      .toast.warn {
-        border-color: rgba(251, 191, 36, .28);
-        box-shadow: var(--shadow), 0 0 48px rgba(251, 191, 36, .16);
-      }
-
-      .toast.warn .t-head {
-        background: rgba(251, 191, 36, .12);
-      }
-
-      .toast.warn .t-head .badge {
-        border-color: rgba(251, 191, 36, .26);
-        background: rgba(251, 191, 36, .14);
-      }
-
-      .toast.bad {
-        border-color: rgba(251, 113, 133, .28);
-        box-shadow: var(--shadow), 0 0 48px rgba(251, 113, 133, .14);
-      }
-
-      .toast.bad .t-head {
-        background: rgba(251, 113, 133, .10);
-      }
-
-      .toast.bad .t-head .badge {
-        border-color: rgba(251, 113, 133, .26);
-        background: rgba(251, 113, 133, .12);
-      }
-
+      .toast.ok{ border-color: rgba(52,211,153,.28); box-shadow: var(--shadow), 0 0 48px rgba(52,211,153,.18); }
+      .toast.ok .t-head{ background: rgba(52,211,153,.12); }
+      .toast.ok .t-head .badge{ border-color: rgba(52,211,153,.26); background: rgba(52,211,153,.14); }
+      .toast.warn{ border-color: rgba(251,191,36,.28); box-shadow: var(--shadow), 0 0 48px rgba(251,191,36,.16); }
+      .toast.warn .t-head{ background: rgba(251,191,36,.12); }
+      .toast.warn .t-head .badge{ border-color: rgba(251,191,36,.26); background: rgba(251,191,36,.14); }
+      .toast.bad{ border-color: rgba(251,113,133,.28); box-shadow: var(--shadow), 0 0 48px rgba(251,113,133,.14); }
+      .toast.bad .t-head{ background: rgba(251,113,133,.10); }
+      .toast.bad .t-head .badge{ border-color: rgba(251,113,133,.26); background: rgba(251,113,133,.12); }
       /* responsiveness */
-      @media (max-width: 1060px) {
-        .main {
-          grid-template-columns: 1fr;
-        }
-
-        body {
-          overflow: auto;
-        }
-
-        .stage {
-          height: auto;
-          min-height: 100vh;
-        }
-
-        .center {
-          order: 1;
-        }
-
-        .toast .line2 {
-          font-size: 28px;
-        }
+      @media (max-width: 1060px){
+      .main{ grid-template-columns: 1fr; }
+      body{ overflow:auto; }
+      .stage{ height:auto; min-height:100vh; }
+      .center{ order: 1; }
+      .toast .line2{ font-size: 28px; }
       }
-
     </style>
   </head>
   <body class="gridbg scan">
@@ -2137,10 +1647,10 @@
           <button class="fsbtn" id="fsBtn" type="button" title="Toàn màn hình">
             <span class="sr-only">Toàn màn hình</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M8 3H5a2 2 0 0 0-2 2v3" />
-              <path d="M16 3h3a2 2 0 0 1 2 2v3" />
-              <path d="M8 21H5a2 2 0 0 1-2-2v-3" />
-              <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+              <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
+              <path d="M16 3h3a2 2 0 0 1 2 2v3"/>
+              <path d="M8 21H5a2 2 0 0 1-2-2v-3"/>
+              <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
             </svg>
           </button>
         </div>
@@ -2223,7 +1733,9 @@
                           <div class="winner-label" id="winnerLabel">NGƯỜI TRÚNG</div>
                           <div class="winner-badge bad" id="winnerBadge">CHƯA CÓ</div>
                         </div>
+
                         <div class="winner-name masked" id="winnerName">—<span class="caret">|</span></div>
+
                         <div class="winner-sttbox masked" id="heroWinnerSttBox">
                           <div class="sttline">
                             <span class="stt-lbl">SỐ THỨ TỰ</span>
@@ -2231,6 +1743,7 @@
                           </div>
                         </div>
                       </div>
+
                     </div>
                   </div>
                 </div>
@@ -2290,16 +1803,8 @@
       // =========================================================
       // DO NOT CHANGE FETCH LOGIC (keep as existing behavior)
       // =========================================================
-      const SESSION_ID = {
-        {
-          session_id | tojson
-        }
-      };
-      const ROUND_NO = {
-        {
-          (round_no or 1) | tojson
-        }
-      };
+      const SESSION_ID = {{ session_id|tojson }};
+      const ROUND_NO   = {{ (round_no or 1)|tojson }};
 
       const POLL_MS = 5000;
       const API_URL = `/auction/sessions/api/display/sessions/${SESSION_ID}?round_no=${ROUND_NO}`;
@@ -2308,128 +1813,125 @@
       // AUDIO (Background + Bell + Win + NextRound)
       // =========================================================
       const AUDIO_URLS = {
-        bell: "https://pub-0963cdac24ac4ec3a94d2bf5c523be29.r2.dev/daugia/uploads/public/file/bell_ting.mp3",
-        next: "https://pub-0963cdac24ac4ec3a94d2bf5c523be29.r2.dev/daugia/uploads/public/file/next_round3.mp3",
-        win: "https://pub-0963cdac24ac4ec3a94d2bf5c523be29.r2.dev/daugia/uploads/public/file/win3.mp3",
-        bg: "https://pub-0963cdac24ac4ec3a94d2bf5c523be29.r2.dev/daugia/uploads/public/file/nhacnen2.mp3",
+      bell: "https://pub-0963cdac24ac4ec3a94d2bf5c523be29.r2.dev/daugia/uploads/public/file/bell_ting.mp3",
+      next: "https://pub-0963cdac24ac4ec3a94d2bf5c523be29.r2.dev/daugia/uploads/public/file/next_round3.mp3",
+      win: "https://pub-0963cdac24ac4ec3a94d2bf5c523be29.r2.dev/daugia/uploads/public/file/win3.mp3",
+      bg: "https://pub-0963cdac24ac4ec3a94d2bf5c523be29.r2.dev/daugia/uploads/public/file/nhacnen2.mp3",
       };
 
       let SOUND_ENABLED = true;
       let _audioUnlocked = false;
 
       const audio = {
-        bg: new Audio(AUDIO_URLS.bg),
-        bell: new Audio(AUDIO_URLS.bell),
-        win: new Audio(AUDIO_URLS.win),
-        next: new Audio(AUDIO_URLS.next),
+      bg: new Audio(AUDIO_URLS.bg),
+      bell: new Audio(AUDIO_URLS.bell),
+      win: new Audio(AUDIO_URLS.win),
+      next: new Audio(AUDIO_URLS.next),
       };
 
       // setup
       audio.bg.loop = true;
-      audio.bg.volume = 0.30; // nền dịu nhẹ
+      audio.bg.volume = 0.30;    // nền dịu nhẹ
       audio.bell.volume = 1.00;
       audio.win.volume = 1.00;
       audio.next.volume = 1.00;
 
       const DEFAULT_VOL = {
-        bg: audio.bg.volume,
-        bell: audio.bell.volume,
-        win: audio.win.volume,
-        next: audio.next.volume,
+      bg:   audio.bg.volume,
+      bell: audio.bell.volume,
+      win:  audio.win.volume,
+      next: audio.next.volume,
       };
 
-      function _safePlay(a) {
-        if (!SOUND_ENABLED) return;
-        if (!_audioUnlocked) return;
-        try {
-          a.play?.().catch(() => {});
-        } catch (_) {}
+
+      function _safePlay(a){
+      if(!SOUND_ENABLED) return;
+      if(!_audioUnlocked) return;
+      try{
+      a.play?.().catch(()=>{});
+      }catch(_){}
       }
 
-      function _safePause(a) {
-        try {
-          a.pause?.();
-        } catch (_) {}
+      function _safePause(a){
+      try{ a.pause?.(); }catch(_){}
       }
 
-      function _safeStop(a) {
-        try {
-          a.pause?.();
-          a.currentTime = 0;
-        } catch (_) {}
+      function _safeStop(a){
+      try{
+      a.pause?.();
+      a.currentTime = 0;
+      }catch(_){}
       }
 
-      function stopAllAudio() {
-        _safeStop(audio.bg);
-        _safeStop(audio.bell);
-        _safeStop(audio.win);
-        _safeStop(audio.next);
+      function stopAllAudio(){
+      _safeStop(audio.bg);
+      _safeStop(audio.bell);
+      _safeStop(audio.win);
+      _safeStop(audio.next);
+      }
+      function fadeAudioTo(a, targetVol, durationMs){
+      return new Promise((resolve)=>{
+      try{
+      if(!a) return resolve();
+      const start = Number(a.volume || 0);
+      const target = Math.max(0, Math.min(1, Number(targetVol)));
+      const dur = Math.max(0, Number(durationMs || 0));
+
+      if(dur <= 0){
+      a.volume = target;
+      return resolve();
       }
 
-      function fadeAudioTo(a, targetVol, durationMs) {
-        return new Promise((resolve) => {
-          try {
-            if (!a) return resolve();
-            const start = Number(a.volume || 0);
-            const target = Math.max(0, Math.min(1, Number(targetVol)));
-            const dur = Math.max(0, Number(durationMs || 0));
-
-            if (dur <= 0) {
-              a.volume = target;
-              return resolve();
-            }
-
-            const t0 = performance.now();
-            const tick = (now) => {
-              const p = Math.min(1, (now - t0) / dur);
-              a.volume = start + (target - start) * p;
-              if (p >= 1) return resolve();
-              requestAnimationFrame(tick);
-            };
-            requestAnimationFrame(tick);
-          } catch (_) {
-            resolve();
-          }
-        });
+      const t0 = performance.now();
+      const tick = (now)=>{
+      const p = Math.min(1, (now - t0) / dur);
+      a.volume = start + (target - start) * p;
+      if(p >= 1) return resolve();
+      requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+      }catch(_){ resolve(); }
+      });
       }
 
-      async function fadeOutAndStop(a, durationMs) {
-        try {
-          if (!a) return;
-          await fadeAudioTo(a, 0, durationMs);
-          _safeStop(a);
-        } catch (_) {}
+      async function fadeOutAndStop(a, durationMs){
+      try{
+      if(!a) return;
+      await fadeAudioTo(a, 0, durationMs);
+      _safeStop(a);
+      }catch(_){}
       }
 
-      function playBackground() {
-        if (!SOUND_ENABLED) return;
-        if (!_audioUnlocked) return;
-        _safeStop(audio.win);
-        _safeStop(audio.next);
-        _safeStop(audio.bell);
-        // bg chỉ play nếu chưa chạy
-        _safePlay(audio.bg);
+
+      function playBackground(){
+      if(!SOUND_ENABLED) return;
+      if(!_audioUnlocked) return;
+      _safeStop(audio.win);
+      _safeStop(audio.next);
+      _safeStop(audio.bell);
+      // bg chỉ play nếu chưa chạy
+      _safePlay(audio.bg);
       }
 
-      function pauseBackground() {
-        _safePause(audio.bg);
+      function pauseBackground(){
+      _safePause(audio.bg);
       }
 
-      function unlockAudioOnce() {
-        if (_audioUnlocked) return;
-        _audioUnlocked = true;
-        // prime: play/pause cực nhanh để unlock trên một số browser
-        try {
-          audio.bg.muted = true;
-          audio.bg.play?.().then(() => {
-            audio.bg.pause?.();
-            audio.bg.currentTime = 0;
-            audio.bg.muted = false;
-            if (SOUND_ENABLED) playBackground();
-          }).catch(() => {
-            audio.bg.muted = false;
-          });
-        } catch (_) {}
+      function unlockAudioOnce(){
+      if(_audioUnlocked) return;
+      _audioUnlocked = true;
+      // prime: play/pause cực nhanh để unlock trên một số browser
+      try{
+      audio.bg.muted = true;
+      audio.bg.play?.().then(()=>{
+      audio.bg.pause?.();
+      audio.bg.currentTime = 0;
+      audio.bg.muted = false;
+      if(SOUND_ENABLED) playBackground();
+      }).catch(()=>{
+      audio.bg.muted = false;
+      });
+      }catch(_){}
       }
 
       // =========================================================
@@ -2437,417 +1939,404 @@
       // =========================================================
       const $ = (id) => document.getElementById(id);
 
-      function safeText(x) {
-        return (x === null || x === undefined) ? '' : String(x);
+      function safeText(x){
+      return (x===null || x===undefined) ? '' : String(x);
+      }
+      function fmtInt(n){
+      const v = Number(n||0);
+      if(!isFinite(v)) return "0";
+      return v.toLocaleString("vi-VN");
+      }
+      function fmtMoney(n){
+      const v = Number(n||0);
+      if(!isFinite(v)) return "—";
+      return v.toLocaleString("vi-VN");
+      }
+      function fmtMoneyVND(n){
+      const v = Number(n||0);
+      if(!isFinite(v) || v <= 0) return "—";
+      return v.toLocaleString("vi-VN") + " VNĐ";   // ✅ full số + VNĐ
       }
 
-      function fmtInt(n) {
-        const v = Number(n || 0);
-        if (!isFinite(v)) return "0";
-        return v.toLocaleString("vi-VN");
+
+      function shortStatus(s){
+      const x = (safeText(s)||'').toUpperCase();
+      if(x.includes("ISSU")) return "ĐANG KIỂM";
+      if(x.includes("OPEN")) return "ĐANG MỞ";
+      if(x.includes("CLOSE")) return "ĐÃ CHỐT";
+      if(x.includes("DONE")) return "HOÀN TẤT";
+      if(!x) return "—";
+      return x;
       }
 
-      function fmtMoney(n) {
-        const v = Number(n || 0);
-        if (!isFinite(v)) return "—";
-        return v.toLocaleString("vi-VN");
+      function statusClass(s){
+      const x = (safeText(s)||'').toUpperCase();
+      if(x.includes("DONE") || x.includes("CLOSE")) return "ok";
+      if(x.includes("ISSU") || x.includes("OPEN")) return "pri";
+      return "bad";
       }
 
-      function fmtMoneyVND(n) {
-        const v = Number(n || 0);
-        if (!isFinite(v) || v <= 0) return "—";
-        return v.toLocaleString("vi-VN") + " VNĐ"; // ✅ full số + VNĐ
+      function resultClass(rt){
+      const x = (safeText(rt)||'').toUpperCase();
+      if(x === "WINNER" || x.includes("WIN")) return "win";
+      if(x === "NEXT_ROUND" || x.includes("NEXT")) return "next";
+      return "no";
       }
 
-      function shortStatus(s) {
-        const x = (safeText(s) || '').toUpperCase();
-        if (x.includes("ISSU")) return "ĐANG KIỂM";
-        if (x.includes("OPEN")) return "ĐANG MỞ";
-        if (x.includes("CLOSE")) return "ĐÃ CHỐT";
-        if (x.includes("DONE")) return "HOÀN TẤT";
-        if (!x) return "—";
-        return x;
+      function resultLabel(rt){
+      const x = (safeText(rt)||'').toUpperCase();
+      if(x === "WINNER" || x.includes("WIN")) return "TRÚNG";
+      if(x === "NEXT_ROUND" || x.includes("NEXT")) return "VÒNG SAU";
+      return "CHƯA CÓ";
+      }
+      function priceLabelForResultLabel(lbl){
+      // WINNER => GIÁ TRÚNG, còn lại => GIÁ CAO NHẤT
+      const x = (safeText(lbl)||"").toUpperCase();
+      if(x === "TRÚNG" || x.includes("TRÚNG")) return "GIÁ TRÚNG";
+      return "GIÁ CAO NHẤT";
+      }
+      function winMethodLabel(wm){
+      const x = (safeText(wm)||"").toUpperCase();
+      if(x === "LOTTERY") return "BỐC THĂM";
+      if(!x) return "";
+      return "TRẢ GIÁ";
       }
 
-      function statusClass(s) {
-        const x = (safeText(s) || '').toUpperCase();
-        if (x.includes("DONE") || x.includes("CLOSE")) return "ok";
-        if (x.includes("ISSU") || x.includes("OPEN")) return "pri";
-        return "bad";
+      function priceLabelFor(label, winMethod){
+      // VÒNG SAU => luôn là GIÁ CAO NHẤT
+      if(label === "VÒNG SAU") return "GIÁ CAO NHẤT";
+
+      // TRÚNG => tuỳ win_method
+      if(label === "TRÚNG"){
+      const wm = (safeText(winMethod)||"").toUpperCase();
+      if(wm === "LOTTERY") return "GIÁ TRÚNG (BỐC THĂM)";
+      return "GIÁ TRÚNG";
       }
 
-      function resultClass(rt) {
-        const x = (safeText(rt) || '').toUpperCase();
-        if (x === "WINNER" || x.includes("WIN")) return "win";
-        if (x === "NEXT_ROUND" || x.includes("NEXT")) return "next";
-        return "no";
+      return "GIÁ CAO NHẤT";
       }
 
-      function resultLabel(rt) {
-        const x = (safeText(rt) || '').toUpperCase();
-        if (x === "WINNER" || x.includes("WIN")) return "TRÚNG";
-        if (x === "NEXT_ROUND" || x.includes("NEXT")) return "VÒNG SAU";
-        return "CHƯA CÓ";
+
+      function maskSTT(stt){
+      const v = safeText(stt).trim();
+      if(!v) return "STT —";
+      return `STT ${v}`;
       }
 
-      function priceLabelForResultLabel(lbl) {
-        // WINNER => GIÁ TRÚNG, còn lại => GIÁ CAO NHẤT
-        const x = (safeText(lbl) || "").toUpperCase();
-        if (x === "TRÚNG" || x.includes("TRÚNG")) return "GIÁ TRÚNG";
-        return "GIÁ CAO NHẤT";
+      function truncate(str, max){
+      const s = safeText(str);
+      if(s.length <= max) return s;
+      return s.slice(0, Math.max(0, max-1)) + "…";
       }
 
-      function winMethodLabel(wm) {
-        const x = (safeText(wm) || "").toUpperCase();
-        if (x === "LOTTERY") return "BỐC THĂM";
-        if (!x) return "";
-        return "TRẢ GIÁ";
-      }
-
-      function priceLabelFor(label, winMethod) {
-        // VÒNG SAU => luôn là GIÁ CAO NHẤT
-        if (label === "VÒNG SAU") return "GIÁ CAO NHẤT";
-
-        // TRÚNG => tuỳ win_method
-        if (label === "TRÚNG") {
-          const wm = (safeText(winMethod) || "").toUpperCase();
-          if (wm === "LOTTERY") return "GIÁ TRÚNG (BỐC THĂM)";
-          return "GIÁ TRÚNG";
-        }
-
-        return "GIÁ CAO NHẤT";
-      }
-
-      function maskSTT(stt) {
-        const v = safeText(stt).trim();
-        if (!v) return "STT —";
-        return `STT ${v}`;
-      }
-
-      function truncate(str, max) {
-        const s = safeText(str);
-        if (s.length <= max) return s;
-        return s.slice(0, Math.max(0, max - 1)) + "…";
-      }
-
-      function upperName(x) {
-        const s = safeText(x).trim();
-        return s ? s.toUpperCase() : "—";
+      function upperName(x){
+      const s = safeText(x).trim();
+      return s ? s.toUpperCase() : "—";
       }
       // =========================================================
       // Smart repeat count for marquee (avoid blind x10)
       // =========================================================
-      function calcRepeatN(realCount) {
-        const TARGET = 50; // muốn tối thiểu ~50 item để chạy mượt
-        const MAX_N = 10; // không cho nhân quá 10 lần
+      function calcRepeatN(realCount){
+      const TARGET = 50;   // muốn tối thiểu ~50 item để chạy mượt
+      const MAX_N  = 10;   // không cho nhân quá 10 lần
 
-        const c = Number(realCount || 0);
-        if (c <= 0) return 1;
+      const c = Number(realCount || 0);
+      if(c <= 0) return 1;
 
-        const n = Math.ceil(TARGET / c);
-        return Math.max(1, Math.min(n, MAX_N));
+      const n = Math.ceil(TARGET / c);
+      return Math.max(1, Math.min(n, MAX_N));
       }
       // =========================================================
       // Seamless vertical repeat (cap total items <= 50)
       // =========================================================
-      function calcRepeatTimesByMax(itemCount, targetItems = 28, maxItems = 50) {
-        const c = Number(itemCount || 0);
-        if (c <= 0) return 1;
+      function calcRepeatTimesByMax(itemCount, targetItems = 28, maxItems = 50){
+      const c = Number(itemCount || 0);
+      if(c <= 0) return 1;
 
-        // muốn >= targetItems cho mượt, nhưng tổng không vượt maxItems
-        const need = Math.ceil(targetItems / c);
-        const allow = Math.floor(maxItems / c) || 1;
+      // muốn >= targetItems cho mượt, nhưng tổng không vượt maxItems
+      const need = Math.ceil(targetItems / c);
+      const allow = Math.floor(maxItems / c) || 1;
 
-        return Math.max(1, Math.min(need, allow));
+      return Math.max(1, Math.min(need, allow));
       }
 
       /**
-       * Build innerHTML = (base repeated N times) duplicated 2 blocks for seamless loop
-       * return blockHeight (height of 1 block)
-       */
-      function setVerticalSeamless(innerEl, baseHtml, repeatTimes) {
-        const n = Math.max(1, Number(repeatTimes) || 1);
-        const block = (baseHtml || "").trim();
-        const safeBlock = block || `<div class="crow"><div class="r1"><div class="name">—</div><div class="stt">STT —</div></div></div>`;
+      * Build innerHTML = (base repeated N times) duplicated 2 blocks for seamless loop
+      * return blockHeight (height of 1 block)
+      */
+      function setVerticalSeamless(innerEl, baseHtml, repeatTimes){
+      const n = Math.max(1, Number(repeatTimes) || 1);
+      const block = (baseHtml || "").trim();
+      const safeBlock = block || `<div class="crow"><div class="r1"><div class="name">—</div><div class="stt">STT —</div></div></div>`;
 
-        const one = safeBlock.repeat(n);
-        innerEl.innerHTML = one + one; // double block for seamless
+      const one = safeBlock.repeat(n);
+      innerEl.innerHTML = one + one; // double block for seamless
 
-        // đo chiều cao 1 block (nửa tổng)
-        const blockHeight = innerEl.scrollHeight / 2;
-        return blockHeight || 0;
+      // đo chiều cao 1 block (nửa tổng)
+      const blockHeight = innerEl.scrollHeight / 2;
+      return blockHeight || 0;
       }
 
       // =========================================================
       // Measure base (non-duplicated) height to decide scroll or not
       // =========================================================
-      function measureBaseHeight(innerEl, baseHtml) {
-        // render đúng 1 lần để đo "chiều cao thật"
-        innerEl.innerHTML = (baseHtml || "").trim() ||
-          `<div class="crow"><div class="r1"><div class="name">—</div><div class="stt">STT —</div></div></div>`;
-        return innerEl.scrollHeight || 0;
+      function measureBaseHeight(innerEl, baseHtml){
+      // render đúng 1 lần để đo "chiều cao thật"
+      innerEl.innerHTML = (baseHtml || "").trim()
+      || `<div class="crow"><div class="r1"><div class="name">—</div><div class="stt">STT —</div></div></div>`;
+      return innerEl.scrollHeight || 0;
       }
 
       // =========================================================
       // Fullscreen
       // =========================================================
-      function toggleFullscreen() {
-        try {
-          if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen?.();
-          } else {
-            document.exitFullscreen?.();
-          }
-        } catch (_) {}
+      function toggleFullscreen(){
+      try{
+      if(!document.fullscreenElement){
+      document.documentElement.requestFullscreen?.();
+      }else{
+      document.exitFullscreen?.();
+      }
+      }catch(_){}
       }
       $("fsBtn").addEventListener("click", toggleFullscreen);
       // =========================================================
       // Sound toggle button
       // =========================================================
-      function renderSoundBtn() {
-        const btn = $("soundBtn");
-        const ico = $("soundIco");
-        if (!btn || !ico) return;
+      function renderSoundBtn(){
+      const btn = $("soundBtn");
+      const ico = $("soundIco");
+      if(!btn || !ico) return;
 
-        if (SOUND_ENABLED) {
-          btn.classList.remove("off");
-          ico.textContent = "🔊";
-          btn.title = "Âm thanh: BẬT (bấm để tắt)";
-        } else {
-          btn.classList.add("off");
-          ico.textContent = "🔇";
-          btn.title = "Âm thanh: TẮT (bấm để bật)";
-        }
+      if(SOUND_ENABLED){
+      btn.classList.remove("off");
+      ico.textContent = "🔊";
+      btn.title = "Âm thanh: BẬT (bấm để tắt)";
+      }else{
+      btn.classList.add("off");
+      ico.textContent = "🔇";
+      btn.title = "Âm thanh: TẮT (bấm để bật)";
+      }
       }
 
-      $("soundBtn").addEventListener("click", () => {
-        unlockAudioOnce();
-        SOUND_ENABLED = !SOUND_ENABLED;
+      $("soundBtn").addEventListener("click", ()=>{
+      unlockAudioOnce();
+      SOUND_ENABLED = !SOUND_ENABLED;
 
-        if (!SOUND_ENABLED) {
-          stopAllAudio();
-        } else {
-          playBackground();
-        }
-        renderSoundBtn();
+      if(!SOUND_ENABLED){
+      stopAllAudio();
+      }else{
+      playBackground();
+      }
+      renderSoundBtn();
       });
 
       // unlock audio khi user fullscreen (một click hợp lệ)
-      $("fsBtn").addEventListener("click", () => {
-        unlockAudioOnce();
+      $("fsBtn").addEventListener("click", ()=>{
+      unlockAudioOnce();
       });
+
 
       // =========================================================
       // Tickers (smooth): duplicate content many times
       // =========================================================
       // helper: set marquee content and duplicate x N times (for smooth scrolling)
-      function setMarqueeRepeat(trackEl, baseHtml, times) {
-        const n = Math.max(1, Number(times) || 1);
-        const base = (baseHtml || "").trim() ||
-          `<span class="marquee-item"><span class="m-stt">STT —</span><span class="m-name">—</span></span>`;
+      function setMarqueeRepeat(trackEl, baseHtml, times){
+      const n = Math.max(1, Number(times) || 1);
+      const base = (baseHtml || "").trim()
+      || `<span class="marquee-item"><span class="m-stt">STT —</span><span class="m-name">—</span></span>`;
 
-        const block = base.repeat(n);
-        trackEl.innerHTML = block + block; // ✅ double for seamless
-        trackEl.style.transform = "translateX(0px)";
+      const block = base.repeat(n);
+      trackEl.innerHTML = block + block;     // ✅ double for seamless
+      trackEl.style.transform = "translateX(0px)";
       }
 
-      function buildLotChips(lotCodes, cls, maxShow) {
-        const arr = (lotCodes || []).map(x => safeText(x).toUpperCase()).filter(Boolean);
-        if (!arr.length) return "";
+      function buildLotChips(lotCodes, cls, maxShow){
+      const arr = (lotCodes || []).map(x => safeText(x).toUpperCase()).filter(Boolean);
+      if(!arr.length) return "";
 
-        const limit = Math.max(1, Number(maxShow || 4)); // default 4 chip
-        // Nếu vượt limit => chừa 1 slot cho +N
-        if (arr.length > limit) {
-          const shown = arr.slice(0, limit - 1);
-          const rest = arr.length - shown.length; // số còn lại
-          // chỉ show +N nếu N>=2 theo yêu cầu
-          const plus = (rest >= 2) ? [`+${rest}`] : arr.slice(0, limit);
-          const finalList = (rest >= 2) ? shown.concat(plus) : plus;
+      const limit = Math.max(1, Number(maxShow || 4)); // default 4 chip
+      // Nếu vượt limit => chừa 1 slot cho +N
+      if(arr.length > limit){
+      const shown = arr.slice(0, limit - 1);
+      const rest = arr.length - shown.length; // số còn lại
+      // chỉ show +N nếu N>=2 theo yêu cầu
+      const plus = (rest >= 2) ? [`+${rest}`] : arr.slice(0, limit);
+      const finalList = (rest >= 2) ? shown.concat(plus) : plus;
 
-          return finalList.map(code => `<span class="chip ${cls}">${code}</span>`).join("");
-        }
-
-        // không dư
-        return arr.map(code => `<span class="chip ${cls}">${code}</span>`).join("");
+      return finalList.map(code => `<span class="chip ${cls}">${code}</span>`).join("");
       }
 
-      function buildTickerHTML(items, cls, maxShowChips) {
-        if (!items || !items.length) {
-          return `<div class="crow ${cls}"><div class="r1"><div class="name">—</div><div class="stt">STT —</div></div></div>`;
-        }
-
-        let html = "";
-        for (const it of items) {
-          const nm = upperName(it.name || "—");
-          const stt = safeText(it.stt || "—");
-
-          const chipsHtml = buildLotChips(it.lot_codes || [], cls, maxShowChips);
-
-          html += `
-           <div class="crow ${cls}">
-             <div class="r1">
-               <div class="name" title="${safeText(nm)}">${safeText(nm)}</div>
-               <div class="stt">STT ${safeText(stt)}</div>
-             </div>
-             ${chipsHtml ? `<div class="r2">${chipsHtml}</div>` : ``}
-           </div>
-         `;
-        }
-        return html;
+      // không dư
+      return arr.map(code => `<span class="chip ${cls}">${code}</span>`).join("");
       }
 
-      function startVerticalTicker(viewportEl, innerEl) {
-        // state lưu trên element để update không cần restart RAF
-        const st = innerEl._vtState || {
-          y: 0,
-          last: performance.now(),
-          speed: 18,
-          blockH: 0
-        };
-        innerEl._vtState = st;
 
-        function tick(now) {
-          const dt = (now - st.last) / 1000;
-          st.last = now;
+      function buildTickerHTML(items, cls, maxShowChips){
+      if(!items || !items.length){
+      return `<div class="crow ${cls}"><div class="r1"><div class="name">—</div><div class="stt">STT —</div></div></div>`;
+      }
 
-          const vh = viewportEl.clientHeight;
-          const bh = st.blockH || 0;
+      let html = "";
+      for(const it of items){
+      const nm  = upperName(it.name || "—");
+      const stt = safeText(it.stt || "—");
 
-          // nếu không đủ cao để scroll thì đứng yên
-          if (bh <= 0 || bh <= vh + 2) {
-            innerEl.style.transform = `translateY(0px)`;
-            requestAnimationFrame(tick);
-            return;
-          }
+      const chipsHtml = buildLotChips(it.lot_codes || [], cls, maxShowChips);
 
-          st.y = (st.y + st.speed * dt) % bh;
-          innerEl.style.transform = `translateY(${-st.y}px)`;
-          requestAnimationFrame(tick);
-        }
+      html += `
+      <div class="crow ${cls}">
+        <div class="r1">
+          <div class="name" title="${safeText(nm)}">${safeText(nm)}</div>
+          <div class="stt">STT ${safeText(stt)}</div>
+        </div>
+        ${chipsHtml ? `<div class="r2">${chipsHtml}</div>` : ``}
+      </div>
+      `;
+      }
+      return html;
+      }
 
-        requestAnimationFrame(tick);
+
+      function startVerticalTicker(viewportEl, innerEl){
+      // state lưu trên element để update không cần restart RAF
+      const st = innerEl._vtState || { y: 0, last: performance.now(), speed: 18, blockH: 0 };
+      innerEl._vtState = st;
+
+      function tick(now){
+      const dt = (now - st.last) / 1000;
+      st.last = now;
+
+      const vh = viewportEl.clientHeight;
+      const bh = st.blockH || 0;
+
+      // nếu không đủ cao để scroll thì đứng yên
+      if(bh <= 0 || bh <= vh + 2){
+      innerEl.style.transform = `translateY(0px)`;
+      requestAnimationFrame(tick);
+      return;
+      }
+
+      st.y = (st.y + st.speed * dt) % bh;
+      innerEl.style.transform = `translateY(${-st.y}px)`;
+      requestAnimationFrame(tick);
+      }
+
+      requestAnimationFrame(tick);
       }
 
       /** update content cho ticker dọc (won/next) */
       /** update content cho ticker dọc (won/next) */
-      function updateVerticalTicker(viewportEl, innerEl, baseHtml, itemCount, speed) {
-        const st = innerEl._vtState || {
-          y: 0,
-          last: performance.now(),
-          speed: 18,
-          blockH: 0
-        };
-        innerEl._vtState = st;
+      function updateVerticalTicker(viewportEl, innerEl, baseHtml, itemCount, speed){
+      const st = innerEl._vtState || { y: 0, last: performance.now(), speed: 18, blockH: 0 };
+      innerEl._vtState = st;
 
-        if (Number(speed) > 0) st.speed = Number(speed);
+      if(Number(speed) > 0) st.speed = Number(speed);
 
-        const vh = viewportEl.clientHeight;
+      const vh = viewportEl.clientHeight;
 
-        // ✅ 1) đo chiều cao THẬT (không duplicate)
-        const baseH = measureBaseHeight(innerEl, baseHtml);
+      // ✅ 1) đo chiều cao THẬT (không duplicate)
+      const baseH = measureBaseHeight(innerEl, baseHtml);
 
-        // ✅ 2) nếu danh sách thật lọt khung => KHÔNG scroll, KHÔNG duplicate
-        if (baseH <= vh + 2) {
-          st.blockH = 0;
-          st.y = 0;
-          innerEl.style.transform = `translateY(0px)`;
-          return;
-        }
-
-        // ✅ 3) nếu không lọt => mới seamless (repeat + double)
-        const times = calcRepeatTimesByMax(itemCount, 28, 50);
-        st.blockH = setVerticalSeamless(innerEl, baseHtml, times);
-
-        // giữ y để tránh giật
-        if (st.blockH > 0 && st.y > st.blockH) st.y = 0;
+      // ✅ 2) nếu danh sách thật lọt khung => KHÔNG scroll, KHÔNG duplicate
+      if(baseH <= vh + 2){
+      st.blockH = 0;
+      st.y = 0;
+      innerEl.style.transform = `translateY(0px)`;
+      return;
       }
 
-      function startCardsTicker(viewportEl, innerEl) {
-        const st = innerEl._ctState || {
-          y: 0,
-          last: performance.now(),
-          speed: 16,
-          blockH: 0
-        };
-        innerEl._ctState = st;
+      // ✅ 3) nếu không lọt => mới seamless (repeat + double)
+      const times = calcRepeatTimesByMax(itemCount, 28, 50);
+      st.blockH = setVerticalSeamless(innerEl, baseHtml, times);
 
-        function tick(now) {
-          const dt = (now - st.last) / 1000;
-          st.last = now;
-
-          const vh = viewportEl.clientHeight;
-          const bh = st.blockH || 0;
-
-          if (bh <= 0 || bh <= vh + 2) {
-            innerEl.style.transform = `translateY(0px)`;
-            requestAnimationFrame(tick);
-            return;
-          }
-
-          st.y = (st.y + st.speed * dt) % bh;
-          innerEl.style.transform = `translateY(${-st.y}px)`;
-          requestAnimationFrame(tick);
-        }
-
-        requestAnimationFrame(tick);
+      // giữ y để tránh giật
+      if(st.blockH > 0 && st.y > st.blockH) st.y = 0;
       }
 
-      function updateCardsTicker(viewportEl, innerEl, baseHtml, itemCount, speed) {
-        const st = innerEl._ctState || {
-          y: 0,
-          last: performance.now(),
-          speed: 16,
-          blockH: 0
-        };
-        innerEl._ctState = st;
 
-        if (Number(speed) > 0) st.speed = Number(speed);
 
-        const vh = viewportEl.clientHeight;
 
-        // ✅ đo chiều cao THẬT (không duplicate)
-        const baseH = measureBaseHeight(innerEl, baseHtml);
+      function startCardsTicker(viewportEl, innerEl){
+      const st = innerEl._ctState || { y: 0, last: performance.now(), speed: 16, blockH: 0 };
+      innerEl._ctState = st;
 
-        // ✅ fit => đứng yên (không lặp)
-        if (baseH <= vh + 2) {
-          st.blockH = 0;
-          st.y = 0;
-          innerEl.style.transform = `translateY(0px)`;
-          return;
-        }
+      function tick(now){
+      const dt = (now - st.last) / 1000;
+      st.last = now;
 
-        // ✅ không fit => seamless
-        const times = calcRepeatTimesByMax(itemCount, 24, 50);
-        st.blockH = setVerticalSeamless(innerEl, baseHtml, times);
+      const vh = viewportEl.clientHeight;
+      const bh = st.blockH || 0;
 
-        if (st.blockH > 0 && st.y > st.blockH) st.y = 0;
+      if(bh <= 0 || bh <= vh + 2){
+      innerEl.style.transform = `translateY(0px)`;
+      requestAnimationFrame(tick);
+      return;
       }
 
-      function startMarquee(trackEl, speedPxPerSec) {
-        let x = 0;
-        let last = performance.now();
-
-        function tick(now) {
-          const dt = (now - last) / 1000;
-          last = now;
-
-          const w = trackEl.scrollWidth;
-          const vw = trackEl.parentElement.clientWidth;
-
-          if (w <= vw) {
-            trackEl.style.transform = `translateX(0px)`;
-            requestAnimationFrame(tick);
-            return;
-          }
-
-          x += speedPxPerSec * dt;
-          if (x > w / 2) x = 0; // reset nửa track là đủ
-          trackEl.style.transform = `translateX(${-x}px)`;
-          requestAnimationFrame(tick);
-        }
-
-        requestAnimationFrame(tick);
+      st.y = (st.y + st.speed * dt) % bh;
+      innerEl.style.transform = `translateY(${-st.y}px)`;
+      requestAnimationFrame(tick);
       }
+
+      requestAnimationFrame(tick);
+      }
+
+      function updateCardsTicker(viewportEl, innerEl, baseHtml, itemCount, speed){
+      const st = innerEl._ctState || { y: 0, last: performance.now(), speed: 16, blockH: 0 };
+      innerEl._ctState = st;
+
+      if(Number(speed) > 0) st.speed = Number(speed);
+
+      const vh = viewportEl.clientHeight;
+
+      // ✅ đo chiều cao THẬT (không duplicate)
+      const baseH = measureBaseHeight(innerEl, baseHtml);
+
+      // ✅ fit => đứng yên (không lặp)
+      if(baseH <= vh + 2){
+      st.blockH = 0;
+      st.y = 0;
+      innerEl.style.transform = `translateY(0px)`;
+      return;
+      }
+
+      // ✅ không fit => seamless
+      const times = calcRepeatTimesByMax(itemCount, 24, 50);
+      st.blockH = setVerticalSeamless(innerEl, baseHtml, times);
+
+      if(st.blockH > 0 && st.y > st.blockH) st.y = 0;
+      }
+
+
+
+
+      function startMarquee(trackEl, speedPxPerSec){
+      let x = 0;
+      let last = performance.now();
+
+      function tick(now){
+      const dt = (now - last)/1000;
+      last = now;
+
+      const w = trackEl.scrollWidth;
+      const vw = trackEl.parentElement.clientWidth;
+
+      if(w <= vw){
+      trackEl.style.transform = `translateX(0px)`;
+      requestAnimationFrame(tick);
+      return;
+      }
+
+      x += speedPxPerSec * dt;
+      if(x > w / 2) x = 0;   // reset nửa track là đủ
+      trackEl.style.transform = `translateX(${-x}px)`;
+      requestAnimationFrame(tick);
+      }
+
+      requestAnimationFrame(tick);
+      }
+
 
       // =========================================================
       // UI render (keep content logic consistent)
@@ -2858,821 +2347,829 @@
       let _lastEventSig = null;
 
       let _teaseTimer = null;
-      let _hasBootstrapped = false; // đã load lần đầu chưa
-      let _toastShowing = false; // chặn spam khi toast đang hiện
+      let _hasBootstrapped = false;   // đã load lần đầu chưa
+      let _toastShowing = false;      // chặn spam khi toast đang hiện
 
-      function setTopTexts(payload) {
-        const c = payload?.context || {};
+      function setTopTexts(payload){
+      const c = payload?.context || {};
 
-        const company = safeText(c.company_name || "");
-        const project = safeText(c.project_name || "");
-        const sessionCode = safeText(c.project_code || c.session_id || "");
+      const company = safeText(c.company_name || "");
+      const project = safeText(c.project_name || "");
+      const sessionCode = safeText(c.project_code || c.session_id || "");
 
-        $("companyName").textContent = truncate(company.toUpperCase(), 26);
-        $("companyName").title = company;
+      $("companyName").textContent = truncate(company.toUpperCase(), 26);
+      $("companyName").title = company;
 
-        $("projectName").textContent = truncate(project.toUpperCase(), 34);
-        $("projectName").title = project;
+      $("projectName").textContent = truncate(project.toUpperCase(), 34);
+      $("projectName").title = project;
 
-        $("sessionCode").textContent = sessionCode ? `PHIÊN ${String(sessionCode).toUpperCase()}` : "PHIÊN —";
-        $("sessionCode").title = sessionCode;
+      $("sessionCode").textContent = sessionCode ? `PHIÊN ${String(sessionCode).toUpperCase()}` : "PHIÊN —";
+      $("sessionCode").title = sessionCode;
 
-        const roundNo = c.round_no ?? ROUND_NO;
-        const st = shortStatus(c.round_status || "");
-        $("roundLine").textContent = `VÒNG ${roundNo} • TRẠNG THÁI ${st}`;
+      const roundNo = c.round_no ?? ROUND_NO;
+      const st = shortStatus(c.round_status || "");
+      $("roundLine").textContent = `VÒNG ${roundNo} • TRẠNG THÁI ${st}`;
       }
 
-      function setKpis(payload) {
-        const s = payload?.context?.stats || {};
+      function setKpis(payload){
+      const s = payload?.context?.stats || {};
 
-        $("kpiTotalLots").textContent = fmtInt(s.total_lots ?? 0);
-        $("kpiWon").textContent = fmtInt(s.won_lots ?? 0);
-        $("kpiNext").textContent = fmtInt(s.next_lots ?? 0);
-        $("kpiPending").textContent = fmtInt(s.pending_lots ?? 0);
+      $("kpiTotalLots").textContent = fmtInt(s.total_lots ?? 0);
+      $("kpiWon").textContent      = fmtInt(s.won_lots ?? 0);
+      $("kpiNext").textContent     = fmtInt(s.next_lots ?? 0);
+      $("kpiPending").textContent  = fmtInt(s.pending_lots ?? 0);
       }
 
-      function setStatus(payload) {
-        const st = payload?.context?.round_status || "";
-        const cls = statusClass(st);
+      function setStatus(payload){
+      const st = payload?.context?.round_status || "";
+      const cls = statusClass(st);
 
-        const pill = $("statusPill");
-        pill.classList.remove("ok", "pri", "warn", "bad");
-        pill.classList.add(cls);
+      const pill = $("statusPill");
+      pill.classList.remove("ok","pri","warn","bad");
+      pill.classList.add(cls);
 
-        $("statusText").textContent = shortStatus(st);
+      $("statusText").textContent = shortStatus(st);
 
-        const dot = $("statusDot");
-        dot.style.background = (cls === "ok") ? "var(--ok)" : (cls === "pri" ? "var(--pri)" : "var(--bad)");
+      const dot = $("statusDot");
+      dot.style.background = (cls==="ok") ? "var(--ok)" : (cls==="pri" ? "var(--pri)" : "var(--bad)");
 
-        $("statusSub").textContent = "Hệ thống đang cập nhật kết quả theo thời gian thực.";
+      $("statusSub").textContent = "Hệ thống đang cập nhật kết quả theo thời gian thực.";
       }
 
-      function setWinnerPanel(label) {
-        const wrap = $("winnerWrap");
-        const badge = $("winnerBadge");
+      function setWinnerPanel(label){
+      const wrap = $("winnerWrap");
+      const badge = $("winnerBadge");
 
-        wrap.classList.remove("ok", "warn", "bad");
-        badge.classList.remove("ok", "warn", "bad");
+      wrap.classList.remove("ok","warn","bad");
+      badge.classList.remove("ok","warn","bad");
 
-        if (label === "TRÚNG") {
-          wrap.classList.add("ok");
-          badge.classList.add("ok");
-          badge.textContent = "TRÚNG";
-          $("winnerLabel").textContent = "NGƯỜI TRÚNG";
-        } else if (label === "VÒNG SAU") {
-          wrap.classList.add("warn");
-          badge.classList.add("warn");
-          badge.textContent = "VÒNG SAU";
-          $("winnerLabel").textContent = "CHUYỂN VÒNG SAU";
-        } else {
-          wrap.classList.add("bad");
-          badge.classList.add("bad");
-          badge.textContent = "CHƯA CÓ";
-          $("winnerLabel").textContent = "CHƯA CÓ KẾT QUẢ";
-        }
+      if(label === "TRÚNG"){
+      wrap.classList.add("ok");
+      badge.classList.add("ok");
+      badge.textContent = "TRÚNG";
+      $("winnerLabel").textContent = "NGƯỜI TRÚNG";
+      }else if(label === "VÒNG SAU"){
+      wrap.classList.add("warn");
+      badge.classList.add("warn");
+      badge.textContent = "VÒNG SAU";
+      $("winnerLabel").textContent = "CHUYỂN VÒNG SAU";
+      }else{
+      wrap.classList.add("bad");
+      badge.classList.add("bad");
+      badge.textContent = "CHƯA CÓ";
+      $("winnerLabel").textContent = "CHƯA CÓ KẾT QUẢ";
+      }
       }
 
-      function renderHeroNewest(payload) {
-        const newest =
-          (payload?.recent_checked_lots && payload.recent_checked_lots[0]) ?
-          payload.recent_checked_lots[0] :
-          (Array.isArray(payload?.by_lot) ? (payload.by_lot[0] || null) : null);
+      function renderHeroNewest(payload){
+      const newest =
+      (payload?.recent_checked_lots && payload.recent_checked_lots[0])
+      ? payload.recent_checked_lots[0]
+      : (Array.isArray(payload?.by_lot) ? (payload.by_lot[0] || null) : null);
 
-        const lot = newest?.lot || null;
+      const lot = newest?.lot || null;
 
-        const lotCode = safeText(lot?.lot_code || "—").toUpperCase();
-        const lotName = safeText(lot?.lot_name || "");
-        const lotDesc = safeText(lot?.lot_description || "—");
-        const areaText = fmtAreaM2(lot?.area_m2);
-        const desc = safeText(lot?.lot_description || "").trim();
+      const lotCode = safeText(lot?.lot_code || "—").toUpperCase();
+      const lotName = safeText(lot?.lot_name || "");
+      const lotDesc = safeText(lot?.lot_description || "—");
+      const areaText = fmtAreaM2(lot?.area_m2);
+      const desc = safeText(lot?.lot_description || "").trim();
 
-        $("heroLotKicker").textContent = "MÃ LÔ";
-        $("heroLotCode").textContent = lotCode || "—";
-        $("heroLotName").textContent = lotName ? truncate(lotName.toUpperCase(), 28) : "—";
-        $("heroLotDesc").textContent = desc ?
-          `DIỆN TÍCH: ${areaText} • ${desc}` :
-          `DIỆN TÍCH: ${areaText}`;
 
-        const rt = newest?.result_type || "";
-        const label = resultLabel(rt);
+      $("heroLotKicker").textContent = "MÃ LÔ";
+      $("heroLotCode").textContent = lotCode || "—";
+      $("heroLotName").textContent = lotName ? truncate(lotName.toUpperCase(), 28) : "—";
+      $("heroLotDesc").textContent = desc
+      ? `DIỆN TÍCH: ${areaText} • ${desc}`
+      : `DIỆN TÍCH: ${areaText}`;
 
-        const wm = newest?.win_method || ""; // NEW
-        const displayPrice =
-          (label === "TRÚNG") ?
-          (newest?.winning_price_vnd ?? newest?.price_vnd ?? 0) :
-          (newest?.price_vnd ?? 0);
 
-        $("priceLabel").textContent = priceLabelFor(label, wm);
-        $("heroPrice").textContent = fmtHeroMoney(displayPrice);
+      const rt = newest?.result_type || "";
+      const label = resultLabel(rt);
 
-        // badge kết quả: thêm win method nếu TRÚNG
-        const methodText = winMethodLabel(wm);
-        $("heroBadge2").textContent = (label === "TRÚNG" && methodText) ?
-          `${label} • ${methodText}` :
-          label;
+      const wm = newest?.win_method || "";                 // NEW
+      const displayPrice =
+      (label === "TRÚNG")
+      ? (newest?.winning_price_vnd ?? newest?.price_vnd ?? 0)
+      : (newest?.price_vnd ?? 0);
 
-        $("heroBadge1").textContent = "KẾT QUẢ MỚI";
+      $("priceLabel").textContent = priceLabelFor(label, wm);
+      $("heroPrice").textContent  = fmtHeroMoney(displayPrice);
 
-        setWinnerPanel(label);
+      // badge kết quả: thêm win method nếu TRÚNG
+      const methodText = winMethodLabel(wm);
+      $("heroBadge2").textContent = (label === "TRÚNG" && methodText)
+      ? `${label} • ${methodText}`
+      : label;
 
-        const winnerNameEl = $("winnerName");
-        winnerNameEl.classList.add("masked");
-        winnerNameEl.classList.remove("reveal");
+      $("heroBadge1").textContent = "KẾT QUẢ MỚI";
 
-        const winnerSttBoxEl = $("heroWinnerSttBox");
-        const winnerSttValEl = $("heroWinnerSttVal");
+      setWinnerPanel(label);
 
-        const nextWrap = $("heroNextWrap");
-        const nexts = newest?.next_customers || [];
+      const winnerNameEl = $("winnerName");
+      winnerNameEl.classList.add("masked");
+      winnerNameEl.classList.remove("reveal");
 
-        if (label === "TRÚNG") {
-          const winName = safeText(newest?.winner?.name || "");
-          const winStt = safeText(newest?.winner?.stt || "").trim();
+      const winnerSttBoxEl = $("heroWinnerSttBox");
+      const winnerSttValEl = $("heroWinnerSttVal");
 
-          winnerNameEl.innerHTML = `${upperName(winName)}<span class="caret">|</span>`;
-          nextWrap.style.display = "none"; // ẩn danh sách vòng sau ở HERO khi đã TRÚNG
 
-          // ✅ hiện STT box (cỡ chữ bằng tên)
-          if (winnerSttBoxEl && winnerSttValEl) {
-            winnerSttValEl.textContent = winStt ? winStt : "—";
-            winnerSttBoxEl.style.display = "block";
-            winnerSttBoxEl.classList.add("masked");
-            winnerSttBoxEl.classList.remove("reveal");
-          }
+      const nextWrap = $("heroNextWrap");
+      const nexts = newest?.next_customers || [];
 
-        } else if (label === "VÒNG SAU") {
-          const n = Number(newest?.next_count ?? nexts.length ?? 0) || 0;
-          winnerNameEl.innerHTML = `${fmtInt(n)} KHÁCH`;
-          nextWrap.style.display = "";
 
-          // ✅ VÒNG SAU => ẩn STT box
-          if (winnerSttBoxEl) {
-            winnerSttBoxEl.style.display = "none";
-          }
+      if(label==="TRÚNG"){
+      const winName = safeText(newest?.winner?.name || "");
+      const winStt  = safeText(newest?.winner?.stt  || "").trim();
 
-        } else {
-          winnerNameEl.innerHTML = `—<span class="caret">|</span>`;
-          nextWrap.style.display = "none"; // PENDING thì ẩn list vòng sau
+      winnerNameEl.innerHTML = `${upperName(winName)}<span class="caret">|</span>`;
+      nextWrap.style.display = "none"; // ẩn danh sách vòng sau ở HERO khi đã TRÚNG
 
-          // ✅ khác => ẩn STT box
-          if (winnerSttBoxEl) {
-            winnerSttBoxEl.style.display = "none";
-          }
-        }
+      // ✅ hiện STT box (cỡ chữ bằng tên)
+      if(winnerSttBoxEl && winnerSttValEl){
+      winnerSttValEl.textContent = winStt ? winStt : "—";
+      winnerSttBoxEl.style.display = "block";
+      winnerSttBoxEl.classList.add("masked");
+      winnerSttBoxEl.classList.remove("reveal");
+      }
 
-        const heroNextN = Number(newest?.next_count ?? nexts.length ?? 0) || 0;
+      }else if(label==="VÒNG SAU"){
+      const n = Number(newest?.next_count ?? nexts.length ?? 0) || 0;
+      winnerNameEl.innerHTML = `${fmtInt(n)} KHÁCH`;
+      nextWrap.style.display = "";
 
-        const baseHtml = nexts.length ?
-          nexts.map((p, idx) => {
-            const nm = upperName(p.name || "—");
-            const stt = safeText(p.stt || "—");
-            const no = idx + 1;
-            return `
-         <span class="marquee-item">
-         <span class="m-idx">#${no}</span>
-         <span class="m-stt">STT ${stt}</span>
-         <span class="m-name">${nm}</span>
-         </span>
-         `;
-          }).join("") :
-          `<span class="marquee-item"><span class="m-idx">#—</span><span class="m-stt">STT —</span><span class="m-name">—</span></span>`;
+      // ✅ VÒNG SAU => ẩn STT box
+      if(winnerSttBoxEl){
+      winnerSttBoxEl.style.display = "none";
+      }
 
-        const repeatN = calcRepeatN(nexts.length);
-        setMarqueeRepeat($("nextTrack"), baseHtml, repeatN);
+      }else{
+      winnerNameEl.innerHTML = `—<span class="caret">|</span>`;
+      nextWrap.style.display = "none"; // PENDING thì ẩn list vòng sau
 
-        clearTimeout(_teaseTimer);
-        _teaseTimer = setTimeout(() => {
-          winnerNameEl.classList.remove("masked");
-          winnerNameEl.classList.add("reveal");
+      // ✅ khác => ẩn STT box
+      if(winnerSttBoxEl){
+      winnerSttBoxEl.style.display = "none";
+      }
+      }
 
-          if (winnerSttBoxEl && getComputedStyle(winnerSttBoxEl).display !== "none") {
-            winnerSttBoxEl.classList.remove("masked");
-            winnerSttBoxEl.classList.add("reveal");
-          }
 
-        }, 1600);
+      const heroNextN = Number(newest?.next_count ?? nexts.length ?? 0) || 0;
 
-        // ✅ CHỈ trigger khi có round_lot_id thật + kết quả là TRÚNG / VÒNG SAU
-        const rid = newest?.round_lot_id;
 
-        // label bạn đã tính ở trên: resultLabel(rt) => "TRÚNG" / "VÒNG SAU" / "CHƯA CÓ"
-        const shouldNotify = (label === "TRÚNG" || label === "VÒNG SAU");
+      const baseHtml = nexts.length
+      ? nexts.map((p, idx)=>{
+      const nm = upperName(p.name||"—");
+      const stt = safeText(p.stt||"—");
+      const no = idx + 1;
+      return `
+      <span class="marquee-item">
+        <span class="m-idx">#${no}</span>
+        <span class="m-stt">STT ${stt}</span>
+        <span class="m-name">${nm}</span>
+      </span>
+      `;
+      }).join("")
+      : `<span class="marquee-item"><span class="m-idx">#—</span><span class="m-stt">STT —</span><span class="m-name">—</span></span>`;
 
-        // tạo “event signature” ổn định: cùng 1 lô + cùng kết quả + cùng giá/winner/next_count thì KHÔNG coi là mới
-        const sig = rid ? [
-          String(rid),
-          String((newest?.result_type || newest?.result || "")).toUpperCase(),
-          String(Number(newest?.price_vnd || 0) || 0),
-          String(newest?.winner?.stt || ""),
-          String(Number(newest?.next_count ?? (newest?.next_customers?.length ?? 0)) || 0),
-        ].join("|") : "";
 
-        // bootstrap: chỉ ghi nhớ, không kêu
-        if (!_hasBootstrapped) {
-          _lastEventSig = sig || null;
-          _hasBootstrapped = true;
-        } else {
-          // ✅ bỏ qua nếu:
-          // - không có rid (dữ liệu thiếu) => tránh “nhảy key”
-          // - không phải TRÚNG/VÒNG SAU
-          // - đang show toast (chặn spam)
-          if (rid && shouldNotify && sig && sig !== _lastEventSig && !_toastShowing) {
-            _lastEventSig = sig;
-            handleNewEventWithSound(newest, lotCode);
-          }
-        }
+      const repeatN = calcRepeatN(nexts.length);
+      setMarqueeRepeat($("nextTrack"), baseHtml, repeatN);
+
+      clearTimeout(_teaseTimer);
+      _teaseTimer = setTimeout(()=>{
+      winnerNameEl.classList.remove("masked");
+      winnerNameEl.classList.add("reveal");
+
+      if(winnerSttBoxEl && getComputedStyle(winnerSttBoxEl).display !== "none"){
+      winnerSttBoxEl.classList.remove("masked");
+      winnerSttBoxEl.classList.add("reveal");
+      }
+
+      }, 1600);
+
+
+      // ✅ CHỈ trigger khi có round_lot_id thật + kết quả là TRÚNG / VÒNG SAU
+      const rid = newest?.round_lot_id;
+
+      // label bạn đã tính ở trên: resultLabel(rt) => "TRÚNG" / "VÒNG SAU" / "CHƯA CÓ"
+      const shouldNotify = (label === "TRÚNG" || label === "VÒNG SAU");
+
+      // tạo “event signature” ổn định: cùng 1 lô + cùng kết quả + cùng giá/winner/next_count thì KHÔNG coi là mới
+      const sig = rid ? [
+      String(rid),
+      String((newest?.result_type || newest?.result || "")).toUpperCase(),
+      String(Number(newest?.price_vnd || 0) || 0),
+      String(newest?.winner?.stt || ""),
+      String(Number(newest?.next_count ?? (newest?.next_customers?.length ?? 0)) || 0),
+      ].join("|") : "";
+
+      // bootstrap: chỉ ghi nhớ, không kêu
+      if(!_hasBootstrapped){
+      _lastEventSig = sig || null;
+      _hasBootstrapped = true;
+      } else {
+      // ✅ bỏ qua nếu:
+      // - không có rid (dữ liệu thiếu) => tránh “nhảy key”
+      // - không phải TRÚNG/VÒNG SAU
+      // - đang show toast (chặn spam)
+      if(rid && shouldNotify && sig && sig !== _lastEventSig && !_toastShowing){
+      _lastEventSig = sig;
+      handleNewEventWithSound(newest, lotCode);
+      }
+      }
+
 
       }
 
-      function renderLeftLists(payload) {
-        const bc = Array.isArray(payload?.by_customer) ? payload.by_customer : [];
+      function renderLeftLists(payload){
+      const bc = Array.isArray(payload?.by_customer) ? payload.by_customer : [];
 
-        // ✅ TRÚNG: mỗi row = 1 khách, chips = list lô trúng
-        const winners = bc
-          .filter(x => Array.isArray(x?.won_lots) && x.won_lots.length > 0)
-          .map(x => ({
-            name: x?.customer?.name,
-            stt: x?.customer?.stt,
-            lot_codes: (x.won_lots || []).map(l => l?.lot_code).filter(Boolean)
-          }));
+      // ✅ TRÚNG: mỗi row = 1 khách, chips = list lô trúng
+      const winners = bc
+      .filter(x => Array.isArray(x?.won_lots) && x.won_lots.length > 0)
+      .map(x => ({
+      name: x?.customer?.name,
+      stt:  x?.customer?.stt,
+      lot_codes: (x.won_lots || []).map(l => l?.lot_code).filter(Boolean)
+      }));
 
-        // ✅ VÒNG SAU: mỗi row = 1 khách, chips = list lô vào vòng sau
-        const nexts = bc
-          .filter(x => Array.isArray(x?.next_lots) && x.next_lots.length > 0)
-          .map(x => ({
-            name: x?.customer?.name,
-            stt: x?.customer?.stt,
-            lot_codes: (x.next_lots || []).map(l => l?.lot_code).filter(Boolean)
-          }));
+      // ✅ VÒNG SAU: mỗi row = 1 khách, chips = list lô vào vòng sau
+      const nexts = bc
+      .filter(x => Array.isArray(x?.next_lots) && x.next_lots.length > 0)
+      .map(x => ({
+      name: x?.customer?.name,
+      stt:  x?.customer?.stt,
+      lot_codes: (x.next_lots || []).map(l => l?.lot_code).filter(Boolean)
+      }));
 
-        // ✅ badge trên box = số người (không phải số lô)
-        $("wonCountTag").textContent = fmtInt(winners.length);
-        $("nextCountTag").textContent = fmtInt(nexts.length);
+      // ✅ badge trên box = số người (không phải số lô)
+      $("wonCountTag").textContent  = fmtInt(winners.length);
+      $("nextCountTag").textContent = fmtInt(nexts.length);
 
-        const wonEl = $("wonTicker");
-        const nextEl = $("nextTicker");
+      const wonEl  = $("wonTicker");
+      const nextEl = $("nextTicker");
 
-        // max chip 1 dòng: bạn chỉnh tuỳ ý
-        const wonHtml = buildTickerHTML(winners, "won", 4);
-        const nextHtml = buildTickerHTML(nexts, "next", 4);
+      // max chip 1 dòng: bạn chỉnh tuỳ ý
+      const wonHtml  = buildTickerHTML(winners, "won", 4);
+      const nextHtml = buildTickerHTML(nexts, "next", 4);
 
-        wonEl.dataset.realCount = String(winners.length);
-        nextEl.dataset.realCount = String(nexts.length);
+      wonEl.dataset.realCount  = String(winners.length);
+      nextEl.dataset.realCount = String(nexts.length);
 
-        if (!_initedTickers) {
-          wonEl.innerHTML = wonHtml;
-          nextEl.innerHTML = nextHtml;
-          return;
-        }
-
-        const wonVp = wonEl.closest(".ticker-viewport");
-        const nextVp = nextEl.closest(".ticker-viewport");
-
-        updateVerticalTicker(wonVp, wonEl, wonHtml, winners.length, 18);
-        updateVerticalTicker(nextVp, nextEl, nextHtml, nexts.length, 18);
+      if(!_initedTickers){
+      wonEl.innerHTML  = wonHtml;
+      nextEl.innerHTML = nextHtml;
+      return;
       }
+
+      const wonVp  = wonEl.closest(".ticker-viewport");
+      const nextVp = nextEl.closest(".ticker-viewport");
+
+      updateVerticalTicker(wonVp, wonEl, wonHtml, winners.length, 18);
+      updateVerticalTicker(nextVp, nextEl, nextHtml, nexts.length, 18);
+      }
+
 
       // RIGHT: cards show lot + highest price + list top 5 next customers (if NEXT_ROUND)
-      function renderRightLots(payload) {
-        const src = Array.isArray(payload?.by_lot) ? payload.by_lot : [];
+      function renderRightLots(payload){
+      const src = Array.isArray(payload?.by_lot) ? payload.by_lot : [];
 
-        const lots = src.filter(it => {
-          const rt = (safeText(it?.result_type || "")).toUpperCase();
-          return rt && rt !== "PENDING";
-        });
+      const lots = src.filter(it => {
+      const rt = (safeText(it?.result_type || "")).toUpperCase();
+      return rt && rt !== "PENDING";
+      });
 
-        if (!lots.length) {
-          $("lotCards").innerHTML = `
-               <div class="lotcard next">
-                 <div class="top">
-                   <div class="code">—</div>
-                   <div class="flag no">CHƯA CÓ</div>
-                 </div>
-                 <div class="mid">
-                   <div class="meta"><span class="pill warn">CHƯA CÓ LÔ TRÚNG / VÒNG SAU</span></div>
-                   <div class="countbox">
-                     <div class="count">0</div>
-                     <div class="sub">VÒNG SAU</div>
-                   </div>
-                 </div>
-               </div>
-             `;
-          return;
-        }
+      if(!lots.length){
+      $("lotCards").innerHTML = `
+      <div class="lotcard next">
+        <div class="top">
+          <div class="code">—</div>
+          <div class="flag no">CHƯA CÓ</div>
+        </div>
+        <div class="mid">
+          <div class="meta"><span class="pill warn">CHƯA CÓ LÔ TRÚNG / VÒNG SAU</span></div>
+          <div class="countbox">
+            <div class="count">0</div>
+            <div class="sub">VÒNG SAU</div>
+          </div>
+        </div>
+      </div>
+      `;
+      return;
+      }
 
-        let html = "";
-        for (const it of lots) {
-          const rt = safeText(it?.result_type || "").toUpperCase();
-          const isWin = (rt === "WINNER" || rt.includes("WIN"));
-          const isNext = (rt === "NEXT_ROUND" || rt.includes("NEXT"));
+      let html = "";
+      for(const it of lots){
+      const rt = safeText(it?.result_type || "").toUpperCase();
+      const isWin  = (rt === "WINNER" || rt.includes("WIN"));
+      const isNext = (rt === "NEXT_ROUND" || rt.includes("NEXT"));
 
-          const code = safeText(it?.lot?.lot_code || it?.lot_code || "—").toUpperCase();
+      const code = safeText(it?.lot?.lot_code || it?.lot_code || "—").toUpperCase();
 
-          const wm = it?.win_method || "";
-          const methodText = winMethodLabel(wm);
+      const wm = it?.win_method || "";
+      const methodText = winMethodLabel(wm);
 
-          const price =
-            isWin ?
-            (Number(it?.winning_price_vnd ?? it?.price_vnd ?? 0) || 0) :
-            (Number(it?.price_vnd ?? 0) || 0);
+      const price =
+      isWin
+      ? (Number(it?.winning_price_vnd ?? it?.price_vnd ?? 0) || 0)
+      : (Number(it?.price_vnd ?? 0) || 0);
 
-          const priceText = price > 0 ? `${fmtMoney(price)}` : "—";
+      const priceText = price > 0 ? `${fmtMoney(price)}` : "—";
 
-          const nextCustomers = Array.isArray(it?.next_customers) ? it.next_customers : [];
-          const nextCount = Number(it?.next_count ?? nextCustomers.length ?? 0) || 0;
 
-          const winnerStt = it?.winner?.stt;
-          const winnerName = it?.winner?.name;
+      const nextCustomers = Array.isArray(it?.next_customers) ? it.next_customers : [];
+      const nextCount = Number(it?.next_count ?? nextCustomers.length ?? 0) || 0;
 
-          const cardClass = isWin ? "win" : (isNext ? "next" : "");
-          const flagCls = isWin ? "win" : (isNext ? "next" : "no");
-          const flagText = isWin ? "TRÚNG" : (isNext ? "VÒNG SAU" : "CHƯA CÓ");
+      const winnerStt = it?.winner?.stt;
+      const winnerName = it?.winner?.name;
 
-          // top 5 names
-          const top5 = nextCustomers.slice(0, 5);
-          const extra = Math.max(0, nextCustomers.length - top5.length);
+      const cardClass = isWin ? "win" : (isNext ? "next" : "");
+      const flagCls   = isWin ? "win" : (isNext ? "next" : "no");
+      const flagText  = isWin ? "TRÚNG" : (isNext ? "VÒNG SAU" : "CHƯA CÓ");
 
-          const nlistHtml = isNext ?
-            `
-                 <div class="nlist">
-                   ${top5.map((c, idx)=>{
-                     const stt = safeText(c?.stt || "—");
-                     const nm = upperName(c?.name || "—");
-                     return `
-                       <div class="nrow">
-                         <div class="nleft">
-                           <span class="nstt">STT ${stt}</span>
-                           <span class="nname" title="${safeText(nm)}">${safeText(nm)}</span>
-                         </div>
-                         <span class="ntail">#${idx+1}</span>
-                       </div>
-                     `;
-                   }).join("")}
-                   ${extra > 0 ? `<div class="nrow"><div class="nleft"><span class="nstt">+${extra}</span><span class="nname">KHÁCH KHÁC</span></div><span class="ntail">…</span></div>` : ``}
-                 </div>
-               ` :
-            ``;
+      // top 5 names
+      const top5 = nextCustomers.slice(0,5);
+      const extra = Math.max(0, nextCustomers.length - top5.length);
 
-          const winnerSttText = safeText(winnerStt || "—");
-          const winnerNameText = upperName(winnerName || "—");
+      const nlistHtml = isNext
+      ? `
+      <div class="nlist">
+        ${top5.map((c, idx)=>{
+        const stt = safeText(c?.stt || "—");
+        const nm = upperName(c?.name || "—");
+        return `
+        <div class="nrow">
+          <div class="nleft">
+            <span class="nstt">STT ${stt}</span>
+            <span class="nname" title="${safeText(nm)}">${safeText(nm)}</span>
+          </div>
+          <span class="ntail">#${idx+1}</span>
+        </div>
+        `;
+        }).join("")}
+        ${extra > 0 ? `<div class="nrow"><div class="nleft"><span class="nstt">+${extra}</span><span class="nname">KHÁCH KHÁC</span></div><span class="ntail">…</span></div>` : ``}
+      </div>
+      `
+      : ``;
 
-          if (isWin) {
-            html += `
-                 <div class="lotcard win">
-                   <div class="top">
-                     <div class="code" title="${safeText(code)}">${safeText(code)}</div>
-                     <div class="flag win">${methodText ? `TRÚNG • ${methodText}` : "TRÚNG"}</div>
-                   </div>
+      const winnerSttText = safeText(winnerStt || "—");
+      const winnerNameText = upperName(winnerName || "—");
 
-                   <div class="row2">
-                     <div class="pricebig">${priceText}</div>
-                   </div>
+      if(isWin){
+      html += `
+      <div class="lotcard win">
+        <div class="top">
+          <div class="code" title="${safeText(code)}">${safeText(code)}</div>
+          <div class="flag win">${methodText ? `TRÚNG • ${methodText}` : "TRÚNG"}</div>
+        </div>
 
-                   <div class="winnerline">
-                     <span class="wstt">STT ${winnerSttText}</span>
-                     <span class="wname" title="${safeText(winnerNameText)}">${safeText(winnerNameText)}</span>
-                   </div>
-                 </div>
-               `;
-          } else if (isNext) {
-            html += `
-                 <div class="lotcard next">
-                   <div class="top">
-                     <div class="code" title="${safeText(code)}">${safeText(code)}</div>
-                     <div class="flag next">VÒNG SAU</div>
-                   </div>
+        <div class="row2">
+          <div class="pricebig">${priceText}</div>
+        </div>
 
-                   <div class="row2">
-                     <div class="pricebig">${priceText}</div>
+        <div class="winnerline">
+          <span class="wstt">STT ${winnerSttText}</span>
+          <span class="wname" title="${safeText(winnerNameText)}">${safeText(winnerNameText)}</span>
+        </div>
+      </div>
+      `;
+      } else if(isNext){
+      html += `
+      <div class="lotcard next">
+        <div class="top">
+          <div class="code" title="${safeText(code)}">${safeText(code)}</div>
+          <div class="flag next">VÒNG SAU</div>
+        </div>
 
-                     <div class="countbox">
-                       <div class="count">${fmtInt(nextCount)}</div>
-                       <div class="sub">VÒNG SAU</div>
-                     </div>
-                   </div>
+        <div class="row2">
+          <div class="pricebig">${priceText}</div>
 
-                   ${nlistHtml}
-                 </div>
-               `;
-          }
+          <div class="countbox">
+            <div class="count">${fmtInt(nextCount)}</div>
+            <div class="sub">VÒNG SAU</div>
+          </div>
+        </div>
 
-        }
-
-        const cardsEl = $("lotCards");
-        cardsEl.innerHTML = html;
-        cardsEl.dataset.realCount = String(lots.length);
-
-        if (_initedTickers) {
-          const cvp = cardsEl.closest(".cards-viewport");
-          const itemCount = lots.length;
-          updateCardsTicker(cvp, cardsEl, html, itemCount, 16);
-        }
+        ${nlistHtml}
+      </div>
+      `;
+      }
 
       }
 
-      function renderRecent(payload) {
-        const rec = payload?.recent_checked_lots || [];
+      const cardsEl = $("lotCards");
+      cardsEl.innerHTML = html;
+      cardsEl.dataset.realCount = String(lots.length);
 
-        // ✅ BỎ HERO (hero đang dùng rec[0]) => recent lấy từ rec[1], rec[2]
-        const arr = rec.slice(1, 3); // đúng 2 item
-        while (arr.length < 2) arr.push(null);
+      if(_initedTickers){
+      const cvp = cardsEl.closest(".cards-viewport");
+      const itemCount = lots.length;
+      updateCardsTicker(cvp, cardsEl, html, itemCount, 16);
+      }
 
-        const html = arr.map((it) => {
-          if (!it) {
-            return `
-             <div class="rslot no">
-               <div class="lc">—</div>
-               <div class="badge-rt no">CHƯA CÓ</div>
-               <div class="price-big">—</div>
-               <div class="who-line">
-                 <span class="stt-pill">STT —</span>
-                 <span class="winner-name">—</span>
-               </div>
-             </div>
-           `;
-          }
 
-          const code = safeText(it?.lot?.lot_code || "—").toUpperCase();
-          const rt = it?.result_type || "";
-          const cls = resultClass(rt);
-          const lab = resultLabel(rt);
+      }
 
-          const wm = it?.win_method || "";
-          const methodText = winMethodLabel(wm);
+      function renderRecent(payload){
+      const rec = payload?.recent_checked_lots || [];
 
-          const displayPrice =
-            (lab === "TRÚNG") ?
-            (it?.winning_price_vnd ?? it?.price_vnd ?? 0) :
-            (it?.price_vnd ?? 0);
+      // ✅ BỎ HERO (hero đang dùng rec[0]) => recent lấy từ rec[1], rec[2]
+      const arr = rec.slice(1, 3); // đúng 2 item
+      while(arr.length < 2) arr.push(null);
 
-          const priceText = fmtHeroMoney(displayPrice);
 
-          const winnerName = upperName(it?.winner?.name || "—");
-          const winnerStt = safeText(it?.winner?.stt || "—");
+      const html = arr.map((it)=>{
+      if(!it){
+      return `
+      <div class="rslot no">
+        <div class="lc">—</div>
+        <div class="badge-rt no">CHƯA CÓ</div>
+        <div class="price-big">—</div>
+        <div class="who-line">
+          <span class="stt-pill">STT —</span>
+          <span class="winner-name">—</span>
+        </div>
+      </div>
+      `;
+      }
 
-          const nextCount = Number(it?.next_count ?? (it?.next_customers?.length ?? 0)) || 0;
+      const code = safeText(it?.lot?.lot_code || "—").toUpperCase();
+      const rt = it?.result_type || "";
+      const cls = resultClass(rt);
+      const lab = resultLabel(rt);
 
-          // ✅ Layout mới:
-          // - Không còn dòng "TRẠNG THÁI"
-          // - TRÚNG: STT pill + Tên
-          // - VÒNG SAU: pill "N KHÁCH"
-          if (lab === "TRÚNG") {
-            return `
-             <div class="rslot ${cls}">
-               <div class="lc" title="${safeText(code)}">${safeText(code)}</div>
-               <div class="badge-rt ${cls}">${methodText ? `TRÚNG • ${methodText}` : "TRÚNG"}</div>
+      const wm = it?.win_method || "";
+      const methodText = winMethodLabel(wm);
 
-               <div class="who-line" title="${safeText(winnerName)}">
-                 <span class="stt-pill">STT ${winnerStt}</span>
-                 <span class="winner-name">${safeText(winnerName)}</span>
-               </div>
+      const displayPrice =
+      (lab === "TRÚNG")
+      ? (it?.winning_price_vnd ?? it?.price_vnd ?? 0)
+      : (it?.price_vnd ?? 0);
 
-               <div class="price-big">${priceText}</div>
-             </div>
-           `;
-          }
+      const priceText = fmtHeroMoney(displayPrice);
 
-          if (lab === "VÒNG SAU") {
-            return `
-             <div class="rslot ${cls}">
-               <div class="lc" title="${safeText(code)}">${safeText(code)}</div>
-               <div class="badge-rt ${cls}">${lab}</div>
 
-               <div class="who-line">
-                 <span class="next-pill">${fmtInt(nextCount)} KHÁCH</span>
-                 <span class="winner-name">CHUYỂN VÒNG SAU</span>
-               </div>
+      const winnerName = upperName(it?.winner?.name || "—");
+      const winnerStt  = safeText(it?.winner?.stt || "—");
 
-               <div class="price-big">${priceText}</div>
-             </div>
-           `;
-          }
+      const nextCount = Number(it?.next_count ?? (it?.next_customers?.length ?? 0)) || 0;
 
-          // CHƯA CÓ
-          return `
-           <div class="rslot ${cls}">
-             <div class="lc" title="${safeText(code)}">${safeText(code)}</div>
-             <div class="badge-rt ${cls}">${lab}</div>
+      // ✅ Layout mới:
+      // - Không còn dòng "TRẠNG THÁI"
+      // - TRÚNG: STT pill + Tên
+      // - VÒNG SAU: pill "N KHÁCH"
+      if(lab === "TRÚNG"){
+      return `
+      <div class="rslot ${cls}">
+        <div class="lc" title="${safeText(code)}">${safeText(code)}</div>
+        <div class="badge-rt ${cls}">${methodText ? `TRÚNG • ${methodText}` : "TRÚNG"}</div>
 
-             <div class="who-line">
-               <span class="stt-pill">STT —</span>
-               <span class="winner-name">CHƯA CÓ KẾT QUẢ</span>
-             </div>
+        <div class="who-line" title="${safeText(winnerName)}">
+          <span class="stt-pill">STT ${winnerStt}</span>
+          <span class="winner-name">${safeText(winnerName)}</span>
+        </div>
 
-             <div class="price-big">${priceText}</div>
-           </div>
-         `;
-        }).join("");
+        <div class="price-big">${priceText}</div>
+      </div>
+      `;
+      }
 
-        $("recentBody").innerHTML = html;
+      if(lab === "VÒNG SAU"){
+      return `
+      <div class="rslot ${cls}">
+        <div class="lc" title="${safeText(code)}">${safeText(code)}</div>
+        <div class="badge-rt ${cls}">${lab}</div>
+
+        <div class="who-line">
+          <span class="next-pill">${fmtInt(nextCount)} KHÁCH</span>
+          <span class="winner-name">CHUYỂN VÒNG SAU</span>
+        </div>
+
+        <div class="price-big">${priceText}</div>
+      </div>
+      `;
+      }
+
+      // CHƯA CÓ
+      return `
+      <div class="rslot ${cls}">
+        <div class="lc" title="${safeText(code)}">${safeText(code)}</div>
+        <div class="badge-rt ${cls}">${lab}</div>
+
+        <div class="who-line">
+          <span class="stt-pill">STT —</span>
+          <span class="winner-name">CHƯA CÓ KẾT QUẢ</span>
+        </div>
+
+        <div class="price-big">${priceText}</div>
+      </div>
+      `;
+      }).join("");
+
+      $("recentBody").innerHTML = html;
       }
 
       // =========================================================
       // TOAST (blur whole page + big popup)
       // =========================================================
-      function showToast(type, title, badge, line1, line2, line3, line4, line5) {
-        const toast = $("toast");
-        const ov = $("toastOverlay");
+      function showToast(type, title, badge, line1, line2, line3, line4, line5){
+      const toast = $("toast");
+      const ov = $("toastOverlay");
 
-        _toastShowing = true; // ✅ lock
+      _toastShowing = true; // ✅ lock
 
-        toast.classList.remove("ok", "warn", "bad", "show");
-        toast.classList.add(type);
+      toast.classList.remove("ok","warn","bad","show");
+      toast.classList.add(type);
 
-        $("toastTitle").textContent = safeText(title);
-        $("toastBadge").textContent = safeText(badge);
+      $("toastTitle").textContent = safeText(title);
+      $("toastBadge").textContent = safeText(badge);
 
-        $("toastLine1").textContent = safeText(line1);
-        $("toastLine2").innerHTML = safeText(line2);
-        $("toastLine3").innerHTML = safeText(line3);
-        $("toastLine4").innerHTML = safeText(line4);
+      $("toastLine1").textContent = safeText(line1);
+      $("toastLine2").innerHTML = safeText(line2);
+      $("toastLine3").innerHTML = safeText(line3);
+      $("toastLine4").innerHTML = safeText(line4);
 
-        const line5El = $("toastLine5");
-        const pill = line5El.querySelector(".pillbig");
-        if (pill) {
-          pill.textContent = safeText(line5);
 
-          pill.style.borderColor = (type === "warn") ? "rgba(251,191,36,.35)" : "rgba(52,211,153,.35)";
-          pill.style.background = (type === "warn") ? "rgba(251,191,36,.14)" : "rgba(52,211,153,.14)";
-          pill.style.boxShadow = (type === "warn") ? "0 0 18px rgba(251,191,36,.22)" : "0 0 18px rgba(52,211,153,.25)";
-        }
+      const line5El = $("toastLine5");
+      const pill = line5El.querySelector(".pillbig");
+      if(pill){
+      pill.textContent = safeText(line5);
 
-        ov.classList.add("show");
-        toast.classList.add("show");
+      pill.style.borderColor = (type === "warn") ? "rgba(251,191,36,.35)" : "rgba(52,211,153,.35)";
+      pill.style.background  = (type === "warn") ? "rgba(251,191,36,.14)" : "rgba(52,211,153,.14)";
+      pill.style.boxShadow   = (type === "warn") ? "0 0 18px rgba(251,191,36,.22)" : "0 0 18px rgba(52,211,153,.25)";
+      }
 
-        const TOAST_MS = 10000; // đang dùng 10s
-        const PRE_FADE_MS = 3000; // ✅ 3s trước khi đóng toast
-        const FADE_OUT_MS = 2500; // ✅ fade trong 2.5s (êm)
-        const BG_FADE_IN_MS = 1200; // ✅ bg vào lại 1.2s
+      ov.classList.add("show");
+      toast.classList.add("show");
 
-        clearTimeout(showToast._t);
-        clearTimeout(showToast._preFadeT);
+      const TOAST_MS = 10000;          // đang dùng 10s
+      const PRE_FADE_MS = 3000;        // ✅ 3s trước khi đóng toast
+      const FADE_OUT_MS = 2500;        // ✅ fade trong 2.5s (êm)
+      const BG_FADE_IN_MS = 1200;      // ✅ bg vào lại 1.2s
 
-        // ✅ hẹn fade 3s trước khi toast đóng
-        showToast._preFadeT = setTimeout(() => {
-          if (!SOUND_ENABLED) return;
+      clearTimeout(showToast._t);
+      clearTimeout(showToast._preFadeT);
 
-          // fade nhẹ win/next về gần im (không stop ngay)
-          // (gọi cả 2 cái vẫn ok)
-          fadeAudioTo(audio.win, 0.06, FADE_OUT_MS);
-          fadeAudioTo(audio.next, 0.06, FADE_OUT_MS);
+      // ✅ hẹn fade 3s trước khi toast đóng
+      showToast._preFadeT = setTimeout(()=>{
+      if(!SOUND_ENABLED) return;
 
-        }, Math.max(0, TOAST_MS - PRE_FADE_MS));
+      // fade nhẹ win/next về gần im (không stop ngay)
+      // (gọi cả 2 cái vẫn ok)
+      fadeAudioTo(audio.win,  0.06, FADE_OUT_MS);
+      fadeAudioTo(audio.next, 0.06, FADE_OUT_MS);
 
-        // ✅ tới lúc đóng toast: tắt hẳn rồi bg quay lại mượt
-        showToast._t = setTimeout(async () => {
-          toast.classList.remove("show");
-          ov.classList.remove("show");
+      }, Math.max(0, TOAST_MS - PRE_FADE_MS));
 
-          // fade về im hẳn rồi stop
-          await Promise.all([
-            fadeOutAndStop(audio.win, 250),
-            fadeOutAndStop(audio.next, 250),
-          ]);
-          // nếu vẫn muốn chắc chắn bell tắt thì chỉ stop thôi:
-          _safeStop(audio.bell);
+      // ✅ tới lúc đóng toast: tắt hẳn rồi bg quay lại mượt
+      showToast._t = setTimeout(async ()=>{
+      toast.classList.remove("show");
+      ov.classList.remove("show");
 
-          // bg quay lại từ từ (không bật "rụp")
-          try {
-            audio.bg.volume = 0;
-          } catch (_) {}
-          playBackground();
-          await fadeAudioTo(audio.bg, 0.30, BG_FADE_IN_MS);
+      // fade về im hẳn rồi stop
+      await Promise.all([
+      fadeOutAndStop(audio.win,  250),
+      fadeOutAndStop(audio.next, 250),
+      ]);
+      // nếu vẫn muốn chắc chắn bell tắt thì chỉ stop thôi:
+      _safeStop(audio.bell);
 
-          _toastShowing = false;
-        }, TOAST_MS);
+
+      // bg quay lại từ từ (không bật "rụp")
+      try{ audio.bg.volume = 0; }catch(_){}
+      playBackground();
+      await fadeAudioTo(audio.bg, 0.30, BG_FADE_IN_MS);
+
+      _toastShowing = false;
+      }, TOAST_MS);
 
       }
 
-      function handleNewEventWithSound(newest, lotCode) {
-        // 1) quyết định loại kết quả
-        const rt = newest?.result_type || newest?.result || "";
-        const label = resultLabel(rt); // "TRÚNG" / "VÒNG SAU" / "CHƯA CÓ"
 
-        // 2) nếu sound OFF => chỉ show toast
-        if (!SOUND_ENABLED) {
-          showToastFromNewest(newest, lotCode);
-          return;
-        }
 
-        // 3) sound ON => dừng nền, bell 1s rồi phát win/next song song toast
-        unlockAudioOnce();
-        pauseBackground();
+      function handleNewEventWithSound(newest, lotCode){
+      // 1) quyết định loại kết quả
+      const rt = newest?.result_type || newest?.result || "";
+      const label = resultLabel(rt); // "TRÚNG" / "VÒNG SAU" / "CHƯA CÓ"
 
-        // reset trước khi phát
-        _safeStop(audio.bell);
-        _safeStop(audio.win);
-        _safeStop(audio.next);
-
-        // ✅ IMPORTANT: bell có thể đã bị fade về 0 ở lần trước
-        try {
-          audio.bell.volume = DEFAULT_VOL.bell;
-        } catch (_) {}
-        try {
-          audio.win.volume = DEFAULT_VOL.win;
-        } catch (_) {}
-        try {
-          audio.next.volume = DEFAULT_VOL.next;
-        } catch (_) {}
-
-        _safePlay(audio.bell);
-
-        // bell ~1s, delay 900ms cho chắc
-        setTimeout(() => {
-          if (!SOUND_ENABLED) return;
-
-          if (label === "TRÚNG") {
-            try {
-              audio.win.volume = 1.00;
-            } catch (_) {}
-            _safePlay(audio.win);
-          } else if (label === "VÒNG SAU") {
-            try {
-              audio.next.volume = 1.00;
-            } catch (_) {}
-            _safePlay(audio.next);
-          }
-
-          showToastFromNewest(newest, lotCode);
-        }, 900);
+      // 2) nếu sound OFF => chỉ show toast
+      if(!SOUND_ENABLED){
+      showToastFromNewest(newest, lotCode);
+      return;
       }
 
-      function showToastFromNewest(newest, lotCode) {
-        const rt = newest?.result_type || newest?.result || "";
-        const label = resultLabel(rt);
+      // 3) sound ON => dừng nền, bell 1s rồi phát win/next song song toast
+      unlockAudioOnce();
+      pauseBackground();
 
-        const wm = newest?.win_method || "";
-        const priceLbl = priceLabelFor(label, wm);
+      // reset trước khi phát
+      _safeStop(audio.bell);
+      _safeStop(audio.win);
+      _safeStop(audio.next);
 
-        const displayPrice =
-          (label === "TRÚNG") ?
-          (newest?.winning_price_vnd ?? newest?.price_vnd ?? 0) :
-          (newest?.price_vnd ?? 0);
+      // ✅ IMPORTANT: bell có thể đã bị fade về 0 ở lần trước
+      try{ audio.bell.volume = DEFAULT_VOL.bell; }catch(_){}
+      try{ audio.win.volume  = DEFAULT_VOL.win;  }catch(_){}
+      try{ audio.next.volume = DEFAULT_VOL.next; }catch(_){}
 
-        const priceText = fmtMoneyVND(displayPrice); // ✅ full số + VNĐ
+      _safePlay(audio.bell);
 
-        if (label === "TRÚNG") {
-          const winName = safeText(newest?.winner?.name || newest?.winner_name || newest?.customer_name || "");
-          const winStt = safeText(newest?.winner?.stt || newest?.winner_stt || "").trim();
 
-          showToast(
-            "ok",
-            "CHÚC MỪNG",
-            "TRÚNG",
-            "KẾT QUẢ ĐÃ ĐƯỢC XÁC NHẬN",
-            // line2: MÃ LÔ (value cực nổi)
-            `<span class="k-lbl">MÃ LÔ</span><span class="k-val lot">${safeText(lotCode)}</span>`,
-            // line3: GIÁ (label mờ + value rõ)
-            `<span class="k-lbl">${safeText(priceLbl)}</span><span class="k-val price">${priceText}</span>`,
-            // line4: TÊN KHÁCH (spotlight thứ 2)
-            `<span class="k-lbl">KHÁCH</span><span class="k-val name">${upperName(winName)}</span>`,
-            // line5: STT (pill)
-            `STT : ${winStt || "—"}`
-          );
-        } else if (label === "VÒNG SAU") {
-          const nextCount = Number(newest?.next_count ?? (newest?.next_customers?.length ?? 0)) || 0;
+      // bell ~1s, delay 900ms cho chắc
+      setTimeout(()=>{
+      if(!SOUND_ENABLED) return;
 
-          showToast(
-            "warn",
-            "THÔNG BÁO",
-            "VÒNG SAU",
-            "THÔNG BÁO KẾT QUẢ KIỂM PHIẾU",
-            // line2: MÃ LÔ
-            `<span class="k-lbl">MÃ LÔ</span><span class="k-val lot">${safeText(lotCode)}</span>`,
-            // line3: GIÁ CAO NHẤT (label mờ)
-            `<span class="k-lbl">${safeText(priceLbl)}</span><span class="k-val price">${priceText}</span>`,
-            // line4: nhấn vào “SỐ KHÁCH”
-            `<span class="k-lbl">VÀO VÒNG TIẾP</span><span class="k-val name">${fmtInt(nextCount)} KHÁCH</span>`,
-            // line5: pill cũng nhấn mạnh
-            `SỐ KHÁCH : ${fmtInt(nextCount)}`
-          );
-        }
+      if(label === "TRÚNG"){
+      try{ audio.win.volume = 1.00; }catch(_){}
+      _safePlay(audio.win);
+      }else if(label === "VÒNG SAU"){
+      try{ audio.next.volume = 1.00; }catch(_){}
+      _safePlay(audio.next);
+      }
+
+      showToastFromNewest(newest, lotCode);
+      }, 900);
+      }
+
+      function showToastFromNewest(newest, lotCode){
+      const rt = newest?.result_type || newest?.result || "";
+      const label = resultLabel(rt);
+
+      const wm = newest?.win_method || "";
+      const priceLbl = priceLabelFor(label, wm);
+
+      const displayPrice =
+      (label === "TRÚNG")
+      ? (newest?.winning_price_vnd ?? newest?.price_vnd ?? 0)
+      : (newest?.price_vnd ?? 0);
+
+      const priceText = fmtMoneyVND(displayPrice); // ✅ full số + VNĐ
+
+
+
+
+      if(label === "TRÚNG"){
+      const winName = safeText(newest?.winner?.name || newest?.winner_name || newest?.customer_name || "");
+      const winStt  = safeText(newest?.winner?.stt  || newest?.winner_stt  || "").trim();
+
+      showToast(
+      "ok",
+      "CHÚC MỪNG",
+      "TRÚNG",
+      "KẾT QUẢ ĐÃ ĐƯỢC XÁC NHẬN",
+      // line2: MÃ LÔ (value cực nổi)
+      `<span class="k-lbl">MÃ LÔ</span><span class="k-val lot">${safeText(lotCode)}</span>`,
+      // line3: GIÁ (label mờ + value rõ)
+      `<span class="k-lbl">${safeText(priceLbl)}</span><span class="k-val price">${priceText}</span>`,
+      // line4: TÊN KHÁCH (spotlight thứ 2)
+      `<span class="k-lbl">KHÁCH</span><span class="k-val name">${upperName(winName)}</span>`,
+      // line5: STT (pill)
+      `STT : ${winStt || "—"}`
+      );
+      }
+
+      else if(label === "VÒNG SAU"){
+      const nextCount = Number(newest?.next_count ?? (newest?.next_customers?.length ?? 0)) || 0;
+
+      showToast(
+      "warn",
+      "THÔNG BÁO",
+      "VÒNG SAU",
+      "THÔNG BÁO KẾT QUẢ KIỂM PHIẾU",
+      // line2: MÃ LÔ
+      `<span class="k-lbl">MÃ LÔ</span><span class="k-val lot">${safeText(lotCode)}</span>`,
+      // line3: GIÁ CAO NHẤT (label mờ)
+      `<span class="k-lbl">${safeText(priceLbl)}</span><span class="k-val price">${priceText}</span>`,
+      // line4: nhấn vào “SỐ KHÁCH”
+      `<span class="k-lbl">VÀO VÒNG TIẾP</span><span class="k-val name">${fmtInt(nextCount)} KHÁCH</span>`,
+      // line5: pill cũng nhấn mạnh
+      `SỐ KHÁCH : ${fmtInt(nextCount)}`
+      );
+      }
 
       }
+
 
       // =========================================================
       // Footer marquee text
       // =========================================================
-      function initFooter() {
-        const base = `
-         <span class="footer-item">
-           <span class="ft-label">ĐƠN VỊ PHẦN MỀM</span>
-           <span class="ft-sep">•</span>
-           <span class="ft-brand">DauGiaThongMinh.vn</span>
-           <span class="ft-sep">•</span>
-           <span class="ft-desc">NỀN TẢNG VẬN HÀNH ĐẤU GIÁ ĐẤT (TỰ ĐỘNG HOÁ &amp; MINH BẠCH)</span>
-         </span>
-         `;
+      function initFooter(){
+      const base = `
+      <span class="footer-item">
+        <span class="ft-label">ĐƠN VỊ PHẦN MỀM</span>
+        <span class="ft-sep">•</span>
+        <span class="ft-brand">DauGiaThongMinh.vn</span>
+        <span class="ft-sep">•</span>
+        <span class="ft-desc">NỀN TẢNG VẬN HÀNH ĐẤU GIÁ ĐẤT (TỰ ĐỘNG HOÁ &amp; MINH BẠCH)</span>
+      </span>
+      `;
 
-        // ✅ lặp nhiều lần để chắc chắn luôn dài hơn viewport => marquee luôn chạy
-        $("footerTrack").innerHTML = base.repeat(12);
+      // ✅ lặp nhiều lần để chắc chắn luôn dài hơn viewport => marquee luôn chạy
+      $("footerTrack").innerHTML = base.repeat(12);
 
-        // ✅ chạy chậm hơn hero để sang hơn
-        startMarquee($("footerTrack"), 36);
+      // ✅ chạy chậm hơn hero để sang hơn
+      startMarquee($("footerTrack"), 36);
       }
+
+
 
       // =========================================================
       // Polling
       // =========================================================
-      async function pollOnce() {
-        let r, js;
-        try {
-          r = await fetch(API_URL, {
-            method: "GET",
-            headers: {
-              "Accept": "application/json"
-            }
-          });
-        } catch (err) {
-          return null;
-        }
-        try {
-          js = await r.json();
-        } catch (_) {
-          js = null;
-        }
-        if (!r || !r.ok) return js || null;
-        return js;
+      async function pollOnce(){
+      let r, js;
+      try{
+      r = await fetch(API_URL, {method:"GET", headers: {"Accept":"application/json"}});
+      }catch(err){
+      return null;
+      }
+      try{ js = await r.json(); }catch(_){ js = null; }
+      if(!r || !r.ok) return js || null;
+      return js;
       }
 
-      async function mainLoop() {
-        const payload = await pollOnce();
-        if (payload) {
-          setTopTexts(payload);
-          setKpis(payload);
-          setStatus(payload);
+      async function mainLoop(){
+      const payload = await pollOnce();
+      if(payload){
+      setTopTexts(payload);
+      setKpis(payload);
+      setStatus(payload);
 
-          renderLeftLists(payload);
-          renderHeroNewest(payload);
-          renderRightLots(payload);
-          renderRecent(payload);
+      renderLeftLists(payload);
+      renderHeroNewest(payload);
+      renderRightLots(payload);
+      renderRecent(payload);
 
-          if (!_initedTickers) {
-            _initedTickers = true;
+      if(!_initedTickers){
+      _initedTickers = true;
 
-            // ===== LEFT tickers =====
-            const wonEl = $("wonTicker");
-            const nextEl = $("nextTicker");
-            const wonVp = wonEl.closest(".ticker-viewport");
-            const nextVp = nextEl.closest(".ticker-viewport");
+      // ===== LEFT tickers =====
+      const wonEl  = $("wonTicker");
+      const nextEl = $("nextTicker");
+      const wonVp  = wonEl.closest(".ticker-viewport");
+      const nextVp = nextEl.closest(".ticker-viewport");
 
-            startVerticalTicker(wonVp, wonEl);
-            startVerticalTicker(nextVp, nextEl);
+      startVerticalTicker(wonVp, wonEl);
+      startVerticalTicker(nextVp, nextEl);
 
-            // dùng realCount (đã set trong renderLeftLists)
-            const wonCount = parseInt(wonEl.dataset.realCount || "0", 10);
-            const nextCount = parseInt(nextEl.dataset.realCount || "0", 10);
-            updateVerticalTicker(wonVp, wonEl, wonEl.innerHTML, wonCount, 18);
-            updateVerticalTicker(nextVp, nextEl, nextEl.innerHTML, nextCount, 18);
+      // dùng realCount (đã set trong renderLeftLists)
+      const wonCount  = parseInt(wonEl.dataset.realCount || "0", 10);
+      const nextCount = parseInt(nextEl.dataset.realCount || "0", 10);
+      updateVerticalTicker(wonVp, wonEl, wonEl.innerHTML, wonCount, 18);
+      updateVerticalTicker(nextVp, nextEl, nextEl.innerHTML, nextCount, 18);
 
-            // ===== RIGHT cards ticker =====
-            const cardsEl = $("lotCards");
-            const cvp = cardsEl.closest(".cards-viewport");
+      // ===== RIGHT cards ticker =====
+      const cardsEl = $("lotCards");
+      const cvp     = cardsEl.closest(".cards-viewport");
 
-            startCardsTicker(cvp, cardsEl);
+      startCardsTicker(cvp, cardsEl);
 
-            const cardCount = parseInt(cardsEl.dataset.realCount || "0", 10);
-            updateCardsTicker(cvp, cardsEl, cardsEl.innerHTML, cardCount, 16);
+      const cardCount = parseInt(cardsEl.dataset.realCount || "0", 10);
+      updateCardsTicker(cvp, cardsEl, cardsEl.innerHTML, cardCount, 16);
 
-            // ===== HERO marquee + footer =====
-            startMarquee($("nextTrack"), 58);
-            initFooter();
-          }
-
-        }
-        setTimeout(mainLoop, POLL_MS);
+      // ===== HERO marquee + footer =====
+      startMarquee($("nextTrack"), 58);
+      initFooter();
       }
 
-      function fmtAreaM2(x) {
-        const v = Number(x);
-        if (!isFinite(v) || v <= 0) return "—";
 
-        // nếu là số nguyên -> không có thập phân
-        if (Number.isInteger(v)) return `${v.toLocaleString("vi-VN")} m²`;
-
-        // nếu có thập phân -> 2 chữ số
-        return `${v.toFixed(2).replace(".", ",")} m²`;
+      }
+      setTimeout(mainLoop, POLL_MS);
       }
 
-      function fmtHeroMoney(n) {
-        const v = Number(n || 0);
-        if (!isFinite(v) || v <= 0) return "—";
+      function fmtAreaM2(x){
+      const v = Number(x);
+      if(!isFinite(v) || v <= 0) return "—";
 
-        // > 1 tỷ => hiển thị dạng "xxx.xxx.xxxk" (tức chia 1.000)
-        // Ví dụ: 1.000.000.000 => 1.000.000k
-        if (v >= 1_000_000_000) {
-          const k = Math.round(v / 1000);
-          return k.toLocaleString("vi-VN") + "k";
-        }
+      // nếu là số nguyên -> không có thập phân
+      if(Number.isInteger(v)) return `${v.toLocaleString("vi-VN")} m²`;
 
-        // còn lại giữ bình thường
-        return v.toLocaleString("vi-VN");
+      // nếu có thập phân -> 2 chữ số
+      return `${v.toFixed(2).replace(".", ",")} m²`;
+      }
+
+      function fmtHeroMoney(n){
+      const v = Number(n||0);
+      if(!isFinite(v) || v <= 0) return "—";
+
+      // > 1 tỷ => hiển thị dạng "xxx.xxx.xxxk" (tức chia 1.000)
+      // Ví dụ: 1.000.000.000 => 1.000.000k
+      if(v >= 1_000_000_000){
+      const k = Math.round(v / 1000);
+      return k.toLocaleString("vi-VN") + "k";
+      }
+
+      // còn lại giữ bình thường
+      return v.toLocaleString("vi-VN");
       }
 
       // boot
       mainLoop();
       renderSoundBtn();
       playBackground();
+
 
     </script>
   </body>
