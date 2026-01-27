@@ -55,7 +55,12 @@
       margin:1.5mm 0 4mm;
     }
 
-    /* Box mã nhận dạng góc trái trên */
+    /* =========================================
+       ✅ Flag góc trái trên (theo yêu cầu mới)
+       - Bỏ chữ "Lô:"
+       - Đóng khung riêng mã lô, font to
+       - Dòng dưới: STT-Cxxx-Syyy-mãlô
+       ========================================= */
     .flag-box{
       position:absolute;
       top:0mm;
@@ -67,12 +72,26 @@
       background:#f9fafb;
       text-align:center;
     }
+
     .flag-lot{
-      font-size:17pt;
+      display:inline-block;
+      font-size:20pt;
       font-weight:900;
-      line-height:1.02;
-      margin-bottom:1px;
+      line-height:1.0;
       white-space:nowrap;
+      padding:2px 10px 3px;
+      border:1.4pt solid rgba(0,0,0,0.65);
+      background:#fff;
+      border-radius:2mm;
+      margin:2px 0 3px;
+      box-sizing:border-box;
+    }
+
+    .flag-code{
+      font-size:10.5pt;
+      font-weight:700;
+      white-space:nowrap;
+      letter-spacing:0.15mm;
     }
 
     .info-table{
@@ -164,7 +183,6 @@
        BOX GIÁ TRẢ (SỐ + MÃ LÔ + CHỮ TRONG 1 KHUNG)
        ============================= */
     .price-wrap{
-      /* ✅ tinh chỉnh nhẹ: mềm & sang hơn khi in */
       border:1.2pt solid rgba(0,0,0,0.55);
       background:#f6f7f9;
       border-radius:3mm;
@@ -204,7 +222,6 @@
       gap:6mm;
       min-height:12mm;
       padding:1mm 1mm 0.6mm 1mm;
-      /* ✅ tinh chỉnh nhẹ: nhấn vùng viết hơn */
       border:1.3pt solid rgba(0,0,0,0.35);
       background:#fff;
       border-radius:2mm;
@@ -244,7 +261,6 @@
 
     /* Ô mã lô (label nhạt + value to đậm) */
     .lot-badge{
-      /* ✅ tinh chỉnh nhẹ: nhẹ hơn ô viết, tạo phân cấp */
       border:1.0pt solid rgba(0,0,0,0.22);
       background:#fbfbfc;
       border-radius:2mm;
@@ -260,15 +276,15 @@
     .lot-badge .lot-label{
       font-size:10.5pt;
       font-weight:600;
-      color:rgba(0,0,0,0.55); /* ✅ nhạt */
+      color:rgba(0,0,0,0.55);
       letter-spacing:0.2mm;
       text-transform:uppercase;
       line-height:1.05;
       margin-bottom:0.6mm;
     }
     .lot-badge .lot-value{
-      font-size:20pt;  /* ✅ to rõ */
-      font-weight:900; /* ✅ đậm */
+      font-size:20pt;
+      font-weight:900;
       line-height:1.0;
       white-space:nowrap;
     }
@@ -280,7 +296,6 @@
       color:#111;
     }
 
-    /* Giá bằng chữ: 2 dòng "......" mờ */
     .price-text-lines{
       margin-top:0.3mm;
     }
@@ -298,23 +313,38 @@
   {% set unit_label = is_per_sqm and 'VND/m²' or 'VND/lô' %}
   {% set price_unit = unit_label %}
   {% set bid_unit = unit_label %}
-  {% set qty_lots = t.customer_lot_count or 1 %}
+
+  {# ✅ #2: Sxxx = số phiếu của khách trong round này (đếm từ tickets) #}
+  {% set qty_lots = (tickets
+    | selectattr('round_id', 'equalto', t.round_id)
+    | selectattr('customer_id', 'equalto', t.customer_id)
+    | list
+    | length) %}
+
   {% set lot_short = (t.lot_code or '').replace('-', '.') %}
   {% set stt_code = t.stt_padded or (t.stt or '') %}
   {% set show_price_step = (t.show_price_step if (t.show_price_step is not none) else true) %}
 
+  {# ✅ đấu 1 vòng / nhiều vòng: mặc định coi là nhiều vòng nếu thiếu field #}
+  {% set is_multi_round = (t.is_multi_round if (t.is_multi_round is not none) else true) %}
+
   <div class="page">
 
     <div class="flag-box">
-      <div class="flag-lot">Lô: {{ t.lot_code }}</div>
-      {{ stt_code }}-C{{ t.customer_id }}-S{{ qty_lots }}-{{ lot_short }}
+      <div class="flag-lot">{{ t.lot_code }}</div>
+      <div class="flag-code">{{ stt_code }}-C{{ t.customer_id }}-S{{ qty_lots }}-{{ lot_short }}</div>
     </div>
 
     <div class="center gov">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
     <div class="center bold">Độc lập – Tự do – Hạnh phúc</div>
     <div class="divider">-----------------o0o-----------------</div>
 
-    <div class="center title">PHIẾU TRẢ GIÁ (VÒNG {{ t.round_no }})</div>
+    {# ✅ Tiêu đề theo config #}
+    {% if is_multi_round %}
+      <div class="center title">PHIẾU TRẢ GIÁ (VÒNG {{ t.round_no }})</div>
+    {% else %}
+      <div class="center title">PHIẾU TRẢ GIÁ</div>
+    {% endif %}
 
     <div class="mt-2">
       <span class="bold">Tài sản đấu giá:</span>
@@ -430,7 +460,8 @@
     </div>
 
     <div class="signature-block">
-      ................................, ngày ...... tháng ...... năm ......<br/><br/>
+      {# ✅ #3: bỏ dòng gạch chấm "................................," #}
+      Ngày ...... tháng ...... năm ......<br/><br/>
       <span class="bold">Khách hàng tham gia đấu giá</span><br/>
       <span class="note">(Ký và ghi rõ họ tên)</span>
     </div>
