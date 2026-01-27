@@ -1525,17 +1525,32 @@
       font-weight:800;
       letter-spacing:.06em;
       }
-      /* TOAST OVERLAY (blur whole page) */
+      /* =========================
+      TOAST OVERLAY + TOAST (NEW)
+      - Không nền đen cho toast
+      - Overlay tinted + blur vẫn giữ focus
+      - Giữ nguyên font-size hiện có
+      ========================= */
+
+      /* TOAST OVERLAY (tinted, không đen đặc) */
       .toast-overlay{
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,.58);
+
+      /* ✅ overlay có màu (không đen): hơi xanh tím + glow ok/warn */
+      background:
+      radial-gradient(900px 520px at 50% 35%, rgba(34,211,238,.14), transparent 60%),
+      radial-gradient(860px 520px at 70% 55%, rgba(52,211,153,.14), transparent 62%),
+      radial-gradient(860px 520px at 30% 55%, rgba(251,191,36,.12), transparent 62%),
+      linear-gradient(180deg, rgba(7,10,18,.52), rgba(10,16,34,.62));
+
       backdrop-filter: blur(14px);
       z-index: 48;
       display:none;
       }
       .toast-overlay.show{ display:block; }
-      /* toast (center big) — AUTO FIT CONTENT (CÓ GIỚI HẠN MÀN HÌNH) */
+
+      /* toast (center big) — AUTO FIT CONTENT */
       .toast{
       position: fixed;
       left: 50%;
@@ -1543,24 +1558,40 @@
       bottom: auto;
       z-index: 50;
 
-      /* ✅ GIÃN THEO CONTENT */
-      display: inline-flex;        /* mấu chốt */
+      display: inline-flex;
       flex-direction: column;
-      width: max-content;          /* mấu chốt */
-      max-width: calc(100vw - 56px); /* chạm mép thì dừng */
+      width: max-content;
+      max-width: calc(100vw - 56px);
       max-height: calc(100vh - 70px);
 
       border-radius: 32px;
-      border: 1px solid rgba(148,163,184,.20);
-      background: rgba(0,0,0,.62);
-      box-shadow: var(--shadow), 0 0 80px rgba(34,211,238,.18);
       overflow: hidden;
 
       transform: translate(-50%, -50%) scale(.95);
       opacity: 0;
       pointer-events: none;
       transition: opacity .22s ease, transform .22s ease;
-      backdrop-filter: blur(12px);
+
+      /* ✅ hệ màu mặc định (sẽ override theo ok/warn/bad) */
+      --toast-bg: rgba(245, 250, 255, .12);
+      --toast-bg2: rgba(255,255,255,.08);
+      --toast-fg: rgba(245, 248, 255, .96);
+      --toast-muted: rgba(226,232,240,.82);     /* ✅ chữ phụ dễ đọc */
+      --toast-muted2: rgba(148,163,184,.78);    /* label phụ nhạt hơn chút nhưng không chìm */
+      --toast-border: rgba(148,163,184,.22);
+      --toast-glow: 0 0 80px rgba(34,211,238,.16);
+      --toast-accent: var(--pri);
+      --toast-accent2: rgba(34,211,238,.22);
+
+      border: 1px solid var(--toast-border);
+
+      /* ✅ nền toast dạng glass sáng, không đen */
+      background:
+      radial-gradient(1200px 520px at 50% 0%, rgba(255,255,255,.12), transparent 60%),
+      linear-gradient(180deg, var(--toast-bg), var(--toast-bg2));
+
+      box-shadow: var(--shadow), var(--toast-glow);
+      backdrop-filter: blur(16px);
       }
 
       .toast.show{
@@ -1568,34 +1599,41 @@
       transform: translate(-50%, -50%) scale(1.12);
       }
 
+      /* Header */
       .toast .t-head{
       display:flex;
       align-items:center;
       justify-content:space-between;
       gap: 12px;
       padding: 18px 20px;
-      border-bottom: 1px solid rgba(148,163,184,.14);
-      background: rgba(255,255,255,.05);
+
+      border-bottom: 1px solid rgba(255,255,255,.10);
+
+      /* ✅ header sáng hơn, rõ chữ */
+      background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.06));
+
       font-weight: 900;
       letter-spacing:.14em;
       text-transform:uppercase;
-      font-size: 15px;
-      color: rgba(226,232,240,.95);
-
-      /* ✅ header không làm toast hẹp */
+      font-size: 15px; /* ✅ giữ nguyên */
+      color: var(--toast-fg);
       min-width: 0;
       }
 
       .toast .t-head .badge{
-      font-size: 12px;
+      font-size: 12px; /* ✅ giữ nguyên */
       padding: 7px 12px;
       border-radius: 999px;
-      border: 1px solid rgba(148,163,184,.18);
-      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.16);
+
+      /* ✅ badge rõ ràng theo accent */
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.05));
+      color: var(--toast-fg);
       white-space:nowrap;
+      box-shadow: 0 0 18px rgba(0,0,0,.18);
       }
 
-      /* ✅ body cũng “fit theo content” */
+      /* Body */
       .toast .t-body{
       padding: 22px 22px 26px 22px;
       display:flex;
@@ -1603,30 +1641,31 @@
       gap: 16px;
       text-align:center;
 
-      width: max-content;           /* mấu chốt */
+      width: max-content;
       max-width: calc(100vw - 56px);
       }
 
-      /* line1: mô tả nhỏ hơn */
+      /* line1 */
       .toast .line1{
       font-weight: 900;
-      font-size: 18px;
+      font-size: 18px; /* ✅ giữ nguyên */
       letter-spacing: .14em;
       text-transform: uppercase;
-      color: rgba(226,232,240,.78);
+
+      /* ✅ sáng hơn để dễ đọc trên glass */
+      color: var(--toast-muted);
 
       width: max-content;
       max-width: calc(100vw - 56px);
       }
 
-      /* các dòng thông tin: label + value */
+      /* Lines 2-4: label + value */
       .toast .line2, .toast .line3, .toast .line4{
       display:flex;
       align-items:baseline;
       justify-content:center;
       gap: 14px;
 
-      /* ✅ fit content, nhưng chạm mép thì dừng */
       width: max-content;
       max-width: calc(100vw - 56px);
 
@@ -1635,58 +1674,74 @@
       text-overflow: ellipsis;
       }
 
+      /* ✅ LABEL (chữ phụ như MÃ LÔ / STT / VÀO VÒNG TIẾP...) */
       .toast .k-lbl{
-      font-size: 14px;
+      font-size: 14px; /* ✅ giữ nguyên */
       font-weight: 900;
       letter-spacing: .16em;
       text-transform: uppercase;
-      color: rgba(148,163,184,.70);
-      opacity: .95;
+
+      /* ✅ tăng tương phản label phụ */
+      color: var(--toast-muted2);
+      opacity: 1;
+
       flex: 0 0 auto;
       min-width: 120px;
       text-align: right;
       }
 
-      /* ✅ VALUE: ưu tiên hiển thị đủ - không bị ép ellipsis sớm */
+      /* ✅ VALUE */
       .toast .k-val{
       font-weight: 900;
       text-transform: uppercase;
-      color: rgba(226,232,240,.98);
+      color: var(--toast-fg);
       letter-spacing: .10em;
-      text-shadow: 0 0 22px rgba(34,211,238,.18);
+
+      /* ✅ glow nhẹ để dễ đọc */
+      text-shadow: 0 0 22px rgba(34,211,238,.14);
 
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: calc(100vw - 280px); /* chừa chỗ cho label + padding */
+      max-width: calc(100vw - 280px);
       }
 
-      /* spotlight 1: MÃ LÔ */
+      /* spotlight: MÃ LÔ */
       .toast .k-val.lot{
-      font-size: clamp(74px, 7.2vw, 118px);
+      font-size: clamp(74px, 7.2vw, 118px); /* ✅ giữ nguyên */
       letter-spacing: .14em;
-      text-shadow: 0 0 34px rgba(34,211,238,.26);
+
+      /* ✅ đổi glow phù hợp nền sáng */
+      text-shadow:
+      0 0 18px rgba(0,0,0,.22),
+      0 0 34px rgba(34,211,238,.18);
 
       width: max-content;
       max-width: calc(100vw - 56px);
       }
 
-      /* spotlight 2: TÊN KHÁCH */
+      /* spotlight: TÊN KHÁCH */
       .toast .k-val.name{
-      font-size: clamp(40px, 4.0vw, 68px);
+      font-size: clamp(40px, 4.0vw, 68px); /* ✅ giữ nguyên */
       letter-spacing: .10em;
-      text-shadow: 0 0 26px rgba(96,165,250,.18);
       text-align:center;
 
+      text-shadow:
+      0 0 18px rgba(0,0,0,.20),
+      0 0 26px rgba(96,165,250,.14);
+
       width: max-content;
       max-width: calc(100vw - 56px);
       }
 
-      /* giá: to nhưng sau mã lô + tên */
+      /* giá */
       .toast .k-val.price{
-      font-size: clamp(48px, 4.8vw, 86px);
+      font-size: clamp(48px, 4.8vw, 86px); /* ✅ giữ nguyên */
       letter-spacing: .08em;
-      text-shadow: 0 0 26px rgba(34,211,238,.18);
+
+      text-shadow:
+      0 0 18px rgba(0,0,0,.20),
+      0 0 26px rgba(34,211,238,.14);
 
       width: max-content;
       max-width: calc(100vw - 56px);
@@ -1698,19 +1753,25 @@
       justify-content:center;
       }
 
+      /* ✅ pill STT/SỐ KHÁCH: vẫn giữ font-size, chỉ đổi màu để hợp nền */
       .pillbig{
       display:inline-flex;
       align-items:center;
       justify-content:center;
       font-weight: 900;
-      font-size: clamp(34px, 3.2vw, 62px);
+
+      font-size: clamp(34px, 3.2vw, 62px); /* ✅ giữ nguyên */
       letter-spacing:.10em;
       text-transform:uppercase;
       padding: 14px 26px;
       border-radius: 999px;
-      border: 1px solid rgba(52,211,153,.35);
-      background: rgba(52,211,153,.14);
-      box-shadow: 0 0 18px rgba(52,211,153,.25);
+      border: 1px solid rgba(255,255,255,.18);
+
+      /* ✅ nền pill sáng hơn + chữ rõ */
+      background: rgba(255,255,255,.10);
+      color: var(--toast-fg);
+
+      box-shadow: 0 0 18px rgba(0,0,0,.18);
       white-space:nowrap;
 
       max-width: calc(100vw - 56px);
@@ -1718,19 +1779,159 @@
       text-overflow: ellipsis;
       }
 
-      .toast.ok{ border-color: rgba(52,211,153,.28); box-shadow: var(--shadow), 0 0 56px rgba(52,211,153,.18); }
-      .toast.ok .t-head{ background: rgba(52,211,153,.12); }
-      .toast.ok .t-head .badge{ border-color: rgba(52,211,153,.26); background: rgba(52,211,153,.14); }
+      /* =========================
+      THEME PER TYPE
+      ========================= */
 
-      .toast.warn{ border-color: rgba(251,191,36,.28); box-shadow: var(--shadow), 0 0 56px rgba(251,191,36,.16); }
-      .toast.warn .t-head{ background: rgba(251,191,36,.12); }
-      .toast.warn .t-head .badge{ border-color: rgba(251,191,36,.26); background: rgba(251,191,36,.14); }
+      /* OK (TRÚNG) */
+      .toast.ok{
+      --toast-accent: var(--ok);
+      --toast-border: rgba(52,211,153,.30);
+      --toast-glow: 0 0 72px rgba(52,211,153,.18);
 
-      .toast.bad{ border-color: rgba(251,113,133,.28); box-shadow: var(--shadow), 0 0 56px rgba(251,113,133,.14); }
-      .toast.bad .t-head{ background: rgba(251,113,133,.10); }
-      .toast.bad .t-head .badge{ border-color: rgba(251,113,133,.26); background: rgba(251,113,133,.12); }
+      /* nền glass hơi xanh ngọc (vui tươi) */
+      --toast-bg: rgba(52,211,153,.13);
+      --toast-bg2: rgba(255,255,255,.08);
 
-      /* responsiveness (giữ nguyên layout chính, chỉ giảm padding nhẹ) */
+      --toast-muted2: rgba(236,253,245,.82);  /* ✅ label phụ rõ trên nền ok */
+      }
+      .toast.ok .t-head{
+      background: linear-gradient(180deg, rgba(52,211,153,.22), rgba(255,255,255,.06));
+      }
+      .toast.ok .t-head .badge{
+      border-color: rgba(52,211,153,.30);
+      background: rgba(52,211,153,.16);
+      box-shadow: 0 0 18px rgba(52,211,153,.18);
+      }
+
+      /* WARN (VÒNG SAU) */
+      .toast.warn{
+      --toast-accent: var(--warn);
+      --toast-border: rgba(251,191,36,.30);
+      --toast-glow: 0 0 72px rgba(251,191,36,.16);
+
+      /* nền glass hơi vàng ấm */
+      --toast-bg: rgba(251,191,36,.13);
+      --toast-bg2: rgba(255,255,255,.08);
+
+      --toast-muted2: rgba(255,251,235,.84);  /* ✅ label phụ rõ trên nền warn */
+      }
+      .toast.warn .t-head{
+      background: linear-gradient(180deg, rgba(251,191,36,.22), rgba(255,255,255,.06));
+      }
+      .toast.warn .t-head .badge{
+      border-color: rgba(251,191,36,.30);
+      background: rgba(251,191,36,.16);
+      box-shadow: 0 0 18px rgba(251,191,36,.16);
+      }
+
+      /* BAD (nếu có) */
+      .toast.bad{
+      --toast-accent: var(--bad);
+      --toast-border: rgba(251,113,133,.30);
+      --toast-glow: 0 0 72px rgba(251,113,133,.14);
+
+      --toast-bg: rgba(251,113,133,.11);
+      --toast-bg2: rgba(255,255,255,.08);
+
+      --toast-muted2: rgba(255,241,242,.84);
+      }
+      .toast.bad .t-head{
+      background: linear-gradient(180deg, rgba(251,113,133,.18), rgba(255,255,255,.06));
+      }
+      .toast.bad .t-head .badge{
+      border-color: rgba(251,113,133,.30);
+      background: rgba(251,113,133,.14);
+      box-shadow: 0 0 18px rgba(251,113,133,.14);
+      }
+
+      /* ✅ k-val glow theo type (giúp chữ chính rõ hơn trên nền sáng) */
+      .toast.ok .k-val{ text-shadow: 0 0 22px rgba(52,211,153,.18); }
+      .toast.warn .k-val{ text-shadow: 0 0 22px rgba(251,191,36,.16); }
+      .toast.bad .k-val{ text-shadow: 0 0 22px rgba(251,113,133,.14); }
+
+      /* ✅ pillbig theo type (JS đang set inline vẫn OK; CSS này là fallback khi không set) */
+      .toast.ok  .pillbig{ border-color: rgba(52,211,153,.30); background: rgba(52,211,153,.16); box-shadow: 0 0 22px rgba(52,211,153,.18); }
+      .toast.warn .pillbig{ border-color: rgba(251,191,36,.30); background: rgba(251,191,36,.16); box-shadow: 0 0 22px rgba(251,191,36,.16); }
+      .toast.bad  .pillbig{ border-color: rgba(251,113,133,.30); background: rgba(251,113,133,.14); box-shadow: 0 0 22px rgba(251,113,133,.14); }
+
+      /* =========================
+      HIỆU ỨNG CHÚC MỪNG (OK)
+      - Không sửa HTML: dùng pseudo-elements
+      ========================= */
+
+      /* pop + shimmer nhẹ */
+      @keyframes toastWinPop{
+      0%   { transform: translate(-50%, -50%) scale(.92); filter: saturate(1); }
+      55%  { transform: translate(-50%, -50%) scale(1.14); filter: saturate(1.15); }
+      100% { transform: translate(-50%, -50%) scale(1.12); filter: saturate(1.05); }
+      }
+      @keyframes toastShine{
+      0%   { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
+      12%  { opacity: .85; }
+      55%  { opacity: .95; }
+      100% { transform: translateX(140%) skewX(-18deg); opacity: 0; }
+      }
+
+      /* confetti nhẹ (điểm sáng bay) */
+      @keyframes confettiFloat{
+      0%   { transform: translateY(0px); opacity: 0; }
+      15%  { opacity: .95; }
+      100% { transform: translateY(90px); opacity: 0; }
+      }
+
+      /* áp vào toast OK khi show */
+      .toast.ok.show{
+      animation: toastWinPop .34s ease-out both;
+      }
+
+      /* lớp shine quét ngang */
+      .toast.ok::before{
+      content:"";
+      position:absolute;
+      inset: 0;
+      pointer-events:none;
+      background:
+      linear-gradient(90deg,
+      rgba(255,255,255,0) 0%,
+      rgba(255,255,255,.10) 28%,
+      rgba(255,255,255,.44) 50%,
+      rgba(255,255,255,.10) 72%,
+      rgba(255,255,255,0) 100%);
+      opacity: 0;
+      transform: translateX(-120%) skewX(-18deg);
+      }
+      .toast.ok.show::before{
+      opacity: .9;
+      animation: toastShine 1.2s ease-in-out 1;
+      }
+
+      /* confetti dots (nhẹ, không rối) */
+      .toast.ok::after{
+      content:"";
+      position:absolute;
+      left: 0; right: 0; top: 0;
+      height: 120px;
+      pointer-events:none;
+
+      /* các chấm sáng rải đều */
+      background:
+      radial-gradient(circle at 12% 20%, rgba(255,255,255,.85) 0 2px, transparent 3px),
+      radial-gradient(circle at 22% 55%, rgba(52,211,153,.90) 0 2px, transparent 3px),
+      radial-gradient(circle at 35% 30%, rgba(34,211,238,.85) 0 2px, transparent 3px),
+      radial-gradient(circle at 48% 18%, rgba(255,255,255,.85) 0 2px, transparent 3px),
+      radial-gradient(circle at 62% 42%, rgba(52,211,153,.90) 0 2px, transparent 3px),
+      radial-gradient(circle at 74% 24%, rgba(34,211,238,.85) 0 2px, transparent 3px),
+      radial-gradient(circle at 86% 52%, rgba(255,255,255,.85) 0 2px, transparent 3px);
+
+      opacity: 0;
+      }
+      .toast.ok.show::after{
+      opacity: 1;
+      animation: confettiFloat 1.0s ease-out 1;
+      }
+
+      /* responsiveness (giữ nguyên layout chính, chỉ giảm scale chút như cũ) */
       @media (max-width: 1060px){
       .main{ grid-template-columns: 1fr; }
       body{ overflow:auto; }
@@ -1747,6 +1948,7 @@
       transform: translate(-50%, -50%) scale(1.06);
       }
       }
+
 
 
     </style>
