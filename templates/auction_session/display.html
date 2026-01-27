@@ -127,6 +127,11 @@
       overflow:hidden;
       text-overflow:ellipsis;
       }
+      #companyName{
+      flex: 1 1 auto;
+      min-width: 0;
+      }
+
       .pill.soft{ background: rgba(255,255,255,.04); box-shadow:none; }
       .pill.blue{ background: rgba(96,165,250,.10); }
       .brand-title{
@@ -757,8 +762,8 @@
 
       /* ✅ GIÁ TRÚNG: tím trần chứng khoán (chỉ khi có class .ceil) */
       .price-val.ceil{
-        color: var(--ceil);
-        text-shadow: 0 0 18px rgba(168,85,247,.28), 0 0 34px rgba(168,85,247,.16);
+      color: var(--ceil);
+      text-shadow: 0 0 18px rgba(168,85,247,.28), 0 0 34px rgba(168,85,247,.16);
       }
 
       /* ===== WINNER PANEL (TRÚNG: ưu tiên full name + STT cùng hàng) ===== */
@@ -1235,10 +1240,10 @@
       text-shadow: 0 0 22px rgba(34,211,238,.18);
       }
       /* ✅ RECENT: chỉ TRÚNG mới tím */
-.rslot.win .price-big{
-  color: var(--ceil);
-  text-shadow: 0 0 18px rgba(168,85,247,.26), 0 0 32px rgba(168,85,247,.14);
-}
+      .rslot.win .price-big{
+      color: var(--ceil);
+      text-shadow: 0 0 18px rgba(168,85,247,.26), 0 0 32px rgba(168,85,247,.14);
+      }
 
       /* NEXT: pill số khách */
       .rslot .next-pill{
@@ -1389,10 +1394,10 @@
       text-shadow: 0 0 18px rgba(34,211,238,.16);
       }
       /* ✅ RIGHT card: chỉ TRÚNG mới tím */
-.lotcard.win .pricebig{
-  color: var(--ceil);
-  text-shadow: 0 0 18px rgba(168,85,247,.26), 0 0 32px rgba(168,85,247,.14);
-}
+      .lotcard.win .pricebig{
+      color: var(--ceil);
+      text-shadow: 0 0 18px rgba(168,85,247,.26), 0 0 32px rgba(168,85,247,.14);
+      }
 
       .lotcard .winnerline{
       margin-top: 6px;
@@ -1765,10 +1770,10 @@
       }
 
       /* ✅ TOAST TRÚNG: chỉ GIÁ TRÚNG mới tím (khi có class .ceil) */
-.toast.ok .k-val.price.ceil{
-  color: var(--ceil);
-  text-shadow: 0 0 18px rgba(168,85,247,.24), 0 0 32px rgba(168,85,247,.14);
-}
+      .toast.ok .k-val.price.ceil{
+      color: var(--ceil);
+      text-shadow: 0 0 18px rgba(168,85,247,.24), 0 0 32px rgba(168,85,247,.14);
+      }
 
 
       .toast .line5{
@@ -1989,7 +1994,6 @@
           <div class="brand-title">TRÌNH CHIẾU KIỂM PHIẾU</div>
           <div class="brand-row">
             <span class="pill" id="companyName" title=""></span>
-            <span class="pill soft blue" id="sessionCode" title=""></span>
           </div>
         </div>
         <div class="top-mid">
@@ -2773,14 +2777,11 @@
       const project = safeText(c.project_name || "");
       const sessionCode = safeText(c.project_code || c.session_id || "");
 
-      $("companyName").textContent = truncate(company.toUpperCase(), 26);
+      $("companyName").textContent = company ? company.toUpperCase() : "";
       $("companyName").title = company;
 
       $("projectName").textContent = truncate(project.toUpperCase(), 34);
       $("projectName").title = project;
-
-      $("sessionCode").textContent = sessionCode ? `PHIÊN ${String(sessionCode).toUpperCase()}` : "PHIÊN —";
-      $("sessionCode").title = sessionCode;
 
       const roundNo = c.round_no ?? ROUND_NO;
       const st = shortStatus(c.round_status || "");
@@ -2872,13 +2873,13 @@
       ? (newest?.winning_price_vnd ?? newest?.price_vnd ?? 0)
       : (newest?.price_vnd ?? 0);
 
-$("priceLabel").textContent = priceLabelFor(label, wm);
+      $("priceLabel").textContent = priceLabelFor(label, wm);
 
-const heroPriceEl = $("heroPrice");
-heroPriceEl.textContent = fmtHeroMoney(displayPrice);
+      const heroPriceEl = $("heroPrice");
+      heroPriceEl.textContent = fmtHeroMoney(displayPrice);
 
-/* ✅ chỉ TRÚNG mới tím trần */
-heroPriceEl.classList.toggle("ceil", label === "TRÚNG");
+      /* ✅ chỉ TRÚNG mới tím trần */
+      heroPriceEl.classList.toggle("ceil", label === "TRÚNG");
 
 
       // badge kết quả: thêm win method nếu TRÚNG
@@ -3515,7 +3516,7 @@ heroPriceEl.classList.toggle("ceil", label === "TRÚNG");
       // line2: MÃ LÔ (value cực nổi)
       `<span class="k-lbl">MÃ LÔ</span><span class="k-val lot">${safeText(lotCode)}</span>`,
       // line3: GIÁ (label mờ + value rõ)
-`<span class="k-lbl">${safeText(priceLbl)}</span><span class="k-val price ceil">${priceText}</span>`,
+      `<span class="k-lbl">${safeText(priceLbl)}</span><span class="k-val price ceil">${priceText}</span>`,
       // line4: TÊN KHÁCH (spotlight thứ 2)
       `<span class="k-lbl">KHÁCH</span><span class="k-val name">${upperName(winName)}</span>`,
       // line5: STT (pill)
