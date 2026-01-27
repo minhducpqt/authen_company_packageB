@@ -21,6 +21,7 @@
       --muted2: rgba(148,163,184,.75);
       --pri:#22d3ee;
       --pri2:#60a5fa;
+      --ceil:#a855f7;   /* ✅ tím trần chứng khoán (chỉ dùng cho GIÁ TRÚNG) */
       --ok:#34d399;    /* TRÚNG */
       --warn:#fbbf24;  /* VÒNG SAU */
       --bad:#fb7185;   /* KHÔNG HỢP LỆ / CHƯA CÓ */
@@ -754,7 +755,11 @@
       white-space: nowrap;
       }
 
-
+      /* ✅ GIÁ TRÚNG: tím trần chứng khoán (chỉ khi có class .ceil) */
+      .price-val.ceil{
+        color: var(--ceil);
+        text-shadow: 0 0 18px rgba(168,85,247,.28), 0 0 34px rgba(168,85,247,.16);
+      }
 
       /* ===== WINNER PANEL (TRÚNG: ưu tiên full name + STT cùng hàng) ===== */
       .winner-wrap{
@@ -1229,6 +1234,12 @@
       line-height: 1.05;
       text-shadow: 0 0 22px rgba(34,211,238,.18);
       }
+      /* ✅ RECENT: chỉ TRÚNG mới tím */
+.rslot.win .price-big{
+  color: var(--ceil);
+  text-shadow: 0 0 18px rgba(168,85,247,.26), 0 0 32px rgba(168,85,247,.14);
+}
+
       /* NEXT: pill số khách */
       .rslot .next-pill{
       padding: 6px 12px;
@@ -1377,6 +1388,12 @@
       text-overflow:ellipsis;
       text-shadow: 0 0 18px rgba(34,211,238,.16);
       }
+      /* ✅ RIGHT card: chỉ TRÚNG mới tím */
+.lotcard.win .pricebig{
+  color: var(--ceil);
+  text-shadow: 0 0 18px rgba(168,85,247,.26), 0 0 32px rgba(168,85,247,.14);
+}
+
       .lotcard .winnerline{
       margin-top: 6px;
       padding-top: 8px;
@@ -1746,6 +1763,13 @@
       width: max-content;
       max-width: calc(100vw - 56px);
       }
+
+      /* ✅ TOAST TRÚNG: chỉ GIÁ TRÚNG mới tím (khi có class .ceil) */
+.toast.ok .k-val.price.ceil{
+  color: var(--ceil);
+  text-shadow: 0 0 18px rgba(168,85,247,.24), 0 0 32px rgba(168,85,247,.14);
+}
+
 
       .toast .line5{
       margin-top: 6px;
@@ -2848,8 +2872,14 @@
       ? (newest?.winning_price_vnd ?? newest?.price_vnd ?? 0)
       : (newest?.price_vnd ?? 0);
 
-      $("priceLabel").textContent = priceLabelFor(label, wm);
-      $("heroPrice").textContent  = fmtHeroMoney(displayPrice);
+$("priceLabel").textContent = priceLabelFor(label, wm);
+
+const heroPriceEl = $("heroPrice");
+heroPriceEl.textContent = fmtHeroMoney(displayPrice);
+
+/* ✅ chỉ TRÚNG mới tím trần */
+heroPriceEl.classList.toggle("ceil", label === "TRÚNG");
+
 
       // badge kết quả: thêm win method nếu TRÚNG
       const methodText = winMethodLabel(wm);
@@ -3485,7 +3515,7 @@
       // line2: MÃ LÔ (value cực nổi)
       `<span class="k-lbl">MÃ LÔ</span><span class="k-val lot">${safeText(lotCode)}</span>`,
       // line3: GIÁ (label mờ + value rõ)
-      `<span class="k-lbl">${safeText(priceLbl)}</span><span class="k-val price">${priceText}</span>`,
+`<span class="k-lbl">${safeText(priceLbl)}</span><span class="k-val price ceil">${priceText}</span>`,
       // line4: TÊN KHÁCH (spotlight thứ 2)
       `<span class="k-lbl">KHÁCH</span><span class="k-val name">${upperName(winName)}</span>`,
       // line5: STT (pill)
