@@ -90,6 +90,7 @@ def _redirect_login(request: Request) -> RedirectResponse:
         nxt = quote(f"{request.url.path}?{request.url.query}")
     return RedirectResponse(url=f"/login?next={nxt}", status_code=303)
 
+
 async def _put_json(path: str, token: str, payload: Dict[str, Any]):
     url = f"{SERVICE_A_BASE_URL}{path}"
     headers = {"Authorization": f"Bearer {token}"}
@@ -109,6 +110,7 @@ async def _put_json(path: str, token: str, payload: Dict[str, Any]):
         body = (r.text or "")[:500]
         _log(f"← {r.status_code} {url} non-json body={body}")
         return r.status_code, {"detail": body}
+
 
 async def _get_json(
     path: str,
@@ -235,8 +237,8 @@ async def auction_sessions_page(
     else:
         raw = (status or "").strip()
         if raw == "":
-            status_effective = None      # ALL
-            status_ui = ""               # UI chọn "Tất cả"
+            status_effective = None  # ALL
+            status_ui = ""  # UI chọn "Tất cả"
         else:
             status_effective = raw.upper()
             status_ui = status_effective
@@ -263,14 +265,12 @@ async def auction_sessions_page(
         "project": selected_code,
         "project_obj": selected_project,
         "project_id": project_id,
-        "active": active,
+        "active": active,  # NOTE: active.primary_session/candidates sẽ có is_multi_round/has_round_limit/max_rounds nếu A đã trả
         "error": error,
         # quan trọng: status dùng cho UI dropdown
         "status": status_ui,
     }
     return templates.TemplateResponse("auction_session/index.html", ctx)
-
-
 
 
 @router.get("/auction/sessions/{session_id}", response_class=HTMLResponse)
@@ -320,8 +320,7 @@ async def auction_session_detail_page(
             {"session_id": session_id},
         )
 
-        # Nếu start fail vì reason nào đó, vẫn render với error rõ ràng
-        # (nhưng cố reload current để lấy round_no nếu start đã thành công)
+        # reload current
         st_c2, cur2 = await _get_json(f"/api/v1/auction-sessions/sessions/{session_id}/current", token, None)
         if st_c2 == 200 and isinstance(cur2, dict):
             try:
@@ -329,12 +328,11 @@ async def auction_session_detail_page(
             except Exception:
                 current_round_no = current_round_no or 0
 
-        # reload session status (optional but helps UI show OPEN)
+        # reload session
         st_s2, sess2 = await _get_json(f"/api/v1/auction-sessions/sessions/{session_id}", token, None)
         if st_s2 == 200 and isinstance(sess2, dict):
             sess_data = (sess2.get("data") or sess2) if isinstance(sess2, dict) else sess_data
 
-        # Nếu vẫn không có round => báo lỗi start
         if current_round_no == 0:
             return templates.TemplateResponse(
                 "auction_session/session.html",
@@ -355,9 +353,6 @@ async def auction_session_detail_page(
             )
 
     # 4) Chọn round_no để render:
-    #    - ưu tiên round_no từ query
-    #    - fallback = current_round_no
-    #    - cuối cùng fallback = 1
     if not round_no or int(round_no) <= 0:
         round_no = current_round_no if current_round_no > 0 else 1
 
@@ -380,7 +375,7 @@ async def auction_session_detail_page(
         "request": request,
         "title": f"Phiên đấu #{session_id}",
         "session_id": session_id,
-        "session": sess_data,
+        "session": sess_data,  # NOTE: đã có is_multi_round/has_round_limit/max_rounds nếu A trả
         "round_no": int(round_no),
         "rounds": rounds_data,
         "ui": ui,
@@ -443,6 +438,7 @@ async def api_create_session(
     if not token:
         return _unauth_json()
 
+    # NOTE: payload có thể chứa is_multi_round/has_round_limit/max_rounds nếu UI gửi
     st, js = await _post_json("/api/v1/auction-sessions/sessions", token, payload)
     return JSONResponse(js, status_code=_proxy_status(st))
 
@@ -544,18 +540,7 @@ async def api_decide_round_lot(
     payload: Dict[str, Any] = Body(...),
 ):
     """
-    payload same as Service A DecideIn:
-      - result_type: PENDING|WINNER|NEXT_ROUND|NO_VALID
-      - win_method: HIGHEST|LOTTERY|MANUAL
-      - winner_customer_id?
-      - highest_price_vnd?
-      - next_customer_ids?
-      - note?
-      - extras?
-      - client_updated_at?
-    NOTE (newest A):
-      - winning_price/highest_price_vnd is "unit price" (PER_SQM or PER_LOT) per bid_price_unit.
-      - results endpoint now returns bid_price_unit (also stored in results.extras).
+    Proxy DecideIn to Service A.
     """
     token = get_access_token(request)
     if not token:
@@ -599,12 +584,12 @@ async def api_list_session_results(
     st, js = await _get_json(f"/api/v1/auction-sessions/sessions/{session_id}/results", token, None)
     return JSONResponse(js, status_code=_proxy_status(st))
 
+
 # =========================================================
 # EXTRA PROXIES (B -> A)
 # - Session status update
 # - Backfill participants.stt
 # =========================================================
-
 @router.post("/auction/sessions/api/sessions/{session_id}/status")
 async def api_update_session_status(
     request: Request,
@@ -614,12 +599,6 @@ async def api_update_session_status(
     """
     Proxy to Service A:
       POST /api/v1/auction-sessions/sessions/{session_id}/status
-
-    payload (A: SessionUpdateStatusIn):
-      {
-        "status": "DRAFT" | "OPEN" | "PAUSED" | "CLOSED",
-        "note": "optional"
-      }
     """
     token = get_access_token(request)
     if not token:
@@ -641,8 +620,6 @@ async def api_backfill_session_stt(
     """
     Proxy to Service A:
       POST /api/v1/auction-sessions/sessions/{session_id}/backfill-stt
-
-    No payload required.
     """
     token = get_access_token(request)
     if not token:
@@ -655,6 +632,7 @@ async def api_backfill_session_stt(
     )
     return JSONResponse(js, status_code=_proxy_status(st))
 
+
 @router.put("/auction/sessions/api/sessions/{session_id}")
 async def api_update_session(
     request: Request,
@@ -665,14 +643,15 @@ async def api_update_session(
     if not token:
         return _unauth_json()
 
+    # NOTE: payload có thể chứa is_multi_round/has_round_limit/max_rounds nếu UI gửi
     st, js = await _put_json(f"/api/v1/auction-sessions/sessions/{session_id}", token, payload)
     return JSONResponse(js, status_code=_proxy_status(st))
+
 
 # =========================================================
 # NEW: Attendance list (per session) + refund bank snapshot
 # - Returns: full session info + derived stats + attendance list sorted by stt
 # - Refund bank accounts: take from first participant snapshot seen for that customer
-#   (because snapshot stored per (customer_id, lot_id) but is same across pairs)
 # =========================================================
 @router.get("/auction/sessions/api/sessions/{session_id}/attendance")
 async def api_session_attendance(
@@ -718,9 +697,6 @@ async def api_session_attendance(
     lot_count = len(lots)
 
     # 4) Build attendance aggregated by customer_id
-    # - customer snapshot from p.extras.snapshot OR p.customer_snapshot (already added by A)
-    # - refund snapshot from p.extras.refund_bank_accounts (your new data)
-    # - lot_count per customer = distinct lot_id count across participants
     by_cid: Dict[int, Dict[str, Any]] = {}
     lotset_by_cid: Dict[int, set] = {}
 
@@ -738,7 +714,6 @@ async def api_session_attendance(
             except Exception:
                 continue
 
-            # initialize
             if cid not in by_cid:
                 by_cid[cid] = {
                     "customer_id": cid,
@@ -756,8 +731,6 @@ async def api_session_attendance(
                 pass
 
             # customer snapshot priority:
-            #  - A returns "customer_snapshot" alias (SELECT (p.extras->'snapshot') AS customer_snapshot)
-            #  - or nested extras.snapshot
             snap = p.get("customer_snapshot")
             if snap is None:
                 extras = p.get("extras") if isinstance(p.get("extras"), dict) else None
@@ -786,13 +759,10 @@ async def api_session_attendance(
             except Exception:
                 pass
 
-    # finalize list
     data: List[Dict[str, Any]] = []
     for cid, item in by_cid.items():
         lots_of_c = lotset_by_cid.get(cid) or set()
         item["lot_count"] = len(lots_of_c)
-        # optional: include lot_ids for debugging / export
-        # item["lot_ids"] = sorted(list(lots_of_c))
         data.append(item)
 
     # sort by stt ASC, nulls last, then customer_id
@@ -819,6 +789,12 @@ async def api_session_attendance(
             "district": sess_data.get("district"),
             "venue": sess_data.get("venue"),
             "note": sess_data.get("note"),
+
+            # ✅ NEW: meta “đấu 1 vòng / nhiều vòng / giới hạn vòng”
+            "is_multi_round": sess_data.get("is_multi_round"),
+            "has_round_limit": sess_data.get("has_round_limit"),
+            "max_rounds": sess_data.get("max_rounds"),
+
             "project_id": sess_data.get("project_id"),
             "project_code": project_code,
             "project_name": project_name,
@@ -830,22 +806,16 @@ async def api_session_attendance(
     }
     return JSONResponse(out, status_code=200)
 
+
 # =========================================================
 # DELETE LAST ROUND (B -> A proxy)
-# - Check endpoint + Delete endpoint
-# - Pass-through status codes
 # =========================================================
-
 @router.get("/auction/sessions/api/sessions/{session_id}/rounds/{round_no}/delete-check")
 async def api_delete_round_check(
     request: Request,
     session_id: int = Path(..., ge=1),
     round_no: int = Path(..., ge=1),
 ):
-    """
-    Proxy to Service A:
-      GET /api/v1/auction-sessions/sessions/{session_id}/rounds/{round_no}/delete-check
-    """
     token = get_access_token(request)
     if not token:
         return _unauth_json()
@@ -864,14 +834,6 @@ async def api_delete_last_round(
     session_id: int = Path(..., ge=1),
     round_no: int = Path(..., ge=1),
 ):
-    """
-    Proxy to Service A:
-      DELETE /api/v1/auction-sessions/sessions/{session_id}/rounds/{round_no}
-
-    Notes:
-      - Only deletes last round and round_no > 1 (enforced by Service A).
-      - Will rollback auction_session_lot_results of lots in that round => PENDING.
-    """
     token = get_access_token(request)
     if not token:
         return _unauth_json()
@@ -896,6 +858,7 @@ async def api_delete_last_round(
         body = (r.text or "")[:500]
         _log(f"← {r.status_code} {url} non-json body={body}")
         return JSONResponse({"detail": body}, status_code=_proxy_status(r.status_code))
+
 
 # =========================================================
 # Wiring note (Service B)
