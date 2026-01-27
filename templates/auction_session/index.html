@@ -209,9 +209,18 @@
       padding:40px 14px;z-index:9999;
       }
       .modal{
-      width:100%;max-width:720px;background:#fff;border-radius:18px;
-      border:1px solid rgba(226,232,240,1);box-shadow:var(--shadow);overflow:hidden;
+      width:100%;
+      max-width:720px;
+      max-height:calc(100vh - 80px); /* ✅ quan trọng */
+      display:flex;
+      flex-direction:column;
+      background:#fff;
+      border-radius:18px;
+      border:1px solid rgba(226,232,240,1);
+      box-shadow:var(--shadow);
+      overflow:hidden;
       }
+
       .modal-h{
       padding:14px 16px;border-bottom:1px solid var(--bd2);
       display:flex;align-items:center;justify-content:space-between;gap:10px;
@@ -219,7 +228,11 @@
       }
       .modal-h b{font-size:14px;color:var(--ink);font-weight:1100;}
       .xbtn{width:36px;height:36px;border-radius:12px;border:1px solid var(--bd);background:#fff;cursor:pointer;font-weight:900;}
-      .modal-b{padding:14px 16px;}
+      .modal-b{
+        padding:14px 16px;
+        overflow-y:auto;          /* ✅ cho scroll */
+        max-height:100%;          /* ✅ ăn theo modal */
+      }
 
       .formgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
       .formgrid .full{grid-column:1/-1;}
