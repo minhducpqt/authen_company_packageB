@@ -7,12 +7,9 @@
   <title>{{ title or "Danh sách điểm danh" }}</title>
 
   <style>
-    /* =========================
-       A4 PRINT SETUP (CHỈ ẢNH HƯỞNG KHI IN)
-       ========================= */
     @page{
       size: A4;
-      margin: 10mm 10mm 12mm 10mm; /* top right bottom left */
+      margin: 10mm 10mm 12mm 10mm;
     }
     *{ box-sizing: border-box; }
     html, body{
@@ -24,9 +21,7 @@
       print-color-adjust: exact;
     }
 
-    /* =========================
-       TOOLBAR (SCREEN)
-       ========================= */
+    /* Toolbar (screen) */
     .toolbar{
       display: flex;
       gap: 8px;
@@ -45,48 +40,30 @@
       cursor: pointer;
       border-radius: 6px;
     }
+    @media print{ .toolbar{ display:none !important; } }
 
-    @media print{
-      .toolbar{ display: none !important; }
-    }
-
-    /* =========================
-       A4 SCREEN PREVIEW (CHỈ ẢNH HƯỞNG KHI XEM TRÊN TRÌNH DUYỆT)
-       - KHÔNG LÀM HỎNG IN ẤN VÌ:
-         + phần in vẫn dùng @page margin
-         + padding A4 chỉ áp dụng @media screen
-       ========================= */
+    /* A4 preview (screen) */
     @media screen{
-      body{ background: #e9edf3; }
-
-      /* toolbar bám theo khung A4 cho đẹp */
+      body{ background:#e9edf3; }
       .toolbar{
         width: 210mm;
         margin: 10px auto 0;
         border-radius: 10px 10px 0 0;
       }
-
       .sheet{
-        width: 210mm;             /* A4 width */
-        min-height: 297mm;        /* A4 height */
+        width: 210mm;
+        min-height: 297mm;
         margin: 0 auto 28px;
         background: #fff;
         box-shadow: 0 10px 30px rgba(0,0,0,.18);
         border: 1px solid rgba(0,0,0,.12);
       }
-
-      /* giả lập margin @page để preview giống khi in */
-      .page{
-        padding: 10mm 10mm 12mm 10mm; /* top right bottom left */
-      }
+      .page{ padding: 10mm 10mm 12mm 10mm; }
     }
 
-    /* =========================
-       PAGE CONTENT
-       ========================= */
-    .page{ width: 100%; }
+    .page{ width:100%; }
 
-    /* Center national header */
+    /* National header */
     .top-center{
       text-align: center;
       line-height: 1.15;
@@ -117,15 +94,16 @@
       letter-spacing: .2px;
     }
 
+    /* Meta (slightly larger) */
     .meta{
-      margin-top: 8px;
-      font-size: 12px;
-      line-height: 1.25;
+      margin-top: 9px;
+      font-size: 13px;
+      line-height: 1.3;
     }
     .meta-grid{
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 2px 14px;
+      gap: 4px 14px;
     }
     .meta-row{
       display: flex;
@@ -133,6 +111,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      align-items: baseline;
     }
     .meta-row .k{
       font-weight: 700;
@@ -146,59 +125,68 @@
     }
     .meta-row.full{ grid-column: 1 / -1; }
 
-    /* =========================
-       TABLE
-       ========================= */
+    /* ✅ Dự án: viết ngay sau nhãn, nhưng vẫn cho phép wrap nhiều dòng */
+    .meta-row.project{
+      grid-column: 1 / -1;
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+    }
+    .meta-row.project .v{
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+      word-break: break-word;
+      line-height: 1.3;
+    }
+
+    /* Table */
     table{
       width: 100%;
       border-collapse: collapse;
-      margin-top: 8px;
+      margin-top: 10px;
       table-layout: fixed;
     }
     thead{ display: table-header-group; }
     th, td{
       border: 1px solid #111;
-      padding: 5px 6px;
+      padding: 6px 7px;
       vertical-align: top;
-      font-size: 11.5px;
-      line-height: 1.15;
+      font-size: 12.5px;
+      line-height: 1.2;
     }
     th{
       text-align: center;
       font-weight: 800;
-      font-size: 11.5px;
-      padding: 6px 6px;
+      font-size: 12.5px;
+      padding: 7px 7px;
     }
 
-    /* Column widths (more room for signature; SL narrower) */
+    /* Columns (no SL) */
     .col-sbd{  width: 7%;  text-align:center; }
     .col-name{ width: 27%; }
     .col-id{   width: 16%; }
-    .col-bank{ width: 26%; }
-    .col-qty{  width: 5%;  text-align:center; }
-    .col-sign{ width: 19%; }
+    .col-bank{ width: 28.5%; }
+    .col-sign{ width: 21.5%; }
 
-    /* Force row to be ~3 lines */
-    .row3 td{ padding-top: 6px; padding-bottom: 6px; }
+    .row3 td{ padding-top: 7px; padding-bottom: 7px; }
 
-    /* Name & address */
     .name{
-      font-weight: 800; /* ✅ name bold */
+      font-weight: 800;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      margin-bottom: 2px;
+      margin-bottom: 3px;
     }
     .addr{
       color: #333;
-      white-space: normal;      /* allow wrap */
+      white-space: normal;
       overflow: hidden;
       word-break: break-word;
-      max-height: 2.4em;        /* ~2 lines */
-      line-height: 1.2;
+      max-height: 2.6em;
+      line-height: 1.25;
     }
 
-    /* CCCD/SDT (values only) */
     .numcell{ font-variant-numeric: tabular-nums; }
     .idval{
       white-space: nowrap;
@@ -206,10 +194,9 @@
       text-overflow: clip;
       letter-spacing: .2px;
     }
-    .idval.cccd{ font-weight: 800; }  /* ✅ CCCD bold */
-    .idval.phone{ margin-top: 2px; }
+    .idval.cccd{ font-weight: 800; }
+    .idval.phone{ margin-top: 3px; }
 
-    /* Bank (labels NOT bold, values bold where required) */
     .bankline{
       white-space: nowrap;
       overflow: hidden;
@@ -217,24 +204,23 @@
     }
     .bankline.wrap{
       white-space: normal;
-      max-height: 2.4em;
-      line-height: 1.2;
+      max-height: 2.6em;
+      line-height: 1.25;
       word-break: break-word;
     }
-    .banklbl{ font-weight: 400; }     /* ✅ labels not bold */
-    .bankval{ font-weight: 800; }     /* ✅ values bold */
+    .banklbl{ font-weight: 400; }
+    .bankval{ font-weight: 800; }
     .bankline .bankval.stk,
     .bankline .bankval.ctk{ font-weight: 800; }
 
-    /* Signature box */
-    .signbox{ min-height: 44px; }
+    .signbox{ min-height: 46px; }
 
     tr{ page-break-inside: avoid; }
 
     .footnote{
-      margin-top: 6px;
-      font-size: 11px;
-      line-height: 1.2;
+      margin-top: 8px;
+      font-size: 12px;
+      line-height: 1.25;
     }
 
     .err{
@@ -252,24 +238,11 @@
     <button class="btn" onclick="history.back()">Quay lại</button>
   </div>
 
-  {# =========
-     Payload from router:
-       - session: dict
-       - rows: list
-       - attendance: full payload {ok, session, data}
-       - error: optional
-     ========= #}
-
   {% set s = session or {} %}
   {% set items = rows or (attendance.data if attendance and attendance.data is defined else []) %}
 
-  {% set stats_total_lots = s.lot_count if s and s.lot_count is defined else 0 %}
-  {% set stats_total_customers = s.customer_count if s and s.customer_count is defined else (items|length) %}
-
-  <!-- A4 Preview wrapper (SCREEN) - không ảnh hưởng PRINT -->
   <div class="sheet">
     <div class="page">
-      <!-- Quốc hiệu (CENTER) -->
       <div class="top-center">
         <div class="line1">CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
         <div class="line2">Độc lập - Tự do - Hạnh phúc</div>
@@ -284,7 +257,6 @@
         </div>
       {% endif %}
 
-      <!-- Meta session -->
       <div class="meta">
         <div class="meta-grid">
           <div class="meta-row full">
@@ -292,38 +264,33 @@
             <div class="v">{{ s.name or ("Phiên #" ~ (s.id or session_id or "")) }}</div>
           </div>
 
-          <div class="meta-row">
-            <div class="k">Dự án:</div>
-            <div class="v">{{ s.project_name or s.project_code or "" }}</div>
+          <div class="meta-row project">
+            <span class="k">Dự án:</span>
+            <span class="v">{{ s.project_name or s.project_code or "" }}</span>
           </div>
 
+          {# ✅ Ngày đấu trước, Địa điểm ngay sau ngày đấu (cùng hàng 2 cột) #}
           <div class="meta-row">
             <div class="k">Ngày đấu:</div>
-            <div class="v">{{ s.auction_date or "" }}</div>
+            <div class="v">
+              {% set _ad = (s.auction_date or '')|string %}
+              {% if _ad and (_ad|length) >= 10 and ('-' in _ad) %}
+                {{ _ad[8:10] }}/{{ _ad[5:7] }}/{{ _ad[0:4] }}
+              {% else %}
+                {{ s.auction_date or "" }}
+              {% endif %}
+            </div>
           </div>
 
           <div class="meta-row">
             <div class="k">Địa điểm:</div>
             <div class="v">{{ s.venue or s.location or "" }}</div>
           </div>
-
-          <div class="meta-row">
-            <div class="k">Số lô:</div>
-            <div class="v">{{ stats_total_lots or 0 }}</div>
-          </div>
-
-          <div class="meta-row">
-            <div class="k">Số khách:</div>
-            <div class="v">{{ stats_total_customers or 0 }}</div>
-          </div>
         </div>
 
-        {% if s.note %}
-          <div class="footnote"><span style="font-weight:700;">Ghi chú:</span> {{ s.note }}</div>
-        {% endif %}
+        {# ✅ Không hiển thị ghi chú #}
       </div>
 
-      <!-- Table -->
       <table>
         <thead>
           <tr>
@@ -331,7 +298,6 @@
             <th class="col-name">Họ và tên / Địa chỉ</th>
             <th class="col-id">CCCD / SĐT</th>
             <th class="col-bank">TK nhận hoàn (Ngân hàng / Số TK / Chủ TK)</th>
-            <th class="col-qty">SL</th>
             <th class="col-sign">Ký nhận<br/><span style="font-weight:400; font-style:italic;">(Ký, ghi rõ họ tên)</span></th>
           </tr>
         </thead>
@@ -371,10 +337,6 @@
                 </div>
               </td>
 
-              <td class="col-qty">
-                <div style="font-weight:800;">{{ r.lot_count or 0 }}</div>
-              </td>
-
               <td class="col-sign">
                 <div class="signbox"></div>
               </td>
@@ -383,7 +345,7 @@
 
           {% if not items or (items|length == 0) %}
             <tr>
-              <td colspan="6" style="text-align:center; padding: 14px; font-style: italic;">
+              <td colspan="5" style="text-align:center; padding: 14px; font-style: italic;">
                 Chưa có dữ liệu điểm danh.
               </td>
             </tr>
@@ -398,7 +360,6 @@
     </div>
   </div>
 
-  <!-- Auto-print: mở popup in NGAY khi mở tab, nhưng CHỈ 1 LẦN (cancel không bật lại) -->
   <script>
   (function(){
     function shouldAutoPrint(){
@@ -412,13 +373,11 @@
 
     if(!shouldAutoPrint()) return;
 
-    // Chốt: trong cùng 1 tab, 1 URL này chỉ auto-print 1 lần
     const key = "attendance_autoprint_done:" + location.pathname + location.search;
     if(sessionStorage.getItem(key) === "1") return;
     sessionStorage.setItem(key, "1");
 
     window.addEventListener("load", function(){
-      // đợi 1 nhịp để layout/font settle, rồi in 1 lần duy nhất
       setTimeout(function(){
         try{ window.focus(); }catch(e){}
         try{ window.print(); }catch(e){}
