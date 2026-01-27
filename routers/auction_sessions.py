@@ -243,9 +243,7 @@ async def auction_sessions_page(
             status_effective = raw.upper()
             status_ui = status_effective
 
-    projects, selected_code, selected_project = await _load_projects(
-        token, project, status_effective
-    )
+    projects, selected_code, selected_project = await _load_projects(token, project, status_effective)
     project_id = _project_id_of(selected_project)
 
     active: Dict[str, Any] = {"has_active": False, "primary_session": None, "candidates": []}
@@ -344,10 +342,7 @@ async def auction_session_detail_page(
                     "round_no": 1,
                     "rounds": [],
                     "ui": {"ok": False, "lots": []},
-                    "error": {
-                        "status": st_start,
-                        "body": js_start,
-                    },
+                    "error": {"status": st_start, "body": js_start},
                 },
                 status_code=502 if st_start not in (401, 403, 404) else st_start,
             )
@@ -589,6 +584,7 @@ async def api_list_session_results(
 # EXTRA PROXIES (B -> A)
 # - Session status update
 # - Backfill participants.stt
+# - Update session
 # =========================================================
 @router.post("/auction/sessions/api/sessions/{session_id}/status")
 async def api_update_session_status(
@@ -789,12 +785,10 @@ async def api_session_attendance(
             "district": sess_data.get("district"),
             "venue": sess_data.get("venue"),
             "note": sess_data.get("note"),
-
             # ✅ NEW: meta “đấu 1 vòng / nhiều vòng / giới hạn vòng”
             "is_multi_round": sess_data.get("is_multi_round"),
             "has_round_limit": sess_data.get("has_round_limit"),
             "max_rounds": sess_data.get("max_rounds"),
-
             "project_id": sess_data.get("project_id"),
             "project_code": project_code,
             "project_name": project_name,
@@ -839,6 +833,79 @@ async def api_delete_last_round(
         return _unauth_json()
 
     path = f"/api/v1/auction-sessions/sessions/{session_id}/rounds/{round_no}"
+    url = f"{SERVICE_A_BASE_URL}{path}"
+    headers = {"Authorization": f"Bearer {token}"}
+
+    _log(f"→ DELETE {url}")
+    async with httpx.AsyncClient(timeout=120.0) as c:
+        try:
+            r = await c.delete(url, headers=headers)
+        except Exception as e:
+            _log(f"← EXC {url} error={e}")
+            return JSONResponse({"detail": str(e)}, status_code=503)
+
+    try:
+        js = r.json()
+        _log(f"← {r.status_code} {url} json={_preview_body(js)}")
+        return JSONResponse(js, status_code=_proxy_status(r.status_code))
+    except Exception:
+        body = (r.text or "")[:500]
+        _log(f"← {r.status_code} {url} non-json body={body}")
+        return JSONResponse({"detail": body}, status_code=_proxy_status(r.status_code))
+
+
+# =========================================================
+# NEW: Session lock/unlock + delete-check + delete (B -> A proxy)
+# =========================================================
+@router.post("/auction/sessions/api/sessions/{session_id}/lock")
+async def api_lock_session(
+    request: Request,
+    session_id: int = Path(..., ge=1),
+):
+    token = get_access_token(request)
+    if not token:
+        return _unauth_json()
+
+    st, js = await _post_json(f"/api/v1/auction-sessions/sessions/{session_id}/lock", token, {})
+    return JSONResponse(js, status_code=_proxy_status(st))
+
+
+@router.post("/auction/sessions/api/sessions/{session_id}/unlock")
+async def api_unlock_session(
+    request: Request,
+    session_id: int = Path(..., ge=1),
+):
+    token = get_access_token(request)
+    if not token:
+        return _unauth_json()
+
+    st, js = await _post_json(f"/api/v1/auction-sessions/sessions/{session_id}/unlock", token, {})
+    return JSONResponse(js, status_code=_proxy_status(st))
+
+
+@router.get("/auction/sessions/api/sessions/{session_id}/delete-check")
+async def api_delete_session_check(
+    request: Request,
+    session_id: int = Path(..., ge=1),
+):
+    token = get_access_token(request)
+    if not token:
+        return _unauth_json()
+
+    st, js = await _get_json(f"/api/v1/auction-sessions/sessions/{session_id}/delete-check", token, None)
+    return JSONResponse(js, status_code=_proxy_status(st))
+
+
+@router.delete("/auction/sessions/api/sessions/{session_id}")
+async def api_delete_session(
+    request: Request,
+    session_id: int = Path(..., ge=1),
+):
+    token = get_access_token(request)
+    if not token:
+        return _unauth_json()
+
+    path = f"/api/v1/auction-sessions/sessions/{session_id}"
     url = f"{SERVICE_A_BASE_URL}{path}"
     headers = {"Authorization": f"Bearer {token}"}
 

@@ -59,7 +59,7 @@
        ✅ Flag góc trái trên (theo yêu cầu mới)
        - Bỏ chữ "Lô:"
        - Đóng khung riêng mã lô, font to
-       - Dòng dưới: STT-Cxxx-Syyy-mãlô
+       - Dòng dưới: STT-Cxxx-Syyy-Pzz
        ========================================= */
     .flag-box{
       position:absolute;
@@ -314,12 +314,12 @@
   {% set price_unit = unit_label %}
   {% set bid_unit = unit_label %}
 
-  {# ✅ #2: Sxxx = số phiếu của khách trong round này (đếm từ tickets) #}
-  {% set qty_lots = (tickets
+  {# ✅ Sxxx = số lô đấu của khách trong ROUND (ưu tiên field từ API: customer_lot_count) #}
+  {% set qty_lots = (t.customer_lot_count if (t.customer_lot_count is not none) else (tickets
     | selectattr('round_id', 'equalto', t.round_id)
     | selectattr('customer_id', 'equalto', t.customer_id)
     | list
-    | length) %}
+    | length)) %}
 
   {% set lot_short = (t.lot_code or '').replace('-', '.') %}
   {% set stt_code = t.stt_padded or (t.stt or '') %}
@@ -332,7 +332,7 @@
 
     <div class="flag-box">
       <div class="flag-lot">{{ t.lot_code }}</div>
-      <div class="flag-code">{{ stt_code }}-C{{ t.customer_id }}-S{{ qty_lots }}-{{ lot_short }}</div>
+      <div class="flag-code">{{ stt_code }}-C{{ t.customer_id }}-S{{ qty_lots }}-P{{ t.session_id }}</div>
     </div>
 
     <div class="center gov">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>

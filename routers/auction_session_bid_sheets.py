@@ -113,7 +113,7 @@ async def print_bid_sheets_for_round_lot(
                 client,
                 f"/api/v1/report/auction-sessions/round-lots/{int(round_lot_id)}/bid-sheets",
                 headers,
-                params={"sort_mode": sort_mode},
+                params={"sort_mode": (sort_mode or "STT_LOT").upper()},
             )
         if st != 200 or not isinstance(js, dict):
             return _err_html(f"Không lấy được dữ liệu phiếu (HTTP {st}).", 500)
@@ -164,7 +164,7 @@ async def print_bid_sheets_for_round(
                 client,
                 f"/api/v1/report/auction-sessions/rounds/{int(round_id)}/bid-sheets",
                 headers,
-                params={"sort_mode": sort_mode},
+                params={"sort_mode": (sort_mode or "STT_LOT").upper()},
             )
         if st != 200 or not isinstance(js, dict):
             return _err_html(f"Không lấy được dữ liệu phiếu (HTTP {st}).", 500)
@@ -215,7 +215,7 @@ async def print_bid_sheets_for_session(
                 client,
                 f"/api/v1/report/auction-sessions/sessions/{int(session_id)}/bid-sheets",
                 headers,
-                params={"sort_mode": sort_mode},
+                params={"sort_mode": (sort_mode or "STT_LOT").upper()},
             )
         if st != 200 or not isinstance(js, dict):
             return _err_html(f"Không lấy được dữ liệu phiếu (HTTP {st}).", 500)
