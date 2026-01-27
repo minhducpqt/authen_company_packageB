@@ -1,23 +1,23 @@
 <!doctype html>
 <html lang="vi">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>{{ title or "Giấy xác nhận trúng đấu giá" }}</title>
-  <style>
-    @page { size: A4; margin: 14mm 14mm 12mm 14mm; }
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>{{ title or "Giấy xác nhận trúng đấu giá" }}</title>
+    <style>
+      @page { size: A4; margin: 14mm 14mm 12mm 14mm; }
 
-    html, body { height: 100%; }
-    body{
+      html, body { height: 100%; }
+      body{
       margin:0;
       background:#f3f4f6;
       color:#111827;
       font-family:"Times New Roman", Times, serif;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
-    }
+      }
 
-    .sheet{
+      .sheet{
       width:210mm;
       min-height:297mm;
       margin:10px auto;
@@ -25,40 +25,40 @@
       box-shadow:0 10px 28px rgba(0,0,0,.12);
       border-radius:10px;
       overflow:hidden;
-    }
-    .page{ padding:14mm 14mm 12mm 14mm; position:relative; }
+      }
+      .page{ padding:14mm 14mm 12mm 14mm; position:relative; }
 
-    @media print{
+      @media print{
       body{ background:#fff; }
       .sheet{ width:auto; min-height:auto; margin:0; box-shadow:none; border-radius:0; }
       .page{ padding:0; }
       .pagebreak{ break-after: page; page-break-after: always; }
-    }
+      }
 
-    /* ===== Typography scale (SAFE, larger, still 1 page) ===== */
-    .center{ text-align:center; }
-    .h1{ margin:0; font-size:19px; font-weight:800; letter-spacing:.2px; }
-    .h2{ margin:6px 0 0; font-size:17px; font-weight:700; }
-    .date-line{ margin:10px 0 10px; font-size:16px; font-style:italic; }
-    .doc-title{ margin:10px 0 6px; font-size:22px; font-weight:900; letter-spacing:.2px; }
-    .project-name{ margin:0 0 6px; font-size:16px; font-style:italic; }
-    .lot-line{ margin:6px 0 10px; font-size:20px; font-weight:900; }
+      /* ===== Typography scale (SAFE, larger, still 1 page) ===== */
+      .center{ text-align:center; }
+      .h1{ margin:0; font-size:19px; font-weight:800; letter-spacing:.2px; }
+      .h2{ margin:6px 0 0; font-size:17px; font-weight:700; }
+      .date-line{ margin:10px 0 10px; font-size:16px; font-style:italic; }
+      .doc-title{ margin:10px 0 6px; font-size:22px; font-weight:900; letter-spacing:.2px; }
+      .project-name{ margin:0 0 6px; font-size:16px; font-style:italic; }
+      .lot-line{ margin:6px 0 10px; font-size:20px; font-weight:900; }
 
-    .para{
+      .para{
       margin:10px 0 10px;
       font-size:16px;
       line-height:1.45;
       text-align:justify;
-    }
+      }
 
-    /* ===== Blocks ===== */
-    .section{
+      /* ===== Blocks ===== */
+      .section{
       margin-top:10px;
       border:1px solid rgba(17,24,39,.18);
       border-radius:10px;
       overflow:hidden;
-    }
-    .section-hd{
+      }
+      .section-hd{
       padding:10px 12px;
       background:#f8fafc;
       border-bottom:1px solid rgba(17,24,39,.14);
@@ -66,63 +66,63 @@
       font-weight:900;
       letter-spacing:.15px;
       text-transform: uppercase;
-    }
-    .section-bd{ padding:10px 12px; }
+      }
+      .section-bd{ padding:10px 12px; }
 
-    .grid2{
+      .grid2{
       display:grid;
       grid-template-columns: 1fr 1fr;
       gap:10px;
       align-items:stretch; /* ✅ equal height */
-    }
+      }
 
-    .kv{
+      .kv{
       width:100%;
       border-collapse:collapse;
       font-size:16px;
       line-height:1.45;
-    }
-    .kv td{ padding:5px 0; vertical-align:top; }
-    .kv td.label{ width:46%; padding-right:10px; color:#111827; }
-    .kv td.value{ width:54%; font-weight:900; }
+      }
+      .kv td{ padding:5px 0; vertical-align:top; }
+      .kv td.label{ width:46%; padding-right:10px; color:#111827; }
+      .kv td.value{ width:54%; font-weight:900; }
 
-    .subnote{
+      .subnote{
       margin-top:3px;
       font-size:14px;
       font-weight:700;
       font-style:italic;
       opacity:.9;
-    }
+      }
 
-    /* ===== Price emphasis (link number + words) ===== */
-    .price-wrap{
+      /* ===== Price emphasis (link number + words) ===== */
+      .price-wrap{
       margin-top:10px;
       border:1px solid rgba(17,24,39,.18);
       border-radius:10px;
       overflow:hidden;
-    }
-    .price-row{
+      }
+      .price-row{
       display:grid;
       grid-template-columns: 1fr 1fr;
       gap:10px;
       padding:10px 12px;
-    }
-    .price-row + .price-row{
+      }
+      .price-row + .price-row{
       border-top:1px dashed rgba(17,24,39,.18);
-    }
-    .price-label{
+      }
+      .price-label{
       font-size:16px;
       font-weight:900;
       text-transform: uppercase;
       letter-spacing:.12px;
-    }
-    .price-val{
+      }
+      .price-val{
       font-size:18px;
       font-weight:900;
       text-align:right;
       white-space:nowrap;
-    }
-    .price-sub{
+      }
+      .price-sub{
       grid-column: 1 / -1;
       margin-top:6px;
       font-size:16px;
@@ -132,58 +132,58 @@
       background:#f8fafc;
       border:1px solid rgba(17,24,39,.12);
       border-radius:8px;
-    }
-    .price-sub b{ font-weight:900; }
+      }
+      .price-sub b{ font-weight:900; }
 
-    .bullets{
+      .bullets{
       margin:10px 0 0;
       padding-left:18px;
       font-size:16px;
       font-style:italic;
       line-height:1.5;
-    }
-    .bullets li{ margin:8px 0; }
+      }
+      .bullets li{ margin:8px 0; }
 
-    .sign{
+      .sign{
       margin-top:14px;
       display:grid;
       grid-template-columns:1fr 1fr;
       gap:18px;
       align-items:start;
-    }
-    .sign .box{
+      }
+      .sign .box{
       text-align:center;
       font-size:16px;
       font-weight:900;
       line-height:1.25;
-    }
-    .sign .hint{
+      }
+      .sign .hint{
       margin-top:6px;
       font-size:14px;
       font-weight:600;
       font-style:italic;
-    }
-    .sign .spacer{ height:64px; }
-    .sign .line{
+      }
+      .sign .spacer{ height:64px; }
+      .sign .line{
       margin-top:10px;
       font-size:15px;
       font-weight:800;
-    }
+      }
 
-    .company-name{
+      .company-name{
       text-transform: uppercase;
       white-space: normal;
       overflow-wrap: anywhere;
       word-break: break-word;
       max-width: 90mm;
       margin: 0 auto;
-    }
+      }
 
-    .keep{ break-inside: avoid; page-break-inside: avoid; }
-    .nowrap{ white-space:nowrap; }
+      .keep{ break-inside: avoid; page-break-inside: avoid; }
+      .nowrap{ white-space:nowrap; }
 
-    /* ✅ STT badge */
-    .stt-badge{
+      /* ✅ STT badge */
+      .stt-badge{
       position:absolute;
       top: 1.5mm;
       left: 1.5mm;
@@ -192,315 +192,329 @@
       padding: 4px 7px;
       background: rgba(255,255,255,.96);
       text-align:center;
-    }
-    .stt-badge .lbl{
+      }
+      .stt-badge .lbl{
       font-size: 10px;
       font-weight: 800;
       letter-spacing: .6px;
       opacity: .45;
       line-height: 1;
       margin-bottom: 2px;
-    }
-    .stt-badge .val{
+      }
+      .stt-badge .val{
       font-size: 19px;
       font-weight: 900;
       line-height: 1;
-    }
-  </style>
-</head>
+      }
+    </style>
+  </head>
 
-<body>
+  <body>
 
-{# ===============================
-   Helpers
-   =============================== #}
-{% macro numfmt(n) -%}
-  {%- set nn = (n or 0) | int -%}
-  {%- set s = nn | string -%}
-  {%- set ns = namespace(out='') -%}
-  {%- for ch in s|reverse -%}
-    {%- if loop.index0 != 0 and (loop.index0 % 3) == 0 -%}
+    {# ===============================
+    Helpers
+    =============================== #}
+    {% macro numfmt(n) -%}
+      {%- set nn = (n or 0) | int -%}
+      {%- set s = nn | string -%}
+      {%- set ns = namespace(out='') -%}
+      {%- for ch in s|reverse -%}
+      {%- if loop.index0 != 0 and (loop.index0 % 3) == 0 -%}
       {%- set ns.out = ns.out + '.' -%}
-    {%- endif -%}
-    {%- set ns.out = ns.out + ch -%}
-  {%- endfor -%}
-  {{- ns.out|reverse -}}
-{%- endmacro %}
+      {%- endif -%}
+      {%- set ns.out = ns.out + ch -%}
+      {%- endfor -%}
+      {{- ns.out|reverse -}}
+      {%- endmacro %}
 
-{% macro iso_ddmmyyyy(iso) -%}
-  {%- set d = (iso|string)[:10] -%}
-  {%- if d and (d|length)==10 and ('-' in d) -%}
-    {%- set y = d[0:4] -%}
-    {%- set m = d[5:7] -%}
-    {%- set day = d[8:10] -%}
-    {{- day }}||{{- m }}||{{- y -}}
-  {%- else -%}
-    |||
-  {%- endif -%}
-{%- endmacro %}
+      {% macro iso_ddmmyyyy(iso) -%}
+        {%- set d = (iso|string)[:10] -%}
+        {%- if d and (d|length)==10 and ('-' in d) -%}
+        {%- set y = d[0:4] -%}
+        {%- set m = d[5:7] -%}
+        {%- set day = d[8:10] -%}
+        {{- day }}||{{- m }}||{{- y -}}
+        {%- else -%}
+        |||
+        {%- endif -%}
+        {%- endmacro %}
 
-{% macro areafmt(a) -%}
-  {%- set aa = (a or 0) | float -%}
-  {{- "%.2f"|format(aa) -}}
-{%- endmacro %}
+        {% macro areafmt(a) -%}
+          {%- set aa = (a or 0) | float -%}
+          {{- "%.2f"|format(aa) -}}
+          {%- endmacro %}
 
-{# ===============================
-   1 page renderer
-   =============================== #}
-{% macro render_one(session, project, round, w) -%}
-  {%- set p = (project or {}) -%}
-  {%- set lot = (w.get('lot') or {}) -%}
-  {%- set cust = (w.get('customer') or {}) -%}
-  {%- set cfg = (p.get('auction_cfg') or {}) -%}
+          {# ===============================
+          1 page renderer
+          =============================== #}
+          {% macro render_one(session, project, round, w) -%}
+            {%- set p = (project or {}) -%}
+            {%- set lot = (w.get('lot') or {}) -%}
+            {%- set cust = (w.get('customer') or {}) -%}
+            {%- set cfg = (p.get('auction_cfg') or {}) -%}
 
-  {%- set venue = (cfg.get('venue') or '') -%}
-  {%- set province_city = (cfg.get('province_city') or '') -%}
+            {%- set venue = (cfg.get('venue') or '') -%}
+            {%- set province_city = (cfg.get('province_city') or '') -%}
 
-  {# date: ưu tiên auction_date (API), fallback '' #}
-  {%- set _auction_at = (session.get('auction_date') or cfg.get('auction_at') or '') -%}
-  {%- set _d = iso_ddmmyyyy(_auction_at) -%}
-  {%- set _parts = (_d|string).split('||') -%}
-  {%- set dd = (_parts[0] if _parts|length>0 else '') -%}
-  {%- set mm = (_parts[1] if _parts|length>1 else '') -%}
-  {%- set yyyy = (_parts[2] if _parts|length>2 else '') -%}
+            {# date: ưu tiên auction_date (API), fallback '' #}
+            {%- set _auction_at = (session.get('auction_date') or cfg.get('auction_at') or '') -%}
+            {%- set _d = iso_ddmmyyyy(_auction_at) -%}
+            {%- set _parts = (_d|string).split('||') -%}
+            {%- set dd = (_parts[0] if _parts|length>0 else '') -%}
+            {%- set mm = (_parts[1] if _parts|length>1 else '') -%}
+            {%- set yyyy = (_parts[2] if _parts|length>2 else '') -%}
 
-  {%- set is_per_sqm = (w.get('is_per_sqm') is not none and w.get('is_per_sqm')) -%}
+            {%- set is_per_sqm = (w.get('is_per_sqm') is not none and w.get('is_per_sqm')) -%}
 
-  {%- set company_name = (p.get('company_name') or '') -%}
-  {%- set company_upper = (company_name | upper) -%}
+            {%- set company_name = (p.get('company_name') or '') -%}
+            {%- set company_upper = (company_name | upper) -%}
 
-  {# ===== STARTING PRICE: MUST BE ORIGINAL (initial), not winning round =====
-     API mới bạn yêu cầu sẽ có 4 field duplicated.
-     - Ưu tiên dùng field mới (initial_*)
-     - Nếu chưa có (chưa deploy API), fallback về lot.starting_price_* (để không vỡ)
-  #}
-  {%- set init_start_total = (w.get('initial_starting_price_total_vnd') if w.get('initial_starting_price_total_vnd') is not none else lot.get('starting_price_total_vnd')) -%}
-  {%- set init_start_per   = (w.get('initial_starting_price_per_sqm_vnd') if w.get('initial_starting_price_per_sqm_vnd') is not none else lot.get('starting_price_per_sqm_vnd')) -%}
+            {# ===== STARTING PRICE: MUST BE ORIGINAL (initial), not winning round =====
+            API mới bạn yêu cầu sẽ có 4 field duplicated.
+            - Ưu tiên dùng field mới (initial_*)
+            - Nếu chưa có (chưa deploy API), fallback về lot.starting_price_* (để không vỡ)
+            #}
+            {%- set init_start_total = (w.get('initial_starting_price_total_vnd') if w.get('initial_starting_price_total_vnd') is not none else lot.get('starting_price_total_vnd')) -%}
+            {%- set init_start_per   = (w.get('initial_starting_price_per_sqm_vnd') if w.get('initial_starting_price_per_sqm_vnd') is not none else lot.get('starting_price_per_sqm_vnd')) -%}
 
-  {# round-winning start (đã có trong payload mới), KHÔNG in, giữ để debug nếu cần #}
-  {%- set win_round_start_total = w.get('winning_round_starting_price_total_vnd') -%}
-  {%- set win_round_start_per   = w.get('winning_round_starting_price_per_sqm_vnd') -%}
+            {# round-winning start (đã có trong payload mới), KHÔNG in, giữ để debug nếu cần #}
+            {%- set win_round_start_total = w.get('winning_round_starting_price_total_vnd') -%}
+            {%- set win_round_start_per   = w.get('winning_round_starting_price_per_sqm_vnd') -%}
 
-  {%- set win_total = (w.get('winning_price_total_vnd') or 0) -%}
-  {%- set win_per = (w.get('winning_price_per_sqm_vnd') or 0) -%}
+            {%- set win_total = (w.get('winning_price_total_vnd') or 0) -%}
+            {%- set win_per = (w.get('winning_price_per_sqm_vnd') or 0) -%}
 
-  {%- set win_text_total = (w.get('winning_price_total_text') or '') -%}
-  {%- set win_text_per = (w.get('winning_price_per_sqm_text') or '') -%}
-  {%- set win_text = (win_text_per if is_per_sqm else win_text_total) -%}
+            {%- set win_text_total = (w.get('winning_price_total_text') or '') -%}
+            {%- set win_text_per = (w.get('winning_price_per_sqm_text') or '') -%}
+            {%- set win_text = (win_text_per if is_per_sqm else win_text_total) -%}
 
-  {%- set stt = (w.get('winner_stt') or '') -%}
+            {%- set stt = (w.get('winner_stt') or '') -%}
 
-  {%- set cust_id = (cust.get('customer_id') or '') -%}
-  {%- set cust_code = ('C' ~ (cust_id|string)) if cust_id else '' -%}
+            {%- set cust_id = (cust.get('customer_id') or '') -%}
+            {%- set cust_code = ('C' ~ (cust_id|string)) if cust_id else '' -%}
 
-  <div class="sheet">
-    <div class="page">
+            <div class="sheet">
+              <div class="page">
 
-      {% if stt %}
-      <div class="stt-badge keep">
-        <div class="lbl">STT</div>
-        <div class="val">{{ stt }}</div>
-      </div>
-      {% endif %}
+                {% if stt %}
+                  <div class="stt-badge keep">
+                    <div class="lbl">STT</div>
+                    <div class="val">{{ stt }}</div>
+                  </div>
+                {% endif %}
 
-      {# ===== Header (National header must be centered) ===== #}
-      <div class="center keep">
-        <h1 class="h1">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</h1>
-        <div class="h2">Độc lập – Tự do – Hạnh phúc</div>
+                {# ===== Header (National header must be centered) ===== #}
+                <div class="center keep">
+                  <h1 class="h1">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</h1>
+                  <div class="h2">Độc lập – Tự do – Hạnh phúc</div>
 
-        <div class="date-line">
-          {% if province_city %}
-            {{ province_city }},
-          {% endif %}
-          ngày {{ dd }} tháng {{ mm }} năm {{ yyyy }}
-        </div>
+                  <div class="date-line">
+                    {% if province_city %}
+                      {{ province_city }},
+                    {% endif %}
+                    ngày {{ dd }} tháng {{ mm }} năm {{ yyyy }}
+                  </div>
 
-        <div class="doc-title">GIẤY XÁC NHẬN TRÚNG ĐẤU GIÁ</div>
-        <div class="project-name">{{ p.get('name') or '' }}</div>
+                  <div class="doc-title">GIẤY XÁC NHẬN TRÚNG ĐẤU GIÁ</div>
+                  <div class="project-name">{{ p.get('name') or '' }}</div>
 
-        <div class="lot-line">
-          Lô đất: {{ lot.get('lot_code') or '' }}
-        </div>
-      </div>
+                  <div class="lot-line">
+                    Lô đất: {{ lot.get('lot_code') or '' }}
+                  </div>
+                </div>
 
-      <div class="para keep">
-        Căn cứ Biên bản đấu giá tài sản lập ngày {{ dd }} tháng {{ mm }} năm {{ yyyy }}
-        {% if venue %} tại {{ venue }}{% endif %}.
-      </div>
+                <div class="para keep">
+                  Căn cứ Biên bản đấu giá tài sản lập ngày {{ dd }} tháng {{ mm }} năm {{ yyyy }}
+                  {% if venue %} tại {{ venue }}{% endif %}.
+                  </div>
 
-      <div class="center keep" style="margin: 2px 0 10px;">
-        <div style="font-size:17px;font-weight:900;letter-spacing:.2px;">
-          {{ company_upper }} XÁC NHẬN
-        </div>
-      </div>
+                  <div class="center keep" style="margin: 2px 0 10px;">
+                    <div style="font-size:17px;font-weight:900;letter-spacing:.2px;">
+                      {{ company_upper }} XÁC NHẬN
+                    </div>
+                  </div>
 
-      {# ===== Two balanced blocks (equal height) ===== #}
-      <div class="grid2 keep">
-        <div class="section">
-          <div class="section-hd">Thông tin người trúng</div>
-          <div class="section-bd">
-            <table class="kv" role="presentation">
-              <tr>
-                <td class="label">Họ và tên:</td>
-                <td class="value">{{ cust.get('full_name') or '' }}</td>
-              </tr>
-              <tr>
-                <td class="label">Mã khách hàng:</td>
-                <td class="value">{{ cust_code }}</td>
-              </tr>
-              <tr>
-                <td class="label">CCCD số:</td>
-                <td class="value">{{ cust.get('cccd') or '' }}</td>
-              </tr>
-              <tr>
-                <td class="label">Địa chỉ:</td>
-                <td class="value">{{ cust.get('address') or '' }}</td>
-              </tr>
-              <tr>
-                <td class="label">Số điện thoại:</td>
-                <td class="value">{{ cust.get('phone') or '' }}</td>
-              </tr>
-            </table>
-          </div>
-        </div>
+                  {# ===== Two balanced blocks (equal height) ===== #}
+                  <div class="grid2 keep">
+                    <div class="section">
+                      <div class="section-hd">Thông tin người trúng</div>
+                      <div class="section-bd">
+                        <table class="kv" role="presentation">
+                          <tr>
+                            <td class="label">Họ và tên:</td>
+                            <td class="value">{{ cust.get('full_name') or '' }}</td>
+                          </tr>
+                          <tr>
+                            <td class="label">Mã khách hàng:</td>
+                            <td class="value">{{ cust_code }}</td>
+                          </tr>
+                          <tr>
+                            <td class="label">CCCD số:</td>
+                            <td class="value">{{ cust.get('cccd') or '' }}</td>
+                          </tr>
+                          <tr>
+                            <td class="label">Địa chỉ:</td>
+                            <td class="value">{{ cust.get('address') or '' }}</td>
+                          </tr>
+                          <tr>
+                            <td class="label">Số điện thoại:</td>
+                            <td class="value">{{ cust.get('phone') or '' }}</td>
+                          </tr>
+                        </table>
+                      </div>
+                    </div>
 
-        <div class="section">
-          <div class="section-hd">Thông tin lô đất</div>
-          <div class="section-bd">
-            <table class="kv" role="presentation">
-              <tr>
-                <td class="label">Mã lô | Diện tích:</td>
-                <td class="value">
-                  {{ lot.get('lot_code') or '' }} |
-                  {{ areafmt(lot.get('area')) }} <span class="nowrap">m²</span>
-                </td>
-              </tr>
+                    <div class="section">
+                      <div class="section-hd">Thông tin lô đất</div>
+                      <div class="section-bd">
+                        <table class="kv" role="presentation">
+                          <tr>
+                            <td class="label">Mã lô | Diện tích:</td>
+                            <td class="value">
+                              {{ lot.get('lot_code') or '' }} |
+                              {{ areafmt(lot.get('area')) }} <span class="nowrap">m²</span>
+                            </td>
+                          </tr>
 
-              {# Giá khởi điểm: dùng giá khởi điểm BAN ĐẦU (initial) #}
-              <tr>
-                <td class="label"><strong>Giá khởi điểm:</strong></td>
-                <td class="value">
-                  {% if is_per_sqm %}
-                    {{ numfmt(init_start_per or 0) }} <span class="nowrap">đồng/m²</span>
-                    <div class="subnote">({{ numfmt(init_start_total or 0) }} đồng/lô)</div>
-                  {% else %}
-                    {{ numfmt(init_start_total or 0) }} <span class="nowrap">đồng/lô</span>
-                    <div class="subnote">({{ numfmt(init_start_per or 0) }} đồng/m²)</div>
-                  {% endif %}
-                </td>
-              </tr>
+                          {# Giá khởi điểm: dùng giá khởi điểm BAN ĐẦU (initial) #}
+                          <tr>
+                            <td class="label"><strong>Giá khởi điểm:</strong></td>
+                            <td class="value">
+                              {% if is_per_sqm %}
+                                {{ numfmt(init_start_per or 0) }} <span class="nowrap">đồng/m²</span>
+                                <div class="subnote">({{ numfmt(init_start_total or 0) }} đồng/lô)</div>
+                              {% else %}
+                                {{ numfmt(init_start_total or 0) }} <span class="nowrap">đồng/lô</span>
+                                <div class="subnote">({{ numfmt(init_start_per or 0) }} đồng/m²)</div>
+                              {% endif %}
+                            </td>
+                          </tr>
 
-              <tr>
-                <td class="label"><strong>Giá trúng:</strong></td>
-                <td class="value">
-                  {% if is_per_sqm %}
-                    {{ numfmt(win_per) }} <span class="nowrap">đồng/m²</span>
-                    <div class="subnote">({{ numfmt(win_total) }} đồng/lô)</div>
-                  {% else %}
-                    {{ numfmt(win_total) }} <span class="nowrap">đồng/lô</span>
-                    <div class="subnote">({{ numfmt(win_per) }} đồng/m²)</div>
-                  {% endif %}
-                </td>
-              </tr>
-            </table>
-          </div>
-        </div>
-      </div>
+                          <tr>
+                            <td class="label"><strong>Giá trúng:</strong></td>
+                            <td class="value">
+                              {% if is_per_sqm %}
+                                {{ numfmt(win_per) }} <span class="nowrap">đồng/m²</span>
+                                <div class="subnote">({{ numfmt(win_total) }} đồng/lô)</div>
+                              {% else %}
+                                {{ numfmt(win_total) }} <span class="nowrap">đồng/lô</span>
+                                <div class="subnote">({{ numfmt(win_per) }} đồng/m²)</div>
+                              {% endif %}
+                            </td>
+                          </tr>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
 
-      {# ===== Price block: link number + words together ===== #}
-      <div class="price-wrap keep" style="margin-top:10px;">
-        <div class="price-row">
-          <div class="price-label">Giá trúng đấu giá</div>
-          <div class="price-val">
-            {% if is_per_sqm %}
-              {{ numfmt(win_per) }} <span class="nowrap">đồng/m²</span>
+                  {# ===== Price block: link number + words together ===== #}
+                  <div class="price-wrap keep" style="margin-top:10px;">
+                    <div class="price-row">
+                      <div class="price-label">Giá trúng đấu giá</div>
+                      <div class="price-val">
+                        {% if is_per_sqm %}
+                          {{ numfmt(win_per) }} <span class="nowrap">đồng/m²</span>
+                        {% else %}
+                          {{ numfmt(win_total) }} <span class="nowrap">đồng/lô</span>
+                        {% endif %}
+                      </div>
+                      <div class="price-sub">
+                        Bằng chữ:
+                        {% if win_text %}
+                          <b>{{ win_text }}</b>
+                        {% else %}
+                          <b>............................................................</b>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+
+                  <ul class="bullets keep">
+                    <li>
+                      Giấy xác nhận này là cơ sở để người trúng đấu giá liên hệ với người có tài sản đấu giá để nộp
+                      tiền trúng đấu giá và thực hiện các thủ tục có liên quan theo quy định của pháp luật.
+                    </li>
+                    <li>
+                      Giấy xác nhận này không có giá trị để mua bán, cầm cố, thế chấp, tặng cho hoặc sử dụng trái pháp luật.
+                    </li>
+                    <li>
+                      Người trúng đấu giá giữ 01 (một) bản chính để làm các thủ tục theo quy định của pháp luật.
+                    </li>
+                  </ul>
+
+                  <div class="sign keep">
+                    <div class="box">
+                      NGƯỜI TRÚNG ĐẤU GIÁ
+                      <div class="hint">(Ký, ghi rõ họ tên)</div>
+                      <div class="spacer"></div>
+                    </div>
+
+                    <div class="box">
+                      <div class="company-name">{{ company_name }}</div>
+                      Đấu giá viên
+                      <div class="hint">(Ký, ghi rõ họ tên)</div>
+                      <div class="spacer"></div>
+                    </div>
+                  </div>
+                  >
+                  <div class="box">
+                    NGƯỜI TRÚNG ĐẤU GIÁ
+                    <div class="hint">(Ký, ghi rõ họ tên)</div>
+                    <div class="spacer"></div>
+                    <div class="line">...........................................</div>
+                  </div>
+
+                  <div class="box">
+                    <div class="company-name">{{ company_name }}</div>
+                    Đấu giá viên
+                    <div class="hint">(Ký, ghi rõ họ tên)</div>
+                    <div class="spacer"></div>
+                    <div class="line">...........................................</div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+            {%- endmacro %}
+
+            {# ===============================
+            Render theo mode Service B
+            =============================== #}
+            {% if (mode or '') == 'SELECTED' %}
+              {% set gs = (groups or []) %}
+              {% for g in gs %}
+                {% set g_session = (g.get('session') or {}) %}
+                {% set g_project = (g.get('project') or {}) %}
+                {% set g_round = None %}
+                {% set g_items = (g.get('items') or []) %}
+                {% for w in g_items %}
+                  {{ render_one(g_session, g_project, g_round, w) }}
+                  <div class="pagebreak"></div>
+                {% endfor %}
+              {% endfor %}
             {% else %}
-              {{ numfmt(win_total) }} <span class="nowrap">đồng/lô</span>
+              {% set s = (session or {}) %}
+              {% set p = (project or {}) %}
+              {% set r = (round or {}) %}
+              {% set its = (items or []) %}
+              {% for w in its %}
+                {{ render_one(s, p, r, w) }}
+                <div class="pagebreak"></div>
+              {% endfor %}
             {% endif %}
-          </div>
-          <div class="price-sub">
-            Bằng chữ:
-            {% if win_text %}
-              <b>{{ win_text }}</b>
-            {% else %}
-              <b>............................................................</b>
-            {% endif %}
-          </div>
-        </div>
-      </div>
 
-      <ul class="bullets keep">
-        <li>
-          Giấy xác nhận này là cơ sở để người trúng đấu giá liên hệ với người có tài sản đấu giá để nộp
-          tiền trúng đấu giá và thực hiện các thủ tục có liên quan theo quy định của pháp luật.
-        </li>
-        <li>
-          Giấy xác nhận này không có giá trị để mua bán, cầm cố, thế chấp, tặng cho hoặc sử dụng trái pháp luật.
-        </li>
-        <li>
-          Người trúng đấu giá giữ 01 (một) bản chính để làm các thủ tục theo quy định của pháp luật.
-        </li>
-      </ul>
+            <script>
+              (function(){
+              function doPrint(){
+              try { window.focus(); } catch(e){}
+              window.print();
+              }
+              if (window.matchMedia && window.matchMedia('print').matches) return;
+              window.addEventListener('load', function(){
+              setTimeout(doPrint, 250);
+              });
+              })();
+            </script>
 
-      <div class="sign keep">
-        <div class="box">
-          NGƯỜI TRÚNG ĐẤU GIÁ
-          <div class="hint">(Ký, ghi rõ họ tên)</div>
-          <div class="spacer"></div>
-          <div class="line">...........................................</div>
-        </div>
-
-        <div class="box">
-          <div class="company-name">{{ company_name }}</div>
-          Đấu giá viên
-          <div class="hint">(Ký, ghi rõ họ tên)</div>
-          <div class="spacer"></div>
-          <div class="line">...........................................</div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-{%- endmacro %}
-
-{# ===============================
-   Render theo mode Service B
-   =============================== #}
-{% if (mode or '') == 'SELECTED' %}
-  {% set gs = (groups or []) %}
-  {% for g in gs %}
-    {% set g_session = (g.get('session') or {}) %}
-    {% set g_project = (g.get('project') or {}) %}
-    {% set g_round = None %}
-    {% set g_items = (g.get('items') or []) %}
-    {% for w in g_items %}
-      {{ render_one(g_session, g_project, g_round, w) }}
-      <div class="pagebreak"></div>
-    {% endfor %}
-  {% endfor %}
-{% else %}
-  {% set s = (session or {}) %}
-  {% set p = (project or {}) %}
-  {% set r = (round or {}) %}
-  {% set its = (items or []) %}
-  {% for w in its %}
-    {{ render_one(s, p, r, w) }}
-    <div class="pagebreak"></div>
-  {% endfor %}
-{% endif %}
-
-<script>
-  (function(){
-    function doPrint(){
-      try { window.focus(); } catch(e){}
-      window.print();
-    }
-    if (window.matchMedia && window.matchMedia('print').matches) return;
-    window.addEventListener('load', function(){
-      setTimeout(doPrint, 250);
-    });
-  })();
-</script>
-
-</body>
-</html>
+          </body>
+        </html>
