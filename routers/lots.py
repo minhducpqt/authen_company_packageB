@@ -5,10 +5,19 @@ import os
 from typing import Any, Dict, Optional, Tuple
 
 import httpx
-from fastapi import APIRouter, Request, Query, Path, Body
+from fastapi import APIRouter, Request, Query, Path, Body, HTTPException
 from fastapi.responses import JSONResponse
 
 from utils.auth import get_access_token, fetch_me
+
+from fastapi.responses import HTMLResponse
+from pathlib import Path as SysPath
+
+from fastapi.templating import Jinja2Templates
+
+BASE_DIR = SysPath(__file__).resolve().parents[1]
+templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+
 
 router = APIRouter(prefix="/lots", tags=["lots"])
 
@@ -304,4 +313,28 @@ async def api_unlock_lot(
     return JSONResponse(
         data or {"error": "upstream_failed", "status": r.status_code},
         status_code=r.status_code,
+    )
+
+@router.get("/{lot_id}/edit", response_class=HTMLResponse)
+async def lot_edit_page(
+    request: Request,
+    lot_id: int = Path(..., ge=1),
+    embed: int | None = Query(None),
+):
+    """
+    SSR page for iframe modal edit lot.
+    URL: /lots/{lot_id}/edit?embed=1
+    """
+    # (optional) chặn nếu chưa login
+    token = get_access_token(request)
+    if not token:
+        raise HTTPException(status_code=401, detail="unauthorized")
+
+    return templates.TemplateResponse(
+        "pages/projects/lot_editer.html",
+        {
+            "request": request,
+            "lot_id": lot_id,
+            "embed": embed or 0,
+        },
     )

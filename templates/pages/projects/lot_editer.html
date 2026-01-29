@@ -1,0 +1,1102 @@
+{# templates/lot_editer.html
+   Standalone page for iframe modal edit lot.
+   - Calls Service B proxy APIs:
+       GET  /lots/api/{lot_id}/detail_for_edit
+       PATCH /lots/api/{lot_id}
+   - On success: postMessage -> parent {type:"LOT_UPDATED", lot_id, lot}
+#}
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chỉnh sửa lô</title>
+
+  <!-- Remixicon (same icon set you are using) -->
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg:#ffffff;
+      --card:#ffffff;
+      --card2:#f8fafc;
+      --bd: rgba(15,23,42,.10);
+      --bd2: rgba(15,23,42,.08);
+      --txt:#0f172a;
+      --muted: rgba(71,85,105,.90);
+
+      --pri:#4f46e5;   /* indigo-600 */
+      --pri2:#4338ca;  /* indigo-700 */
+      --ok:#16a34a;
+      --warn:#f59e0b;
+      --bad:#ef4444;
+
+      --shadow: 0 14px 40px rgba(2,6,23,.10);
+      --r:16px;
+      --r2:18px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: var(--sans);
+      color:var(--txt);
+      background:var(--bg);
+    }
+    .wrap{
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 14px 14px 18px;
+    }
+    .top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      padding: 10px 12px;
+      border:1px solid var(--bd);
+      border-radius: var(--r2);
+      background: linear-gradient(180deg, #fff, #fbfbff);
+      box-shadow: 0 10px 30px rgba(2,6,23,.06);
+    }
+    .title{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:0;
+    }
+    .ico{
+      height:38px; width:38px;
+      border-radius: 12px;
+      display:flex; align-items:center; justify-content:center;
+      background:#eef2ff;
+      border:1px solid rgba(79,70,229,.18);
+      color:#3730a3;
+      flex: 0 0 auto;
+    }
+    h1{
+      margin:0;
+      font-size: 16px;
+      line-height: 1.2;
+      font-weight: 800;
+      letter-spacing: .2px;
+    }
+    .sub{
+      margin-top:3px;
+      font-size: 12px;
+      color: var(--muted);
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      align-items:center;
+    }
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      border:1px solid var(--bd);
+      background: #fff;
+      color: rgba(30,41,59,.95);
+      white-space:nowrap;
+    }
+    .chip.mono{ font-family: var(--mono); }
+    .chip.ok{ border-color: rgba(22,163,74,.22); background: rgba(22,163,74,.08); color: #166534; }
+    .chip.warn{ border-color: rgba(245,158,11,.25); background: rgba(245,158,11,.12); color: #92400e; }
+    .chip.bad{ border-color: rgba(239,68,68,.25); background: rgba(239,68,68,.10); color: #991b1b; }
+
+    .btns{
+      display:flex;
+      gap:8px;
+      flex: 0 0 auto;
+    }
+    .btn{
+      appearance:none;
+      border:1px solid var(--bd);
+      background:#fff;
+      color: rgba(15,23,42,.92);
+      border-radius: 12px;
+      padding: 9px 12px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor:pointer;
+      transition: .15s ease;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      line-height: 1;
+      user-select:none;
+    }
+    .btn:hover{ transform: translateY(-1px); box-shadow: 0 10px 26px rgba(2,6,23,.08); }
+    .btn:active{ transform: translateY(0); box-shadow:none; }
+    .btn.pri{
+      border-color: rgba(79,70,229,.28);
+      background: var(--pri);
+      color:#fff;
+    }
+    .btn.pri:hover{ background: var(--pri2); }
+    .btn:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      transform:none !important;
+      box-shadow:none !important;
+    }
+
+    .grid{
+      margin-top: 12px;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    @media (min-width: 860px){
+      .grid{
+        grid-template-columns: 1fr 1fr;
+        align-items:start;
+      }
+    }
+    .card{
+      border:1px solid var(--bd);
+      border-radius: var(--r2);
+      background: var(--card);
+      box-shadow: 0 10px 26px rgba(2,6,23,.06);
+      overflow:hidden;
+    }
+    .card .hd{
+      padding: 10px 12px;
+      border-bottom:1px solid var(--bd2);
+      background: #fafafa;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .card .hd h2{
+      margin:0;
+      font-size: 13px;
+      font-weight: 800;
+      color: rgba(15,23,42,.9);
+    }
+    .card .bd{
+      padding: 12px;
+    }
+
+    .kv{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+    .k{
+      padding:10px 10px;
+      border-radius: 14px;
+      border:1px solid var(--bd);
+      background: var(--card2);
+      min-width:0;
+    }
+    .k .lb{
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom:4px;
+    }
+    .k .vl{
+      font-size: 13px;
+      font-weight: 800;
+      min-width:0;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      white-space:nowrap;
+    }
+    .k .vl.mono{ font-family: var(--mono); }
+
+    .banner{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      padding: 12px;
+      border-radius: var(--r2);
+      border:1px solid rgba(245,158,11,.28);
+      background: rgba(245,158,11,.12);
+      color: rgba(120,53,15,.98);
+    }
+    .banner .bico{
+      height:34px; width:34px;
+      border-radius: 12px;
+      display:flex; align-items:center; justify-content:center;
+      background: rgba(245,158,11,.18);
+      border:1px solid rgba(245,158,11,.22);
+      flex:0 0 auto;
+    }
+    .banner .btxt{
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 700;
+    }
+    .banner .bsub{
+      margin-top:4px;
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(120,53,15,.85);
+    }
+
+    .form{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .row2{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:10px;
+    }
+    @media (min-width: 560px){
+      .row2{ grid-template-columns: 1fr 1fr; }
+    }
+
+    label{
+      display:block;
+      font-size: 12px;
+      font-weight: 800;
+      color: rgba(15,23,42,.86);
+      margin-bottom:6px;
+    }
+    .meta{
+      margin-top: 6px;
+      font-size: 11px;
+      color: rgba(71,85,105,.88);
+      line-height: 1.35;
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .meta .risk{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding: 1px 8px;
+      border-radius: 999px;
+      border:1px solid var(--bd);
+      background:#fff;
+      font-weight: 800;
+      font-size: 11px;
+      color: rgba(30,41,59,.9);
+    }
+    .meta .risk.low{ border-color: rgba(22,163,74,.25); background: rgba(22,163,74,.08); color:#166534;}
+    .meta .risk.med{ border-color: rgba(245,158,11,.28); background: rgba(245,158,11,.12); color:#92400e;}
+    .meta .risk.high{ border-color: rgba(239,68,68,.25); background: rgba(239,68,68,.10); color:#991b1b;}
+
+    input[type="text"], input[type="number"], textarea, select{
+      width:100%;
+      padding: 10px 11px;
+      border-radius: 12px;
+      border:1px solid rgba(15,23,42,.16);
+      background:#fff;
+      outline:none;
+      font-size: 13px;
+      color: rgba(15,23,42,.92);
+      transition: .15s ease;
+    }
+    textarea{ min-height: 92px; resize: vertical; }
+    input:focus, textarea:focus, select:focus{
+      border-color: rgba(79,70,229,.55);
+      box-shadow: 0 0 0 4px rgba(79,70,229,.12);
+    }
+
+    .foot{
+      margin-top: 12px;
+      position: sticky;
+      bottom: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,.70), #fff 40%);
+      padding: 10px 0 2px;
+      z-index: 3;
+    }
+    .footbar{
+      border:1px solid var(--bd);
+      border-radius: var(--r2);
+      background:#fff;
+      box-shadow: 0 12px 30px rgba(2,6,23,.08);
+      padding: 10px 12px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap: 10px;
+    }
+    .muted{
+      font-size: 12px;
+      color: rgba(71,85,105,.92);
+      line-height: 1.35;
+    }
+
+    /* Toast */
+    .toast{
+      position: fixed;
+      right: 12px;
+      top: 12px;
+      z-index: 9999;
+      display:none;
+      max-width: min(92vw, 420px);
+      border-radius: 14px;
+      padding: 10px 12px;
+      border:1px solid var(--bd);
+      background:#fff;
+      box-shadow: 0 18px 40px rgba(2,6,23,.16);
+      font-size: 13px;
+      font-weight: 800;
+      color: rgba(15,23,42,.92);
+    }
+    .toast.show{ display:block; }
+    .toast .small{
+      margin-top: 3px;
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(71,85,105,.88);
+    }
+
+    /* Confirm phrase modal */
+    .modal{
+      position: fixed;
+      inset: 0;
+      background: rgba(2,6,23,.45);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 14px;
+      z-index: 9998;
+    }
+    .modal.show{ display:flex; }
+    .mcard{
+      width: min(92vw, 520px);
+      border-radius: 18px;
+      border: 1px solid var(--bd);
+      background:#fff;
+      box-shadow: 0 26px 70px rgba(2,6,23,.28);
+      overflow:hidden;
+    }
+    .mhd{
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--bd2);
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .mhd .mtitle{
+      font-size: 14px;
+      font-weight: 900;
+      margin:0;
+      color: rgba(15,23,42,.92);
+    }
+    .mhd .x{
+      height:36px; width:36px;
+      border-radius: 12px;
+      border:1px solid var(--bd);
+      background:#fff;
+      cursor:pointer;
+      color: rgba(71,85,105,.9);
+    }
+    .mhd .x:hover{ background:#f1f5f9; color: rgba(15,23,42,.95); }
+    .mbd{
+      padding: 12px 14px 14px;
+    }
+    .mdesc{
+      font-size: 13px;
+      color: rgba(51,65,85,.96);
+      font-weight: 700;
+      line-height: 1.4;
+    }
+    .ph{
+      margin-top: 10px;
+      font-size: 12px;
+      color: rgba(71,85,105,.92);
+      font-weight: 700;
+    }
+    .ph b{ color: rgba(15,23,42,.95); }
+    .mft{
+      padding: 12px 14px;
+      border-top: 1px solid var(--bd2);
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="toast" id="toast">
+    <div id="toastMain">—</div>
+    <div class="small" id="toastSub"></div>
+  </div>
+
+  <div class="wrap">
+    <div class="top">
+      <div class="title">
+        <div class="ico"><i class="ri-pencil-line"></i></div>
+        <div style="min-width:0">
+          <h1>Chỉnh sửa lô</h1>
+          <div class="sub" id="subline">
+            <span class="chip mono" id="chipLotCode">—</span>
+            <span class="chip" id="chipStatus">—</span>
+            <span class="chip" id="chipPaid">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="btns">
+        <button class="btn" type="button" onclick="cancelAndClose()">
+          <i class="ri-close-line"></i> Đóng
+        </button>
+        <button class="btn pri" type="button" id="btnSave" onclick="onSaveClick()" disabled>
+          <i class="ri-save-3-line"></i> Lưu thay đổi
+        </button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- Left: Summary + warning -->
+      <div class="card">
+        <div class="hd">
+          <h2>Tóm tắt</h2>
+          <span class="chip mono" id="sumProject">—</span>
+        </div>
+        <div class="bd">
+          <div class="kv">
+            <div class="k">
+              <div class="lb">Mã lô</div>
+              <div class="vl mono" id="sumLotCode">—</div>
+            </div>
+            <div class="k">
+              <div class="lb">Trạng thái</div>
+              <div class="vl" id="sumStatus">—</div>
+            </div>
+            <div class="k">
+              <div class="lb">Diện tích</div>
+              <div class="vl" id="sumArea">—</div>
+            </div>
+            <div class="k">
+              <div class="lb">Bước giá</div>
+              <div class="vl" id="sumBidStep">—</div>
+            </div>
+            <div class="k">
+              <div class="lb">Giá khởi điểm</div>
+              <div class="vl" id="sumStarting">—</div>
+            </div>
+            <div class="k">
+              <div class="lb">Tiền cọc</div>
+              <div class="vl" id="sumDeposit">—</div>
+            </div>
+          </div>
+
+          <div id="paidBannerWrap" style="margin-top:12px; display:none;">
+            <div class="banner">
+              <div class="bico"><i class="ri-error-warning-line"></i></div>
+              <div>
+                <div class="btxt" id="paidBannerMsg">—</div>
+                <div class="bsub" id="paidBannerImpact">—</div>
+              </div>
+            </div>
+          </div>
+
+          <div id="leftLoading" style="margin-top:12px; color: rgba(71,85,105,.9); font-size:12px; font-weight:700;">
+            Đang tải dữ liệu…
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Form -->
+      <div class="card">
+        <div class="hd">
+          <h2>Thông tin chỉnh sửa</h2>
+          <span class="chip" id="dirtyChip" style="display:none;"><i class="ri-edit-line"></i> Có thay đổi</span>
+        </div>
+        <div class="bd">
+          <form class="form" id="form">
+            <div class="row2">
+              <div>
+                <label for="lot_code">Mã lô</label>
+                <input id="lot_code" type="text" inputmode="text" autocomplete="off" />
+                <div class="meta" id="meta_lot_code"></div>
+              </div>
+              <div>
+                <label for="status">Trạng thái</label>
+                <select id="status">
+                  <option value="">—</option>
+                  <option value="AVAILABLE">AVAILABLE</option>
+                  <option value="LOCKED">LOCKED</option>
+                  <option value="SOLD">SOLD</option>
+                </select>
+                <div class="meta" id="meta_status"></div>
+              </div>
+            </div>
+
+            <div>
+              <label for="name">Tên lô</label>
+              <input id="name" type="text" autocomplete="off" />
+              <div class="meta" id="meta_name"></div>
+            </div>
+
+            <div>
+              <label for="description">Mô tả</label>
+              <textarea id="description" autocomplete="off"></textarea>
+              <div class="meta" id="meta_description"></div>
+            </div>
+
+            <div class="row2">
+              <div>
+                <label for="area">Diện tích</label>
+                <input id="area" type="number" step="0.01" inputmode="decimal" />
+                <div class="meta" id="meta_area"></div>
+              </div>
+              <div>
+                <label for="bid_step_vnd">Bước giá (VND)</label>
+                <input id="bid_step_vnd" type="number" step="1" inputmode="numeric" />
+                <div class="meta" id="meta_bid_step_vnd"></div>
+              </div>
+            </div>
+
+            <div class="row2">
+              <div>
+                <label for="starting_price">Giá khởi điểm</label>
+                <input id="starting_price" type="number" step="1" inputmode="numeric" />
+                <div class="meta" id="meta_starting_price"></div>
+              </div>
+              <div>
+                <label for="deposit_amount">Tiền cọc</label>
+                <input id="deposit_amount" type="number" step="1" inputmode="numeric" />
+                <div class="meta" id="meta_deposit_amount"></div>
+              </div>
+            </div>
+
+            <div style="margin-top:2px; font-size:12px; color: rgba(71,85,105,.92); font-weight:700; line-height:1.35;">
+              * Khi bấm <b>Lưu thay đổi</b> bạn sẽ cần gõ <b>“tôi xác nhận”</b> để xác nhận thao tác.
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="foot">
+      <div class="footbar">
+        <div class="muted" id="footHint">
+          —
+        </div>
+        <div class="btns">
+          <button class="btn" type="button" onclick="cancelAndClose()">
+            <i class="ri-close-line"></i> Đóng
+          </button>
+          <button class="btn pri" type="button" id="btnSave2" onclick="onSaveClick()" disabled>
+            <i class="ri-save-3-line"></i> Lưu thay đổi
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm phrase modal -->
+  <div class="modal" id="confirmModal" aria-hidden="true">
+    <div class="mcard" role="dialog" aria-modal="true">
+      <div class="mhd">
+        <div>
+          <p class="mtitle" id="cmTitle">Xác nhận lưu thay đổi</p>
+          <div class="mdesc" id="cmDesc" style="margin-top:6px;">—</div>
+        </div>
+        <button class="x" type="button" onclick="closeConfirm(false)" title="Đóng">
+          <i class="ri-close-line"></i>
+        </button>
+      </div>
+      <div class="mbd">
+        <div class="ph">
+          Nhập đúng: <b id="cmPhrase">tôi xác nhận</b>
+        </div>
+        <input
+          id="cmInput"
+          type="text"
+          style="margin-top:8px;"
+          placeholder="Gõ: tôi xác nhận"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          oninput="onConfirmInput()"
+        />
+        <div style="margin-top:8px; font-size:11px; color: rgba(71,85,105,.88); font-weight:700;">
+          Ô này không tự điền. Bạn cần tự gõ chính xác để mở nút xác nhận.
+        </div>
+      </div>
+      <div class="mft">
+        <button class="btn" type="button" onclick="closeConfirm(false)">Hủy</button>
+        <button class="btn pri" id="cmOk" type="button" onclick="closeConfirm(true)" disabled>
+          Xác nhận
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --------------------------
+    // Utilities
+    // --------------------------
+    function qs(sel){ return document.querySelector(sel); }
+    function qsa(sel){ return document.querySelectorAll(sel); }
+
+    function format0(v){
+      if (v === null || v === undefined || v === "") return "";
+      const n = Number(v);
+      if (!isFinite(n)) return "";
+      return n.toLocaleString("en-US", {maximumFractionDigits:0});
+    }
+    function format2(v){
+      if (v === null || v === undefined || v === "") return "";
+      const n = Number(v);
+      if (!isFinite(n)) return "";
+      return n.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
+    }
+
+    function toast(main, sub){
+      const t = qs("#toast");
+      qs("#toastMain").textContent = main || "";
+      qs("#toastSub").textContent = sub || "";
+      t.classList.add("show");
+      clearTimeout(window.__toastT);
+      window.__toastT = setTimeout(()=> t.classList.remove("show"), 2200);
+    }
+
+    // --------------------------
+    // Detect lot_id from URL
+    // Supports:
+    //  - /lots/{id}/edit?embed=1
+    //  - ?lot_id=123
+    // --------------------------
+    function getLotId(){
+      const u = new URL(window.location.href);
+      const qid = u.searchParams.get("lot_id");
+      if (qid && /^\d+$/.test(qid)) return Number(qid);
+
+      const m = window.location.pathname.match(/\/lots\/(\d+)\/edit/i);
+      if (m && m[1]) return Number(m[1]);
+
+      // fallback: last number in path
+      const m2 = window.location.pathname.match(/(\d+)/g);
+      if (m2 && m2.length) return Number(m2[m2.length - 1]);
+
+      return null;
+    }
+
+    // --------------------------
+    // State
+    // --------------------------
+    const state = {
+      lot_id: null,
+      originLot: null,     // original lot object
+      editContext: null,   // edit_context
+      fieldsMeta: {},      // edit_context.fields
+      dirty: false,
+      pendingSavePayload: null,
+    };
+
+    // --------------------------
+    // API calls
+    // --------------------------
+    async function apiGetDetailForEdit(lotId){
+      const r = await fetch(`/lots/api/${lotId}/detail_for_edit`, {
+        method: "GET",
+        headers: { "Accept": "application/json" },
+        credentials: "same-origin",
+      });
+      const data = await r.json().catch(()=> ({}));
+      if (!r.ok) throw new Error((data && data.detail) || (data && data.error) || `HTTP ${r.status}`);
+      return data;
+    }
+
+    async function apiPatchLot(lotId, payload){
+      const r = await fetch(`/lots/api/${lotId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "Accept":"application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify(payload || {}),
+      });
+      const data = await r.json().catch(()=> ({}));
+      if (!r.ok) throw new Error((data && data.detail) || (data && data.error) || `HTTP ${r.status}`);
+      return data;
+    }
+
+    // --------------------------
+    // Render meta
+    // --------------------------
+    function renderFieldMeta(fieldKey){
+      const metaEl = qs(`#meta_${fieldKey}`);
+      if (!metaEl) return;
+
+      const m = (state.fieldsMeta || {})[fieldKey] || null;
+      metaEl.innerHTML = "";
+      if (!m){
+        metaEl.innerHTML = `<span class="risk low"><i class="ri-shield-check-line"></i> An toàn</span>`;
+        return;
+      }
+
+      const risk = (m.risk_level || "LOW").toUpperCase();
+      const cls = risk === "HIGH" ? "high" : (risk === "MEDIUM" ? "med" : "low");
+      const txt = risk === "HIGH" ? "Ảnh hưởng giao dịch" : (risk === "MEDIUM" ? "Cẩn thận" : "An toàn");
+
+      const requires = !!m.requires_override;
+      const rs = requires ? `<span class="chip warn"><i class="ri-lock-2-line"></i> Cần xác nhận</span>` : "";
+
+      const reason = m.reason ? `<span>${m.reason}</span>` : "";
+
+      metaEl.innerHTML = `
+        <span class="risk ${cls}">${txt}</span>
+        ${rs}
+        ${reason}
+      `;
+    }
+
+    function renderAllMeta(){
+      [
+        "lot_code","name","description","area","starting_price","deposit_amount","bid_step_vnd","status"
+      ].forEach(renderFieldMeta);
+    }
+
+    // --------------------------
+    // Populate form
+    // --------------------------
+    function setStatusChip(st){
+      const c = qs("#chipStatus");
+      if (!c) return;
+      c.textContent = st || "—";
+      c.className = "chip";
+      if (st === "AVAILABLE") c.className += " ok";
+      else if (st === "LOCKED") c.className += " warn";
+      else if (st === "SOLD") c.className += " bad";
+    }
+
+    function setPaidChip(hasPaid){
+      const c = qs("#chipPaid");
+      if (!c) return;
+      if (hasPaid){
+        c.textContent = "Đã có đặt cọc";
+        c.className = "chip warn";
+      }else{
+        c.textContent = "Chưa có đặt cọc";
+        c.className = "chip ok";
+      }
+    }
+
+    function fillForm(lot){
+      qs("#lot_code").value = lot.lot_code ?? "";
+      qs("#name").value = lot.name ?? "";
+      qs("#description").value = lot.description ?? "";
+      qs("#area").value = (lot.area ?? "") === null ? "" : (lot.area ?? "");
+      qs("#starting_price").value = (lot.starting_price ?? "") === null ? "" : (lot.starting_price ?? "");
+      qs("#deposit_amount").value = (lot.deposit_amount ?? "") === null ? "" : (lot.deposit_amount ?? "");
+      qs("#bid_step_vnd").value = (lot.bid_step_vnd ?? "") === null ? "" : (lot.bid_step_vnd ?? "");
+      qs("#status").value = lot.status ?? "";
+
+      // summary
+      qs("#chipLotCode").textContent = lot.lot_code || "—";
+      qs("#sumLotCode").textContent = lot.lot_code || "—";
+      qs("#sumStatus").textContent = lot.status || "—";
+      qs("#sumArea").textContent = lot.area == null ? "—" : format2(lot.area);
+      qs("#sumStarting").textContent = lot.starting_price == null ? "—" : format0(lot.starting_price);
+      qs("#sumDeposit").textContent = lot.deposit_amount == null ? "—" : format0(lot.deposit_amount);
+      qs("#sumBidStep").textContent = lot.bid_step_vnd == null ? "—" : format0(lot.bid_step_vnd);
+      setStatusChip(lot.status || "");
+
+      // hint
+      qs("#footHint").textContent = `Lô ${lot.lot_code || ("#" + state.lot_id)} • Chỉnh sửa và bấm “Lưu thay đổi”`;
+    }
+
+    function setDirty(isDirty){
+      state.dirty = !!isDirty;
+      const d = qs("#dirtyChip");
+      const b1 = qs("#btnSave");
+      const b2 = qs("#btnSave2");
+      if (isDirty){
+        if (d) d.style.display = "inline-flex";
+        if (b1) b1.disabled = false;
+        if (b2) b2.disabled = false;
+      }else{
+        if (d) d.style.display = "none";
+        if (b1) b1.disabled = true;
+        if (b2) b2.disabled = true;
+      }
+    }
+
+    function attachDirtyWatch(){
+      const ids = ["lot_code","name","description","area","starting_price","deposit_amount","bid_step_vnd","status"];
+      ids.forEach(id=>{
+        const el = qs("#"+id);
+        if (!el) return;
+        el.addEventListener("input", ()=> setDirty(computePayload() !== null));
+        el.addEventListener("change", ()=> setDirty(computePayload() !== null));
+      });
+    }
+
+    // Returns payload of changed fields, or null if no changes
+    function computePayload(){
+      if (!state.originLot) return null;
+
+      const o = state.originLot;
+      const payload = {};
+
+      function normStr(v){ return (v === null || v === undefined) ? "" : String(v); }
+      function normNum(v){
+        if (v === "" || v === null || v === undefined) return null;
+        const n = Number(v);
+        return isFinite(n) ? n : null;
+      }
+
+      const cur = {
+        lot_code: normStr(qs("#lot_code").value).trim(),
+        name: normStr(qs("#name").value).trim() || null,
+        description: normStr(qs("#description").value).trim() || null,
+        area: normNum(qs("#area").value),
+        starting_price: normNum(qs("#starting_price").value),
+        deposit_amount: normNum(qs("#deposit_amount").value),
+        bid_step_vnd: normNum(qs("#bid_step_vnd").value),
+        status: normStr(qs("#status").value).trim() || null,
+      };
+
+      // compare
+      if ((o.lot_code ?? "") !== (cur.lot_code ?? "")) payload.lot_code = cur.lot_code;
+      if ((o.name ?? null) !== (cur.name ?? null)) payload.name = cur.name;
+      if ((o.description ?? null) !== (cur.description ?? null)) payload.description = cur.description;
+      if ((o.area ?? null) !== (cur.area ?? null)) payload.area = cur.area;
+      if ((o.starting_price ?? null) !== (cur.starting_price ?? null)) payload.starting_price = cur.starting_price;
+      if ((o.deposit_amount ?? null) !== (cur.deposit_amount ?? null)) payload.deposit_amount = cur.deposit_amount;
+      if ((o.bid_step_vnd ?? null) !== (cur.bid_step_vnd ?? null)) payload.bid_step_vnd = cur.bid_step_vnd;
+      if ((o.status ?? null) !== (cur.status ?? null)) payload.status = cur.status;
+
+      const keys = Object.keys(payload);
+      if (!keys.length) return null;
+      return payload;
+    }
+
+    // --------------------------
+    // Confirm phrase modal (must type)
+    // --------------------------
+    const confirmState = {
+      phrase: "tôi xác nhận",
+      onConfirm: null,
+    };
+
+    function openConfirm(title, descHtml, onConfirm){
+      qs("#cmTitle").textContent = title || "Xác nhận";
+      qs("#cmDesc").innerHTML = descHtml || "";
+      qs("#cmPhrase").textContent = confirmState.phrase;
+
+      const inp = qs("#cmInput");
+      inp.value = "";              // IMPORTANT: no autofill
+      inp.setAttribute("autocomplete","off");
+      inp.setAttribute("autocapitalize","off");
+      inp.setAttribute("spellcheck","false");
+
+      qs("#cmOk").disabled = true;
+      confirmState.onConfirm = onConfirm;
+
+      qs("#confirmModal").classList.add("show");
+      setTimeout(()=>{ try{ inp.focus(); }catch(e){} }, 0);
+    }
+
+    function closeConfirm(confirmed){
+      qs("#confirmModal").classList.remove("show");
+      const ok = !!confirmed;
+      const fn = confirmState.onConfirm;
+      confirmState.onConfirm = null;
+      qs("#cmInput").value = "";
+      qs("#cmOk").disabled = true;
+
+      if (ok && typeof fn === "function") fn();
+    }
+
+    function onConfirmInput(){
+      const v = String(qs("#cmInput").value || "").trim().toLowerCase();
+      const p = String(confirmState.phrase || "").trim().toLowerCase();
+      qs("#cmOk").disabled = (v !== p);
+    }
+
+    document.addEventListener("keydown", function(e){
+      if (e.key === "Escape"){
+        const m = qs("#confirmModal");
+        if (m && m.classList.contains("show")){
+          closeConfirm(false);
+        }
+      }
+    });
+
+    // --------------------------
+    // Save flow
+    // --------------------------
+    function requiresOverrideForPayload(payload){
+      const fields = state.fieldsMeta || {};
+      const keys = Object.keys(payload || {});
+      for (const k of keys){
+        const m = fields[k];
+        if (m && m.requires_override) return true;
+      }
+      return false;
+    }
+
+    function onSaveClick(){
+      const payload = computePayload();
+      if (!payload){
+        toast("Chưa có thay đổi", "Không có gì để lưu.");
+        setDirty(false);
+        return;
+      }
+      state.pendingSavePayload = payload;
+
+      // ALWAYS require phrase confirm when saving (as per your latest requirement)
+      // If you want only for sensitive fields, change this block accordingly.
+      const hasPaid = !!(state.editContext && state.editContext.has_paid_deposit);
+      const override = requiresOverrideForPayload(payload);
+
+      let desc = "Bạn sắp lưu thay đổi cho lô <b>" + (state.originLot?.lot_code || ("#" + state.lot_id)) + "</b>.";
+      if (hasPaid && override){
+        const cnt = state.editContext?.impact?.deposit_amount?.paid_orders_count ?? 0;
+        desc = "Lô này <b>đã có đặt cọc thành công</b>. Bạn đang sửa trường nhạy cảm, có thể ảnh hưởng <b>" + cnt + "</b> giao dịch. Vui lòng gõ <b>tôi xác nhận</b> để tiếp tục.";
+      }else if (hasPaid){
+        desc = "Lô này <b>đã có đặt cọc thành công</b>. Vui lòng gõ <b>tôi xác nhận</b> để lưu thay đổi.";
+      }else{
+        desc = "Vui lòng gõ <b>tôi xác nhận</b> để lưu thay đổi.";
+      }
+
+      openConfirm("Xác nhận lưu thay đổi", desc, doSave);
+    }
+
+    async function doSave(){
+      const payload = state.pendingSavePayload;
+      state.pendingSavePayload = null;
+
+      if (!payload) return;
+
+      // lock buttons
+      const b1 = qs("#btnSave"), b2 = qs("#btnSave2");
+      if (b1) b1.disabled = true;
+      if (b2) b2.disabled = true;
+
+      try{
+        const res = await apiPatchLot(state.lot_id, payload);
+        // Service B proxy returns either {ok:true, data:{...}} or raw dict.
+        const updated = (res && res.data) ? res.data : (res && res.data?.lot ? res.data.lot : null);
+
+        // Prefer exact lot object if returned; else, build from current inputs.
+        const lot = updated && typeof updated === "object"
+          ? updated
+          : {
+              id: state.lot_id,
+              lot_code: qs("#lot_code").value.trim(),
+              name: (qs("#name").value || "").trim(),
+              description: (qs("#description").value || "").trim(),
+              area: qs("#area").value === "" ? null : Number(qs("#area").value),
+              starting_price: qs("#starting_price").value === "" ? null : Number(qs("#starting_price").value),
+              deposit_amount: qs("#deposit_amount").value === "" ? null : Number(qs("#deposit_amount").value),
+              bid_step_vnd: qs("#bid_step_vnd").value === "" ? null : Number(qs("#bid_step_vnd").value),
+              status: qs("#status").value || null,
+            };
+
+        toast("Đã lưu thay đổi", "Đang cập nhật danh sách lô…");
+
+        // notify parent to update row + close modal
+        try{
+          window.parent.postMessage({ type: "LOT_UPDATED", lot_id: state.lot_id, lot: lot }, "*");
+        }catch(e){}
+
+        // update local state (in case parent doesn't close instantly)
+        state.originLot = {
+          ...state.originLot,
+          ...lot
+        };
+        fillForm(state.originLot);
+        setDirty(false);
+
+      }catch(err){
+        const msg = (err && err.message) ? err.message : String(err || "Lỗi không xác định");
+        toast("Không lưu được", msg);
+        setDirty(computePayload() !== null);
+      }finally{
+        // re-enable if still dirty
+        const dirty = (computePayload() !== null);
+        setDirty(dirty);
+      }
+    }
+
+    function cancelAndClose(){
+      // Ask only if dirty; keep it simple (no extra modal to avoid changing your global flows)
+      if (state.dirty){
+        toast("Bạn chưa lưu", "Hãy bấm Lưu thay đổi hoặc đóng lại.");
+        // still allow close: parent can close by ESC/backdrop; we won't force.
+      }
+      try{
+        window.parent.postMessage({ type: "LOT_EDITOR_CLOSE", lot_id: state.lot_id }, "*");
+      }catch(e){}
+      // If parent doesn't handle, do nothing (parent modal has close button anyway).
+    }
+
+    // --------------------------
+    // Boot
+    // --------------------------
+    async function boot(){
+      state.lot_id = getLotId();
+      if (!state.lot_id){
+        qs("#leftLoading").textContent = "Không xác định được lot_id từ URL.";
+        toast("Thiếu lot_id", "URL cần có /lots/{id}/edit hoặc ?lot_id=...");
+        return;
+      }
+
+      try{
+        const data = await apiGetDetailForEdit(state.lot_id);
+        const d = (data && data.data) ? data.data : {};
+        const lot = d.lot || {};
+        const ctx = d.edit_context || {};
+
+        state.originLot = {
+          id: lot.id ?? state.lot_id,
+          lot_code: lot.lot_code ?? "",
+          name: lot.name ?? null,
+          description: lot.description ?? null,
+          area: lot.area ?? null,
+          starting_price: lot.starting_price ?? null,
+          deposit_amount: lot.deposit_amount ?? null,
+          bid_step_vnd: lot.bid_step_vnd ?? null,
+          status: lot.status ?? null,
+          project_code: lot.project_code ?? null,
+          company_code: lot.company_code ?? null,
+        };
+
+        state.editContext = ctx;
+        state.fieldsMeta = (ctx && ctx.fields) ? ctx.fields : {};
+
+        // header chips
+        qs("#sumProject").textContent = state.originLot.project_code ? state.originLot.project_code : "—";
+        setPaidChip(!!ctx.has_paid_deposit);
+
+        // warning banner
+        if (ctx.has_paid_deposit && ctx.deposit_warning){
+          qs("#paidBannerWrap").style.display = "block";
+          qs("#paidBannerMsg").textContent = ctx.deposit_warning.message || "Lô đã có đặt cọc thành công.";
+          const imp = (ctx.deposit_warning.impact || ctx.impact?.deposit_amount || {});
+          const cnt = imp.paid_orders_count ?? 0;
+          const sum = imp.paid_sum_vnd ?? 0;
+          qs("#paidBannerImpact").textContent = `Ảnh hưởng: ${cnt} giao dịch • Tổng tiền đã nhận: ${format0(sum)} VND`;
+        }else{
+          qs("#paidBannerWrap").style.display = "none";
+        }
+
+        fillForm(state.originLot);
+        renderAllMeta();
+        attachDirtyWatch();
+        setDirty(false);
+
+        qs("#leftLoading").style.display = "none";
+
+      }catch(err){
+        const msg = (err && err.message) ? err.message : String(err || "Lỗi không xác định");
+        qs("#leftLoading").textContent = "Không tải được dữ liệu: " + msg;
+        toast("Lỗi tải dữ liệu", msg);
+      }
+    }
+
+    boot();
+  </script>
+</body>
+</html>

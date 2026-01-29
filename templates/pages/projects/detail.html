@@ -333,29 +333,34 @@
           <th class="px-3 py-2 border-b text-right">Tiền cọc</th>
           <th class="px-3 py-2 border-b text-right">Bước giá (VND)</th>
           <th class="px-3 py-2 border-b">Trạng thái</th>
+          {# ✅ NEW: action col (icon only) #}
+          <th class="px-2 py-2 border-b text-right w-[44px]"></th>
         </tr>
       </thead>
       <tbody>
         {% for l in lots_page.data %}
-        <tr>
+        {# ✅ NEW: data-lot-id for DOM update #}
+        <tr data-lot-id="{{ l.id }}">
           <td class="px-3 py-2 border-b">{{ loop.index }}</td>
-          <td class="px-3 py-2 border-b font-mono">{{ l.lot_code }}</td>
-          <td class="px-3 py-2 border-b">{{ l.name or '' }}</td>
-          <td class="px-3 py-2 border-b text-right">
+
+          {# ✅ NEW: wrap content with hooks to update later #}
+          <td class="px-3 py-2 border-b font-mono js-lot-code">{{ l.lot_code }}</td>
+          <td class="px-3 py-2 border-b js-lot-name">{{ l.name or '' }}</td>
+          <td class="px-3 py-2 border-b text-right js-lot-area">
             {{ "{:,.2f}".format(l.area) if l.area is number else "" }}
           </td>
-          <td class="px-3 py-2 border-b text-right">
+          <td class="px-3 py-2 border-b text-right js-lot-starting-price">
             {{ "{:,.0f}".format(l.starting_price) if l.starting_price is number else "" }}
           </td>
-          <td class="px-3 py-2 border-b text-right">
+          <td class="px-3 py-2 border-b text-right js-lot-deposit-amount">
             {{ "{:,.0f}".format(l.deposit_amount) if l.deposit_amount is number else "" }}
           </td>
-          <td class="px-3 py-2 border-b text-right">
+          <td class="px-3 py-2 border-b text-right js-lot-bid-step">
             {{ "{:,.0f}".format(l.bid_step_vnd) if l.bid_step_vnd is number else "" }}
           </td>
-          <td class="px-3 py-2 border-b">
+          <td class="px-3 py-2 border-b js-lot-status">
             {% set ls = (l.status or '') %}
-            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs js-lot-status-badge
               {% if ls=='AVAILABLE' %} bg-emerald-100 text-emerald-700 border border-emerald-200
               {% elif ls=='LOCKED' %} bg-amber-100 text-amber-700 border border-amber-200
               {% elif ls=='SOLD' %} bg-slate-200 text-slate-700 border border-slate-300
@@ -363,12 +368,24 @@
               {{ ls or '—' }}
             </span>
           </td>
+
+          {# ✅ NEW: icon edit (small + aesthetic) #}
+          <td class="px-2 py-2 border-b text-right">
+            <button
+              type="button"
+              class="inline-flex items-center justify-center h-8 w-8 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition"
+              title="Sửa lô"
+              onclick="openLotEditModal({{ l.id }})"
+            >
+              <i class="ri-pencil-line text-[16px]"></i>
+            </button>
+          </td>
         </tr>
         {% endfor %}
 
         {% if not lots_page.data %}
         <tr>
-          <td colspan="8" class="px-3 py-6 text-center text-slate-500">
+          <td colspan="9" class="px-3 py-6 text-center text-slate-500">
             Chưa có lô nào trong dự án này.
           </td>
         </tr>
@@ -378,6 +395,43 @@
   </div>
 
   {% endif %}
+</div>
+
+{# =========================================================
+   ✅ NEW: LOT EDIT MODAL (iframe) - isolated, does not change existing flows
+   ========================================================= #}
+<div id="lotEditModal"
+     class="fixed inset-0 bg-black/40 hidden z-50">
+  <div class="absolute inset-0 flex items-center justify-center p-3">
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-[96vw] max-w-3xl h-[90vh] overflow-hidden">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+        <div class="flex items-center gap-2">
+          <div class="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600">
+            <i class="ri-edit-2-line"></i>
+          </div>
+          <div>
+            <div class="text-sm font-semibold text-slate-800">Chỉnh sửa lô</div>
+            <div id="lotEditSub" class="text-xs text-slate-500">—</div>
+          </div>
+        </div>
+
+        <button type="button"
+                class="h-9 w-9 inline-flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                onclick="closeLotEditModal()"
+                title="Đóng">
+          <i class="ri-close-line text-xl"></i>
+        </button>
+      </div>
+
+      <iframe
+        id="lotEditFrame"
+        src="about:blank"
+        class="w-full h-[calc(90vh-56px)]"
+        style="border:0"
+        referrerpolicy="no-referrer"
+      ></iframe>
+    </div>
+  </div>
 </div>
 
 <!-- GLOBAL CONFIRM MODAL (phrase required) -->
@@ -443,6 +497,148 @@
 </div>
 
 <script>
+  /* =========================================================
+     ✅ NEW: Lot edit modal (iframe) - isolated, minimal hooks
+     ========================================================= */
+
+  function openLotEditModal(lotId){
+    const m = document.getElementById("lotEditModal");
+    const f = document.getElementById("lotEditFrame");
+    const sub = document.getElementById("lotEditSub");
+
+    if (!m || !f) return;
+
+    // show hint title (optional, keep minimal)
+    try{
+      const row = document.querySelector(`tr[data-lot-id="${lotId}"]`);
+      const code = row ? (row.querySelector(".js-lot-code")?.textContent || "").trim() : "";
+      sub.textContent = code ? ("Lô: " + code) : "—";
+    }catch(e){}
+
+    // load external editor page (you will provide lot_editer.html later)
+    // keep URL simple; editor page can read lot_id from query or path
+    f.src = `/lots/${lotId}/edit?embed=1`;
+    m.classList.remove("hidden");
+
+    // ESC closes (do not touch existing ESC behavior for confirm modal)
+  }
+
+  function closeLotEditModal(){
+    const m = document.getElementById("lotEditModal");
+    const f = document.getElementById("lotEditFrame");
+    if (!m) return;
+    m.classList.add("hidden");
+    if (f) f.src = "about:blank";
+  }
+
+  // click outside closes (only for the edit modal)
+  document.addEventListener("click", function(e){
+    const m = document.getElementById("lotEditModal");
+    if (!m || m.classList.contains("hidden")) return;
+    // close when clicking on the dark backdrop (not inside modal card)
+    if (e.target === m) closeLotEditModal();
+  });
+
+  // ESC closes edit modal (but not interfere confirm modal)
+  document.addEventListener("keydown", function(e){
+    if (e.key === "Escape"){
+      const cpm = document.getElementById("confirmPhraseModal");
+      if (cpm && !cpm.classList.contains("hidden")) return; // keep existing behavior
+      const m = document.getElementById("lotEditModal");
+      if (m && !m.classList.contains("hidden")){
+        closeLotEditModal();
+      }
+    }
+  });
+
+  // Receive updates from iframe editor
+  window.addEventListener("message", function(event){
+    // same-origin recommended; keep permissive but guarded by message type
+    const msg = event && event.data ? event.data : null;
+    if (!msg || typeof msg !== "object") return;
+    if (msg.type !== "LOT_UPDATED") return;
+
+    const lotId = msg.lot_id;
+    const lot = msg.lot;
+
+    if (!lotId || !lot) return;
+
+    // Update row DOM in-place (no reload)
+    try{
+      const row = document.querySelector(`tr[data-lot-id="${lotId}"]`);
+      if (!row) return;
+
+      function fmt0(v){
+        if (v === null || v === undefined || v === "") return "";
+        const n = Number(v);
+        if (!isFinite(n)) return "";
+        return n.toLocaleString("en-US", {maximumFractionDigits:0});
+      }
+      function fmt2(v){
+        if (v === null || v === undefined || v === "") return "";
+        const n = Number(v);
+        if (!isFinite(n)) return "";
+        return n.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
+      }
+
+      if (lot.lot_code !== undefined){
+        const el = row.querySelector(".js-lot-code");
+        if (el) el.textContent = (lot.lot_code || "");
+      }
+      if (lot.name !== undefined){
+        const el = row.querySelector(".js-lot-name");
+        if (el) el.textContent = (lot.name || "");
+      }
+      if (lot.area !== undefined){
+        const el = row.querySelector(".js-lot-area");
+        if (el) el.textContent = (lot.area === null ? "" : fmt2(lot.area));
+      }
+      if (lot.starting_price !== undefined){
+        const el = row.querySelector(".js-lot-starting-price");
+        if (el) el.textContent = (lot.starting_price === null ? "" : fmt0(lot.starting_price));
+      }
+      if (lot.deposit_amount !== undefined){
+        const el = row.querySelector(".js-lot-deposit-amount");
+        if (el) el.textContent = (lot.deposit_amount === null ? "" : fmt0(lot.deposit_amount));
+      }
+      if (lot.bid_step_vnd !== undefined){
+        const el = row.querySelector(".js-lot-bid-step");
+        if (el) el.textContent = (lot.bid_step_vnd === null ? "" : fmt0(lot.bid_step_vnd));
+      }
+      if (lot.status !== undefined){
+        const badge = row.querySelector(".js-lot-status-badge");
+        if (badge){
+          const ls = (lot.status || "");
+          badge.textContent = ls || "—";
+
+          // reset classes to match server template logic
+          badge.className = "inline-flex items-center px-2 py-0.5 rounded text-xs js-lot-status-badge";
+          if (ls === "AVAILABLE"){
+            badge.className += " bg-emerald-100 text-emerald-700 border border-emerald-200";
+          }else if (ls === "LOCKED"){
+            badge.className += " bg-amber-100 text-amber-700 border border-amber-200";
+          }else if (ls === "SOLD"){
+            badge.className += " bg-slate-200 text-slate-700 border border-slate-300";
+          }else{
+            badge.className += " bg-slate-100 text-slate-600 border border-slate-200";
+          }
+        }
+      }
+
+      // Update subtitle (optional)
+      try{
+        const sub = document.getElementById("lotEditSub");
+        if (sub && lot.lot_code) sub.textContent = "Lô: " + lot.lot_code;
+      }catch(e){}
+
+    }catch(e){
+      // swallow to avoid breaking production page
+    }
+
+    // close modal after update
+    closeLotEditModal();
+  });
+
   /* -------------------------
      PHRASE CONFIRM MODAL (custom)
   ------------------------- */
