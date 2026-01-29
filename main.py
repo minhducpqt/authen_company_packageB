@@ -37,6 +37,9 @@ from routers.auction_session_bid_sheets import router as auction_session_bid_she
 from routers.auction_session_winner_prints import router as auction_session_winner_prints_router
 from routers.auction_documents_print import router as auction_documents_print_router
 
+# ✅ Lots (tách từ projects.py)
+from routers.lots import router as lots_router  # <-- NEW
+
 # Bid attendance
 from routers import bid_attendance as bid_attendance_router
 from routers.bid_attendance_exclusions import router as bid_attendance_exclusions_router
@@ -88,6 +91,10 @@ app.include_router(auth_router)
 app.include_router(dashboard_router)
 app.include_router(account_router)
 app.include_router(projects_router)
+
+# ✅ lots router (đặt gần projects để dễ quản lý)
+app.include_router(lots_router)  # <-- NEW: /lots/*
+
 app.include_router(settings_bank_accounts_router)
 app.include_router(settings_company_router)
 app.include_router(customers_router)
@@ -136,4 +143,4 @@ def _legacy_account_redirect():
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host="0.0.0.0", port=8887, reload=True)
+    uvicorn.run('main:app', host="0.0.0.0", port=8887, reload=True)

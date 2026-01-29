@@ -1,4 +1,4 @@
-# routers/projects.py (Service B)
+# routers/projects.py (Service B) - FINAL (lots đã tách sang routers/lots.py)
 from __future__ import annotations
 
 import os
@@ -32,26 +32,28 @@ from utils.excel_import import handle_import_preview  # chỉ dùng preview
 
 import json as pyjson  # cho decode JWT payload
 
+# ✅ import helper lots từ routers/lots.py (Service B)
+from routers.lots import sa_create_lot, sa_list_lots_by_project_code
+
 router = APIRouter(prefix="/projects", tags=["projects"])
 
 SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 
-# Endpoints Service A
-EP_LIST            = "/api/v1/projects"
-EP_CREATE_PROJ     = "/api/v1/projects"
-EP_DETAIL          = "/api/v1/projects/{project_id}"
-EP_ENABLE          = "/api/v1/projects/{project_id}/enable"
-EP_DISABLE         = "/api/v1/projects/{project_id}/disable"
-EP_BYCODE_PROJ     = "/api/v1/projects/by_code/{code}"
-EP_UPDATE_PROJ     = "/api/v1/projects/{pid}"
-EP_EXPORT_XLSX     = "/api/v1/projects/export_xlsx"
-EP_IMPORT_XLSX     = "/api/v1/projects/import_xlsx"   # (nếu dùng Service A build)
-EP_CREATE_LOT      = "/api/v1/lots"
-EP_DEADLINES       = "/api/v1/projects/{project_id}/deadlines"
-EP_PUBLIC_PROJECTS = "/api/v1/projects/public"
-EP_COMPANY_PROFILE = "/api/v1/company/profile"
-EP_AUCTION_MODE    = "/api/v1/projects/{project_id}/auction_mode"  # <-- NEW
-EP_AUCTION_CONFIG  = "/api/v1/projects/{project_id}/auction_config"   # <-- NEW
+# Endpoints Service A (projects.py)
+EP_LIST              = "/api/v1/projects"
+EP_CREATE_PROJ       = "/api/v1/projects"
+EP_DETAIL            = "/api/v1/projects/{project_id}"
+EP_ENABLE            = "/api/v1/projects/{project_id}/enable"
+EP_DISABLE           = "/api/v1/projects/{project_id}/disable"
+EP_BYCODE_PROJ       = "/api/v1/projects/by_code/{code}"
+EP_UPDATE_PROJ       = "/api/v1/projects/{pid}"
+EP_EXPORT_XLSX       = "/api/v1/projects/export_xlsx"
+EP_IMPORT_XLSX       = "/api/v1/projects/import_xlsx"   # (nếu dùng Service A build)
+EP_DEADLINES         = "/api/v1/projects/{project_id}/deadlines"
+EP_PUBLIC_PROJECTS   = "/api/v1/projects/public"
+EP_COMPANY_PROFILE   = "/api/v1/company/profile"
+EP_AUCTION_MODE      = "/api/v1/projects/{project_id}/auction_mode"  # <-- NEW
+EP_AUCTION_CONFIG    = "/api/v1/projects/{project_id}/auction_config"   # <-- NEW
 EP_BID_TICKET_CONFIG = "/api/v1/projects/{project_id}/bid_ticket_config"  # <-- NEW
 
 
@@ -183,6 +185,7 @@ async def import_preview(request: Request, file: UploadFile = File(...)):
         },
     )
 
+
 @router.post("/import/apply", response_class=HTMLResponse)
 async def import_apply(
     request: Request,
@@ -278,18 +281,21 @@ async def import_apply(
                     "bid_step_vnd": l.get("bid_step_vnd"),
                     "status": "AVAILABLE",
                 }
-                rl = await client.post(EP_CREATE_LOT, json=lot_body, headers=headers)
-                if rl.status_code in (200, 201, 204):
+
+                # ✅ refactor: gọi helper nhưng hành vi phải y hệt đoạn cũ
+                rl_st, rl_js = await sa_create_lot(client, headers=headers, lot_body=lot_body)
+
+                if rl_st in (200, 201, 204):
                     continue
-                if rl.status_code == 409:
+                if rl_st == 409:
                     # Chưa có API update-by-code cho lot → BỎ QUA (không ghi đè)
                     continue
                 try:
-                    lmsg = (rl.json() or {}).get("detail") or (rl.json() or {}).get("message") or ""
+                    lmsg = (rl_js or {}).get("detail") or (rl_js or {}).get("message") or ""
                 except Exception:
                     lmsg = ""
                 errors.append(
-                    f"Lô {l.get('lot_code')} thuộc {code}: tạo thất bại (HTTP {rl.status_code}) {lmsg}"
+                    f"Lô {l.get('lot_code')} thuộc {code}: tạo thất bại (HTTP {rl_st}) {lmsg}"
                 )
 
     # Kết luận
@@ -419,6 +425,7 @@ async def project_detail(request: Request, project_id: int = Path(...)):
                     auction_cfg = cfg.get("auction") or {}
                 else:
                     auction_cfg = None
+
             # 1c) Lấy bid_ticket_config (extras.settings.bid_ticket)
             if project:
                 bt_st, bt = await _get_json(
@@ -434,11 +441,12 @@ async def project_detail(request: Request, project_id: int = Path(...)):
 
             # 2) Nếu có project_code thì lấy danh sách lô theo project_code
             if project and project.get("project_code"):
-                params = {"project_code": project["project_code"], "size": 1000}
-                lst_st, lst = await _get_json(
+                # ✅ refactor: gọi helper nhưng phải y hệt call cũ (Authorization Bearer)
+                lst_st, lst = await sa_list_lots_by_project_code(
                     client,
-                    f"/api/v1/lots?{urlencode(params)}",
-                    {"Authorization": f"Bearer {token}"},
+                    token=token,
+                    project_code=project["project_code"],
+                    size=1000,
                 )
                 if lst_st == 200 and isinstance(lst, dict):
                     lots_page = {
@@ -466,6 +474,7 @@ async def project_detail(request: Request, project_id: int = Path(...)):
             "bid_ticket_cfg": bid_ticket_cfg,  # NEW
         },
     )
+
 
 # =========================
 # 4) CREATE (form + submit)
@@ -605,10 +614,12 @@ async def projects_data(
 
         raw = r.json() or {}
         items = raw.get("data") or []
+
         def pick(x: dict) -> dict:
             code = x.get("project_code") or x.get("code")
             name = x.get("name") or code
             return {"project_code": code, "name": name, "status": x.get("status")}
+
         data = [pick(x) for x in items if x]
 
         return JSONResponse(
@@ -849,6 +860,7 @@ async def update_project_auction_mode(
         status_code=303,
     )
 
+
 # =========================
 # 9) AUCTION CONFIG (Ngày đấu / Tỉnh thành / Địa điểm)
 # =========================
@@ -935,6 +947,7 @@ async def update_project_auction_config(
         url=f"/projects/{project_id}?msg=auction_config_updated",
         status_code=303,
     )
+
 
 @router.post("/{project_id}/bid-ticket-config")
 async def update_project_bid_ticket_config(
