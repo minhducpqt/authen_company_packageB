@@ -1014,3 +1014,156 @@ async def update_project_bid_ticket_config(
         url=f"/projects/{project_id}?msg=bid_ticket_config_updated",
         status_code=303,
     )
+
+# =========================
+# 10) UPDATE BASIC INFO (name / location / description / status)
+# =========================
+@router.post("/{project_id}/update")
+async def update_project_basic_info(
+    request: Request,
+    project_id: int = Path(...),
+    name: str = Form(""),
+    location: str = Form(""),
+    description: str = Form(""),
+    status: str = Form(""),  # optional: ACTIVE|INACTIVE|CLOSED (nếu FE có gửi)
+):
+    """
+    Update thông tin cơ bản của dự án (Service B → Service A):
+    - Service A endpoint: PUT /api/v1/projects/{project_id}
+    - Fields hỗ trợ bên A: name, location, description, status (và vài field khác)
+    """
+
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(url=f"/login?next=/projects/{project_id}", status_code=303)
+
+    # Build payload: chỉ gửi field nào có value khác "" (để khỏi ghi đè thành null ngoài ý muốn)
+    payload: dict = {}
+
+    n = (name or "").strip()
+    if n != "":
+        payload["name"] = n
+
+    loc = (location or "").strip()
+    if loc != "":
+        payload["location"] = loc
+
+    desc = (description or "").strip()
+    if desc != "":
+        payload["description"] = desc
+
+    st = (status or "").strip().upper()
+    if st in ("ACTIVE", "INACTIVE", "CLOSED"):
+        payload["status"] = st
+    elif st != "":
+        # Nếu FE gửi status lạ thì coi như lỗi form, khỏi gọi A
+        return RedirectResponse(
+            url=f"/projects/{project_id}?err=project_update_failed",
+            status_code=303,
+        )
+
+    # Nếu không có gì để update thì thôi
+    if not payload:
+        return RedirectResponse(url=f"/projects/{project_id}?msg=project_updated", status_code=303)
+
+    print("====== [DEBUG] SERVICE B → A PROJECT UPDATE PAYLOAD ======")
+    print("project_id =", project_id)
+    print("payload =", payload)
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            r = await client.put(
+                EP_UPDATE_PROJ.format(pid=project_id),
+                json=payload,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        if r.status_code != 200:
+            try:
+                detail = r.json()
+            except Exception:
+                detail = r.text
+            print("⚠️ PROJECT UPDATE FAILED:", detail)
+            return RedirectResponse(
+                url=f"/projects/{project_id}?err=project_update_failed",
+                status_code=303,
+            )
+
+    except Exception as e:
+        print("🔥 EXCEPTION update_project_basic_info:", e)
+        return RedirectResponse(
+            url=f"/projects/{project_id}?err=project_update_failed",
+            status_code=303,
+        )
+
+    return RedirectResponse(
+        url=f"/projects/{project_id}?msg=project_updated",
+        status_code=303,
+    )
+
+
+# (Optional) JSON API cho AJAX (nếu sau này bạn muốn update inline không reload)
+@router.put("/{project_id}/api/update", response_class=JSONResponse)
+async def api_update_project_basic_info(
+    request: Request,
+    project_id: int = Path(...),
+):
+    """
+    JSON API (Service B → Service A) để update name/location/description/status.
+    Body JSON ví dụ:
+      {"name":"...", "location":"...", "description":"...", "status":"ACTIVE"}
+    """
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
+
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    if not isinstance(body, dict):
+        body = {}
+
+    # Whitelist fields
+    payload: dict = {}
+    for k in ("name", "location", "description", "status"):
+        if k in body:
+            v = body.get(k)
+            if isinstance(v, str):
+                v = v.strip()
+            payload[k] = v if v != "" else None
+
+    # Validate status nếu có
+    if "status" in payload and payload["status"] is not None:
+        st = str(payload["status"]).strip().upper()
+        if st not in ("ACTIVE", "INACTIVE", "CLOSED"):
+            return JSONResponse({"ok": False, "error": "invalid_status"}, status_code=400)
+        payload["status"] = st
+
+    if not payload:
+        return JSONResponse({"ok": True, "data": None}, status_code=200)
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            r = await client.put(
+                EP_UPDATE_PROJ.format(pid=project_id),
+                json=payload,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        if r.status_code != 200:
+            try:
+                detail = r.json()
+            except Exception:
+                detail = r.text
+            return JSONResponse(
+                {"ok": False, "error": "upstream_error", "status": r.status_code, "detail": detail},
+                status_code=502,
+            )
+
+        js = r.json() if r.content else None
+        return JSONResponse({"ok": True, "data": js}, status_code=200)
+
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": "exception", "message": str(e)}, status_code=500)

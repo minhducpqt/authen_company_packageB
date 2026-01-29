@@ -37,6 +37,63 @@
   {% set btc = bid_ticket_cfg or {} %}
   {% set show_price_step = (btc.show_price_step if (btc.show_price_step is not none) else true) %}
 
+  <style>
+    /* ===== Project inline edit icon (small + discreet) ===== */
+    .pj-edit-btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      height:28px;
+      width:28px;
+      border-radius:10px;
+      border:1px solid rgba(148,163,184,.8);
+      color: rgba(71,85,105,.85);
+      background: #fff;
+      transition: .15s ease;
+    }
+    .pj-edit-btn:hover{
+      color:#0f172a;
+      border-color: rgba(99,102,241,.55);
+      box-shadow: 0 0 0 3px rgba(99,102,241,.18);
+    }
+    .pj-edit-btn i{ font-size: 14px; }
+
+    /* ===== Lot edit buttons: hidden by default, only show when enabled ===== */
+    .lot-edit-btn{ display:none; }
+    .lot-edit-enabled .lot-edit-btn{ display:inline-flex; }
+
+    /* Tiny toggle at bottom */
+    .lot-edit-toggle{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      height:30px;
+      width:30px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.55);
+      background:#fff;
+      color: rgba(100,116,139,.85);
+      transition:.15s ease;
+    }
+    .lot-edit-toggle:hover{
+      color:#0f172a;
+      border-color: rgba(148,163,184,.85);
+      box-shadow: 0 0 0 3px rgba(15,23,42,.06);
+    }
+    .lot-edit-toggle i{ font-size: 14px; }
+    .lot-edit-toggle.is-on{
+      color:#4f46e5;
+      border-color: rgba(79,70,229,.35);
+      box-shadow: 0 0 0 3px rgba(79,70,229,.15);
+    }
+
+    /* Project edit modal */
+    #projectEditModal .pe-card{
+      width: 96vw;
+      max-width: 560px;
+    }
+  </style>
+
   <!-- Thông tin dự án -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
     <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
@@ -45,8 +102,18 @@
     </div>
 
     <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
-      <div class="text-slate-500 text-sm">Tên dự án</div>
-      <div class="text-lg font-semibold">{{ project.name }}</div>
+      <div class="flex items-center justify-between gap-2">
+        <div class="text-slate-500 text-sm">Tên dự án</div>
+        <button
+          type="button"
+          class="pj-edit-btn"
+          title="Sửa tên dự án"
+          onclick="openProjectEdit('name')"
+        >
+          <i class="ri-edit-2-line"></i>
+        </button>
+      </div>
+      <div class="text-lg font-semibold" id="pj_name_text">{{ project.name }}</div>
     </div>
 
     <!-- Trạng thái + chế độ đấu giá -->
@@ -97,13 +164,33 @@
     </div>
 
     <div class="md:col-span-3 p-4 rounded-lg bg-slate-50 border border-slate-200">
-      <div class="text-slate-500 text-sm mb-1">Vị trí</div>
-      <div>{{ project.location or '—' }}</div>
+      <div class="flex items-center justify-between gap-2 mb-1">
+        <div class="text-slate-500 text-sm">Vị trí</div>
+        <button
+          type="button"
+          class="pj-edit-btn"
+          title="Sửa vị trí dự án"
+          onclick="openProjectEdit('location')"
+        >
+          <i class="ri-edit-2-line"></i>
+        </button>
+      </div>
+      <div id="pj_location_text">{{ project.location or '—' }}</div>
     </div>
 
     <div class="md:col-span-3 p-4 rounded-lg bg-slate-50 border border-slate-200">
-      <div class="text-slate-500 text-sm mb-1">Mô tả</div>
-      <div class="whitespace-pre-wrap">{{ project.description or '—' }}</div>
+      <div class="flex items-center justify-between gap-2 mb-1">
+        <div class="text-slate-500 text-sm">Mô tả</div>
+        <button
+          type="button"
+          class="pj-edit-btn"
+          title="Sửa mô tả dự án"
+          onclick="openProjectEdit('description')"
+        >
+          <i class="ri-edit-2-line"></i>
+        </button>
+      </div>
+      <div class="whitespace-pre-wrap" id="pj_description_text">{{ project.description or '—' }}</div>
     </div>
   </div>
 
@@ -333,17 +420,14 @@
           <th class="px-3 py-2 border-b text-right">Tiền cọc</th>
           <th class="px-3 py-2 border-b text-right">Bước giá (VND)</th>
           <th class="px-3 py-2 border-b">Trạng thái</th>
-          {# ✅ NEW: action col (icon only) #}
           <th class="px-2 py-2 border-b text-right w-[44px]"></th>
         </tr>
       </thead>
       <tbody>
         {% for l in lots_page.data %}
-        {# ✅ NEW: data-lot-id for DOM update #}
         <tr data-lot-id="{{ l.id }}">
           <td class="px-3 py-2 border-b">{{ loop.index }}</td>
 
-          {# ✅ NEW: wrap content with hooks to update later #}
           <td class="px-3 py-2 border-b font-mono js-lot-code">{{ l.lot_code }}</td>
           <td class="px-3 py-2 border-b js-lot-name">{{ l.name or '' }}</td>
           <td class="px-3 py-2 border-b text-right js-lot-area">
@@ -369,15 +453,15 @@
             </span>
           </td>
 
-          {# ✅ NEW: icon edit (small + aesthetic) #}
+          <!-- Lot edit button (hidden by default; enabled via tiny toggle at bottom) -->
           <td class="px-2 py-2 border-b text-right">
             <button
               type="button"
-              class="inline-flex items-center justify-center h-8 w-8 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition"
+              class="lot-edit-btn inline-flex items-center justify-center h-8 w-8 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition"
               title="Sửa lô"
               onclick="openLotEditModal({{ l.id }})"
             >
-              <i class="ri-pencil-line text-[16px]"></i>
+              <i class="ri-edit-2-line text-[15px]"></i>
             </button>
           </td>
         </tr>
@@ -394,7 +478,103 @@
     </table>
   </div>
 
+  <!-- Tiny toggle to show lot edit buttons (discreet) -->
+  <div class="mt-3 flex items-center justify-end">
+    <button
+      type="button"
+      id="lotEditToggle"
+      class="lot-edit-toggle"
+      title="Bật/Tắt nút sửa lô"
+      onclick="toggleLotEditButtons()"
+      aria-label="Bật/Tắt nút sửa lô"
+    >
+      <i class="ri-settings-3-line"></i>
+    </button>
+  </div>
+
   {% endif %}
+</div>
+
+{# =========================================================
+   ✅ NEW: PROJECT EDIT MODAL (name/location/description) with phrase confirm
+   ========================================================= #}
+<div id="projectEditModal" class="fixed inset-0 bg-black/40 hidden z-50">
+  <div class="absolute inset-0 flex items-center justify-center p-3">
+    <div class="pe-card bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+        <div class="flex items-center gap-2">
+          <div class="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600">
+            <i class="ri-edit-2-line"></i>
+          </div>
+          <div>
+            <div id="peTitle" class="text-sm font-semibold text-slate-800">Chỉnh sửa</div>
+            <div class="text-xs text-slate-500">Nhập “tôi xác nhận” để bật nút lưu</div>
+          </div>
+        </div>
+
+        <button type="button"
+                class="h-9 w-9 inline-flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                onclick="closeProjectEdit()"
+                title="Đóng">
+          <i class="ri-close-line text-xl"></i>
+        </button>
+      </div>
+
+      <form id="projectEditForm" method="post" action="/projects/{{ project.id }}/update" class="p-4">
+        <input type="hidden" id="peField" value="">
+        <div class="space-y-2">
+          <label id="peLabel" class="block text-xs font-medium text-slate-600">Giá trị</label>
+
+          <!-- single editor: will switch between input/textarea -->
+          <input
+            id="peInput"
+            type="text"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition hidden"
+            value=""
+          >
+
+          <textarea
+            id="peTextarea"
+            rows="4"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition whitespace-pre-wrap hidden"
+          ></textarea>
+
+          <div class="pt-2">
+            <label class="block text-xs font-medium text-slate-600 mb-1">
+              Nhập đúng: <span class="font-semibold text-slate-800">tôi xác nhận</span>
+            </label>
+            <input
+              id="pePhrase"
+              type="text"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition"
+              placeholder="Gõ: tôi xác nhận"
+              autocomplete="off"
+              oninput="onPePhraseInput()"
+            >
+            <p class="mt-1 text-xs text-slate-500">
+              Mục đích: tránh bấm nhầm khi sửa thông tin dự án.
+            </p>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 mt-4">
+          <button type="button"
+                  class="px-3 py-1.5 rounded-lg bg-slate-200 text-slate-700"
+                  onclick="closeProjectEdit()">
+            Hủy
+          </button>
+
+          <button id="peSaveBtn"
+                  type="button"
+                  class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white opacity-50 cursor-not-allowed"
+                  onclick="submitProjectEdit()"
+                  disabled>
+            Lưu
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 {# =========================================================
@@ -498,7 +678,157 @@
 
 <script>
   /* =========================================================
-     ✅ NEW: Lot edit modal (iframe) - isolated, minimal hooks
+     #1: Project edit modal (name/location/description) with phrase confirm
+     ========================================================= */
+  const _pe = {
+    el: null,
+    titleEl: null,
+    labelEl: null,
+    fieldEl: null,
+    inputEl: null,
+    taEl: null,
+    phraseEl: null,
+    saveBtn: null,
+    formEl: null,
+  };
+
+  function peInit(){
+    if (_pe.el) return;
+    _pe.el = document.getElementById("projectEditModal");
+    _pe.titleEl = document.getElementById("peTitle");
+    _pe.labelEl = document.getElementById("peLabel");
+    _pe.fieldEl = document.getElementById("peField");
+    _pe.inputEl = document.getElementById("peInput");
+    _pe.taEl = document.getElementById("peTextarea");
+    _pe.phraseEl = document.getElementById("pePhrase");
+    _pe.saveBtn = document.getElementById("peSaveBtn");
+    _pe.formEl = document.getElementById("projectEditForm");
+  }
+
+  function _norm(s){ return String(s || "").trim().toLowerCase(); }
+
+  function openProjectEdit(field){
+    peInit();
+    _pe.fieldEl.value = field;
+
+    // reset phrase
+    _pe.phraseEl.value = "";
+    _pe.saveBtn.disabled = true;
+    _pe.saveBtn.classList.add("opacity-50","cursor-not-allowed");
+
+    // swap editor types
+    _pe.inputEl.classList.add("hidden");
+    _pe.taEl.classList.add("hidden");
+
+    if (field === "name"){
+      _pe.titleEl.textContent = "Sửa tên dự án";
+      _pe.labelEl.textContent = "Tên dự án";
+      _pe.inputEl.value = (document.getElementById("pj_name_text")?.textContent || "").trim();
+      _pe.inputEl.classList.remove("hidden");
+      _pe.inputEl.focus();
+    }else if (field === "location"){
+      _pe.titleEl.textContent = "Sửa vị trí dự án";
+      _pe.labelEl.textContent = "Vị trí";
+      const cur = (document.getElementById("pj_location_text")?.textContent || "").trim();
+      _pe.inputEl.value = (cur === "—" ? "" : cur);
+      _pe.inputEl.classList.remove("hidden");
+      _pe.inputEl.focus();
+    }else if (field === "description"){
+      _pe.titleEl.textContent = "Sửa mô tả dự án";
+      _pe.labelEl.textContent = "Mô tả";
+      const cur = (document.getElementById("pj_description_text")?.textContent || "");
+      _pe.taEl.value = (cur.trim() === "—" ? "" : cur);
+      _pe.taEl.classList.remove("hidden");
+      _pe.taEl.focus();
+    }else{
+      return;
+    }
+
+    _pe.el.classList.remove("hidden");
+  }
+
+  function closeProjectEdit(){
+    peInit();
+    _pe.el.classList.add("hidden");
+  }
+
+  function onPePhraseInput(){
+    peInit();
+    const ok = _norm(_pe.phraseEl.value) === "tôi xác nhận";
+    _pe.saveBtn.disabled = !ok;
+    if (ok){
+      _pe.saveBtn.classList.remove("opacity-50","cursor-not-allowed");
+    }else{
+      _pe.saveBtn.classList.add("opacity-50","cursor-not-allowed");
+    }
+  }
+
+  function submitProjectEdit(){
+    peInit();
+    if (_pe.saveBtn.disabled) return;
+
+    const field = _pe.fieldEl.value;
+    let value = "";
+
+    if (field === "description"){
+      value = _pe.taEl.value;
+    }else{
+      value = _pe.inputEl.value;
+    }
+
+    // Remove existing dynamic field inputs (if any)
+    try{
+      _pe.formEl.querySelectorAll("input[data-pe-dyn], textarea[data-pe-dyn]").forEach(x => x.remove());
+    }catch(e){}
+
+    // Create a hidden field with the exact name expected by Service B endpoint: name/location/description
+    const h = document.createElement("input");
+    h.type = "hidden";
+    h.name = field;
+    h.value = (value || "").trim();
+    h.setAttribute("data-pe-dyn","1");
+    _pe.formEl.appendChild(h);
+
+    _pe.formEl.submit();
+  }
+
+  // click outside closes project edit modal
+  document.addEventListener("click", function(e){
+    const m = document.getElementById("projectEditModal");
+    if (!m || m.classList.contains("hidden")) return;
+    if (e.target === m) closeProjectEdit();
+  });
+
+  // ESC closes project edit modal (but not interfere confirm modal)
+  document.addEventListener("keydown", function(e){
+    if (e.key === "Escape"){
+      const cpm = document.getElementById("confirmPhraseModal");
+      if (cpm && !cpm.classList.contains("hidden")) return;
+      const lotm = document.getElementById("lotEditModal");
+      if (lotm && !lotm.classList.contains("hidden")) return;
+      const pem = document.getElementById("projectEditModal");
+      if (pem && !pem.classList.contains("hidden")){
+        closeProjectEdit();
+      }
+    }
+  });
+
+  /* =========================================================
+     #2: Lot edit buttons - hidden by default; toggle to reveal
+     ========================================================= */
+  function toggleLotEditButtons(){
+    const btn = document.getElementById("lotEditToggle");
+    const on = document.documentElement.classList.toggle("lot-edit-enabled");
+    try{
+      if (btn){
+        btn.classList.toggle("is-on", on);
+        btn.title = on ? "Đang bật nút sửa lô" : "Bật/Tắt nút sửa lô";
+      }
+    }catch(e){}
+  }
+
+  /* =========================================================
+     Existing: Lot edit modal (iframe) - unchanged logic
      ========================================================= */
 
   function openLotEditModal(lotId){
@@ -508,19 +838,14 @@
 
     if (!m || !f) return;
 
-    // show hint title (optional, keep minimal)
     try{
       const row = document.querySelector(`tr[data-lot-id="${lotId}"]`);
       const code = row ? (row.querySelector(".js-lot-code")?.textContent || "").trim() : "";
       sub.textContent = code ? ("Lô: " + code) : "—";
     }catch(e){}
 
-    // load external editor page (you will provide lot_editer.html later)
-    // keep URL simple; editor page can read lot_id from query or path
     f.src = `/lots/${lotId}/edit?embed=1`;
     m.classList.remove("hidden");
-
-    // ESC closes (do not touch existing ESC behavior for confirm modal)
   }
 
   function closeLotEditModal(){
@@ -531,19 +856,18 @@
     if (f) f.src = "about:blank";
   }
 
-  // click outside closes (only for the edit modal)
   document.addEventListener("click", function(e){
     const m = document.getElementById("lotEditModal");
     if (!m || m.classList.contains("hidden")) return;
-    // close when clicking on the dark backdrop (not inside modal card)
     if (e.target === m) closeLotEditModal();
   });
 
-  // ESC closes edit modal (but not interfere confirm modal)
   document.addEventListener("keydown", function(e){
     if (e.key === "Escape"){
       const cpm = document.getElementById("confirmPhraseModal");
-      if (cpm && !cpm.classList.contains("hidden")) return; // keep existing behavior
+      if (cpm && !cpm.classList.contains("hidden")) return;
+      const pem = document.getElementById("projectEditModal");
+      if (pem && !pem.classList.contains("hidden")) return;
       const m = document.getElementById("lotEditModal");
       if (m && !m.classList.contains("hidden")){
         closeLotEditModal();
@@ -551,9 +875,7 @@
     }
   });
 
-  // Receive updates from iframe editor
   window.addEventListener("message", function(event){
-    // same-origin recommended; keep permissive but guarded by message type
     const msg = event && event.data ? event.data : null;
     if (!msg || typeof msg !== "object") return;
     if (msg.type !== "LOT_UPDATED") return;
@@ -563,7 +885,6 @@
 
     if (!lotId || !lot) return;
 
-    // Update row DOM in-place (no reload)
     try{
       const row = document.querySelector(`tr[data-lot-id="${lotId}"]`);
       if (!row) return;
@@ -611,7 +932,6 @@
           const ls = (lot.status || "");
           badge.textContent = ls || "—";
 
-          // reset classes to match server template logic
           badge.className = "inline-flex items-center px-2 py-0.5 rounded text-xs js-lot-status-badge";
           if (ls === "AVAILABLE"){
             badge.className += " bg-emerald-100 text-emerald-700 border border-emerald-200";
@@ -625,22 +945,18 @@
         }
       }
 
-      // Update subtitle (optional)
       try{
         const sub = document.getElementById("lotEditSub");
         if (sub && lot.lot_code) sub.textContent = "Lô: " + lot.lot_code;
       }catch(e){}
 
-    }catch(e){
-      // swallow to avoid breaking production page
-    }
+    }catch(e){}
 
-    // close modal after update
     closeLotEditModal();
   });
 
   /* -------------------------
-     PHRASE CONFIRM MODAL (custom)
+     PHRASE CONFIRM MODAL (custom) - unchanged
   ------------------------- */
   let _cpm = {
     el: null,
@@ -649,15 +965,11 @@
     inputEl: null,
     okBtn: null,
     phraseLabelEl: null,
-    pendingEl: null,     // checkbox/input element that triggered
-    pendingPrev: null,   // previous checked state for rollback
+    pendingEl: null,
+    pendingPrev: null,
     phrase: "tôi xác nhận",
     onConfirm: null,
   };
-
-  function _norm(s){
-    return String(s || "").trim().toLowerCase();
-  }
 
   function ensureCpmInit(){
     if (_cpm.el) return;
@@ -672,17 +984,14 @@
   function confirmWithPhrase(el, opts){
     ensureCpmInit();
 
-    // save pending + rollback state
     _cpm.pendingEl = el;
     _cpm.pendingPrev = (el && typeof el.checked === "boolean") ? (!el.checked) : null;
 
     _cpm.phrase = (opts && opts.phrase) ? String(opts.phrase) : "tôi xác nhận";
     _cpm.onConfirm = function(){
-      // default: submit its form if present
       if (el && el.form) el.form.submit();
     };
 
-    // set UI
     _cpm.titleEl.textContent = (opts && opts.title) ? opts.title : "Xác nhận";
     _cpm.descEl.innerHTML = (opts && opts.descHtml) ? opts.descHtml : "";
     _cpm.phraseLabelEl.textContent = _cpm.phrase;
@@ -693,7 +1002,6 @@
 
     _cpm.el.classList.remove("hidden");
 
-    // focus
     setTimeout(()=>{ try{ _cpm.inputEl.focus(); }catch(e){} }, 0);
   }
 
@@ -714,7 +1022,6 @@
     _cpm.el.classList.add("hidden");
 
     if (!confirmed){
-      // rollback checkbox state if needed
       if (_cpm.pendingEl && typeof _cpm.pendingEl.checked === "boolean" && _cpm.pendingPrev !== null){
         _cpm.pendingEl.checked = _cpm.pendingPrev;
       }
@@ -724,7 +1031,6 @@
       return;
     }
 
-    // confirmed
     try{
       if (typeof _cpm.onConfirm === "function") _cpm.onConfirm();
     }finally{
@@ -734,7 +1040,6 @@
     }
   }
 
-  // ESC to close
   document.addEventListener("keydown", function(e){
     if (e.key === "Escape"){
       const m = document.getElementById("confirmPhraseModal");
@@ -745,7 +1050,7 @@
   });
 
   /* -------------------------
-     DEADLINE PICKER (dùng chung cho deadline + auction_at)
+     DEADLINE PICKER (dùng chung cho deadline + auction_at) - unchanged
   ------------------------- */
   let currentField = null;
 
