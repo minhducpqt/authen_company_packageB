@@ -5,7 +5,7 @@ import os
 from typing import Any, Dict, Optional, Tuple
 
 import httpx
-from fastapi import APIRouter, Request, Query, Path, Body, HTTPException
+from fastapi import APIRouter, Request, Query, Path, Body
 from fastapi.responses import JSONResponse
 
 from utils.auth import get_access_token, fetch_me
@@ -17,6 +17,7 @@ SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 # ---- Service A endpoints (lots) ----
 EP_LOTS_BASE = "/api/v1/lots"
 EP_LOT_DETAIL = "/api/v1/lots/{lot_id}"
+EP_LOT_DETAIL_FOR_EDIT = "/api/v1/lots/{lot_id}/detail_for_edit"
 EP_LOT_LOCK = "/api/v1/lots/{lot_id}/lock"
 EP_LOT_UNLOCK = "/api/v1/lots/{lot_id}/unlock"
 
@@ -34,7 +35,7 @@ def _merge_headers(
     Hợp nhất headers:
     - headers truyền vào là base
     - nếu chưa có Authorization và có token -> Bearer token
-    - nếu có company_code -> set X-Company-Code (để import/apply dùng giống bản gốc)
+    - nếu có company_code -> set X-Company-Code
     """
     h: Dict[str, str] = dict(headers or {})
     if token and not h.get("Authorization"):
@@ -53,7 +54,7 @@ async def _safe_json(resp: httpx.Response) -> Optional[Dict[str, Any]]:
 
 
 # =========================================================
-# ✅ Helpers exported for reuse in projects.py
+# ✅ Helpers exported for reuse in projects.py (and elsewhere)
 # =========================================================
 async def sa_create_lot(
     client: httpx.AsyncClient,
@@ -90,7 +91,7 @@ async def sa_list_lots_by_project_code(
 ) -> Tuple[int, Optional[Dict[str, Any]]]:
     """
     Helper list lots theo project_code từ Service A.
-    Giữ đúng tinh thần bản gốc: gọi /api/v1/lots?project_code=...&size=1000 (+ page)
+    Gọi: /api/v1/lots?project_code=...&size=...&page=...
     """
     h = _merge_headers(token=token, company_code=company_code, headers=headers)
 
@@ -104,9 +105,23 @@ async def sa_list_lots_by_project_code(
     return r.status_code, await _safe_json(r)
 
 
+async def sa_get_lot_detail_for_edit(
+    client: httpx.AsyncClient,
+    token: str,
+    lot_id: int,
+    company_code: Optional[str] = None,
+    headers: Optional[Dict[str, str]] = None,
+) -> Tuple[int, Optional[Dict[str, Any]]]:
+    """
+    Helper lấy detail_for_edit (warnings + per-field meta) từ Service A.
+    """
+    h = _merge_headers(token=token, company_code=company_code, headers=headers)
+    r = await client.get(EP_LOT_DETAIL_FOR_EDIT.format(lot_id=lot_id), headers=h)
+    return r.status_code, await _safe_json(r)
+
+
 # =========================================================
 # ✅ Router endpoints (Service B) - proxy to Service A
-# (Additive, không phá logic endpoint cũ)
 # =========================================================
 
 @router.get("/api/list", response_class=JSONResponse)
@@ -140,7 +155,41 @@ async def api_list_lots(
             status=status,
         )
 
-    return JSONResponse(data or {"error": "upstream_failed", "status": st}, status_code=st if st else 502)
+    return JSONResponse(
+        data or {"error": "upstream_failed", "status": st},
+        status_code=st if st else 502,
+    )
+
+
+@router.get("/api/{lot_id}/detail_for_edit", response_class=JSONResponse)
+async def api_lot_detail_for_edit(
+    request: Request,
+    lot_id: int = Path(..., ge=1),
+):
+    """
+    Proxy detail_for_edit:
+      GET /lots/api/{lot_id}/detail_for_edit
+      -> GET /api/v1/lots/{lot_id}/detail_for_edit
+    """
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    me = await fetch_me(token)
+    company_code = (me or {}).get("company_code")
+
+    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=15.0) as client:
+        st, data = await sa_get_lot_detail_for_edit(
+            client,
+            token=token,
+            lot_id=lot_id,
+            company_code=company_code,
+        )
+
+    return JSONResponse(
+        data or {"error": "upstream_failed", "status": st},
+        status_code=st if st else 502,
+    )
 
 
 @router.post("/api/create", response_class=JSONResponse)
@@ -165,13 +214,17 @@ async def api_create_lot(
             lot_body=payload,
             company_code=company_code or payload.get("company_code"),
         )
-    return JSONResponse(data or {"error": "upstream_failed", "status": st}, status_code=st if st else 502)
+
+    return JSONResponse(
+        data or {"error": "upstream_failed", "status": st},
+        status_code=st if st else 502,
+    )
 
 
 @router.patch("/api/{lot_id}", response_class=JSONResponse)
 async def api_update_lot(
     request: Request,
-    lot_id: int = Path(...),
+    lot_id: int = Path(..., ge=1),
     payload: Dict[str, Any] = Body(...),
 ):
     """
@@ -181,21 +234,27 @@ async def api_update_lot(
     if not token:
         return JSONResponse({"error": "unauthorized"}, status_code=401)
 
-    # Không ép company_code ở đây để giữ đúng behavior Service A (scope do token quyết định)
+    me = await fetch_me(token)
+    company_code = (me or {}).get("company_code")
+
     async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=20.0) as client:
         r = await client.patch(
             EP_LOT_DETAIL.format(lot_id=lot_id),
             json=payload,
-            headers={"Authorization": f"Bearer {token}"},
+            headers=_merge_headers(token=token, company_code=company_code),
         )
         data = await _safe_json(r)
-        return JSONResponse(data or {"error": "upstream_failed", "status": r.status_code}, status_code=r.status_code)
+
+    return JSONResponse(
+        data or {"error": "upstream_failed", "status": r.status_code},
+        status_code=r.status_code,
+    )
 
 
 @router.post("/api/{lot_id}/lock", response_class=JSONResponse)
 async def api_lock_lot(
     request: Request,
-    lot_id: int = Path(...),
+    lot_id: int = Path(..., ge=1),
 ):
     """
     Proxy lock lot: POST /lots/api/{lot_id}/lock
@@ -204,19 +263,26 @@ async def api_lock_lot(
     if not token:
         return JSONResponse({"error": "unauthorized"}, status_code=401)
 
+    me = await fetch_me(token)
+    company_code = (me or {}).get("company_code")
+
     async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=15.0) as client:
         r = await client.post(
             EP_LOT_LOCK.format(lot_id=lot_id),
-            headers={"Authorization": f"Bearer {token}"},
+            headers=_merge_headers(token=token, company_code=company_code),
         )
         data = await _safe_json(r)
-        return JSONResponse(data or {"error": "upstream_failed", "status": r.status_code}, status_code=r.status_code)
+
+    return JSONResponse(
+        data or {"error": "upstream_failed", "status": r.status_code},
+        status_code=r.status_code,
+    )
 
 
 @router.post("/api/{lot_id}/unlock", response_class=JSONResponse)
 async def api_unlock_lot(
     request: Request,
-    lot_id: int = Path(...),
+    lot_id: int = Path(..., ge=1),
 ):
     """
     Proxy unlock lot: POST /lots/api/{lot_id}/unlock
@@ -225,10 +291,17 @@ async def api_unlock_lot(
     if not token:
         return JSONResponse({"error": "unauthorized"}, status_code=401)
 
+    me = await fetch_me(token)
+    company_code = (me or {}).get("company_code")
+
     async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=15.0) as client:
         r = await client.post(
             EP_LOT_UNLOCK.format(lot_id=lot_id),
-            headers={"Authorization": f"Bearer {token}"},
+            headers=_merge_headers(token=token, company_code=company_code),
         )
         data = await _safe_json(r)
-        return JSONResponse(data or {"error": "upstream_failed", "status": r.status_code}, status_code=r.status_code)
+
+    return JSONResponse(
+        data or {"error": "upstream_failed", "status": r.status_code},
+        status_code=r.status_code,
+    )
