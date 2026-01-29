@@ -102,16 +102,6 @@
         <p class="text-xs text-slate-400 mt-1">Giá trị cố định theo tài khoản, không thể chỉnh sửa.</p>
       </div>
 
-      <div>
-        <label class="inline-flex items-center gap-2">
-          <input type="checkbox" name="force_replace" value="1" class="rounded border-slate-300">
-          <span class="text-sm text-slate-600">Ghi đè nếu đã tồn tại</span>
-        </label>
-        {% if preview.conflicts_inactive and preview.conflicts_inactive|length > 0 %}
-          <p class="text-xs text-slate-400 mt-1">Bật tuỳ chọn này để cập nhật các dự án đang INACTIVE.</p>
-        {% endif %}
-      </div>
-
       <div class="text-right md:col-span-1">
         <input type="hidden" name="payload" value='{{ payload_json|safe }}'/>
         <button type="submit"

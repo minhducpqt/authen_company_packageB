@@ -191,40 +191,71 @@ async def import_apply(
     request: Request,
     payload: str = Form(...),
     company_code: str = Form(...),
-    force_replace: bool = Form(False),
 ):
     """
     Ghi từng dự án + lô:
-    - Project: POST; nếu 409 và force_replace=True → GET by_code lấy id rồi PUT (giữ status='INACTIVE').
-    - Lot: POST; nếu 409 hiện bỏ qua (chưa ghi đè).
+    - Project: POST; nếu đã tồn tại (409) → BÁO LỖI, KHÔNG GHI ĐÈ.
+    - Lot: POST; nếu 409 → bỏ qua (không ghi đè).
     """
     token = get_access_token(request)
     me = await fetch_me(token)
     if not me:
         return RedirectResponse(url="/login?next=/projects/import", status_code=303)
 
+    # ⛔ Chặn cứng nếu FE cũ vẫn gửi force_replace
+    try:
+        form = await request.form()
+        if form.get("force_replace"):
+            return templates.TemplateResponse(
+                "pages/projects/import_preview.html",
+                {
+                    "request": request,
+                    "title": "Xem trước import dự án",
+                    "me": me,
+                    "company_code": company_code,
+                    "payload_json": payload,
+                    "preview": json.loads(payload),
+                    "err": "Tính năng ghi đè dự án đã bị vô hiệu hoá.",
+                },
+                status_code=400,
+            )
+    except Exception:
+        pass
+
     try:
         data = json.loads(payload)
     except Exception:
         return templates.TemplateResponse(
             "pages/projects/import.html",
-            {"request": request, "title": "Nhập dự án từ Excel", "me": me, "err": "Payload không hợp lệ."},
+            {
+                "request": request,
+                "title": "Nhập dự án từ Excel",
+                "me": me,
+                "err": "Payload không hợp lệ.",
+            },
             status_code=400,
         )
 
     projects = data.get("projects") or []
     lots     = data.get("lots") or []
+
     errors: list[str] = []
     created_codes: list[str] = []
-    replaced_codes: list[str] = []
 
     headers = {"Authorization": f"Bearer {token}", "X-Company-Code": company_code}
 
     async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=30.0) as client:
-        # --- Ghi PROJECTS ---
+        # -----------------------
+        # 1) PROJECTS
+        # -----------------------
         for p in projects:
             code = (p.get("project_code") or "").strip()
             name = (p.get("name") or "").strip()
+
+            if not code or not name:
+                errors.append("Thiếu project_code hoặc name.")
+                continue
+
             body = {
                 "project_code": code,
                 "name": name,
@@ -232,32 +263,16 @@ async def import_apply(
                 "location": p.get("location") or None,
                 "status": "INACTIVE",
             }
-            # Tạo
+
             r = await client.post(EP_CREATE_PROJ, json=body, headers=headers)
+
             if r.status_code == 200:
                 created_codes.append(code)
+
             elif r.status_code == 409:
-                if force_replace:
-                    # Lấy id theo code rồi PUT
-                    r0 = await client.get(
-                        EP_BYCODE_PROJ.format(code=code),
-                        headers=headers,
-                        params={"company_code": company_code},
-                    )
-                    if r0.status_code != 200:
-                        errors.append(f"Dự án {code}: không tìm được id để ghi đè (HTTP {r0.status_code}).")
-                        continue
-                    pid = (r0.json() or {}).get("id")
-                    if not isinstance(pid, int):
-                        errors.append(f"Dự án {code}: id không hợp lệ khi ghi đè.")
-                        continue
-                    r1 = await client.put(EP_UPDATE_PROJ.format(pid=pid), json=body, headers=headers)
-                    if r1.status_code == 200:
-                        replaced_codes.append(code)
-                    else:
-                        errors.append(f"Dự án {code}: ghi đè thất bại (HTTP {r1.status_code}).")
-                else:
-                    errors.append(f"Dự án {code}: đã tồn tại, bật 'Ghi đè' để cập nhật.")
+                # ❌ KHÔNG GHI ĐÈ
+                errors.append(f"Dự án {code}: đã tồn tại, không cho phép ghi đè.")
+
             else:
                 try:
                     msg = (r.json() or {}).get("detail") or (r.json() or {}).get("message") or ""
@@ -265,8 +280,14 @@ async def import_apply(
                     msg = ""
                 errors.append(f"Dự án {code}: tạo thất bại (HTTP {r.status_code}) {msg}")
 
-            # --- Ghi LOTS cho project này ---
-            proj_lots = [l for l in lots if (l.get("project_code") or "").strip().upper() == code.upper()]
+            # -----------------------
+            # 2) LOTS (theo project_code)
+            # -----------------------
+            proj_lots = [
+                l for l in lots
+                if (l.get("project_code") or "").strip().upper() == code.upper()
+            ]
+
             for l in proj_lots:
                 lot_body = {
                     "company_code": company_code,
@@ -277,41 +298,49 @@ async def import_apply(
                     "starting_price": l.get("starting_price"),
                     "deposit_amount": l.get("deposit_amount"),
                     "area": l.get("area"),
-                    # ⭐ NEW: bước giá mỗi lô (đọc từ file Excel)
                     "bid_step_vnd": l.get("bid_step_vnd"),
                     "status": "AVAILABLE",
                 }
 
-                # ✅ refactor: gọi helper nhưng hành vi phải y hệt đoạn cũ
-                rl_st, rl_js = await sa_create_lot(client, headers=headers, lot_body=lot_body)
+                rl_st, rl_js = await sa_create_lot(
+                    client,
+                    headers=headers,
+                    lot_body=lot_body,
+                )
 
                 if rl_st in (200, 201, 204):
                     continue
+
                 if rl_st == 409:
-                    # Chưa có API update-by-code cho lot → BỎ QUA (không ghi đè)
+                    # ❌ không ghi đè lot
                     continue
+
                 try:
                     lmsg = (rl_js or {}).get("detail") or (rl_js or {}).get("message") or ""
                 except Exception:
                     lmsg = ""
+
                 errors.append(
                     f"Lô {l.get('lot_code')} thuộc {code}: tạo thất bại (HTTP {rl_st}) {lmsg}"
                 )
 
-    # Kết luận
-    if errors and (created_codes or replaced_codes):
-        # Partial OK
-        return RedirectResponse(
-            url=f"/projects?msg=import_ok&c={len(created_codes)}&r={len(replaced_codes)}",
-            status_code=303,
-        )
+    # -----------------------
+    # KẾT LUẬN
+    # -----------------------
     if not errors:
         return RedirectResponse(
-            url=f"/projects?msg=import_ok&c={len(created_codes)}&r={len(replaced_codes)}",
+            url=f"/projects?msg=import_ok&c={len(created_codes)}",
             status_code=303,
         )
 
-    # Có lỗi → quay lại preview hiển thị lỗi
+    if created_codes:
+        # Partial OK
+        return RedirectResponse(
+            url=f"/projects?msg=import_ok&c={len(created_codes)}",
+            status_code=303,
+        )
+
+    # Không tạo được gì → quay lại preview
     return templates.TemplateResponse(
         "pages/projects/import_preview.html",
         {
@@ -319,11 +348,11 @@ async def import_apply(
             "title": "Xem trước import dự án",
             "me": me,
             "company_code": company_code,
-            "payload_json": payload,           # giữ để người dùng Apply lại nếu muốn
+            "payload_json": payload,
             "preview": json.loads(payload),
             "err": errors,
         },
-        status_code=207 if (created_codes or replaced_codes) else 400,
+        status_code=400,
     )
 
 
