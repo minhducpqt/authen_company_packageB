@@ -172,8 +172,70 @@
   {% set rows_cust = summary.get('items') or summary.get('rows') or [] %}
   {% set rows_type = totals_type.get('items') or totals_type.get('rows') or [] %}
 
-  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
-    <div class="xl:col-span-2 bg-white border rounded-2xl shadow-sm overflow-hidden">
+  {# ✅ Tổng tiền + tổng SL (an toàn scoping) #}
+  {% set ns = namespace(amount=0, qty=0) %}
+  {% for r in rows_type %}
+    {% set ns.amount = ns.amount + (r.total_amount or 0) %}
+    {% set ns.qty    = ns.qty    + (r.total_qty or 0) %}
+  {% endfor %}
+
+  <div class="space-y-4">
+    <!-- BOX: Tổng hợp theo loại hồ sơ (FULL WIDTH + show tổng tiền) -->
+    <div class="bg-white border rounded-2xl shadow-sm overflow-hidden">
+      <div class="flex items-center justify-between px-4 py-3 border-b bg-slate-50">
+        <div class="text-sm font-semibold text-slate-900 flex items-center gap-2">
+          <i class="ri-stack-line text-amber-500"></i>
+          Tổng hợp theo loại hồ sơ
+        </div>
+        <div class="flex items-center gap-3 text-xs text-slate-500">
+          <span>{{ rows_type|length }} loại</span>
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border bg-white">
+            <span class="text-slate-500">Tổng tiền:</span>
+            <span class="font-semibold text-slate-900" data-amount="{{ ns.amount }}"></span>
+          </span>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm text-slate-700">
+          <thead class="bg-slate-50 text-slate-500 border-b">
+            <tr>
+              <th class="px-4 py-2 text-left font-semibold">Loại hồ sơ</th>
+              <th class="px-4 py-2 text-right font-semibold">Tổng SL</th>
+              <th class="px-4 py-2 text-right font-semibold">Tổng tiền</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+          {% for r in rows_type %}
+            <tr class="hover:bg-slate-50 transition">
+              <td class="px-4 py-3 whitespace-nowrap">{{ r.dossier_label }}</td>
+              <td class="px-4 py-3 text-right whitespace-nowrap">{{ r.total_qty or '' }}</td>
+              <td class="px-4 py-3 text-right whitespace-nowrap" data-amount="{{ r.total_amount or 0 }}"></td>
+            </tr>
+          {% endfor %}
+
+          {# ✅ Row cuối: Tổng cộng (đúng theo tổng các dòng) #}
+          {% if rows_type|length > 0 %}
+            <tr class="bg-slate-50">
+              <td class="px-4 py-3 font-semibold text-slate-900">Tổng cộng</td>
+              <td class="px-4 py-3 text-right font-semibold text-slate-900">{{ ns.qty }}</td>
+              <td class="px-4 py-3 text-right font-semibold text-slate-900" data-amount="{{ ns.amount }}"></td>
+            </tr>
+          {% endif %}
+
+          {% if rows_type|length == 0 %}
+            <tr>
+              <td colspan="3" class="px-4 py-10 text-center text-slate-400">
+                {% if project %}Chưa có dữ liệu.{% else %}Vui lòng chọn dự án.{% endif %}
+              </td>
+            </tr>
+          {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- BOX: Tổng hợp theo khách hàng (FULL WIDTH) -->
+    <div class="bg-white border rounded-2xl shadow-sm overflow-hidden">
       <div class="flex items-center justify-between px-4 py-3 border-b bg-slate-50">
         <div class="text-sm font-semibold text-slate-900 flex items-center gap-2">
           <i class="ri-user-3-line text-indigo-500"></i>
@@ -217,43 +279,6 @@
         </table>
       </div>
     </div>
-
-    <div class="bg-white border rounded-2xl shadow-sm overflow-hidden">
-      <div class="flex items-center justify-between px-4 py-3 border-b bg-slate-50">
-        <div class="text-sm font-semibold text-slate-900 flex items-center gap-2">
-          <i class="ri-stack-line text-amber-500"></i>
-          Tổng hợp theo loại hồ sơ
-        </div>
-        <div class="text-xs text-slate-500">{{ rows_type|length }} loại</div>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-sm text-slate-700">
-          <thead class="bg-slate-50 text-slate-500 border-b">
-            <tr>
-              <th class="px-4 py-2 text-left font-semibold">Loại hồ sơ</th>
-              <th class="px-4 py-2 text-right font-semibold">Tổng SL</th>
-              <th class="px-4 py-2 text-right font-semibold">Tổng tiền</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100">
-          {% for r in rows_type %}
-            <tr class="hover:bg-slate-50 transition">
-              <td class="px-4 py-3 whitespace-nowrap">{{ r.dossier_label }}</td>
-              <td class="px-4 py-3 text-right whitespace-nowrap">{{ r.total_qty or '' }}</td>
-              <td class="px-4 py-3 text-right whitespace-nowrap" data-amount="{{ r.total_amount or 0 }}"></td>
-            </tr>
-          {% endfor %}
-          {% if rows_type|length == 0 %}
-            <tr>
-              <td colspan="3" class="px-4 py-10 text-center text-slate-400">
-                {% if project %}Chưa có dữ liệu.{% else %}Vui lòng chọn dự án.{% endif %}
-              </td>
-            </tr>
-          {% endif %}
-          </tbody>
-        </table>
-      </div>
-    </div>
   </div>
 {% endif %}
 
@@ -270,7 +295,7 @@
 
   function formatAmountCell(td) {
     const raw = td && td.getAttribute('data-amount');
-    if (!raw) return;
+    if (raw == null) return;
     const n = Number(raw);
     if (!Number.isFinite(n)) return;
     td.textContent = n.toLocaleString('vi-VN', { maximumFractionDigits: 0 });
