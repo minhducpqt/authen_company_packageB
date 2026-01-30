@@ -32,11 +32,8 @@ ADMIN_ONLY_PREFIXES = (
 )
 
 # ===== EXCEPTIONS: Non-admin vẫn được phép vào một số report export =====
-# (Bạn muốn staff download được file tổng hợp đó)
 REPORTS_NON_ADMIN_ALLOW_PREFIXES = (
-    # Export chi tiết mua hồ sơ
     "/reports/dossiers/paid/detail/export",
-    # Export tổng hợp theo khách / theo loại hồ sơ
     "/reports/dossiers/paid/summary/customer/export",
     "/reports/dossiers/paid/summary/types/export",
 )
@@ -92,7 +89,6 @@ async def _get_role(request) -> str:
 
 
 def _is_reports_exception_allowed_for_non_admin(path: str) -> bool:
-    # path ở đây nên là logical_path (đã normalize)
     return any(path.startswith(p) for p in REPORTS_NON_ADMIN_ALLOW_PREFIXES)
 
 
@@ -108,6 +104,11 @@ def _redirect_non_admin_home():
     return RedirectResponse(url="/transactions/dossiers", status_code=303)
 
 
+def _redirect_super_admin_home():
+    # ✅ SUPER_ADMIN landing page
+    return RedirectResponse(url="/account", status_code=303)
+
+
 # ===== Middleware =====
 
 async def rbac_guard_middleware(request, call_next):
@@ -119,7 +120,15 @@ async def rbac_guard_middleware(request, call_next):
 
     role = await _get_role(request)
 
-    # ✅ ADMIN: không giới hạn gì cả
+    # ✅ Nếu SUPER_ADMIN: sau login / landing -> đưa về /account
+    # (Áp dụng cho các path "home" hay gặp sau login)
+    if role == "SUPER_ADMIN":
+        if path in ("/", "/login") or path.startswith("/login/"):
+            return _redirect_super_admin_home()
+        # SUPER_ADMIN toàn quyền, không hạn chế
+        return await call_next(request)
+
+    # ✅ COMPANY_ADMIN: không giới hạn gì cả
     if role == "COMPANY_ADMIN":
         return await call_next(request)
 

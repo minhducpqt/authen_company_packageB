@@ -60,13 +60,17 @@
 
                 {% if c.is_active %}
                   <form action="/account/super/company/disable" method="post"
-                        onsubmit="return confirm('Tắt công ty {{ c.company_code }} ?');">
+                        class="js-confirm-form"
+                        data-confirm-title="Xác nhận"
+                        data-confirm-message="Tắt công ty {{ c.company_code }} ?">
                     <input type="hidden" name="company_code" value="{{ c.company_code }}">
                     <button class="btn-secondary" type="submit">Disable</button>
                   </form>
                 {% else %}
                   <form action="/account/super/company/enable" method="post"
-                        onsubmit="return confirm('Bật công ty {{ c.company_code }} ?');">
+                        class="js-confirm-form"
+                        data-confirm-title="Xác nhận"
+                        data-confirm-message="Bật công ty {{ c.company_code }} ?">
                     <input type="hidden" name="company_code" value="{{ c.company_code }}">
                     <button class="btn-primary" type="submit">Enable</button>
                   </form>
@@ -88,8 +92,9 @@
   <div class="mb-8">
     <h2 class="text-lg font-semibold text-slate-700 mb-3">Tài khoản công ty</h2>
 
-    <form action="/account/admin/user/create" method="post" class="flex gap-2 mb-4">
-      <input name="username" placeholder="username (a-z0-9_)" class="input" required>
+    <form id="createUserForm" action="/account/admin/user/create" method="post" class="flex flex-wrap gap-2 mb-1 items-end">
+      <input type="hidden" name="company_code" value="{{ profile.company_code or '' }}">
+      <input id="usernameInput" name="username" placeholder="username (a-z0-9_)" class="input" required>
       <input name="password" placeholder="password" type="password" class="input" required>
       <select name="role" class="input">
         <option value="STAFF">STAFF</option>
@@ -99,6 +104,12 @@
       </select>
       <button class="btn-primary" type="submit">Thêm tài khoản</button>
     </form>
+
+    {# ✅ Hint: chỉ nhập suffix, hệ thống tự prefix company_code #}
+    <div id="usernameHint" class="text-xs text-slate-500 mb-4">
+      Gợi ý: Hệ thống tự thêm tiền tố <b class="text-slate-700"><span id="ccPrefix">{{ profile.company_code or '' }}</span>.</b>
+      Ví dụ muốn tạo <b class="text-slate-700"><span id="ccExample">{{ profile.company_code or '' }}</span>.AnhNV</b> → bạn chỉ cần nhập <b class="text-slate-700">AnhNV</b>.
+    </div>
 
     {% if admin_users and admin_users|length > 0 %}
       <div class="overflow-x-auto border rounded">
@@ -116,7 +127,7 @@
             {% for u in admin_users %}
             <tr class="border-t">
               <td class="px-3 py-2">{{ u.id }}</td>
-              <td class="px-3 py-2 font-mono">{{ u.username }}</td>
+              <td class="px-3 py-2 font-mono js-username">{{ u.username }}</td>
               <td class="px-3 py-2">{{ u.role }}</td>
               <td class="px-3 py-2">
                 {% if u.is_active %}<span class="text-green-600">Active</span>
@@ -124,25 +135,29 @@
               </td>
               <td class="px-3 py-2">
                 {% if u.is_active %}
-                  <form action="/account/admin/user/toggle" method="post" class="inline"
-                        onsubmit="return confirm('Disable user {{ u.username }} ?');">
+                  <form action="/account/admin/user/toggle" method="post" class="inline js-confirm-form"
+                        data-confirm-title="Xác nhận"
+                        data-confirm-message="Disable user {{ u.username }} ?">
                     <input type="hidden" name="user_id" value="{{ u.id }}">
                     <input type="hidden" name="action" value="disable">
                     <button class="btn-secondary" type="submit">Disable</button>
                   </form>
                 {% else %}
-                  <form action="/account/admin/user/toggle" method="post" class="inline"
-                        onsubmit="return confirm('Enable user {{ u.username }} ?');">
+                  <form action="/account/admin/user/toggle" method="post" class="inline js-confirm-form"
+                        data-confirm-title="Xác nhận"
+                        data-confirm-message="Enable user {{ u.username }} ?">
                     <input type="hidden" name="user_id" value="{{ u.id }}">
                     <input type="hidden" name="action" value="enable">
                     <button class="btn-primary" type="submit">Enable</button>
                   </form>
                 {% endif %}
 
-                <form action="/account/admin/user/set-password" method="post" class="inline ml-2"
-                      onsubmit="return confirm('Đặt lại mật khẩu cho {{ u.username }} ?');">
+                {# ✅ Set password: bỏ input inline, dùng popup; endpoint giữ nguyên #}
+                <form action="/account/admin/user/set-password" method="post"
+                      class="inline ml-2 js-setpass-form"
+                      data-username="{{ u.username }}">
                   <input type="hidden" name="user_id" value="{{ u.id }}">
-                  <input type="password" name="new_password" placeholder="new password" class="input" required>
+                  <input type="hidden" name="new_password" value="">
                   <button class="btn-primary" type="submit">Set password</button>
                 </form>
               </td>
@@ -156,5 +171,319 @@
     {% endif %}
   </div>
 {% endif %}
+
+{# =========================
+   CUSTOM MODAL (replaces browser confirm/alert + set password popup)
+   ========================= #}
+<style>
+  #appModal{ position:fixed; inset:0; z-index:60; display:none; }
+  #appModal.show{ display:block; }
+  #appModal .m-backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.50); }
+  #appModal .m-card{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:min(560px, calc(100vw - 32px));
+    background:#fff; border-radius:14px; box-shadow:0 30px 80px rgba(2,6,23,.35);
+    overflow:hidden; border:1px solid rgba(15,23,42,.12);
+  }
+  #appModal .m-head{ padding:14px 16px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(15,23,42,.08); }
+  #appModal .m-title{ font-weight:700; color:#0f172a; display:flex; align-items:center; gap:10px; }
+  #appModal .m-close{ width:36px; height:36px; border-radius:999px; display:flex; align-items:center; justify-content:center; cursor:pointer; background:transparent; border:0; }
+  #appModal .m-close:hover{ background:rgba(15,23,42,.06); }
+  #appModal .m-body{ padding:14px 16px; color:#0f172a; }
+  #appModal .m-desc{ color:rgba(71,85,105,.92); font-size:14px; line-height:1.45; white-space:pre-line; }
+  #appModal .m-foot{ padding:12px 16px; display:flex; justify-content:flex-end; gap:10px; border-top:1px solid rgba(15,23,42,.08); background:#f8fafc; }
+  #appModal .m-btn{ padding:9px 14px; border-radius:10px; font-weight:600; font-size:14px; border:1px solid rgba(15,23,42,.16); background:#fff; }
+  #appModal .m-btn:hover{ background:#f1f5f9; }
+  #appModal .m-btn.primary{ background:#4f46e5; border-color:#4f46e5; color:#fff; }
+  #appModal .m-btn.primary:hover{ filter:brightness(.95); }
+  #appModal .m-btn:disabled{ opacity:.55; cursor:not-allowed; }
+  #appModal .m-ico{ width:30px; height:30px; border-radius:10px; display:flex; align-items:center; justify-content:center; }
+  #appModal .m-ico.info{ background:rgba(79,70,229,.12); color:#4f46e5; }
+  #appModal .m-ico.warn{ background:rgba(245,158,11,.16); color:#b45309; }
+  #appModal .m-ico.bad{ background:rgba(239,68,68,.14); color:#b91c1c; }
+
+  .m-field{ margin-top:10px; }
+  .m-label{ display:block; font-size:12px; color:rgba(71,85,105,.92); margin-bottom:6px; }
+  .m-input{
+    width:100%; border:1px solid rgba(15,23,42,.16); border-radius:10px;
+    padding:10px 12px; font-size:14px; outline:none;
+  }
+  .m-input:focus{ border-color:rgba(79,70,229,.65); box-shadow:0 0 0 3px rgba(79,70,229,.12); }
+  .m-hint{ margin-top:8px; font-size:12px; color:rgba(71,85,105,.92); }
+  .m-hint.ok{ color:#16a34a; }
+  .m-hint.bad{ color:#b91c1c; }
+</style>
+
+<div id="appModal" aria-hidden="true">
+  <div class="m-backdrop" id="appModalBackdrop"></div>
+  <div class="m-card" role="dialog" aria-modal="true" aria-labelledby="appModalTitle">
+    <div class="m-head">
+      <div class="m-title" id="appModalTitle">
+        <span class="m-ico info" id="appModalIcon"><i class="ri-information-line"></i></span>
+        <span id="appModalTitleText">Thông báo</span>
+      </div>
+      <button class="m-close" id="appModalClose" aria-label="Đóng">
+        <i class="ri-close-line text-xl"></i>
+      </button>
+    </div>
+    <div class="m-body" id="appModalBody">
+      <div class="m-desc" id="appModalDesc">—</div>
+    </div>
+    <div class="m-foot" id="appModalFooter">
+      <button class="m-btn" id="appModalCancel" style="display:none">Hủy</button>
+      <button class="m-btn primary" id="appModalOk">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const appModal = document.getElementById("appModal");
+  const appModalBackdrop = document.getElementById("appModalBackdrop");
+  const appModalClose = document.getElementById("appModalClose");
+  const appModalOk = document.getElementById("appModalOk");
+  const appModalCancel = document.getElementById("appModalCancel");
+  const appModalDesc = document.getElementById("appModalDesc");
+  const appModalBody = document.getElementById("appModalBody");
+  const appModalTitleText = document.getElementById("appModalTitleText");
+  const appModalIcon = document.getElementById("appModalIcon");
+
+  let __modalResolve = null;
+  let __modalMode = "alert"; // alert | confirm | setpass
+
+  function setModalVariant(variant){
+    appModalIcon.classList.remove("info","warn","bad");
+    const v = variant || "info";
+    appModalIcon.classList.add(v);
+    const ico = (v==="warn") ? "ri-error-warning-line" : (v==="bad" ? "ri-close-circle-line" : "ri-information-line");
+    appModalIcon.innerHTML = `<i class="${ico}"></i>`;
+  }
+
+  function openModal(){
+    appModal.classList.add("show");
+    appModal.setAttribute("aria-hidden","false");
+  }
+  function closeModal(result){
+    appModal.classList.remove("show");
+    appModal.setAttribute("aria-hidden","true");
+    const r = __modalResolve;
+    __modalResolve = null;
+    __modalMode = "alert";
+    if (typeof r === "function") r(result);
+  }
+
+  function _clearBodyExtras(){
+    const nodes = Array.from(appModalBody.children);
+    nodes.forEach((n, idx)=>{ if (idx>0) n.remove(); });
+  }
+
+  function showAlert({title, message, variant, okText}){
+    __modalMode = "alert";
+    appModalTitleText.textContent = title || "Thông báo";
+    setModalVariant(variant || "info");
+    _clearBodyExtras();
+    appModalDesc.textContent = message || "";
+    appModalDesc.style.display = "";
+
+    appModalCancel.style.display = "none";
+    appModalOk.textContent = okText || "OK";
+    appModalOk.disabled = false;
+
+    openModal();
+    setTimeout(()=>{ try{ appModalOk.focus(); }catch(e){} }, 0);
+    return new Promise((resolve)=>{ __modalResolve = resolve; });
+  }
+
+  function showConfirm({title, message, variant, okText, cancelText}){
+    __modalMode = "confirm";
+    appModalTitleText.textContent = title || "Xác nhận";
+    setModalVariant(variant || "warn");
+    _clearBodyExtras();
+    appModalDesc.textContent = message || "";
+    appModalDesc.style.display = "";
+
+    appModalCancel.style.display = "";
+    appModalCancel.textContent = cancelText || "Hủy";
+    appModalOk.textContent = okText || "Xác nhận";
+    appModalOk.disabled = false;
+
+    openModal();
+    setTimeout(()=>{ try{ appModalOk.focus(); }catch(e){} }, 0);
+    return new Promise((resolve)=>{ __modalResolve = resolve; });
+  }
+
+  function showSetPassword({username}){
+    __modalMode = "setpass";
+    appModalTitleText.textContent = "Đặt lại mật khẩu";
+    setModalVariant("info");
+    _clearBodyExtras();
+
+    appModalDesc.textContent = username ? `Tài khoản: ${username}` : `Nhập mật khẩu mới`;
+    appModalDesc.style.display = "";
+
+    const wrap = document.createElement("div");
+    wrap.innerHTML = `
+      <div class="m-field">
+        <label class="m-label">Mật khẩu mới</label>
+        <input id="spPass1" type="password" class="m-input" placeholder="Nhập mật khẩu mới" autocomplete="new-password">
+      </div>
+      <div class="m-field">
+        <label class="m-label">Xác nhận mật khẩu mới</label>
+        <input id="spPass2" type="password" class="m-input" placeholder="Nhập lại mật khẩu mới" autocomplete="new-password">
+      </div>
+      <div id="spHint" class="m-hint">Vui lòng nhập đủ 2 ô và trùng khớp.</div>
+    `;
+    appModalBody.appendChild(wrap);
+
+    appModalCancel.style.display = "";
+    appModalCancel.textContent = "Hủy";
+    appModalOk.textContent = "Xác nhận";
+    appModalOk.disabled = true;
+
+    openModal();
+
+    const p1 = document.getElementById("spPass1");
+    const p2 = document.getElementById("spPass2");
+    const hint = document.getElementById("spHint");
+
+    function validate(){
+      const a = (p1.value || "");
+      const b = (p2.value || "");
+      const ok = (a.length > 0) && (b.length > 0) && (a === b);
+      appModalOk.disabled = !ok;
+
+      if (!a && !b){
+        hint.textContent = "Vui lòng nhập đủ 2 ô và trùng khớp.";
+        hint.classList.remove("ok","bad");
+      } else if (a && b && a !== b){
+        hint.textContent = "Mật khẩu xác nhận chưa khớp.";
+        hint.classList.remove("ok"); hint.classList.add("bad");
+      } else if (a && !b){
+        hint.textContent = "Vui lòng nhập ô xác nhận mật khẩu.";
+        hint.classList.remove("ok","bad");
+      } else if (!a && b){
+        hint.textContent = "Vui lòng nhập mật khẩu mới.";
+        hint.classList.remove("ok","bad");
+      } else if (ok){
+        hint.textContent = "Hợp lệ ✓";
+        hint.classList.remove("bad"); hint.classList.add("ok");
+      }
+      return ok;
+    }
+
+    p1.addEventListener("input", validate);
+    p2.addEventListener("input", validate);
+
+    setTimeout(()=>{ try{ p1.focus(); }catch(e){} }, 0);
+    return new Promise((resolve)=>{ __modalResolve = resolve; });
+  }
+
+  appModalOk.onclick = ()=>{
+    if (__modalMode === "setpass"){
+      const p1 = document.getElementById("spPass1");
+      const p2 = document.getElementById("spPass2");
+      const a = (p1?.value || "");
+      const b = (p2?.value || "");
+      if (a && b && a === b){
+        closeModal({ok:true, password:a});
+      }
+      return;
+    }
+    closeModal(true);
+  };
+  appModalCancel.onclick = ()=> closeModal(false);
+  appModalBackdrop.onclick = ()=> closeModal(false);
+  appModalClose.onclick = ()=> closeModal(false);
+
+  document.addEventListener("keydown", (e)=>{
+    if (!appModal.classList.contains("show")) return;
+    if (e.key === "Escape"){ e.preventDefault(); closeModal(false); }
+    if (e.key === "Enter"){
+      if (!appModalOk.disabled){
+        e.preventDefault();
+        appModalOk.click();
+      }
+    }
+  });
+
+  // Confirm forms (super/company admin actions)
+  document.querySelectorAll("form.js-confirm-form").forEach(form=>{
+    form.addEventListener("submit", async (e)=>{
+      e.preventDefault();
+      const title = form.dataset.confirmTitle || "Xác nhận";
+      const msg = form.dataset.confirmMessage || "Bạn có chắc chắn?";
+      const ok = await showConfirm({title, message: msg, variant:"warn", okText:"Xác nhận", cancelText:"Hủy"});
+      if (ok) form.submit();
+    });
+  });
+
+  // Set password popup
+  document.querySelectorAll("form.js-setpass-form").forEach(form=>{
+    form.addEventListener("submit", async (e)=>{
+      e.preventDefault();
+      const username = form.dataset.username || "";
+      const rs = await showSetPassword({username});
+      if (rs && rs.ok && rs.password){
+        const hidden = form.querySelector('input[name="new_password"]');
+        if (hidden) hidden.value = rs.password;
+        form.submit();
+      }
+    });
+  });
+
+  // Username hint + auto-strip prefix for COMPANY_ADMIN create form
+  function detectCompanyCode(){
+    let cc = ("{{ profile.company_code or '' }}").trim();
+    if (cc) return cc;
+    const cells = document.querySelectorAll(".js-username");
+    for (const c of cells){
+      const v = (c.textContent || "").trim();
+      const idx = v.indexOf(".");
+      if (idx > 0) return v.slice(0, idx);
+    }
+    return "";
+  }
+
+  const ccDetected = detectCompanyCode();
+  const ccPrefixEl = document.getElementById("ccPrefix");
+  const ccExampleEl = document.getElementById("ccExample");
+  if (ccDetected){
+    if (ccPrefixEl) ccPrefixEl.textContent = ccDetected;
+    if (ccExampleEl) ccExampleEl.textContent = ccDetected;
+  }
+
+  const createForm = document.getElementById("createUserForm");
+  const usernameInput = document.getElementById("usernameInput");
+  if (createForm && usernameInput){
+    createForm.addEventListener("submit", async (e)=>{
+      const cc = detectCompanyCode();
+      const v0 = (usernameInput.value || "").trim();
+      if (!v0) return;
+
+      if (cc){
+        const lower = v0.toLowerCase();
+        const pref = (cc + ".").toLowerCase();
+        if (lower.startsWith(pref)){
+          usernameInput.value = v0.slice(cc.length + 1);
+          return;
+        }
+      }
+
+      if (v0.includes(".")){
+        await showAlert({
+          title: "Gợi ý nhập username",
+          message: cc
+            ? `Bạn chỉ cần nhập phần sau dấu chấm.\nHệ thống sẽ tự thêm tiền tố: ${cc}.\nVí dụ: muốn tạo ${cc}.AnhNV → chỉ nhập AnhNV.`
+            : `Bạn chỉ cần nhập phần sau dấu chấm.\nHệ thống sẽ tự thêm tiền tố company_code.\nVí dụ: muốn tạo {company}.AnhNV → chỉ nhập AnhNV.`,
+          variant: "info",
+          okText: "Đã hiểu"
+        });
+      }
+    });
+  }
+
+  window.__appAlert = showAlert;
+})();
+</script>
 
 {% endblock %}
