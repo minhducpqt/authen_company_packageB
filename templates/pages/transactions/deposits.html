@@ -1,5 +1,15 @@
 {% extends "base.html" %}
 {% block content %}
+
+{# ✅ #1: Title trang (thêm, không ảnh hưởng logic) #}
+<div class="mb-4">
+  <h1 class="text-2xl font-semibold text-slate-900 flex items-center gap-2">
+    <i class="ri-bank-card-line text-indigo-600"></i>
+    Giao dịch đặt cọc
+  </h1>
+  <div class="text-sm text-slate-500 mt-1">Tra cứu theo dự án/khách hàng và xem chi tiết đơn đặt cọc.</div>
+</div>
+
 <div class="bg-white rounded-xl border border-slate-200" id="pageRoot" data-company="{{ company_code or '' }}">
   <!-- ✅ FILTER BAR: layout giống 2.1 -->
   <div class="p-4">
@@ -135,6 +145,57 @@
   </div>
 </div>
 
+{# ✅ #2: Custom popup (không dùng alert/confirm mặc định) #}
+<style>
+  /* Minimal, scoped modal style - không đụng phần khác */
+  #appModal{ position:fixed; inset:0; z-index:60; display:none; }
+  #appModal.show{ display:block; }
+  #appModal .m-backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.50); }
+  #appModal .m-card{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:min(520px, calc(100vw - 32px));
+    background:#fff; border-radius:14px; box-shadow:0 30px 80px rgba(2,6,23,.35);
+    overflow:hidden; border:1px solid rgba(15,23,42,.12);
+  }
+  #appModal .m-head{ padding:14px 16px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(15,23,42,.08); }
+  #appModal .m-title{ font-weight:700; color:#0f172a; display:flex; align-items:center; gap:8px; }
+  #appModal .m-close{ width:36px; height:36px; border-radius:999px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  #appModal .m-close:hover{ background:rgba(15,23,42,.06); }
+  #appModal .m-body{ padding:14px 16px; color:#0f172a; }
+  #appModal .m-desc{ color:rgba(71,85,105,.9); font-size:14px; line-height:1.4; white-space:pre-line; }
+  #appModal .m-foot{ padding:12px 16px; display:flex; justify-content:flex-end; gap:10px; border-top:1px solid rgba(15,23,42,.08); background:#f8fafc; }
+  #appModal .m-btn{ padding:9px 14px; border-radius:10px; font-weight:600; font-size:14px; border:1px solid rgba(15,23,42,.16); background:#fff; }
+  #appModal .m-btn:hover{ background:#f1f5f9; }
+  #appModal .m-btn.primary{ background:#4f46e5; border-color:#4f46e5; color:#fff; }
+  #appModal .m-btn.primary:hover{ filter:brightness(.95); }
+  #appModal .m-ico{ width:28px; height:28px; border-radius:10px; display:flex; align-items:center; justify-content:center; }
+  #appModal .m-ico.info{ background:rgba(79,70,229,.12); color:#4f46e5; }
+  #appModal .m-ico.warn{ background:rgba(245,158,11,.16); color:#b45309; }
+  #appModal .m-ico.bad{ background:rgba(239,68,68,.14); color:#b91c1c; }
+</style>
+
+<div id="appModal" aria-hidden="true">
+  <div class="m-backdrop" id="appModalBackdrop"></div>
+  <div class="m-card" role="dialog" aria-modal="true" aria-labelledby="appModalTitle">
+    <div class="m-head">
+      <div class="m-title" id="appModalTitle">
+        <span class="m-ico info" id="appModalIcon"><i class="ri-information-line"></i></span>
+        <span id="appModalTitleText">Thông báo</span>
+      </div>
+      <button class="m-close" id="appModalClose" aria-label="Đóng">
+        <i class="ri-close-line text-xl"></i>
+      </button>
+    </div>
+    <div class="m-body">
+      <div class="m-desc" id="appModalDesc">—</div>
+    </div>
+    <div class="m-foot" id="appModalFooter">
+      <button class="m-btn" id="appModalCancel" style="display:none">Đóng</button>
+      <button class="m-btn primary" id="appModalOk">OK</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   const DATA_URL = "/transactions/deposits/data";
@@ -179,6 +240,78 @@
   const btnDocClose = document.getElementById("btnDocClose");
   const btnDocDownload = document.getElementById("btnDocDownload");
   const docFrame = document.getElementById("docFrame");
+
+  // ===== CUSTOM MODAL (replaces alert/confirm) =====
+  const appModal = document.getElementById("appModal");
+  const appModalBackdrop = document.getElementById("appModalBackdrop");
+  const appModalClose = document.getElementById("appModalClose");
+  const appModalOk = document.getElementById("appModalOk");
+  const appModalCancel = document.getElementById("appModalCancel");
+  const appModalDesc = document.getElementById("appModalDesc");
+  const appModalTitleText = document.getElementById("appModalTitleText");
+  const appModalIcon = document.getElementById("appModalIcon");
+
+  let __modalResolve = null;
+
+  function setModalVariant(variant){
+    // variant: info | warn | bad
+    appModalIcon.classList.remove("info","warn","bad");
+    const v = variant || "info";
+    appModalIcon.classList.add(v);
+    const ico = (v==="warn") ? "ri-error-warning-line" : (v==="bad" ? "ri-close-circle-line" : "ri-information-line");
+    appModalIcon.innerHTML = `<i class="${ico}"></i>`;
+  }
+
+  function showModal({title, message, variant, okText, cancelText, showCancel}){
+    appModalTitleText.textContent = title || "Thông báo";
+    appModalDesc.textContent = message || "";
+    setModalVariant(variant || "info");
+
+    appModalOk.textContent = okText || "OK";
+    if (showCancel){
+      appModalCancel.style.display = "";
+      appModalCancel.textContent = cancelText || "Đóng";
+    } else {
+      appModalCancel.style.display = "none";
+    }
+
+    appModal.classList.add("show");
+    appModal.setAttribute("aria-hidden","false");
+
+    // focus for accessibility
+    setTimeout(()=>{ try{ appModalOk.focus(); }catch(e){} }, 0);
+
+    return new Promise((resolve)=>{
+      __modalResolve = resolve;
+    });
+  }
+  function hideModal(result){
+    appModal.classList.remove("show");
+    appModal.setAttribute("aria-hidden","true");
+    const r = __modalResolve;
+    __modalResolve = null;
+    if (typeof r === "function") r(!!result);
+  }
+
+  function bindModalEvents(){
+    if (!appModal) return;
+
+    appModalOk.onclick = ()=> hideModal(true);
+    appModalCancel.onclick = ()=> hideModal(false);
+    appModalBackdrop.onclick = ()=> hideModal(false);
+    appModalClose.onclick = ()=> hideModal(false);
+
+    document.addEventListener("keydown", (e)=>{
+      if (!appModal.classList.contains("show")) return;
+      if (e.key === "Escape"){ e.preventDefault(); hideModal(false); }
+      if (e.key === "Enter"){
+        // tránh Enter bấm lung tung ở trang: chỉ khi modal đang mở
+        e.preventDefault();
+        hideModal(true);
+      }
+    });
+  }
+  bindModalEvents();
 
   // init server defaults
   elSearch.value = "{{ init_q or '' }}";
@@ -311,7 +444,14 @@
   // ===== DOC MODAL =====
   function openDoc(cccd, project_code){
     if (!project_code){
-      alert("Vui lòng chọn dự án trước khi xem đơn.");
+      // ✅ replace alert with custom modal
+      showModal({
+        title: "Thiếu thông tin",
+        message: "Vui lòng chọn dự án trước khi xem đơn.",
+        variant: "warn",
+        okText: "Đã hiểu",
+        showCancel: false
+      });
       return;
     }
     const url = DOC_URL(COMPANY, project_code, cccd);
@@ -328,12 +468,19 @@
   function closeDoc(){ docModal.classList.add("hidden"); docFrame.src = "about:blank"; }
   btnDocClose.onclick = closeDoc;
   docBackdrop.onclick = closeDoc;
-  btnDocDownload.onclick = () => {
+  btnDocDownload.onclick = async () => {
     try {
       docFrame.contentWindow.focus();
       docFrame.contentWindow.print();
     } catch (e) {
-      alert("Không thể mở hộp thoại in. Vui lòng kiểm tra popup blocker.");
+      // ✅ replace alert with custom modal
+      await showModal({
+        title: "Không thể in",
+        message: "Không thể mở hộp thoại in. Vui lòng kiểm tra popup blocker.",
+        variant: "bad",
+        okText: "Đóng",
+        showCancel: false
+      });
     }
   };
 
