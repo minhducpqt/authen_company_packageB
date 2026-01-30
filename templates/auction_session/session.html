@@ -598,6 +598,57 @@
       .cItem .k{font-size:12px;color:var(--muted);font-weight:1000;display:flex;gap:8px;align-items:center;}
       .cItem .v{margin-top:6px;font-size:14px;font-weight:1200;color:var(--ink);line-height:1.2;}
       .cItem .v.mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;}
+      /* ===== Confirm dialog: EXTREME highlight (đậm béo, dễ đọc) ===== */
+      .cItem .v.big{
+        font-size:18px;
+        font-weight:900;                 /* dùng weight THẬT */
+        letter-spacing:.25px;
+        line-height:1.15;
+
+        /* 👇 tạo cảm giác “béo chữ” */
+        text-shadow:
+          0 0 0.5px currentColor,
+          0 1px 0 rgba(255,255,255,.9),
+          0 2px 4px rgba(2,6,23,.12);
+
+        background:linear-gradient(
+          180deg,
+          rgba(15,118,110,.08),
+          rgba(15,118,110,.03)
+        );
+        padding:4px 8px;
+        border-radius:10px;
+        display:inline-block;
+      }
+
+      /* Giá tiền: đậm hơn nữa */
+      .cItem .v.big.money{
+        font-size:20px;
+        font-weight:900;
+        letter-spacing:.3px;
+        text-shadow:
+          0 0 0.8px currentColor,
+          0 1px 0 rgba(255,255,255,.95),
+          0 3px 6px rgba(2,6,23,.18);
+      }
+
+      /* Giá trị chính (mã lô / tên khách / số lượng) */
+      .cItem .v.big.em{
+        color:#075985;
+        background:linear-gradient(
+          180deg,
+          rgba(14,165,233,.16),
+          rgba(14,165,233,.06)
+        );
+      }
+
+      /* Mobile */
+      @media (max-width: 520px){
+        .cItem .v.big{font-size:17px;}
+        .cItem .v.big.money{font-size:19px;}
+      }
+
+
       .cWarn{
       margin-top:10px;
       border:1px solid rgba(245,158,11,.25);
@@ -2555,117 +2606,131 @@ Modal: Print One Bid Sheet (choose one customer)
   }
 
   function buildConfirmHtml(mode, payload){
-  const lotCode = getCurrentLotCode() || '—';
-  const startPrice = getStartPriceVnd(currentLot);
-  const step = getBidStepVnd(currentLot);
+    const lotCode = getCurrentLotCode() || '—';
+    const startPrice = getStartPriceVnd(currentLot);
+    const step = getBidStepVnd(currentLot);
 
-  if(mode === 'WINNER'){
-  const winner = findParticipantById(payload.winner_customer_id);
-  const stt = winner ? fmtStt(winner.stt) : '';
-  const who = winner ? `${stt ? (stt + " — ") : ""}${winner.name}` : (`#${payload.winner_customer_id}`);
+    if(mode === 'WINNER'){
+      const winner = findParticipantById(payload.winner_customer_id);
+      const stt = winner ? fmtStt(winner.stt) : '';
+      const who = winner ? `${stt ? (stt + " — ") : ""}${winner.name}` : (`#${payload.winner_customer_id}`);
 
-  let priceText = '';
-  let methodPill = '';
-  if(payload.win_method === 'LOTTERY'){
-  priceText = fmtMoney(startPrice);
-  methodPill = `<span class="pill warn"><i class="ri-shuffle-line"></i> LOTTERY</span>`;
-  } else if(payload.win_method === 'MANUAL'){
-  priceText = fmtMoney(payload.highest_price_vnd);
-  methodPill = `<span class="pill warn"><i class="ri-hand-line"></i> MANUAL</span>`;
-  } else {
-  priceText = fmtMoney(payload.highest_price_vnd);
-  methodPill = `<span class="pill ok"><i class="ri-trophy-line"></i> HIGHEST</span>`;
-  }
+      let priceText = '';
+      let methodPill = '';
+      if(payload.win_method === 'LOTTERY'){
+        priceText = fmtMoney(startPrice);
+        methodPill = `<span class="pill warn"><i class="ri-shuffle-line"></i> LOTTERY</span>`;
+      } else if(payload.win_method === 'MANUAL'){
+        priceText = fmtMoney(payload.highest_price_vnd);
+        methodPill = `<span class="pill warn"><i class="ri-hand-line"></i> MANUAL</span>`;
+      } else {
+        priceText = fmtMoney(payload.highest_price_vnd);
+        methodPill = `<span class="pill ok"><i class="ri-trophy-line"></i> HIGHEST</span>`;
+      }
 
-  return `
-  <div class="cCard">
-    <div class="cTop">
-      <div class="cTitle"><i class="ri-checkbox-circle-line"></i> Xác nhận chốt <b>WON</b></div>
-      ${methodPill}
-    </div>
-    <div class="cGrid">
-      <div class="cItem">
-        <div class="k"><i class="ri-barcode-line"></i> Lô</div>
-        <div class="v mono">${escapeHtml(lotCode)}</div>
-      </div>
-      <div class="cItem">
-        <div class="k"><i class="ri-user-3-line"></i> Khách trúng</div>
-        <div class="v">${escapeHtml(who)}</div>
-        <div class="muted" style="margin-top:6px;">
-          ${winner ? `CCCD: <span class="mono">${escapeHtml(winner.cccd)}</span> • SĐT: <span class="mono">${escapeHtml(winner.phone)}</span>` : ``}
+      return `
+        <div class="cCard">
+          <div class="cTop">
+            <div class="cTitle"><i class="ri-checkbox-circle-line"></i> Xác nhận chốt <b>WON</b></div>
+            ${methodPill}
+          </div>
+
+          <div class="cGrid">
+            <div class="cItem">
+              <div class="k"><i class="ri-barcode-line"></i> Lô</div>
+              <div class="v mono big em">${escapeHtml(lotCode)}</div>
+            </div>
+
+            <div class="cItem">
+              <div class="k"><i class="ri-user-3-line"></i> Khách trúng</div>
+              <div class="v big em">${escapeHtml(who)}</div>
+              <div class="muted" style="margin-top:6px;">
+                ${winner ? `CCCD: <span class="mono">${escapeHtml(winner.cccd)}</span> • SĐT: <span class="mono">${escapeHtml(winner.phone)}</span>` : ``}
+              </div>
+            </div>
+
+            <div class="cItem">
+              <div class="k"><i class="ri-coins-line"></i> Giá khởi điểm</div>
+              <div class="v">${fmtMoney(startPrice)} VND</div>
+            </div>
+
+            <div class="cItem">
+              <div class="k"><i class="ri-money-dollar-circle-line"></i> Giá trúng</div>
+              <div class="v big money">${escapeHtml(priceText)} VND</div>
+              <div class="muted" style="margin-top:6px;">Bước giá: <b>${step ? fmtMoney(step) : '—'}</b></div>
+            </div>
+          </div>
+
+          ${payload.note ? `<div class="cWarn"><i class="ri-sticky-note-line"></i><div>Ghi chú: ${escapeHtml(payload.note)}</div></div>` : ``}
         </div>
-      </div>
-      <div class="cItem">
-        <div class="k"><i class="ri-coins-line"></i> Giá khởi điểm</div>
-        <div class="v">${fmtMoney(startPrice)} VND</div>
-      </div>
-      <div class="cItem">
-        <div class="k"><i class="ri-money-dollar-circle-line"></i> Giá trúng</div>
-        <div class="v">${escapeHtml(priceText)} VND</div>
-        <div class="muted" style="margin-top:6px;">Bước giá: <b>${step ? fmtMoney(step) : '—'}</b></div>
-      </div>
-    </div>
-    ${payload.note ? `<div class="cWarn"><i class="ri-sticky-note-line"></i><div>Ghi chú: ${escapeHtml(payload.note)}</div></div>` : ``}
-  </div>
-  `;
-  }
+      `;
+    }
 
-  if(mode === 'NEXT'){
-  const N = (Array.isArray(currentParticipants) ? currentParticipants.length : 0);
-  const M = (Array.isArray(dualNext) ? dualNext.length : 0);
-  return `
-  <div class="cCard">
-    <div class="cTop">
-      <div class="cTitle"><i class="ri-checkbox-circle-line"></i> Xác nhận chốt <b>VÀO VÒNG SAU</b></div>
-      <span class="pill warn"><i class="ri-arrow-right-up-line"></i> NEXT_ROUND</span>
-    </div>
-    <div class="cGrid">
-      <div class="cItem">
-        <div class="k"><i class="ri-barcode-line"></i> Lô</div>
-        <div class="v mono">${escapeHtml(lotCode)}</div>
-      </div>
-      <div class="cItem">
-        <div class="k"><i class="ri-user-3-line"></i> Người vào vòng sau</div>
-        <div class="v">${M}/${N} người</div>
-      </div>
-      <div class="cItem">
-        <div class="k"><i class="ri-flag-2-line"></i> Giá khởi điểm vòng</div>
-        <div class="v">${fmtMoney(startPrice)} VND</div>
-        <div class="muted" style="margin-top:6px;">Bước giá: <b>${step ? fmtMoney(step) : '—'}</b></div>
-      </div>
-      <div class="cItem">
-        <div class="k"><i class="ri-line-chart-line"></i> Giá cao nhất (base vòng sau)</div>
-        <div class="v">${fmtMoney(payload.highest_price_vnd)} VND</div>
-      </div>
-    </div>
-    ${payload.note ? `<div class="cWarn"><i class="ri-sticky-note-line"></i><div>Ghi chú: ${escapeHtml(payload.note)}</div></div>` : ``}
-  </div>
-  `;
-  }
+    if(mode === 'NEXT'){
+      const N = (Array.isArray(currentParticipants) ? currentParticipants.length : 0);
+      const M = (Array.isArray(dualNext) ? dualNext.length : 0);
 
-  if(mode === 'NO_VALID'){
-  return `
-  <div class="cCard">
-    <div class="cTop">
-      <div class="cTitle"><i class="ri-checkbox-circle-line"></i> Xác nhận chốt <b>NO VALID</b></div>
-      <span class="pill bad"><i class="ri-close-circle-line"></i> NO_VALID</span>
-    </div>
-    <div class="cGrid">
-      <div class="cItem">
-        <div class="k"><i class="ri-barcode-line"></i> Lô</div>
-        <div class="v mono">${escapeHtml(lotCode)}</div>
-      </div>
-      <div class="cItem">
-        <div class="k"><i class="ri-information-line"></i> Ý nghĩa</div>
-        <div class="v">Không có phiếu hợp lệ / không đủ điều kiện.</div>
-      </div>
-    </div>
-    ${payload.note ? `<div class="cWarn"><i class="ri-sticky-note-line"></i><div>Ghi chú: ${escapeHtml(payload.note)}</div></div>` : ``}
-  </div>
-  `;
-  }
+      return `
+        <div class="cCard">
+          <div class="cTop">
+            <div class="cTitle"><i class="ri-checkbox-circle-line"></i> Xác nhận chốt <b>VÀO VÒNG SAU</b></div>
+            <span class="pill warn"><i class="ri-arrow-right-up-line"></i> NEXT_ROUND</span>
+          </div>
 
-  return `<div class="cCard"><div class="cTitle"><i class="ri-information-line"></i> Xác nhận thực hiện?</div></div>`;
+          <div class="cGrid">
+            <div class="cItem">
+              <div class="k"><i class="ri-barcode-line"></i> Lô</div>
+              <div class="v mono big em">${escapeHtml(lotCode)}</div>
+            </div>
+
+            <div class="cItem">
+              <div class="k"><i class="ri-user-3-line"></i> Người vào vòng sau</div>
+              <div class="v big em">${M}/${N} người</div>
+            </div>
+
+            <div class="cItem">
+              <div class="k"><i class="ri-flag-2-line"></i> Giá khởi điểm vòng</div>
+              <div class="v">${fmtMoney(startPrice)} VND</div>
+              <div class="muted" style="margin-top:6px;">Bước giá: <b>${step ? fmtMoney(step) : '—'}</b></div>
+            </div>
+
+            <div class="cItem">
+              <div class="k"><i class="ri-line-chart-line"></i> Giá cao nhất (base vòng sau)</div>
+              <div class="v big money">${fmtMoney(payload.highest_price_vnd)} VND</div>
+            </div>
+          </div>
+
+          ${payload.note ? `<div class="cWarn"><i class="ri-sticky-note-line"></i><div>Ghi chú: ${escapeHtml(payload.note)}</div></div>` : ``}
+        </div>
+      `;
+    }
+
+    if(mode === 'NO_VALID'){
+      return `
+        <div class="cCard">
+          <div class="cTop">
+            <div class="cTitle"><i class="ri-checkbox-circle-line"></i> Xác nhận chốt <b>NO VALID</b></div>
+            <span class="pill bad"><i class="ri-close-circle-line"></i> NO_VALID</span>
+          </div>
+
+          <div class="cGrid">
+            <div class="cItem">
+              <div class="k"><i class="ri-barcode-line"></i> Lô</div>
+              <div class="v mono big em">${escapeHtml(lotCode)}</div>
+            </div>
+
+            <div class="cItem">
+              <div class="k"><i class="ri-information-line"></i> Ý nghĩa</div>
+              <div class="v">Không có phiếu hợp lệ / không đủ điều kiện.</div>
+            </div>
+          </div>
+
+          ${payload.note ? `<div class="cWarn"><i class="ri-sticky-note-line"></i><div>Ghi chú: ${escapeHtml(payload.note)}</div></div>` : ``}
+        </div>
+      `;
+    }
+
+    return `<div class="cCard"><div class="cTitle"><i class="ri-information-line"></i> Xác nhận thực hiện?</div></div>`;
   }
 
   async function resetPending(){
