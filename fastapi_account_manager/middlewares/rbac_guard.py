@@ -31,6 +31,16 @@ ADMIN_ONLY_PREFIXES = (
     "/auction",
 )
 
+# ===== EXCEPTIONS: Non-admin vẫn được phép vào một số report export =====
+# (Bạn muốn staff download được file tổng hợp đó)
+REPORTS_NON_ADMIN_ALLOW_PREFIXES = (
+    # Export chi tiết mua hồ sơ
+    "/reports/dossiers/paid/detail/export",
+    # Export tổng hợp theo khách / theo loại hồ sơ
+    "/reports/dossiers/paid/summary/customer/export",
+    "/reports/dossiers/paid/summary/types/export",
+)
+
 # ===== Helpers =====
 
 def _is_api_like(path: str) -> bool:
@@ -81,7 +91,15 @@ async def _get_role(request) -> str:
         return "VIEWER"
 
 
+def _is_reports_exception_allowed_for_non_admin(path: str) -> bool:
+    # path ở đây nên là logical_path (đã normalize)
+    return any(path.startswith(p) for p in REPORTS_NON_ADMIN_ALLOW_PREFIXES)
+
+
 def _is_admin_only(path: str) -> bool:
+    # ✅ ngoại lệ: cho non-admin đi vào đúng các report export cần thiết
+    if _is_reports_exception_allowed_for_non_admin(path):
+        return False
     return any(path.startswith(p) for p in ADMIN_ONLY_PREFIXES)
 
 
