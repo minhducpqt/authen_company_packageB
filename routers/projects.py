@@ -1167,3 +1167,65 @@ async def api_update_project_basic_info(
 
     except Exception as e:
         return JSONResponse({"ok": False, "error": "exception", "message": str(e)}, status_code=500)
+
+# đặt ở routers/projects.py (Service B)
+
+from typing import Optional, Dict, Any, List
+from fastapi import Request, Query
+from fastapi.responses import JSONResponse
+import httpx
+
+@router.get("/options/listing_projects", response_class=JSONResponse)
+async def listing_projects(
+    request: Request,
+    status: str = Query("ALL", description="ACTIVE|INACTIVE|ALL"),
+    q: Optional[str] = Query(None, description="search by code/name (optional)"),
+    size: int = Query(1000, ge=1, le=1000),
+):
+    token = get_access_token(request)
+    me = await fetch_me(token)
+    if not me:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    st = (status or "ALL").strip().upper()
+    if st not in ("ACTIVE", "INACTIVE", "ALL"):
+        st = "ALL"
+
+    params: Dict[str, Any] = {"page": 1, "size": size}
+    if st != "ALL":
+        params["status"] = st
+    if q:
+        params["q"] = q
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
+            r = await client.get(
+                EP_LIST,  # "/api/v1/projects"
+                params=params,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+    except Exception as e:
+        return JSONResponse({"error": "upstream_error", "msg": str(e)}, status_code=502)
+
+    if r.status_code == 401:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    if r.status_code >= 500:
+        return JSONResponse({"error": "upstream_5xx", "msg": r.text[:300]}, status_code=502)
+    if r.status_code != 200:
+        return JSONResponse({"error": "upstream", "status": r.status_code, "detail": r.text[:300]}, status_code=502)
+
+    js = r.json() or {}
+    items = js.get("data") or []
+    if not isinstance(items, list):
+        items = []
+
+    data: List[Dict[str, Any]] = []
+    for p in items:
+        pp = p or {}
+        code = (pp.get("project_code") or pp.get("code") or "").strip()
+        name = (pp.get("name") or "").strip()
+        if not code:
+            continue
+        data.append({"project_code": code, "name": name, "status": (pp.get("status") or "").strip()})
+
+    return JSONResponse({"data": data}, status_code=200)
