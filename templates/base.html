@@ -10,14 +10,18 @@
   <link rel="stylesheet" href="/static/style.css"/>
 </head>
 <body class="bg-slate-50">
-  {# logged_in vẫn giữ nếu nơi khác dùng #}
   {% set logged_in = is_logged_in(request) %}
+
+  {# ===== Role flags (theo quy ước bạn chốt) ===== #}
+  {% set user_role = (request.cookies.get('user_role') or 'VIEWER')|upper %}
+  {% set is_admin = (user_role == 'COMPANY_ADMIN') %}
+  {% set is_staff_like = (user_role in ['STAFF', 'VIEWER', 'ACCOUNTANT']) %}
+  {% set is_accountant = (user_role == 'ACCOUNTANT') %}
 
   <!-- ===== Header ===== -->
   <div class="bg-indigo-700 text-white">
     <div class="max-w-screen-2xl mx-auto h-14 px-5 flex items-center justify-between">
 
-      <!-- Left: app name / brand -->
       <div class="flex items-center gap-3">
         <a href="/reports"
            class="font-semibold text-lg tracking-wide hover:underline cursor-pointer">
@@ -31,25 +35,25 @@
         <i class="ri-notification-3-line cursor-pointer"></i>
 
         <div class="relative">
-          <button
-            onclick="toggleUserMenu()"
-            class="avatar focus:outline-none">
+          <button onclick="toggleUserMenu()" class="avatar focus:outline-none">
             <i class="ri-user-3-fill text-indigo-700"></i>
           </button>
 
-          <!-- User menu -->
           <div id="userMenu"
                class="hidden absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-lg z-50">
             <a href="/account/change-password-form"
                class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
               <i class="ri-key-2-line mr-2"></i> Đổi mật khẩu
             </a>
+
+            {# ✅ GIỮ NGUYÊN action cũ /account/logout, nhưng giờ backend đã xoá cookie role ở route này #}
             <form method="post" action="/account/logout" data-confirm="Đăng xuất khỏi thiết bị này?">
               <button type="submit"
                       class="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
                 <i class="ri-logout-box-line mr-2"></i> Đăng xuất
               </button>
             </form>
+
             <form method="post" action="/account/logout_all" data-confirm="Đăng xuất khỏi TẤT CẢ thiết bị?">
               <button type="submit"
                       class="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
@@ -81,12 +85,12 @@
   <!-- ===== Layout ===== -->
   <div class="max-w-screen-2xl mx-auto px-5 py-5 app-shell">
 
-    {# Ẩn sidebar riêng trang /login, còn lại luôn hiển thị #}
     {% if not request.url.path.startswith('/login') %}
     <aside id="appSidebarScroll" class="app-sidebar w-64 bg-white rounded-xl border border-slate-200 h-[84vh] overflow-y-auto">
       <ul class="p-2">
 
-        {# === DASHBOARD TRÊN CÙNG === #}
+        {# ✅ Dashboard/Tổng quan: CHỈ ADMIN #}
+        {% if is_admin %}
         <li class="side-title mt-0">Dashboard</li>
         <li>
           <a class="side-link {% if request.url.path in ['/', '/reports'] %}active{% endif %}"
@@ -94,7 +98,10 @@
             <i class="ri-bar-chart-2-line"></i> Tổng quan
           </a>
         </li>
+        {% endif %}
 
+        {# ===== 1. Dự án & Giao dịch (Admin full) ===== #}
+        {% if is_admin %}
         <li class="side-title mt-4">1. Dự án & Giao dịch</li>
         <li>
           <a class="side-link {% if request.url.path.startswith('/projects') and not request.url.path.startswith('/projects/payment-accounts') %}active{% endif %}"
@@ -114,8 +121,12 @@
             <i class="ri-megaphone-line"></i> 1.3 Quản lý thông báo
           </a>
         </li>
+        {% endif %}
 
+        {# ===== 2. Giao dịch ===== #}
         <li class="side-title mt-4">2. Giao dịch</li>
+
+        {% if is_admin or is_staff_like %}
         <li>
           <a class="side-link {% if request.url.path == '/transactions/dossiers' %}active{% endif %}"
              href="/transactions/dossiers">
@@ -128,13 +139,19 @@
             <i class="ri-hand-coin-line"></i> 2.2 Đặt cọc
           </a>
         </li>
+        {% endif %}
+
+        {% if is_admin %}
         <li>
           <a class="side-link {% if request.url.path == '/transactions/summary' %}active{% endif %}"
              href="/transactions/summary">
             <i class="ri-dashboard-line"></i> 2.3 Tổng hợp
           </a>
         </li>
+        {% endif %}
 
+        {# ===== 3. Quản lý dòng tiền ===== #}
+        {% if is_admin or is_accountant %}
         <li class="side-title mt-4">3. Quản lý dòng tiền</li>
         <li>
           <a class="side-link {% if request.url.path.startswith('/giao-dich-ngan-hang') %}active{% endif %}"
@@ -142,8 +159,10 @@
             <i class="ri-bank-card-line"></i> 3.1 Giao dịch ngân hàng
           </a>
         </li>
+        {% endif %}
 
-        {# ===== NEW: 4. KHÁCH HÀNG ===== #}
+        {# ===== 4. Khách hàng ===== #}
+        {% if is_admin or is_staff_like %}
         <li class="side-title mt-4">4. Khách hàng</li>
         <li>
           <a class="side-link {% if request.url.path.startswith('/customers') and not request.url.path.startswith('/customers/documents') %}active{% endif %}"
@@ -152,54 +171,50 @@
           </a>
         </li>
         <li>
-            <a class="side-link {% if request.url.path.startswith('/_admin/customer-documents') %}active{% endif %}"
-               href="/_admin/customer-documents">
-              <i class="ri-file-shield-2-line"></i> 4.1 Giấy tờ phải nộp
-            </a>
+          <a class="side-link {% if request.url.path.startswith('/_admin/customer-documents') %}active{% endif %}"
+             href="/_admin/customer-documents">
+            <i class="ri-file-shield-2-line"></i> 4.1 Giấy tờ phải nộp
+          </a>
         </li>
+        {% endif %}
 
-                {# ===== 5: PHIÊN ĐẤU GIÁ ===== #}
+        {# ===== 5. Phiên Đấu Giá (Admin full) ===== #}
+        {% if is_admin %}
         <li class="side-title mt-4">5. Phiên Đấu Giá</li>
-
         <li>
           <a class="side-link {% if request.url.path.startswith('/bid-attendance') %}active{% endif %}"
              href="/bid-attendance">
             <i class="ri-user-follow-line"></i> 5.1 Danh sách điểm danh
           </a>
         </li>
-
         <li>
           <a class="side-link {% if request.url.path.startswith('/bid-tickets') %}active{% endif %}"
              href="/bid-tickets">
             <i class="ri-file-text-line"></i> 5.2 Phiếu trả giá
           </a>
         </li>
-
-        {# 5.3 GIỮ BẢN HIỆN TẠI #}
         <li>
           <a class="side-link {% if request.url.path.startswith('/auction/sessions') %}active{% endif %}"
              href="/auction/sessions">
             <i class="ri-auction-line"></i> 5.3 Vận hành phiên
           </a>
         </li>
-
-        {# 5.4 THÊM LẠI THEO BASE CŨ #}
         <li>
           <a class="side-link {% if request.url.path.startswith('/auction/results') %}active{% endif %}"
              href="/auction/results">
             <i class="ri-auction-line"></i> 5.4 Kết quả trúng đấu giá
           </a>
         </li>
-
-        {# 5.5 GIỮ THEO BASE CŨ #}
         <li>
           <a class="side-link {% if request.url.path.startswith('/auction/refunds') %}active{% endif %}"
              href="/auction/refunds">
             <i class="ri-refund-2-line"></i> 5.5 Hoàn tiền đặt trước
           </a>
         </li>
+        {% endif %}
 
-        {# ===== 6: THIẾT LẬP ===== #}
+        {# ===== 6. Thiết lập (Admin full) ===== #}
+        {% if is_admin %}
         <li class="side-title mt-4">6. Thiết lập</li>
         <li>
           <a class="side-link {% if request.url.path.startswith('/settings/company') %}active{% endif %}"
@@ -213,12 +228,16 @@
             <i class="ri-bank-line"></i> 6.2 Tài khoản ngân hàng
           </a>
         </li>
+        {% endif %}
+
+        {# ===== Tài khoản (mọi role) ===== #}
         <li>
           <a class="side-link {% if request.url.path.startswith('/account') %}active{% endif %}"
              href="/account">
             <i class="ri-user-settings-line"></i> Tài khoản
           </a>
         </li>
+
       </ul>
     </aside>
     {% endif %}
@@ -254,7 +273,6 @@
   </div>
 
   <script>
-    // Modal confirm
     window.confirmModal = function ({title = "Xác nhận", message = "Bạn có chắc chắn?"} = {}) {
       return new Promise((resolve) => {
         const wrap = document.getElementById("app-confirm");
@@ -287,7 +305,6 @@
       });
     };
 
-    // Auto-bind confirm
     (function bindConfirm() {
       document.querySelectorAll('form[data-confirm]').forEach(function (f) {
         f.addEventListener('submit', async function (e) {
@@ -311,7 +328,6 @@
     })();
   </script>
 
-  <!-- ===== Sidebar scroll persist (FIX) ===== -->
   <script>
   (function () {
     var el = document.getElementById("appSidebarScroll");
@@ -353,16 +369,15 @@
   })();
   </script>
 
-  <!-- Force layout for sidebar + main, tránh bị CSS cũ phá -->
   <style>
     .app-shell {
       display: flex !important;
-      gap: 1.25rem; /* tương đương gap-5 */
+      gap: 1.25rem;
       align-items: flex-start;
     }
     .app-shell .app-sidebar {
       display: block !important;
-      flex: 0 0 16rem; /* w-64 */
+      flex: 0 0 16rem;
     }
     .app-shell .app-main {
       flex: 1 1 auto;

@@ -36,6 +36,7 @@ from routers.auction_sessions import router as auction_sessions_router
 from routers.auction_session_bid_sheets import router as auction_session_bid_sheets_router
 from routers.auction_session_winner_prints import router as auction_session_winner_prints_router
 from routers.auction_documents_print import router as auction_documents_print_router
+from fastapi_account_manager.middlewares.rbac_guard import rbac_guard_middleware
 
 # ✅ Lots (tách từ projects.py)
 from routers.lots import router as lots_router  # <-- NEW
@@ -83,6 +84,9 @@ app = FastAPI(
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.middleware("http")(auth_guard_middleware)
+
+app.middleware("http")(rbac_guard_middleware)  # ✅ chạy sau auth_guard
+
 
 # Đăng ký routers
 app.include_router(api_proxy_router)  # <-- NEW: /api/*
