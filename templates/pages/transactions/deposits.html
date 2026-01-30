@@ -1,36 +1,56 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="bg-white rounded-xl border border-slate-200" id="pageRoot" data-company="{{ company_code or '' }}">
-  <!-- FILTER BAR -->
-  <div class="p-4 flex flex-wrap gap-4 items-center">
-    <div class="w-72">
-      <label class="block text-sm text-slate-500 mb-1">Dự án</label>
-      <select id="projectSelect" class="w-full border rounded-lg px-3 py-2">
-        <option value="">Tất cả dự án</option>
-      </select>
-    </div>
+  <!-- ✅ FILTER BAR: layout giống 2.1 -->
+  <div class="p-4">
+    <div class="grid grid-cols-12 gap-4 items-end">
+      <!-- Row 1: Trạng thái -->
+      <div class="col-span-12 md:col-span-3">
+        <label class="block text-sm text-slate-500 mb-1">Trạng thái</label>
+        <select id="projectStatusSelect" class="w-full border rounded-lg px-3 py-2">
+          <option value="ALL">Tất cả</option>
+          <option value="ACTIVE" selected>ACTIVE</option>
+          <option value="INACTIVE">INACTIVE</option>
+        </select>
+      </div>
 
-    <div class="flex-1 min-w-[280px]">
-      <label class="block text-sm text-slate-500 mb-1">Tìm khách (Tên/CCCD/SDT)</label>
-      <input id="searchInput" type="text" placeholder="Gõ để tìm..." class="w-full border rounded-lg px-3 py-2">
-    </div>
+      <!-- Row 1: Dự án -->
+      <div class="col-span-12 md:col-span-9">
+        <label class="block text-sm text-slate-500 mb-1">Dự án</label>
+        <select id="projectSelect" class="w-full border rounded-lg px-3 py-2" title="">
+          <option value="">Tất cả dự án</option>
+        </select>
+      </div>
 
-    <div class="w-28">
-      <label class="block text-sm text-slate-500 mb-1">Trang</label>
-      <input id="pageInput" type="number" min="1" value="{{ init_page or 1 }}" class="w-full border rounded-lg px-3 py-2">
-    </div>
-    <div class="w-28">
-      <label class="block text-sm text-slate-500 mb-1">Size</label>
-      <select id="sizeSelect" class="w-full border rounded-lg px-3 py-2">
-        {% for n in [25,50,100] %}
-        <option value="{{n}}" {% if (init_size or 50) == n %}selected{% endif %}>{{n}}</option>
-        {% endfor %}
-      </select>
-    </div>
+      <!-- Row 2: Search -->
+      <div class="col-span-12 md:col-span-8">
+        <label class="block text-sm text-slate-500 mb-1">Tìm khách (Tên/CCCD/SDT)</label>
+        <input id="searchInput" type="text" placeholder="Gõ để tìm..." class="w-full border rounded-lg px-3 py-2">
+      </div>
 
-    <button id="refreshBtn" class="h-10 px-4 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
-      <i class="ri-refresh-line"></i> Nạp
-    </button>
+      <!-- Row 2: Trang -->
+      <div class="col-span-6 md:col-span-1">
+        <label class="block text-sm text-slate-500 mb-1">Trang</label>
+        <input id="pageInput" type="number" min="1" value="{{ init_page or 1 }}" class="w-full border rounded-lg px-3 py-2">
+      </div>
+
+      <!-- Row 2: Size -->
+      <div class="col-span-6 md:col-span-1">
+        <label class="block text-sm text-slate-500 mb-1">Size</label>
+        <select id="sizeSelect" class="w-full border rounded-lg px-3 py-2">
+          {% for n in [25,50,100] %}
+          <option value="{{n}}" {% if (init_size or 50) == n %}selected{% endif %}>{{n}}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Row 2: Refresh -->
+      <div class="col-span-12 md:col-span-2 flex md:justify-end">
+        <button id="refreshBtn" class="h-10 w-full md:w-auto px-5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
+          <i class="ri-refresh-line"></i> Nạp
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- TABLE -->
@@ -41,6 +61,10 @@
           <th class="py-3 px-4">Khách</th>
           <th class="py-3 px-4">CCCD</th>
           <th class="py-3 px-4">SĐT</th>
+
+          <!-- ✅ NEW: tổng tiền cọc đã trả -->
+          <th class="py-3 px-4 text-right whitespace-nowrap">Tổng tiền cọc đã trả (VND)</th>
+
           <th class="py-3 px-4 text-right">Đã trả</th>
           <th class="py-3 px-4 text-right">Pending</th>
           <th class="py-3 px-4 text-right">QR chờ TT</th>
@@ -48,7 +72,7 @@
         </tr>
       </thead>
       <tbody id="dataBody">
-        <tr><td class="py-6 px-4 text-slate-400" colspan="7">Đang tải...</td></tr>
+        <tr><td class="py-6 px-4 text-slate-400" colspan="8">Đang tải...</td></tr>
       </tbody>
     </table>
   </div>
@@ -92,7 +116,7 @@
   </div>
 </div>
 
-<!-- DOC MODAL -->
+<!-- DOC MODAL (giữ nguyên) -->
 <div id="docModal" class="fixed inset-0 hidden z-50">
   <div class="absolute inset-0 bg-black/50" id="docBackdrop"></div>
   <div class="absolute inset-4 sm:inset-10 bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden">
@@ -114,7 +138,10 @@
 <script>
 (function(){
   const DATA_URL = "/transactions/deposits/data";
-  const PROJ_URL = "/projects/options/active";
+
+  // ✅ giống 2.1: dùng listing_projects + có param status
+  const PROJ_URL = "/projects/options/listing_projects";
+
   const DETAIL_URL = (cid) => `/transactions/customers/${cid}/orders?type=DEPOSIT`;
   const DOC_URL = (company_code, project_code, cccd) => {
     const p = new URLSearchParams();
@@ -126,6 +153,8 @@
 
   const root     = document.getElementById("pageRoot");
   const COMPANY  = root.dataset.company || "";
+
+  const elProjectStatus = document.getElementById("projectStatusSelect");
   const elProject= document.getElementById("projectSelect");
   const elSearch = document.getElementById("searchInput");
   const elPage   = document.getElementById("pageInput");
@@ -155,6 +184,9 @@
   elSearch.value = "{{ init_q or '' }}";
   elProject.dataset.init = "{{ init_project_code or '' }}";
 
+  // ✅ mặc định ACTIVE (giống yêu cầu 2.1)
+  elProjectStatus.value = "ACTIVE";
+
   let t; const debounce=(fn,ms=350)=>{ clearTimeout(t); t=setTimeout(fn,ms); };
 
   function chip(number,label){
@@ -172,7 +204,7 @@
       return `<tr>
         <td class="px-3 py-2">Lô ${lot}</td>
         <td class="px-3 py-2 text-right" colspan="2">—</td>
-        <td class="px-3 py-2 text-right">${depo.toLocaleString()}</td>
+        <td class="px-3 py-2 text-right">${Number(depo||0).toLocaleString()}</td>
       </tr>`;
     }).join("");
     return `<div class="overflow-x-auto border rounded-lg">
@@ -305,17 +337,25 @@
     }
   };
 
+  function money(v){
+    const n = Number(v || 0);
+    return isFinite(n) ? n.toLocaleString() : '0';
+  }
+
   // ===== TABLE LIST =====
   function rowHtml(r){
     const full = r.full_name ?? "-";
     const cccd = r.cccd ?? "-";
     const phone= r.phone ?? "-";
-    const paid = Number(r.orders_paid ?? 0);
+    const paidCount = Number(r.orders_paid ?? 0);
     const pending = Number(r.orders_pending ?? 0);
     const qr = Number(r.unpaid_qr_count ?? 0);
     const cid = r.customer_id;
 
-    const canViewDoc = paid > 0;
+    // ✅ NEW: tổng tiền cọc đã paid (API A trả agg.total_paid)
+    const totalPaidVnd = Number(r.total_paid ?? 0);
+
+    const canViewDoc = paidCount > 0;
     const viewBtn = canViewDoc
       ? `<button class="ml-2 px-2.5 py-1 rounded border text-xs hover:bg-slate-50"
             data-view-doc="${cccd}" title="Xem đơn">
@@ -329,43 +369,55 @@
       </td>
       <td class="py-3 px-4">${cccd}</td>
       <td class="py-3 px-4">${phone}</td>
-      <td class="py-3 px-4 text-right">${paid}</td>
+
+      <td class="py-3 px-4 text-right font-medium whitespace-nowrap">${money(totalPaidVnd)}</td>
+
+      <td class="py-3 px-4 text-right">${paidCount}</td>
       <td class="py-3 px-4 text-right">${pending}</td>
       <td class="py-3 px-4 text-right">${qr}</td>
       <td class="py-3 px-4 text-right">${viewBtn}</td>
     </tr>`;
   }
 
+  function syncSelectTitle(){
+    const sel = elProject.selectedOptions?.[0];
+    elProject.title = sel ? (sel.title || sel.textContent || '') : '';
+  }
+
   async function loadProjects(){
-    const r = await fetch(PROJ_URL, {headers:{'X-Requested-With':'fetch'}});
+    const status = (elProjectStatus.value || 'ACTIVE').toUpperCase();
+    const params = new URLSearchParams();
+    if (status) params.set('status', status);
+
+    const r = await fetch(`${PROJ_URL}?${params.toString()}`, {headers:{'X-Requested-With':'fetch'}});
     const js = await r.json();
     const list = js.data ?? js.items ?? [];
 
     elProject.innerHTML = `<option value="">Tất cả dự án</option>`;
 
-    let onlyCode = null;
     for (const p of list){
-      const code = p.project_code ?? p.code ?? "";
-      const name = p.name ?? code;
+      const code = (p.project_code ?? p.code ?? "").trim();
+      const name = (p.name ?? "").trim();
+      if (!code) continue;
+
+      const label = name ? `${code} — ${name}` : `${code}`;
       const opt = document.createElement('option');
       opt.value = code;
-      opt.textContent = `${code} — ${name}`;
+      opt.textContent = label;
+      opt.title = label;
       elProject.appendChild(opt);
-      if (!onlyCode) {
-        onlyCode = code;
-      } else {
-        // đã có >1 project
-        onlyCode = null;
-      }
     }
 
-    const initCode = elProject.dataset.init;
+    const initCode = (elProject.dataset.init || "").trim();
     if (initCode) {
       elProject.value = initCode;
-    } else if (onlyCode) {
-      // chỉ có đúng 1 dự án active → auto select
-      elProject.value = onlyCode;
+    } else if ((list || []).length === 1) {
+      const only = list[0] || {};
+      const onlyCode = (only.project_code || only.code || "").trim();
+      if (onlyCode) elProject.value = onlyCode;
     }
+
+    syncSelectTitle();
   }
 
   async function loadData(){
@@ -377,14 +429,14 @@
     if(q) params.set('q',q);
     if(project_code) params.set('project_code',project_code);
 
-    elBody.innerHTML = `<tr><td class="py-6 px-4 text-slate-400" colspan="7">Đang tải...</td></tr>`;
+    elBody.innerHTML = `<tr><td class="py-6 px-4 text-slate-400" colspan="8">Đang tải...</td></tr>`;
     const r = await fetch(`${DATA_URL}?${params.toString()}`, {headers:{'X-Requested-With':'fetch'}});
     const js = await r.json();
     const rows = js.data ?? js.items ?? [];
     const total = js.total ?? 0;
 
     if(!rows.length){
-      elBody.innerHTML = `<tr><td class="py-6 px-4 text-slate-400" colspan="7">Không có dữ liệu</td></tr>`;
+      elBody.innerHTML = `<tr><td class="py-6 px-4 text-slate-400" colspan="8">Không có dữ liệu</td></tr>`;
     }else{
       elBody.innerHTML = rows.map(rowHtml).join('');
 
@@ -398,8 +450,18 @@
     elTotal.textContent = `Tổng: ${total.toLocaleString()}`;
   }
 
-  // events
-  elProject.onchange = loadData;
+  // events (giữ nguyên; thêm status reload như 2.1)
+  elProject.onchange = ()=>{ syncSelectTitle(); loadData(); };
+
+  elProjectStatus.onchange = async ()=>{
+    elProject.dataset.init = "";
+    elProject.value = "";
+    syncSelectTitle();
+    await loadProjects();
+    elPage.value = 1;
+    loadData();
+  };
+
   elSize.onchange = ()=>{ elPage.value=1; loadData(); };
   elPage.onchange = loadData;
   btnPrev.onclick = ()=>{ elPage.value = Math.max(1,(+elPage.value||1)-1); loadData(); };
