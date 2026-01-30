@@ -23,15 +23,30 @@
         </select>
       </div>
 
-      <!-- Row 1: Dự án -->
+      <!-- Row 1: Dự án + ✅ Export (nhúng sau ô chọn dự án) -->
       <div class="col-span-12 md:col-span-9">
         <label class="block text-sm text-slate-500 mb-1">Dự án</label>
-        <select id="projectSelect"
-                class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-white
-                       focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
-                title="">
-          <option value="">Tất cả dự án</option>
-        </select>
+
+        <div class="flex flex-col md:flex-row gap-3 md:items-center">
+          <select id="projectSelect"
+                  class="flex-1 w-full border border-slate-200 rounded-lg px-3 py-2 bg-white
+                         focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
+                  title="">
+            <option value="">Tất cả dự án</option>
+          </select>
+
+          {# ✅ Nút export giống trang report: disable khi chưa chọn dự án #}
+          <a id="exportBtn"
+             href="#"
+             aria-disabled="true"
+             class="h-10 px-4 rounded-lg border border-slate-200 text-sm font-medium
+                    inline-flex items-center justify-center gap-2
+                    bg-slate-100 text-slate-400 cursor-not-allowed select-none
+                    md:shrink-0">
+            <i class="ri-file-excel-2-line"></i>
+            Export XLSX
+          </a>
+        </div>
       </div>
 
       <!-- Row 2: Search -->
@@ -151,8 +166,12 @@
 
   const DETAIL_URL = (cid) => `/transactions/customers/${cid}/orders?type=APPLICATION`;
 
+  // ✅ Export endpoint giống trang report
+  const EXPORT_URL = (project_code) => `/reports/dossiers/paid/detail/export?project=${encodeURIComponent(project_code)}&limit=10000`;
+
   const elProjectStatus = document.getElementById("projectStatusSelect");
   const elProject = document.getElementById("projectSelect");
+  const elExport  = document.getElementById("exportBtn");
   const elSearch  = document.getElementById("searchInput");
   const elPage    = document.getElementById("pageInput");
   const elSize    = document.getElementById("sizeSelect");
@@ -369,6 +388,30 @@
     elProject.title = sel ? (sel.title || sel.textContent || '') : '';
   }
 
+  function syncExportBtn(){
+    const project_code = (elProject.value || "").trim();
+    const enabled = !!project_code;
+
+    if (!elExport) return;
+
+    if (!enabled){
+      elExport.href = "#";
+      elExport.setAttribute("aria-disabled","true");
+      elExport.className =
+        "h-10 px-4 rounded-lg border border-slate-200 text-sm font-medium " +
+        "inline-flex items-center justify-center gap-2 " +
+        "bg-slate-100 text-slate-400 cursor-not-allowed select-none md:shrink-0";
+      elExport.onclick = (e)=>{ e.preventDefault(); };
+    } else {
+      elExport.href = EXPORT_URL(project_code);
+      elExport.setAttribute("aria-disabled","false");
+      elExport.className =
+        "h-10 px-4 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 " +
+        "bg-white hover:bg-slate-50 inline-flex items-center justify-center gap-2 md:shrink-0";
+      elExport.onclick = null;
+    }
+  }
+
   async function loadProjects(){
     const status = (elProjectStatus.value || 'ACTIVE').toUpperCase();
 
@@ -405,6 +448,7 @@
     }
 
     syncSelectTitle();
+    syncExportBtn();
   }
 
   async function loadData(){
@@ -412,6 +456,7 @@
     const page=+elPage.value||1;
     const size=+elSize.value||50;
     const project_code = elProject.value||'';
+
     const params = new URLSearchParams({page,size});
     if(q) params.set('q',q);
     if(project_code) params.set('project_code',project_code);
@@ -433,14 +478,15 @@
     elTotal.textContent = `Tổng: ${total.toLocaleString()}`;
   }
 
-  // events (giữ nguyên logic; chỉ thêm status reload)
-  elProject.onchange = ()=>{ syncSelectTitle(); loadData(); };
+  // events (giữ nguyên logic; chỉ thêm syncExportBtn)
+  elProject.onchange = ()=>{ syncSelectTitle(); syncExportBtn(); loadData(); };
 
   elProjectStatus.onchange = async ()=>{
     // đổi status -> reload projects, reset project selection, reload data
     elProject.dataset.init = "";     // không cố giữ init khi user đã đổi status
     elProject.value = "";
     syncSelectTitle();
+    syncExportBtn();
     await loadProjects();
     elPage.value = 1;
     loadData();
@@ -457,7 +503,11 @@
   drawerClose.onclick = closeDrawer;
 
   // init
-  loadProjects().then(loadData);
+  loadProjects().then(()=>{
+    syncExportBtn();
+    loadData();
+  });
 })();
 </script>
 {% endblock %}
+
