@@ -1,33 +1,63 @@
 {% extends "base.html" %}
 {% block content %}
+
+<!-- ✅ Title rõ ràng để trang đỡ “cụt” -->
+<div class="mb-4">
+  <h1 class="text-2xl font-semibold text-slate-900">Trang Tổng Hợp Giao Dịch</h1>
+  <div class="text-sm text-slate-500 mt-1">Tổng hợp hồ sơ đã mua, lô đã cọc và QR đang chờ theo từng khách hàng.</div>
+</div>
+
 <div class="bg-white rounded-xl border border-slate-200">
-  <!-- FILTER BAR -->
-  <div class="p-4 flex flex-wrap gap-4 items-center">
-    <div class="w-72">
-      <label class="block text-sm text-slate-500 mb-1">Dự án</label>
-      <select id="projectSelect" class="w-full border rounded-lg px-3 py-2">
-        <option value="">Tất cả dự án</option>
-      </select>
+  <!-- ✅ FILTER BAR: layout giống 2.1 / 2.2 + dùng API dự án như 2 mục kia -->
+  <div class="p-4">
+    <div class="grid grid-cols-12 gap-4 items-end">
+      <!-- Status -->
+      <div class="col-span-12 md:col-span-3">
+        <label class="block text-sm text-slate-500 mb-1">Trạng thái</label>
+        <select id="projectStatusSelect" class="w-full border rounded-lg px-3 py-2">
+          <option value="ALL">Tất cả</option>
+          <option value="ACTIVE" selected>ACTIVE</option>
+          <option value="INACTIVE">INACTIVE</option>
+        </select>
+      </div>
+
+      <!-- Project -->
+      <div class="col-span-12 md:col-span-9">
+        <label class="block text-sm text-slate-500 mb-1">Dự án</label>
+        <select id="projectSelect" class="w-full border rounded-lg px-3 py-2" title="">
+          <option value="">Tất cả dự án</option>
+        </select>
+      </div>
+
+      <!-- Search -->
+      <div class="col-span-12 md:col-span-8">
+        <label class="block text-sm text-slate-500 mb-1">Tìm khách (Tên/CCCD/SDT)</label>
+        <input id="searchInput" type="text" placeholder="Gõ để tìm..." class="w-full border rounded-lg px-3 py-2">
+      </div>
+
+      <!-- Page -->
+      <div class="col-span-6 md:col-span-1">
+        <label class="block text-sm text-slate-500 mb-1">Trang</label>
+        <input id="pageInput" type="number" min="1" value="{{ init_page or 1 }}" class="w-full border rounded-lg px-3 py-2">
+      </div>
+
+      <!-- Size -->
+      <div class="col-span-6 md:col-span-1">
+        <label class="block text-sm text-slate-500 mb-1">Size</label>
+        <select id="sizeSelect" class="w-full border rounded-lg px-3 py-2">
+          {% for n in [25,50,100] %}
+          <option value="{{n}}" {% if (init_size or 50) == n %}selected{% endif %}>{{n}}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Refresh -->
+      <div class="col-span-12 md:col-span-2 flex md:justify-end">
+        <button id="refreshBtn" class="h-10 w-full md:w-auto px-5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
+          <i class="ri-refresh-line"></i> Nạp
+        </button>
+      </div>
     </div>
-    <div class="flex-1 min-w-[280px]">
-      <label class="block text-sm text-slate-500 mb-1">Tìm khách (Tên/CCCD/SDT)</label>
-      <input id="searchInput" type="text" placeholder="Gõ để tìm..." class="w-full border rounded-lg px-3 py-2">
-    </div>
-    <div class="w-28">
-      <label class="block text-sm text-slate-500 mb-1">Trang</label>
-      <input id="pageInput" type="number" min="1" value="{{ init_page or 1 }}" class="w-full border rounded-lg px-3 py-2">
-    </div>
-    <div class="w-28">
-      <label class="block text-sm text-slate-500 mb-1">Size</label>
-      <select id="sizeSelect" class="w-full border rounded-lg px-3 py-2">
-        {% for n in [25,50,100] %}
-        <option value="{{n}}" {% if (init_size or 50) == n %}selected{% endif %}>{{n}}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <button id="refreshBtn" class="h-10 px-4 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
-      <i class="ri-refresh-line"></i> Nạp
-    </button>
   </div>
 
   <!-- TABLE -->
@@ -93,9 +123,13 @@
 <script>
 (function(){
   const DATA_URL = "/transactions/summary/data";
-  const PROJ_URL = "/projects/options/active";
+
+  // ✅ giống 2.1 / 2.2
+  const PROJ_URL = "/projects/options/listing_projects";
+
   const DETAIL_URL = (cid) => `/transactions/customers/${cid}/orders`; // cả 2 loại
 
+  const elProjectStatus = document.getElementById("projectStatusSelect");
   const elProject = document.getElementById("projectSelect");
   const elSearch  = document.getElementById("searchInput");
   const elPage    = document.getElementById("pageInput");
@@ -117,7 +151,15 @@
   elSearch.value = "{{ init_q or '' }}";
   elProject.dataset.init = "{{ init_project_code or '' }}";
 
+  // ✅ mặc định ACTIVE như 2.1/2.2
+  elProjectStatus.value = "ACTIVE";
+
   let t; const debounce=(fn,ms=350)=>{clearTimeout(t); t=setTimeout(fn,ms);};
+
+  function syncSelectTitle(){
+    const sel = elProject.selectedOptions?.[0];
+    elProject.title = sel ? (sel.title || sel.textContent || '') : '';
+  }
 
   // Gộp tất cả loại hồ sơ thành 3 số tổng mua/đã dùng/còn
   function statsCompact(list){
@@ -305,33 +347,39 @@
   }
 
   async function loadProjects(){
-    const r = await fetch(PROJ_URL, {headers:{'X-Requested-With':'fetch'}});
+    const status = (elProjectStatus.value || 'ACTIVE').toUpperCase();
+    const params = new URLSearchParams();
+    if (status) params.set('status', status);
+
+    const r = await fetch(`${PROJ_URL}?${params.toString()}`, {headers:{'X-Requested-With':'fetch'}});
     const js = await r.json();
     const list = js.data ?? js.items ?? [];
 
     elProject.innerHTML = `<option value="">Tất cả dự án</option>`;
 
-    let singleCode = "";
-    if (list.length === 1) {
-      singleCode = list[0].project_code ?? list[0].code ?? "";
-    }
-
     for (const p of list){
-      const code = p.project_code ?? p.code ?? "";
-      const name = p.name ?? code;
+      const code = (p.project_code ?? p.code ?? "").trim();
+      const name = (p.name ?? "").trim();
+      if (!code) continue;
+
+      const label = name ? `${code} — ${name}` : `${code}`;
       const opt = document.createElement('option');
       opt.value = code;
-      opt.textContent = `${code} — ${name}`;
+      opt.textContent = label;
+      opt.title = label;
       elProject.appendChild(opt);
     }
 
-    const initCode = elProject.dataset.init;
+    const initCode = (elProject.dataset.init || "").trim();
     if (initCode) {
       elProject.value = initCode;
-    } else if (singleCode) {
-      // chỉ có 1 dự án active → auto select
-      elProject.value = singleCode;
+    } else if ((list || []).length === 1) {
+      const only = list[0] || {};
+      const onlyCode = (only.project_code || only.code || "").trim();
+      if (onlyCode) elProject.value = onlyCode;
     }
+
+    syncSelectTitle();
   }
 
   async function loadData(){
@@ -361,7 +409,17 @@
   }
 
   // events
-  elProject.onchange = loadData;
+  elProject.onchange = ()=>{ syncSelectTitle(); loadData(); };
+
+  elProjectStatus.onchange = async ()=>{
+    elProject.dataset.init = "";
+    elProject.value = "";
+    syncSelectTitle();
+    await loadProjects();
+    elPage.value = 1;
+    loadData();
+  };
+
   elSize.onchange = ()=>{ elPage.value=1; loadData(); };
   elPage.onchange = loadData;
   btnPrev.onclick = ()=>{ elPage.value = Math.max(1,(+elPage.value||1)-1); loadData(); };
