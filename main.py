@@ -52,6 +52,9 @@ from routers import deposit_refunds
 from routers.auction_prints import router as auction_prints_router
 from routers import auction_session_display
 
+#Mobile
+from routers.mobile.wire import mount_routers as mount_mobile_routers
+
 
 def _dump_bank_routes(app: FastAPI) -> None:
     print("=== ROUTE DUMP (bank) ===")
@@ -128,6 +131,8 @@ app.include_router(auction_session_winner_prints_router)
 app.include_router(auction_session_display.router)
 app.include_router(auction_documents_print_router)  # <-- NEW (attendance, future docs)
 
+#Mobile
+mount_mobile_routers(app)
 
 @app.get("/healthz")
 def healthz():
