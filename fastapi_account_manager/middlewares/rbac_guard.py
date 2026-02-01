@@ -17,6 +17,7 @@ RBAC_ALLOW_PREFIXES = (
     "/favicon.ico",
     "/login",
     "/healthz",
+    "/api/mobile/",  # ✅ bypass RBAC web cho mobile
 )
 
 # ===== ADMIN-ONLY PATHS (DENY LIST) =====

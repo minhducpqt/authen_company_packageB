@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-import os
 from typing import Optional, Any, Dict, List, Tuple
 
-import httpx
 from fastapi import APIRouter, Header, HTTPException, Query
 from pydantic import BaseModel, Field
 
-SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
-API_TIMEOUT = float(os.getenv("API_HTTP_TIMEOUT", os.getenv("AUTH_HTTP_TIMEOUT", "8.0")))
+from routers.mobile.service_a_client import request_json, require_bearer
 
 router = APIRouter(prefix="/customers", tags=["mobile-customers"])
 
@@ -30,47 +27,16 @@ class CustomerUpsertByCCCDPayload(BaseModel):
 def _norm(s: Optional[str]) -> str:
     return (s or "").strip().lower()
 
+
 def _only_digits(s: str) -> str:
     return "".join(ch for ch in (s or "") if ch.isdigit())
+
 
 def _validate_phone_10_digits(phone: str) -> str:
     p = _only_digits(phone)
     if len(p) != 10:
         raise HTTPException(status_code=422, detail="phone must be exactly 10 digits")
     return p
-
-async def _proxy_json(
-    method: str,
-    path: str,
-    *,
-    headers: Optional[Dict[str, str]] = None,
-    params: Optional[List[Tuple[str, Any]]] = None,
-    json: Optional[Dict[str, Any]] = None,
-) -> Any:
-    """
-    Proxy request to Service A, return JSON or raise HTTPException with upstream error.
-    """
-    try:
-        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=API_TIMEOUT) as client:
-            r = await client.request(method, path, headers=headers, params=params or [], json=json)
-    except httpx.RequestError as e:
-        raise HTTPException(status_code=502, detail=f"Upstream Service A error: {str(e)}")
-
-    if r.status_code >= 400:
-        try:
-            detail = r.json()
-        except Exception:
-            detail = r.text
-        raise HTTPException(status_code=r.status_code, detail=detail)
-
-    if r.headers.get("content-type", "").startswith("application/json"):
-        return r.json()
-    return {"ok": True}
-
-def _require_bearer(authorization: Optional[str]) -> str:
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Missing Authorization header")
-    return authorization
 
 
 # ===== APIs =====
@@ -87,7 +53,7 @@ async def mobile_list_customers(
     -> A: GET /api/v1/customers?page=&size=&q=&company_code=
     Response passthrough: {data,page,size,total}
     """
-    bearer = _require_bearer(authorization)
+    bearer = require_bearer(authorization)
 
     params: List[Tuple[str, Any]] = [("page", page), ("size", size)]
     if q:
@@ -95,7 +61,7 @@ async def mobile_list_customers(
     if company_code:
         params.append(("company_code", company_code))
 
-    return await _proxy_json(
+    return await request_json(
         "GET",
         "/api/v1/customers",
         headers={"Authorization": bearer},
@@ -118,14 +84,14 @@ async def mobile_check_customer_by_cccd(
     or
       { "exists": false }
     """
-    bearer = _require_bearer(authorization)
+    bearer = require_bearer(authorization)
     cccd_norm = _norm(cccd)
 
     params: List[Tuple[str, Any]] = [("page", 1), ("size", 20), ("q", cccd)]
     if company_code:
         params.append(("company_code", company_code))
 
-    resp = await _proxy_json(
+    resp = await request_json(
         "GET",
         "/api/v1/customers",
         headers={"Authorization": bearer},
@@ -161,7 +127,7 @@ async def mobile_upsert_customer_by_cccd(
       - CCCD fields (trust): full_name, cccd, address, dob
       - Contact fields: phone (required 10 digits), email (optional)
     """
-    bearer = _require_bearer(authorization)
+    bearer = require_bearer(authorization)
     phone = _validate_phone_10_digits(payload.phone)
 
     # 1) check exists
@@ -169,7 +135,7 @@ async def mobile_upsert_customer_by_cccd(
     if company_code:
         check_params.append(("company_code", company_code))
 
-    resp = await _proxy_json(
+    resp = await request_json(
         "GET",
         "/api/v1/customers",
         headers={"Authorization": bearer},
@@ -202,7 +168,7 @@ async def mobile_upsert_customer_by_cccd(
         if company_code:
             params.append(("company_code", company_code))
 
-        customer = await _proxy_json(
+        customer = await request_json(
             "PUT",
             f"/api/v1/customers/{cid}",
             headers={"Authorization": bearer},
@@ -216,7 +182,7 @@ async def mobile_upsert_customer_by_cccd(
     if company_code:
         params2.append(("company_code", company_code))
 
-    customer = await _proxy_json(
+    customer = await request_json(
         "POST",
         "/api/v1/customers",
         headers={"Authorization": bearer},
