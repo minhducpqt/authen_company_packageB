@@ -1,4 +1,3 @@
-# routers/mobile/service_a_client.py
 from __future__ import annotations
 
 import os
@@ -10,8 +9,7 @@ from fastapi import HTTPException
 
 SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 
-# Mobile APIs đa phần là JSON, dùng chung timeout.
-# Bạn có thể chỉnh env API_HTTP_TIMEOUT / AUTH_HTTP_TIMEOUT, mặc định 8s.
+# Mobile APIs mostly JSON; shared timeout.
 DEFAULT_TIMEOUT = float(os.getenv("API_HTTP_TIMEOUT", os.getenv("AUTH_HTTP_TIMEOUT", "8.0")))
 
 
@@ -31,8 +29,35 @@ async def request_json(
     timeout: float = DEFAULT_TIMEOUT,
 ) -> Any:
     """
-    Proxy request to Service A, return JSON (preferred) or {"ok": True}.
-    If upstream returns error, raise HTTPException with the upstream status + detail.
+    Backward-compatible helper (used by older mobile routers).
+    - On success: return JSON (preferred) or {"ok": True}
+    - On upstream error: raise HTTPException(status_code, detail)
+    """
+    status_code, data = await request_json_with_status(
+        method,
+        path,
+        headers=headers,
+        params=params,
+        json=json,
+        timeout=timeout,
+    )
+    # Keep old behavior: ignore status_code
+    return data
+
+
+async def request_json_with_status(
+    method: str,
+    path: str,
+    *,
+    headers: Optional[Dict[str, str]] = None,
+    params: Optional[List[Tuple[str, Any]]] = None,
+    json: Optional[Dict[str, Any]] = None,
+    timeout: float = DEFAULT_TIMEOUT,
+) -> Tuple[int, Any]:
+    """
+    JSON helper WITH status code (used by mirror).
+    - On success: returns (status_code, json_data or {"ok": True})
+    - On upstream error: raises HTTPException(status_code, detail)
     """
     try:
         async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=timeout) as client:
@@ -44,7 +69,6 @@ async def request_json(
                 json=json,
             )
     except httpx.RequestError as e:
-        # network/dns/timeout/connect issues
         raise HTTPException(status_code=502, detail=f"Upstream Service A error: {str(e)}")
 
     # Upstream error passthrough
@@ -59,10 +83,56 @@ async def request_json(
     ctype = (r.headers.get("content-type") or "").lower()
     if ctype.startswith("application/json"):
         try:
-            return r.json()
+            return r.status_code, r.json()
         except Exception:
-            # rare: content-type json but body invalid
-            return {"ok": True}
+            # content-type says json but body is invalid
+            return r.status_code, {"ok": True}
 
     # Success but non-JSON
-    return {"ok": True}
+    return r.status_code, {"ok": True}
+
+
+async def request_raw(
+    method: str,
+    path: str,
+    *,
+    headers: Optional[Dict[str, str]] = None,
+    params: Optional[List[Tuple[str, Any]]] = None,
+    content: Optional[bytes] = None,
+    content_type: Optional[str] = None,
+    timeout: float = DEFAULT_TIMEOUT,
+) -> httpx.Response:
+    """
+    Raw proxy helper for file/binary endpoints (xlsx/pdf/...).
+
+    Returns the upstream httpx.Response.
+    Caller should stream bytes and forward headers as needed.
+
+    On upstream error: raises HTTPException(status_code, detail).
+    """
+    h = dict(headers or {})
+
+    # Forward content-type if provided
+    if content_type and "content-type" not in {k.lower() for k in h.keys()}:
+        h["Content-Type"] = content_type
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=timeout) as client:
+            r = await client.request(
+                method=method,
+                url=path,
+                headers=h,
+                params=params or [],
+                content=content,
+            )
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=502, detail=f"Upstream Service A error: {str(e)}")
+
+    if r.status_code >= 400:
+        try:
+            detail = r.json()
+        except Exception:
+            detail = r.text
+        raise HTTPException(status_code=r.status_code, detail=detail)
+
+    return r
