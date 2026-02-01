@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple
 
 from fastapi import APIRouter, Header, HTTPException, Request
-from starlette.responses import StreamingResponse
+from starlette.responses import JSONResponse, StreamingResponse
 
 from routers.mobile.service_a_client import (
     require_bearer,
@@ -69,7 +69,7 @@ async def mirror_all(
     except Exception:
         raw_body = b""
 
-    # Parse JSON body if content-type is JSON
+    # Parse JSON body if content-type is JSON (only for methods with body)
     json_body: Optional[Dict[str, Any]] = None
     if request.method in {"POST", "PUT", "PATCH"}:
         ct = (request.headers.get("content-type") or "").lower()
@@ -79,7 +79,7 @@ async def mirror_all(
             except Exception:
                 json_body = None
 
-    # 1) JSON-first (wrap)
+    # 1) JSON-first passthrough (NO WRAP)
     try:
         status_code, data = await request_json_with_status(
             request.method,
@@ -88,26 +88,17 @@ async def mirror_all(
             params=params,
             json=json_body,
         )
-        return {
-            "code": status_code,
-            "message": "Success" if 200 <= status_code < 300 else "Error",
-            "data": data,
-        }
+        # Return raw JSON body exactly as A returned (status preserved)
+        return JSONResponse(content=data, status_code=status_code)
 
     except HTTPException as he:
         status = he.status_code
         detail = he.detail
 
-        # 4xx: usually JSON error -> wrap as consistent envelope
+        # If upstream returned JSON error (typical 4xx), pass through raw error body & status
         if 400 <= status < 500:
-            raise HTTPException(
-                status_code=status,
-                detail={
-                    "code": status,
-                    "message": "Error",
-                    "data": detail,
-                },
-            )
+            # detail might be dict/list/str - JSONResponse handles it
+            return JSONResponse(content=detail, status_code=status)
 
         # 5xx / file endpoints / content-type mismatch -> raw streaming fallback
         raw = await request_raw(
