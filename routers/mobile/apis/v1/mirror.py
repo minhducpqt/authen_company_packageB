@@ -1,3 +1,4 @@
+# routers/mobile/apis/v1/mirror.py
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Tuple
@@ -34,23 +35,37 @@ def _upstream_path(full_path: str) -> str:
     return p if p != "/" else "/"
 
 
+# Endpoints that MUST allow unauthenticated calls (no Authorization header)
+OPEN_PATHS = {
+    "/auth/login",
+    "/auth/refresh",
+    # add more public auth endpoints here if needed
+    # "/auth/forgot-password",
+    # "/auth/reset-password",
+}
+
+
 @router.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
 async def mirror_all(
     request: Request,
     full_path: str,
     authorization: Optional[str] = Header(None),
 ):
-    bearer = require_bearer(authorization)
+    upstream = _upstream_path(full_path)
+
+    # ✅ Only require Bearer for non-open endpoints
+    bearer: Optional[str] = None
+    if upstream not in OPEN_PATHS:
+        bearer = require_bearer(authorization)
+
+    headers = {"Authorization": bearer} if bearer else None
 
     # Query params passthrough
     params: List[Tuple[str, Any]] = list(request.query_params.multi_items())
 
-    upstream = _upstream_path(full_path)
-
     # Read body once for both json + raw fallback
-    raw_body: bytes = b""
     try:
-        raw_body = await request.body()
+        raw_body: bytes = await request.body()
     except Exception:
         raw_body = b""
 
@@ -69,7 +84,7 @@ async def mirror_all(
         status_code, data = await request_json_with_status(
             request.method,
             upstream,
-            headers={"Authorization": bearer},
+            headers=headers,
             params=params,
             json=json_body,
         )
@@ -94,26 +109,26 @@ async def mirror_all(
                 },
             )
 
-        # 5xx / content-type mismatch / file endpoints -> raw streaming fallback
+        # 5xx / file endpoints / content-type mismatch -> raw streaming fallback
         raw = await request_raw(
             request.method,
             upstream,
-            headers={"Authorization": bearer},
+            headers=headers,
             params=params,
             content=raw_body if raw_body else None,
             content_type=request.headers.get("content-type"),
         )
 
         # Forward headers (drop hop-by-hop)
-        headers = {}
+        forward_headers: Dict[str, str] = {}
         for k, v in raw.headers.items():
             lk = k.lower()
             if lk in {"content-length", "transfer-encoding", "connection"}:
                 continue
-            headers[k] = v
+            forward_headers[k] = v
 
         return StreamingResponse(
             raw.iter_bytes(),
             status_code=raw.status_code,
-            headers=headers,
+            headers=forward_headers,
         )

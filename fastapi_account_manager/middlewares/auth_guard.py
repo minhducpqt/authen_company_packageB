@@ -27,7 +27,7 @@ ALLOW_PREFIXES = (
     "/static/",
     "/favicon.ico",
     "/login",
-    "/api/mobile/",  # ✅ cho mobile đi thẳng
+    "/apis/mobile/",  # ✅ NEW mobile gateway
 )
 
 
