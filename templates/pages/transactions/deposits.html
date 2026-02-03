@@ -77,7 +77,10 @@
 
           <th class="py-3 px-4 text-right">Đã trả</th>
           <th class="py-3 px-4 text-right">Pending</th>
-          <th class="py-3 px-4 text-right">QR chờ TT</th>
+
+          {# ✅ CHỈ ĐỔI CỘT NÀY: bỏ QR chờ TT -> thay "Cọc gần nhất" #}
+          <th class="py-3 px-4 text-right whitespace-nowrap">Cọc gần nhất</th>
+
           <th class="py-3 px-4 text-right">Đơn</th>
         </tr>
       </thead>
@@ -172,6 +175,17 @@
   #appModal .m-ico.info{ background:rgba(79,70,229,.12); color:#4f46e5; }
   #appModal .m-ico.warn{ background:rgba(245,158,11,.16); color:#b45309; }
   #appModal .m-ico.bad{ background:rgba(239,68,68,.14); color:#b91c1c; }
+
+  /* ✅ NEW (scoped): last-paid cell small 2 lines, stay inside 1 row height */
+  .last-paid{
+    display:inline-block;
+    text-align:right;
+    line-height:1.15;
+    font-size:12px;
+    white-space:nowrap;
+  }
+  .last-paid .d{ color:#0f172a; font-weight:600; }
+  .last-paid .t{ color:#64748b; font-weight:500; margin-top:2px; }
 </style>
 
 <div id="appModal" aria-hidden="true">
@@ -489,6 +503,30 @@
     return isFinite(n) ? n.toLocaleString() : '0';
   }
 
+  // ✅ NEW: format last_paid_at -> 2 lines (dd/mm/yyyy + HH:MM:SS)
+  function fmtLastPaid2Lines(v){
+    if (!v) return `<span class="text-slate-400 text-xs">—</span>`;
+
+    // robust parse (ISO string)
+    const d = new Date(v);
+    if (!isFinite(d.getTime())) return `<span class="text-slate-400 text-xs">—</span>`;
+
+    // keep it simple + deterministic for VN style (no timezone conversion logic changes elsewhere)
+    const dd = String(d.getDate()).padStart(2,'0');
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const yy = String(d.getFullYear());
+    const hh = String(d.getHours()).padStart(2,'0');
+    const mi = String(d.getMinutes()).padStart(2,'0');
+    const ss = String(d.getSeconds()).padStart(2,'0');
+
+    return `
+      <span class="last-paid">
+        <div class="d">${dd}/${mm}/${yy}</div>
+        <div class="t">${hh}:${mi}:${ss}</div>
+      </span>
+    `;
+  }
+
   // ===== TABLE LIST =====
   function rowHtml(r){
     const full = r.full_name ?? "-";
@@ -496,11 +534,17 @@
     const phone= r.phone ?? "-";
     const paidCount = Number(r.orders_paid ?? 0);
     const pending = Number(r.orders_pending ?? 0);
+
+    // ✅ giữ nguyên biến để không ảnh hưởng logic (dù không render cột QR nữa)
     const qr = Number(r.unpaid_qr_count ?? 0);
+
     const cid = r.customer_id;
 
-    // ✅ NEW: tổng tiền cọc đã paid (API A trả agg.total_paid)
+    // ✅ tổng tiền cọc đã paid (API A trả agg.total_paid)
     const totalPaidVnd = Number(r.total_paid ?? 0);
+
+    // ✅ NEW: last paid at (API A trả agg.last_paid_at)
+    const lastPaidAt = r.last_paid_at ?? null;
 
     const canViewDoc = paidCount > 0;
     const viewBtn = canViewDoc
@@ -521,7 +565,10 @@
 
       <td class="py-3 px-4 text-right">${paidCount}</td>
       <td class="py-3 px-4 text-right">${pending}</td>
-      <td class="py-3 px-4 text-right">${qr}</td>
+
+      {# ✅ CHỈ ĐỔI CELL NÀY: show last_paid_at thay cho QR #}
+      <td class="py-3 px-4 text-right align-middle">${fmtLastPaid2Lines(lastPaidAt)}</td>
+
       <td class="py-3 px-4 text-right">${viewBtn}</td>
     </tr>`;
   }
