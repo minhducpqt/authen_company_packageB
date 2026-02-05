@@ -229,6 +229,16 @@
       padding: 8px 10px;
       font-size: 12px;
     }
+
+    /* ✅ ONLY CHANGE: Zebra background for consecutive rows (white/gray alternating) */
+    tbody tr.row3:nth-child(odd) td{ background: #fff; }
+    tbody tr.row3:nth-child(even) td{ background: #f4f6f9; } /* very light gray for print */
+
+    /* Print safety: preserve zebra colors */
+    @media print{
+      tbody tr.row3:nth-child(odd) td{ background:#fff !important; }
+      tbody tr.row3:nth-child(even) td{ background:#f4f6f9 !important; }
+    }
   </style>
 </head>
 
