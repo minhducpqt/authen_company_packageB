@@ -351,3 +351,142 @@ async def print_attendance_list(
             "error": error,
         },
     )
+
+
+# =========================================================
+# PRINT: Public notice (A4) — STT lookup board (NO SIGNATURE)
+#   - Data source & flow: identical to attendance_print above
+#   - Template: pages/auction_session_documents/attendance_public_notice.html
+# =========================================================
+@router.get(
+    "/auction/sessions/{session_id}/documents/attendance/public-notice",
+    response_class=HTMLResponse,
+)
+async def print_attendance_public_notice(
+    request: Request,
+    session_id: int = Path(..., ge=1),
+    title: Optional[str] = Query(None),
+    autoprint: int = Query(0, ge=0, le=1),
+):
+    """
+    In danh sách công khai để dán bảng tin (khách tra cứu STT).
+    ✅ GỌI THẲNG SERVICE A (y hệt attendance/print)
+    Flow:
+      1) GET A: /sessions/{id}
+      2) GET A: /sessions/{id}/current  -> round_no
+      3) GET A: /sessions/{id}/rounds/{round_no}/ui
+      4) aggregate attendance from UI
+    """
+    token = get_access_token(request)
+    if not token:
+        return templates.TemplateResponse(
+            "pages/error.html",
+            {
+                "request": request,
+                "title": "Chưa đăng nhập",
+                "message": "Vui lòng đăng nhập lại.",
+            },
+            status_code=401,
+        )
+
+    error: Optional[Dict[str, Any]] = None
+
+    # 1) session detail
+    st_s, sess = await _a_get_json(f"/api/v1/auction-sessions/sessions/{session_id}", token, None, timeout=60.0)
+    if st_s != 200 or not isinstance(sess, dict):
+        error = {"message": f"Không tải được phiên đấu (status={st_s})", "body": sess}
+        sess_data: Dict[str, Any] = {"id": session_id}
+    else:
+        sess_data = (sess.get("data") or sess) if isinstance(sess, dict) else {"id": session_id}
+
+    project_name = sess_data.get("project_name") or sess_data.get("p_project_name") or ""
+    project_code = sess_data.get("project_code") or sess_data.get("p_project_code") or ""
+
+    # 2) current round
+    round_no = 1
+    st_c, cur = await _a_get_json(f"/api/v1/auction-sessions/sessions/{session_id}/current", token, None, timeout=60.0)
+    if st_c == 200 and isinstance(cur, dict):
+        try:
+            rn = int(cur.get("current_round_no") or 0)
+            round_no = rn if rn > 0 else 1
+        except Exception:
+            round_no = 1
+    else:
+        if not error:
+            error = {"message": f"Không tải được vòng hiện tại (status={st_c})", "body": cur}
+
+    # 3) round UI
+    attendance_rows: List[Dict[str, Any]] = []
+    lot_count = 0
+    customer_count = 0
+
+    st_ui, ui = await _a_get_json(
+        f"/api/v1/auction-sessions/sessions/{session_id}/rounds/{round_no}/ui",
+        token,
+        None,
+        timeout=60.0,
+    )
+    if st_ui == 200 and isinstance(ui, dict):
+        attendance_rows, lot_count, customer_count = _aggregate_attendance_from_round_ui(ui)
+    else:
+        if not error:
+            error = {"message": f"Không tải được dữ liệu vòng (status={st_ui})", "body": ui}
+
+    # Build template variables (same structure as attendance/print)
+    session_out = {
+        "id": sess_data.get("id") or session_id,
+        "name": sess_data.get("name"),
+        "status": sess_data.get("status"),
+        "auction_date": sess_data.get("auction_date"),
+        "location": sess_data.get("location"),
+        "province": sess_data.get("province"),
+        "district": sess_data.get("district"),
+        "venue": sess_data.get("venue"),
+        "note": sess_data.get("note"),
+        "project_id": sess_data.get("project_id"),
+        "project_code": project_code,
+        "project_name": project_name,
+        "lot_count": lot_count,
+        "customer_count": customer_count,
+        "round_no": int(round_no),
+    }
+
+    project = {"name": project_name or project_code or "", "project_code": project_code or ""}
+    stats = {"total_lots": lot_count or 0, "total_customers": customer_count or 0}
+
+    # Keep consistency: provide both rows (for template) and items (optional)
+    items = _build_print_items(attendance_rows)
+
+    # raw payload (optional debug)
+    attendance_payload = {"ok": True, "session": session_out, "data": attendance_rows}
+
+    return templates.TemplateResponse(
+        "pages/auction_session_documents/attendance_public_notice.html",
+        {
+            "request": request,
+            "title": title or "Danh sách STT tham dự đấu giá",
+            "session_id": session_id,
+
+            # raw payload (optional debug)
+            "attendance": attendance_payload,
+
+            # template variables
+            "session": session_out,
+            "project": project,
+            "stats": stats,
+
+            # IMPORTANT: the public template consumes `rows` (or attendance.data)
+            "rows": attendance_rows,
+            "items": items,
+
+            # org header (kept for consistency)
+            "org_name": ORG_NAME,
+            "org_note": ORG_NOTE,
+
+            # auto print flag for template JS
+            "autoprint": int(autoprint),
+
+            # error payload
+            "error": error,
+        },
+    )
