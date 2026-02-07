@@ -79,6 +79,17 @@
     background: linear-gradient(180deg, rgba(239,68,68,.14), rgba(239,68,68,.08));
     color: rgba(153,27,27,.95);
   }
+  .btn.tiny{
+    padding:8px 10px;
+    border-radius: 12px;
+    font-size:12px;
+    font-weight:950;
+  }
+  .btn.linky{
+    border-color: rgba(79,70,229,.18);
+    background: linear-gradient(180deg, rgba(79,70,229,.10), rgba(79,70,229,.05));
+    color: rgba(49,46,129,.95);
+  }
 
   .kpis{
     margin-top: 14px;
@@ -171,7 +182,7 @@
     width:100%;
     border-collapse:separate;
     border-spacing:0;
-    min-width: 980px; /* để desktop luôn thẳng hàng */
+    min-width: 980px;
   }
   table.rp-table thead th{
     position: sticky;
@@ -227,7 +238,7 @@
     font-size:13px;
   }
 
-  /* Mobile: cho cuộn ngang table, không phá layout */
+  /* Mobile */
   @media (max-width: 980px){
     table.rp-table{min-width: 900px;}
   }
@@ -286,6 +297,11 @@
         {% if project_id_val %}
           <a class="btn primary" href="/reports/v2/projects/{{ project_id_val }}/customers/ineligible/export?limit={{ limit or 10000 }}&expose_phone=1">
             <i class="ri-download-2-line"></i> Tải danh sách (Excel)
+          </a>
+
+          {# ✅ NEW: điều hướng sang trang chi tiết #}
+          <a class="btn linky" href="/reports/v2/projects/{{ project_id_val }}/customers/ineligible/detail?limit={{ limit or 10000 }}&expose_phone=1">
+            <i class="ri-file-search-line"></i> Xem chi tiết (lô + lý do + evidence)
           </a>
         {% endif %}
       {% endif %}
@@ -368,11 +384,11 @@
           <table class="rp-table">
             <thead>
               <tr>
-                <th style="width:34%">Khách hàng</th>
-                <th style="width:26%">Liên hệ</th>
+                <th style="width:36%">Khách hàng</th>
+                <th style="width:28%">Liên hệ</th>
                 <th style="width:16%">Tổng tiền đã nộp</th>
-                <th style="width:12%">Số lô liên quan</th>
-                <th style="width:12%">Ghi chú</th>
+                <th style="width:12%">Số lô</th>
+                <th style="width:8%;text-align:right">Chi tiết</th>
               </tr>
             </thead>
 
@@ -438,13 +454,18 @@
                       <i class="ri-stack-line"></i>
                       <span class="mono">{{ lots }}</span> lô
                     </span>
-                    <div class="mini" style="margin-top:6px">Số lô có hồ sơ của khách trong dự án.</div>
+                    <div class="mini" style="margin-top:6px">Số lô liên quan.</div>
                   </td>
 
-                  <td>
-                    <div class="mini">
-                      Có thể liên hệ để hướng dẫn bổ sung hoặc xác nhận thông tin.
-                    </div>
+                  <td style="text-align:right">
+                    {% if project_id_val %}
+                      <a class="btn tiny linky"
+                         href="/reports/v2/projects/{{ project_id_val }}/customers/ineligible/detail?limit={{ limit or 10000 }}&expose_phone=1#cccd={{ cccd|urlencode }}">
+                        <i class="ri-arrow-right-up-line"></i> Xem
+                      </a>
+                    {% else %}
+                      <span class="mini" style="opacity:.7">—</span>
+                    {% endif %}
                   </td>
 
                 </tr>
@@ -533,7 +554,6 @@
       );
     }
 
-    // reorder DOM
     for(const tr of visible){ list.appendChild(tr); }
 
     setShownKpi(visible.length, rows.length);
