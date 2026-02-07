@@ -5,7 +5,7 @@ import os
 from typing import Optional, Dict, Any, List, Tuple
 
 import httpx
-from fastapi import APIRouter, Request, Query
+from fastapi import APIRouter, Request, Query, Path
 from fastapi.responses import (
     HTMLResponse,
     JSONResponse,
@@ -849,8 +849,6 @@ async def reports_api(
         return JSONResponse({"error": "service_a_failed", "status": st, "body": data}, status_code=502)
     return JSONResponse(data, status_code=200)
 
-from fastapi import Path  # thêm Path nếu file chưa import
-
 # ============================================================
 # V2 (SSR) — 4 báo cáo chuyển sang endpoint mới (A: /api/v2/reports/*)
 #   - Lots eligible/ineligible
@@ -1111,3 +1109,25 @@ async def v2_customers_ineligible_export(
 
     filename = f"customers_ineligible_v2_p{project_id}.xlsx"
     return await _proxy_xlsx(f"/api/v2/reports/projects/{project_id}/customers/ineligible", token, params, filename)
+
+from fastapi import Path  # nếu chưa có
+
+@router.get("/reports/v2/projects/{project_id}/lots/{lot_id}/json", response_class=JSONResponse)
+async def v2_lot_detail_json(
+    request: Request,
+    project_id: int = Path(..., ge=1),
+    lot_id: int = Path(..., ge=1),
+    expose_phone: int = Query(1, ge=0, le=1),
+):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    params: Dict[str, Any] = {}
+    if expose_phone == 1:
+        params["expose_phone"] = "true"
+
+    st, js = await _get_json(f"/api/v2/reports/projects/{project_id}/lots/{lot_id}", token, params)
+    if st != 200:
+        return JSONResponse({"error": "service_a_failed", "status": st, "body": js}, status_code=502)
+    return JSONResponse(js, status_code=200)

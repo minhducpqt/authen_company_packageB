@@ -1,410 +1,827 @@
-{# templates/reports/lots_eligible.html #}
 {% extends "base.html" %}
-{% block title %}Lô đủ điều kiện{% if is_v2 %} (V2){% endif %}{% endblock %}
+{% block title %}Lô đủ điều kiện{% endblock %}
 
 {% block content %}
-{% set _data = data if data is mapping else {} %}
-{% set rows = _data.get("items") or [] %}
-{% set row_count = (rows|length) %}
+<style>
+  :root{
+    --bd: rgba(15,23,42,.10);
+    --bd2: rgba(15,23,42,.07);
+    --card: #fff;
+    --muted: rgba(71,85,105,.88);
+    --txt: #0f172a;
 
-{# ---------- helpers / aggregate (Jinja-safe) ---------- #}
-{% set ns = namespace(
-  sum_paid_all=0,
-  sum_paid_eligible=0,
-  sum_paid_diff=0,
-  sum_eligible_customers=0,
-  sum_paid_customers=0,
-  min_deadline=None,
-  max_deadline=None,
-  project_code="",
-  project_name=""
-) %}
+    --ok: #16a34a;
+    --ok2:#22c55e;
+    --warn:#f59e0b;
+    --bad:#ef4444;
+    --pri:#4f46e5;
 
-{% for r in rows %}
-  {% set paid_all = (r.get("total_deposit_amount") if (r.get("total_deposit_amount") is not none) else (r.get("total_paid_vnd_all") if (r.get("total_paid_vnd_all") is not none) else (r.get("total_deposit_amount_all") if (r.get("total_deposit_amount_all") is not none) else 0))) %}
-  {% set paid_ok  = (r.get("eligible_deposit_amount") if (r.get("eligible_deposit_amount") is not none) else (r.get("total_paid_vnd_eligible") if (r.get("total_paid_vnd_eligible") is not none) else (r.get("total_deposit_amount_eligible") if (r.get("total_deposit_amount_eligible") is not none) else paid_all))) %}
-  {% set cnt_paid = (r.get("total_customers_paid") if (r.get("total_customers_paid") is not none) else (r.get("deposit_customer_count") if (r.get("deposit_customer_count") is not none) else (r.get("deposit_customer_count_for_lot") if (r.get("deposit_customer_count_for_lot") is not none) else 0))) %}
-  {% set cnt_ok   = (r.get("eligible_customer_count") if (r.get("eligible_customer_count") is not none) else (r.get("eligible_customer_count_for_lot") if (r.get("eligible_customer_count_for_lot") is not none) else 0)) %}
+    --r: 16px;
+    --shadow: 0 14px 36px rgba(2,6,23,.10);
+  }
 
-  {% set ns.sum_paid_all = ns.sum_paid_all + (paid_all or 0) %}
-  {% set ns.sum_paid_eligible = ns.sum_paid_eligible + (paid_ok or 0) %}
-  {% set ns.sum_paid_diff = ns.sum_paid_diff + ((paid_all or 0) - (paid_ok or 0)) %}
-  {% set ns.sum_paid_customers = ns.sum_paid_customers + (cnt_paid or 0) %}
-  {% set ns.sum_eligible_customers = ns.sum_eligible_customers + (cnt_ok or 0) %}
+  .rp-wrap{max-width:1200px;margin:0 auto}
+  .rp-head{
+    background: linear-gradient(135deg, rgba(79,70,229,.10), rgba(34,197,94,.08));
+    border:1px solid var(--bd);
+    border-radius: 22px;
+    padding: 16px 16px 14px;
+    box-shadow: 0 10px 28px rgba(2,6,23,.06);
+  }
+  .rp-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .rp-title h1{font-size:20px;font-weight:800;color:var(--txt);display:flex;align-items:center;gap:10px;margin:0}
+  .rp-title p{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.35}
+  .pill{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 10px;border-radius:999px;
+    background: rgba(255,255,255,.72);
+    border:1px solid var(--bd2);
+    color: rgba(15,23,42,.70);
+    font-size:12px;font-weight:700;
+    backdrop-filter: blur(8px);
+    white-space:nowrap;
+  }
+  .dot{width:8px;height:8px;border-radius:999px;background: var(--ok2);box-shadow:0 0 0 3px rgba(34,197,94,.14)}
+  .rp-controls{
+    margin-top: 12px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px;
+  }
+  .sel{
+    display:flex;align-items:center;gap:10px;
+    padding:10px 12px;border-radius: 14px;
+    border:1px solid var(--bd);
+    background: rgba(255,255,255,.80);
+    min-width: 260px;
+  }
+  .sel label{font-size:12px;color:rgba(15,23,42,.65);font-weight:800}
+  .sel select{
+    border:0;outline:0;background:transparent;
+    font-weight:900;color:var(--txt);
+    width:100%;
+  }
 
-  {% if not ns.project_code %}
-    {% set ns.project_code = (r.get("project_code") or "") %}
-  {% endif %}
-  {% if not ns.project_name %}
-    {% set ns.project_name = (r.get("project_name") or "") %}
-  {% endif %}
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:10px 12px;border-radius: 14px;
+    border:1px solid var(--bd);
+    background: rgba(255,255,255,.85);
+    font-size:12px;font-weight:900;color: rgba(15,23,42,.75);
+    transition: .15s ease;
+  }
+  .btn:hover{transform: translateY(-1px); box-shadow: 0 10px 20px rgba(2,6,23,.10)}
+  .btn.primary{
+    border-color: rgba(34,197,94,.35);
+    background: linear-gradient(180deg, rgba(34,197,94,.18), rgba(34,197,94,.10));
+    color: rgba(20,83,45,.95);
+  }
 
-  {% set dl = r.get("deposit_deadline_at") %}
-  {% if dl %}
-    {% if ns.min_deadline is none or (dl < ns.min_deadline) %}
-      {% set ns.min_deadline = dl %}
-    {% endif %}
-    {% if ns.max_deadline is none or (dl > ns.max_deadline) %}
-      {% set ns.max_deadline = dl %}
-    {% endif %}
-  {% endif %}
-{% endfor %}
+  .kpis{
+    margin-top: 14px;
+    display:grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap:10px;
+  }
+  .kpi{
+    grid-column: span 3;
+    background: rgba(255,255,255,.88);
+    border:1px solid var(--bd);
+    border-radius: 18px;
+    padding: 12px 12px 10px;
+    box-shadow: 0 10px 22px rgba(2,6,23,.06);
+  }
+  @media (max-width: 1024px){ .kpi{grid-column: span 6} }
+  @media (max-width: 640px){
+    .sel{min-width: 100%}
+    .kpi{grid-column: span 12}
+  }
+  .kpi .t{font-size:12px;color:rgba(15,23,42,.62);font-weight:900}
+  .kpi .v{margin-top:6px;font-size:18px;font-weight:950;color:var(--txt);letter-spacing:.2px}
+  .kpi .s{margin-top:6px;font-size:11px;color:rgba(71,85,105,.90)}
+  .kpi.ok .v{color: rgba(20,83,45,.98)}
+  .kpi.money .v{color: rgba(30,64,175,.95)}
+  .kpi.deadline .v{color: rgba(124,45,18,.95)}
+  .kpi.meta .v{color: rgba(15,23,42,.92)}
 
-<div class="mb-5">
-  <div class="flex items-start justify-between gap-4">
-    <div class="min-w-0">
-      <h1 class="text-2xl font-semibold text-slate-900 flex items-center gap-2">
-        <i class="ri-checkbox-circle-line text-indigo-600 text-3xl"></i>
-        Lô đủ điều kiện
-        {% if is_v2 %}
-          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">V2</span>
-        {% endif %}
-      </h1>
-      <p class="text-slate-500 text-sm mt-1">
-        Danh sách lô đủ điều kiện mở đấu giá (≥ 2 khách đủ điều kiện).
-      </p>
+  .rp-card{
+    margin-top: 14px;
+    background: var(--card);
+    border:1px solid var(--bd);
+    border-radius: 22px;
+    box-shadow: var(--shadow);
+    overflow:hidden;
+  }
+  .rp-card .hd{
+    padding: 12px 14px;
+    border-bottom:1px solid var(--bd2);
+    background: linear-gradient(90deg, rgba(15,23,42,.03), rgba(15,23,42,.00));
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+  }
+  .rp-card .hd .left{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .badge{
+    display:inline-flex;align-items:center;gap:7px;
+    padding:6px 10px;border-radius:999px;
+    border:1px solid var(--bd2);
+    background: rgba(255,255,255,.85);
+    font-size:12px;font-weight:900;color:rgba(15,23,42,.72);
+  }
+  .badge.ok{border-color: rgba(34,197,94,.30); background: rgba(34,197,94,.10); color: rgba(20,83,45,.92)}
+  .muted{color: var(--muted);font-size:12px}
+
+  /* table */
+  .tbl{width:100%;border-collapse:separate;border-spacing:0}
+  .tbl th, .tbl td{
+    padding: 11px 12px;
+    border-bottom:1px solid rgba(15,23,42,.06);
+    vertical-align:top;
+  }
+  .tbl th{
+    position:sticky;top:0;
+    background: #fff;
+    z-index:1;
+    font-size:12px;
+    color: rgba(15,23,42,.58);
+    font-weight:950;
+    letter-spacing:.2px;
+  }
+  .row{transition: .12s ease;background: #fff}
+  .row:hover{background: rgba(15,23,42,.02)}
+  .lotcode{
+    font-weight:950;color: rgba(30,64,175,.98);
+    text-decoration:none;
+  }
+  .lotname{font-size:12px;color: rgba(15,23,42,.78);margin-top:4px;line-height:1.25}
+  .mini{font-size:12px;color: rgba(71,85,105,.92);line-height:1.25}
+  .mono{font-variant-numeric: tabular-nums; font-feature-settings: "tnum";}
+  .chip{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:6px 10px;border-radius:999px;
+    border:1px solid rgba(15,23,42,.10);
+    background: rgba(15,23,42,.03);
+    font-size:12px;font-weight:900;color: rgba(15,23,42,.74);
+    white-space:nowrap;
+  }
+  .chip.ok{border-color: rgba(34,197,94,.28); background: rgba(34,197,94,.10); color: rgba(20,83,45,.92)}
+  .chip.money{border-color: rgba(59,130,246,.24); background: rgba(59,130,246,.10); color: rgba(30,64,175,.92)}
+  .chip.deadline{border-color: rgba(245,158,11,.28); background: rgba(245,158,11,.12); color: rgba(124,45,18,.92)}
+
+  .act{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 10px;border-radius: 12px;
+    border:1px solid rgba(15,23,42,.10);
+    background: rgba(255,255,255,.90);
+    font-size:12px;font-weight:950;color: rgba(15,23,42,.72);
+    cursor:pointer;
+    transition: .12s ease;
+    user-select:none;
+  }
+  .act:hover{transform: translateY(-1px); box-shadow: 0 10px 18px rgba(2,6,23,.10)}
+  .act.primary{
+    border-color: rgba(79,70,229,.25);
+    background: rgba(79,70,229,.08);
+    color: rgba(30,27,135,.92);
+  }
+
+  /* skeleton */
+  .skeleton{
+    background: linear-gradient(90deg, rgba(15,23,42,.04), rgba(15,23,42,.02), rgba(15,23,42,.04));
+    background-size: 240% 100%;
+    animation: sk 1.2s ease infinite;
+    border-radius: 12px;
+    height: 12px;
+  }
+  @keyframes sk{ 0%{background-position: 0% 0} 100%{background-position: 240% 0} }
+
+  /* ===== Modal (popup) ===== */
+  .modal{
+    position:fixed;inset:0;
+    display:none;
+    z-index: 9999;
+  }
+  .modal.show{display:block}
+  .modal .backdrop{
+    position:absolute;inset:0;
+    background: rgba(2,6,23,.55);
+    backdrop-filter: blur(6px);
+  }
+  .modal .panel{
+    position:relative;
+    width:min(980px, calc(100vw - 24px));
+    max-height: calc(100vh - 24px);
+    margin: 12px auto;
+    background:#fff;
+    border:1px solid rgba(255,255,255,.18);
+    border-radius: 20px;
+    box-shadow: 0 24px 60px rgba(0,0,0,.35);
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  }
+  .m-hd{
+    padding: 12px 14px;
+    border-bottom:1px solid rgba(15,23,42,.08);
+    background: linear-gradient(135deg, rgba(79,70,229,.10), rgba(34,197,94,.06));
+    display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+  }
+  .m-title{
+    display:flex;flex-direction:column;gap:4px;min-width:0;
+  }
+  .m-title .t{
+    font-size:14px;font-weight:950;color:rgba(15,23,42,.92);
+    display:flex;align-items:center;gap:8px;
+  }
+  .m-title .sub{
+    font-size:12px;color:rgba(71,85,105,.92);line-height:1.25;
+  }
+  .m-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .m-close{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:36px;height:36px;border-radius:12px;
+    border:1px solid rgba(15,23,42,.10);
+    background: rgba(255,255,255,.85);
+    cursor:pointer;
+  }
+  .m-bd{
+    padding: 12px 14px 14px;
+    overflow:auto;
+  }
+
+  .topinfo{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+
+  /* Customers list (gọn) */
+  .cust-list{display:flex;flex-direction:column;gap:8px}
+  .cust-item{
+    border:1px solid rgba(15,23,42,.10);
+    border-radius: 16px;
+    background: #fff;
+    overflow:hidden;
+    box-shadow: 0 10px 18px rgba(2,6,23,.05);
+  }
+  .cust-row{
+    padding: 10px 10px;
+    display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+  }
+  .cust-left{min-width:0}
+  .cust-name{font-size:13px;font-weight:950;color:rgba(15,23,42,.92);line-height:1.22}
+  .cust-sub{margin-top:4px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .cccd-pill{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:5px 8px;border-radius:999px;
+    border:1px solid rgba(15,23,42,.10);
+    background: rgba(15,23,42,.03);
+    font-size:12px;font-weight:900;color: rgba(15,23,42,.78);
+  }
+  .copybtn{
+    border:0;outline:0;cursor:pointer;
+    font-size:11px;font-weight:950;
+    padding:4px 8px;border-radius:999px;
+    border:1px solid rgba(15,23,42,.10);
+    background: rgba(255,255,255,.9);
+    color: rgba(15,23,42,.72);
+  }
+  .st-pill{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:6px 10px;border-radius:999px;
+    font-size:12px;font-weight:950;
+    border:1px solid rgba(15,23,42,.10);
+    background: rgba(15,23,42,.03);
+    white-space:nowrap;
+  }
+  .st-pill.ok{border-color: rgba(34,197,94,.30); background: rgba(34,197,94,.12); color: rgba(20,83,45,.92)}
+  .st-pill.bad{border-color: rgba(239,68,68,.28); background: rgba(239,68,68,.10); color: rgba(153,27,27,.92)}
+
+  .cust-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+  .amt{
+    font-size:12px;font-weight:950;color: rgba(30,64,175,.92);
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .mini-btn{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:6px 9px;border-radius:12px;
+    border:1px solid rgba(15,23,42,.10);
+    background: rgba(255,255,255,.92);
+    font-size:12px;font-weight:950;color: rgba(15,23,42,.72);
+    cursor:pointer;
+  }
+
+  .tx-wrap{
+    display:none;
+    border-top:1px dashed rgba(15,23,42,.12);
+    background: rgba(15,23,42,.018);
+    padding: 10px 10px 12px;
+  }
+  .tx-wrap.show{display:block}
+  .tx-row{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:7px 0;
+    border-bottom:1px solid rgba(15,23,42,.06);
+    font-size:12px;
+  }
+  .tx-row:last-child{border-bottom:0}
+  .tx-left{display:flex;flex-direction:column;gap:2px}
+  .tx-time{color: rgba(71,85,105,.92)}
+  .tx-amt{font-weight:950;color: rgba(15,23,42,.85)}
+</style>
+
+{# ✅ SAFE for dict/object: data is mapping -> get('items') #}
+{% set items = (data.get('items') if data is mapping else (data.items if data and data.items is defined else [])) %}
+{% set project_id_val = project_id if project_id is defined else None %}
+{% set is_v2_page = is_v2 if is_v2 is defined else False %}
+
+<div class="rp-wrap">
+  <div class="rp-head">
+    <div class="rp-title">
+      <div>
+        <h1>
+          <i class="ri-checkbox-circle-line" style="color: var(--pri);font-size:24px"></i>
+          Lô đủ điều kiện
+        </h1>
+        <p>
+          Tổng hợp các lô đạt điều kiện mở đấu giá (>= 2 khách đủ điều kiện).
+          Bấm “Xem khách” để xem chi tiết khách &amp; giao dịch của lô trong popup.
+        </p>
+      </div>
+      <div class="pill">
+        <span class="dot"></span>
+        Reports V2
+      </div>
     </div>
 
-    <div class="shrink-0">
-      <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-slate-200 text-slate-700 text-sm shadow-sm">
-        <span class="h-2 w-2 rounded-full {% if row_count > 0 %}bg-emerald-500{% else %}bg-slate-300{% endif %}"></span>
-        <span class="font-semibold" id="pillCount">{{ row_count }} dòng</span>
-      </span>
-    </div>
-  </div>
-</div>
-
-{# =======================
-   Filters (auto-apply)
-   - BỎ nút "Xem"
-   - BỎ limit (ẩn hẳn)
-   - đổi dự án => điều hướng sang /reports/v2/projects/{id}/lots/eligible
-   ======================= #}
-<div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mb-5">
-  <div class="p-4 md:p-5 bg-gradient-to-r from-slate-50 to-white border-b border-slate-100">
-    <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-      <div class="md:col-span-9">
-        <label class="text-xs font-semibold text-slate-600">Dự án</label>
-        <div class="mt-1">
-          <select id="projectSelect"
-                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-300">
-            {% set _pid = project_id if project_id is not none else 0 %}
+    <div class="rp-controls">
+      <form id="projForm" method="get" action="{{ request.url.path }}">
+        <div class="sel">
+          <label>Dự án</label>
+          <select id="projectSelect">
+            <option value="">— Chọn dự án —</option>
             {% for p in (projects or []) %}
               {% set pid = p.get("id") or p.get("project_id") %}
-              {% set code = (p.get("project_code") or p.get("code") or "") %}
-              {% set name = (p.get("name") or "") %}
-              <option value="{{ pid }}"
-                      {% if pid == _pid %}selected{% endif %}>
-                {{ code }} — {{ name }}
+              {% set code = (p.get("project_code") or p.get("code") or "")|upper %}
+              <option value="{{ pid }}" {% if pid == project_id_val %}selected{% endif %}>
+                {{ code }} — {{ (p.get("name") or "") }}
               </option>
             {% endfor %}
           </select>
         </div>
-        <div class="mt-2 text-[12px] text-slate-500 flex items-center gap-2">
-          <i class="ri-flashlight-line"></i>
-          <span>Đổi dự án sẽ tự tải lại báo cáo.</span>
-          {% if ns.project_code %}
-            <span class="hidden md:inline text-slate-400">•</span>
-            <span class="hidden md:inline">theo project_id = <span class="font-semibold text-slate-700">{{ project_id }}</span></span>
+      </form>
+
+      {% if project_id_val %}
+        <a class="btn primary" href="/reports/v2/projects/{{ project_id_val }}/lots/eligible/export">
+          <i class="ri-download-2-line"></i> Export XLSX
+        </a>
+      {% endif %}
+
+      <a class="btn" href="/reports">
+        <i class="ri-arrow-left-line"></i> Tổng quan
+      </a>
+    </div>
+
+    {# ===== KPI (CHUNG) ===== #}
+    {% set lot_count = (items|length) %}
+    {% set sum_paid_all = namespace(v=0) %}
+    {% set sum_paid_eligible = namespace(v=0) %}
+    {% set first_paid_min = namespace(v=None) %}
+    {% set last_paid_max = namespace(v=None) %}
+    {% set deadline_val = namespace(v=None) %}
+    {% if items %}
+      {% for r in items %}
+        {% set _a = (r.get("total_deposit_amount") if r.get("total_deposit_amount") is not none else r.get("total_paid_vnd_all")) %}
+        {% set _e = (r.get("eligible_deposit_amount") if r.get("eligible_deposit_amount") is not none else r.get("total_paid_vnd_eligible")) %}
+        {% set sum_paid_all.v = sum_paid_all.v + (_a or 0) %}
+        {% set sum_paid_eligible.v = sum_paid_eligible.v + (_e or 0) %}
+        {% if deadline_val.v is none and r.get("deposit_deadline_at") %}
+          {% set deadline_val.v = r.get("deposit_deadline_at") %}
+        {% endif %}
+        {% if r.get("first_paid_at") %}
+          {% if first_paid_min.v is none or r.get("first_paid_at") < first_paid_min.v %}
+            {% set first_paid_min.v = r.get("first_paid_at") %}
           {% endif %}
-        </div>
+        {% endif %}
+        {% if r.get("last_paid_at") %}
+          {% if last_paid_max.v is none or r.get("last_paid_at") > last_paid_max.v %}
+            {% set last_paid_max.v = r.get("last_paid_at") %}
+          {% endif %}
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+
+    <div class="kpis">
+      <div class="kpi ok">
+        <div class="t">Số lô đủ điều kiện</div>
+        <div class="v mono" data-num="{{ lot_count }}">{{ lot_count }}</div>
+        <div class="s">Tổng số lô trong danh sách hiện tại</div>
       </div>
 
-      <div class="md:col-span-3 flex md:justify-end gap-2">
-        {# Export V2 #}
-        {% if is_v2 %}
-          <a href="/reports/v2/projects/{{ project_id }}/lots/eligible/export"
-             class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-900 text-sm font-semibold shadow-sm">
-            <i class="ri-download-2-line"></i>
-            Export
-          </a>
-        {% else %}
-          {# back-compat if you ever reuse template for V1 #}
-          <a href="/reports/lots/eligible/export?project={{ (project or '')|upper }}"
-             class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-900 text-sm font-semibold shadow-sm">
-            <i class="ri-download-2-line"></i>
-            Export
-          </a>
-        {% endif %}
+      <div class="kpi money">
+        <div class="t">Tổng tiền đã nộp (tất cả khách)</div>
+        <div class="v mono" data-money="{{ sum_paid_all.v }}">{{ sum_paid_all.v }}</div>
+        <div class="s">Cộng theo paid_vnd của tất cả khách đã nộp (paid_vnd &gt; 0)</div>
+      </div>
+
+      <div class="kpi money">
+        <div class="t">Tổng tiền của khách đủ điều kiện</div>
+        <div class="v mono" data-money="{{ sum_paid_eligible.v }}">{{ sum_paid_eligible.v }}</div>
+        <div class="s">Cộng paid_vnd chỉ trên tập khách đủ điều kiện của từng lô</div>
+      </div>
+
+      <div class="kpi deadline">
+        <div class="t">Hạn đặt cọc (theo dự án)</div>
+        <div class="v mono">{{ deadline_val.v or "—" }}</div>
+        <div class="s">
+          {% if first_paid_min.v or last_paid_max.v %}
+            Dải thời gian nộp: {{ first_paid_min.v or "—" }} → {{ last_paid_max.v or "—" }}
+          {% else %}
+            Chưa có dữ liệu thời điểm nộp trong danh sách
+          {% endif %}
+        </div>
       </div>
     </div>
   </div>
 
-  {# =======================
-     Summary boxes (THÔNG TIN CHUNG)
-     - Thứ cần show ở trên, KHÔNG nhét vào danh sách
-     ======================= #}
-  <div class="p-4 md:p-5">
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div class="flex items-center justify-between">
-          <div class="text-xs font-semibold text-slate-500">Tổng lô đủ điều kiện</div>
-          <div class="h-9 w-9 rounded-xl bg-indigo-50 flex items-center justify-center">
-            <i class="ri-stack-line text-indigo-600"></i>
-          </div>
-        </div>
-        <div class="mt-2 text-2xl font-extrabold text-slate-900">{{ row_count }}</div>
-        <div class="mt-1 text-xs text-slate-500">Số dòng từ API</div>
+  <div class="rp-card">
+    <div class="hd">
+      <div class="left">
+        <span class="badge ok"><i class="ri-list-check-2"></i> Danh sách lô</span>
+        <span class="muted">Chi tiết khách &amp; giao dịch mở trong popup (tải theo yêu cầu).</span>
       </div>
 
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div class="flex items-center justify-between">
-          <div class="text-xs font-semibold text-slate-500">Tổng khách đủ điều kiện</div>
-          <div class="h-9 w-9 rounded-xl bg-emerald-50 flex items-center justify-center">
-            <i class="ri-user-star-line text-emerald-600"></i>
-          </div>
-        </div>
-        <div class="mt-2 text-2xl font-extrabold text-slate-900">
-          {{ ns.sum_eligible_customers }}
-        </div>
-        <div class="mt-1 text-xs text-slate-500">Cộng dồn “Số KH đủ” của các lô</div>
-      </div>
-
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div class="flex items-center justify-between">
-          <div class="text-xs font-semibold text-slate-500">Tổng tiền (đủ điều kiện)</div>
-          <div class="h-9 w-9 rounded-xl bg-sky-50 flex items-center justify-center">
-            <i class="ri-funds-line text-sky-600"></i>
-          </div>
-        </div>
-        <div class="mt-2 text-2xl font-extrabold text-slate-900 tabular-nums"
-             data-money="{{ ns.sum_paid_eligible }}">0</div>
-        <div class="mt-1 text-xs text-slate-500">
-          Tổng tiền tính theo tập “eligible”
-          {% if ns.sum_paid_diff and ns.sum_paid_diff > 0 %}
-            <span class="text-slate-400">•</span>
-            <span class="text-slate-600">còn lại (không đủ):</span>
-            <span class="font-semibold text-slate-700 tabular-nums" data-money="{{ ns.sum_paid_diff }}">0</span>
-          {% endif %}
-        </div>
-      </div>
-
-      <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div class="flex items-center justify-between">
-          <div class="text-xs font-semibold text-slate-500">Deadline tiền đặt trước</div>
-          <div class="h-9 w-9 rounded-xl bg-amber-50 flex items-center justify-center">
-            <i class="ri-timer-line text-amber-600"></i>
-          </div>
-        </div>
-
-        {% if ns.min_deadline and ns.max_deadline %}
-          {% if ns.min_deadline == ns.max_deadline %}
-            <div class="mt-2 text-base font-bold text-slate-900 tabular-nums">
-              {{ ns.min_deadline }}
-            </div>
-            <div class="mt-1 text-xs text-slate-500">Áp dụng chung cho dự án</div>
-          {% else %}
-            <div class="mt-2 text-sm font-bold text-slate-900 tabular-nums">
-              {{ ns.min_deadline }} <span class="text-slate-400 font-semibold">→</span> {{ ns.max_deadline }}
-            </div>
-            <div class="mt-1 text-xs text-slate-500">Có nhiều mốc deadline</div>
-          {% endif %}
-        {% else %}
-          <div class="mt-2 text-base font-bold text-slate-900">—</div>
-          <div class="mt-1 text-xs text-slate-500">Không có dữ liệu deadline</div>
-        {% endif %}
-      </div>
+      {% if error %}
+        <span class="badge" style="border-color: rgba(239,68,68,.25); background: rgba(239,68,68,.08); color: rgba(153,27,27,.92)">
+          <i class="ri-error-warning-line"></i> Lỗi tải dữ liệu
+        </span>
+      {% endif %}
     </div>
 
     {% if error %}
-      <div class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-4">
-        <div class="flex items-start gap-3">
-          <div class="h-10 w-10 rounded-xl bg-rose-100 flex items-center justify-center">
-            <i class="ri-error-warning-line text-rose-600 text-xl"></i>
-          </div>
-          <div class="min-w-0">
-            <div class="font-semibold text-rose-900">Không tải được dữ liệu từ Service A</div>
-            <div class="text-sm text-rose-700 mt-1">
-              Status: <span class="font-semibold">{{ error.status }}</span>
-            </div>
-            <pre class="mt-2 text-xs text-rose-800 whitespace-pre-wrap break-words">{{ error.body }}</pre>
-          </div>
-        </div>
+      <div style="padding:12px 14px;border-bottom:1px solid rgba(15,23,42,.06);color:rgba(153,27,27,.92);font-size:12px">
+        Service A trả lỗi: <b>{{ error.status }}</b>
+      </div>
+    {% endif %}
+
+    {% if items|length == 0 %}
+      <div style="padding:18px 14px;color:rgba(71,85,105,.88);font-size:13px">
+        Chưa có dữ liệu. Hãy chọn dự án để xem danh sách.
+      </div>
+    {% else %}
+      <div style="overflow:auto">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th style="min-width:160px">Lô</th>
+              <th style="min-width:220px">Thông tin lô</th>
+              <th style="min-width:260px">Tham gia đặt cọc</th>
+              <th style="min-width:260px">Khách đủ điều kiện</th>
+              <th style="min-width:160px"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in items %}
+              {% set lot_id = r.get("lot_id") %}
+              {% set lot_code = r.get("lot_code") %}
+              {% set name = r.get("lot_name") or r.get("lot_title") or r.get("lot_description") or "" %}
+              {% set area = r.get("area_m2") or r.get("area") %}
+              {% set sp = r.get("starting_price_vnd") %}
+              {% set step = r.get("bid_step_vnd") %}
+              {% set dep_req = r.get("deposit_vnd") or r.get("deposit_required_vnd") %}
+              {% set paid_all = r.get("total_deposit_amount") if r.get("total_deposit_amount") is not none else r.get("total_paid_vnd_all") %}
+              {% set paid_el = r.get("eligible_deposit_amount") if r.get("eligible_deposit_amount") is not none else r.get("total_paid_vnd_eligible") %}
+              {% set c_all = r.get("total_customers_paid") if r.get("total_customers_paid") is not none else r.get("deposit_customer_count") %}
+              {% set c_el = r.get("eligible_customer_count") if r.get("eligible_customer_count") is not none else r.get("eligible_customer_count_for_lot") %}
+              {% set fp = r.get("first_paid_at") %}
+              {% set lp = r.get("last_paid_at") %}
+              {% set fp2 = r.get("eligible_first_paid_at") if r.get("eligible_first_paid_at") is not none else r.get("first_paid_at_eligible") %}
+              {% set lp2 = r.get("eligible_last_paid_at") if r.get("eligible_last_paid_at") is not none else r.get("last_paid_at_eligible") %}
+
+              <tr class="row">
+                <td>
+                  <a class="lotcode mono" href="javascript:void(0)" onclick="openLotModal({{ lot_id }}, '{{ lot_code }}')">{{ lot_code }}</a>
+                  {% if name %}<div class="lotname">{{ name }}</div>{% endif %}
+                </td>
+
+                <td>
+                  <div class="mini">
+                    {% if area %}<span class="mono">{{ area }}</span> m²{% else %}—{% endif %}
+                    <span style="opacity:.35">•</span>
+                    Giá khởi điểm: <b class="mono" data-money="{{ sp or 0 }}">{{ sp or 0 }}</b>
+                    <br/>
+                    Bước giá: <b class="mono" data-money="{{ step or 0 }}">{{ step or 0 }}</b>
+                    <span style="opacity:.35">•</span>
+                    Cọc yêu cầu: <b class="mono" data-money="{{ dep_req or 0 }}">{{ dep_req or 0 }}</b>
+                  </div>
+                </td>
+
+                <td>
+                  <div style="display:flex;flex-wrap:wrap;gap:8px">
+                    <span class="chip"><i class="ri-user-3-line"></i> <span class="mono">{{ c_all or 0 }}</span> khách</span>
+                    <span class="chip money"><i class="ri-coins-line"></i> <span class="mono" data-money="{{ paid_all or 0 }}">{{ paid_all or 0 }}</span></span>
+                  </div>
+                  <div class="mini" style="margin-top:6px">
+                    {% if fp or lp %}{{ fp or "—" }} → {{ lp or "—" }}{% else %}—{% endif %}
+                  </div>
+                </td>
+
+                <td>
+                  <div style="display:flex;flex-wrap:wrap;gap:8px">
+                    <span class="chip ok"><i class="ri-user-star-line"></i> <span class="mono">{{ c_el or 0 }}</span> khách</span>
+                    <span class="chip money"><i class="ri-coins-line"></i> <span class="mono" data-money="{{ paid_el or 0 }}">{{ paid_el or 0 }}</span></span>
+                  </div>
+                  <div class="mini" style="margin-top:6px">
+                    {% if fp2 or lp2 %}{{ fp2 or "—" }} → {{ lp2 or "—" }}{% else %}—{% endif %}
+                  </div>
+                </td>
+
+                <td style="text-align:right">
+                  <button class="act primary" type="button" onclick="openLotModal({{ lot_id }}, '{{ lot_code }}')">
+                    <i class="ri-team-line"></i> Xem khách
+                  </button>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     {% endif %}
   </div>
 </div>
 
-{# =======================
-   Table (CHỈ THÔNG TIN RIÊNG TỪNG LÔ)
-   - Không show “thông tin chung” ở đây nữa
-   - Tiền: format dễ đọc (không thêm VND)
-   ======================= #}
-<div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-  <div class="px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-white to-slate-50">
-    <div class="flex items-center justify-between gap-3">
-      <div class="flex items-center gap-2">
-        <div class="h-9 w-9 rounded-xl bg-indigo-50 flex items-center justify-center">
-          <i class="ri-table-line text-indigo-600"></i>
+{# ===== Modal popup ===== #}
+<div class="modal" id="lotModal" aria-hidden="true">
+  <div class="backdrop" onclick="closeLotModal()"></div>
+  <div class="panel" role="dialog" aria-modal="true">
+    <div class="m-hd">
+      <div class="m-title">
+        <div class="t">
+          <i class="ri-team-line" style="color:rgba(79,70,229,.95)"></i>
+          <span>Khách &amp; giao dịch — <span class="mono" id="mLotCode">—</span></span>
+          <span class="badge ok" id="mCount" style="margin-left:8px">—</span>
         </div>
-        <div>
-          <div class="text-sm font-semibold text-slate-900">Danh sách lô đủ điều kiện</div>
-          <div class="text-xs text-slate-500">
-            {% if is_v2 %}
-              {{ row_count }} dòng • theo project_id = {{ project_id }}
-            {% else %}
-              {{ row_count }} dòng
-            {% endif %}
-          </div>
+        <div class="sub" id="mSub">
+          Tải theo yêu cầu từ Reports V2 (lot detail). Dữ liệu lớn vẫn hiển thị gọn trong popup.
         </div>
       </div>
 
-      <div class="hidden md:flex items-center gap-2">
-        <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-semibold">
-          <i class="ri-shield-check-line"></i>
-          Đủ điều kiện
-        </span>
+      <div class="m-actions">
+        <a class="btn" id="mOpenDetail" href="#" target="_blank" rel="noopener">
+          <i class="ri-external-link-line"></i> Mở trang chi tiết
+        </a>
+        <button class="m-close" type="button" onclick="closeLotModal()" aria-label="Đóng">
+          <i class="ri-close-line"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="m-bd">
+      <div class="topinfo" id="mTopInfo"></div>
+      <div id="mBody">
+        <div class="skeleton" style="width:48%"></div>
+        <div class="skeleton" style="width:72%;margin-top:10px"></div>
+        <div class="skeleton" style="width:66%;margin-top:10px"></div>
       </div>
     </div>
   </div>
-
-  {% if row_count == 0 %}
-    <div class="p-8 text-center">
-      <div class="mx-auto h-12 w-12 rounded-2xl bg-slate-100 flex items-center justify-center">
-        <i class="ri-inbox-2-line text-slate-400 text-2xl"></i>
-      </div>
-      <div class="mt-3 font-semibold text-slate-900">Không có dữ liệu</div>
-      <div class="mt-1 text-sm text-slate-500">
-        Dự án hiện tại chưa có lô nào đạt điều kiện (≥ 2 khách đủ điều kiện) hoặc API trả về rỗng.
-      </div>
-    </div>
-  {% else %}
-    <div class="overflow-auto">
-      <table class="min-w-full text-sm">
-        <thead class="bg-slate-50/70 text-slate-600">
-          <tr class="text-left">
-            <th class="px-4 py-3 font-semibold uppercase tracking-wide text-xs whitespace-nowrap">Mã lô</th>
-            <th class="px-4 py-3 font-semibold uppercase tracking-wide text-xs min-w-[220px]">Mô tả</th>
-            <th class="px-4 py-3 font-semibold uppercase tracking-wide text-xs whitespace-nowrap">Số KH đặt</th>
-            <th class="px-4 py-3 font-semibold uppercase tracking-wide text-xs whitespace-nowrap">Số KH đủ</th>
-            <th class="px-4 py-3 font-semibold uppercase tracking-wide text-xs whitespace-nowrap">Tổng tiền</th>
-            <th class="px-4 py-3 font-semibold uppercase tracking-wide text-xs whitespace-nowrap">Tổng tiền (đủ)</th>
-            <th class="px-4 py-3 font-semibold uppercase tracking-wide text-xs whitespace-nowrap">Trạng thái</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100">
-          {% for r in rows %}
-            {% set lot_code = r.get("lot_code") or "-" %}
-            {% set lot_desc = r.get("lot_description") or r.get("lot_name") or r.get("lot_title") or r.get("description") or "-" %}
-
-            {% set cnt_paid = (r.get("total_customers_paid") if (r.get("total_customers_paid") is not none) else (r.get("deposit_customer_count") if (r.get("deposit_customer_count") is not none) else (r.get("deposit_customer_count_for_lot") if (r.get("deposit_customer_count_for_lot") is not none) else 0))) %}
-            {% set cnt_ok = (r.get("eligible_customer_count") if (r.get("eligible_customer_count") is not none) else (r.get("eligible_customer_count_for_lot") if (r.get("eligible_customer_count_for_lot") is not none) else 0)) %}
-
-            {% set paid_all = (r.get("total_deposit_amount") if (r.get("total_deposit_amount") is not none) else (r.get("total_paid_vnd_all") if (r.get("total_paid_vnd_all") is not none) else (r.get("total_deposit_amount_all") if (r.get("total_deposit_amount_all") is not none) else 0))) %}
-            {% set paid_ok = (r.get("eligible_deposit_amount") if (r.get("eligible_deposit_amount") is not none) else (r.get("total_paid_vnd_eligible") if (r.get("total_paid_vnd_eligible") is not none) else (r.get("total_deposit_amount_eligible") if (r.get("total_deposit_amount_eligible") is not none) else paid_all))) %}
-
-            {% set st = (r.get("lot_status") or r.get("status") or "")|upper %}
-            {% set st_label = st if st else "—" %}
-
-            <tr class="hover:bg-slate-50/40">
-              <td class="px-4 py-3 whitespace-nowrap">
-                <div class="font-extrabold text-slate-900">{{ lot_code }}</div>
-                <div class="text-[12px] text-slate-500">ID: {{ r.get("lot_id") or "-" }}</div>
-              </td>
-
-              <td class="px-4 py-3">
-                <div class="text-slate-900 font-semibold leading-snug">
-                  {{ lot_desc }}
-                </div>
-                <div class="mt-1 text-[12px] text-slate-500 flex flex-wrap gap-x-3 gap-y-1">
-                  {% if r.get("area_m2") %}
-                    <span class="inline-flex items-center gap-1">
-                      <i class="ri-ruler-line"></i>
-                      {{ r.get("area_m2") }} m²
-                    </span>
-                  {% endif %}
-                  {% if r.get("deposit_vnd") or r.get("deposit_required_vnd") %}
-                    {% set dep_req = r.get("deposit_required_vnd") if r.get("deposit_required_vnd") is not none else r.get("deposit_vnd") %}
-                    <span class="inline-flex items-center gap-1">
-                      <i class="ri-bank-card-line"></i>
-                      Cọc: <span class="font-semibold tabular-nums" data-money="{{ dep_req }}">0</span>
-                    </span>
-                  {% endif %}
-                </div>
-              </td>
-
-              <td class="px-4 py-3 whitespace-nowrap">
-                <span class="inline-flex items-center justify-center min-w-[44px] px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 font-bold tabular-nums">
-                  {{ cnt_paid }}
-                </span>
-              </td>
-
-              <td class="px-4 py-3 whitespace-nowrap">
-                <span class="inline-flex items-center justify-center min-w-[44px] px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 font-extrabold tabular-nums">
-                  {{ cnt_ok }}
-                </span>
-              </td>
-
-              <td class="px-4 py-3 whitespace-nowrap">
-                <div class="font-extrabold text-slate-900 tabular-nums" data-money="{{ paid_all }}">0</div>
-                {% if r.get("first_paid_at") or r.get("last_paid_at") %}
-                  <div class="mt-1 text-[12px] text-slate-500">
-                    {% if r.get("first_paid_at") %}<span>Đầu: {{ r.get("first_paid_at") }}</span>{% endif %}
-                    {% if r.get("last_paid_at") %}<span class="ml-2">Cuối: {{ r.get("last_paid_at") }}</span>{% endif %}
-                  </div>
-                {% endif %}
-              </td>
-
-              <td class="px-4 py-3 whitespace-nowrap">
-                <div class="font-extrabold text-slate-900 tabular-nums" data-money="{{ paid_ok }}">0</div>
-                {% if paid_all != paid_ok %}
-                  <div class="mt-1 text-[12px] text-slate-500">
-                    Không đủ: <span class="font-semibold tabular-nums" data-money="{{ (paid_all or 0) - (paid_ok or 0) }}">0</span>
-                  </div>
-                {% endif %}
-              </td>
-
-              <td class="px-4 py-3 whitespace-nowrap">
-                {% if st == "AVAILABLE" %}
-                  <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 text-amber-800 border border-amber-100 text-xs font-semibold">
-                    <span class="h-2 w-2 rounded-full bg-amber-500"></span>
-                    AVAILABLE
-                  </span>
-                {% elif st %}
-                  <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold">
-                    <span class="h-2 w-2 rounded-full bg-slate-400"></span>
-                    {{ st_label }}
-                  </span>
-                {% else %}
-                  <span class="text-slate-400">—</span>
-                {% endif %}
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  {% endif %}
 </div>
 
 <script>
-  (function () {
-    // -------- money formatter (no "VND") --------
-    function fmtMoney(n) {
-      try {
-        const x = Number(n || 0);
-        return new Intl.NumberFormat('en-US').format(Math.round(x));
-      } catch (e) {
-        return String(n ?? '');
-      }
+  // ===== helpers =====
+  function fmtMoney(n){
+    try{
+      const x = Number(n || 0);
+      return x.toLocaleString('vi-VN');
+    }catch(e){
+      return String(n || 0);
     }
-    document.querySelectorAll('[data-money]').forEach(function (el) {
+  }
+  function applyMoneyFormat(root){
+    const nodes = (root || document).querySelectorAll('[data-money]');
+    nodes.forEach(el => {
       const v = el.getAttribute('data-money');
       el.textContent = fmtMoney(v);
     });
+  }
+  applyMoneyFormat(document);
 
-    // -------- auto-apply project select --------
+  // project select redirect
+  (function(){
     const sel = document.getElementById('projectSelect');
-    if (sel) {
-      sel.addEventListener('change', function () {
-        const pid = (sel.value || '').trim();
-        if (!pid) return;
-
-        // V2 route
-        const base = `/reports/v2/projects/${pid}/lots/eligible`;
-        window.location.href = base;
-      });
-    }
+    if(!sel) return;
+    sel.addEventListener('change', () => {
+      const pid = sel.value;
+      if(!pid){ window.location.href = '/reports'; return; }
+      window.location.href = `/reports/v2/projects/${pid}/lots/eligible`;
+    });
   })();
+
+  // ===== modal state =====
+  const lotCache = new Map();
+  const projectId = {{ project_id_val or 0 }};
+
+  function escHtml(s){
+    return String(s || '')
+      .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
+      .replaceAll('"','&quot;').replaceAll("'","&#039;");
+  }
+
+  function reasonText(elig){
+    const isOk = !!(elig && elig.is_eligible);
+    if(isOk) return 'Đủ điều kiện';
+    return (elig && (elig.reason_text || elig.reason_code || elig.ineligible_reason)) || 'Không đủ điều kiện';
+  }
+
+  function copyToClipboard(text){
+    try{
+      navigator.clipboard.writeText(text || '');
+    }catch(e){}
+  }
+
+  async function loadLotDetail(lotId){
+    if(lotCache.has(lotId)) return lotCache.get(lotId);
+    const url = `/reports/v2/projects/${projectId}/lots/${lotId}/json?expose_phone=1`;
+    const res = await fetch(url, {credentials: 'same-origin'});
+    if(!res.ok){
+      const t = await res.text();
+      throw new Error(`HTTP ${res.status}: ${t}`);
+    }
+    const js = await res.json();
+    lotCache.set(lotId, js);
+    return js;
+  }
+
+  function renderTxnRows(txns){
+    if(!txns || !txns.length){
+      return `<div style="color:rgba(71,85,105,.90);font-size:12px">Không có danh sách giao dịch (receipt).</div>`;
+    }
+    return txns.map(t => {
+      const amt = t.receipt_amount_vnd ?? t.amount_vnd ?? 0;
+      const time = t.received_at || t.txn_time || '';
+      const src = t.receipt_source || t.source || '';
+      return `
+        <div class="tx-row">
+          <div class="tx-left">
+            <div class="tx-time mono">${escHtml(time)}</div>
+            <div class="tx-time" style="opacity:.75">${escHtml(src)}</div>
+          </div>
+          <div class="tx-amt mono">${fmtMoney(amt)}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderCustomerItem(c){
+    const cust = (c && c.customer) || {};
+    const elig = (c && c.eligibility) || {};
+    const dep  = (c && c.deposit) || {};
+    const txns = (c && c.txns) || [];
+
+    const ok = !!elig.is_eligible;
+    const stClass = ok ? 'ok' : 'bad';
+    const stLabel = ok ? 'ĐỦ ĐK' : 'KHÔNG ĐỦ';
+
+    const fullName = cust.full_name || '';
+    const cccd = cust.cccd || '';
+    const phone = cust.phone || '';
+    const email = cust.email || '';
+
+    const paid = dep.paid_vnd || 0;
+    const paidAt = dep.paid_at || '';
+    const txnCount = (dep.txn_count ?? txns.length ?? 0);
+
+    const id = `c_${Math.random().toString(16).slice(2)}`;
+
+    const subBits = [];
+    if(cccd) subBits.push(`
+      <span class="cccd-pill mono">
+        ${escHtml(cccd)}
+        <button class="copybtn" type="button" data-copy="${escHtml(cccd)}"><i class="ri-file-copy-line"></i> Copy</button>
+      </span>
+    `);
+    if(phone) subBits.push(`<span class="chip"><i class="ri-phone-line"></i> <span class="mono">${escHtml(phone)}</span></span>`);
+    if(email) subBits.push(`<span class="chip"><i class="ri-mail-line"></i> <span class="mono">${escHtml(email)}</span></span>`);
+
+    return `
+      <div class="cust-item">
+        <div class="cust-row">
+          <div class="cust-left">
+            <div class="cust-name">${escHtml(fullName)}</div>
+            <div class="cust-sub">
+              ${subBits.join('')}
+              <span class="chip money"><i class="ri-coins-line"></i> <span class="mono">${fmtMoney(paid)}</span></span>
+              ${paidAt ? `<span class="chip"><i class="ri-time-line"></i> <span class="mono">${escHtml(paidAt)}</span></span>` : ``}
+              <span class="chip"><i class="ri-repeat-2-line"></i> <span class="mono">${txnCount}</span> giao dịch</span>
+              <span class="chip ${ok ? 'ok' : ''}"><i class="ri-shield-check-line"></i> ${escHtml(reasonText(elig))}</span>
+            </div>
+          </div>
+
+          <div class="cust-right">
+            <span class="st-pill ${stClass}"><i class="ri-shield-check-line"></i> ${stLabel}</span>
+            <button class="mini-btn" type="button" data-toggle-tx="${id}">
+              <i class="ri-exchange-dollar-line"></i> Giao dịch
+            </button>
+          </div>
+        </div>
+
+        <div class="tx-wrap" id="${id}">
+          ${renderTxnRows(txns)}
+        </div>
+      </div>
+    `;
+  }
+
+  function showModal(){
+    const m = document.getElementById('lotModal');
+    if(!m) return;
+    m.classList.add('show');
+    m.setAttribute('aria-hidden','false');
+    document.documentElement.style.overflow = 'hidden';
+  }
+
+  function closeLotModal(){
+    const m = document.getElementById('lotModal');
+    if(!m) return;
+    m.classList.remove('show');
+    m.setAttribute('aria-hidden','true');
+    document.documentElement.style.overflow = '';
+  }
+
+  // ESC close
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape'){
+      const m = document.getElementById('lotModal');
+      if(m && m.classList.contains('show')) closeLotModal();
+    }
+  });
+
+  // event delegation: copy + toggle tx
+  document.addEventListener('click', (e) => {
+    const t = e.target;
+    const copyBtn = t && t.closest ? t.closest('[data-copy]') : null;
+    if(copyBtn){
+      const val = copyBtn.getAttribute('data-copy') || '';
+      copyToClipboard(val);
+      return;
+    }
+    const tog = t && t.closest ? t.closest('[data-toggle-tx]') : null;
+    if(tog){
+      const id = tog.getAttribute('data-toggle-tx');
+      const box = document.getElementById(id);
+      if(box) box.classList.toggle('show');
+      return;
+    }
+  });
+
+  async function openLotModal(lotId, lotCode){
+    if(!projectId){
+      alert('Thiếu project_id trên trang (v2).');
+      return;
+    }
+
+    // set header
+    document.getElementById('mLotCode').textContent = lotCode || '—';
+    document.getElementById('mCount').textContent = '—';
+    const openLink = document.getElementById('mOpenDetail');
+    openLink.href = `/reports/v2/projects/${projectId}/lots/${lotId}`;
+
+    // skeleton
+    document.getElementById('mTopInfo').innerHTML = '';
+    document.getElementById('mBody').innerHTML = `
+      <div class="skeleton" style="width:48%"></div>
+      <div class="skeleton" style="width:72%;margin-top:10px"></div>
+      <div class="skeleton" style="width:66%;margin-top:10px"></div>
+    `;
+
+    showModal();
+
+    try{
+      const js = await loadLotDetail(lotId);
+      const customers = (js && js.customers) || [];
+      const lot = (js && js.lot) || {};
+      const ccount = customers.length || 0;
+
+      const countEl = document.getElementById('mCount');
+      countEl.className = 'badge ok';
+      countEl.innerHTML = `<i class="ri-team-line"></i> <span class="mono">${ccount}</span> khách`;
+
+      const topInfo = [];
+      topInfo.push(`<span class="chip"><i class="ri-calendar-2-line"></i> Hạn cọc: <span class="mono">${escHtml(lot.deposit_deadline_at || '—')}</span></span>`);
+      if(lot.lot_status) topInfo.push(`<span class="chip"><i class="ri-flag-line"></i> Trạng thái: <span class="mono">${escHtml(lot.lot_status)}</span></span>`);
+      if(lot.deposit_required_vnd != null) topInfo.push(`<span class="chip money"><i class="ri-coins-line"></i> Cọc yêu cầu: <span class="mono">${fmtMoney(lot.deposit_required_vnd)}</span></span>`);
+
+      document.getElementById('mTopInfo').innerHTML = topInfo.join('');
+
+      const bodyEl = document.getElementById('mBody');
+      if(!customers.length){
+        bodyEl.innerHTML = `<div style="color:rgba(71,85,105,.90);font-size:13px">Không có khách (paid_vnd &gt; 0) trong lô này.</div>`;
+        return;
+      }
+
+      bodyEl.innerHTML = `<div class="cust-list">${customers.map(renderCustomerItem).join('')}</div>`;
+    }catch(e){
+      document.getElementById('mBody').innerHTML = `
+        <div style="color:rgba(153,27,27,.92);font-size:13px">
+          Không tải được dữ liệu chi tiết. ${escHtml(e && e.message ? e.message : e)}
+        </div>
+      `;
+      const countEl = document.getElementById('mCount');
+      countEl.className = 'badge';
+      countEl.innerHTML = `<i class="ri-error-warning-line"></i> Lỗi`;
+    }
+  }
 </script>
 {% endblock %}
