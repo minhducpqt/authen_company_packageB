@@ -27,6 +27,7 @@ from routers import transactions  # <-- NEW
 from routers.api_proxy import router as api_proxy_router  # <-- NEW
 from routers.reports import router as reports_router
 from routers.reports_export import router as reports_export_router
+from routers.reports_v2 import router as reports_v2_router  # ✅ NEW
 from routers.dashboard import router as dashboard_router
 from routers import company_mailers
 from routers import auction_docs  # import file mới
@@ -109,8 +110,12 @@ app.include_router(bank_transactions.router)
 app.include_router(bank_import_router)
 app.include_router(dossier_buyers_router)
 app.include_router(transactions.router)  # <-- NEW
+
+# Reports
 app.include_router(reports_router)
 app.include_router(reports_export_router)
+app.include_router(reports_v2_router)  # ✅ NEW: /reports/v2/*
+
 app.include_router(company_mailers.router)
 app.include_router(auction_docs.router)
 app.include_router(bid_tickets_router.router)
@@ -133,6 +138,7 @@ app.include_router(auction_documents_print_router)  # <-- NEW (attendance, futur
 
 #Mobile
 mount_mobile_routers(app)
+
 
 @app.get("/healthz")
 def healthz():

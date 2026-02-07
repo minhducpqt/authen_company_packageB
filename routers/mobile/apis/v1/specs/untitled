@@ -1,0 +1,76 @@
+
+
+Tôi cần các view report để trang Admin có thể trả lời các câu hỏi sau, (tên view cần đặt hậu tố _v2)
+Hãy phân tích các yêu cầu và trao đổi với tôi để có tính logic cùng nhau trước khi chốt code. chưa code ngay nhé
+
+
+Với một dự án thì cần xem được
+
+A. Đối với Lô:
+1. Những Lô nào đủ điều kiện đấu giá: 
+- Các thông tin của lô đó (mã lô, tên lô, mô tả lô, diện tích, giá khởi điểm, bước giá)
+- Thời hạn đặt cọc lấy theo dự án
+- Số lượng khách tham gia đặt cọc lô này (điều kiện paid_vnd >0)  kể cả đủ đk hay không đủ đk
+	+ tổng số tiền khách đặt đã đặt cho lô này tính theo sum(paid_vnd)
+	+ time lần đầu đặt - time lần cuối đặt
+- Số lượng khách đủ đk tham gia đấu lô này 
+	+ tổng số tiền khách  đủ đk  đã đặt cho lô này tính theo sum(paid_vnd) (chỉ xét trên tập giao dịch khách đủ đk cho lô này)
+	+ time lần đầu đặt - time lần cuối đặt (chỉ xét trên tập giao dịch khách đủ đk cho lô này)
+- Danh sách các khách hàng tham gia đặt cho lô này chỉ cần (paid_vnd >0)
+	Với mỗi người trong danh sách thì cần biết:
+		+ người này đủ đk đấu lô này hay không, nếu không đủ đk và bị loại thì loại vì lý do gì (không nộp đủ tiền cọc, không nộp đúng hạn, loại thủ công bằng tay - trong view này sẽ k có khách k đủ đk vì có ít hơn 2 khách vì nó nằm trong phần report cho lô đủ đk đấu giá)
+		+ Thông tin từng khách (id khách, họ tên, cccd, sdt...) 
+		+ Thông tin  về giao dịch: (tổng số tiền khách đặt cho lô này paid_vnd, thời điểm xác nhận paid_at, tổng số lượng giao dịch chuyển tiền cho lô này, danh sách các lần chuyển tiền cho lô này gồm có (số tiền, thời gian nhận) vì một lô có thể chuyển nhiều lần nộp lẻ và gộp lại ) 
+
+2. lô không đủ đk đấu giá
+-  Các thông tin của lô đó (mã lô, tên lô, mô tả lô, diện tích, giá khởi điểm, bước giá)
+- Thời hạn đặt cọc lấy theo dự án
+- Số lượng khách tham gia đặt cọc lô này (điều kiện paid_vnd >0)  kể cả đủ đk hay không đủ đk
+	+ tổng số tiền khách đặt đã đặt cho lô này tính theo sum(paid_vnd)
+	+ time lần đầu đặt - time lần cuối đặt
+- Tổng số khách đã đặt cọc vào lô này (không cần order phải paid chỉ cần paid_vnd>0 là tính +1) tổng số tiền đã topup vào lô này 
+- Danh sách các khách hàng tham gia đặt cho lô này chỉ cần (paid_vnd >0): 
+chi tiết danh sách thì từng người cần có:
+		+ người này đủ đk đấu lô này hay không, nếu không đủ đk và bị loại thì loại vì lý do gì (không nộp đủ tiền cọc, không nộp đúng hạn, loại thủ công bằng tay - trong view này sẽ k có khách k đủ đk vì có ít hơn 2 khách vì nó nằm trong phần report cho lô đủ đk đấu giá)
+		+ Thông tin từng khách (id khách, họ tên, cccd, sdt...) 
+		+ Thông tin  về giao dịch: (tổng số tiền khách đặt cho lô này paid_vnd, thời điểm xác nhận paid_at, tổng số lượng giao dịch chuyển tiền cho lô này, danh sách các lần chuyển tiền cho lô này gồm có (số tiền, thời gian nhận) vì một lô có thể chuyển nhiều lần nộp lẻ và gộp lại ) 
+- Lý do loại lô này: có 0 khách tham gia, chỉ có 1 khách đủ dk tham gia 
+
+
+B. Đối với khách
+
+3. Danh sách khách đủ điều kiện tham gia đấu giá 
+- Các thông tin căn bản của khách 
+- tổng số tiền khách này đặt cho tất cả các lô trong cả dự án
+
+- danh sách các lô khách tham gia đấu giá:
+	+  ( thông tin căn bản từng lô)
+	+ số khách hàng cùng đủ đk tham gia đấu lô này 
+	+ thời điểm khách đặt thành công với lô này tổng tiền khách đặt 
+	+ chi tiết các giao dịch khách đặt cho lô này  
+
+
+4. Danh sách khách không đủ điều kiện :
+- Các thông tin căn bản của khách 
+- danh sách các lô mà khách không đủ đktham gia đấu giá (chỉ xét trên các lô mà khách có paid_vnd>0:
+	+  ( thông tin căn bản từng lô)
+	+  Lý do ko đủ đk: nộp k đủ tiền/ nộp muộn/ số khách hàng tối thiểu  cho lô không đạt 
+	+ thời điểm khách đặt thành công với lô này tổng tiền khách đặt 
+	+ chi tiết các giao dịch khách đặt cho lô này  
+
+
+
+Trong trường hợp cả đối với lô hay đối với khách thì tôi thấy có một điểm chung là cần tạo view (khách hàng id, lô id)
+view này là quan hệ của khách vs lô sẽ chỉ tính các giao dịch deposit và có paid_vnd>0 nghĩa là khách có tham gia trả giá cho lô này. 
+Trong view đó có thông tin :
+- Thông tin cơ bản của khách
+- Thông tin cơ bản của lô
+- Thông tin giao dịch của khách cho lô này : tổng tiền giao dịch, danh sách chi tiết các lần nộp tiền cho lô này : số tiền, thời gian ghi nhận 
+
+Tất cả các view report của phần A và B bên trên mô trả sẽ sử dụng thông tin của view này để bổ sung dữ liệu cho report. 
+
+
+
+
+ 
+
