@@ -309,17 +309,32 @@
     backdrop-filter: blur(8px);
   }
   .modal .panel{
-    position: absolute;
-    inset: 18px;
-    background: rgba(255,255,255,.96);
-    border: 1px solid rgba(255,255,255,.45);
-    border-radius: 22px;
-    box-shadow: 0 30px 70px rgba(2,6,23,.40);
-    overflow: hidden;
-    display:flex;
-    flex-direction:column;
+  position: absolute;
+  top: 18px;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(980px, calc(100vw - 36px));  /* ✅ hẹp lại, vẫn responsive */
+  background: rgba(255,255,255,.96);
+  border: 1px solid rgba(255,255,255,.45);
+  border-radius: 22px;
+  box-shadow: 0 30px 70px rgba(2,6,23,.40);
+  overflow: hidden;
+  display:flex;
+  flex-direction:column;
+}
+
+  @media (max-width: 720px){
+  .modal .panel{
+    left: 10px;
+    right: 10px;
+    width: auto;
+    transform: none;
+    top: 10px;
+    bottom: 10px;
   }
-  @media (max-width: 720px){ .modal .panel{inset: 10px} }
+}
+
 
   .m-hd{
     padding: 12px 14px;
