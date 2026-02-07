@@ -41,6 +41,13 @@ DEFAULT_LIMIT_DOSSIER_DETAIL = 1000
 DEFAULT_MIN_CUSTOMERS = 0
 DEFAULT_MAX_CUSTOMERS = 10**9  # đủ lớn, coi như "không giới hạn"
 
+# ============================================================
+# V2 Reports (Service A: /api/v2/reports) - limits
+# ============================================================
+
+MAX_LIMIT_REPORTS_V2 = 10000
+DEFAULT_LIMIT_REPORTS_V2 = 10000
+
 
 def _clamp_int(value: Any, default: int, min_value: int, max_value: int) -> int:
     """
@@ -841,3 +848,266 @@ async def reports_api(
     if st != 200:
         return JSONResponse({"error": "service_a_failed", "status": st, "body": data}, status_code=502)
     return JSONResponse(data, status_code=200)
+
+from fastapi import Path  # thêm Path nếu file chưa import
+
+# ============================================================
+# V2 (SSR) — 4 báo cáo chuyển sang endpoint mới (A: /api/v2/reports/*)
+#   - Lots eligible/ineligible
+#   - Customers eligible/ineligible
+#   - Render HTML templates (không trả JSON)
+# ============================================================
+
+@router.get("/reports/v2/projects/{project_id}/lots/eligible", response_class=HTMLResponse)
+async def v2_lots_eligible_page(
+    request: Request,
+    project_id: int = Path(..., ge=1),
+    limit: Optional[int] = Query(10000),
+):
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(url="/login?next=%2Freports", status_code=303)
+
+    # clamp theo rule V2 (A cap 10000)
+    limit2 = _clamp_int(limit, default=10000, min_value=1, max_value=10000)
+
+    # load projects để show dropdown/label
+    projects, _ = await _load_projects(token, None)
+    selected_code = ""
+    try:
+        for p in (projects or []):
+            pid = p.get("id") or p.get("project_id")
+            if pid == project_id:
+                selected_code = (p.get("project_code") or p.get("code") or "").strip().upper()
+                break
+    except Exception:
+        pass
+
+    st, js = await _get_json(f"/api/v2/reports/projects/{project_id}/lots/eligible", token, {"limit": limit2})
+    data = js if st == 200 and isinstance(js, dict) else {"items": [], "count": 0}
+    error = None if st == 200 else {"status": st, "body": js}
+
+    # ✅ dùng lại template cũ
+    ctx = {
+        "request": request,
+        "title": "Lô đủ điều kiện",
+        "projects": projects,
+        "project": selected_code,  # để UI vẫn hiện dự án như cũ
+        "lot_code": "",            # V2 list chưa filter theo lot_code (giữ trống)
+        "limit": limit2,
+        "data": data,
+        "error": error,
+        "is_v2": True,
+        "project_id": project_id,
+    }
+    return templates.TemplateResponse("reports/lots_eligible.html", ctx)
+
+
+@router.get("/reports/v2/projects/{project_id}/lots/eligible/export")
+async def v2_lots_eligible_export(
+    request: Request,
+    project_id: int = Path(..., ge=1),
+    limit: Optional[int] = Query(None),
+):
+    token = get_access_token(request)
+    if not token:
+        return _unauth()
+
+    limit2 = _clamp_int(limit, default=10000, min_value=1, max_value=10000)
+    filename = f"lots_eligible_v2_p{project_id}.xlsx"
+    return await _proxy_xlsx(f"/api/v2/reports/projects/{project_id}/lots/eligible", token, {"limit": limit2}, filename)
+
+
+@router.get("/reports/v2/projects/{project_id}/lots/ineligible", response_class=HTMLResponse)
+async def v2_lots_ineligible_page(
+    request: Request,
+    project_id: int = Path(..., ge=1),
+    limit: Optional[int] = Query(10000),
+):
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(url="/login?next=%2Freports", status_code=303)
+
+    limit2 = _clamp_int(limit, default=10000, min_value=1, max_value=10000)
+
+    projects, _ = await _load_projects(token, None)
+    selected_code = ""
+    try:
+        for p in (projects or []):
+            pid = p.get("id") or p.get("project_id")
+            if pid == project_id:
+                selected_code = (p.get("project_code") or p.get("code") or "").strip().upper()
+                break
+    except Exception:
+        pass
+
+    st, js = await _get_json(f"/api/v2/reports/projects/{project_id}/lots/ineligible", token, {"limit": limit2})
+    data = js if st == 200 and isinstance(js, dict) else {"items": [], "count": 0}
+    error = None if st == 200 else {"status": st, "body": js}
+
+    ctx = {
+        "request": request,
+        "title": "Lô KHÔNG đủ điều kiện",
+        "projects": projects,
+        "project": selected_code,
+        "lot_code": "",
+        "limit": limit2,
+        "data": data,
+        "error": error,
+        "is_v2": True,
+        "project_id": project_id,
+    }
+    return templates.TemplateResponse("reports/lots_ineligible.html", ctx)
+
+
+@router.get("/reports/v2/projects/{project_id}/lots/ineligible/export")
+async def v2_lots_ineligible_export(
+    request: Request,
+    project_id: int = Path(..., ge=1),
+    limit: Optional[int] = Query(None),
+):
+    token = get_access_token(request)
+    if not token:
+        return _unauth()
+
+    limit2 = _clamp_int(limit, default=10000, min_value=1, max_value=10000)
+    filename = f"lots_ineligible_v2_p{project_id}.xlsx"
+    return await _proxy_xlsx(f"/api/v2/reports/projects/{project_id}/lots/ineligible", token, {"limit": limit2}, filename)
+
+
+@router.get("/reports/v2/projects/{project_id}/customers/eligible", response_class=HTMLResponse)
+async def v2_customers_eligible_page(
+    request: Request,
+    project_id: int = Path(..., ge=1),
+    limit: Optional[int] = Query(10000),
+    expose_phone: int = Query(1, ge=0, le=1),
+):
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(url="/login?next=%2Freports", status_code=303)
+
+    limit2 = _clamp_int(limit, default=10000, min_value=1, max_value=10000)
+
+    projects, _ = await _load_projects(token, None)
+    selected_code = ""
+    try:
+        for p in (projects or []):
+            pid = p.get("id") or p.get("project_id")
+            if pid == project_id:
+                selected_code = (p.get("project_code") or p.get("code") or "").strip().upper()
+                break
+    except Exception:
+        pass
+
+    params = {"limit": limit2}
+    if expose_phone == 1:
+        params["expose_phone"] = "true"
+
+    st, js = await _get_json(f"/api/v2/reports/projects/{project_id}/customers/eligible", token, params)
+    data = js if st == 200 and isinstance(js, dict) else {"items": [], "count": 0}
+    error = None if st == 200 else {"status": st, "body": js}
+
+    ctx = {
+        "request": request,
+        "title": "Khách hàng đủ điều kiện",
+        "projects": projects,
+        "project": selected_code,
+        "customer_cccd": "",
+        "lot_code": "",
+        "limit": limit2,
+        "data": data,
+        "error": error,
+        "is_v2": True,
+        "project_id": project_id,
+        "expose_phone": expose_phone,
+    }
+    return templates.TemplateResponse("reports/customers_eligible.html", ctx)
+
+
+@router.get("/reports/v2/projects/{project_id}/customers/eligible/export")
+async def v2_customers_eligible_export(
+    request: Request,
+    project_id: int = Path(..., ge=1),
+    limit: Optional[int] = Query(None),
+    expose_phone: int = Query(1, ge=0, le=1),
+):
+    token = get_access_token(request)
+    if not token:
+        return _unauth()
+
+    limit2 = _clamp_int(limit, default=10000, min_value=1, max_value=10000)
+    params = {"limit": limit2}
+    if expose_phone == 1:
+        params["expose_phone"] = "true"
+
+    filename = f"customers_eligible_v2_p{project_id}.xlsx"
+    return await _proxy_xlsx(f"/api/v2/reports/projects/{project_id}/customers/eligible", token, params, filename)
+
+
+@router.get("/reports/v2/projects/{project_id}/customers/ineligible", response_class=HTMLResponse)
+async def v2_customers_ineligible_page(
+    request: Request,
+    project_id: int = Path(..., ge=1),
+    limit: Optional[int] = Query(10000),
+    expose_phone: int = Query(1, ge=0, le=1),
+):
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(url="/login?next=%2Freports", status_code=303)
+
+    limit2 = _clamp_int(limit, default=10000, min_value=1, max_value=10000)
+
+    projects, _ = await _load_projects(token, None)
+    selected_code = ""
+    try:
+        for p in (projects or []):
+            pid = p.get("id") or p.get("project_id")
+            if pid == project_id:
+                selected_code = (p.get("project_code") or p.get("code") or "").strip().upper()
+                break
+    except Exception:
+        pass
+
+    params = {"limit": limit2}
+    if expose_phone == 1:
+        params["expose_phone"] = "true"
+
+    st, js = await _get_json(f"/api/v2/reports/projects/{project_id}/customers/ineligible", token, params)
+    data = js if st == 200 and isinstance(js, dict) else {"items": [], "count": 0}
+    error = None if st == 200 else {"status": st, "body": js}
+
+    ctx = {
+        "request": request,
+        "title": "Khách hàng KHÔNG đủ điều kiện",
+        "projects": projects,
+        "project": selected_code,
+        "customer_cccd": "",
+        "lot_code": "",
+        "limit": limit2,
+        "data": data,
+        "error": error,
+        "is_v2": True,
+        "project_id": project_id,
+        "expose_phone": expose_phone,
+    }
+    return templates.TemplateResponse("reports/customers_ineligible.html", ctx)
+
+
+@router.get("/reports/v2/projects/{project_id}/customers/ineligible/export")
+async def v2_customers_ineligible_export(
+    request: Request,
+    project_id: int = Path(..., ge=1),
+    limit: Optional[int] = Query(None),
+    expose_phone: int = Query(1, ge=0, le=1),
+):
+    token = get_access_token(request)
+    if not token:
+        return _unauth()
+
+    limit2 = _clamp_int(limit, default=10000, min_value=1, max_value=10000)
+    params = {"limit": limit2}
+    if expose_phone == 1:
+        params["expose_phone"] = "true"
+
+    filename = f"customers_ineligible_v2_p{project_id}.xlsx"
+    return await _proxy_xlsx(f"/api/v2/reports/projects/{project_id}/customers/ineligible", token, params, filename)

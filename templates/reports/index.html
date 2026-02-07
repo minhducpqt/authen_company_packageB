@@ -2,6 +2,10 @@
 {% block title %}Báo cáo thống kê{% endblock %}
 
 {% block content %}
+{# ===== chuẩn hoá list projects + default project id ===== #}
+{% set projects_list = projects or [] %}
+{% set default_pid = (projects_list[0].id or projects_list[0].project_id) if projects_list|length >= 1 else None %}
+
 <div class="mb-6">
   <div class="flex items-start justify-between gap-4">
     <div>
@@ -21,6 +25,21 @@
       </span>
     </div>
   </div>
+
+  {% if projects_list|length >= 2 %}
+  <div class="mt-3">
+    <div class="inline-flex items-center gap-2 text-xs text-slate-500">
+      <i class="ri-information-line"></i>
+      <span>
+        Các nút “Tổng quan” sẽ mở theo dự án mặc định:
+        <span class="font-semibold text-slate-700">
+          {{ (projects_list[0].project_code or projects_list[0].code) }}
+        </span>.
+        Muốn xem dự án khác, chọn ở “Dự án đang hoạt động” bên dưới.
+      </span>
+    </div>
+  </div>
+  {% endif %}
 </div>
 
 {# ===== TỔNG QUAN (ENTRY) ===== #}
@@ -46,8 +65,8 @@
 
   <div class="p-4">
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-      <!-- Lô đủ điều kiện -->
-      <a href="/reports/lots/eligible"
+      <!-- Lô đủ điều kiện (V2) -->
+      <a href="{% if default_pid %}/reports/v2/projects/{{ default_pid }}/lots/eligible{% else %}/reports{% endif %}"
          class="group relative bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-indigo-200 transition overflow-hidden">
         <div class="absolute inset-x-0 top-0 h-1 bg-indigo-500/80"></div>
         <div class="flex items-start justify-between gap-3 mb-2">
@@ -59,15 +78,15 @@
           </div>
         </div>
         <p class="text-xs text-slate-500 leading-relaxed">
-          Danh sách lô có đủ số khách đặt tiền, kèm số lượng khách và tổng tiền đặt trước.
+          Danh sách lô đủ điều kiện mở đấu giá (V2) theo dự án.
         </p>
         <div class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-indigo-700">
           Mở báo cáo <i class="ri-arrow-right-line"></i>
         </div>
       </a>
 
-      <!-- Lô không đủ điều kiện -->
-      <a href="/reports/lots/ineligible"
+      <!-- Lô không đủ điều kiện (V2) -->
+      <a href="{% if default_pid %}/reports/v2/projects/{{ default_pid }}/lots/ineligible{% else %}/reports{% endif %}"
          class="group relative bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-rose-200 transition overflow-hidden">
         <div class="absolute inset-x-0 top-0 h-1 bg-rose-500/80"></div>
         <div class="flex items-start justify-between gap-3 mb-2">
@@ -79,14 +98,14 @@
           </div>
         </div>
         <p class="text-xs text-slate-500 leading-relaxed">
-          Các lô chưa đạt điều kiện đấu giá (0–1 khách đặt hoặc thiếu điều kiện).
+          Danh sách lô chưa đủ điều kiện (V2) theo dự án.
         </p>
         <div class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-rose-700">
           Mở báo cáo <i class="ri-arrow-right-line"></i>
         </div>
       </a>
 
-      <!-- Thống kê tiền đặt trước -->
+      <!-- Thống kê tiền đặt trước (GIỮ NGUYÊN CŨ) -->
       <a href="/reports/lots/deposit-stats"
          class="group relative bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-sky-200 transition overflow-hidden">
         <div class="absolute inset-x-0 top-0 h-1 bg-sky-500/80"></div>
@@ -106,20 +125,20 @@
         </div>
       </a>
 
-      <!-- KH đủ điều kiện & lô -->
-      <a href="/reports/customers/eligible-lots"
+      <!-- KH đủ điều kiện (V2) -->
+      <a href="{% if default_pid %}/reports/v2/projects/{{ default_pid }}/customers/eligible{% else %}/reports{% endif %}"
          class="group relative bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-emerald-200 transition overflow-hidden">
         <div class="absolute inset-x-0 top-0 h-1 bg-emerald-500/80"></div>
         <div class="flex items-start justify-between gap-3 mb-2">
           <div class="min-w-0">
-            <div class="text-base font-semibold text-slate-900 mt-0.5">KH đủ điều kiện &amp; lô</div>
+            <div class="text-base font-semibold text-slate-900 mt-0.5">KH đủ điều kiện</div>
           </div>
           <div class="h-10 w-10 rounded-2xl bg-emerald-50 flex items-center justify-center group-hover:bg-emerald-100 transition">
             <i class="ri-user-star-line text-emerald-600 text-xl"></i>
           </div>
         </div>
         <p class="text-xs text-slate-500 leading-relaxed">
-          Mỗi dòng là 1 khách + 1 lô đủ điều kiện, kèm SĐT/email và tài khoản hoàn cọc.
+          Danh sách khách đủ điều kiện tham gia (V2) theo dự án.
         </p>
         <div class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
           Mở báo cáo <i class="ri-arrow-right-line"></i>
@@ -130,27 +149,27 @@
 </div>
 
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-  <!-- KH không đủ điều kiện & lô -->
-  <a href="/reports/customers/not-eligible-lots"
+  <!-- KH không đủ điều kiện (V2) -->
+  <a href="{% if default_pid %}/reports/v2/projects/{{ default_pid }}/customers/ineligible{% else %}/reports{% endif %}"
      class="group relative bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-rose-200 transition overflow-hidden">
     <div class="absolute inset-x-0 top-0 h-1 bg-rose-500/80"></div>
     <div class="flex items-start justify-between gap-3 mb-2">
       <div class="min-w-0">
-        <div class="text-base font-semibold text-slate-900 mt-0.5">KH không đủ điều kiện &amp; lô</div>
+        <div class="text-base font-semibold text-slate-900 mt-0.5">KH không đủ điều kiện</div>
       </div>
       <div class="h-10 w-10 rounded-2xl bg-rose-50 flex items-center justify-center group-hover:bg-rose-100 transition">
         <i class="ri-user-forbid-line text-rose-600 text-xl"></i>
       </div>
     </div>
     <p class="text-xs text-slate-500 leading-relaxed">
-      Khách + lô chưa đủ điều kiện, vẫn kèm tài khoản hoàn cọc để xử lý nghiệp vụ.
+      Danh sách khách không đủ điều kiện tham gia (V2) theo dự án.
     </p>
     <div class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-rose-700">
       Mở báo cáo <i class="ri-arrow-right-line"></i>
     </div>
   </a>
 
-  <!-- Mua hồ sơ — chi tiết -->
+  <!-- Mua hồ sơ — chi tiết (GIỮ NGUYÊN CŨ) -->
   <a href="/reports/dossiers/paid/detail"
      class="group relative bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-amber-200 transition overflow-hidden">
     <div class="absolute inset-x-0 top-0 h-1 bg-amber-500/80"></div>
@@ -170,7 +189,7 @@
     </div>
   </a>
 
-  <!-- Mua hồ sơ — tổng hợp -->
+  <!-- Mua hồ sơ — tổng hợp (GIỮ NGUYÊN CŨ) -->
   <a href="/reports/dossiers/paid/summary"
      class="group relative bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-violet-200 transition overflow-hidden">
     <div class="absolute inset-x-0 top-0 h-1 bg-violet-500/80"></div>
@@ -192,7 +211,7 @@
 </div>
 
 {# ===== DỰ ÁN ĐANG HOẠT ĐỘNG (CARD VIEW) ===== #}
-<div class="bg-white border rounded-2xl shadow-sm p-4">
+<div id="projects-active" class="bg-white border rounded-2xl shadow-sm p-4 scroll-mt-24">
   <div class="flex items-center justify-between mb-4">
     <div>
       <div class="text-sm font-semibold text-slate-900 flex items-center gap-2">
@@ -205,7 +224,6 @@
     </div>
   </div>
 
-  {% set projects_list = projects or [] %}
   {% if projects_list|length == 0 %}
     <div class="py-6 text-center text-slate-400 text-sm">
       Chưa có dự án ACTIVE nào hoặc không tải được danh sách dự án.
@@ -214,6 +232,7 @@
     <div class="space-y-3">
       {% for p in projects_list %}
         {% set code = p.project_code or p.code %}
+        {% set pid = p.id or p.project_id %}
         <div class="border border-slate-100 rounded-2xl px-4 py-3 bg-slate-50/60 hover:bg-slate-50 transition">
           <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div class="flex-1 min-w-0">
@@ -237,26 +256,38 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-2 text-xs md:justify-end">
-              <a href="/reports/lots/eligible?project={{ code }}"
+              {# 4 báo cáo đổi sang V2: dùng pid #}
+              <a href="/reports/v2/projects/{{ pid }}/lots/eligible"
                  class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100">
                 <i class="ri-checkbox-circle-line"></i>
                 <span>Lô đủ</span>
               </a>
-              <a href="/reports/lots/ineligible?project={{ code }}"
+              <a href="/reports/v2/projects/{{ pid }}/lots/ineligible"
                  class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-rose-50 text-rose-700 hover:bg-rose-100">
                 <i class="ri-alert-line"></i>
                 <span>Lô không đủ</span>
               </a>
+
+              {# giữ nguyên cũ #}
               <a href="/reports/lots/deposit-stats?project={{ code }}"
                  class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-sky-50 text-sky-700 hover:bg-sky-100">
                 <i class="ri-funds-line"></i>
                 <span>Tiền đặt</span>
               </a>
-              <a href="/reports/customers/eligible-lots?project={{ code }}"
+
+              {# KH đủ/không đủ -> V2 #}
+              <a href="/reports/v2/projects/{{ pid }}/customers/eligible"
                  class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100">
                 <i class="ri-user-star-line"></i>
                 <span>KH đủ</span>
               </a>
+              <a href="/reports/v2/projects/{{ pid }}/customers/ineligible"
+                 class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-rose-50 text-rose-700 hover:bg-rose-100">
+                <i class="ri-user-forbid-line"></i>
+                <span>KH không đủ</span>
+              </a>
+
+              {# giữ nguyên cũ #}
               <a href="/reports/dossiers/paid/detail?project={{ code }}"
                  class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-50 text-amber-700 hover:bg-amber-100">
                 <i class="ri-file-list-3-line"></i>
