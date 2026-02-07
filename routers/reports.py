@@ -119,9 +119,20 @@ async def _get_json(
             return 599, {"detail": str(e)}
 
     try:
-        js = r.json()
-        _log(f"← {r.status_code} {url} json={_preview_body(js)}")
-        return r.status_code, js
+        try:
+            js = r.json()
+
+            # ✅ LOG FULL JSON (copy được)
+            import json
+            pretty = json.dumps(js, ensure_ascii=False, indent=2)
+            _log(f"← {r.status_code} {url} JSON_BEGIN\n{pretty}\nJSON_END")
+
+            return r.status_code, js
+        except Exception:
+            text_preview = (r.text or "")[:300]
+            _log(f"← {r.status_code} {url} text={text_preview}")
+            return r.status_code, {"detail": (r.text or "")[:500]}
+
     except Exception:
         text_preview = (r.text or "")[:300]
         _log(f"← {r.status_code} {url} text={text_preview}")
@@ -1194,7 +1205,7 @@ async def v2_customers_ineligible_detail_page(
         "is_v2": True,
         "mode": "ineligible_detail",
     }
-    return templates.TemplateResponse("reports/customers_ineligible_detail_v2.html", ctx)
+    return templates.TemplateResponse("reports/customers_ineligible_detail.html", ctx)
 
 
 @router.get(
