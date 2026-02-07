@@ -67,6 +67,7 @@
     background: rgba(255,255,255,.85);
     font-size:12px;font-weight:900;color: rgba(15,23,42,.75);
     transition: .15s ease;
+    text-decoration:none;
   }
   .btn:hover{transform: translateY(-1px); box-shadow: 0 10px 20px rgba(2,6,23,.10)}
   .btn.primary{
@@ -126,6 +127,54 @@
   .badge.ok{border-color: rgba(34,197,94,.30); background: rgba(34,197,94,.10); color: rgba(20,83,45,.92)}
   .muted{color: var(--muted);font-size:12px}
 
+  /* ===== Summary (static full list) ===== */
+  .sumbar{
+    padding: 12px 14px;
+    border-bottom:1px solid rgba(15,23,42,.06);
+    background: rgba(255,255,255,.92);
+    display:grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap:10px;
+  }
+  .sumcard{
+    grid-column: span 4;
+    border:1px solid rgba(15,23,42,.10);
+    border-radius: 18px;
+    background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,255,255,.92));
+    box-shadow: 0 10px 18px rgba(2,6,23,.06);
+    padding: 12px 12px 10px;
+    min-width: 0;
+  }
+  @media (max-width: 1024px){ .sumcard{grid-column: span 6} }
+  @media (max-width: 640px){ .sumcard{grid-column: span 12} }
+  .sumtop{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .sumlbl{font-size:12px;font-weight:950;color: rgba(15,23,42,.62)}
+  .sumico{
+    width:34px;height:34px;border-radius:14px;
+    display:flex;align-items:center;justify-content:center;
+    border:1px solid rgba(15,23,42,.10);
+    background: rgba(15,23,42,.03);
+  }
+  .sumval{
+    margin-top:8px;
+    font-size:20px;
+    font-weight:1000;
+    letter-spacing:.2px;
+    color: rgba(15,23,42,.92);
+    font-variant-numeric: tabular-nums; font-feature-settings: "tnum";
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .sumsub{
+    margin-top:6px;
+    font-size:12px;
+    color: rgba(71,85,105,.90);
+    line-height:1.35;
+  }
+  .sumcard.ok .sumval{color: rgba(20,83,45,.98)}
+  .sumcard.money .sumval{color: rgba(30,64,175,.95)}
+  .sumcard.ticket .sumval{color: rgba(49,46,129,.95)}
+  .sumhint{opacity:.9}
+
   /* ===== controls (local sort/filter) ===== */
   .list-controls{
     padding: 10px 14px;
@@ -172,7 +221,7 @@
     background: rgba(15,23,42,.02);
   }
 
-  /* ===== table: FIX "co dúm" ===== */
+  /* ===== table ===== */
   .tbl-wrap{overflow:auto}
   .tbl{
     width:100%;
@@ -195,26 +244,23 @@
     top: 0;
     z-index: 1;
   }
-  /* ===== table: HARD OVERRIDE chống CSS global làm lệch cột ===== */
-.tbl{
-  display: table !important;
-  width: 100% !important;
-  table-layout: fixed;
-}
-.tbl thead{display: table-header-group !important;}
-.tbl tbody{display: table-row-group !important;}
-.tbl tr{display: table-row !important;}
-.tbl th,
-.tbl td{
-  display: table-cell !important;
-  box-sizing: border-box; /* tránh tính width lệch do padding/border */
-}
+  /* HARD OVERRIDE (phòng CSS global của base làm table bị co lệch) */
+  .tbl{display:table !important;width:100% !important;table-layout:fixed}
+  .tbl thead{display:table-header-group !important}
+  .tbl tbody{display:table-row-group !important}
+  .tbl tr{display:table-row !important}
+  .tbl th,.tbl td{display:table-cell !important;box-sizing:border-box}
 
   .row{transition: .12s ease;background:#fff}
   .row:hover{background: rgba(15,23,42,.02)}
   .lotcode{
     font-weight:950;color: rgba(30,64,175,.98);
     text-decoration:none;
+    display:inline-block;
+    max-width: 12ch;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
   }
   .lotname{font-size:12px;color: rgba(15,23,42,.78);margin-top:4px;line-height:1.25}
   .mini{font-size:12px;color: rgba(71,85,105,.92);line-height:1.28}
@@ -247,7 +293,6 @@
   .sub-actions a{color:rgba(71,85,105,.90);font-size:12px;font-weight:900;text-decoration:none}
   .sub-actions a:hover{text-decoration:underline}
 
-  /* empty row */
   .empty-row td{
     padding:18px 14px;
     color:rgba(71,85,105,.88);
@@ -256,12 +301,7 @@
   }
 
   /* ===== modal ===== */
-  .modal{
-    position: fixed;
-    inset: 0;
-    display: none;
-    z-index: 9999;
-  }
+  .modal{position: fixed;inset: 0;display: none;z-index: 9999;}
   .modal.show{display:block}
   .modal .bg{
     position:absolute;inset:0;
@@ -279,18 +319,16 @@
     display:flex;
     flex-direction:column;
   }
-  @media (max-width: 720px){
-    .modal .panel{inset: 10px}
-  }
+  @media (max-width: 720px){ .modal .panel{inset: 10px} }
+
   .m-hd{
     padding: 12px 14px;
     border-bottom:1px solid rgba(15,23,42,.08);
     background: linear-gradient(135deg, rgba(79,70,229,.10), rgba(34,197,94,.08));
     display:flex;align-items:center;justify-content:space-between;gap:12px;
+    position: sticky; top: 0; z-index: 2;
   }
-  .m-title{
-    display:flex;flex-direction:column;gap:4px;min-width:0;
-  }
+  .m-title{display:flex;flex-direction:column;gap:4px;min-width:0;}
   .m-title .t{
     font-size:16px;font-weight:950;color: rgba(15,23,42,.90);
     display:flex;align-items:center;gap:10px;
@@ -325,29 +363,44 @@
     border:1px solid rgba(15,23,42,.10);
     background: rgba(255,255,255,.90);
     font-size:12px;font-weight:900;color: rgba(15,23,42,.72);
+    white-space:nowrap;
   }
 
+  /* ===== Popup customers (NEW pro layout) ===== */
   .cust-list{display:flex;flex-direction:column;gap:10px}
-  .cust{
+  .cust2{
     border-radius: 18px;
     border:1px solid rgba(15,23,42,.10);
-    background: rgba(255,255,255,.92);
+    background: rgba(255,255,255,.95);
     box-shadow: 0 10px 18px rgba(2,6,23,.06);
     overflow:hidden;
   }
-  .cust .top{
-    padding:10px 12px;
-    display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+  .cust2-hd{
+    padding: 12px 12px 10px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
   }
-  .cust .name{
-    font-size:13px;font-weight:950;color: rgba(15,23,42,.88);
+  .cust2-left{min-width:0;display:flex;flex-direction:column;gap:6px}
+  .cust2-name{
+    font-size:13px;
+    font-weight:1000;
+    color: rgba(15,23,42,.90);
     line-height:1.25;
+    word-break:break-word;
   }
-  .cust .sub{
-    margin-top:6px;
-    display:flex;flex-wrap:wrap;gap:8px;align-items:center;
-    font-size:12px;color: rgba(71,85,105,.92);
+  .cust2-sub{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .cccd-pill{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:6px 10px;border-radius:999px;
+    border:1px solid rgba(15,23,42,.10);
+    background: rgba(255,255,255,.90);
+    font-size:12px;font-weight:950;color: rgba(15,23,42,.78);
+    cursor:pointer;
+    user-select:none;
   }
+  .cccd-pill:hover{box-shadow:0 10px 18px rgba(2,6,23,.08); transform: translateY(-1px)}
   .pill-st{
     display:inline-flex;align-items:center;gap:7px;
     padding:6px 10px;border-radius:999px;
@@ -357,34 +410,71 @@
   }
   .pill-st.ok{border-color: rgba(34,197,94,.30); background: rgba(34,197,94,.12); color: rgba(20,83,45,.92)}
   .pill-st.bad{border-color: rgba(239,68,68,.28); background: rgba(239,68,68,.10); color: rgba(153,27,27,.92)}
-  .cccd-pill{
-    display:inline-flex;align-items:center;gap:8px;
+  .cust2-right{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:8px;
+    flex: 0 0 auto;
+  }
+  .amt{
+    font-size:14px;
+    font-weight:1000;
+    color: rgba(30,64,175,.95);
+    background: rgba(59,130,246,.10);
+    border:1px solid rgba(59,130,246,.22);
+    padding:6px 10px;
+    border-radius: 999px;
+    white-space:nowrap;
+  }
+  .cust2-meta{
+    padding: 0 12px 12px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    align-items:center;
+  }
+  .meta-chip{
+    display:inline-flex;align-items:center;gap:7px;
     padding:6px 10px;border-radius:999px;
     border:1px solid rgba(15,23,42,.10);
-    background: rgba(255,255,255,.88);
-    font-size:12px;font-weight:950;color: rgba(15,23,42,.78);
+    background: rgba(15,23,42,.02);
+    font-size:12px;font-weight:900;
+    color: rgba(15,23,42,.74);
+    white-space:nowrap;
   }
-  .copy-btn{
-    padding:4px 8px;border-radius:999px;
-    border:1px solid rgba(15,23,42,.10);
-    background: rgba(15,23,42,.03);
+  .meta-chip.mono{font-variant-numeric: tabular-nums; font-feature-settings: "tnum";}
+  .cust2-reason{
+    padding: 10px 12px;
+    border-top:1px dashed rgba(15,23,42,.10);
+    background: rgba(239,68,68,.06);
+    color: rgba(153,27,27,.92);
+    font-size:12px;
+    line-height:1.35;
+  }
+  .cust2-reason b{font-weight:1000}
+
+  details.tx-acc{
+    border-top:1px dashed rgba(15,23,42,.10);
+    background: rgba(15,23,42,.012);
+  }
+  details.tx-acc > summary{
+    list-style:none;
     cursor:pointer;
-    font-size:11px;font-weight:950;
+    user-select:none;
+    padding: 10px 12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    font-size:12px;
+    font-weight:950;
+    color: rgba(15,23,42,.75);
   }
-  .cust .meta{
-    padding: 0 12px 10px;
-    display:flex;flex-wrap:wrap;gap:8px;
-  }
-  .reason{
-    padding: 0 12px 12px;
-    font-size:12px;color: rgba(71,85,105,.92);
-    line-height:1.25;
-  }
-  .cust .tx{
-    border-top:1px dashed rgba(15,23,42,.12);
-    background: rgba(15,23,42,.015);
-    padding:10px 12px 12px;
-  }
+  details.tx-acc > summary::-webkit-details-marker{display:none}
+  .tx-sum-left{display:flex;align-items:center;gap:10px}
+  .tx-sum-right{opacity:.85}
+  .tx-body{padding: 0 12px 12px}
   .tx-row{
     display:flex;align-items:center;justify-content:space-between;gap:10px;
     padding:8px 0;
@@ -392,9 +482,10 @@
     font-size:12px;
   }
   .tx-row:last-child{border-bottom:0}
-  .tx-left{display:flex;flex-direction:column;gap:2px}
+  .tx-left{display:flex;flex-direction:column;gap:2px;min-width:0}
   .tx-time{color: rgba(71,85,105,.92)}
-  .tx-amt{font-weight:950;color: rgba(15,23,42,.85)}
+  .tx-amt{font-weight:1000;color: rgba(15,23,42,.88);font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+  .tx-src{opacity:.75;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width: 64ch}
 
   .skeleton{
     background: linear-gradient(90deg, rgba(15,23,42,.04), rgba(15,23,42,.02), rgba(15,23,42,.04));
@@ -408,6 +499,15 @@
 
 {% set items = (data.get('items') if data and data.get('items') is not none else []) %}
 {% set project_id_val = project_id if project_id is defined else None %}
+
+{# ===== Summary (static full list) ===== #}
+{% set ns = namespace(sum_paid=0, sum_tickets=0) %}
+{% for r in items %}
+  {% set paid_el = r.get("eligible_deposit_amount") if r.get("eligible_deposit_amount") is not none else r.get("total_paid_vnd_eligible") %}
+  {% set c_el = r.get("eligible_customer_count") if r.get("eligible_customer_count") is not none else r.get("eligible_customer_count_for_lot") %}
+  {% set ns.sum_paid = ns.sum_paid + (paid_el or 0) %}
+  {% set ns.sum_tickets = ns.sum_tickets + (c_el or 0) %}
+{% endfor %}
 
 <div class="rp-wrap">
   <div class="rp-head">
@@ -472,6 +572,42 @@
       </div>
     {% else %}
 
+      {# ===== Summary row (STATIC: full list, không đổi theo sort/filter) ===== #}
+      <div class="sumbar">
+        <div class="sumcard ok">
+          <div class="sumtop">
+            <div class="sumlbl">Tổng số lô đủ ĐK</div>
+            <div class="sumico" style="border-color:rgba(34,197,94,.22);background:rgba(34,197,94,.10);color:rgba(20,83,45,.92)">
+              <i class="ri-layout-grid-line"></i>
+            </div>
+          </div>
+          <div class="sumval"><span class="mono">{{ items|length }}</span></div>
+          <div class="sumsub sumhint">Tính từ toàn bộ dữ liệu đã tải về (không đổi theo sort/filter).</div>
+        </div>
+
+        <div class="sumcard money">
+          <div class="sumtop">
+            <div class="sumlbl">Tổng tiền cọc (khách đủ ĐK)</div>
+            <div class="sumico" style="border-color:rgba(59,130,246,.22);background:rgba(59,130,246,.10);color:rgba(30,64,175,.92)">
+              <i class="ri-coins-line"></i>
+            </div>
+          </div>
+          <div class="sumval mono" data-money="{{ ns.sum_paid }}">{{ ns.sum_paid }}</div>
+          <div class="sumsub sumhint">Cộng dồn “eligible_deposit_amount” theo từng lô.</div>
+        </div>
+
+        <div class="sumcard ticket">
+          <div class="sumtop">
+            <div class="sumlbl">Tổng số phiếu trả giá</div>
+            <div class="sumico" style="border-color:rgba(79,70,229,.22);background:rgba(79,70,229,.10);color:rgba(49,46,129,.92)">
+              <i class="ri-file-list-3-line"></i>
+            </div>
+          </div>
+          <div class="sumval"><span class="mono">{{ ns.sum_tickets }}</span></div>
+          <div class="sumsub sumhint">= Tổng số khách đủ ĐK của tất cả lô (sum eligible_customer_count).</div>
+        </div>
+      </div>
+
       <div class="list-controls">
         <div class="lc-left">
           <div class="ctl">
@@ -506,13 +642,12 @@
       <div class="tbl-wrap">
         <table class="tbl" id="lotTable">
           <colgroup>
-  <col style="width:140px">  <!-- ~10 ký tự + padding -->
-  <col style="width:auto">
-  <col style="width:25%">
-  <col style="width:25%">
-  <col style="width:160px">
-</colgroup>
-
+            <col style="width:12%">   {# Lô hẹp lại #}
+            <col style="width:26%">
+            <col style="width:25%">   {# 2 cột này rộng hơn #}
+            <col style="width:25%">
+            <col style="width:12%">
+          </colgroup>
           <thead>
             <tr>
               <th>Lô</th>
@@ -856,11 +991,10 @@
     const txnCount = (dep.txn_count ?? (txns ? txns.length : 0)) ?? 0;
 
     let meta = '';
-    if(cust.phone) meta += `<span class="chip"><i class="ri-phone-line"></i> <span class="mono">${escHtml(cust.phone)}</span></span>`;
-    if(cust.email) meta += `<span class="chip"><i class="ri-mail-line"></i> <span class="mono">${escHtml(cust.email)}</span></span>`;
-    meta += `<span class="chip money"><i class="ri-coins-line"></i> <span class="mono">${fmtMoney(paid)}</span></span>`;
-    if(paidAt) meta += `<span class="chip"><i class="ri-time-line"></i> <span class="mono">${escHtml(paidAt)}</span></span>`;
-    meta += `<span class="chip"><i class="ri-repeat-2-line"></i> <span class="mono">${txnCount}</span> giao dịch</span>`;
+    if(cust.phone) meta += `<span class="meta-chip"><i class="ri-phone-line"></i> <span class="mono">${escHtml(cust.phone)}</span></span>`;
+    if(cust.email) meta += `<span class="meta-chip"><i class="ri-mail-line"></i> <span class="mono">${escHtml(cust.email)}</span></span>`;
+    if(paidAt) meta += `<span class="meta-chip"><i class="ri-time-line"></i> <span class="mono">${escHtml(paidAt)}</span></span>`;
+    meta += `<span class="meta-chip"><i class="ri-repeat-2-line"></i> <span class="mono">${txnCount}</span> giao dịch</span>`;
 
     let txHtml = '';
     if(txns && txns.length){
@@ -872,48 +1006,64 @@
           <div class="tx-row">
             <div class="tx-left">
               <div class="tx-time mono">${escHtml(time)}</div>
-              <div class="tx-time" style="opacity:.75">${escHtml(src)}</div>
+              <div class="tx-time tx-src">${escHtml(src)}</div>
             </div>
             <div class="tx-amt mono">${fmtMoney(amt)}</div>
           </div>
         `;
       }).join('');
     }else{
-      txHtml = `<div style="color:rgba(71,85,105,.90);font-size:12px">Không có danh sách giao dịch (receipt).</div>`;
+      txHtml = `<div style="color:rgba(71,85,105,.90);font-size:12px;padding-top:8px">Không có danh sách giao dịch (receipt).</div>`;
     }
 
+    const reason = escHtml(reasonText(elig));
+
     return `
-      <div class="cust">
-        <div class="top">
-          <div style="min-width:0">
-            <div class="name">${escHtml(cust.full_name || '')}</div>
-            <div class="sub">
+      <div class="cust2">
+        <div class="cust2-hd">
+          <div class="cust2-left">
+            <div class="cust2-name">${escHtml(cust.full_name || '')}</div>
+            <div class="cust2-sub">
               ${cccd ? `
-                <span class="cccd-pill mono">
-                  ${escHtml(cccd)}
-                  <button class="copy-btn" type="button" onclick="copyText('${escHtml(cccd)}')">
-                    <i class="ri-file-copy-line"></i> Copy
-                  </button>
+                <span class="cccd-pill mono" title="Bấm để copy CCCD" onclick="copyText('${escHtml(cccd)}')">
+                  <i class="ri-id-card-line"></i> ${escHtml(cccd)} <span style="opacity:.65">• Copy</span>
                 </span>
               ` : ``}
               <span class="pill-st ${stClass}">
-                <i class="ri-shield-check-line"></i> ${stLabel}
+                ${ok ? '<i class="ri-shield-check-line"></i>' : '<i class="ri-shield-cross-line"></i>'}
+                ${stLabel}
               </span>
             </div>
           </div>
-          <span class="pill-st ${stClass}">
-            ${ok ? '<i class="ri-checkbox-circle-line"></i>' : '<i class="ri-close-circle-line"></i>'}
-            ${ok ? 'Đủ điều kiện' : 'Không đủ'}
-          </span>
+
+          <div class="cust2-right">
+            <span class="pill-st ${stClass}">
+              ${ok ? '<i class="ri-checkbox-circle-line"></i>' : '<i class="ri-close-circle-line"></i>'}
+              ${ok ? 'Đủ điều kiện' : 'Không đủ'}
+            </span>
+            <div class="amt"><i class="ri-coins-line"></i> <span class="mono">${fmtMoney(paid)}</span></div>
+          </div>
         </div>
 
-        <div class="meta">${meta}</div>
+        <div class="cust2-meta">${meta}</div>
 
-        <div class="reason">
-          <b>Lý do:</b> ${escHtml(reasonText(elig))}
-        </div>
+        ${ok ? '' : `
+          <div class="cust2-reason"><b>Lý do:</b> ${reason}</div>
+        `}
 
-        <div class="tx">${txHtml}</div>
+        <details class="tx-acc" ${txns && txns.length ? '' : ''}>
+          <summary>
+            <div class="tx-sum-left">
+              <i class="ri-receipt-line"></i>
+              Giao dịch / receipts
+            </div>
+            <div class="tx-sum-right">
+              <span class="mono">${txns ? txns.length : 0}</span> dòng
+              <span style="margin-left:8px;opacity:.7"><i class="ri-arrow-down-s-line"></i></span>
+            </div>
+          </summary>
+          <div class="tx-body">${txHtml}</div>
+        </details>
       </div>
     `;
   }
