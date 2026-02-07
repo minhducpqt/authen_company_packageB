@@ -1131,3 +1131,126 @@ async def v2_lot_detail_json(
     if st != 200:
         return JSONResponse({"error": "service_a_failed", "status": st, "body": js}, status_code=502)
     return JSONResponse(js, status_code=200)
+
+# ============================================================
+# V2 — REPORT: Customers + ineligible lots detail (SSR + JSON + XLSX)
+# Service A:
+#   GET /api/v2/reports/projects/{project_id}/customers/ineligible/detail
+#   (supports format=xlsx)
+# ============================================================
+
+@router.get(
+    "/reports/v2/projects/{project_id}/customers/ineligible/detail",
+    response_class=HTMLResponse,
+)
+async def v2_customers_ineligible_detail_page(
+    request: Request,
+    project_id: int = Path(..., ge=1),
+    limit: Optional[int] = Query(DEFAULT_LIMIT_REPORTS_V2, description="max rows, capped to 10000"),
+    expose_phone: int = Query(1, ge=0, le=1, description="1=show full phone/email/bank if allowed"),
+):
+    _log(f"REQ /reports/v2/projects/{project_id}/customers/ineligible/detail url={request.url}")
+
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(url="/login?next=%2Freports", status_code=303)
+
+    limit2 = _clamp_int(limit, default=DEFAULT_LIMIT_REPORTS_V2, min_value=1, max_value=MAX_LIMIT_REPORTS_V2)
+
+    projects, _ = await _load_projects(token, None)
+
+    selected_code = ""
+    try:
+        for p in (projects or []):
+            pid = p.get("id") or p.get("project_id")
+            if pid == project_id:
+                selected_code = (p.get("project_code") or p.get("code") or "").strip().upper()
+                break
+    except Exception:
+        pass
+
+    params: Dict[str, Any] = {"limit": limit2}
+    if expose_phone == 1:
+        params["expose_phone"] = "true"
+
+    st, js = await _get_json(
+        f"/api/v2/reports/projects/{project_id}/customers/ineligible/detail",
+        token,
+        params,
+    )
+    data = js if st == 200 and isinstance(js, dict) else {"items": [], "count": 0, "pair_count": 0}
+    error = None if st == 200 else {"status": st, "body": js}
+
+    ctx = {
+        "request": request,
+        "title": "Khách hàng — Lô KHÔNG đủ điều kiện (chi tiết)",
+        "projects": projects,
+        "project": selected_code,
+        "project_id": project_id,
+        "limit": limit2,
+        "expose_phone": expose_phone,
+        "data": data,
+        "error": error,
+        "is_v2": True,
+        "mode": "ineligible_detail",
+    }
+    return templates.TemplateResponse("reports/customers_ineligible_detail_v2.html", ctx)
+
+
+@router.get(
+    "/reports/v2/projects/{project_id}/customers/ineligible/detail/json",
+    response_class=JSONResponse,
+)
+async def v2_customers_ineligible_detail_json(
+    request: Request,
+    project_id: int = Path(..., ge=1),
+    limit: Optional[int] = Query(DEFAULT_LIMIT_REPORTS_V2),
+    expose_phone: int = Query(1, ge=0, le=1),
+):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    limit2 = _clamp_int(limit, default=DEFAULT_LIMIT_REPORTS_V2, min_value=1, max_value=MAX_LIMIT_REPORTS_V2)
+
+    params: Dict[str, Any] = {"limit": limit2}
+    if expose_phone == 1:
+        params["expose_phone"] = "true"
+
+    st, js = await _get_json(
+        f"/api/v2/reports/projects/{project_id}/customers/ineligible/detail",
+        token,
+        params,
+    )
+    if st != 200:
+        return JSONResponse({"error": "service_a_failed", "status": st, "body": js}, status_code=502)
+    return JSONResponse(js, status_code=200)
+
+
+@router.get("/reports/v2/projects/{project_id}/customers/ineligible/detail/export")
+async def v2_customers_ineligible_detail_export(
+    request: Request,
+    project_id: int = Path(..., ge=1),
+    limit: Optional[int] = Query(None),
+    expose_phone: int = Query(1, ge=0, le=1),
+):
+    """
+    XLSX export proxy (IMPORTANT for calling customers).
+    """
+    token = get_access_token(request)
+    if not token:
+        return _unauth()
+
+    limit2 = _clamp_int(limit, default=DEFAULT_LIMIT_REPORTS_V2, min_value=1, max_value=MAX_LIMIT_REPORTS_V2)
+
+    params: Dict[str, Any] = {"limit": limit2}
+    if expose_phone == 1:
+        params["expose_phone"] = "true"
+
+    filename = f"customers_ineligible_detail_v2_p{project_id}.xlsx"
+    return await _proxy_xlsx(
+        f"/api/v2/reports/projects/{project_id}/customers/ineligible/detail",
+        token,
+        params,
+        filename,
+    )
