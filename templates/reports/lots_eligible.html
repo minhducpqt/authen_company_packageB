@@ -195,6 +195,21 @@
     top: 0;
     z-index: 1;
   }
+  /* ===== table: HARD OVERRIDE chống CSS global làm lệch cột ===== */
+.tbl{
+  display: table !important;
+  width: 100% !important;
+  table-layout: fixed;
+}
+.tbl thead{display: table-header-group !important;}
+.tbl tbody{display: table-row-group !important;}
+.tbl tr{display: table-row !important;}
+.tbl th,
+.tbl td{
+  display: table-cell !important;
+  box-sizing: border-box; /* tránh tính width lệch do padding/border */
+}
+
   .row{transition: .12s ease;background:#fff}
   .row:hover{background: rgba(15,23,42,.02)}
   .lotcode{
@@ -491,12 +506,13 @@
       <div class="tbl-wrap">
         <table class="tbl" id="lotTable">
           <colgroup>
-            <col style="width:18%">
-            <col style="width:26%">
-            <col style="width:22%">
-            <col style="width:22%">
-            <col style="width:12%">
-          </colgroup>
+  <col style="width:140px">  <!-- ~10 ký tự + padding -->
+  <col style="width:auto">
+  <col style="width:25%">
+  <col style="width:25%">
+  <col style="width:160px">
+</colgroup>
+
           <thead>
             <tr>
               <th>Lô</th>
