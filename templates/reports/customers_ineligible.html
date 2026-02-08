@@ -1,71 +1,75 @@
+{# templates/reports/customers_ineligible.html #}
 {% extends "base.html" %}
 {% block title %}Khách hàng không đủ điều kiện{% endblock %}
 
 {% block content %}
 <style>
   :root{
+    --bg0:#f6f8fc;
+    --card:#ffffff;
+    --txt:#0f172a;
+    --muted: rgba(71,85,105,.88);
     --bd: rgba(15,23,42,.10);
     --bd2: rgba(15,23,42,.07);
-    --card: #fff;
-    --muted: rgba(71,85,105,.88);
-    --txt: #0f172a;
+
+    --pri:#4f46e5;
+    --pri2:#6366f1;
 
     --bad:#ef4444;
-    --pri:#4f46e5;
-    --blue:#3b82f6;
+    --warn:#f59e0b;
+    --ok:#10b981;
+    --info:#0ea5e9;
+    --vio:#a855f7;
 
-    --r: 16px;
-    --shadow: 0 14px 36px rgba(2,6,23,.10);
+    --shadow: 0 18px 48px rgba(2,6,23,.10);
+    --shadow2: 0 10px 24px rgba(2,6,23,.08);
+    --r: 18px;
   }
 
-  .rp-wrap{max-width:1280px;margin:0 auto}
+  .rp-wrap{max-width:1240px;margin:0 auto;padding: 10px 12px 22px}
   .rp-head{
-    background: linear-gradient(135deg, rgba(79,70,229,.10), rgba(239,68,68,.08));
+    background:
+      radial-gradient(1200px 400px at 10% 0%, rgba(79,70,229,.14), rgba(79,70,229,0) 55%),
+      radial-gradient(900px 380px at 90% 0%, rgba(239,68,68,.10), rgba(239,68,68,0) 52%),
+      linear-gradient(180deg, rgba(255,255,255,.86), rgba(255,255,255,.76));
     border:1px solid var(--bd);
     border-radius: 22px;
     padding: 16px 16px 14px;
-    box-shadow: 0 10px 28px rgba(2,6,23,.06);
+    box-shadow: 0 14px 40px rgba(2,6,23,.08);
+    backdrop-filter: blur(10px);
   }
-  .rp-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-  .rp-title h1{font-size:20px;font-weight:900;color:var(--txt);display:flex;align-items:center;gap:10px;margin:0}
-  .rp-title p{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.35}
+  .rp-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .rp-title h1{font-size:20px;font-weight:950;color:var(--txt);display:flex;align-items:center;gap:10px;margin:0}
+  .rp-title p{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.35;max-width:760px}
 
   .pill{
     display:inline-flex;align-items:center;gap:8px;
     padding:8px 10px;border-radius:999px;
-    background: rgba(255,255,255,.72);
+    background: rgba(255,255,255,.75);
     border:1px solid var(--bd2);
-    color: rgba(15,23,42,.70);
-    font-size:12px;font-weight:800;
-    backdrop-filter: blur(8px);
+    color: rgba(15,23,42,.72);
+    font-size:12px;font-weight:900;
     white-space:nowrap;
   }
   .dot{width:8px;height:8px;border-radius:999px;background: var(--bad);box-shadow:0 0 0 3px rgba(239,68,68,.14)}
 
-  .rp-controls{
-    margin-top: 12px;
-    display:flex;flex-wrap:wrap;align-items:center;gap:10px;
-  }
+  .rp-controls{margin-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:10px}
   .sel{
     display:flex;align-items:center;gap:10px;
     padding:10px 12px;border-radius: 14px;
     border:1px solid var(--bd);
-    background: rgba(255,255,255,.80);
+    background: rgba(255,255,255,.88);
     min-width: 320px;
     flex: 1 1 420px;
   }
-  .sel label{font-size:12px;color:rgba(15,23,42,.65);font-weight:900}
-  .sel select{
-    border:0;outline:0;background:transparent;
-    font-weight:950;color:var(--txt);
-    width:100%;
-  }
+  .sel label{font-size:12px;color:rgba(15,23,42,.65);font-weight:950}
+  .sel select{border:0;outline:0;background:transparent;font-weight:950;color:var(--txt);width:100%}
 
   .btn{
     display:inline-flex;align-items:center;gap:8px;
     padding:10px 12px;border-radius: 14px;
     border:1px solid var(--bd);
-    background: rgba(255,255,255,.88);
+    background: rgba(255,255,255,.90);
     font-size:12px;font-weight:950;color: rgba(15,23,42,.78);
     transition: .15s ease;
     text-decoration:none;
@@ -74,32 +78,15 @@
     white-space:nowrap;
   }
   .btn:hover{transform: translateY(-1px); box-shadow: 0 10px 20px rgba(2,6,23,.10)}
-  .btn.primary{
-    border-color: rgba(239,68,68,.30);
-    background: linear-gradient(180deg, rgba(239,68,68,.14), rgba(239,68,68,.08));
-    color: rgba(153,27,27,.95);
-  }
-  .btn.tiny{
-    padding:8px 10px;
-    border-radius: 12px;
-    font-size:12px;
-    font-weight:950;
-  }
-  .btn.linky{
-    border-color: rgba(79,70,229,.18);
-    background: linear-gradient(180deg, rgba(79,70,229,.10), rgba(79,70,229,.05));
-    color: rgba(49,46,129,.95);
-  }
+  .btn.primary{border-color: rgba(79,70,229,.22);background: linear-gradient(180deg, rgba(79,70,229,.14), rgba(79,70,229,.08));color: rgba(49,46,129,.95)}
+  .btn.soft{border-color: rgba(15,23,42,.10);background: rgba(255,255,255,.90);color: rgba(15,23,42,.78)}
+  .btn.tiny{padding:8px 10px;border-radius: 12px;font-size:12px;font-weight:950}
+  .btn.red{border-color: rgba(239,68,68,.26);background: linear-gradient(180deg, rgba(239,68,68,.12), rgba(239,68,68,.06));color: rgba(153,27,27,.95)}
 
-  .kpis{
-    margin-top: 14px;
-    display:grid;
-    grid-template-columns: repeat(12, 1fr);
-    gap:10px;
-  }
+  .kpis{margin-top: 14px;display:grid;grid-template-columns: repeat(12, 1fr);gap:10px}
   .kpi{
     grid-column: span 3;
-    background: rgba(255,255,255,.90);
+    background: rgba(255,255,255,.92);
     border:1px solid var(--bd);
     border-radius: 18px;
     padding: 12px 12px 10px;
@@ -107,29 +94,35 @@
     min-width:0;
   }
   @media (max-width: 1024px){ .kpi{grid-column: span 6} }
-  @media (max-width: 640px){
-    .sel{min-width:100%}
-    .kpi{grid-column: span 12}
-  }
-  .kpi .t{font-size:12px;color:rgba(15,23,42,.62);font-weight:900}
+  @media (max-width: 640px){ .sel{min-width:100%} .kpi{grid-column: span 12} }
+  .kpi .t{font-size:12px;color:rgba(15,23,42,.62);font-weight:950}
   .kpi .v{margin-top:6px;font-size:18px;font-weight:950;color:var(--txt);letter-spacing:.2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .kpi .s{margin-top:6px;font-size:11px;color:rgba(71,85,105,.90);line-height:1.35}
   .kpi.bad .v{color: rgba(153,27,27,.95)}
-  .kpi.money .v{color: rgba(30,64,175,.95)}
+  .kpi.info .v{color: rgba(30,64,175,.95)}
+  .mono{font-variant-numeric: tabular-nums; font-feature-settings: "tnum";}
 
-  .rp-card{
-    margin-top: 14px;
-    background: var(--card);
-    border:1px solid var(--bd);
-    border-radius: 22px;
-    box-shadow: var(--shadow);
-    overflow:hidden;
+  .reason-strip{margin-top: 12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .chip{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 10px;border-radius:999px;
+    border:1px solid var(--bd2);
+    background: rgba(255,255,255,.86);
+    font-size:12px;font-weight:950;color: rgba(15,23,42,.78);
+    user-select:none;
+    cursor:pointer;
+    transition:.12s ease;
   }
+  .chip:hover{box-shadow:0 10px 18px rgba(2,6,23,.08); transform: translateY(-1px)}
+  .chip.active{border-color: rgba(15,23,42,.18);box-shadow: 0 12px 22px rgba(2,6,23,.10)}
+  .chip .n{opacity:.85}
+  .chip .sw{width:10px;height:10px;border-radius:999px;box-shadow:0 0 0 3px rgba(2,6,23,.05)}
+
+  .rp-card{margin-top: 14px;background: var(--card);border:1px solid var(--bd);border-radius: 22px;box-shadow: var(--shadow);overflow:hidden}
   .rp-card .hd{
-    padding: 12px 14px;
-    border-bottom:1px solid var(--bd2);
+    padding: 12px 14px;border-bottom:1px solid var(--bd2);
     background: linear-gradient(90deg, rgba(15,23,42,.03), rgba(15,23,42,.00));
-    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
   }
   .badge{
     display:inline-flex;align-items:center;gap:7px;
@@ -137,15 +130,14 @@
     border:1px solid var(--bd2);
     background: rgba(255,255,255,.88);
     font-size:12px;font-weight:950;color:rgba(15,23,42,.74);
+    white-space:nowrap;
   }
-  .badge.bad{border-color: rgba(239,68,68,.26); background: rgba(239,68,68,.08); color: rgba(153,27,27,.92)}
   .muted{color: var(--muted);font-size:12px}
 
   .list-controls{
-    padding: 10px 14px;
-    border-bottom:1px solid rgba(15,23,42,.06);
+    padding: 10px 14px;border-bottom:1px solid rgba(15,23,42,.06);
     display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
-    background: rgba(255,255,255,.84);
+    background: rgba(255,255,255,.90);
   }
   .lc-left{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
   .ctl{
@@ -154,109 +146,175 @@
     border:1px solid rgba(15,23,42,.10);
     background: rgba(15,23,42,.02);
   }
-  .ctl label{font-size:12px;font-weight:900;color:rgba(15,23,42,.70)}
-  .ctl select, .ctl input{
-    border:0;outline:0;background:transparent;
-    font-size:12px;font-weight:950;color:rgba(15,23,42,.85);
-  }
+  .ctl label{font-size:12px;font-weight:950;color:rgba(15,23,42,.70)}
+  .ctl select, .ctl input{border:0;outline:0;background:transparent;font-size:12px;font-weight:950;color:rgba(15,23,42,.85)}
   .lc-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   .mini-kpi{
     font-size:12px;color:rgba(71,85,105,.92);
     padding:8px 10px;border-radius:14px;
     border:1px solid rgba(15,23,42,.10);
     background: rgba(15,23,42,.02);
-  }
-
-  /* ===== TABLE (chuẩn thẳng hàng) ===== */
-  .tbl-wrap{
-    padding: 12px 14px 16px;
-    background: rgba(15,23,42,.01);
-  }
-  .tbl-scroll{
-    overflow-x:auto;
-    border-radius: 18px;
-    border:1px solid rgba(15,23,42,.08);
-    background: rgba(255,255,255,.92);
-  }
-  table.rp-table{
-    width:100%;
-    border-collapse:separate;
-    border-spacing:0;
-    min-width: 980px;
-  }
-  table.rp-table thead th{
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    background: rgba(255,255,255,.98);
-    font-size:12px;
-    font-weight:950;
-    color: rgba(15,23,42,.60);
-    text-align:left;
-    padding: 12px 12px;
-    border-bottom:1px solid rgba(15,23,42,.08);
     white-space:nowrap;
   }
-  table.rp-table tbody td{
-    padding: 14px 12px;
-    vertical-align:top;
-    border-bottom:1px solid rgba(15,23,42,.06);
-    background: rgba(255,255,255,.96);
-  }
-  table.rp-table tbody tr:hover td{
-    background: rgba(15,23,42,.015);
-  }
 
-  .cust-name{font-weight:1000;color: rgba(15,23,42,.92);line-height:1.25;word-break:break-word}
-  .subline{margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-  .pill2{
-    display:inline-flex;align-items:center;gap:8px;
+  .list-wrap{padding: 12px 14px 16px;background: rgba(15,23,42,.01)}
+  .cust{
+    border:1px solid rgba(15,23,42,.10);
+    background: rgba(255,255,255,.94);
+    border-radius: 18px;
+    box-shadow: 0 10px 22px rgba(2,6,23,.05);
+    overflow:hidden;
+    margin-bottom: 12px;
+  }
+  .cust-hd{
+    padding: 12px 12px 10px;
+    display:flex;justify-content:space-between;gap:12px;align-items:flex-start;
+    cursor:pointer;
+  }
+  .cust-hd:hover{background: rgba(15,23,42,.012)}
+  .cust-left{min-width:0}
+  .cust-name{font-weight:950;color: rgba(15,23,42,.92);line-height:1.2;font-size: 15px;word-break:break-word}
+  .cust-meta{
+    margin-top:6px;color: rgba(71,85,105,.90);
+    font-size: 12px;line-height: 1.45;
+    user-select:text;cursor:text;
+  }
+  .cust-meta .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+  .sep{opacity:.45;margin:0 6px}
+  .cust-right{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;min-width: 180px}
+  .tag{
+    display:inline-flex;align-items:center;gap:7px;
     padding:6px 10px;border-radius:999px;
     border:1px solid rgba(15,23,42,.10);
-    background: rgba(255,255,255,.92);
+    background: rgba(15,23,42,.02);
     font-size:12px;font-weight:950;color: rgba(15,23,42,.78);
-    user-select:none;
-    cursor:pointer;
     white-space:nowrap;
   }
-  .pill2:hover{box-shadow:0 10px 18px rgba(2,6,23,.08); transform: translateY(-1px)}
-  .pill2.gray{cursor:default;opacity:.8}
-  .pill2.gray:hover{box-shadow:none;transform:none}
-  .pill2.bad{border-color: rgba(239,68,68,.22); background: rgba(239,68,68,.06); color: rgba(153,27,27,.92)}
-  .pill2.money{border-color: rgba(59,130,246,.22); background: rgba(59,130,246,.08); color: rgba(30,64,175,.92)}
-  .pill2.warn{border-color: rgba(245,158,11,.22); background: rgba(245,158,11,.10); color: rgba(124,45,18,.92)}
-  .mini{font-size:12px;color: rgba(71,85,105,.92);line-height:1.35}
-  .mono{font-variant-numeric: tabular-nums; font-feature-settings: "tnum";}
+  .tag.money{border-color: rgba(59,130,246,.22); background: rgba(59,130,246,.08); color: rgba(30,64,175,.92)}
+  .tag.lots{border-color: rgba(245,158,11,.22); background: rgba(245,158,11,.10); color: rgba(124,45,18,.92)}
+  .chev{
+    margin-left:auto;width:30px;height:30px;border-radius:10px;
+    display:inline-flex;align-items:center;justify-content:center;
+    border:1px solid rgba(15,23,42,.10);
+    background: rgba(255,255,255,.80);
+    color: rgba(15,23,42,.70);
+    flex: 0 0 auto;
+  }
 
+  .cust-body{display:none;border-top:1px solid rgba(15,23,42,.08)}
+  .cust.open .cust-body{display:block}
+  .lots{
+    padding: 10px 12px 12px;
+    display:grid;grid-template-columns: repeat(12, 1fr);gap:10px;
+  }
+  .lot{
+    grid-column: span 6;
+    border:1px solid rgba(15,23,42,.10);
+    border-radius: 16px;
+    background: rgba(255,255,255,.96);
+    box-shadow: 0 10px 20px rgba(2,6,23,.04);
+    padding: 10px 10px 9px;
+    min-width:0;
+  }
+  @media (max-width: 980px){ .lot{grid-column: span 12} }
+
+  .lot-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+  .lot-code{font-weight:950;color: rgba(15,23,42,.92);font-size: 13px;display:flex;align-items:center;gap:8px;min-width:0}
+  .lot-code .code{
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    padding:4px 8px;border-radius: 10px;
+    border:1px solid rgba(15,23,42,.10);
+    background: rgba(15,23,42,.02);
+    white-space:nowrap;
+  }
+  .lot-reason{
+    display:inline-flex;align-items:center;gap:7px;
+    padding:6px 9px;border-radius:999px;
+    font-size:12px;font-weight:950;
+    border:1px solid rgba(15,23,42,.10);
+    white-space:nowrap;
+  }
+  .lot-mid{margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .mini{font-size:12px;color: rgba(71,85,105,.92);line-height:1.35}
+  .kv{
+    display:inline-flex;align-items:center;gap:7px;
+    padding:6px 9px;border-radius:999px;
+    border:1px solid rgba(15,23,42,.10);
+    background: rgba(15,23,42,.02);
+    font-size:12px;font-weight:950;color: rgba(15,23,42,.78);
+    white-space:nowrap;
+  }
+  .kv.money{border-color: rgba(59,130,246,.22); background: rgba(59,130,246,.08); color: rgba(30,64,175,.92)}
+  .kv.count{border-color: rgba(16,185,129,.22); background: rgba(16,185,129,.10); color: rgba(6,95,70,.95)}
+  .infoBtn{
+    width:28px;height:28px;border-radius: 10px;
+    display:inline-flex;align-items:center;justify-content:center;
+    border:1px solid rgba(15,23,42,.10);
+    background: rgba(255,255,255,.86);
+    color: rgba(15,23,42,.70);
+    cursor:pointer;
+  }
+  .infoBtn:hover{box-shadow:0 10px 16px rgba(2,6,23,.10); transform: translateY(-1px)}
   .empty{
     margin-top:10px;
     padding: 14px 12px;
     border:1px dashed rgba(15,23,42,.14);
     border-radius: 16px;
-    background: rgba(255,255,255,.90);
+    background: rgba(255,255,255,.92);
     color: rgba(71,85,105,.90);
     font-size:13px;
   }
 
-  /* Mobile */
-  @media (max-width: 980px){
-    table.rp-table{min-width: 900px;}
+  .modalMask{
+    position:fixed;inset:0;background: rgba(2,6,23,.50);
+    display:none;align-items:flex-end;justify-content:center;
+    padding: 18px 12px;z-index: 9999;
+  }
+  .modalMask.show{display:flex}
+  .modal{
+    width: min(900px, 100%);
+    background: rgba(255,255,255,.98);
+    border:1px solid rgba(255,255,255,.55);
+    border-radius: 20px;
+    box-shadow: 0 22px 70px rgba(2,6,23,.35);
+    overflow:hidden;
+    backdrop-filter: blur(14px);
+  }
+  .modalHd{
+    padding: 12px 14px;
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    border-bottom:1px solid rgba(15,23,42,.08);
+    background: linear-gradient(180deg, rgba(79,70,229,.10), rgba(255,255,255,.00));
+  }
+  .modalTitle{display:flex;flex-direction:column;gap:3px;min-width:0}
+  .modalTitle .t{font-weight:950;color: rgba(15,23,42,.92)}
+  .modalTitle .s{font-size:12px;color: rgba(71,85,105,.92);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .modalBd{padding: 12px 14px 14px;background: rgba(15,23,42,.01)}
+  .tbl{
+    width:100%;
+    border-collapse:separate;border-spacing:0;
+    overflow:hidden;
+    border:1px solid rgba(15,23,42,.10);
+    border-radius: 16px;
+    background: rgba(255,255,255,.95);
+  }
+  .tbl th, .tbl td{padding: 10px 10px; text-align:left; border-bottom:1px solid rgba(15,23,42,.06); vertical-align:top}
+  .tbl th{font-size:12px;font-weight:950;color: rgba(15,23,42,.60); background: rgba(255,255,255,.98); white-space:nowrap}
+  .tbl td{font-size:12px;color: rgba(15,23,42,.86)}
+  .tbl tr:last-child td{border-bottom:0}
+  .loading{
+    padding: 12px 12px;
+    border:1px dashed rgba(15,23,42,.16);
+    border-radius: 16px;
+    background: rgba(255,255,255,.92);
+    color: rgba(71,85,105,.92);
+    font-size: 13px;
   }
 </style>
 
-{% set is_v2 = (is_v2 if is_v2 is defined else false) %}
-{% set items = (data.get('items') if data and data.get('items') is not none else []) %}
 {% set project_id_val = (project_id if project_id is defined else None) %}
-
-{% set ns = namespace(sum_money=0, sum_lots=0, cnt_phone=0, cnt_cccd=0) %}
-{% for r in items %}
-  {% set amt = r.get("total_deposit_amount_project") %}
-  {% set lots = r.get("ineligible_lot_count") %}
-  {% set ns.sum_money = ns.sum_money + (amt or 0) %}
-  {% set ns.sum_lots = ns.sum_lots + (lots or 0) %}
-  {% if r.get("phone") %}{% set ns.cnt_phone = ns.cnt_phone + 1 %}{% endif %}
-  {% if r.get("cccd") %}{% set ns.cnt_cccd = ns.cnt_cccd + 1 %}{% endif %}
-{% endfor %}
+{% set items = (data.get('items') if data and data.get('items') is not none else []) %}
+{% set pair_count = (data.get('pair_count') if data and data.get('pair_count') is not none else 0) %}
 
 <div class="rp-wrap">
   <div class="rp-head">
@@ -267,237 +325,289 @@
           Khách hàng không đủ điều kiện
         </h1>
         <p>
-          Bạn có thể tìm nhanh theo <b>tên</b>, <b>CCCD</b> hoặc <b>SĐT</b>. Chạm để copy thông tin liên hệ.
+          Danh sách được tổng hợp theo từng khách và các lô chưa đủ điều kiện.
+          Bạn có thể lọc theo nguyên nhân và sắp xếp ngay trên trang để thao tác nhanh.
         </p>
       </div>
       <div class="pill">
         <span class="dot"></span>
-        Danh sách liên hệ
+        Danh sách tổng hợp
       </div>
     </div>
 
     <div class="rp-controls">
-      {% if is_v2 %}
-        <form id="projFormV2" method="get" action="{{ request.url.path }}" style="flex:1 1 auto">
-          <div class="sel">
-            <label>Dự án</label>
-            <select id="projectSelectV2">
-              <option value="">— Chọn dự án —</option>
-              {% for p in (projects or []) %}
-                {% set pid = p.get("id") or p.get("project_id") %}
-                {% set code = (p.get("project_code") or p.get("code") or "")|upper %}
-                <option value="{{ pid }}" {% if pid == project_id_val %}selected{% endif %}>
-                  {{ code }} — {{ (p.get("name") or "") }}
-                </option>
-              {% endfor %}
-            </select>
-          </div>
-        </form>
+      <form id="projFormV2" method="get" action="{{ request.url.path }}" style="flex:1 1 auto">
+        <div class="sel">
+          <label>Dự án</label>
+          <select id="projectSelectV2">
+            <option value="">— Chọn dự án —</option>
+            {% for p in (projects or []) %}
+              {% set pid = p.get("id") or p.get("project_id") %}
+              {% set code = (p.get("project_code") or p.get("code") or "")|upper %}
+              <option value="{{ pid }}" {% if pid == project_id_val %}selected{% endif %}>
+                {{ code }} — {{ (p.get("name") or "") }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      </form>
 
-        {% if project_id_val %}
-          <a class="btn primary" href="/reports/v2/projects/{{ project_id_val }}/customers/ineligible/export?limit={{ limit or 10000 }}&expose_phone=1">
-            <i class="ri-download-2-line"></i> Tải danh sách (Excel)
-          </a>
-
-          {# ✅ NEW: điều hướng sang trang chi tiết #}
-          <a class="btn linky" href="/reports/v2/projects/{{ project_id_val }}/customers/ineligible/detail?limit={{ limit or 10000 }}&expose_phone=1">
-            <i class="ri-file-search-line"></i> Xem chi tiết (lô + lý do + evidence)
-          </a>
-        {% endif %}
+      {% if project_id_val %}
+        <a class="btn primary" href="/reports/v2/projects/{{ project_id_val }}/customers-lots/ineligible/export?limit={{ limit or 10000 }}">
+          <i class="ri-download-2-line"></i> Tải danh sách (Excel)
+        </a>
       {% endif %}
 
-      <a class="btn" href="/reports">
+      <a class="btn soft" href="/reports">
         <i class="ri-arrow-left-line"></i> Quay lại
       </a>
     </div>
 
     <div class="kpis">
       <div class="kpi bad">
-        <div class="t">Số khách trong danh sách</div>
-        <div class="v"><span class="mono">{{ items|length }}</span></div>
-        <div class="s">Thống kê theo dự án đang chọn.</div>
+        <div class="t">Tổng số khách</div>
+        <div class="v"><span class="mono" id="kpiCustomers">{{ items|length }}</span></div>
+        <div class="s">Số khách có ít nhất 1 lô chưa đủ điều kiện.</div>
       </div>
 
-      <div class="kpi money">
-        <div class="t">Tổng tiền đã nộp</div>
-        <div class="v mono"><span data-money="{{ ns.sum_money }}">{{ ns.sum_money }}</span></div>
-        <div class="s">Tổng tiền của nhóm khách trong danh sách.</div>
+      <div class="kpi info">
+        <div class="t">Tổng cặp Khách + Lô</div>
+        <div class="v"><span class="mono" id="kpiPairs">{{ pair_count or 0 }}</span></div>
+        <div class="s">Tổng số dòng “khách tham gia một lô”.</div>
       </div>
 
       <div class="kpi">
         <div class="t">Tổng số lô liên quan</div>
-        <div class="v"><span class="mono">{{ ns.sum_lots }}</span></div>
-        <div class="s">Cộng dồn theo từng khách.</div>
+        <div class="v"><span class="mono" id="kpiLots">0</span></div>
+        <div class="s">Cộng theo danh sách lô của từng khách.</div>
       </div>
 
       <div class="kpi">
-        <div class="t">Có SĐT / CCCD</div>
-        <div class="v"><span class="mono">{{ ns.cnt_phone }}</span> / <span class="mono">{{ ns.cnt_cccd }}</span></div>
-        <div class="s">Hỗ trợ copy nhanh để liên hệ.</div>
+        <div class="t">Tổng tiền đã nộp</div>
+        <div class="v mono"><span class="mono" id="kpiPaid" data-money="0">0</span></div>
+        <div class="s">Cộng theo từng lô (từ dữ liệu báo cáo).</div>
       </div>
+    </div>
+
+    <div class="reason-strip" id="reasonStrip">
+      <span class="badge" style="background: rgba(255,255,255,.86)">
+        <i class="ri-palette-line"></i> Nguyên nhân
+      </span>
+      <span class="muted">Chọn để lọc nhanh.</span>
     </div>
   </div>
 
   <div class="rp-card">
     <div class="hd">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <span class="badge bad"><i class="ri-contacts-line"></i> Danh sách khách</span>
-        <span class="muted">Tìm kiếm & sắp xếp ngay trên trang.</span>
+        <span class="badge"><i class="ri-contacts-line"></i> Danh sách khách</span>
+        <span class="muted">Bấm vào từng khách để xem các lô.</span>
       </div>
+      <div class="muted" id="hintRight">—</div>
     </div>
 
-    {% if items|length == 0 %}
+    {% if not project_id_val %}
       <div style="padding:18px 14px;color:rgba(71,85,105,.88);font-size:13px">
-        Chưa có dữ liệu. Vui lòng chọn dự án để xem danh sách.
+        Vui lòng chọn dự án để xem danh sách.
       </div>
     {% else %}
+      {% if items|length == 0 %}
+        <div style="padding:18px 14px;color:rgba(71,85,105,.88);font-size:13px">
+          Chưa có dữ liệu cho dự án này.
+        </div>
+      {% else %}
 
-      <div class="list-controls">
-        <div class="lc-left">
-          <div class="ctl">
-            <label>Sắp xếp</label>
-            <select id="sortKey">
-              <option value="default">Mặc định</option>
-              <option value="money_desc">Tiền đã nộp (cao → thấp)</option>
-              <option value="lots_desc">Số lô liên quan (nhiều → ít)</option>
-              <option value="name_asc">Tên (A → Z)</option>
-            </select>
+        <div class="list-controls">
+          <div class="lc-left">
+            <div class="ctl">
+              <label>Sắp xếp</label>
+              <select id="sortKey">
+                <option value="default">Mặc định</option>
+                <option value="lots_desc">Số lô (nhiều → ít)</option>
+                <option value="lots_asc">Số lô (ít → nhiều)</option>
+                <option value="name_asc">Tên (A → Z)</option>
+              </select>
+            </div>
+
+            <div class="ctl">
+              <label>Tìm</label>
+              <input id="q" type="text" placeholder="Tên / CCCD / SĐT / Email" style="width:260px"/>
+            </div>
+
+            <button class="btn soft" type="button" id="resetBtn">
+              <i class="ri-refresh-line"></i> Reset
+            </button>
           </div>
 
-          <div class="ctl">
-            <label>Tìm</label>
-            <input id="q" type="text" placeholder="Tên / CCCD / SĐT" style="width:240px"/>
+          <div class="lc-right">
+            <div class="mini-kpi" id="shownKpi">—</div>
           </div>
-
-          <button class="btn" type="button" id="resetBtn">
-            <i class="ri-refresh-line"></i> Reset
-          </button>
         </div>
 
-        <div class="lc-right">
-          <div class="mini-kpi" id="shownKpi">—</div>
-        </div>
-      </div>
+        <div class="list-wrap" id="custList">
+          {% for it in items %}
+            {% set c = it.get('customer') or {} %}
+            {% set lots = it.get('lots') or [] %}
+            {% set cname = c.get('customer_full_name') or c.get('full_name') or '' %}
+            {% set cccd = c.get('cccd') or '' %}
+            {% set phone = c.get('phone') or '' %}
+            {% set email = c.get('email') or '' %}
+            {% set lot_count = it.get('ineligible_lot_count') or (lots|length) %}
+            {% set sum_paid = 0 %}
+            {% for l in lots %}{% set sum_paid = sum_paid + (l.get('paid_vnd') or 0) %}{% endfor %}
 
-      <div class="tbl-wrap">
-        <div class="tbl-scroll">
-          <table class="rp-table">
-            <thead>
-              <tr>
-                <th style="width:36%">Khách hàng</th>
-                <th style="width:28%">Liên hệ</th>
-                <th style="width:16%">Tổng tiền đã nộp</th>
-                <th style="width:12%">Số lô</th>
-                <th style="width:8%;text-align:right">Chi tiết</th>
-              </tr>
-            </thead>
-
-            <tbody id="list">
-              {% for r in items %}
-                {% set name = r.get("customer_full_name") or r.get("full_name") or "" %}
-                {% set cccd = r.get("cccd") or "" %}
-                {% set phone = r.get("phone") or "" %}
-                {% set email = r.get("email") or "" %}
-                {% set money = r.get("total_deposit_amount_project") or 0 %}
-                {% set lots = r.get("ineligible_lot_count") or 0 %}
-
-                <tr class="rp-row"
-                    data-idx="{{ loop.index0 }}"
-                    data-name="{{ (name or '')|lower }}"
-                    data-cccd="{{ (cccd or '') }}"
-                    data-phone="{{ (phone or '') }}"
-                    data-money-sort="{{ money or 0 }}"
-                    data-lots-sort="{{ lots or 0 }}">
-
-                  <td>
-                    <div class="cust-name">{{ name }}</div>
-                    <div class="subline">
-                      {% if cccd %}
-                        <span class="pill2 mono" title="Copy CCCD" onclick="copyText('{{ cccd }}')">
-                          <i class="ri-id-card-line"></i> {{ cccd }} <span style="opacity:.6">• Copy</span>
-                        </span>
-                      {% else %}
-                        <span class="pill2 gray"><i class="ri-id-card-line"></i> CCCD —</span>
-                      {% endif %}
-                    </div>
-                  </td>
-
-                  <td>
-                    <div class="subline" style="margin-top:0">
-                      {% if phone %}
-                        <span class="pill2 mono bad" title="Copy SĐT" onclick="copyText('{{ phone }}')">
-                          <i class="ri-phone-line"></i> {{ phone }} <span style="opacity:.6">• Copy</span>
-                        </span>
-                      {% else %}
-                        <span class="pill2 gray"><i class="ri-phone-line"></i> SĐT —</span>
-                      {% endif %}
-
-                      {% if email %}
-                        <span class="pill2 mono" title="Copy email" onclick="copyText('{{ email }}')">
-                          <i class="ri-mail-line"></i> {{ email }}
-                        </span>
-                      {% endif %}
-                    </div>
-                    <div class="mini" style="margin-top:6px">Ưu tiên liên hệ theo SĐT.</div>
-                  </td>
-
-                  <td>
-                    <span class="pill2 money">
-                      <i class="ri-coins-line"></i>
-                      <span class="mono" data-money="{{ money }}">{{ money }}</span>
-                    </span>
-                    <div class="mini" style="margin-top:6px">Tổng tiền khách đã nộp trong dự án.</div>
-                  </td>
-
-                  <td>
-                    <span class="pill2 warn">
-                      <i class="ri-stack-line"></i>
-                      <span class="mono">{{ lots }}</span> lô
-                    </span>
-                    <div class="mini" style="margin-top:6px">Số lô liên quan.</div>
-                  </td>
-
-                  <td style="text-align:right">
-                    {% if project_id_val %}
-                      <a class="btn tiny linky"
-                         href="/reports/v2/projects/{{ project_id_val }}/customers/ineligible/detail?limit={{ limit or 10000 }}&expose_phone=1#cccd={{ cccd|urlencode }}">
-                        <i class="ri-arrow-right-up-line"></i> Xem
-                      </a>
-                    {% else %}
-                      <span class="mini" style="opacity:.7">—</span>
+            <div class="cust rp-row"
+                 data-idx="{{ loop.index0 }}"
+                 data-name="{{ (cname or '')|lower }}"
+                 data-cccd="{{ (cccd or '') }}"
+                 data-phone="{{ (phone or '') }}"
+                 data-email="{{ (email or '')|lower }}"
+                 data-lots="{{ lot_count }}">
+              <div class="cust-hd" onclick="toggleCust(this)">
+                <div class="cust-left">
+                  <div class="cust-name">{{ cname }}</div>
+                  <div class="cust-meta">
+                    {% if cccd %}<span class="mono">CCCD: {{ cccd }}</span>{% else %}<span>CCCD: —</span>{% endif %}
+                    <span class="sep">•</span>
+                    {% if phone %}<span class="mono">SĐT: {{ phone }}</span>{% else %}<span>SĐT: —</span>{% endif %}
+                    {% if email %}
+                      <span class="sep">•</span>
+                      <span>Email: {{ email }}</span>
                     {% endif %}
-                  </td>
+                  </div>
+                </div>
 
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+                <div class="cust-right">
+                  <span class="tag money">
+                    <i class="ri-coins-line"></i>
+                    <span data-money="{{ sum_paid }}" class="mono">{{ sum_paid }}</span>
+                  </span>
+                  <span class="tag lots">
+                    <i class="ri-stack-line"></i>
+                    <span class="mono">{{ lot_count }}</span> lô
+                  </span>
+                  <span class="chev"><i class="ri-arrow-down-s-line"></i></span>
+                </div>
+              </div>
 
-        <div class="empty" id="emptyBox" style="display:none">
-          Không có kết quả phù hợp. Vui lòng thử lại hoặc bấm <b>Reset</b>.
+              <div class="cust-body">
+                <div class="lots">
+                  {% for l in lots %}
+                    {% set lot_id = l.get('lot_id') %}
+                    {% set lot_code = l.get('lot_code') or '' %}
+                    {% set paid = l.get('paid_vnd') or 0 %}
+                    {% set reason = l.get('final_ineligible_reason') or 'UNKNOWN' %}
+                    {% set label = l.get('final_ineligible_label') or 'Chưa xác định' %}
+                    {% set eligible_cnt = l.get('eligible_customer_count') %}
+
+                    <div class="lot"
+                         data-reason="{{ reason }}"
+                         data-lot="{{ lot_code|lower }}">
+                      <div class="lot-top">
+                        <div class="lot-code">
+                          <span class="code">{{ lot_code }}</span>
+                        </div>
+
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+                          <span class="lot-reason"
+                                data-reason-badge="{{ reason }}"
+                                title="{{ label }}">
+                            <span class="sw" data-reason-sw="{{ reason }}"></span>
+                            {{ label }}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div class="lot-mid">
+                        <span class="kv money">
+                          <i class="ri-bank-card-line"></i>
+                          <span class="mono" data-money="{{ paid }}">{{ paid }}</span>
+
+                          <button class="infoBtn"
+                                  type="button"
+                                  title="Xem các lần nộp tiền"
+                                  data-project-id="{{ project_id_val }}"
+                                  data-customer-id="{{ c.get('customer_id') }}"
+                                  data-lot-id="{{ lot_id }}"
+                                  data-customer-name="{{ cname }}"
+                                  data-lot-code="{{ lot_code }}"
+                                  onclick="openTxnsFromBtn(event, this)">
+                            <i class="ri-information-line"></i>
+                          </button>
+                        </span>
+
+                        {% if eligible_cnt is not none %}
+                          <span class="kv count">
+                            <i class="ri-group-line"></i>
+                            <span class="mono">{{ eligible_cnt }}</span> khách đủ điều kiện
+                          </span>
+                        {% endif %}
+                      </div>
+
+                      <div class="mini" style="margin-top:8px">
+                        {% if reason == 'LATE' %}
+                          Nộp tiền sau thời hạn quy định của dự án.
+                        {% elif reason == 'NOT_ENOUGH_DEPOSIT' %}
+                          Số tiền nộp chưa đạt mức tiền cọc yêu cầu.
+                        {% elif reason == 'LOT_NEED_2_ELIGIBLE' %}
+                          Lô này chưa đủ số khách đạt điều kiện (tối thiểu 2).
+                        {% else %}
+                          {{ label }}
+                        {% endif %}
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+
+          <div class="empty" id="emptyBox" style="display:none">
+            Không có kết quả phù hợp. Vui lòng thử lại hoặc bấm <b>Reset</b>.
+          </div>
         </div>
-      </div>
+      {% endif %}
     {% endif %}
   </div>
 </div>
 
+<div class="modalMask" id="txModalMask" onclick="closeTxnsIfMask(event)">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Chi tiết giao dịch">
+    <div class="modalHd">
+      <div class="modalTitle">
+        <div class="t">Chi tiết các lần nộp tiền</div>
+        <div class="s" id="txModalSub">—</div>
+      </div>
+      <button class="btn red tiny" type="button" onclick="closeTxns()">
+        <i class="ri-close-line"></i> Đóng
+      </button>
+    </div>
+    <div class="modalBd" id="txModalBody">
+      <div class="loading">Đang tải dữ liệu…</div>
+    </div>
+  </div>
+</div>
+
 <script>
+  /* ---------- helpers ---------- */
   function fmtMoney(n){
     try{ return Number(n || 0).toLocaleString('vi-VN'); }
     catch(e){ return String(n || 0); }
   }
   function applyMoneyFormat(root){
-    const nodes = (root || document).querySelectorAll('span[data-money]');
+    const nodes = (root || document).querySelectorAll('[data-money]');
     nodes.forEach(el => el.textContent = fmtMoney(el.getAttribute('data-money')));
   }
-
-  function copyText(s){
-    try{ navigator.clipboard.writeText(String(s||"")); }catch(e){}
+  function escapeHtml(s){
+    return String(s || '')
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'","&#039;");
   }
-  applyMoneyFormat(document);
 
-  // V2 project redirect
+  /* ---------- project redirect (NEW endpoint) ---------- */
   (function(){
     const sel = document.getElementById('projectSelectV2');
     if(!sel) return;
@@ -505,46 +615,197 @@
       const pid = sel.value;
       if(!pid){ window.location.href = '/reports'; return; }
       const limit = {{ (limit or 10000) }};
-      window.location.href = `/reports/v2/projects/${pid}/customers/ineligible?limit=${limit}&expose_phone=1`;
+      window.location.href = `/reports/v2/projects/${pid}/customers-lots/ineligible?limit=${limit}`;
     });
   })();
 
-  const list = document.getElementById('list');
-  const emptyBox = document.getElementById('emptyBox');
-  const rows = list ? Array.from(list.querySelectorAll('tr.rp-row')) : [];
-
-  function setShownKpi(shown, total){
-    const el = document.getElementById('shownKpi');
-    if(!el) return;
-    el.innerHTML = `<b class="mono">${shown}</b> / <span class="mono">${total}</span> khách đang hiển thị`;
+  /* ---------- accordion toggle ---------- */
+  function toggleCust(el){
+    const card = el?.closest('.cust');
+    if(!card) return;
+    card.classList.toggle('open');
+    const chev = card.querySelector('.chev i');
+    if(chev){
+      chev.classList.toggle('ri-arrow-down-s-line', !card.classList.contains('open'));
+      chev.classList.toggle('ri-arrow-up-s-line', card.classList.contains('open'));
+    }
   }
 
+  /* ---------- colors by reason ---------- */
+  const REASON_STYLE = {
+    'LATE':                { sw:'var(--bad)',  bd:'rgba(239,68,68,.26)', bg:'rgba(239,68,68,.08)', fg:'rgba(153,27,27,.92)' },
+    'NOT_ENOUGH_DEPOSIT':  { sw:'var(--warn)', bd:'rgba(245,158,11,.26)', bg:'rgba(245,158,11,.10)', fg:'rgba(124,45,18,.92)' },
+    'LOT_NEED_2_ELIGIBLE': { sw:'var(--pri2)', bd:'rgba(99,102,241,.26)', bg:'rgba(99,102,241,.10)', fg:'rgba(49,46,129,.95)' },
+    'UNKNOWN':             { sw:'rgba(100,116,139,1)', bd:'rgba(100,116,139,.22)', bg:'rgba(100,116,139,.08)', fg:'rgba(30,41,59,.92)' }
+  };
+
+  function applyReasonBadges(){
+    document.querySelectorAll('[data-reason-badge]').forEach(b => {
+      const key = (b.getAttribute('data-reason-badge') || 'UNKNOWN').trim() || 'UNKNOWN';
+      const st = REASON_STYLE[key] || REASON_STYLE.UNKNOWN;
+      b.style.borderColor = st.bd;
+      b.style.background = st.bg;
+      b.style.color = st.fg;
+    });
+    document.querySelectorAll('[data-reason-sw]').forEach(sw => {
+      const key = (sw.getAttribute('data-reason-sw') || 'UNKNOWN').trim() || 'UNKNOWN';
+      const st = REASON_STYLE[key] || REASON_STYLE.UNKNOWN;
+      sw.style.background = st.sw;
+      sw.style.boxShadow = `0 0 0 3px rgba(2,6,23,.05)`;
+    });
+  }
+
+  /* ---------- build chips + compute header KPIs (safe) ---------- */
+  function computeHeaderKpis(){
+    const lots = Array.from(document.querySelectorAll('.lot[data-reason]'));
+    const totalLots = lots.length;
+
+    let sumPaid = 0;
+    lots.forEach(l => {
+      const moneyEl = l.querySelector('[data-money]');
+      const v = Number(moneyEl?.getAttribute('data-money') || 0);
+      if(!Number.isNaN(v)) sumPaid += v;
+    });
+
+    // pairs: ưu tiên số từ API nếu có, nếu không dùng totalLots
+    const kpiPairs = document.getElementById('kpiPairs');
+    const apiPairs = Number(kpiPairs?.textContent || 0) || 0;
+    const pairsFinal = apiPairs > 0 ? apiPairs : totalLots;
+
+    const kLots = document.getElementById('kpiLots');
+    if(kLots) kLots.textContent = String(totalLots);
+
+    const kPaid = document.getElementById('kpiPaid');
+    if(kPaid){
+      kPaid.setAttribute('data-money', String(sumPaid));
+      kPaid.textContent = fmtMoney(sumPaid);
+    }
+
+    if(kpiPairs) kpiPairs.textContent = String(pairsFinal);
+  }
+
+  function buildReasonChips(){
+    const strip = document.getElementById('reasonStrip');
+    if(!strip) return;
+
+    const mp = new Map(); // reason -> count (pairs)
+    document.querySelectorAll('.lot[data-reason]').forEach(l => {
+      const r = (l.getAttribute('data-reason') || 'UNKNOWN').trim() || 'UNKNOWN';
+      mp.set(r, (mp.get(r) || 0) + 1);
+    });
+
+    const total = Array.from(mp.values()).reduce((a,b)=>a+b,0);
+
+    // stable order
+    const preferred = ['LATE','NOT_ENOUGH_DEPOSIT','LOT_NEED_2_ELIGIBLE','UNKNOWN'];
+    const keys = Array.from(mp.keys()).sort((a,b)=>{
+      const ia = preferred.indexOf(a), ib = preferred.indexOf(b);
+      if(ia !== -1 || ib !== -1){
+        return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+      }
+      return a.localeCompare(b,'vi');
+    });
+
+    // clear chips (keep first 2 nodes)
+    while(strip.children.length > 2) strip.removeChild(strip.lastChild);
+
+    const all = document.createElement('span');
+    all.className = 'chip active';
+    all.setAttribute('data-reason-filter', '');
+    all.innerHTML = `<span class="sw" style="background: rgba(15,23,42,.55)"></span>Tất cả <span class="n mono">(${total})</span>`;
+    strip.appendChild(all);
+
+    keys.forEach(k=>{
+      const st = REASON_STYLE[k] || REASON_STYLE.UNKNOWN;
+      const count = mp.get(k) || 0;
+
+      // lấy label “thân thiện” từ badge text (không cần CSS.escape)
+      let label = k;
+      const any = Array.from(document.querySelectorAll('[data-reason-badge]'))
+        .find(x => (x.getAttribute('data-reason-badge') || '').trim() === k);
+      if(any) label = (any.textContent || '').trim() || k;
+
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      chip.setAttribute('data-reason-filter', k);
+      chip.innerHTML = `<span class="sw" style="background:${st.sw}"></span>${escapeHtml(label)} <span class="n mono">(${count})</span>`;
+      strip.appendChild(chip);
+    });
+
+    strip.querySelectorAll('.chip').forEach(ch=>{
+      ch.addEventListener('click', ()=>{
+        strip.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
+        ch.classList.add('active');
+        window.__reasonFilter = ch.getAttribute('data-reason-filter') || '';
+        applyView();
+      });
+    });
+  }
+
+  /* ---------- local sort/filter/search ---------- */
+  const listRoot = document.getElementById('custList');
+  const emptyBox = document.getElementById('emptyBox');
+  const rows = listRoot ? Array.from(listRoot.querySelectorAll('.cust.rp-row')) : [];
+
+  function setShownKpi(shownCustomers, totalCustomers, shownPairs, totalPairs){
+    const el = document.getElementById('shownKpi');
+    if(!el) return;
+    el.innerHTML = `<b class="mono">${shownCustomers}</b> / <span class="mono">${totalCustomers}</span> khách • <b class="mono">${shownPairs}</b> / <span class="mono">${totalPairs}</span> cặp Khách+Lô`;
+  }
+
+  window.__reasonFilter = '';
+
   function applyView(){
-    if(!list) return;
+    if(!listRoot) return;
 
     const sortKey = document.getElementById('sortKey')?.value || 'default';
     const q = (document.getElementById('q')?.value || '').trim().toLowerCase();
+    const reasonFilter = (window.__reasonFilter || '').trim();
 
     let visible = [];
-    for(const tr of rows){
-      const name = (tr.getAttribute('data-name') || '');
-      const cccd = (tr.getAttribute('data-cccd') || '');
-      const phone = (tr.getAttribute('data-phone') || '');
-      const ok = (!q) || name.includes(q) || cccd.includes(q) || phone.includes(q);
-      tr.style.display = ok ? '' : 'none';
-      if(ok) visible.push(tr);
+    let shownPairs = 0;
+    const totalPairs = document.querySelectorAll('.lot[data-reason]').length;
+
+    for(const card of rows){
+      const lots = Array.from(card.querySelectorAll('.lot[data-reason]'));
+      let cardHasAnyLot = false;
+
+      for(const lot of lots){
+        const r = (lot.getAttribute('data-reason') || 'UNKNOWN').trim() || 'UNKNOWN';
+        const okReason = (!reasonFilter) || (r === reasonFilter);
+        lot.style.display = okReason ? '' : 'none';
+        if(okReason) cardHasAnyLot = true;
+      }
+
+      const name = (card.getAttribute('data-name') || '');
+      const cccd = (card.getAttribute('data-cccd') || '');
+      const phone = (card.getAttribute('data-phone') || '');
+      const email = (card.getAttribute('data-email') || '');
+      const okSearch = (!q) || name.includes(q) || cccd.includes(q) || phone.includes(q) || email.includes(q);
+
+      const ok = okSearch && cardHasAnyLot;
+      card.style.display = ok ? '' : 'none';
+
+      if(ok){
+        visible.push(card);
+        shownPairs += Array.from(card.querySelectorAll('.lot[data-reason]')).filter(x => x.style.display !== 'none').length;
+      }else{
+        card.classList.remove('open');
+      }
     }
 
     if(sortKey === 'default'){
       visible.sort((a,b) => Number(a.getAttribute('data-idx')) - Number(b.getAttribute('data-idx')));
-    } else if(sortKey === 'money_desc'){
-      visible.sort((a,b) =>
-        (Number(b.getAttribute('data-money-sort')) - Number(a.getAttribute('data-money-sort')))
-        || (Number(a.getAttribute('data-idx')) - Number(b.getAttribute('data-idx')))
-      );
     } else if(sortKey === 'lots_desc'){
       visible.sort((a,b) =>
-        (Number(b.getAttribute('data-lots-sort')) - Number(a.getAttribute('data-lots-sort')))
+        (Number(b.getAttribute('data-lots')) - Number(a.getAttribute('data-lots')))
+        || String(a.getAttribute('data-name')||'').localeCompare(String(b.getAttribute('data-name')||''), 'vi')
+        || (Number(a.getAttribute('data-idx')) - Number(b.getAttribute('data-idx')))
+      );
+    } else if(sortKey === 'lots_asc'){
+      visible.sort((a,b) =>
+        (Number(a.getAttribute('data-lots')) - Number(b.getAttribute('data-lots')))
+        || String(a.getAttribute('data-name')||'').localeCompare(String(b.getAttribute('data-name')||''), 'vi')
         || (Number(a.getAttribute('data-idx')) - Number(b.getAttribute('data-idx')))
       );
     } else if(sortKey === 'name_asc'){
@@ -554,14 +815,20 @@
       );
     }
 
-    for(const tr of visible){ list.appendChild(tr); }
+    for(const card of visible){ listRoot.insertBefore(card, emptyBox); }
 
-    setShownKpi(visible.length, rows.length);
+    setShownKpi(visible.length, rows.length, shownPairs, totalPairs);
     if(emptyBox) emptyBox.style.display = (visible.length === 0) ? '' : 'none';
+
+    const hint = document.getElementById('hintRight');
+    if(hint){
+      hint.textContent = reasonFilter ? 'Đang lọc theo nguyên nhân' : 'Đang hiển thị tất cả';
+    }
   }
 
   (function initControls(){
-    if(!list) return;
+    if(!listRoot) return;
+
     const sortKey = document.getElementById('sortKey');
     const q = document.getElementById('q');
     const resetBtn = document.getElementById('resetBtn');
@@ -569,16 +836,122 @@
     sortKey?.addEventListener('change', applyView);
     q?.addEventListener('input', () => {
       clearTimeout(window.__rpq);
-      window.__rpq = setTimeout(applyView, 60);
+      window.__rpq = setTimeout(applyView, 80);
     });
 
     resetBtn?.addEventListener('click', () => {
       if(sortKey) sortKey.value = 'default';
       if(q) q.value = '';
+      window.__reasonFilter = '';
+
+      const strip = document.getElementById('reasonStrip');
+      if(strip){
+        strip.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
+        const first = strip.querySelector('.chip[data-reason-filter=""]');
+        if(first) first.classList.add('active');
+      }
       applyView();
     });
 
+    applyMoneyFormat(document);
+    applyReasonBadges();
+    buildReasonChips();
+    computeHeaderKpis();
     applyView();
   })();
+
+  /* ---------- Txn modal ---------- */
+  function openTxnsFromBtn(ev, btn){
+    if(ev) ev.stopPropagation();
+    if(!btn) return;
+
+    const projectId = Number(btn.getAttribute('data-project-id') || 0);
+    const customerId = Number(btn.getAttribute('data-customer-id') || 0);
+    const lotId = Number(btn.getAttribute('data-lot-id') || 0);
+    const customerName = btn.getAttribute('data-customer-name') || '';
+    const lotCode = btn.getAttribute('data-lot-code') || '';
+
+    return openTxns(ev, projectId, customerId, lotId, customerName, lotCode);
+  }
+
+  function closeTxnsIfMask(e){
+    if(e && e.target && e.target.id === 'txModalMask') closeTxns();
+  }
+  function closeTxns(){
+    const m = document.getElementById('txModalMask');
+    if(m) m.classList.remove('show');
+  }
+
+  async function openTxns(ev, projectId, customerId, lotId, customerName, lotCode){
+    if(ev) ev.stopPropagation();
+
+    const mask = document.getElementById('txModalMask');
+    const body = document.getElementById('txModalBody');
+    const sub = document.getElementById('txModalSub');
+    if(!mask || !body || !sub) return;
+
+    sub.textContent = `${customerName || 'Khách'} • Lô ${lotCode || ''}`;
+    body.innerHTML = `<div class="loading">Đang tải dữ liệu…</div>`;
+    mask.classList.add('show');
+
+    const url = `/reports/v2/projects/${projectId}/customers/${customerId}/lots/${lotId}/txns/json?limit=10000`;
+
+    try{
+      const r = await fetch(url, { headers: { "Accept": "application/json" } });
+      const js = await r.json().catch(()=>null);
+
+      if(!r.ok || !js){
+        body.innerHTML = `<div class="loading">Không tải được dữ liệu. Vui lòng thử lại.</div>`;
+        return;
+      }
+
+      const items = js.items || [];
+      if(!items.length){
+        body.innerHTML = `<div class="loading">Chưa có giao dịch cho lô này.</div>`;
+        return;
+      }
+
+      let html = `
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th style="width:34%">Thời gian</th>
+              <th style="width:22%">Số tiền</th>
+              <th style="width:22%">Ngân hàng</th>
+              <th style="width:22%">Mã giao dịch</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      for(const it of items){
+        const t = it.received_at || it.txn_time || it.paid_at || '';
+        const amt = (it.amount_vnd ?? it.receipt_amount_vnd ?? it.amount ?? 0);
+        const bank = (it.bank_name || it.bank_code || it.payer_bank_name || it.payer_bank_code || '') || '—';
+        const ref = (it.receipt_code || it.receipt_id || it.txn_id || it.pay_reference || '') || '—';
+
+        html += `
+          <tr>
+            <td class="mono">${escapeHtml(String(t || ''))}</td>
+            <td class="mono">${fmtMoney(amt)}</td>
+            <td>${escapeHtml(String(bank || '—'))}</td>
+            <td class="mono">${escapeHtml(String(ref || '—'))}</td>
+          </tr>
+        `;
+      }
+
+      html += `</tbody></table>`;
+      body.innerHTML = html;
+
+    }catch(e){
+      body.innerHTML = `<div class="loading">Lỗi kết nối. Vui lòng thử lại.</div>`;
+    }
+  }
+
+  window.toggleCust = toggleCust;
+  window.openTxnsFromBtn = openTxnsFromBtn;
+  window.openTxns = openTxns;
+  window.closeTxns = closeTxns;
+  window.closeTxnsIfMask = closeTxnsIfMask;
 </script>
 {% endblock %}

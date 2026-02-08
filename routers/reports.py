@@ -1265,3 +1265,168 @@ async def v2_customers_ineligible_detail_export(
         params,
         filename,
     )
+
+# ============================================================
+# V2 REPORTS (Service A) — NEW PROXIES
+# Paste this block at the END of routers/reports.py (Service B).
+#
+# Service A endpoints:
+#   1) GET /api/v2/reports/projects/{project_id}/customers-lots/ineligible
+#      (+ optional format=xlsx)
+#   2) GET /api/v2/reports/projects/{project_id}/customers/{customer_id}/lots/{lot_id}/txns
+# ============================================================
+
+# ============================================================
+# V2 — Customers + Lots INELIGIBLE (grouped)
+# Service A:
+#   GET /api/v2/reports/projects/{project_id}/customers-lots/ineligible
+#   Supports: limit, format=xlsx
+# ============================================================
+
+@router.get(
+    "/reports/v2/projects/{project_id}/customers-lots/ineligible",
+    response_class=HTMLResponse,
+)
+async def v2_customers_lots_ineligible_page(
+    request: Request,
+    project_id: int = Path(..., ge=1),
+    limit: Optional[int] = Query(DEFAULT_LIMIT_REPORTS_V2, description="max rows, capped to 10000"),
+):
+    """
+    SSR page (Service B) -> proxy Service A V2 report:
+      Customers + ineligible lots (grouped by customer).
+    """
+    _log(f"REQ /reports/v2/projects/{project_id}/customers-lots/ineligible url={request.url}")
+
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(url="/login?next=%2Freports", status_code=303)
+
+    limit2 = _clamp_int(limit, default=DEFAULT_LIMIT_REPORTS_V2, min_value=1, max_value=MAX_LIMIT_REPORTS_V2)
+
+    projects, _ = await _load_projects(token, None)
+
+    selected_code = ""
+    try:
+        for p in (projects or []):
+            pid = p.get("id") or p.get("project_id")
+            if pid == project_id:
+                selected_code = (p.get("project_code") or p.get("code") or "").strip().upper()
+                break
+    except Exception:
+        pass
+
+    st, js = await _get_json(
+        f"/api/v2/reports/projects/{project_id}/customers-lots/ineligible",
+        token,
+        {"limit": limit2},
+    )
+
+    data = js if st == 200 and isinstance(js, dict) else {"items": [], "count": 0, "pair_count": 0}
+    error = None if st == 200 else {"status": st, "body": js}
+
+    # ✅ Template bạn tự tạo/đặt tên sau:
+    #   - gợi ý: reports/customers_lots_ineligible_v2.html
+    ctx = {
+        "request": request,
+        "title": "Khách hàng + Lô KHÔNG đủ điều kiện",
+        "projects": projects,
+        "project": selected_code,
+        "project_id": project_id,
+        "limit": limit2,
+        "data": data,
+        "error": error,
+        "is_v2": True,
+        "mode": "customers_lots_ineligible",
+    }
+    return templates.TemplateResponse("reports/customers_ineligible.html", ctx)
+
+
+@router.get(
+    "/reports/v2/projects/{project_id}/customers-lots/ineligible/json",
+    response_class=JSONResponse,
+)
+async def v2_customers_lots_ineligible_json(
+    request: Request,
+    project_id: int = Path(..., ge=1),
+    limit: Optional[int] = Query(DEFAULT_LIMIT_REPORTS_V2),
+):
+    """
+    JSON proxy for FE/AJAX (optional).
+    """
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    limit2 = _clamp_int(limit, default=DEFAULT_LIMIT_REPORTS_V2, min_value=1, max_value=MAX_LIMIT_REPORTS_V2)
+
+    st, js = await _get_json(
+        f"/api/v2/reports/projects/{project_id}/customers-lots/ineligible",
+        token,
+        {"limit": limit2},
+    )
+    if st != 200:
+        return JSONResponse({"error": "service_a_failed", "status": st, "body": js}, status_code=502)
+    return JSONResponse(js, status_code=200)
+
+
+@router.get("/reports/v2/projects/{project_id}/customers-lots/ineligible/export")
+async def v2_customers_lots_ineligible_export(
+    request: Request,
+    project_id: int = Path(..., ge=1),
+    limit: Optional[int] = Query(None),
+):
+    """
+    XLSX export proxy:
+      Service A returns XLSX when format=xlsx
+    """
+    token = get_access_token(request)
+    if not token:
+        return _unauth()
+
+    limit2 = _clamp_int(limit, default=DEFAULT_LIMIT_REPORTS_V2, min_value=1, max_value=MAX_LIMIT_REPORTS_V2)
+
+    filename = f"customers_lots_ineligible_v2_p{project_id}.xlsx"
+    return await _proxy_xlsx(
+        f"/api/v2/reports/projects/{project_id}/customers-lots/ineligible",
+        token,
+        {"limit": limit2},
+        filename,
+    )
+
+
+# ============================================================
+# V2 — Txn History for Customer + Lot (multi-pay)
+# Service A:
+#   GET /api/v2/reports/projects/{project_id}/customers/{customer_id}/lots/{lot_id}/txns
+# ============================================================
+
+@router.get(
+    "/reports/v2/projects/{project_id}/customers/{customer_id}/lots/{lot_id}/txns/json",
+    response_class=JSONResponse,
+)
+async def v2_customer_lot_txns_json(
+    request: Request,
+    project_id: int = Path(..., ge=1),
+    customer_id: int = Path(..., ge=1),
+    lot_id: int = Path(..., ge=1),
+    limit: Optional[int] = Query(DEFAULT_LIMIT_REPORTS_V2),
+):
+    """
+    JSON proxy for UI 'Chi tiết' button:
+      returns receipts history for one customer+lot in a project.
+    """
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    limit2 = _clamp_int(limit, default=DEFAULT_LIMIT_REPORTS_V2, min_value=1, max_value=MAX_LIMIT_REPORTS_V2)
+
+    st, js = await _get_json(
+        f"/api/v2/reports/projects/{project_id}/customers/{customer_id}/lots/{lot_id}/txns",
+        token,
+        {"limit": limit2},
+    )
+    if st != 200:
+        return JSONResponse({"error": "service_a_failed", "status": st, "body": js}, status_code=502)
+    return JSONResponse(js, status_code=200)
