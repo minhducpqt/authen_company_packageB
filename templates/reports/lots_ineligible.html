@@ -1,119 +1,619 @@
+{# templates/reports/lots_ineligible.html #}
 {% extends "base.html" %}
-{% block title %}Lô KHÔNG đủ điều kiện{% endblock %}
+{% block title %}Lô chưa đủ điều kiện{% endblock %}
 
 {% block content %}
-{% set projects_list = projects or [] %}
-{% set MAX_LIMIT = 5000 %}
-
-<div class="mb-6">
-  <h1 class="text-2xl font-semibold text-slate-900 flex items-center gap-2">
-    <i class="ri-alert-line text-rose-600 text-3xl"></i>
-    Lô KHÔNG đủ điều kiện đấu giá
-  </h1>
-  <p class="text-slate-500 text-sm mt-1">
-    Danh sách các lô có <span class="font-semibold text-slate-800">&le; 1 khách đặt tiền</span> hoặc chưa đạt điều kiện.
-  </p>
-</div>
-
-<form id="filtersForm" method="get" class="bg-white border rounded-2xl shadow-sm p-4 mb-4">
-  <div class="flex flex-col md:flex-row md:items-end gap-3">
-    <div class="flex-1 min-w-[260px]">
-      <label class="block text-xs font-semibold text-slate-500 mb-1">Dự án</label>
-      <select id="projectSelectLocal" name="project" class="w-full h-10 rounded-xl border px-3 text-sm">
-        <option value="">— Chọn dự án —</option>
-        {% for p in projects_list %}
-          {% set code = p.project_code or p.code %}
-          {% set st = (p.status or p.project_status or '')|upper %}
-          <option value="{{ code }}" {% if code == project %}selected{% endif %}>
-            {{ code }} — {{ p.name }}{% if st and st != 'ACTIVE' %} (INACTIVE){% endif %}
-          </option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <input type="hidden" name="limit" value="{{ MAX_LIMIT }}">
-
-    <div class="flex items-center gap-2 md:justify-end">
-      {% if project %}
-        <a
-          href="/reports/lots/ineligible/export?project={{ project }}&limit={{ MAX_LIMIT }}"
-          class="h-10 px-4 rounded-xl border border-slate-300 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 inline-flex items-center gap-2"
-        >
-          <i class="ri-file-excel-2-line"></i>
-          Export XLSX
-        </a>
-      {% endif %}
-    </div>
-  </div>
-</form>
-
-{% set rows = (data or {}).get('items') or (data or {}).get('rows') or [] %}
-{% set total = (data or {}).get('count') or rows|length %}
-
-<div class="mb-3 text-sm text-slate-600">
-  <span class="font-semibold text-slate-900">{{ total }}</span>
-  lô <span class="text-rose-600 font-semibold">KHÔNG đủ điều kiện</span>.
-</div>
-
-<div class="bg-white border rounded-2xl shadow-sm overflow-hidden">
-  <div class="overflow-x-auto">
-    <table class="min-w-full text-sm text-slate-700">
-      <thead class="bg-slate-50 text-slate-500 border-b">
-        <tr>
-          <th class="px-4 py-2 text-left font-semibold">Mã lô</th>
-          <th class="px-4 py-2 text-left font-semibold">Mô tả</th>
-          <th class="px-4 py-2 text-right font-semibold">Diện tích (m²)</th>
-          <th class="px-4 py-2 text-right font-semibold">Tiền đặt trước</th>
-          <th class="px-4 py-2 text-right font-semibold">Số KH đặt</th>
-          <th class="px-4 py-2 text-right font-semibold">Tổng tiền đặt</th>
-          <th class="px-4 py-2 text-left font-semibold">Lần đầu đặt</th>
-          <th class="px-4 py-2 text-left font-semibold">Lần cuối đặt</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-100">
-      {% for r in rows %}
-        <tr class="hover:bg-slate-50 transition">
-          <td class="px-4 py-3 font-semibold text-slate-900 whitespace-nowrap">{{ r.lot_code }}</td>
-          <td class="px-4 py-3 text-xs cell-wrap">{{ r.lot_description or '-' }}</td>
-          <td class="px-4 py-3 text-right whitespace-nowrap">{{ r.area_m2 or '' }}</td>
-          <td class="px-4 py-3 text-right whitespace-nowrap" data-amount="{{ r.deposit_amount_vnd or 0 }}"></td>
-          <td class="px-4 py-3 text-right whitespace-nowrap">{{ r.deposit_customer_count or 0 }}</td>
-          <td class="px-4 py-3 text-right whitespace-nowrap" data-amount="{{ r.total_deposit_amount_vnd or 0 }}"></td>
-          <td class="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{{ r.first_paid_at or '' }}</td>
-          <td class="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{{ r.last_paid_at or '' }}</td>
-        </tr>
-      {% endfor %}
-      {% if rows|length == 0 %}
-        <tr>
-          <td colspan="8" class="px-4 py-10 text-center text-slate-400">
-            {% if project %}Chưa có dữ liệu.{% else %}Vui lòng chọn dự án.{% endif %}
-          </td>
-        </tr>
-      {% endif %}
-      </tbody>
-    </table>
-  </div>
-</div>
-
 <style>
-  table th, table td { white-space: nowrap; }
-  .cell-wrap { white-space: normal; }
+  :root{
+    --bd: rgba(15,23,42,.10);
+    --bd2: rgba(15,23,42,.07);
+    --card: #fff;
+    --muted: rgba(71,85,105,.88);
+    --txt: #0f172a;
+
+    --warn:#f59e0b;
+    --bad:#ef4444;
+    --pri:#4f46e5;
+
+    --r: 18px;
+    --shadow: 0 14px 36px rgba(2,6,23,.10);
+  }
+
+  .rp-wrap{max-width:1280px;margin:0 auto}
+
+  /* ===== Header ===== */
+  .rp-head{
+    background: linear-gradient(135deg, rgba(239,68,68,.10), rgba(245,158,11,.10), rgba(79,70,229,.06));
+    border:1px solid var(--bd);
+    border-radius: 22px;
+    padding: 16px 16px 14px;
+    box-shadow: 0 10px 28px rgba(2,6,23,.06);
+  }
+  .rp-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .rp-title h1{
+    font-size:20px;font-weight:900;color:var(--txt);
+    display:flex;align-items:center;gap:10px;margin:0
+  }
+  .rp-title p{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.35}
+  .pill{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 10px;border-radius:999px;
+    background: rgba(255,255,255,.72);
+    border:1px solid var(--bd2);
+    color: rgba(15,23,42,.70);
+    font-size:12px;font-weight:900;
+    backdrop-filter: blur(8px);
+    white-space:nowrap;
+  }
+  .dot{
+    width:8px;height:8px;border-radius:999px;background: var(--warn);
+    box-shadow:0 0 0 3px rgba(245,158,11,.16)
+  }
+
+  .rp-controls{
+    margin-top: 12px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px;
+  }
+  .sel{
+    display:flex;align-items:center;gap:10px;
+    padding:10px 12px;border-radius: 14px;
+    border:1px solid var(--bd);
+    background: rgba(255,255,255,.80);
+    min-width: 320px;
+  }
+  .sel label{font-size:12px;color:rgba(15,23,42,.65);font-weight:900}
+  .sel select{
+    border:0;outline:0;background:transparent;
+    font-weight:950;color:var(--txt);
+    width:100%;
+  }
+  @media (max-width: 640px){ .sel{min-width: 100%} }
+
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:10px 12px;border-radius: 14px;
+    border:1px solid var(--bd);
+    background: rgba(255,255,255,.85);
+    font-size:12px;font-weight:950;color: rgba(15,23,42,.75);
+    transition: .15s ease;
+    text-decoration:none;
+  }
+  .btn:hover{transform: translateY(-1px); box-shadow: 0 10px 20px rgba(2,6,23,.10)}
+  .btn.primary{
+    border-color: rgba(245,158,11,.35);
+    background: linear-gradient(180deg, rgba(245,158,11,.18), rgba(245,158,11,.10));
+    color: rgba(124,45,18,.95);
+  }
+
+  /* ===== Summary ===== */
+  .sumbar{
+    margin-top: 14px;
+    display:grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap:10px;
+  }
+  .sumcard{
+    grid-column: span 4;
+    border:1px solid rgba(15,23,42,.10);
+    border-radius: 20px;
+    background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,255,255,.92));
+    box-shadow: 0 10px 18px rgba(2,6,23,.06);
+    padding: 12px 12px 10px;
+    min-width: 0;
+  }
+  @media (max-width: 1024px){ .sumcard{grid-column: span 6} }
+  @media (max-width: 640px){ .sumcard{grid-column: span 12} }
+
+  .sumtop{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .sumlbl{font-size:12px;font-weight:950;color: rgba(15,23,42,.62)}
+  .sumico{
+    width:34px;height:34px;border-radius:14px;
+    display:flex;align-items:center;justify-content:center;
+    border:1px solid rgba(15,23,42,.10);
+    background: rgba(15,23,42,.03);
+  }
+  .sumval{
+    margin-top:8px;
+    font-size:22px;
+    font-weight:1000;
+    letter-spacing:.2px;
+    color: rgba(15,23,42,.92);
+    font-variant-numeric: tabular-nums; font-feature-settings: "tnum";
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .sumsub{
+    margin-top:6px;
+    font-size:12px;
+    color: rgba(71,85,105,.90);
+    line-height:1.35;
+  }
+  .sumcard.bad .sumval{color: rgba(153,27,27,.95)}
+  .sumcard.warn .sumval{color: rgba(124,45,18,.95)}
+
+  /* ===== Card/Table ===== */
+  .rp-card{
+    margin-top: 14px;
+    background: var(--card);
+    border:1px solid var(--bd);
+    border-radius: 22px;
+    box-shadow: var(--shadow);
+    overflow:hidden;
+  }
+  .rp-card .hd{
+    padding: 12px 14px;
+    border-bottom:1px solid var(--bd2);
+    background: linear-gradient(90deg, rgba(15,23,42,.03), rgba(15,23,42,.00));
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+  }
+  .badge{
+    display:inline-flex;align-items:center;gap:7px;
+    padding:6px 10px;border-radius:999px;
+    border:1px solid var(--bd2);
+    background: rgba(255,255,255,.85);
+    font-size:12px;font-weight:950;color:rgba(15,23,42,.72);
+  }
+  .badge.bad{border-color: rgba(239,68,68,.28); background: rgba(239,68,68,.10); color: rgba(153,27,27,.92)}
+  .muted{color: var(--muted);font-size:12px}
+
+  .list-controls{
+    padding: 10px 14px;
+    border-bottom:1px solid rgba(15,23,42,.06);
+    display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+    background: rgba(255,255,255,.82);
+  }
+  .lc-left{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .ctl{
+    display:flex;align-items:center;gap:8px;
+    padding:8px 10px;border-radius:14px;
+    border:1px solid rgba(15,23,42,.10);
+    background: rgba(15,23,42,.02);
+  }
+  .ctl label{font-size:12px;font-weight:900;color:rgba(15,23,42,.70)}
+  .ctl select{
+    border:0;outline:0;background:transparent;
+    font-size:12px;font-weight:950;color:rgba(15,23,42,.85);
+  }
+  .toggle{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 10px;border-radius:14px;
+    border:1px solid rgba(15,23,42,.10);
+    background: rgba(255,255,255,.90);
+    font-size:12px;font-weight:950;color: rgba(15,23,42,.72);
+    cursor:pointer;
+    user-select:none;
+  }
+  .toggle .ico{opacity:.85}
+  .toggle:hover{box-shadow:0 10px 18px rgba(2,6,23,.08); transform: translateY(-1px)}
+  .chk{
+    display:flex;align-items:center;gap:8px;
+    padding:8px 10px;border-radius:14px;
+    border:1px solid rgba(15,23,42,.10);
+    background: rgba(255,255,255,.90);
+    font-size:12px;font-weight:950;color: rgba(15,23,42,.72);
+  }
+  .chk input{width:16px;height:16px}
+  .lc-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .mini-kpi{
+    font-size:12px;color:rgba(71,85,105,.92);
+    padding:8px 10px;border-radius:14px;
+    border:1px solid rgba(15,23,42,.10);
+    background: rgba(15,23,42,.02);
+  }
+
+  .tbl-wrap{overflow:auto}
+  .tbl{
+    width:100%;
+    min-width: 980px;
+    border-collapse:separate;border-spacing:0;
+    table-layout: fixed;
+  }
+  .tbl th, .tbl td{
+    padding: 12px 12px;
+    border-bottom:1px solid rgba(15,23,42,.06);
+    vertical-align:top;
+  }
+  .tbl th{
+    background: #fff;
+    font-size:12px;
+    color: rgba(15,23,42,.58);
+    font-weight:950;
+    letter-spacing:.2px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  /* HARD OVERRIDE */
+  .tbl{display:table !important;width:100% !important;table-layout:fixed}
+  .tbl thead{display:table-header-group !important}
+  .tbl tbody{display:table-row-group !important}
+  .tbl tr{display:table-row !important}
+  .tbl th,.tbl td{display:table-cell !important;box-sizing:border-box}
+
+  .row{transition: .12s ease;background:#fff}
+  .row:hover{background: rgba(15,23,42,.02)}
+  .lotcode{
+    font-weight:1000;color: rgba(30,64,175,.98);
+    text-decoration:none;
+    display:inline-block;
+    max-width: 14ch;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .lotname{font-size:12px;color: rgba(15,23,42,.78);margin-top:4px;line-height:1.25}
+  .mini{font-size:12px;color: rgba(71,85,105,.92);line-height:1.28}
+  .mono{font-variant-numeric: tabular-nums; font-feature-settings: "tnum";}
+  .chip{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:6px 10px;border-radius:999px;
+    border:1px solid rgba(15,23,42,.10);
+    background: rgba(15,23,42,.03);
+    font-size:12px;font-weight:950;color: rgba(15,23,42,.74);
+    white-space:nowrap;
+  }
+  .chip.bad{border-color: rgba(239,68,68,.25); background: rgba(239,68,68,.08); color: rgba(153,27,27,.92)}
+  .chip.warn{border-color: rgba(245,158,11,.28); background: rgba(245,158,11,.12); color: rgba(124,45,18,.92)}
+
+  .empty-row td{
+    padding:18px 14px;
+    color:rgba(71,85,105,.88);
+    font-size:13px;
+    background: rgba(15,23,42,.01);
+  }
 </style>
 
-<script>
-(function () {
-  const form = document.getElementById('filtersForm');
-  const sel = document.getElementById('projectSelectLocal');
-  if (sel && form) sel.addEventListener('change', () => form.submit());
+{% set items = (data.get('items') if data and data.get('items') is not none else []) %}
+{% set project_id_val = project_id if project_id is defined else None %}
 
-  function formatAmountCell(td) {
-    const raw = td && td.getAttribute('data-amount');
-    if (!raw) return;
-    const n = Number(raw);
-    if (!Number.isFinite(n)) return;
-    td.textContent = n.toLocaleString('vi-VN', { maximumFractionDigits: 0 });
+{# ===== Summary: chỉ dựa theo eligible_customer_count (V2) ===== #}
+{% set ns = namespace(zero=0, one=0) %}
+{% for r in items %}
+  {% set c_el = r.get("eligible_customer_count") if r.get("eligible_customer_count") is not none else r.get("eligible_customer_count_for_lot") %}
+  {% if (c_el or 0) == 0 %}{% set ns.zero = ns.zero + 1 %}{% endif %}
+  {% if (c_el or 0) == 1 %}{% set ns.one = ns.one + 1 %}{% endif %}
+{% endfor %}
+
+<div class="rp-wrap">
+  <div class="rp-head">
+    <div class="rp-title">
+      <div>
+        <h1>
+          <i class="ri-error-warning-line" style="color: var(--warn);font-size:24px"></i>
+          Lô chưa đủ điều kiện
+        </h1>
+        <p>
+          Chỉ có 2 trường hợp: <b>không có khách hợp lệ</b> hoặc <b>chỉ có 1 khách hợp lệ</b>.
+        </p>
+      </div>
+      <div class="pill"><span class="dot"></span> Báo cáo</div>
+    </div>
+
+    <div class="rp-controls">
+      <form id="projForm" method="get" action="{{ request.url.path }}">
+        <div class="sel">
+          <label>Dự án</label>
+          <select id="projectSelect">
+            <option value="">— Chọn dự án —</option>
+
+            {% for p in (projects or []) %}
+              {% set pid =
+                  (p.id if p is not mapping and p.id is defined else (p.get('id') if p is mapping else None))
+                  or
+                  (p.project_id if p is not mapping and p.project_id is defined else (p.get('project_id') if p is mapping else None))
+              %}
+              {% set code =
+                  (p.project_code if p is not mapping and p.project_code is defined else (p.get('project_code') if p is mapping else None))
+                  or
+                  (p.code if p is not mapping and p.code is defined else (p.get('code') if p is mapping else None))
+                  or ''
+              %}
+              {% set pname =
+                  (p.name if p is not mapping and p.name is defined else (p.get('name') if p is mapping else None))
+                  or ''
+              %}
+
+              <option value="{{ pid }}"
+                {% if pid and project_id_val and (pid|string) == (project_id_val|string) %}selected{% endif %}>
+                {{ code|upper }} — {{ pname }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      </form>
+
+      {% if project_id_val %}
+        <a class="btn primary" href="/reports/v2/projects/{{ project_id_val }}/lots/ineligible/export">
+          <i class="ri-download-2-line"></i> Tải Excel
+        </a>
+      {% endif %}
+
+      <a class="btn" href="/reports">
+        <i class="ri-arrow-left-line"></i> Quay lại
+      </a>
+    </div>
+
+    {% if project_id_val and items|length > 0 %}
+      <div class="sumbar">
+        <div class="sumcard bad">
+          <div class="sumtop">
+            <div class="sumlbl">Tổng số lô chưa đủ điều kiện</div>
+            <div class="sumico" style="border-color:rgba(239,68,68,.22);background:rgba(239,68,68,.10);color:rgba(153,27,27,.92)">
+              <i class="ri-layout-grid-line"></i>
+            </div>
+          </div>
+          <div class="sumval"><span class="mono">{{ items|length }}</span></div>
+          <div class="sumsub">= Số lô 0 khách hợp lệ + Số lô 1 khách hợp lệ.</div>
+        </div>
+
+        <div class="sumcard warn">
+          <div class="sumtop">
+            <div class="sumlbl">Số lô chỉ có 1 khách hợp lệ</div>
+            <div class="sumico" style="border-color:rgba(245,158,11,.22);background:rgba(245,158,11,.10);color:rgba(124,45,18,.92)">
+              <i class="ri-user-2-line"></i>
+            </div>
+          </div>
+          <div class="sumval"><span class="mono">{{ ns.one }}</span></div>
+          <div class="sumsub">Cần thêm ít nhất 1 khách hợp lệ nữa để mở đấu giá.</div>
+        </div>
+
+        <div class="sumcard bad">
+          <div class="sumtop">
+            <div class="sumlbl">Số lô chưa có khách hợp lệ</div>
+            <div class="sumico" style="border-color:rgba(239,68,68,.22);background:rgba(239,68,68,.10);color:rgba(153,27,27,.92)">
+              <i class="ri-user-unfollow-line"></i>
+            </div>
+          </div>
+          <div class="sumval"><span class="mono">{{ ns.zero }}</span></div>
+          <div class="sumsub">Chưa có ai đủ điều kiện tham gia lô này.</div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="rp-card">
+    <div class="hd">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span class="badge bad"><i class="ri-list-unordered"></i> Danh sách lô</span>
+        <span class="muted">Danh sách dưới đây chỉ dựa trên số khách hợp lệ (0 hoặc 1).</span>
+      </div>
+    </div>
+
+    {% if items|length == 0 %}
+      <div style="padding:18px 14px;color:rgba(71,85,105,.88);font-size:13px">
+        Chưa có dữ liệu. Hãy chọn dự án để xem danh sách.
+      </div>
+    {% else %}
+
+      <div class="list-controls">
+        <div class="lc-left">
+          <div class="ctl">
+            <label>Hiển thị</label>
+            <select id="lotFilterKind">
+              <option value="all">Tất cả (0 và 1)</option>
+              <option value="one">Chỉ lô có 1 khách hợp lệ</option>
+              <option value="zero">Chỉ lô có 0 khách hợp lệ</option>
+            </select>
+          </div>
+
+          <div class="ctl">
+            <label>Sắp xếp</label>
+            <select id="lotSortKey">
+              <option value="default">Mặc định</option>
+              <option value="eligible_count">Số khách hợp lệ</option>
+              <option value="lot_code">Mã lô (A→Z)</option>
+            </select>
+          </div>
+
+          <div class="toggle" id="lotSortDir" data-dir="asc" title="Đổi chiều tăng/giảm">
+            <span class="ico"><i class="ri-sort-asc"></i></span>
+            <span>Tăng dần</span>
+          </div>
+
+          <button class="btn" type="button" id="lotReset">
+            <i class="ri-refresh-line"></i> Đặt lại
+          </button>
+        </div>
+
+        <div class="lc-right">
+          <div class="mini-kpi" id="lotShownKpi">—</div>
+        </div>
+      </div>
+
+      <div class="tbl-wrap">
+        <table class="tbl" id="lotTable">
+          <colgroup>
+            <col style="width:14%">
+            <col style="width:46%">
+            <col style="width:20%">
+            <col style="width:20%">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Lô</th>
+              <th>Thông tin lô</th>
+              <th>Số khách hợp lệ</th>
+              <th>Kết luận</th>
+            </tr>
+          </thead>
+          <tbody id="lotTbody">
+            {% for r in items %}
+              {% set lot_id = r.get("lot_id") %}
+              {% set lot_code = r.get("lot_code") %}
+              {% set name = r.get("lot_name") or r.get("lot_title") or r.get("lot_description") or "" %}
+              {% set area = r.get("area_m2") or r.get("area") %}
+              {% set sp = r.get("starting_price_vnd") %}
+              {% set c_el = r.get("eligible_customer_count") if r.get("eligible_customer_count") is not none else r.get("eligible_customer_count_for_lot") %}
+
+              <tr class="row"
+                  data-idx="{{ loop.index0 }}"
+                  data-eligible-customers="{{ c_el or 0 }}"
+                  data-lot-code="{{ lot_code or '' }}">
+                <td>
+                  <span class="lotcode mono">{{ lot_code }}</span>
+                  {% if name %}<div class="lotname">{{ name }}</div>{% endif %}
+                </td>
+
+                <td>
+                  <div class="mini">
+                    {% if area %}<span class="mono">{{ area }}</span> m²{% else %}—{% endif %}
+                    <span style="opacity:.35">•</span>
+                    Giá khởi điểm: <b class="mono" data-money="{{ sp or 0 }}">{{ sp or 0 }}</b>
+                    <span style="opacity:.35">•</span>
+                    Lot ID: <span class="mono">{{ lot_id }}</span>
+                  </div>
+                </td>
+
+                <td>
+                  {% if (c_el or 0) == 0 %}
+                    <span class="chip bad"><i class="ri-close-circle-line"></i> <span class="mono">0</span> khách</span>
+                  {% else %}
+                    <span class="chip warn"><i class="ri-alert-line"></i> <span class="mono">1</span> khách</span>
+                  {% endif %}
+                </td>
+
+                <td>
+                  {% if (c_el or 0) == 0 %}
+                    <span class="chip bad"><i class="ri-user-unfollow-line"></i> Chưa có khách hợp lệ</span>
+                  {% else %}
+                    <span class="chip warn"><i class="ri-user-2-line"></i> Cần thêm 1 khách hợp lệ</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+
+            <tr class="empty-row" id="lotEmptyRow" style="display:none">
+              <td colspan="4">Không có dữ liệu theo bộ lọc hiện tại. Bấm <b>Đặt lại</b> để quay về mặc định.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  function fmtMoney(n){
+    try{ return Number(n || 0).toLocaleString('vi-VN'); }
+    catch(e){ return String(n || 0); }
   }
-  document.querySelectorAll('[data-amount]').forEach(formatAmountCell);
-})();
+  function applyMoneyFormat(root){
+    const nodes = (root || document).querySelectorAll('[data-money]');
+    nodes.forEach(el => el.textContent = fmtMoney(el.getAttribute('data-money')));
+  }
+  applyMoneyFormat(document);
+
+  // project select redirect
+  (function(){
+    const sel = document.getElementById('projectSelect');
+    if(!sel) return;
+    sel.addEventListener('change', () => {
+      const pid = (sel.value || '').trim();
+      if(!pid){ window.location.href = '/reports'; return; }
+      window.location.href = `/reports/v2/projects/${pid}/lots/ineligible`;
+    });
+  })();
+
+  const lotTbody = document.getElementById('lotTbody');
+  const lotEmptyRow = document.getElementById('lotEmptyRow');
+  const lotRows = lotTbody ? Array.from(lotTbody.querySelectorAll('tr.row')) : [];
+
+  function numAttr(el, name){
+    const v = el.getAttribute(name);
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  }
+  function strAttr(el, name){ return String(el.getAttribute(name) || ''); }
+
+  function setShownKpi(shown, total){
+    const el = document.getElementById('lotShownKpi');
+    if(!el) return;
+    el.innerHTML = `<b class="mono">${shown}</b> / <span class="mono">${total}</span> lô đang hiển thị`;
+  }
+
+  function applyLotView(){
+    if(!lotTbody) return;
+
+    const filterKind = document.getElementById('lotFilterKind')?.value || 'all'; // all/one/zero
+    const sortKey = document.getElementById('lotSortKey')?.value || 'default';
+    const dirEl = document.getElementById('lotSortDir');
+    const dir = (dirEl?.getAttribute('data-dir') || 'asc');
+
+    let visible = [];
+    for(const tr of lotRows){
+      const e = numAttr(tr, 'data-eligible-customers');
+
+      let ok = true;
+      if(filterKind === 'one') ok = (e === 1);
+      else if(filterKind === 'zero') ok = (e === 0);
+
+      tr.style.display = ok ? '' : 'none';
+      if(ok) visible.push(tr);
+    }
+
+    const mul = (dir === 'asc') ? 1 : -1;
+
+    if(sortKey === 'default'){
+      visible.sort((a,b) => numAttr(a,'data-idx') - numAttr(b,'data-idx'));
+    } else if(sortKey === 'eligible_count'){
+      visible.sort((a,b) =>
+        (numAttr(a,'data-eligible-customers') - numAttr(b,'data-eligible-customers')) * mul
+        || (numAttr(a,'data-idx') - numAttr(b,'data-idx'))
+      );
+    } else if(sortKey === 'lot_code'){
+      visible.sort((a,b) => strAttr(a,'data-lot-code').localeCompare(strAttr(b,'data-lot-code'), 'vi') * mul);
+    }
+
+    for(const tr of visible){
+      lotTbody.insertBefore(tr, lotEmptyRow);
+    }
+
+    setShownKpi(visible.length, lotRows.length);
+    if(lotEmptyRow){
+      lotEmptyRow.style.display = (visible.length === 0) ? '' : 'none';
+    }
+  }
+
+  (function initLotControls(){
+    if(!lotTbody) return;
+
+    const kind = document.getElementById('lotFilterKind');
+    const sortKey = document.getElementById('lotSortKey');
+    const dirEl = document.getElementById('lotSortDir');
+    const resetBtn = document.getElementById('lotReset');
+
+    // defaults
+    if(kind) kind.value = 'all';
+    if(sortKey) sortKey.value = 'default';
+    if(dirEl){
+      dirEl.setAttribute('data-dir','asc');
+      dirEl.querySelector('.ico').innerHTML = '<i class="ri-sort-asc"></i>';
+      dirEl.querySelector('span:last-child').textContent = 'Tăng dần';
+    }
+
+    kind?.addEventListener('change', applyLotView);
+    sortKey?.addEventListener('change', applyLotView);
+
+    dirEl?.addEventListener('click', () => {
+      const cur = dirEl.getAttribute('data-dir') || 'asc';
+      const next = (cur === 'desc') ? 'asc' : 'desc';
+      dirEl.setAttribute('data-dir', next);
+      dirEl.querySelector('.ico').innerHTML = (next === 'asc') ? '<i class="ri-sort-asc"></i>' : '<i class="ri-sort-desc"></i>';
+      dirEl.querySelector('span:last-child').textContent = (next === 'asc') ? 'Tăng dần' : 'Giảm dần';
+      applyLotView();
+    });
+
+    resetBtn?.addEventListener('click', () => {
+      if(kind) kind.value = 'all';
+      if(sortKey) sortKey.value = 'default';
+      if(dirEl){
+        dirEl.setAttribute('data-dir','asc');
+        dirEl.querySelector('.ico').innerHTML = '<i class="ri-sort-asc"></i>';
+        dirEl.querySelector('span:last-child').textContent = 'Tăng dần';
+      }
+      applyLotView();
+    });
+
+    applyLotView();
+  })();
 </script>
 {% endblock %}
