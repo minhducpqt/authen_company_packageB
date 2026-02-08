@@ -15,6 +15,7 @@
     --pri:#4f46e5;
     --pri2:#6366f1;
     --ok:#10b981;
+    --ok2:#22c55e;
     --info:#0ea5e9;
 
     --shadow: 0 18px 48px rgba(2,6,23,.10);
@@ -22,8 +23,10 @@
     --r: 18px;
   }
 
+  /* ===== Page container ===== */
   .rp2-wrap{max-width:1240px;margin:0 auto;padding: 10px 12px 22px}
 
+  /* ===== Header ===== */
   .rp2-head{
     background:
       radial-gradient(1200px 400px at 10% 0%, rgba(16,185,129,.14), rgba(16,185,129,0) 55%),
@@ -81,6 +84,7 @@
   .rp2-btn.soft{border-color: rgba(15,23,42,.10);background: rgba(255,255,255,.90);color: rgba(15,23,42,.78)}
   .rp2-btn.tiny{padding:8px 10px;border-radius: 12px;font-size:12px;font-weight:950}
 
+  /* ===== KPI cards ===== */
   .rp2-kpis{margin-top: 14px;display:grid;grid-template-columns: repeat(12, 1fr);gap:10px}
   .rp2-kpi{
     grid-column: span 4;
@@ -104,6 +108,7 @@
   .rp2-kpi.money .v{color: rgba(30,64,175,.95)}
   .rp2-mono{font-variant-numeric: tabular-nums; font-feature-settings: "tnum";}
 
+  /* ===== List card ===== */
   .rp2-card{
     margin-top: 14px;
     background: var(--card);
@@ -112,58 +117,77 @@
     box-shadow: var(--shadow);
     overflow:hidden;
   }
-  .rp2-card-hd{
-    padding: 12px 14px;border-bottom:1px solid var(--bd2);
-    background: linear-gradient(90deg, rgba(15,23,42,.03), rgba(15,23,42,.00));
+
+  /* ===== Card header (like screenshot top bar) ===== */
+  .rp2-card-top{
+    padding: 12px 14px;
+    border-bottom:1px solid var(--bd2);
+    background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,255,255,.92));
     display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
   }
-  .rp2-badge{
-    display:inline-flex;align-items:center;gap:7px;
-    padding:6px 10px;border-radius:999px;
-    border:1px solid var(--bd2);
-    background: rgba(255,255,255,.88);
-    font-size:12px;font-weight:950;color:rgba(15,23,42,.74);
+  .rp2-top-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .rp2-top-chip{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 12px;border-radius:999px;
+    border:1px solid rgba(16,185,129,.22);
+    background: rgba(16,185,129,.10);
+    color: rgba(6,95,70,.95);
+    font-size:12px;font-weight:950;
     white-space:nowrap;
   }
-  .rp2-badge.ok{border-color: rgba(16,185,129,.24); background: rgba(16,185,129,.10); color: rgba(6,95,70,.95)}
-  .rp2-muted{color: var(--muted);font-size:12px}
+  .rp2-top-chip i{font-size:16px}
+  .rp2-subtxt{color: rgba(71,85,105,.90);font-size:12px;white-space:nowrap}
+  @media (max-width: 640px){
+    .rp2-subtxt{white-space:normal}
+  }
 
+  /* ===== Tools row ===== */
   .rp2-tools{
-    padding: 10px 14px;border-bottom:1px solid rgba(15,23,42,.06);
+    padding: 10px 14px;
+    border-bottom:1px solid rgba(15,23,42,.06);
     display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
-    background: rgba(255,255,255,.90);
+    background:
+      radial-gradient(900px 240px at 18% 0%, rgba(99,102,241,.08), rgba(255,255,255,0) 62%),
+      radial-gradient(800px 240px at 88% 0%, rgba(16,185,129,.08), rgba(255,255,255,0) 60%),
+      rgba(255,255,255,.92);
   }
   .rp2-left{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+
+  .rp2-search{
+    display:flex;align-items:center;gap:10px;
+    padding:10px 12px;border-radius: 14px;
+    border:1px solid rgba(15,23,42,.10);
+    background: rgba(255,255,255,.96);
+    min-width: 360px;
+    box-shadow: 0 8px 18px rgba(2,6,23,.05);
+  }
+  .rp2-search input{
+    border:0;outline:0;background:transparent;width:100%;
+    font-size:12px;font-weight:950;color:rgba(15,23,42,.86)
+  }
   .rp2-ctl{
     display:flex;align-items:center;gap:8px;
-    padding:8px 10px;border-radius:14px;
+    padding:10px 12px;border-radius:14px;
     border:1px solid rgba(15,23,42,.10);
     background: rgba(15,23,42,.02);
   }
   .rp2-ctl label{font-size:12px;font-weight:950;color:rgba(15,23,42,.70)}
-  .rp2-ctl select, .rp2-ctl input{
+  .rp2-ctl select{
     border:0;outline:0;background:transparent;
     font-size:12px;font-weight:950;color:rgba(15,23,42,.85)
   }
-  .rp2-search{
-    display:flex;align-items:center;gap:10px;
-    padding:8px 10px;border-radius:14px;
-    border:1px solid rgba(15,23,42,.10);
-    background: rgba(255,255,255,.92);
-    min-width: 360px;
-  }
-  .rp2-search input{border:0;outline:0;background:transparent;width:100%;font-size:12px;font-weight:950;color:rgba(15,23,42,.85)}
   @media (max-width: 720px){ .rp2-search{min-width: 100%} }
 
   .rp2-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   .rp2-mini-kpi{
     font-size:12px;color:rgba(71,85,105,.92);
-    padding:8px 10px;border-radius:14px;
+    padding:10px 12px;border-radius:999px;
     border:1px solid rgba(15,23,42,.10);
     background: rgba(15,23,42,.02);
     white-space:nowrap;
   }
 
+  /* ===== Table ===== */
   .rp2-tblwrap{overflow:auto;background: rgba(15,23,42,.01)}
   table.rp2-tbl{
     width:100%;
@@ -178,7 +202,7 @@
   table.rp2-tbl th, table.rp2-tbl td{display: table-cell !important; box-sizing:border-box;}
 
   table.rp2-tbl th, table.rp2-tbl td{
-    padding: 12px 12px;
+    padding: 14px 14px;
     border-bottom:1px solid rgba(15,23,42,.06);
     vertical-align:top;
     background: #fff;
@@ -190,41 +214,87 @@
     letter-spacing:.2px;
     position: sticky;
     top: 0;
-    z-index: 1;
+    z-index: 2;
+    background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,255,255,.92));
+    backdrop-filter: blur(8px);
   }
-
   .rp2-tr{transition: .12s ease}
   .rp2-tr:hover td{background: rgba(15,23,42,.02)}
 
-  .rp2-name{font-weight:1000;color: rgba(15,23,42,.92);line-height:1.25}
-  .rp2-mini{font-size:12px;color: rgba(71,85,105,.92);line-height:1.35}
+  /* ===== Row content (professional list feel) ===== */
+  .rp2-person{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:14px;
+  }
+  .rp2-person-left{min-width:0}
+  .rp2-person-right{flex:0 0 auto}
+
+  .rp2-name{
+    font-weight:1000;
+    color: rgba(15,23,42,.92);
+    line-height:1.22;
+    letter-spacing:.2px;
+    font-size:15px;
+    text-transform: uppercase;
+  }
+  .rp2-subline{
+    margin-top:8px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
+  }
 
   .rp2-cccd{
     display:inline-flex;align-items:center;gap:8px;
-    padding:6px 10px;border-radius:999px;
+    padding:7px 12px;border-radius:999px;
     border:1px solid rgba(15,23,42,.10);
     background: rgba(15,23,42,.02);
     font-size:12px;font-weight:950;color: rgba(15,23,42,.78);
     user-select:text;
-    margin-top:6px;
   }
-
-  .rp2-chip{
+  .rp2-mini{
+    font-size:12px;
+    color: rgba(71,85,105,.92);
+    line-height:1.35;
+  }
+  .rp2-mini .it{
     display:inline-flex;align-items:center;gap:6px;
     padding:6px 10px;border-radius:999px;
+    border:1px solid rgba(15,23,42,.10);
+    background: rgba(255,255,255,.90);
+    box-shadow: 0 6px 14px rgba(2,6,23,.05);
+  }
+
+  /* Chips like screenshot */
+  .rp2-chip{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 12px;border-radius:999px;
     border:1px solid rgba(15,23,42,.10);
     background: rgba(15,23,42,.03);
     font-size:12px;font-weight:950;color: rgba(15,23,42,.74);
     white-space:nowrap;
   }
   .rp2-chip.ok{border-color: rgba(16,185,129,.22); background: rgba(16,185,129,.10); color: rgba(6,95,70,.95)}
-  .rp2-chip.money{border-color: rgba(59,130,246,.22); background: rgba(59,130,246,.10); color: rgba(30,64,175,.92)}
+  .rp2-chip.money{border-color: rgba(99,102,241,.22); background: rgba(99,102,241,.10); color: rgba(30,64,175,.92)}
+  .rp2-chip.money strong{font-weight:1000}
+
+  /* Right align numeric columns */
+  .rp2-td-center{display:flex;align-items:flex-start;justify-content:center}
+  .rp2-td-right{display:flex;align-items:flex-start;justify-content:flex-end}
 
   .rp2-empty td{
     padding:18px 14px;
     color:rgba(71,85,105,.88);
     font-size:13px;
     background: rgba(15,23,42,.01);
+  }
+
+  /* ===== Mobile: stack like cards (still same DOM/table) ===== */
+  @media (max-width: 760px){
+    table.rp2-tbl{min-width: 720px;} /* keep horizontal scroll light on phone */
   }
 </style>
 
@@ -317,17 +387,17 @@
         <div class="rp2-kpi money">
           <div class="t">Tổng tiền cọc</div>
           <div class="v rp2-mono" data-money="{{ (ns.sum_money|float)|round(0,'floor')|int }}">{{ ns.sum_money }}</div>
-          <div class="s">Tổng tiền cọc của khách trong dự án (theo API).</div>
+          <div class="s">Tổng tiền cọc của khách đủ điều kiện.</div>
         </div>
       </div>
     {% endif %}
   </div>
 
   <div class="rp2-card">
-    <div class="rp2-card-hd">
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <span class="rp2-badge ok"><i class="ri-list-check-2"></i> Danh sách khách</span>
-        <span class="rp2-muted">Tìm kiếm / sắp xếp chạy tại trình duyệt.</span>
+    <div class="rp2-card-top">
+      <div class="rp2-top-left">
+        <span class="rp2-top-chip"><i class="ri-list-check-2"></i> Danh sách khách</span>
+        <span class="rp2-subtxt">Tìm kiếm / sắp xếp chạy tại trình duyệt.</span>
       </div>
 
       {% if project_id_val %}
@@ -384,15 +454,15 @@
       <div class="rp2-tblwrap">
         <table class="rp2-tbl" id="tblEligible">
           <colgroup>
-            <col style="width:56%">
-            <col style="width:18%">
+            <col style="width:58%">
+            <col style="width:16%">
             <col style="width:26%">
           </colgroup>
           <thead>
             <tr>
               <th>Khách hàng</th>
-              <th>Số lô đủ điều kiện</th>
-              <th>Tổng tiền cọc</th>
+              <th style="text-align:center">Số lô đủ điều kiện</th>
+              <th style="text-align:right">Tổng tiền cọc</th>
             </tr>
           </thead>
 
@@ -413,31 +483,44 @@
                   {# ✅ giữ data-money trên TR để sort, nhưng JS sẽ không format TR nữa #}
                   data-money="{{ (money|float)|round(0,'floor')|int }}">
                 <td>
-                  <div class="rp2-name">{{ name }}</div>
+                  <div class="rp2-person">
+                    <div class="rp2-person-left">
+                      <div class="rp2-name">{{ name }}</div>
 
-                  {% if cccd %}
-                    <div class="rp2-cccd rp2-mono">
-                      <i class="ri-id-card-line"></i> {{ cccd }}
-                    </div>
-                  {% endif %}
+                      <div class="rp2-subline">
+                        {% if cccd %}
+                          <span class="rp2-cccd rp2-mono"><i class="ri-id-card-line"></i> {{ cccd }}</span>
+                        {% endif %}
 
-                  {% if expose_on %}
-                    <div class="rp2-mini" style="margin-top:8px">
-                      {% if phone %}<span class="rp2-mono"><i class="ri-phone-line"></i> {{ phone }}</span>{% endif %}
-                      {% if phone and email %}<span style="opacity:.35">•</span>{% endif %}
-                      {% if email %}<span class="rp2-mono"><i class="ri-mail-line"></i> {{ email }}</span>{% endif %}
+                        {% if expose_on %}
+                          {% if phone %}
+                            <span class="rp2-mini it rp2-mono"><i class="ri-phone-line"></i> {{ phone }}</span>
+                          {% endif %}
+                          {% if email %}
+                            <span class="rp2-mini it rp2-mono"><i class="ri-mail-line"></i> {{ email }}</span>
+                          {% endif %}
+                        {% endif %}
+                      </div>
                     </div>
-                  {% endif %}
+                  </div>
                 </td>
 
                 <td>
-                  <span class="rp2-chip ok"><i class="ri-layout-grid-line"></i> <span class="rp2-mono">{{ lots|int }}</span> lô</span>
+                  <div class="rp2-td-center">
+                    <span class="rp2-chip ok">
+                      <i class="ri-layout-grid-line"></i>
+                      <span class="rp2-mono">{{ lots|int }}</span> lô
+                    </span>
+                  </div>
                 </td>
 
                 <td>
-                  <span class="rp2-chip money"><i class="ri-coins-line"></i>
-                    <span class="rp2-mono" data-money="{{ (money|float)|round(0,'floor')|int }}">{{ money }}</span>
-                  </span>
+                  <div class="rp2-td-right">
+                    <span class="rp2-chip money">
+                      <i class="ri-coins-line"></i>
+                      <strong class="rp2-mono" data-money="{{ (money|float)|round(0,'floor')|int }}">{{ money }}</strong>
+                    </span>
+                  </div>
                 </td>
               </tr>
             {% endfor %}
