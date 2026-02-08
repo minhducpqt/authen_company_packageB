@@ -544,20 +544,39 @@
 
     <div class="rp-controls">
       <form id="projForm" method="get" action="{{ request.url.path }}">
-        <div class="sel">
-          <label>Dự án</label>
-          <select id="projectSelect">
-            <option value="">— Chọn dự án —</option>
-            {% for p in (projects or []) %}
-              {% set pid = p.get("id") or p.get("project_id") %}
-              {% set code = (p.get("project_code") or p.get("code") or "")|upper %}
-              <option value="{{ pid }}" {% if pid == project_id_val %}selected{% endif %}>
-                {{ code }} — {{ (p.get("name") or "") }}
-              </option>
-            {% endfor %}
-          </select>
-        </div>
-      </form>
+  <div class="sel">
+    <label>Dự án</label>
+    <select id="projectSelect">
+      <option value="">— Chọn dự án —</option>
+
+      {% for p in (projects or []) %}
+        {# Support BOTH: object (p.id) and dict (p.get('id')) #}
+        {% set pid =
+            (p.id if p is not mapping and p.id is defined else (p.get('id') if p is mapping else None))
+            or
+            (p.project_id if p is not mapping and p.project_id is defined else (p.get('project_id') if p is mapping else None))
+        %}
+        {% set code =
+            (p.project_code if p is not mapping and p.project_code is defined else (p.get('project_code') if p is mapping else None))
+            or
+            (p.code if p is not mapping and p.code is defined else (p.get('code') if p is mapping else None))
+            or ''
+        %}
+        {% set pname =
+            (p.name if p is not mapping and p.name is defined else (p.get('name') if p is mapping else None))
+            or ''
+        %}
+
+        <option value="{{ pid }}"
+          {% if pid and project_id_val and (pid|string) == (project_id_val|string) %}selected{% endif %}>
+          {{ code|upper }} — {{ pname }}
+        </option>
+      {% endfor %}
+
+    </select>
+  </div>
+</form>
+
 
       {% if project_id_val %}
         <a class="btn primary" href="/reports/v2/projects/{{ project_id_val }}/lots/eligible/export">
@@ -846,7 +865,7 @@
     const sel = document.getElementById('projectSelect');
     if(!sel) return;
     sel.addEventListener('change', () => {
-      const pid = sel.value;
+      const pid = (sel.value || '').trim();
       if(!pid){ window.location.href = '/reports'; return; }
       window.location.href = `/reports/v2/projects/${pid}/lots/eligible`;
     });
