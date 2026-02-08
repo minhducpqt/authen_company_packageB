@@ -316,7 +316,7 @@
 
         <div class="rp2-kpi money">
           <div class="t">Tổng tiền cọc</div>
-          <div class="v rp2-mono" data-money="{{ ns.sum_money }}">{{ ns.sum_money }}</div>
+          <div class="v rp2-mono" data-money="{{ (ns.sum_money|float)|round(0,'floor')|int }}">{{ ns.sum_money }}</div>
           <div class="s">Tổng tiền cọc của khách trong dự án (theo API).</div>
         </div>
       </div>
@@ -410,6 +410,7 @@
                   data-name="{{ name|lower|e }}"
                   data-cccd="{{ cccd|string|e }}"
                   data-lots="{{ lots|int }}"
+                  {# ✅ giữ data-money trên TR để sort, nhưng JS sẽ không format TR nữa #}
                   data-money="{{ (money|float)|round(0,'floor')|int }}">
                 <td>
                   <div class="rp2-name">{{ name }}</div>
@@ -434,7 +435,9 @@
                 </td>
 
                 <td>
-                  <span class="rp2-chip money"><i class="ri-coins-line"></i> <span class="rp2-mono" data-money="{{ (money|float)|round(0,'floor')|int }}">{{ money }}</span></span>
+                  <span class="rp2-chip money"><i class="ri-coins-line"></i>
+                    <span class="rp2-mono" data-money="{{ (money|float)|round(0,'floor')|int }}">{{ money }}</span>
+                  </span>
                 </td>
               </tr>
             {% endfor %}
@@ -461,8 +464,10 @@
       return String(n ?? '');
     }
   }
+
   function applyMoneyFormat(root){
-    const nodes = (root || document).querySelectorAll('[data-money]');
+    // ✅ FIX BUG: không format [data-money] trên TR (vì sẽ xoá toàn bộ <td> bên trong)
+    const nodes = (root || document).querySelectorAll('[data-money]:not(tr)');
     nodes.forEach(el => el.textContent = fmtMoney(el.getAttribute('data-money')));
   }
   applyMoneyFormat(document);
