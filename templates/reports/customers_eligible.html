@@ -1,161 +1,579 @@
+{# templates/reports/customers_eligible.html #}
 {% extends "base.html" %}
-{% block title %}Khách hàng đủ điều kiện & các lô{% endblock %}
+{% block title %}Khách hàng đủ điều kiện{% endblock %}
 
 {% block content %}
-<div class="mb-6">
-  <h1 class="text-2xl font-semibold text-slate-900 flex items-center gap-2">
-    <i class="ri-user-star-line text-emerald-600 text-3xl"></i>
-    Khách hàng đủ điều kiện & các lô
-  </h1>
-  <p class="text-slate-500 text-sm mt-1">
-    Mỗi dòng là <span class="font-semibold text-slate-800">1 khách + 1 lô đủ điều kiện</span>,
-    dùng để chuẩn bị danh sách tham gia đấu giá. Thời gian hiển thị theo
-    <span class="font-semibold">giờ Việt Nam (GMT+7)</span>.
-  </p>
-</div>
-
-<form method="get" class="bg-white border rounded-2xl shadow-sm p-4 mb-4 flex flex-wrap gap-4 items-end">
-  <div class="flex flex-col">
-    <label class="text-xs font-semibold text-slate-500 mb-1">Dự án</label>
-    <select name="project" class="h-10 rounded-xl border px-3 text-sm min-w-[220px]">
-      <option value="">— Chọn dự án —</option>
-      {% for p in projects or [] %}
-        {% set code = p.project_code or p.code %}
-        <option value="{{ code }}" {% if code == project %}selected{% endif %}>
-          {{ code }} — {{ p.name }}
-        </option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <div class="flex flex-col">
-    <label class="text-xs font-semibold text-slate-500 mb-1">CCCD khách</label>
-    <input
-      type="text"
-      name="customer_cccd"
-      value="{{ customer_cccd }}"
-      class="h-10 rounded-xl border px-3 text-sm min-w-[160px]"
-      placeholder="Exact CCCD"
-    >
-  </div>
-
-  <div class="flex flex-col">
-    <label class="text-xs font-semibold text-slate-500 mb-1">Mã lô (prefix)</label>
-    <input
-      type="text"
-      name="lot_code"
-      value="{{ lot_code }}"
-      class="h-10 rounded-xl border px-3 text-sm min-w-[140px]"
-      placeholder="VD: L01"
-    >
-  </div>
-
-  <div class="flex flex-col">
-    <label class="text-xs font-semibold text-slate-500 mb-1">Số dòng tối đa (limit)</label>
-    <input
-      type="number"
-      name="limit"
-      value="{{ limit or '' }}"
-      class="h-10 rounded-xl border px-3 text-sm w-28"
-      min="1"
-      max="5000"
-    >
-  </div>
-
-  <div class="flex items-center gap-3 ml-auto">
-    <button
-      type="submit"
-      class="h-10 px-4 rounded-xl bg-emerald-600 text-white text-sm font-medium shadow-sm hover:bg-emerald-700"
-    >Áp dụng</button>
-
-    {% if project %}
-      <a
-        href="/reports/customers/eligible-lots/export?project={{ project }}&expose_phone=true{% if customer_cccd %}&customer_cccd={{ customer_cccd }}{% endif %}{% if lot_code %}&lot_code={{ lot_code }}{% endif %}{% if limit %}&limit={{ limit }}{% endif %}"
-        class="h-10 px-4 rounded-xl border border-slate-300 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 inline-flex items-center gap-2"
-      >
-        <i class="ri-file-excel-2-line"></i>
-        Export XLSX
-      </a>
-    {% endif %}
-  </div>
-</form>
-
-{% set rows = (data or {}).get('items') or (data or {}).get('rows') or [] %}
-{% set total = (data or {}).get('count') or rows|length %}
-
-<div class="mb-3 text-sm text-slate-600">
-  <span class="font-semibold text-slate-900">{{ total }}</span>
-  dòng khách + lô <span class="text-emerald-600 font-semibold">đủ điều kiện</span> được tìm thấy.
-</div>
-
-<div class="bg-white border rounded-2xl shadow-sm overflow-hidden">
-  <div class="overflow-x-auto">
-    <table class="min-w-full text-sm text-slate-700">
-      <thead class="bg-slate-50 text-slate-500 border-b">
-        <tr>
-          <th class="px-4 py-2 text-left font-semibold">Khách hàng</th>
-          <th class="px-4 py-2 text-left font-semibold">CCCD</th>
-          <th class="px-4 py-2 text-left font-semibold">SĐT</th>
-          <th class="px-4 py-2 text-left font-semibold">Email</th>
-          <th class="px-4 py-2 text-left font-semibold">Ngân hàng hoàn cọc</th>
-          <th class="px-4 py-2 text-left font-semibold">Số TK hoàn cọc</th>
-          <th class="px-4 py-2 text-left font-semibold">Chủ TK hoàn cọc</th>
-          <th class="px-4 py-2 text-left font-semibold">Mã lô</th>
-          <th class="px-4 py-2 text-right font-semibold">Tiền đặt cho lô</th>
-          <th class="px-4 py-2 text-right font-semibold">Số KH trên lô</th>
-          <th class="px-4 py-2 text-right font-semibold">Tổng tiền trên lô</th>
-          <th class="px-4 py-2 text-right font-semibold">Tổng đặt trước theo dự án</th>
-          <th class="px-4 py-2 text-left font-semibold">Thời điểm nộp</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-100">
-      {% for r in rows %}
-        <tr class="hover:bg-slate-50 transition">
-          <td class="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">{{ r.customer_full_name }}</td>
-          <td class="px-4 py-3 whitespace-nowrap">{{ r.cccd }}</td>
-          <td class="px-4 py-3 whitespace-nowrap">{{ r.phone }}</td>
-          <td class="px-4 py-3 whitespace-nowrap">{{ r.email or '-' }}</td>
-          <td class="px-4 py-3 whitespace-nowrap">{{ r.bank_name or '-' }}</td>
-          <td class="px-4 py-3 whitespace-nowrap">{{ r.account_number or '-' }}</td>
-          <td class="px-4 py-3 whitespace-nowrap">{{ r.account_name or '-' }}</td>
-          <td class="px-4 py-3 font-semibold text-slate-900 whitespace-nowrap">{{ r.lot_code }}</td>
-
-          <td class="px-4 py-3 text-right whitespace-nowrap" data-amount="{{ r.deposit_amount or 0 }}"></td>
-          <td class="px-4 py-3 text-right whitespace-nowrap">{{ r.deposit_customer_count or 0 }}</td>
-          <td class="px-4 py-3 text-right whitespace-nowrap" data-amount="{{ r.total_deposit_amount_per_lot or 0 }}"></td>
-          <td class="px-4 py-3 text-right whitespace-nowrap" data-amount="{{ r.total_deposit_amount_per_customer_project or 0 }}"></td>
-
-          <td class="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{{ r.paid_at or '' }}</td>
-        </tr>
-      {% endfor %}
-      {% if rows|length == 0 %}
-        <tr>
-          <td colspan="13" class="px-4 py-4 text-center text-slate-400">
-            Chọn dự án và bấm "Áp dụng" để xem dữ liệu.
-          </td>
-        </tr>
-      {% endif %}
-      </tbody>
-    </table>
-  </div>
-</div>
-
 <style>
-  table th, table td { white-space: nowrap; }
-</style>
+  :root{
+    --bg0:#f6f8fc;
+    --card:#ffffff;
+    --txt:#0f172a;
+    --muted: rgba(71,85,105,.88);
+    --bd: rgba(15,23,42,.10);
+    --bd2: rgba(15,23,42,.07);
 
-<script>
-(function () {
-  function formatAmountCell(td) {
-    if (!td) return;
-    const raw = td.getAttribute('data-amount');
-    if (!raw) return;
-    const n = Number(raw);
-    if (!Number.isFinite(n)) return;
-    td.textContent = n.toLocaleString('vi-VN', { maximumFractionDigits: 0 });
+    --pri:#4f46e5;
+    --pri2:#6366f1;
+    --ok:#10b981;
+    --info:#0ea5e9;
+
+    --shadow: 0 18px 48px rgba(2,6,23,.10);
+    --shadow2: 0 10px 24px rgba(2,6,23,.08);
+    --r: 18px;
   }
 
-  document.querySelectorAll('[data-amount]').forEach(formatAmountCell);
-})();
+  .rp2-wrap{max-width:1240px;margin:0 auto;padding: 10px 12px 22px}
+
+  .rp2-head{
+    background:
+      radial-gradient(1200px 400px at 10% 0%, rgba(16,185,129,.14), rgba(16,185,129,0) 55%),
+      radial-gradient(900px 380px at 90% 0%, rgba(79,70,229,.12), rgba(79,70,229,0) 52%),
+      linear-gradient(180deg, rgba(255,255,255,.86), rgba(255,255,255,.76));
+    border:1px solid var(--bd);
+    border-radius: 22px;
+    padding: 16px 16px 14px;
+    box-shadow: 0 14px 40px rgba(2,6,23,.08);
+    backdrop-filter: blur(10px);
+  }
+  .rp2-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .rp2-title h1{
+    font-size:20px;font-weight:950;color:var(--txt);
+    display:flex;align-items:center;gap:10px;margin:0
+  }
+  .rp2-title p{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.35;max-width:760px}
+  .rp2-pill{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 10px;border-radius:999px;
+    background: rgba(255,255,255,.75);
+    border:1px solid var(--bd2);
+    color: rgba(15,23,42,.72);
+    font-size:12px;font-weight:900;
+    white-space:nowrap;
+  }
+  .rp2-dot{width:8px;height:8px;border-radius:999px;background: var(--ok);box-shadow:0 0 0 3px rgba(16,185,129,.14)}
+
+  .rp2-controls{margin-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .rp2-sel{
+    display:flex;align-items:center;gap:10px;
+    padding:10px 12px;border-radius: 14px;
+    border:1px solid var(--bd);
+    background: rgba(255,255,255,.88);
+    min-width: 320px;
+    flex: 1 1 420px;
+  }
+  .rp2-sel label{font-size:12px;color:rgba(15,23,42,.65);font-weight:950}
+  .rp2-sel select{border:0;outline:0;background:transparent;font-weight:950;color:var(--txt);width:100%}
+
+  .rp2-btn{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:10px 12px;border-radius: 14px;
+    border:1px solid var(--bd);
+    background: rgba(255,255,255,.90);
+    font-size:12px;font-weight:950;color: rgba(15,23,42,.78);
+    transition: .15s ease;
+    text-decoration:none;
+    cursor:pointer;
+    user-select:none;
+    white-space:nowrap;
+  }
+  .rp2-btn:hover{transform: translateY(-1px); box-shadow: 0 10px 20px rgba(2,6,23,.10)}
+  .rp2-btn.primary{border-color: rgba(16,185,129,.24);background: linear-gradient(180deg, rgba(16,185,129,.14), rgba(16,185,129,.08));color: rgba(6,95,70,.95)}
+  .rp2-btn.soft{border-color: rgba(15,23,42,.10);background: rgba(255,255,255,.90);color: rgba(15,23,42,.78)}
+  .rp2-btn.tiny{padding:8px 10px;border-radius: 12px;font-size:12px;font-weight:950}
+
+  .rp2-kpis{margin-top: 14px;display:grid;grid-template-columns: repeat(12, 1fr);gap:10px}
+  .rp2-kpi{
+    grid-column: span 4;
+    background: rgba(255,255,255,.92);
+    border:1px solid var(--bd);
+    border-radius: 18px;
+    padding: 12px 12px 10px;
+    box-shadow: 0 10px 22px rgba(2,6,23,.06);
+    min-width:0;
+  }
+  @media (max-width: 1024px){ .rp2-kpi{grid-column: span 6} }
+  @media (max-width: 640px){ .rp2-sel{min-width:100%} .rp2-kpi{grid-column: span 12} }
+  .rp2-kpi .t{font-size:12px;color:rgba(15,23,42,.62);font-weight:950}
+  .rp2-kpi .v{
+    margin-top:6px;font-size:22px;font-weight:1000;color:var(--txt);
+    letter-spacing:.2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+  }
+  .rp2-kpi .s{margin-top:6px;font-size:11px;color:rgba(71,85,105,.90);line-height:1.35}
+  .rp2-kpi.ok .v{color: rgba(6,95,70,.95)}
+  .rp2-kpi.lots .v{color: rgba(49,46,129,.95)}
+  .rp2-kpi.money .v{color: rgba(30,64,175,.95)}
+  .rp2-mono{font-variant-numeric: tabular-nums; font-feature-settings: "tnum";}
+
+  .rp2-card{
+    margin-top: 14px;
+    background: var(--card);
+    border:1px solid var(--bd);
+    border-radius: 22px;
+    box-shadow: var(--shadow);
+    overflow:hidden;
+  }
+  .rp2-card-hd{
+    padding: 12px 14px;border-bottom:1px solid var(--bd2);
+    background: linear-gradient(90deg, rgba(15,23,42,.03), rgba(15,23,42,.00));
+    display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  }
+  .rp2-badge{
+    display:inline-flex;align-items:center;gap:7px;
+    padding:6px 10px;border-radius:999px;
+    border:1px solid var(--bd2);
+    background: rgba(255,255,255,.88);
+    font-size:12px;font-weight:950;color:rgba(15,23,42,.74);
+    white-space:nowrap;
+  }
+  .rp2-badge.ok{border-color: rgba(16,185,129,.24); background: rgba(16,185,129,.10); color: rgba(6,95,70,.95)}
+  .rp2-muted{color: var(--muted);font-size:12px}
+
+  .rp2-tools{
+    padding: 10px 14px;border-bottom:1px solid rgba(15,23,42,.06);
+    display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+    background: rgba(255,255,255,.90);
+  }
+  .rp2-left{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .rp2-ctl{
+    display:flex;align-items:center;gap:8px;
+    padding:8px 10px;border-radius:14px;
+    border:1px solid rgba(15,23,42,.10);
+    background: rgba(15,23,42,.02);
+  }
+  .rp2-ctl label{font-size:12px;font-weight:950;color:rgba(15,23,42,.70)}
+  .rp2-ctl select, .rp2-ctl input{
+    border:0;outline:0;background:transparent;
+    font-size:12px;font-weight:950;color:rgba(15,23,42,.85)
+  }
+  .rp2-search{
+    display:flex;align-items:center;gap:10px;
+    padding:8px 10px;border-radius:14px;
+    border:1px solid rgba(15,23,42,.10);
+    background: rgba(255,255,255,.92);
+    min-width: 360px;
+  }
+  .rp2-search input{border:0;outline:0;background:transparent;width:100%;font-size:12px;font-weight:950;color:rgba(15,23,42,.85)}
+  @media (max-width: 720px){ .rp2-search{min-width: 100%} }
+
+  .rp2-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .rp2-mini-kpi{
+    font-size:12px;color:rgba(71,85,105,.92);
+    padding:8px 10px;border-radius:14px;
+    border:1px solid rgba(15,23,42,.10);
+    background: rgba(15,23,42,.02);
+    white-space:nowrap;
+  }
+
+  .rp2-tblwrap{overflow:auto;background: rgba(15,23,42,.01)}
+  table.rp2-tbl{
+    width:100%;
+    min-width: 980px;
+    border-collapse:separate;border-spacing:0;
+    table-layout: fixed;
+    display: table !important;
+  }
+  table.rp2-tbl thead{display: table-header-group !important;}
+  table.rp2-tbl tbody{display: table-row-group !important;}
+  table.rp2-tbl tr{display: table-row !important;}
+  table.rp2-tbl th, table.rp2-tbl td{display: table-cell !important; box-sizing:border-box;}
+
+  table.rp2-tbl th, table.rp2-tbl td{
+    padding: 12px 12px;
+    border-bottom:1px solid rgba(15,23,42,.06);
+    vertical-align:top;
+    background: #fff;
+  }
+  table.rp2-tbl th{
+    font-size:12px;
+    color: rgba(15,23,42,.58);
+    font-weight:950;
+    letter-spacing:.2px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  .rp2-tr{transition: .12s ease}
+  .rp2-tr:hover td{background: rgba(15,23,42,.02)}
+
+  .rp2-name{font-weight:1000;color: rgba(15,23,42,.92);line-height:1.25}
+  .rp2-mini{font-size:12px;color: rgba(71,85,105,.92);line-height:1.35}
+
+  .rp2-cccd{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:6px 10px;border-radius:999px;
+    border:1px solid rgba(15,23,42,.10);
+    background: rgba(15,23,42,.02);
+    font-size:12px;font-weight:950;color: rgba(15,23,42,.78);
+    user-select:text;
+    margin-top:6px;
+  }
+
+  .rp2-chip{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:6px 10px;border-radius:999px;
+    border:1px solid rgba(15,23,42,.10);
+    background: rgba(15,23,42,.03);
+    font-size:12px;font-weight:950;color: rgba(15,23,42,.74);
+    white-space:nowrap;
+  }
+  .rp2-chip.ok{border-color: rgba(16,185,129,.22); background: rgba(16,185,129,.10); color: rgba(6,95,70,.95)}
+  .rp2-chip.money{border-color: rgba(59,130,246,.22); background: rgba(59,130,246,.10); color: rgba(30,64,175,.92)}
+
+  .rp2-empty td{
+    padding:18px 14px;
+    color:rgba(71,85,105,.88);
+    font-size:13px;
+    background: rgba(15,23,42,.01);
+  }
+</style>
+
+{% set items = (data.get('items') if data and data.get('items') is not none else []) %}
+{% set project_id_val = project_id if project_id is defined else None %}
+
+{# ✅ web route (Service B) yêu cầu expose_phone là INT: 0/1 #}
+{% set expose = expose_phone if expose_phone is defined else (request.query_params.get('expose_phone') or '') %}
+{% set expose_s = (expose|string)|lower %}
+{% set expose_on = expose_s in ['1','true','yes','y','on'] %}
+
+{% set ns = namespace(sum_lots=0, sum_money=0) %}
+{% for r in items %}
+  {% set ns.sum_lots = ns.sum_lots + (r.get('eligible_lot_count') or 0) %}
+  {% set ns.sum_money = ns.sum_money + (r.get('total_deposit_amount_project') or 0) %}
+{% endfor %}
+
+<div class="rp2-wrap">
+  <div class="rp2-head">
+    <div class="rp2-title">
+      <div>
+        <h1>
+          <i class="ri-user-star-line" style="color: var(--ok);font-size:24px"></i>
+          Khách hàng đủ điều kiện
+        </h1>
+        <p>
+          Danh sách khách có <b>ít nhất 1 lô đủ điều kiện</b> trong dự án. Bạn có thể tìm nhanh theo tên/CCCD, sắp xếp theo số lô hoặc số tiền.
+        </p>
+      </div>
+      <div class="rp2-pill"><span class="rp2-dot"></span> Reports V2</div>
+    </div>
+
+    <div class="rp2-controls">
+      <form id="projForm" method="get" action="{{ request.url.path }}" style="flex:1 1 auto">
+        <div class="rp2-sel">
+          <label>Dự án</label>
+          <select id="projectSelect">
+            <option value="">— Chọn dự án —</option>
+            {% for p in (projects or []) %}
+              {% set pid =
+                  (p.id if p is not mapping and p.id is defined else (p.get('id') if p is mapping else None))
+                  or
+                  (p.project_id if p is not mapping and p.project_id is defined else (p.get('project_id') if p is mapping else None))
+              %}
+              {% set code =
+                  (p.project_code if p is not mapping and p.project_code is defined else (p.get('project_code') if p is mapping else None))
+                  or
+                  (p.code if p is not mapping and p.code is defined else (p.get('code') if p is mapping else None))
+                  or ''
+              %}
+              {% set pname =
+                  (p.name if p is not mapping and p.name is defined else (p.get('name') if p is mapping else None))
+                  or ''
+              %}
+              <option value="{{ pid }}"
+                {% if pid and project_id_val and (pid|string) == (project_id_val|string) %}selected{% endif %}>
+                {{ code|upper }} — {{ pname }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      </form>
+
+      {% if project_id_val %}
+        <a class="rp2-btn primary"
+           href="/reports/v2/projects/{{ project_id_val }}/customers/eligible/export{% if expose_on %}?expose_phone=1{% endif %}">
+          <i class="ri-download-2-line"></i> Export Excel
+        </a>
+      {% endif %}
+
+      <a class="rp2-btn soft" href="/reports">
+        <i class="ri-arrow-left-line"></i> Tổng quan
+      </a>
+    </div>
+
+    {% if project_id_val %}
+      <div class="rp2-kpis">
+        <div class="rp2-kpi ok">
+          <div class="t">Tổng số khách đủ điều kiện</div>
+          <div class="v"><span class="rp2-mono">{{ items|length }}</span></div>
+          <div class="s">Tính theo dự án đang chọn.</div>
+        </div>
+
+        <div class="rp2-kpi lots">
+          <div class="t">Số phiếu trả giá</div>
+          <div class="v"><span class="rp2-mono">{{ ns.sum_lots }}</span></div>
+          <div class="s">Tổng số phiếu trả giá phát hành ban đầu</div>
+        </div>
+
+        <div class="rp2-kpi money">
+          <div class="t">Tổng tiền cọc</div>
+          <div class="v rp2-mono" data-money="{{ ns.sum_money }}">{{ ns.sum_money }}</div>
+          <div class="s">Tổng tiền cọc của khách trong dự án (theo API).</div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="rp2-card">
+    <div class="rp2-card-hd">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span class="rp2-badge ok"><i class="ri-list-check-2"></i> Danh sách khách</span>
+        <span class="rp2-muted">Tìm kiếm / sắp xếp chạy tại trình duyệt.</span>
+      </div>
+
+      {% if project_id_val %}
+        {% if expose_on %}
+          <a class="rp2-btn tiny" href="/reports/v2/projects/{{ project_id_val }}/customers/eligible">
+            <i class="ri-eye-off-line"></i> Ẩn thông tin liên hệ
+          </a>
+        {% else %}
+          <a class="rp2-btn tiny" href="/reports/v2/projects/{{ project_id_val }}/customers/eligible?expose_phone=1">
+            <i class="ri-eye-line"></i> Hiển thị thông tin liên hệ
+          </a>
+        {% endif %}
+      {% endif %}
+    </div>
+
+    {% if items|length == 0 %}
+      <div style="padding:18px 14px;color:rgba(71,85,105,.88);font-size:13px">
+        Chưa có dữ liệu. Hãy chọn dự án để xem danh sách.
+      </div>
+    {% else %}
+
+      <div class="rp2-tools">
+        <div class="rp2-left">
+          <div class="rp2-search">
+            <span style="opacity:.75"><i class="ri-search-line"></i></span>
+            <input id="qInput" placeholder="Tìm nhanh: nhập tên hoặc CCCD..." autocomplete="off" />
+          </div>
+
+          <div class="rp2-ctl">
+            <label>Sắp xếp</label>
+            <select id="sortKey">
+              <option value="default">Mặc định</option>
+              <option value="name">Tên (A→Z)</option>
+              <option value="lots">Số lô đủ điều kiện</option>
+              <option value="money">Tổng tiền cọc</option>
+            </select>
+          </div>
+
+          <button class="rp2-btn soft" type="button" id="sortDir" data-dir="desc" title="Đổi chiều tăng/giảm">
+            <i class="ri-sort-desc"></i>
+            <span>Giảm dần</span>
+          </button>
+
+          <button class="rp2-btn soft" type="button" id="resetBtn">
+            <i class="ri-refresh-line"></i> Reset
+          </button>
+        </div>
+
+        <div class="rp2-right">
+          <div class="rp2-mini-kpi" id="shownKpi">—</div>
+        </div>
+      </div>
+
+      <div class="rp2-tblwrap">
+        <table class="rp2-tbl" id="tblEligible">
+          <colgroup>
+            <col style="width:56%">
+            <col style="width:18%">
+            <col style="width:26%">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Khách hàng</th>
+              <th>Số lô đủ điều kiện</th>
+              <th>Tổng tiền cọc</th>
+            </tr>
+          </thead>
+
+          <tbody id="tbodyEligible">
+            {% for r in items %}
+              {% set name = r.get('customer_full_name') or '' %}
+              {% set cccd = r.get('cccd') or '' %}
+              {% set lots = r.get('eligible_lot_count') or 0 %}
+              {% set money = r.get('total_deposit_amount_project') or 0 %}
+              {% set phone = r.get('phone') or '' %}
+              {% set email = r.get('email') or '' %}
+
+              <tr class="rp2-tr"
+                  data-idx="{{ loop.index0 }}"
+                  data-name="{{ name|lower|e }}"
+                  data-cccd="{{ cccd|string|e }}"
+                  data-lots="{{ lots|int }}"
+                  data-money="{{ (money|float)|round(0,'floor')|int }}">
+                <td>
+                  <div class="rp2-name">{{ name }}</div>
+
+                  {% if cccd %}
+                    <div class="rp2-cccd rp2-mono">
+                      <i class="ri-id-card-line"></i> {{ cccd }}
+                    </div>
+                  {% endif %}
+
+                  {% if expose_on %}
+                    <div class="rp2-mini" style="margin-top:8px">
+                      {% if phone %}<span class="rp2-mono"><i class="ri-phone-line"></i> {{ phone }}</span>{% endif %}
+                      {% if phone and email %}<span style="opacity:.35">•</span>{% endif %}
+                      {% if email %}<span class="rp2-mono"><i class="ri-mail-line"></i> {{ email }}</span>{% endif %}
+                    </div>
+                  {% endif %}
+                </td>
+
+                <td>
+                  <span class="rp2-chip ok"><i class="ri-layout-grid-line"></i> <span class="rp2-mono">{{ lots|int }}</span> lô</span>
+                </td>
+
+                <td>
+                  <span class="rp2-chip money"><i class="ri-coins-line"></i> <span class="rp2-mono" data-money="{{ (money|float)|round(0,'floor')|int }}">{{ money }}</span></span>
+                </td>
+              </tr>
+            {% endfor %}
+
+            <tr class="rp2-empty" id="emptyRowEligible" style="display:none">
+              <td colspan="3">Không có dữ liệu theo bộ lọc hiện tại. Bấm <b>Reset</b> để quay về mặc định.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  function fmtMoney(n){
+    try{
+      const s = String(n ?? 0).replace(/,/g,'').trim();
+      const x = Number(s);
+      if(!Number.isFinite(x)) return String(n ?? '');
+      return x.toLocaleString('vi-VN');
+    }catch(e){
+      return String(n ?? '');
+    }
+  }
+  function applyMoneyFormat(root){
+    const nodes = (root || document).querySelectorAll('[data-money]');
+    nodes.forEach(el => el.textContent = fmtMoney(el.getAttribute('data-money')));
+  }
+  applyMoneyFormat(document);
+
+  (function(){
+    const sel = document.getElementById('projectSelect');
+    if(!sel) return;
+    sel.addEventListener('change', () => {
+      const pid = (sel.value || '').trim();
+      if(!pid){ window.location.href = '/reports'; return; }
+      const expose = {{ 'true' if expose_on else 'false' }};
+      const qs = expose ? '?expose_phone=1' : '';
+      window.location.href = `/reports/v2/projects/${pid}/customers/eligible${qs}`;
+    });
+  })();
+
+  const tbody = document.getElementById('tbodyEligible');
+  const emptyRow = document.getElementById('emptyRowEligible');
+  const rows = tbody ? Array.from(tbody.querySelectorAll('tr.rp2-tr')) : [];
+
+  function setShownKpi(shown, total){
+    const el = document.getElementById('shownKpi');
+    if(!el) return;
+    el.innerHTML = `<b class="rp2-mono">${shown}</b> / <span class="rp2-mono">${total}</span> khách đang hiển thị`;
+  }
+
+  function numAttr(tr, k){
+    const n = Number(tr.getAttribute(k));
+    return Number.isFinite(n) ? n : 0;
+  }
+  function strAttr(tr, k){
+    return String(tr.getAttribute(k) || '');
+  }
+
+  function applyView(){
+    if(!tbody) return;
+
+    const q = (document.getElementById('qInput')?.value || '').trim().toLowerCase();
+    const sortKey = document.getElementById('sortKey')?.value || 'default';
+    const dirEl = document.getElementById('sortDir');
+    const dir = (dirEl?.getAttribute('data-dir') || 'desc');
+    const mul = (dir === 'asc') ? 1 : -1;
+
+    let visible = [];
+    for(const tr of rows){
+      const name = strAttr(tr, 'data-name');
+      const cccd = strAttr(tr, 'data-cccd');
+      const ok = !q || name.includes(q) || cccd.includes(q);
+      tr.style.display = ok ? '' : 'none';
+      if(ok) visible.push(tr);
+    }
+
+    if(sortKey === 'default'){
+      visible.sort((a,b) => numAttr(a,'data-idx') - numAttr(b,'data-idx'));
+    } else if(sortKey === 'name'){
+      visible.sort((a,b) => strAttr(a,'data-name').localeCompare(strAttr(b,'data-name'), 'vi') * mul);
+    } else if(sortKey === 'lots'){
+      visible.sort((a,b) => (numAttr(a,'data-lots') - numAttr(b,'data-lots')) * mul || (numAttr(a,'data-idx') - numAttr(b,'data-idx')));
+    } else if(sortKey === 'money'){
+      visible.sort((a,b) => (numAttr(a,'data-money') - numAttr(b,'data-money')) * mul || (numAttr(a,'data-idx') - numAttr(b,'data-idx')));
+    }
+
+    for(const tr of visible){
+      tbody.insertBefore(tr, emptyRow);
+    }
+
+    setShownKpi(visible.length, rows.length);
+    if(emptyRow){
+      emptyRow.style.display = (visible.length === 0) ? '' : 'none';
+    }
+  }
+
+  (function init(){
+    if(!tbody) return;
+
+    const q = document.getElementById('qInput');
+    const sortKey = document.getElementById('sortKey');
+    const dirEl = document.getElementById('sortDir');
+    const reset = document.getElementById('resetBtn');
+
+    if(q) q.value = '';
+    if(sortKey) sortKey.value = 'default';
+    if(dirEl){
+      dirEl.setAttribute('data-dir','desc');
+      dirEl.innerHTML = '<i class="ri-sort-desc"></i><span>Giảm dần</span>';
+    }
+
+    q?.addEventListener('input', applyView);
+    sortKey?.addEventListener('change', applyView);
+
+    dirEl?.addEventListener('click', () => {
+      const cur = dirEl.getAttribute('data-dir') || 'desc';
+      const next = (cur === 'desc') ? 'asc' : 'desc';
+      dirEl.setAttribute('data-dir', next);
+      dirEl.innerHTML = (next === 'asc')
+        ? '<i class="ri-sort-asc"></i><span>Tăng dần</span>'
+        : '<i class="ri-sort-desc"></i><span>Giảm dần</span>';
+      applyView();
+    });
+
+    reset?.addEventListener('click', () => {
+      if(q) q.value = '';
+      if(sortKey) sortKey.value = 'default';
+      if(dirEl){
+        dirEl.setAttribute('data-dir','desc');
+        dirEl.innerHTML = '<i class="ri-sort-desc"></i><span>Giảm dần</span>';
+      }
+      applyView();
+    });
+
+    applyView();
+  })();
 </script>
 {% endblock %}
