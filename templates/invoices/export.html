@@ -16,6 +16,83 @@
   .ie-td{vertical-align:top}
   .ie-muted{color:rgb(100 116 139)}
   .ie-sticky thead th{position:sticky;top:0;z-index:10}
+
+  /* Overlap modal */
+  .ov-backdrop{
+    position:fixed;inset:0;
+    background:rgba(2,6,23,.55);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:200;
+    padding:18px;
+  }
+  .ov-modal{
+    width:min(640px, 100%);
+    background:#fff;
+    border:1px solid rgba(148,163,184,.35);
+    border-radius:18px;
+    box-shadow:0 28px 90px rgba(2,6,23,.38);
+    overflow:hidden;
+  }
+  .ov-head{
+    padding:14px 16px;
+    background:linear-gradient(135deg, rgba(239,68,68,.10), rgba(245,158,11,.10));
+    border-bottom:1px solid rgba(148,163,184,.25);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .ov-title{
+    font-weight:800;
+    color:rgb(185,28,28);
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .ov-body{padding:14px 16px}
+  .ov-box{
+    border:1px solid rgba(148,163,184,.25);
+    background:rgba(248,250,252,.75);
+    border-radius:14px;
+    padding:12px;
+  }
+  .ov-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
+  .ov-pill{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 10px;border-radius:999px;
+    border:1px solid rgba(148,163,184,.35);
+    background:#fff;
+    font-size:12px;color:rgb(15,23,42);
+  }
+  .ov-actions{
+    padding:12px 16px;
+    border-top:1px solid rgba(148,163,184,.25);
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+    background:#fff;
+  }
+  .ov-btn{
+    height:40px;
+    padding:0 14px;
+    border-radius:12px;
+    border:1px solid rgb(203 213 225);
+    background:#fff;
+    color:rgb(30 41 59);
+    font-weight:700;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+  }
+  .ov-btn:hover{background:rgb(248 250 252)}
+  .ov-btn-danger{
+    border-color:rgba(239,68,68,.35);
+    background:rgb(239 68 68);
+    color:#fff;
+  }
+  .ov-btn-danger:hover{filter:brightness(.96)}
 </style>
 
 <div class="ie-wrap">
@@ -56,7 +133,7 @@
 
       <div class="h-px bg-slate-200/60 my-4"></div>
 
-      <!-- Row 2: thời gian + nơi phát hành + VAT + tạo log (đồng hàng ngang) -->
+      <!-- Row 2 -->
       <div class="grid grid-cols-12 gap-4 items-end">
         <!-- t1 -->
         <div class="col-span-12 md:col-span-4">
@@ -72,7 +149,7 @@
                    class="flex-1 min-w-0 border border-slate-200 rounded-lg px-3 py-2
                           focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400">
           </div>
-          <div class="text-xs ie-muted mt-1">paid_at ≥ t1</div>
+          {# ✅ #1: bỏ giải thích paid_at ≥ t1 #}
         </div>
 
         <!-- t2 -->
@@ -89,7 +166,7 @@
               <i class="ri-time-line"></i> Now
             </button>
           </div>
-          <div class="text-xs ie-muted mt-1">paid_at &lt; t2</div>
+          {# ✅ #1: bỏ giải thích paid_at < t2 #}
         </div>
 
         <!-- Target -->
@@ -134,14 +211,14 @@
         </div>
       </div>
 
-      <!-- ✅ #1: Cục “Mẹo” full chiều ngang ở đáy filter -->
+      <!-- Mẹo -->
       <div class="mt-4">
         <div class="rounded-xl border border-slate-200 bg-white/70 p-3 text-xs text-slate-600">
           <div class="font-semibold text-slate-700 mb-1">Mẹo</div>
           <div>Chọn log gần nhất → hệ thống tự fill t1 để tạo log tiếp theo không bị trùng.</div>
           <div class="mt-2">Bấm <b>Full</b> để lấy full lifetime (t1 = 2000-01-01 00:00:00).</div>
           <div class="mt-2">T2 mặc định = NOW. Nếu mở trang lâu, bấm <b>Now</b> để cập nhật.</div>
-          <div class="mt-2">Nút <b>Tạo log</b> dùng để tạo một bản ghi log, sau đó bạn bấm <b>Tải</b> ở bảng để tải file.</div>
+          <div class="mt-2">Nút <b>Tạo log</b> dùng để tạo một bản ghi log, sau đó bấm <b>Tải</b> ở bảng để tải file.</div>
         </div>
       </div>
     </div>
@@ -151,16 +228,18 @@
       <table class="w-full text-sm ie-sticky">
         <thead class="bg-slate-50">
           <tr class="text-left">
+            {# ✅ #2: thứ tự cột mới #}
             <th class="py-3 px-4 whitespace-nowrap ie-th">Tải</th>
             <th class="py-3 px-4 whitespace-nowrap ie-th">ID</th>
+            <th class="py-3 px-4 whitespace-nowrap ie-th">Tạo lúc</th>
+            <th class="py-3 px-4 whitespace-nowrap ie-th">Người tạo</th>
+
             <th class="py-3 px-4 whitespace-nowrap ie-th">Target</th>
             <th class="py-3 px-4 whitespace-nowrap ie-th">Khoảng thời gian</th>
             <th class="py-3 px-4 text-right whitespace-nowrap ie-th">Số đơn</th>
             <th class="py-3 px-4 text-right whitespace-nowrap ie-th">Tổng tiền</th>
             <th class="py-3 px-4 text-right whitespace-nowrap ie-th">VAT</th>
             <th class="py-3 px-4 whitespace-nowrap ie-th">File</th>
-            <th class="py-3 px-4 whitespace-nowrap ie-th">Tạo lúc</th>
-            <th class="py-3 px-4 whitespace-nowrap ie-th">Người tạo</th>
           </tr>
         </thead>
         <tbody id="logsBody">
@@ -187,6 +266,54 @@
             bg-white border border-slate-200 rounded-xl shadow-xl p-3">
   <div id="toastTitle" class="text-sm font-semibold text-slate-900">Thông báo</div>
   <div id="toastMsg" class="text-xs text-slate-600 mt-0.5">...</div>
+</div>
+
+<!-- ✅ #3: Overlap Warning Modal -->
+<div id="ovBackdrop" class="ov-backdrop" aria-hidden="true">
+  <div class="ov-modal" role="dialog" aria-modal="true" aria-labelledby="ovTitle">
+    <div class="ov-head">
+      <div class="ov-title" id="ovTitle">
+        <i class="ri-error-warning-line"></i>
+        Cảnh báo: Phát hiện overlap khoảng thời gian
+      </div>
+      <button id="ovClose"
+              class="h-9 px-3 rounded-lg border border-slate-300 text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50">
+        Đóng
+      </button>
+    </div>
+    <div class="ov-body">
+      <div class="ov-box">
+        <div class="text-sm text-slate-800 font-semibold">
+          Bạn cần kiểm tra lại vì phát hiện <span class="text-red-600">overlap</span> với log gần nhất.
+        </div>
+        <div class="text-xs text-slate-600 mt-1">
+          Việc này có thể gây <b>xuất trùng hoá đơn</b> và phát sinh thiệt hại.
+        </div>
+
+        <div class="ov-row">
+          <span class="ov-pill"><i class="ri-calendar-line"></i> <b>Khoảng mới</b>: <span id="ovNewRange" class="ie-kbd"></span></span>
+        </div>
+
+        <div class="ov-row">
+          <span class="ov-pill"><i class="ri-file-list-3-line"></i> <b>Log gần nhất</b>: #<span id="ovPrevId" class="ie-kbd"></span></span>
+          <span class="ov-pill"><i class="ri-timer-line"></i> <b>Khoảng cũ</b>: <span id="ovPrevRange" class="ie-kbd"></span></span>
+        </div>
+      </div>
+
+      <div class="text-xs text-slate-600 mt-3">
+        Bạn vẫn có thể tiếp tục tạo log nếu chắc chắn không ảnh hưởng.
+      </div>
+    </div>
+
+    <div class="ov-actions">
+      <button id="ovReview" class="ov-btn">
+        <i class="ri-close-circle-line"></i> Xem lại
+      </button>
+      <button id="ovContinue" class="ov-btn ov-btn-danger">
+        <i class="ri-check-line"></i> OK, vẫn tạo
+      </button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -223,6 +350,18 @@
   const toastWrap = document.getElementById("toast");
   const toastTitle = document.getElementById("toastTitle");
   const toastMsg = document.getElementById("toastMsg");
+
+  // overlap modal
+  const ovBackdrop = document.getElementById("ovBackdrop");
+  const ovClose = document.getElementById("ovClose");
+  const ovReview = document.getElementById("ovReview");
+  const ovContinue = document.getElementById("ovContinue");
+  const ovNewRange = document.getElementById("ovNewRange");
+  const ovPrevId = document.getElementById("ovPrevId");
+  const ovPrevRange = document.getElementById("ovPrevRange");
+
+  let _latestLog = null;         // log gần nhất (theo created_at)
+  let _pendingCreate = null;     // fn() tiếp tục tạo sau cảnh báo
 
   function toast(t, m, ms=2600){
     toastTitle.textContent = t || "Thông báo";
@@ -349,11 +488,27 @@
     return pc + "_" + fn;
   }
 
+  // ✅ log gần nhất theo created_at (fallback id)
+  function pickLatestLog(arr){
+    const xs = Array.isArray(arr) ? arr.slice() : [];
+    xs.sort((a,b)=>{
+      const ta = new Date(a.created_at || 0).getTime();
+      const tb = new Date(b.created_at || 0).getTime();
+      if (ta && tb && ta !== tb) return tb - ta;
+      const ia = Number(a.id || 0), ib = Number(b.id || 0);
+      return ib - ia;
+    });
+    return xs.length ? xs[0] : null;
+  }
+
   function renderLogs(items){
     const arr = Array.isArray(items) ? items : [];
     elTotal.textContent = `Logs: ${arr.length.toLocaleString("vi-VN")}`;
 
     const pc = getSelectedProjectCode();
+
+    // set latest log (for overlap)
+    _latestLog = pickLatestLog(arr);
 
     elPrevLog.innerHTML =
       `<option value="">— Chọn log để set t1 = t2(log) + 1s —</option>` +
@@ -388,6 +543,7 @@
 
       return `
         <tr class="border-t hover:bg-slate-50/60">
+          <!-- ✅ #2: Tải -->
           <td class="py-3 px-4 whitespace-nowrap ie-td">
             <a href="${API_DOWNLOAD(id)}"
                download="${dlName.replace(/"/g,'')}"
@@ -397,7 +553,16 @@
             </a>
           </td>
 
+          <!-- ✅ #2: ID -->
           <td class="py-3 px-4 whitespace-nowrap ie-td ie-kbd text-xs">${id}</td>
+
+          <!-- ✅ #2: Tạo lúc -->
+          <td class="py-3 px-4 whitespace-nowrap ie-td ie-kbd text-xs">${ca}</td>
+
+          <!-- ✅ #2: Người tạo -->
+          <td class="py-3 px-4 whitespace-nowrap ie-td ie-kbd text-xs">${by || ""}</td>
+
+          <!-- then giữ thứ tự cũ tiếp theo -->
           <td class="py-3 px-4 whitespace-nowrap ie-td">${badge(target)}</td>
 
           <td class="py-3 px-4 whitespace-nowrap ie-td">
@@ -412,9 +577,6 @@
           <td class="py-3 px-4 whitespace-nowrap ie-td ie-kbd text-xs" title="${fnShow}">
             <span class="inline-block max-w-[320px] truncate align-bottom">${fnShow}</span>
           </td>
-
-          <td class="py-3 px-4 whitespace-nowrap ie-td ie-kbd text-xs">${ca}</td>
-          <td class="py-3 px-4 whitespace-nowrap ie-td ie-kbd text-xs">${by || ""}</td>
         </tr>
       `;
     }).join("");
@@ -429,6 +591,7 @@
       setEmpty("Chọn dự án để xem logs…");
       elTotal.textContent = "Logs: 0";
       elPrevLog.innerHTML = `<option value="">— Chọn log để set t1 = t2(log) + 1s —</option>`;
+      _latestLog = null;
       return;
     }
 
@@ -436,6 +599,7 @@
       elProjectHint.textContent = "⚠️ Project đang thiếu project_id (dataset.pid). Kiểm tra API /projects/options/listing_projects phải trả về id.";
       setEmpty("Không thể tải logs vì thiếu project_id.");
       elTotal.textContent = "Logs: 0";
+      _latestLog = null;
       return;
     }
 
@@ -448,16 +612,42 @@
       if (!r.ok){
         if (!silent) toast("Lỗi tải logs", (js.detail || js.error || `HTTP ${r.status}`), 4200);
         setEmpty("Không tải được logs.");
+        _latestLog = null;
         return;
       }
       renderLogs(js.items || []);
     }catch(e){
       if (!silent) toast("Lỗi tải logs", String(e), 4200);
       setEmpty("Không tải được logs.");
+      _latestLog = null;
     }
   }
 
-  async function createLog(){
+  // overlap check: [a1,a2) overlaps [b1,b2) if a1 < b2 && a2 > b1
+  function isOverlap(a1Iso, a2Iso, b1Iso, b2Iso){
+    const a1 = new Date(a1Iso).getTime();
+    const a2 = new Date(a2Iso).getTime();
+    const b1 = new Date(b1Iso).getTime();
+    const b2 = new Date(b2Iso).getTime();
+    if (!isFinite(a1) || !isFinite(a2) || !isFinite(b1) || !isFinite(b2)) return false;
+    return (a1 < b2) && (a2 > b1);
+  }
+
+  function openOverlapModal({newFromIso, newToIso, prevLog}){
+    ovNewRange.textContent = `${fmtYmdHms(newFromIso)} → ${fmtYmdHms(newToIso)}`;
+    ovPrevId.textContent = String(prevLog.id ?? "");
+    ovPrevRange.textContent = `${fmtYmdHms(prevLog.time_from || "")} → ${fmtYmdHms(prevLog.time_to || "")}`;
+
+    ovBackdrop.style.display = "flex";
+    ovBackdrop.setAttribute("aria-hidden", "false");
+  }
+  function closeOverlapModal(){
+    ovBackdrop.style.display = "none";
+    ovBackdrop.setAttribute("aria-hidden", "true");
+    _pendingCreate = null;
+  }
+
+  async function createLog({force=false} = {}){
     const pid = getSelectedProjectId();
     const code = getSelectedProjectCode();
 
@@ -475,6 +665,15 @@
     if (!tf || !tt){
       toast("Thiếu thời gian", "Vui lòng chọn t1 và t2.", 3600);
       return;
+    }
+
+    // ✅ #3: warn overlap with latest log
+    if (!force && _latestLog && _latestLog.time_from && _latestLog.time_to){
+      if (isOverlap(tf, tt, _latestLog.time_from, _latestLog.time_to)){
+        _pendingCreate = ()=> createLog({force:true});
+        openOverlapModal({newFromIso: tf, newToIso: tt, prevLog: _latestLog});
+        return;
+      }
     }
 
     const vat = parseFloat(elVat.value || "8");
@@ -511,11 +710,12 @@
       btnCreate.disabled = false;
       btnCreate.classList.remove("opacity-70");
       btnCreate.innerHTML = `<i class="ri-file-add-line"></i> Tạo log`;
+      closeOverlapModal();
     }
   }
 
   // events
-  btnCreate.onclick = createLog;
+  btnCreate.onclick = ()=> createLog({force:false});
 
   elProject.onchange = async ()=>{
     syncSelectTitle();
@@ -554,6 +754,21 @@
     elHint.textContent = "Đã đặt t1 = 2000-01-01 00:00:00 (full lifetime).";
   }
   btnAllTime.onclick = (e)=>{ e.preventDefault(); setAllTimeFrom(); };
+
+  // overlap modal events
+  ovClose.onclick = (e)=>{ e.preventDefault(); closeOverlapModal(); };
+  ovReview.onclick = (e)=>{ e.preventDefault(); closeOverlapModal(); };
+  ovContinue.onclick = (e)=>{
+    e.preventDefault();
+    const fn = _pendingCreate;
+    if (typeof fn === "function") fn();
+  };
+  ovBackdrop.addEventListener("click", (e)=>{
+    if (e.target === ovBackdrop) closeOverlapModal();
+  });
+  document.addEventListener("keydown", (e)=>{
+    if (e.key === "Escape" && ovBackdrop.style.display === "flex") closeOverlapModal();
+  });
 
   // defaults
   elTo.value = nowLocalInputValue();
