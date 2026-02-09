@@ -150,15 +150,22 @@
         </li>
         {% endif %}
 
-        {# ===== 3. Quản lý dòng tiền ===== #}
+        {# ===== 3. Kế toán & dòng tiền ===== #}
         {% if is_admin or is_accountant %}
-        <li class="side-title mt-4">3. Quản lý dòng tiền</li>
+        <li class="side-title mt-4">3. Kế toán & dòng tiền</li>
         <li>
           <a class="side-link {% if request.url.path.startswith('/giao-dich-ngan-hang') %}active{% endif %}"
              href="/giao-dich-ngan-hang">
             <i class="ri-bank-card-line"></i> 3.1 Giao dịch ngân hàng
           </a>
         </li>
+        <li>
+          <a class="side-link {% if request.url.path.startswith('/invoices/export') %}active{% endif %}"
+             href="/invoice-exports">
+            <i class="ri-file-paper-2-line"></i> 3.2 Xuất hoá đơn
+          </a>
+        </li>
+
         {% endif %}
 
         {# ===== 4. Khách hàng ===== #}

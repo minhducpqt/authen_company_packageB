@@ -37,6 +37,7 @@ from routers.auction_session_bid_sheets import router as auction_session_bid_she
 from routers.auction_session_winner_prints import router as auction_session_winner_prints_router
 from routers.auction_documents_print import router as auction_documents_print_router
 from fastapi_account_manager.middlewares.rbac_guard import rbac_guard_middleware
+from routers.invoice_exports import router as invoice_exports_router
 
 # ✅ Lots (tách từ projects.py)
 from routers.lots import router as lots_router  # <-- NEW
@@ -114,6 +115,8 @@ app.include_router(reports_export_router)
 app.include_router(company_mailers.router)
 app.include_router(auction_docs.router)
 app.include_router(bid_tickets_router.router)
+app.include_router(invoice_exports_router)
+
 
 # Bid attendance (list/print) + exclusions (detail/exclude/clear)
 app.include_router(bid_attendance_router.router)
@@ -130,6 +133,7 @@ app.include_router(auction_session_bid_sheets_router)
 app.include_router(auction_session_winner_prints_router)
 app.include_router(auction_session_display.router)
 app.include_router(auction_documents_print_router)  # <-- NEW (attendance, future docs)
+
 
 #Mobile
 mount_mobile_routers(app)

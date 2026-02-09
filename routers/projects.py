@@ -1222,10 +1222,28 @@ async def listing_projects(
     data: List[Dict[str, Any]] = []
     for p in items:
         pp = p or {}
+
+        # ✅ NEW: giữ lại id để UI export hoá đơn dùng project_id
+        pid = pp.get("id", None)
+        if pid is None:
+            pid = pp.get("project_id", None)
+        try:
+            pid = int(pid) if pid is not None else None
+        except Exception:
+            pid = None
+
         code = (pp.get("project_code") or pp.get("code") or "").strip()
         name = (pp.get("name") or "").strip()
         if not code:
             continue
-        data.append({"project_code": code, "name": name, "status": (pp.get("status") or "").strip()})
+
+        data.append(
+            {
+                "id": pid,  # ✅ thêm field này
+                "project_code": code,
+                "name": name,
+                "status": (pp.get("status") or "").strip(),
+            }
+        )
 
     return JSONResponse({"data": data}, status_code=200)

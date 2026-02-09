@@ -1,0 +1,489 @@
+{% extends "base.html" %}
+{% block title %}Xuất hoá đơn{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <h1 class="text-2xl font-semibold text-slate-900">Xuất hoá đơn</h1>
+  <div class="text-sm text-slate-500 mt-1">
+    Chọn dự án → chọn thời gian t1–t2 → chọn nơi phát hành (Viettel/BKAV) → tạo log → tải file (mỗi lần tải sẽ tính lại dữ liệu).
+  </div>
+</div>
+
+<div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+  <!-- FILTER -->
+  <div class="p-4">
+    <!-- Row 1 -->
+    <div class="grid grid-cols-12 gap-4 items-end">
+      <div class="col-span-12 md:col-span-3">
+        <label class="block text-sm text-slate-500 mb-1">Trạng thái</label>
+        <select id="projectStatusSelect"
+                class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-white
+                       focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400">
+          <option value="ACTIVE" selected>ACTIVE</option>
+          <option value="INACTIVE">INACTIVE</option>
+          <option value="ALL">ALL</option>
+        </select>
+      </div>
+
+      <div class="col-span-12 md:col-span-9">
+        <label class="block text-sm text-slate-500 mb-1">Dự án</label>
+        <select id="projectSelect"
+                class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-white
+                       focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
+                title="">
+          <option value="">Chọn dự án</option>
+        </select>
+        <div id="projectHint" class="text-xs text-slate-500 mt-1"></div>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <div class="h-px bg-slate-100 my-4"></div>
+
+    <!-- Row 2: ✅ FIX OVERLAP bằng grid rõ ràng -->
+    <div class="grid grid-cols-12 gap-4 items-end">
+      <!-- t1 -->
+      <div class="col-span-12 md:col-span-3">
+        <label class="block text-sm text-slate-500 mb-1">Thời gian bắt đầu (t1)</label>
+        <input id="timeFrom" type="datetime-local"
+               class="w-full border border-slate-200 rounded-lg px-3 py-2
+                      focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400">
+        <div class="text-xs text-slate-500 mt-1">paid_at ≥ t1</div>
+      </div>
+
+      <!-- t2 + Now -->
+      <div class="col-span-12 md:col-span-4">
+        <label class="block text-sm text-slate-500 mb-1">Thời gian kết thúc (t2)</label>
+        <div class="flex gap-2 items-center">
+          <input id="timeTo" type="datetime-local"
+                 class="flex-1 min-w-0 border border-slate-200 rounded-lg px-3 py-2
+                        focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400">
+          <button id="btnNow"
+                  class="h-10 px-3 rounded-lg border border-slate-300 text-sm font-medium text-slate-700
+                         bg-white hover:bg-slate-50 inline-flex items-center justify-center gap-2 shrink-0">
+            <i class="ri-time-line"></i> Now
+          </button>
+        </div>
+        <div class="text-xs text-slate-500 mt-1">paid_at &lt; t2</div>
+      </div>
+
+      <!-- Target -->
+      <div class="col-span-12 md:col-span-2">
+        <label class="block text-sm text-slate-500 mb-1">Nơi phát hành</label>
+        <select id="targetSelect"
+                class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-white
+                       focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400">
+          <option value="VIETTEL" selected>VIETTEL</option>
+          <option value="BKAV">BKAV</option>
+        </select>
+      </div>
+
+      <!-- VAT -->
+      <div class="col-span-12 md:col-span-1">
+        <label class="block text-sm text-slate-500 mb-1">VAT (%)</label>
+        <input id="vatRate" type="number" step="0.1" min="0" max="100" value="8"
+               class="w-full border border-slate-200 rounded-lg px-3 py-2
+                      focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400">
+      </div>
+
+      <!-- Export -->
+      <div class="col-span-12 md:col-span-2 flex md:justify-end">
+        <button id="createLogBtn"
+                class="h-10 w-full md:w-auto px-5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700
+                       inline-flex items-center justify-center gap-2">
+          <i class="ri-download-2-line"></i> Tạo log (Export)
+        </button>
+      </div>
+    </div>
+
+    <!-- Row 3 -->
+    <div class="grid grid-cols-12 gap-4 items-end mt-4">
+      <div class="col-span-12 md:col-span-8">
+        <label class="block text-sm text-slate-500 mb-1">Gợi ý t1 từ log trước</label>
+        <select id="prevLogSelect"
+                class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-white
+                       focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400">
+          <option value="">— Chọn log để set t1 = t2(log) + 1s —</option>
+        </select>
+        <div id="hintBox" class="text-xs text-slate-500 mt-2"></div>
+      </div>
+      <div class="col-span-12 md:col-span-4">
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+          <div class="font-semibold text-slate-700 mb-1">Mẹo</div>
+          <div>Chọn log gần nhất → hệ thống tự fill t1 để export tiếp theo không bị trùng.</div>
+          <div class="mt-2">T2 mặc định = thời điểm hiện tại. Bấm <b>Now</b> để cập nhật nếu mở trang lâu.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="border-t border-slate-100 overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-slate-50">
+        <tr class="text-left text-slate-600">
+          <th class="py-3 px-4 whitespace-nowrap">ID</th>
+          <th class="py-3 px-4 whitespace-nowrap">Target</th>
+          <th class="py-3 px-4 whitespace-nowrap">Khoảng thời gian</th>
+          <th class="py-3 px-4 text-right whitespace-nowrap">Số đơn</th>
+          <th class="py-3 px-4 text-right whitespace-nowrap">Tổng tiền</th>
+          <th class="py-3 px-4 text-right whitespace-nowrap">VAT</th>
+          <th class="py-3 px-4 whitespace-nowrap">File</th>
+          <th class="py-3 px-4 whitespace-nowrap">Tạo lúc</th>
+          <th class="py-3 px-4 whitespace-nowrap">Người tạo</th>
+          <th class="py-3 px-4"></th>
+        </tr>
+      </thead>
+      <tbody id="logsBody">
+        <tr><td class="py-6 px-4 text-slate-400" colspan="10">Chọn dự án để xem logs…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="p-4 flex items-center justify-between text-sm text-slate-500">
+    <div id="totalInfo">Logs: 0</div>
+    <div class="text-xs text-slate-500">
+      * “Tải file” sẽ gọi download và phía A sẽ recompute dữ liệu từ view.
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"
+     class="fixed right-4 bottom-4 z-[100] hidden max-w-[420px]
+            bg-white border border-slate-200 rounded-xl shadow-xl p-3">
+  <div id="toastTitle" class="text-sm font-semibold text-slate-900">Thông báo</div>
+  <div id="toastMsg" class="text-xs text-slate-600 mt-0.5">...</div>
+</div>
+
+<script>
+(function(){
+  const PROJ_URL = "/projects/options/listing_projects";
+  const API_LIST_LOGS = (projectId, target) => {
+    const u = new URL(`/invoice-exports/api/projects/${projectId}/logs`, location.origin);
+    u.searchParams.set("limit", "200");
+    if (target) u.searchParams.set("target", target);
+    return u.pathname + u.search;
+  };
+  const API_CREATE_LOG = (projectId) => `/invoice-exports/api/projects/${projectId}/logs`;
+  const API_DOWNLOAD = (logId) => `/invoice-exports/api/logs/${logId}/download`;
+
+  const elStatus = document.getElementById("projectStatusSelect");
+  const elProject = document.getElementById("projectSelect");
+  const elProjectHint = document.getElementById("projectHint");
+
+  const elFrom = document.getElementById("timeFrom");
+  const elTo = document.getElementById("timeTo");
+  const btnNow = document.getElementById("btnNow");
+
+  const elTarget = document.getElementById("targetSelect");
+  const elVat = document.getElementById("vatRate");
+  const btnCreate = document.getElementById("createLogBtn");
+
+  const elPrevLog = document.getElementById("prevLogSelect");
+  const elHint = document.getElementById("hintBox");
+
+  const elBody = document.getElementById("logsBody");
+  const elTotal = document.getElementById("totalInfo");
+
+  const toastWrap = document.getElementById("toast");
+  const toastTitle = document.getElementById("toastTitle");
+  const toastMsg = document.getElementById("toastMsg");
+
+  function toast(t, m, ms=2600){
+    toastTitle.textContent = t || "Thông báo";
+    toastMsg.textContent = m || "";
+    toastWrap.classList.remove("hidden");
+    setTimeout(()=> toastWrap.classList.add("hidden"), ms);
+  }
+
+  function pad2(n){ n = parseInt(n,10); return (n<10?("0"+n):(""+n)); }
+  function nowLocalInputValue(){
+    const d = new Date();
+    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+  }
+  function toISOFromInput(v){
+    if (!v) return null;
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return null;
+    return d.toISOString();
+  }
+  function toLocalInputValue(dtStr){
+    const d = new Date(dtStr);
+    if (isNaN(d.getTime())) return "";
+    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+  }
+  function addSecondsToInput(v, sec){
+    if (!v) return "";
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return "";
+    d.setSeconds(d.getSeconds() + (sec||0));
+    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+  }
+
+  function money(v){
+    const n = Number(v || 0);
+    return isFinite(n) ? (n.toLocaleString("vi-VN") + " ₫") : String(v||"");
+  }
+  function badge(target){
+    const t = (target || "").toUpperCase();
+    const cls = (t === "VIETTEL")
+      ? "bg-amber-50 border-amber-200 text-amber-700"
+      : "bg-emerald-50 border-emerald-200 text-emerald-700";
+    return `<span class="inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-medium ${cls}">${t}</span>`;
+  }
+
+  function syncSelectTitle(){
+    const sel = elProject.selectedOptions?.[0];
+    elProject.title = sel ? (sel.title || sel.textContent || '') : '';
+  }
+
+  async function loadProjects(){
+    const status = (elStatus.value || "ACTIVE").toUpperCase();
+    const params = new URLSearchParams();
+    if (status) params.set("status", status);
+
+    const r = await fetch(`${PROJ_URL}?${params.toString()}`, {headers:{'X-Requested-With':'fetch'}});
+    const js = await r.json().catch(()=> ({}));
+    const list = js.data ?? js.items ?? [];
+
+    elProject.innerHTML = `<option value="">Chọn dự án</option>`;
+    for (const p of list){
+      const code = (p.project_code ?? p.code ?? "").trim();
+      const name = (p.name ?? "").trim();
+      if (!code) continue;
+
+      const label = name ? `${code} — ${name}` : `${code}`;
+      const opt = document.createElement("option");
+      opt.value = code;
+      opt.textContent = label;
+      opt.title = label;
+
+      // ✅ cần project_id để gọi invoice-exports (A dùng project_id)
+      if (p.id) opt.dataset.pid = String(p.id);
+      else if (p.project_id) opt.dataset.pid = String(p.project_id);
+
+      elProject.appendChild(opt);
+    }
+
+    // restore query (?project_code=)
+    const qs = new URLSearchParams(location.search);
+    const initCode = (qs.get("project_code") || "").trim();
+    if (initCode) elProject.value = initCode;
+
+    syncSelectTitle();
+  }
+
+  function getSelectedProjectId(){
+    const opt = elProject.selectedOptions?.[0];
+    const pidRaw = opt?.dataset?.pid;
+    const pid = pidRaw ? parseInt(pidRaw, 10) : NaN;
+    return isNaN(pid) ? null : pid;
+  }
+
+  function setLoading(){
+    elBody.innerHTML = `<tr><td class="py-6 px-4 text-slate-400" colspan="10">Đang tải...</td></tr>`;
+  }
+  function setEmpty(msg){
+    elBody.innerHTML = `<tr><td class="py-6 px-4 text-slate-400" colspan="10">${msg || "Không có dữ liệu"}</td></tr>`;
+  }
+
+  function renderLogs(items){
+    const arr = Array.isArray(items) ? items : [];
+    elTotal.textContent = `Logs: ${arr.length.toLocaleString("vi-VN")}`;
+
+    elPrevLog.innerHTML =
+      `<option value="">— Chọn log để set t1 = t2(log) + 1s —</option>` +
+      arr.map(x=>{
+        const t2 = x.time_to || "";
+        const label = `#${x.id} • ${(x.target||"").toUpperCase()} • ${x.time_from||""} → ${x.time_to||""}`;
+        return `<option value="${x.id}" data-time-to="${t2}">${label}</option>`;
+      }).join("");
+
+    if (!arr.length){
+      setEmpty("Chưa có log nào cho dự án này.");
+      return;
+    }
+
+    elBody.innerHTML = arr.map(x=>{
+      const id = x.id;
+      const target = (x.target || "").toUpperCase();
+      const tf = x.time_from || "";
+      const tt = x.time_to || "";
+      const oc = Number(x.order_count ?? 0);
+      const total = x.total_amount_vnd ?? 0;
+      const vat = x.vat_rate ?? 8;
+      const fn = x.file_name || "";
+      const ca = x.created_at || "";
+      const by = x.created_by || "";
+
+      return `
+        <tr class="border-t">
+          <td class="py-3 px-4 whitespace-nowrap font-mono text-xs">${id}</td>
+          <td class="py-3 px-4 whitespace-nowrap">${badge(target)}</td>
+          <td class="py-3 px-4 whitespace-nowrap">
+            <div class="font-mono text-xs">${tf}</div>
+            <div class="font-mono text-xs text-slate-500">→ ${tt}</div>
+          </td>
+          <td class="py-3 px-4 text-right whitespace-nowrap font-mono">${oc.toLocaleString("vi-VN")}</td>
+          <td class="py-3 px-4 text-right whitespace-nowrap font-mono">${money(total)}</td>
+          <td class="py-3 px-4 text-right whitespace-nowrap font-mono">${vat}%</td>
+          <td class="py-3 px-4 whitespace-nowrap font-mono text-xs" title="${fn}">
+            <span class="inline-block max-w-[260px] truncate align-bottom">${fn}</span>
+          </td>
+          <td class="py-3 px-4 whitespace-nowrap font-mono text-xs">${ca}</td>
+          <td class="py-3 px-4 whitespace-nowrap font-mono text-xs">${by || ""}</td>
+          <td class="py-3 px-4 whitespace-nowrap text-right">
+            <a href="${API_DOWNLOAD(id)}"
+               class="h-9 px-3 rounded-lg border border-slate-300 text-sm font-medium text-slate-700
+                      bg-white hover:bg-slate-50 inline-flex items-center justify-center gap-2">
+              <i class="ri-download-cloud-2-line"></i> Tải file
+            </a>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  async function loadLogs({silent=false} = {}){
+    const pid = getSelectedProjectId();
+    const code = (elProject.value || "").trim();
+
+    if (!code){
+      elProjectHint.textContent = "";
+      setEmpty("Chọn dự án để xem logs…");
+      elTotal.textContent = "Logs: 0";
+      elPrevLog.innerHTML = `<option value="">— Chọn log để set t1 = t2(log) + 1s —</option>`;
+      return;
+    }
+
+    if (!pid){
+      elProjectHint.textContent = "⚠️ Project đang thiếu project_id (dataset.pid). Kiểm tra API /projects/options/listing_projects phải trả về id.";
+      setEmpty("Không thể tải logs vì thiếu project_id.");
+      elTotal.textContent = "Logs: 0";
+      return;
+    }
+
+    elProjectHint.textContent = "";
+    setLoading();
+
+    try{
+      const r = await fetch(API_LIST_LOGS(pid, null), {credentials:"same-origin"});
+      const js = await r.json().catch(()=> ({}));
+      if (!r.ok){
+        if (!silent) toast("Lỗi tải logs", (js.detail || js.error || `HTTP ${r.status}`), 4200);
+        setEmpty("Không tải được logs.");
+        return;
+      }
+      renderLogs(js.items || []);
+    }catch(e){
+      if (!silent) toast("Lỗi tải logs", String(e), 4200);
+      setEmpty("Không tải được logs.");
+    }
+  }
+
+  async function createLog(){
+    const pid = getSelectedProjectId();
+    const code = (elProject.value || "").trim();
+
+    if (!code){
+      toast("Thiếu dự án", "Vui lòng chọn dự án.", 3200);
+      return;
+    }
+    if (!pid){
+      toast("Thiếu project_id", "API projects/options cần trả về id để export.", 4200);
+      return;
+    }
+
+    const tf = toISOFromInput(elFrom.value);
+    const tt = toISOFromInput(elTo.value);
+    if (!tf || !tt){
+      toast("Thiếu thời gian", "Vui lòng chọn t1 và t2.", 3600);
+      return;
+    }
+
+    const vat = parseFloat(elVat.value || "8");
+    const target = (elTarget.value || "VIETTEL").toUpperCase();
+
+    const payload = {
+      time_from: tf,
+      time_to: tt,
+      target: target,
+      vat_rate: isNaN(vat) ? 8.0 : vat
+    };
+
+    btnCreate.disabled = true;
+    btnCreate.classList.add("opacity-70");
+    btnCreate.innerHTML = `<i class="ri-loader-4-line animate-spin"></i> Đang tạo...`;
+
+    try{
+      const r = await fetch(API_CREATE_LOG(pid), {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        credentials: "same-origin",
+        body: JSON.stringify(payload),
+      });
+      const js = await r.json().catch(()=> ({}));
+      if (!r.ok){
+        toast("Tạo log thất bại", (js.detail || js.error || `HTTP ${r.status}`), 5200);
+        return;
+      }
+      toast("Đã tạo log", `log_id = ${js.log_id || "OK"}.`, 2600);
+
+      // ✅ #2: tạo xong tự reload logs
+      await loadLogs({silent:true});
+    }catch(e){
+      toast("Tạo log thất bại", String(e), 5200);
+    }finally{
+      btnCreate.disabled = false;
+      btnCreate.classList.remove("opacity-70");
+      btnCreate.innerHTML = `<i class="ri-download-2-line"></i> Tạo log (Export)`;
+    }
+  }
+
+  // events
+  btnCreate.onclick = createLog;
+
+  // ✅ #1: chọn dự án xong load logs ngay
+  elProject.onchange = async ()=>{
+    syncSelectTitle();
+
+    const code = (elProject.value || "").trim();
+    const u = new URL(location.href);
+    if (code) u.searchParams.set("project_code", code);
+    else u.searchParams.delete("project_code");
+    history.replaceState({}, "", u.toString());
+
+    await loadLogs();
+  };
+
+  elStatus.onchange = async ()=>{
+    await loadProjects();
+    await loadLogs();
+  };
+
+  elPrevLog.onchange = ()=>{
+    const opt = elPrevLog.options[elPrevLog.selectedIndex];
+    const t2 = opt ? opt.getAttribute("data-time-to") : "";
+    if (!t2) return;
+    const v = toLocalInputValue(t2);
+    elFrom.value = addSecondsToInput(v, 1);
+    elHint.textContent = "Đã gợi ý t1 theo t2 của log đã chọn (+1 giây).";
+  };
+
+  function setNowTo(){
+    elTo.value = nowLocalInputValue();
+    elHint.textContent = "Đã cập nhật t2 = NOW.";
+  }
+  btnNow.onclick = (e)=>{ e.preventDefault(); setNowTo(); };
+
+  // defaults
+  elTo.value = nowLocalInputValue(); // ✅ t2 auto now
+  // target default VIETTEL already selected
+
+  // init
+  loadProjects().then(()=> loadLogs({silent:true}));
+})();
+</script>
+{% endblock %}
