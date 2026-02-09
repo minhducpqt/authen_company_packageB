@@ -2,149 +2,181 @@
 {% block title %}Xuất hoá đơn{% endblock %}
 
 {% block content %}
-<div class="mb-4">
-  <h1 class="text-2xl font-semibold text-slate-900">Xuất hoá đơn</h1>
-  <div class="text-sm text-slate-500 mt-1">
-    Chọn dự án → chọn thời gian t1–t2 → chọn nơi phát hành (Viettel/BKAV) → tạo log → tải file (mỗi lần tải sẽ tính lại dữ liệu).
-  </div>
-</div>
+<style>
+  /* nhẹ nhàng, gọn gàng */
+  .ie-wrap{max-width:1280px;margin:0 auto}
+  .ie-card{background:#fff;border:1px solid rgb(226 232 240);border-radius:16px;overflow:hidden}
+  .ie-head{
+    background: linear-gradient(135deg, rgba(79,70,229,.10), rgba(34,197,94,.06));
+    border-bottom:1px solid rgb(241 245 249);
+  }
+  .ie-sub{color:rgb(100 116 139)}
+  .ie-kbd{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+  .ie-th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:rgb(71 85 105)}
+  .ie-td{vertical-align:top}
+  .ie-muted{color:rgb(100 116 139)}
+  .ie-sticky thead th{position:sticky;top:0;z-index:10}
+</style>
 
-<div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-  <!-- FILTER -->
-  <div class="p-4">
-    <!-- Row 1 -->
-    <div class="grid grid-cols-12 gap-4 items-end">
-      <div class="col-span-12 md:col-span-3">
-        <label class="block text-sm text-slate-500 mb-1">Trạng thái</label>
-        <select id="projectStatusSelect"
-                class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-white
-                       focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400">
-          <option value="ACTIVE" selected>ACTIVE</option>
-          <option value="INACTIVE">INACTIVE</option>
-          <option value="ALL">ALL</option>
-        </select>
-      </div>
-
-      <div class="col-span-12 md:col-span-9">
-        <label class="block text-sm text-slate-500 mb-1">Dự án</label>
-        <select id="projectSelect"
-                class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-white
-                       focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
-                title="">
-          <option value="">Chọn dự án</option>
-        </select>
-        <div id="projectHint" class="text-xs text-slate-500 mt-1"></div>
-      </div>
+<div class="ie-wrap">
+  <div class="mb-4">
+    <h1 class="text-2xl font-semibold text-slate-900">Xuất hoá đơn</h1>
+    <div class="text-sm ie-sub mt-1">
+      Chọn dự án → chọn thời gian t1–t2 → chọn nơi phát hành (Viettel/BKAV) → tạo log → tải file (mỗi lần tải sẽ tính lại dữ liệu).
     </div>
+  </div>
 
-    <!-- Divider -->
-    <div class="h-px bg-slate-100 my-4"></div>
+  <div class="ie-card">
+    <!-- FILTER -->
+    <div class="ie-head p-4">
+      <!-- Row 1 -->
+      <div class="grid grid-cols-12 gap-4 items-end">
+        <div class="col-span-12 md:col-span-3">
+          <label class="block text-sm text-slate-600 mb-1">Trạng thái</label>
+          <select id="projectStatusSelect"
+                  class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-white
+                         focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400">
+            <option value="ACTIVE" selected>ACTIVE</option>
+            <option value="INACTIVE">INACTIVE</option>
+            <option value="ALL">ALL</option>
+          </select>
+        </div>
 
-    <!-- Row 2: ✅ FIX OVERLAP bằng grid rõ ràng -->
-    <div class="grid grid-cols-12 gap-4 items-end">
-      <!-- t1 -->
-      <div class="col-span-12 md:col-span-3">
-        <label class="block text-sm text-slate-500 mb-1">Thời gian bắt đầu (t1)</label>
-        <input id="timeFrom" type="datetime-local"
-               class="w-full border border-slate-200 rounded-lg px-3 py-2
-                      focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400">
-        <div class="text-xs text-slate-500 mt-1">paid_at ≥ t1</div>
+        <div class="col-span-12 md:col-span-9">
+          <label class="block text-sm text-slate-600 mb-1">Dự án</label>
+          <select id="projectSelect"
+                  class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-white
+                         focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
+                  title="">
+            <option value="">Chọn dự án</option>
+          </select>
+          <div id="projectHint" class="text-xs ie-muted mt-1"></div>
+        </div>
       </div>
 
-      <!-- t2 + Now -->
-      <div class="col-span-12 md:col-span-4">
-        <label class="block text-sm text-slate-500 mb-1">Thời gian kết thúc (t2)</label>
-        <div class="flex gap-2 items-center">
-          <input id="timeTo" type="datetime-local"
-                 class="flex-1 min-w-0 border border-slate-200 rounded-lg px-3 py-2
+      <div class="h-px bg-slate-200/60 my-4"></div>
+
+      <!-- Row 2: thời gian + nơi phát hành + VAT + tạo log (đồng hàng ngang) -->
+      <div class="grid grid-cols-12 gap-4 items-end">
+        <!-- t1 -->
+        <div class="col-span-12 md:col-span-4">
+          <label class="block text-sm text-slate-600 mb-1">Thời gian bắt đầu (t1)</label>
+          <div class="flex gap-2 items-center">
+            <button id="btnAllTime"
+                    class="h-10 px-3 rounded-lg border border-slate-300 text-sm font-medium text-slate-700
+                           bg-white hover:bg-slate-50 inline-flex items-center justify-center gap-2 shrink-0"
+                    title="Đặt t1 = 2000-01-01 00:00:00 để lấy full lifetime">
+              <i class="ri-infinity-line"></i> Full
+            </button>
+            <input id="timeFrom" type="datetime-local" step="1"
+                   class="flex-1 min-w-0 border border-slate-200 rounded-lg px-3 py-2
+                          focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400">
+          </div>
+          <div class="text-xs ie-muted mt-1">paid_at ≥ t1</div>
+        </div>
+
+        <!-- t2 -->
+        <div class="col-span-12 md:col-span-4">
+          <label class="block text-sm text-slate-600 mb-1">Thời gian kết thúc (t2)</label>
+          <div class="flex gap-2 items-center">
+            <input id="timeTo" type="datetime-local" step="1"
+                   class="flex-1 min-w-0 border border-slate-200 rounded-lg px-3 py-2
+                          focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400">
+            <button id="btnNow"
+                    class="h-10 px-3 rounded-lg border border-slate-300 text-sm font-medium text-slate-700
+                           bg-white hover:bg-slate-50 inline-flex items-center justify-center gap-2 shrink-0"
+                    title="Đặt t2 = thời điểm hiện tại">
+              <i class="ri-time-line"></i> Now
+            </button>
+          </div>
+          <div class="text-xs ie-muted mt-1">paid_at &lt; t2</div>
+        </div>
+
+        <!-- Target -->
+        <div class="col-span-12 md:col-span-2">
+          <label class="block text-sm text-slate-600 mb-1">Nơi phát hành</label>
+          <select id="targetSelect"
+                  class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-white
+                         focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400">
+            <option value="VIETTEL" selected>VIETTEL</option>
+            <option value="BKAV">BKAV</option>
+          </select>
+        </div>
+
+        <!-- VAT -->
+        <div class="col-span-6 md:col-span-1">
+          <label class="block text-sm text-slate-600 mb-1">VAT (%)</label>
+          <input id="vatRate" type="number" step="0.1" min="0" max="100" value="8"
+                 class="w-full border border-slate-200 rounded-lg px-3 py-2
                         focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400">
-          <button id="btnNow"
-                  class="h-10 px-3 rounded-lg border border-slate-300 text-sm font-medium text-slate-700
-                         bg-white hover:bg-slate-50 inline-flex items-center justify-center gap-2 shrink-0">
-            <i class="ri-time-line"></i> Now
+        </div>
+
+        <!-- Create log -->
+        <div class="col-span-6 md:col-span-1 flex md:justify-end">
+          <button id="createLogBtn"
+                  class="h-10 w-full md:w-auto px-4 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700
+                         inline-flex items-center justify-center gap-2">
+            <i class="ri-file-add-line"></i> Tạo log
           </button>
         </div>
-        <div class="text-xs text-slate-500 mt-1">paid_at &lt; t2</div>
       </div>
 
-      <!-- Target -->
-      <div class="col-span-12 md:col-span-2">
-        <label class="block text-sm text-slate-500 mb-1">Nơi phát hành</label>
-        <select id="targetSelect"
-                class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-white
-                       focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400">
-          <option value="VIETTEL" selected>VIETTEL</option>
-          <option value="BKAV">BKAV</option>
-        </select>
+      <!-- Row 3: prev log -->
+      <div class="grid grid-cols-12 gap-4 items-end mt-4">
+        <div class="col-span-12">
+          <label class="block text-sm text-slate-600 mb-1">Gợi ý t1 từ log trước</label>
+          <select id="prevLogSelect"
+                  class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-white
+                         focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400">
+            <option value="">— Chọn log để set t1 = t2(log) + 1s —</option>
+          </select>
+          <div id="hintBox" class="text-xs ie-muted mt-2"></div>
+        </div>
       </div>
 
-      <!-- VAT -->
-      <div class="col-span-12 md:col-span-1">
-        <label class="block text-sm text-slate-500 mb-1">VAT (%)</label>
-        <input id="vatRate" type="number" step="0.1" min="0" max="100" value="8"
-               class="w-full border border-slate-200 rounded-lg px-3 py-2
-                      focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400">
-      </div>
-
-      <!-- Export -->
-      <div class="col-span-12 md:col-span-2 flex md:justify-end">
-        <button id="createLogBtn"
-                class="h-10 w-full md:w-auto px-5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700
-                       inline-flex items-center justify-center gap-2">
-          <i class="ri-download-2-line"></i> Tạo log (Export)
-        </button>
-      </div>
-    </div>
-
-    <!-- Row 3 -->
-    <div class="grid grid-cols-12 gap-4 items-end mt-4">
-      <div class="col-span-12 md:col-span-8">
-        <label class="block text-sm text-slate-500 mb-1">Gợi ý t1 từ log trước</label>
-        <select id="prevLogSelect"
-                class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-white
-                       focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400">
-          <option value="">— Chọn log để set t1 = t2(log) + 1s —</option>
-        </select>
-        <div id="hintBox" class="text-xs text-slate-500 mt-2"></div>
-      </div>
-      <div class="col-span-12 md:col-span-4">
-        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+      <!-- ✅ #1: Cục “Mẹo” full chiều ngang ở đáy filter -->
+      <div class="mt-4">
+        <div class="rounded-xl border border-slate-200 bg-white/70 p-3 text-xs text-slate-600">
           <div class="font-semibold text-slate-700 mb-1">Mẹo</div>
-          <div>Chọn log gần nhất → hệ thống tự fill t1 để export tiếp theo không bị trùng.</div>
-          <div class="mt-2">T2 mặc định = thời điểm hiện tại. Bấm <b>Now</b> để cập nhật nếu mở trang lâu.</div>
+          <div>Chọn log gần nhất → hệ thống tự fill t1 để tạo log tiếp theo không bị trùng.</div>
+          <div class="mt-2">Bấm <b>Full</b> để lấy full lifetime (t1 = 2000-01-01 00:00:00).</div>
+          <div class="mt-2">T2 mặc định = NOW. Nếu mở trang lâu, bấm <b>Now</b> để cập nhật.</div>
+          <div class="mt-2">Nút <b>Tạo log</b> dùng để tạo một bản ghi log, sau đó bạn bấm <b>Tải</b> ở bảng để tải file.</div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- TABLE -->
-  <div class="border-t border-slate-100 overflow-x-auto">
-    <table class="w-full text-sm">
-      <thead class="bg-slate-50">
-        <tr class="text-left text-slate-600">
-          <th class="py-3 px-4 whitespace-nowrap">ID</th>
-          <th class="py-3 px-4 whitespace-nowrap">Target</th>
-          <th class="py-3 px-4 whitespace-nowrap">Khoảng thời gian</th>
-          <th class="py-3 px-4 text-right whitespace-nowrap">Số đơn</th>
-          <th class="py-3 px-4 text-right whitespace-nowrap">Tổng tiền</th>
-          <th class="py-3 px-4 text-right whitespace-nowrap">VAT</th>
-          <th class="py-3 px-4 whitespace-nowrap">File</th>
-          <th class="py-3 px-4 whitespace-nowrap">Tạo lúc</th>
-          <th class="py-3 px-4 whitespace-nowrap">Người tạo</th>
-          <th class="py-3 px-4"></th>
-        </tr>
-      </thead>
-      <tbody id="logsBody">
-        <tr><td class="py-6 px-4 text-slate-400" colspan="10">Chọn dự án để xem logs…</td></tr>
-      </tbody>
-    </table>
-  </div>
+    <!-- TABLE -->
+    <div class="border-t border-slate-100 overflow-x-auto">
+      <table class="w-full text-sm ie-sticky">
+        <thead class="bg-slate-50">
+          <tr class="text-left">
+            <th class="py-3 px-4 whitespace-nowrap ie-th">Tải</th>
+            <th class="py-3 px-4 whitespace-nowrap ie-th">ID</th>
+            <th class="py-3 px-4 whitespace-nowrap ie-th">Target</th>
+            <th class="py-3 px-4 whitespace-nowrap ie-th">Khoảng thời gian</th>
+            <th class="py-3 px-4 text-right whitespace-nowrap ie-th">Số đơn</th>
+            <th class="py-3 px-4 text-right whitespace-nowrap ie-th">Tổng tiền</th>
+            <th class="py-3 px-4 text-right whitespace-nowrap ie-th">VAT</th>
+            <th class="py-3 px-4 whitespace-nowrap ie-th">File</th>
+            <th class="py-3 px-4 whitespace-nowrap ie-th">Tạo lúc</th>
+            <th class="py-3 px-4 whitespace-nowrap ie-th">Người tạo</th>
+          </tr>
+        </thead>
+        <tbody id="logsBody">
+          <tr>
+            <td class="py-6 px-4 text-slate-400" colspan="10">Chọn dự án để xem logs…</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-  <!-- FOOTER -->
-  <div class="p-4 flex items-center justify-between text-sm text-slate-500">
-    <div id="totalInfo">Logs: 0</div>
-    <div class="text-xs text-slate-500">
-      * “Tải file” sẽ gọi download và phía A sẽ recompute dữ liệu từ view.
+    <!-- FOOTER -->
+    <div class="p-4 flex items-center justify-between text-sm text-slate-500">
+      <div id="totalInfo">Logs: 0</div>
+      <div class="text-xs ie-muted">
+        * “Tải” sẽ gọi download và phía A sẽ recompute dữ liệu từ view.
+      </div>
     </div>
   </div>
 </div>
@@ -176,6 +208,7 @@
   const elFrom = document.getElementById("timeFrom");
   const elTo = document.getElementById("timeTo");
   const btnNow = document.getElementById("btnNow");
+  const btnAllTime = document.getElementById("btnAllTime");
 
   const elTarget = document.getElementById("targetSelect");
   const elVat = document.getElementById("vatRate");
@@ -199,33 +232,47 @@
   }
 
   function pad2(n){ n = parseInt(n,10); return (n<10?("0"+n):(""+n)); }
+
   function nowLocalInputValue(){
     const d = new Date();
-    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
   }
+
   function toISOFromInput(v){
     if (!v) return null;
     const d = new Date(v);
     if (isNaN(d.getTime())) return null;
     return d.toISOString();
   }
+
   function toLocalInputValue(dtStr){
     const d = new Date(dtStr);
     if (isNaN(d.getTime())) return "";
-    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
   }
+
   function addSecondsToInput(v, sec){
     if (!v) return "";
     const d = new Date(v);
     if (isNaN(d.getTime())) return "";
     d.setSeconds(d.getSeconds() + (sec||0));
-    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+  }
+
+  function fmtYmdHms(dtStr){
+    if (!dtStr) return "";
+    const d = new Date(dtStr);
+    if (isNaN(d.getTime())) {
+      return String(dtStr).replace("T", " ").replace("Z", "").slice(0, 19);
+    }
+    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
   }
 
   function money(v){
     const n = Number(v || 0);
     return isFinite(n) ? (n.toLocaleString("vi-VN") + " ₫") : String(v||"");
   }
+
   function badge(target){
     const t = (target || "").toUpperCase();
     const cls = (t === "VIETTEL")
@@ -237,6 +284,10 @@
   function syncSelectTitle(){
     const sel = elProject.selectedOptions?.[0];
     elProject.title = sel ? (sel.title || sel.textContent || '') : '';
+  }
+
+  function getSelectedProjectCode(){
+    return (elProject.value || "").trim();
   }
 
   async function loadProjects(){
@@ -260,14 +311,12 @@
       opt.textContent = label;
       opt.title = label;
 
-      // ✅ cần project_id để gọi invoice-exports (A dùng project_id)
       if (p.id) opt.dataset.pid = String(p.id);
       else if (p.project_id) opt.dataset.pid = String(p.project_id);
 
       elProject.appendChild(opt);
     }
 
-    // restore query (?project_code=)
     const qs = new URLSearchParams(location.search);
     const initCode = (qs.get("project_code") || "").trim();
     if (initCode) elProject.value = initCode;
@@ -289,15 +338,28 @@
     elBody.innerHTML = `<tr><td class="py-6 px-4 text-slate-400" colspan="10">${msg || "Không có dữ liệu"}</td></tr>`;
   }
 
+  function withProjectPrefix(originalFileName, projectCode){
+    const fn = String(originalFileName || "").trim();
+    const pc = String(projectCode || "").trim();
+    if (!fn) return fn;
+    if (!pc) return fn;
+
+    const idx = fn.indexOf("_");
+    if (idx > 0) return pc + fn.slice(idx);
+    return pc + "_" + fn;
+  }
+
   function renderLogs(items){
     const arr = Array.isArray(items) ? items : [];
     elTotal.textContent = `Logs: ${arr.length.toLocaleString("vi-VN")}`;
+
+    const pc = getSelectedProjectCode();
 
     elPrevLog.innerHTML =
       `<option value="">— Chọn log để set t1 = t2(log) + 1s —</option>` +
       arr.map(x=>{
         const t2 = x.time_to || "";
-        const label = `#${x.id} • ${(x.target||"").toUpperCase()} • ${x.time_from||""} → ${x.time_to||""}`;
+        const label = `#${x.id} • ${(x.target||"").toUpperCase()} • ${fmtYmdHms(x.time_from||"")} → ${fmtYmdHms(x.time_to||"")}`;
         return `<option value="${x.id}" data-time-to="${t2}">${label}</option>`;
       }).join("");
 
@@ -309,38 +371,50 @@
     elBody.innerHTML = arr.map(x=>{
       const id = x.id;
       const target = (x.target || "").toUpperCase();
-      const tf = x.time_from || "";
-      const tt = x.time_to || "";
+      const tf = fmtYmdHms(x.time_from || "");
+      const tt = fmtYmdHms(x.time_to || "");
+
       const oc = Number(x.order_count ?? 0);
       const total = x.total_amount_vnd ?? 0;
       const vat = x.vat_rate ?? 8;
-      const fn = x.file_name || "";
-      const ca = x.created_at || "";
+
+      const fnRaw = x.file_name || "";
+      const fnShow = withProjectPrefix(fnRaw, pc);
+
+      const ca = fmtYmdHms(x.created_at || "");
       const by = x.created_by || "";
 
+      const dlName = fnShow || `export_${id}.xlsx`;
+
       return `
-        <tr class="border-t">
-          <td class="py-3 px-4 whitespace-nowrap font-mono text-xs">${id}</td>
-          <td class="py-3 px-4 whitespace-nowrap">${badge(target)}</td>
-          <td class="py-3 px-4 whitespace-nowrap">
-            <div class="font-mono text-xs">${tf}</div>
-            <div class="font-mono text-xs text-slate-500">→ ${tt}</div>
-          </td>
-          <td class="py-3 px-4 text-right whitespace-nowrap font-mono">${oc.toLocaleString("vi-VN")}</td>
-          <td class="py-3 px-4 text-right whitespace-nowrap font-mono">${money(total)}</td>
-          <td class="py-3 px-4 text-right whitespace-nowrap font-mono">${vat}%</td>
-          <td class="py-3 px-4 whitespace-nowrap font-mono text-xs" title="${fn}">
-            <span class="inline-block max-w-[260px] truncate align-bottom">${fn}</span>
-          </td>
-          <td class="py-3 px-4 whitespace-nowrap font-mono text-xs">${ca}</td>
-          <td class="py-3 px-4 whitespace-nowrap font-mono text-xs">${by || ""}</td>
-          <td class="py-3 px-4 whitespace-nowrap text-right">
+        <tr class="border-t hover:bg-slate-50/60">
+          <td class="py-3 px-4 whitespace-nowrap ie-td">
             <a href="${API_DOWNLOAD(id)}"
+               download="${dlName.replace(/"/g,'')}"
                class="h-9 px-3 rounded-lg border border-slate-300 text-sm font-medium text-slate-700
                       bg-white hover:bg-slate-50 inline-flex items-center justify-center gap-2">
-              <i class="ri-download-cloud-2-line"></i> Tải file
+              <i class="ri-download-cloud-2-line"></i> Tải
             </a>
           </td>
+
+          <td class="py-3 px-4 whitespace-nowrap ie-td ie-kbd text-xs">${id}</td>
+          <td class="py-3 px-4 whitespace-nowrap ie-td">${badge(target)}</td>
+
+          <td class="py-3 px-4 whitespace-nowrap ie-td">
+            <div class="ie-kbd text-xs">${tf}</div>
+            <div class="ie-kbd text-xs ie-muted">→ ${tt}</div>
+          </td>
+
+          <td class="py-3 px-4 text-right whitespace-nowrap ie-td ie-kbd">${oc.toLocaleString("vi-VN")}</td>
+          <td class="py-3 px-4 text-right whitespace-nowrap ie-td ie-kbd">${money(total)}</td>
+          <td class="py-3 px-4 text-right whitespace-nowrap ie-td ie-kbd">${vat}%</td>
+
+          <td class="py-3 px-4 whitespace-nowrap ie-td ie-kbd text-xs" title="${fnShow}">
+            <span class="inline-block max-w-[320px] truncate align-bottom">${fnShow}</span>
+          </td>
+
+          <td class="py-3 px-4 whitespace-nowrap ie-td ie-kbd text-xs">${ca}</td>
+          <td class="py-3 px-4 whitespace-nowrap ie-td ie-kbd text-xs">${by || ""}</td>
         </tr>
       `;
     }).join("");
@@ -348,7 +422,7 @@
 
   async function loadLogs({silent=false} = {}){
     const pid = getSelectedProjectId();
-    const code = (elProject.value || "").trim();
+    const code = getSelectedProjectCode();
 
     if (!code){
       elProjectHint.textContent = "";
@@ -385,14 +459,14 @@
 
   async function createLog(){
     const pid = getSelectedProjectId();
-    const code = (elProject.value || "").trim();
+    const code = getSelectedProjectCode();
 
     if (!code){
       toast("Thiếu dự án", "Vui lòng chọn dự án.", 3200);
       return;
     }
     if (!pid){
-      toast("Thiếu project_id", "API projects/options cần trả về id để export.", 4200);
+      toast("Thiếu project_id", "API projects/options cần trả về id để tạo log.", 4200);
       return;
     }
 
@@ -430,26 +504,23 @@
         return;
       }
       toast("Đã tạo log", `log_id = ${js.log_id || "OK"}.`, 2600);
-
-      // ✅ #2: tạo xong tự reload logs
       await loadLogs({silent:true});
     }catch(e){
       toast("Tạo log thất bại", String(e), 5200);
     }finally{
       btnCreate.disabled = false;
       btnCreate.classList.remove("opacity-70");
-      btnCreate.innerHTML = `<i class="ri-download-2-line"></i> Tạo log (Export)`;
+      btnCreate.innerHTML = `<i class="ri-file-add-line"></i> Tạo log`;
     }
   }
 
   // events
   btnCreate.onclick = createLog;
 
-  // ✅ #1: chọn dự án xong load logs ngay
   elProject.onchange = async ()=>{
     syncSelectTitle();
 
-    const code = (elProject.value || "").trim();
+    const code = getSelectedProjectCode();
     const u = new URL(location.href);
     if (code) u.searchParams.set("project_code", code);
     else u.searchParams.delete("project_code");
@@ -478,9 +549,14 @@
   }
   btnNow.onclick = (e)=>{ e.preventDefault(); setNowTo(); };
 
+  function setAllTimeFrom(){
+    elFrom.value = "2000-01-01T00:00:00";
+    elHint.textContent = "Đã đặt t1 = 2000-01-01 00:00:00 (full lifetime).";
+  }
+  btnAllTime.onclick = (e)=>{ e.preventDefault(); setAllTimeFrom(); };
+
   // defaults
-  elTo.value = nowLocalInputValue(); // ✅ t2 auto now
-  // target default VIETTEL already selected
+  elTo.value = nowLocalInputValue();
 
   // init
   loadProjects().then(()=> loadLogs({silent:true}));
