@@ -476,10 +476,20 @@
       <div class="text-slate-300">/</div>
       <div class="text-xl font-semibold text-slate-700"><span id="sExcludedTxn">—</span></div>
     </div>
-    <div class="text-xs text-slate-500 mt-1">
-      Phải hoàn: <b class="money" id="sMustRefundAmount" data-value="0">—</b> •
-      Không hoàn: <b class="money" id="sExcludedAmount" data-value="0">—</b>
+    <div class="mt-2 text-xs text-slate-500 space-y-1">
+    <div class="grid grid-cols-[88px_1fr_auto] items-baseline gap-2">
+      <span>Phải hoàn:</span>
+      <b class="money font-mono text-slate-900 text-right tabular-nums" id="sMustRefundAmount" data-value="0">—</b>
+      <span class="text-slate-400">VND</span>
     </div>
+
+    <div class="grid grid-cols-[88px_1fr_auto] items-baseline gap-2">
+      <span>Không hoàn:</span>
+      <b class="money font-mono text-slate-900 text-right tabular-nums" id="sExcludedAmount" data-value="0">—</b>
+      <span class="text-slate-400">VND</span>
+    </div>
+  </div>
+
   </div>
 
   <div class="bg-white border rounded-2xl shadow-sm p-4">
