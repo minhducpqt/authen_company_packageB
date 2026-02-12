@@ -641,11 +641,13 @@
     // project is controlled by shared selector only
     // do not set/delete 'project' here
 
-    if(eligible && eligible !== 'ELIGIBLE') u.searchParams.set('eligible', eligible);
-    else u.searchParams.delete('eligible');
+    u.searchParams.set('eligible', eligible || 'ELIGIBLE');
 
-    if(scoreLevel && scoreLevel !== 'ALL') u.searchParams.set('score_level', scoreLevel);
-    else u.searchParams.delete('score_level');
+
+    // ✅ IMPORTANT: luôn giữ score_level trong URL (kể cả ALL)
+    // để không bị ensureListDefaults() ghi đè về LOW sau khi reload
+    u.searchParams.set('score_level', scoreLevel || 'ALL');
+
 
     if(q) u.searchParams.set('q', q); else u.searchParams.delete('q');
 
