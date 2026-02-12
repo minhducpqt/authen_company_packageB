@@ -31,36 +31,49 @@
 {% endif %}
 
 {# =========================================================
-   1) PROJECT SELECT (shared)
-   - MUST keep list tab logic unchanged:
-     -> so we keep original #fProject in list tab (below)
-   - Here we only show a separate project selector above tabs,
-     and sync it with list #fProject when in list tab.
+   1) PROJECT SELECT (shared) + TOP RIGHT XLSX
+   - single project selector for both tabs
+   - download xlsx button is ALWAYS here (depends on project only)
    ========================================================= #}
-<div class="bg-white border rounded-2xl shadow-sm p-4 mb-3 flex flex-wrap gap-4 items-end">
-  <div class="flex flex-col min-w-[320px]">
-    <label class="text-xs font-semibold text-slate-500 mb-1">Dự án</label>
-    <select id="fProjectShared" class="h-10 rounded-xl border px-3 text-sm">
-      <option value="">— Chọn dự án —</option>
-      {% for p in projects or [] %}
-        {% set code = (p.project_code or p.code) %}
-        <option value="{{ code }}" {% if code == project %}selected{% endif %}>
-          {{ code }} — {{ p.name }}
-        </option>
-      {% endfor %}
-    </select>
-  </div>
-
-  {% if project_id %}
-    <div class="text-xs text-slate-500 pb-1">
-      <span class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-slate-50">
-        <i class="ri-folder-2-line"></i>
-        <span>Mã dự án: <b class="text-slate-900">{{ project }}</b></span>
-        <span class="text-slate-300">•</span>
-        <span>ID: <b class="text-slate-900">{{ project_id }}</b></span>
-      </span>
+<div class="bg-white border rounded-2xl shadow-sm p-4 mb-3">
+  <div class="flex flex-wrap gap-4 items-end">
+    <div class="flex flex-col min-w-[320px]">
+      <label class="text-xs font-semibold text-slate-500 mb-1">Dự án</label>
+      <select id="fProjectShared" class="h-10 rounded-xl border px-3 text-sm">
+        <option value="">— Chọn dự án —</option>
+        {% for p in projects or [] %}
+          {% set code = (p.project_code or p.code) %}
+          <option value="{{ code }}" {% if code == project %}selected{% endif %}>
+            {{ code }} — {{ p.name }}
+          </option>
+        {% endfor %}
+      </select>
     </div>
-  {% endif %}
+
+    {% if project_id %}
+      <div class="text-xs text-slate-500 pb-1">
+        <span class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-slate-50">
+          <i class="ri-folder-2-line"></i>
+          <span>Mã dự án: <b class="text-slate-900">{{ project }}</b></span>
+          <span class="text-slate-300">•</span>
+          <span>ID: <b class="text-slate-900">{{ project_id }}</b></span>
+        </span>
+      </div>
+    {% endif %}
+
+    <div class="ml-auto flex items-center gap-2 flex-wrap justify-end">
+      {# XLSX download for LIST (keeps existing endpoint)
+         NOTE: keep current query eligible/score/q if you want,
+         but per your statement "ds hoàn chỉ phụ thuộc project"
+         we only pass project_id (and keep it stable).
+      #}
+      <a id="btnExportXlsxTop"
+         href="{% if project_id %}/auction/refunds/export.xlsx?project_id={{ project_id }}{% else %}#{% endif %}"
+         class="h-10 px-4 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 inline-flex items-center gap-2 {% if not project_id %}opacity-40 pointer-events-none{% endif %}">
+        <i class="ri-file-excel-2-line"></i> Download XLSX
+      </a>
+    </div>
+  </div>
 </div>
 
 {# =========================================================
@@ -87,11 +100,12 @@
 </div>
 
 {# =========================================================
-   TAB 1: LIST (KEEP 100% old code/logic)
-   - only change requested:
-     ✅ When "Chỉ hiện TK nhận không trùng tên" is checked:
-        show ALL mismatched rows (NO implicit per-CCCD dedupe).
-        Grouping only happens if user also checks "Group theo CCCD".
+   TAB 1: LIST (KEEP LOGIC)
+   - IMPORTANT: removed duplicate project selector inside the list form.
+   - other code stays the same except:
+     * mismatch-only no auto grouping
+     * default url params (eligible=ELIGIBLE, score_level=LOW) handled in JS
+     * default local checks enabled on load if no saved state
    ========================================================= #}
 {% if tab == 'list' %}
 
@@ -99,18 +113,7 @@
       class="bg-white border rounded-2xl shadow-sm p-4 mb-4 flex flex-wrap gap-4 items-end"
       onsubmit="return false;">
 
-  <div class="flex flex-col">
-    <label class="text-xs font-semibold text-slate-500 mb-1">Dự án</label>
-    <select id="fProject" name="project" class="h-10 rounded-xl border px-3 text-sm min-w-[320px]">
-      <option value="">— Chọn dự án —</option>
-      {% for p in projects or [] %}
-        {% set code = (p.project_code or p.code) %}
-        <option value="{{ code }}" {% if code == project %}selected{% endif %}>
-          {{ code }} — {{ p.name }}
-        </option>
-      {% endfor %}
-    </select>
-  </div>
+  {# ❌ REMOVED duplicate project selector here #}
 
   <div class="flex flex-col">
     <label class="text-xs font-semibold text-slate-500 mb-1">Loại danh sách</label>
@@ -171,12 +174,6 @@
             class="h-10 px-4 rounded-xl border border-slate-300 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 inline-flex items-center gap-2">
       <i class="ri-refresh-line"></i> Reset
     </button>
-
-    <a id="btnExportXlsx"
-       href="{% if project_id %}/auction/refunds/export.xlsx?project_id={{ project_id }}&eligible={{ cur_eligible }}&score_level={{ cur_level }}{% if q %}&q={{ q|urlencode }}{% endif %}{% else %}#{% endif %}"
-       class="h-10 px-4 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 inline-flex items-center gap-2 {% if not project_id %}opacity-40 pointer-events-none{% endif %}">
-      <i class="ri-file-excel-2-line"></i> Download XLSX
-    </a>
   </div>
 </form>
 
@@ -186,8 +183,6 @@
     <span><b class="text-slate-900">{{ total }}</b> dòng</span>
     <span class="text-slate-300">•</span>
     <span><b class="text-slate-900 money" data-value="{{ total_amount_vnd }}">—</b> VND</span>
-
-    <!-- ✅ visible rows count (local filter result) -->
     <span class="text-slate-300">•</span>
     <span>Hiển thị: <b id="visibleCount" class="text-slate-900">—</b> dòng</span>
   {% else %}
@@ -385,10 +380,6 @@
 
 {# =========================================================
    TAB 2: AUDIT
-   - Change requested:
-     ✅ "Loại danh sách" MUST be LOCAL filter only
-     (API already returns ALL, each row has eligible bool)
-     Default: ELIGIBLE (Phải hoàn)
    ========================================================= #}
 {% if tab == 'audit' %}
 <div class="bg-white border rounded-2xl shadow-sm p-4 mb-4">
@@ -404,47 +395,51 @@
     </div>
 
     <div class="ml-auto flex items-center gap-2 flex-wrap justify-end">
+      <button type="button" id="btnAuditReset"
+              class="h-10 px-4 rounded-xl border border-slate-300 text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50 inline-flex items-center gap-2 {% if not project_id %}opacity-40 pointer-events-none{% endif %}">
+        <i class="ri-refresh-line"></i> Reset filter
+      </button>
+
       <button type="button" id="btnAuditReload"
               class="h-10 px-4 rounded-xl border border-slate-300 text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50 inline-flex items-center gap-2 {% if not project_id %}opacity-40 pointer-events-none{% endif %}">
-        <i class="ri-refresh-line"></i> Tải lại audit
+        <i class="ri-loop-right-line"></i> Tải lại audit
       </button>
     </div>
   </div>
 
   <div class="mt-4 flex flex-wrap gap-3 items-center">
-    <!-- ✅ NEW: Eligible filter (AUDIT ONLY) - LOCAL -->
+    {# ✅ NEW: local eligible filter for audit #}
     <div class="flex flex-col">
       <label class="text-xs font-semibold text-slate-500 mb-1">Loại danh sách</label>
-      <select id="auditEligible" class="h-10 rounded-xl border px-3 text-sm w-56" {% if not project_id %}disabled{% endif %}>
-        <option value="ELIGIBLE" selected>Phải hoàn</option>
-        <option value="EXCLUDED">Không hoàn (khách trúng)</option>
+      <select id="auditEligible" class="h-10 rounded-xl border px-3 text-sm w-56">
+        <option value="ELIGIBLE">Phải hoàn</option>
+        <option value="EXCLUDED">Không hoàn</option>
         <option value="ALL">Tất cả</option>
       </select>
     </div>
 
-    <div class="flex items-center gap-2 pt-5">
+    <div class="flex items-center gap-2">
       <input id="auditOnlyRisk" type="checkbox" class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
       <label for="auditOnlyRisk" class="text-sm text-slate-700 font-medium select-none">
         Chỉ hiện <b>RISK</b>
       </label>
     </div>
 
-    <div class="flex items-center gap-2 pt-5">
+    <div class="flex items-center gap-2">
       <input id="auditOnlyChanged" type="checkbox" class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
       <label for="auditOnlyChanged" class="text-sm text-slate-700 font-medium select-none">
         Chỉ hiện <b>Bank changed</b>
       </label>
     </div>
 
-    <div class="flex items-center gap-2 pt-5">
+    <div class="flex items-center gap-2">
       <input id="auditOnlyNoBank" type="checkbox" class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
       <label for="auditOnlyNoBank" class="text-sm text-slate-700 font-medium select-none">
         Chỉ hiện <b>Không có TK</b>
       </label>
     </div>
 
-    <!-- Group by CCCD (audit local) -->
-    <div class="flex items-center gap-2 pt-5">
+    <div class="flex items-center gap-2">
       <input id="auditGroupByCccd" type="checkbox" class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
       <label for="auditGroupByCccd" class="text-sm text-slate-700 font-medium select-none">
         Group theo <b>CCCD</b> (lọc local)
@@ -459,15 +454,8 @@
              placeholder="CCCD, tên khách, mã lô, STK...">
     </div>
 
-    <div class="ml-auto flex items-center gap-2 pt-5 flex-wrap justify-end">
-      <button type="button" id="btnAuditReset"
-              class="h-10 px-4 rounded-xl border border-slate-300 text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50 inline-flex items-center gap-2 {% if not project_id %}opacity-40 pointer-events-none{% endif %}">
-        <i class="ri-refresh-line"></i> Reset
-      </button>
-
-      <div class="text-xs text-slate-500">
-        Hiển thị: <b id="auditVisibleCount" class="text-slate-900">—</b> dòng
-      </div>
+    <div class="text-xs text-slate-500 ml-auto">
+      Hiển thị: <b id="auditVisibleCount" class="text-slate-900">—</b> dòng
     </div>
   </div>
 </div>
@@ -568,25 +556,29 @@
   function switchTab(nextTab){
     const u = currentUrl();
     setParam(u, "tab", nextTab);
-    // keep current project + other params
     window.location.assign(u.toString());
   }
   document.getElementById('tabBtnList')?.addEventListener('click', ()=> switchTab('list'));
   document.getElementById('tabBtnAudit')?.addEventListener('click', ()=> switchTab('audit'));
 
-  // Shared project selector -> update URL project (do not touch other params)
+  // Shared project selector -> update URL project
+  // IMPORTANT: project change should RESET per your earlier decision.
   document.getElementById('fProjectShared')?.addEventListener('change', ()=>{
     const u = currentUrl();
     const project = (document.getElementById('fProjectShared')?.value || '').trim();
-    setParam(u, "project", project || null);
-    u.searchParams.delete("page");
+
+    // reset everything except project + tab
+    const tab = (u.searchParams.get('tab') || 'list');
+    u.search = '';
+    if(project) u.searchParams.set('project', project);
+    u.searchParams.set('tab', tab);
+
     window.location.assign(u.toString());
   });
 </script>
 
 {# =========================================================
-   KEEP LIST SCRIPTS EXACTLY AS OLD (only when tab==list)
-   - Only change requested: mismatch-only no longer auto dedupe by CCCD
+   LIST SCRIPTS (only when tab==list)
    ========================================================= #}
 {% if tab == 'list' %}
 <script>
@@ -602,10 +594,33 @@
 
   function currentUrl(){ return new URL(window.location.href); }
 
+  // ✅ Ensure default server filters for LIST if not present:
+  // eligible default ELIGIBLE, score_level default LOW
+  // (only apply when project chosen; and only when param not set)
+  (function ensureListDefaults(){
+    const u = currentUrl();
+    const hasProject = !!(u.searchParams.get('project') || '').trim();
+    if(!hasProject) return;
+
+    let changed = false;
+
+    if(!u.searchParams.has('eligible')){
+      u.searchParams.set('eligible','ELIGIBLE'); changed = true;
+    }
+    if(!u.searchParams.has('score_level')){
+      u.searchParams.set('score_level','LOW'); changed = true;
+    }
+
+    // keep size default as-is (no forced param)
+    if(changed){
+      u.searchParams.set('tab','list');
+      window.location.replace(u.toString());
+    }
+  })();
+
   function applyFilters(pushHistory=true){
     const u = currentUrl();
 
-    const project = (document.getElementById('fProject')?.value || '').trim();
     const eligible = (document.getElementById('fEligible')?.value || 'ELIGIBLE').trim();
     const scoreLevel = (document.getElementById('fScoreLevel')?.value || 'ALL').trim();
     const q = (document.getElementById('fQ')?.value || '').trim();
@@ -613,7 +628,8 @@
 
     u.searchParams.set('page','1');
 
-    if(project) u.searchParams.set('project', project); else u.searchParams.delete('project');
+    // project is controlled by shared selector only
+    // do not set/delete 'project' here
 
     if(eligible && eligible !== 'ELIGIBLE') u.searchParams.set('eligible', eligible);
     else u.searchParams.delete('eligible');
@@ -627,19 +643,20 @@
     if(sizeNum && sizeNum !== DEFAULT_SIZE) u.searchParams.set('size', String(sizeNum));
     else u.searchParams.delete('size');
 
+    u.searchParams.set('tab','list');
+
     if(pushHistory) window.location.assign(u.toString());
     else window.location.replace(u.toString());
   }
 
   const applyFiltersDebounced = debounce(()=> applyFilters(true), 300);
 
-  document.getElementById('fProject')?.addEventListener('change', ()=> applyFilters(true));
   document.getElementById('fEligible')?.addEventListener('change', ()=> applyFilters(true));
   document.getElementById('fScoreLevel')?.addEventListener('change', ()=> applyFilters(true));
   document.getElementById('fSize')?.addEventListener('change', ()=> applyFilters(true));
   document.getElementById('fQ')?.addEventListener('input', ()=> applyFiltersDebounced());
 
-  // ✅ Reset: KHÔNG reset dự án + reset local checkboxes về unchecked
+  // ✅ Reset (keep project, keep tab)
   document.getElementById('btnResetFilters')?.addEventListener('click', ()=>{
     const u = currentUrl();
     u.searchParams.delete('eligible');
@@ -647,6 +664,7 @@
     u.searchParams.delete('q');
     u.searchParams.delete('size');
     u.searchParams.delete('page');
+    u.searchParams.set('tab','list');
     window.location.assign(u.toString());
   });
 
@@ -730,10 +748,12 @@
 
       let show = true;
 
-      // ✅ mismatch-only: show ALL mismatched rows (NO dedupe)
-      if(onlyMismatch && isMatch) show = false;
+      // ✅ mismatch-only: ONLY filters mismatch; NO implicit grouping anymore
+      if(onlyMismatch){
+        if(isMatch) show = false;
+      }
 
-      // ✅ groupByCccd only when user explicitly checks it
+      // ✅ grouping only when groupByCccd is checked
       if(show && groupByCccd){
         const key = cccd || "__NO_CCCD__";
         if(seen.has(key)) show = false;
@@ -749,12 +769,27 @@
   document.getElementById('fMismatchOnly')?.addEventListener('change', ()=> applyLocalFilter());
   document.getElementById('fGroupByCccd')?.addEventListener('change', ()=> applyLocalFilter());
 
+  // ✅ Default local checkbox states for LIST when landing (per your requirement)
+  //   - mismatch checked
+  //   - group checked
+  (function setListLocalDefaultsOnce(){
+    const u = currentUrl();
+    const hasProject = !!(u.searchParams.get('project') || '').trim();
+    if(!hasProject) return;
+
+    // only auto-set if user hasn't interacted in this load (fresh load)
+    const mismatch = document.getElementById('fMismatchOnly');
+    const group = document.getElementById('fGroupByCccd');
+    if(mismatch) mismatch.checked = true;
+    if(group) group.checked = true;
+  })();
+
   applyNameColors();
   applyLocalFilter();
   updateVisibleCount();
 
   // -------------------------
-  // Modal helpers
+  // Modal helpers (UNCHANGED)
   // -------------------------
   function badgeMeta(level){
     const lvl = String(level || 'LOW').toUpperCase();
@@ -916,26 +951,11 @@
       await loadDetail(id);
     });
   });
-
-  // ✅ sync shared project selector to old #fProject (visual only)
-  try{
-    const shared = document.getElementById('fProjectShared');
-    const oldSel = document.getElementById('fProject');
-    if(shared && oldSel){
-      shared.value = oldSel.value;
-      oldSel.addEventListener('change', ()=> { shared.value = oldSel.value; });
-    }
-  }catch(e){}
 </script>
 {% endif %}
 
 {# =========================================================
    AUDIT SCRIPT (only when tab==audit)
-   - Requested:
-     ✅ loadAudit always calls API without eligible param (server returns ALL)
-     ✅ auditEligible filters LOCAL using row.eligible
-     ✅ default auditEligible = ELIGIBLE (Phải hoàn)
-     ✅ reset returns to ELIGIBLE + clears local checks + reload
    ========================================================= #}
 {% if tab == 'audit' %}
 <script>
@@ -1009,12 +1029,14 @@
   }
 
   function applyAuditLocalFilter(){
-    const eligiblePick = String(document.getElementById('auditEligible')?.value || 'ELIGIBLE').trim().toUpperCase();
     const onlyRisk = !!document.getElementById('auditOnlyRisk')?.checked;
     const onlyChanged = !!document.getElementById('auditOnlyChanged')?.checked;
     const onlyNoBank = !!document.getElementById('auditOnlyNoBank')?.checked;
     const groupBy = !!document.getElementById('auditGroupByCccd')?.checked;
     const q = String(document.getElementById('auditQ')?.value || '').trim().toLowerCase();
+
+    // ✅ NEW: eligible filter (local)
+    const eligibleMode = String(document.getElementById('auditEligible')?.value || 'ELIGIBLE').toUpperCase();
 
     const seen = new Set();
 
@@ -1024,15 +1046,12 @@
       const hasBank = (tr.getAttribute('data-hasbank') || '0') === '1';
       const cccd = (tr.getAttribute('data-cccd') || '').trim();
       const hay = (tr.getAttribute('data-hay') || '').toLowerCase();
-      const eligible = (tr.getAttribute('data-eligible') || '').toUpperCase(); // '1' | '0'
+      const eligible = (tr.getAttribute('data-eligible') || '').toUpperCase(); // ELIGIBLE|EXCLUDED
 
       let show = true;
 
-      // ✅ NEW: eligible local filter
-      if(eligiblePick === 'ELIGIBLE'){
-        if(eligible !== '1') show = false;
-      }else if(eligiblePick === 'EXCLUDED'){
-        if(eligible !== '0') show = false;
+      if(eligibleMode !== 'ALL'){
+        if(eligible !== eligibleMode) show = false;
       }
 
       if(show && onlyRisk){
@@ -1067,19 +1086,21 @@
   document.getElementById('auditGroupByCccd')?.addEventListener('change', applyAuditLocalFilter);
   document.getElementById('auditQ')?.addEventListener('input', debounce(applyAuditLocalFilter, 150));
 
-  document.getElementById('btnAuditReset')?.addEventListener('click', ()=>{
-    const sel = document.getElementById('auditEligible');
-    if(sel) sel.value = 'ELIGIBLE';
-
-    const c1 = document.getElementById('auditOnlyRisk'); if(c1) c1.checked = false;
-    const c2 = document.getElementById('auditOnlyChanged'); if(c2) c2.checked = false;
-    const c3 = document.getElementById('auditOnlyNoBank'); if(c3) c3.checked = false;
-    const c4 = document.getElementById('auditGroupByCccd'); if(c4) c4.checked = false;
-
+  function setAuditDefaults(){
+    const eligibleSel = document.getElementById('auditEligible');
+    const onlyRisk = document.getElementById('auditOnlyRisk');
+    if(eligibleSel) eligibleSel.value = 'ELIGIBLE';   // ✅ default must refund
+    if(onlyRisk) onlyRisk.checked = true;             // ✅ default only risk
+    // keep others false by default
+    const changed = document.getElementById('auditOnlyChanged'); if(changed) changed.checked = false;
+    const nobank = document.getElementById('auditOnlyNoBank'); if(nobank) nobank.checked = false;
+    const group = document.getElementById('auditGroupByCccd'); if(group) group.checked = false;
     const q = document.getElementById('auditQ'); if(q) q.value = '';
+  }
 
-    // reload from server (same behavior as before)
-    loadAudit();
+  document.getElementById('btnAuditReset')?.addEventListener('click', ()=>{
+    setAuditDefaults();
+    applyAuditLocalFilter();
   });
 
   async function loadAudit(){
@@ -1094,11 +1115,7 @@
     }
 
     try{
-      // ✅ always fetch ALL; do NOT send eligible param
-      const url = new URL(`/auction/refunds/check.json`, window.location.origin);
-      url.searchParams.set('project_id', String(AUDIT_PROJECT_ID));
-
-      const res = await fetch(url.toString(), {
+      const res = await fetch(`/auction/refunds/check.json?project_id=${encodeURIComponent(String(AUDIT_PROJECT_ID))}`, {
         headers: { 'Accept': 'application/json' }
       });
       const js = await res.json().catch(()=> ({}));
@@ -1163,6 +1180,8 @@
           name, cccd, lot, bankCode, accNo, accName, (item.order_code||''), (item.content||'')
         ].filter(Boolean).join(' | ');
 
+        const eligible = (item.eligible === true) ? 'ELIGIBLE' : 'EXCLUDED';
+
         const tr = document.createElement('tr');
         tr.setAttribute('data-audit-row','1');
         tr.setAttribute('data-risk', risk);
@@ -1170,10 +1189,7 @@
         tr.setAttribute('data-hasbank', hasBank ? '1' : '0');
         tr.setAttribute('data-cccd', cccd);
         tr.setAttribute('data-hay', hay);
-
-        // ✅ NEW: eligible flag for local filter (refund_required / eligible)
-        const eligibleBool = (typeof item.eligible === 'boolean') ? item.eligible : !!a.refund_required;
-        tr.setAttribute('data-eligible', eligibleBool ? '1' : '0');
+        tr.setAttribute('data-eligible', eligible);
 
         tr.innerHTML = `
           <td class="px-4 py-3 whitespace-nowrap">
@@ -1228,10 +1244,8 @@
         tbody.appendChild(tr);
       }
 
-      // default local filter: ELIGIBLE
-      const sel = document.getElementById('auditEligible');
-      if(sel && !sel.value) sel.value = 'ELIGIBLE';
-
+      // ✅ defaults then filter
+      setAuditDefaults();
       applyAuditLocalFilter();
       updateAuditVisibleCount();
     }catch(e){
@@ -1245,7 +1259,6 @@
 
   document.getElementById('btnAuditReload')?.addEventListener('click', loadAudit);
 
-  // auto load
   if(AUDIT_PROJECT_ID){
     loadAudit();
   }
