@@ -88,8 +88,10 @@
 
 {# =========================================================
    TAB 1: LIST (KEEP 100% old code/logic)
-   - We render your old code block exactly,
-     only wrapped in if(tab=='list').
+   - only change requested:
+     ✅ When "Chỉ hiện TK nhận không trùng tên" is checked:
+        show ALL mismatched rows (NO implicit per-CCCD dedupe).
+        Grouping only happens if user also checks "Group theo CCCD".
    ========================================================= #}
 {% if tab == 'list' %}
 
@@ -151,7 +153,7 @@
     <label for="fMismatchOnly" class="text-sm text-slate-700 font-medium select-none">
       Chỉ hiện <b>TK nhận không trùng tên</b> (lọc local)
     </label>
-    <span class="text-xs text-slate-500">(mỗi CCCD chỉ giữ 1 dòng)</span>
+    <span class="text-xs text-slate-500">(không tự group)</span>
   </div>
 
   <!-- ✅ Group by CCCD (local) -->
@@ -185,7 +187,7 @@
     <span class="text-slate-300">•</span>
     <span><b class="text-slate-900 money" data-value="{{ total_amount_vnd }}">—</b> VND</span>
 
-    <!-- ✅ NEW: visible rows count (local filter result) -->
+    <!-- ✅ visible rows count (local filter result) -->
     <span class="text-slate-300">•</span>
     <span>Hiển thị: <b id="visibleCount" class="text-slate-900">—</b> dòng</span>
   {% else %}
@@ -382,7 +384,11 @@
 {% endif %}
 
 {# =========================================================
-   TAB 2: AUDIT (new UI + local filters + group by CCCD)
+   TAB 2: AUDIT
+   - Change requested:
+     ✅ "Loại danh sách" MUST be LOCAL filter only
+     (API already returns ALL, each row has eligible bool)
+     Default: ELIGIBLE (Phải hoàn)
    ========================================================= #}
 {% if tab == 'audit' %}
 <div class="bg-white border rounded-2xl shadow-sm p-4 mb-4">
@@ -406,29 +412,39 @@
   </div>
 
   <div class="mt-4 flex flex-wrap gap-3 items-center">
-    <div class="flex items-center gap-2">
+    <!-- ✅ NEW: Eligible filter (AUDIT ONLY) - LOCAL -->
+    <div class="flex flex-col">
+      <label class="text-xs font-semibold text-slate-500 mb-1">Loại danh sách</label>
+      <select id="auditEligible" class="h-10 rounded-xl border px-3 text-sm w-56" {% if not project_id %}disabled{% endif %}>
+        <option value="ELIGIBLE" selected>Phải hoàn</option>
+        <option value="EXCLUDED">Không hoàn (khách trúng)</option>
+        <option value="ALL">Tất cả</option>
+      </select>
+    </div>
+
+    <div class="flex items-center gap-2 pt-5">
       <input id="auditOnlyRisk" type="checkbox" class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
       <label for="auditOnlyRisk" class="text-sm text-slate-700 font-medium select-none">
         Chỉ hiện <b>RISK</b>
       </label>
     </div>
 
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-2 pt-5">
       <input id="auditOnlyChanged" type="checkbox" class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
       <label for="auditOnlyChanged" class="text-sm text-slate-700 font-medium select-none">
         Chỉ hiện <b>Bank changed</b>
       </label>
     </div>
 
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-2 pt-5">
       <input id="auditOnlyNoBank" type="checkbox" class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
       <label for="auditOnlyNoBank" class="text-sm text-slate-700 font-medium select-none">
         Chỉ hiện <b>Không có TK</b>
       </label>
     </div>
 
-    <!-- ✅ NEW: Group by CCCD (audit local) -->
-    <div class="flex items-center gap-2">
+    <!-- Group by CCCD (audit local) -->
+    <div class="flex items-center gap-2 pt-5">
       <input id="auditGroupByCccd" type="checkbox" class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
       <label for="auditGroupByCccd" class="text-sm text-slate-700 font-medium select-none">
         Group theo <b>CCCD</b> (lọc local)
@@ -437,13 +453,21 @@
     </div>
 
     <div class="flex flex-col min-w-[320px]">
+      <label class="text-xs font-semibold text-slate-500 mb-1">Tìm local</label>
       <input id="auditQ" type="text"
              class="h-10 rounded-xl border px-3 text-sm"
-             placeholder="Tìm local: CCCD, tên khách, mã lô, STK...">
+             placeholder="CCCD, tên khách, mã lô, STK...">
     </div>
 
-    <div class="text-xs text-slate-500 ml-auto">
-      Hiển thị: <b id="auditVisibleCount" class="text-slate-900">—</b> dòng
+    <div class="ml-auto flex items-center gap-2 pt-5 flex-wrap justify-end">
+      <button type="button" id="btnAuditReset"
+              class="h-10 px-4 rounded-xl border border-slate-300 text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50 inline-flex items-center gap-2 {% if not project_id %}opacity-40 pointer-events-none{% endif %}">
+        <i class="ri-refresh-line"></i> Reset
+      </button>
+
+      <div class="text-xs text-slate-500">
+        Hiển thị: <b id="auditVisibleCount" class="text-slate-900">—</b> dòng
+      </div>
     </div>
   </div>
 </div>
@@ -562,6 +586,7 @@
 
 {# =========================================================
    KEEP LIST SCRIPTS EXACTLY AS OLD (only when tab==list)
+   - Only change requested: mismatch-only no longer auto dedupe by CCCD
    ========================================================= #}
 {% if tab == 'list' %}
 <script>
@@ -685,7 +710,6 @@
     });
   }
 
-  // ✅ NEW: count visible rows
   function updateVisibleCount(){
     const el = document.getElementById('visibleCount');
     if(!el) return;
@@ -706,17 +730,11 @@
 
       let show = true;
 
-      if(onlyMismatch){
-        if(isMatch) show = false;
-      }
+      // ✅ mismatch-only: show ALL mismatched rows (NO dedupe)
+      if(onlyMismatch && isMatch) show = false;
 
+      // ✅ groupByCccd only when user explicitly checks it
       if(show && groupByCccd){
-        const key = cccd || "__NO_CCCD__";
-        if(seen.has(key)) show = false;
-        else seen.add(key);
-      }
-
-      if(show && onlyMismatch && !groupByCccd){
         const key = cccd || "__NO_CCCD__";
         if(seen.has(key)) show = false;
         else seen.add(key);
@@ -913,6 +931,11 @@
 
 {# =========================================================
    AUDIT SCRIPT (only when tab==audit)
+   - Requested:
+     ✅ loadAudit always calls API without eligible param (server returns ALL)
+     ✅ auditEligible filters LOCAL using row.eligible
+     ✅ default auditEligible = ELIGIBLE (Phải hoàn)
+     ✅ reset returns to ELIGIBLE + clears local checks + reload
    ========================================================= #}
 {% if tab == 'audit' %}
 <script>
@@ -986,6 +1009,7 @@
   }
 
   function applyAuditLocalFilter(){
+    const eligiblePick = String(document.getElementById('auditEligible')?.value || 'ELIGIBLE').trim().toUpperCase();
     const onlyRisk = !!document.getElementById('auditOnlyRisk')?.checked;
     const onlyChanged = !!document.getElementById('auditOnlyChanged')?.checked;
     const onlyNoBank = !!document.getElementById('auditOnlyNoBank')?.checked;
@@ -1000,10 +1024,18 @@
       const hasBank = (tr.getAttribute('data-hasbank') || '0') === '1';
       const cccd = (tr.getAttribute('data-cccd') || '').trim();
       const hay = (tr.getAttribute('data-hay') || '').toLowerCase();
+      const eligible = (tr.getAttribute('data-eligible') || '').toUpperCase(); // '1' | '0'
 
       let show = true;
 
-      if(onlyRisk){
+      // ✅ NEW: eligible local filter
+      if(eligiblePick === 'ELIGIBLE'){
+        if(eligible !== '1') show = false;
+      }else if(eligiblePick === 'EXCLUDED'){
+        if(eligible !== '0') show = false;
+      }
+
+      if(show && onlyRisk){
         if(risk === 'SAFE') show = false;
       }
       if(show && onlyChanged){
@@ -1028,11 +1060,27 @@
     updateAuditVisibleCount();
   }
 
+  document.getElementById('auditEligible')?.addEventListener('change', applyAuditLocalFilter);
   document.getElementById('auditOnlyRisk')?.addEventListener('change', applyAuditLocalFilter);
   document.getElementById('auditOnlyChanged')?.addEventListener('change', applyAuditLocalFilter);
   document.getElementById('auditOnlyNoBank')?.addEventListener('change', applyAuditLocalFilter);
   document.getElementById('auditGroupByCccd')?.addEventListener('change', applyAuditLocalFilter);
   document.getElementById('auditQ')?.addEventListener('input', debounce(applyAuditLocalFilter, 150));
+
+  document.getElementById('btnAuditReset')?.addEventListener('click', ()=>{
+    const sel = document.getElementById('auditEligible');
+    if(sel) sel.value = 'ELIGIBLE';
+
+    const c1 = document.getElementById('auditOnlyRisk'); if(c1) c1.checked = false;
+    const c2 = document.getElementById('auditOnlyChanged'); if(c2) c2.checked = false;
+    const c3 = document.getElementById('auditOnlyNoBank'); if(c3) c3.checked = false;
+    const c4 = document.getElementById('auditGroupByCccd'); if(c4) c4.checked = false;
+
+    const q = document.getElementById('auditQ'); if(q) q.value = '';
+
+    // reload from server (same behavior as before)
+    loadAudit();
+  });
 
   async function loadAudit(){
     if(!AUDIT_PROJECT_ID){
@@ -1046,7 +1094,11 @@
     }
 
     try{
-      const res = await fetch(`/auction/refunds/check.json?project_id=${encodeURIComponent(String(AUDIT_PROJECT_ID))}`, {
+      // ✅ always fetch ALL; do NOT send eligible param
+      const url = new URL(`/auction/refunds/check.json`, window.location.origin);
+      url.searchParams.set('project_id', String(AUDIT_PROJECT_ID));
+
+      const res = await fetch(url.toString(), {
         headers: { 'Accept': 'application/json' }
       });
       const js = await res.json().catch(()=> ({}));
@@ -1119,6 +1171,10 @@
         tr.setAttribute('data-cccd', cccd);
         tr.setAttribute('data-hay', hay);
 
+        // ✅ NEW: eligible flag for local filter (refund_required / eligible)
+        const eligibleBool = (typeof item.eligible === 'boolean') ? item.eligible : !!a.refund_required;
+        tr.setAttribute('data-eligible', eligibleBool ? '1' : '0');
+
         tr.innerHTML = `
           <td class="px-4 py-3 whitespace-nowrap">
             <span class="inline-flex items-center px-2 py-0.5 rounded-lg border text-xs font-semibold ${b.cls}">
@@ -1171,6 +1227,10 @@
 
         tbody.appendChild(tr);
       }
+
+      // default local filter: ELIGIBLE
+      const sel = document.getElementById('auditEligible');
+      if(sel && !sel.value) sel.value = 'ELIGIBLE';
 
       applyAuditLocalFilter();
       updateAuditVisibleCount();
