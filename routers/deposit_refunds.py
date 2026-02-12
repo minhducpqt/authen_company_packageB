@@ -336,3 +336,37 @@ async def export_refunds_xlsx_proxy(
         )
     except ServiceAError as e:
         return JSONResponse({"ok": False, "status": e.status, "body": e.body}, status_code=500)
+
+# =========================================================
+# 1.x) API: Refund candidates CHECK/AUDIT (JSON)
+#    A: GET /api/v1/auction/refunds/check
+# =========================================================
+@router.get("/auction/refunds/check.json")
+async def refund_candidates_check_json(
+    request: Request,
+    project_id: int = Query(..., ge=1, alias="project_id"),
+):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse(
+            status_code=401,
+            content={"ok": False, "detail": "Missing access token"},
+        )
+
+    try:
+        js = await _get_json(
+            "/api/v1/auction/refunds/check",
+            token,
+            params={"project_id": int(project_id)},
+        )
+        return JSONResponse(status_code=200, content=js)
+    except ServiceAError as e:
+        return JSONResponse(
+            status_code=e.status or 502,
+            content={
+                "ok": False,
+                "detail": (e.body or {}).get("detail") if isinstance(e.body, dict) else e.body,
+                "status": e.status,
+                "body": e.body,
+            },
+        )
