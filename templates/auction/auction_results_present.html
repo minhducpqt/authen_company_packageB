@@ -1,0 +1,334 @@
+{# templates/auction/auction_results_present.html #}
+{% extends "base.html" %}
+{% block title %}Present — Kết quả trúng đấu giá{% endblock %}
+
+{% block content %}
+<style>
+  .p-wrap{max-width:1400px;margin:0 auto}
+  .p-head{
+    display:flex;gap:16px;align-items:flex-start;justify-content:space-between;
+    padding:14px 16px;
+    background:linear-gradient(135deg, rgba(15,23,42,.96), rgba(17,24,39,.92));
+    color:#fff;border-radius:16px;
+    border:1px solid rgba(255,255,255,.10);
+    box-shadow:0 18px 50px rgba(15,23,42,.20);
+    margin-bottom:12px;
+  }
+  .p-h1{font-weight:900;letter-spacing:.06em;font-size:18px}
+  .p-sub{margin-top:6px;color:rgba(255,255,255,.78);font-size:13px}
+  .p-pill{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:2px 10px;border-radius:999px;
+    background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16);
+    font-weight:800;color:#fff
+  }
+  .p-meta{min-width:240px;text-align:right}
+  .p-meta-row{font-size:13px;color:rgba(255,255,255,.85);margin-top:4px}
+  .p-meta-k{color:rgba(255,255,255,.65);margin-right:6px}
+  .p-badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:999px;font-weight:800;border:1px solid transparent}
+  .p-badge-ok{background:rgba(16,185,129,.15);border-color:rgba(16,185,129,.35);color:#a7f3d0}
+  .p-badge-warn{background:rgba(245,158,11,.14);border-color:rgba(245,158,11,.35);color:#fde68a}
+  .p-badge-bad{background:rgba(244,63,94,.12);border-color:rgba(244,63,94,.35);color:#fecdd3}
+
+  .p-board{
+    background:#fff;border:1px solid rgb(226 232 240);
+    border-radius:16px;overflow:hidden;
+    box-shadow:0 10px 30px rgba(15,23,42,.06);
+  }
+  .p-scroll{max-height:calc(100vh - 220px);overflow:auto}
+
+  .p-table{width:100%;border-collapse:separate;border-spacing:0}
+  .p-table thead th{
+    position:sticky;top:0;z-index:2;
+    background:rgb(248 250 252);
+    border-bottom:1px solid rgb(226 232 240);
+    padding:12px 14px;
+    font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+    color:rgb(71 85 105);font-weight:900;
+  }
+  .p-table tbody td{
+    padding:12px 14px;border-bottom:1px solid rgb(241 245 249);
+    vertical-align:middle;
+    font-size:16px;
+  }
+  .p-table tbody tr:hover{background:rgb(248 250 252)}
+  .c-lot{width:140px}
+  .c-name{width:420px}
+  .c-cccd{width:260px}
+  .c-price{width:240px;text-align:right}
+
+  .lot{font-weight:950;font-size:18px;color:rgb(15 23 42)}
+  .name{font-weight:800;color:rgb(15 23 42)}
+  .cccd{
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-weight:950;
+    font-size:18px;
+    letter-spacing:.06em;
+    color:rgb(15 23 42);
+  }
+  .money{
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-weight:900;
+    font-size:18px;
+    color:rgb(15 23 42);
+    white-space:nowrap;
+  }
+  .muted{color:rgb(148 163 184)}
+</style>
+
+<div class="p-wrap">
+  <div class="p-head">
+    <div>
+      <div class="p-h1">TRÌNH CHIẾU KẾT QUẢ TRÚNG ĐẤU GIÁ</div>
+      <div class="p-sub">
+        {% if project_obj %}
+          {% set pcode = (project_obj.project_code or project_obj.code or project) %}
+          Dự án: <span class="p-pill">{{ pcode }}</span>
+        {% elif project %}
+          Dự án: <span class="p-pill">{{ project }}</span>
+        {% else %}
+          <span class="p-pill" style="background:rgba(244,63,94,.14);border-color:rgba(244,63,94,.35)">Chưa chọn dự án</span>
+        {% endif %}
+        <span style="margin:0 8px;opacity:.6">•</span>
+        Polling: <b>10s</b> • size mặc định: <b>200</b>
+      </div>
+    </div>
+
+    <div class="p-meta">
+      <div class="p-meta-row">
+        <span class="p-meta-k">Trạng thái:</span>
+        <span id="netBadge" class="p-badge p-badge-ok">OK</span>
+      </div>
+      <div class="p-meta-row">
+        <span class="p-meta-k">Lần cập nhật:</span>
+        <span id="lastUpdated">—</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="p-board">
+    <div id="scrollBox" class="p-scroll">
+      <table class="p-table">
+        <thead>
+          <tr>
+            <th class="c-lot">Mã lô</th>
+            <th class="c-name">Tên người trúng</th>
+            <th class="c-cccd">CCCD</th>
+            <th class="c-price">Giá trúng</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          {% set rows = (data or {}).get('data') or [] %}
+          {% for r in rows %}
+            <tr data-lot-code="{{ r.lot_code }}">
+              <td class="c-lot"><span class="lot">{{ r.lot_code }}</span></td>
+              <td class="c-name">
+                {% if r.winner_name %}
+                  <span class="name">{{ r.winner_name }}</span>
+                {% else %}
+                  <span class="muted">—</span>
+                {% endif %}
+              </td>
+              <td class="c-cccd">
+                {% if r.winner_cccd %}
+                  <span class="cccd" data-raw-cccd="{{ r.winner_cccd }}">{{ r.winner_cccd }}</span>
+                {% else %}
+                  <span class="muted">—</span>
+                {% endif %}
+              </td>
+              <td class="c-price">
+                {% if r.winning_price_vnd %}
+                  <span class="money" data-value="{{ r.winning_price_vnd }}">—</span>
+                {% else %}
+                  <span class="muted">—</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+
+          {% if rows|length == 0 %}
+            <tr>
+              <td colspan="4" style="padding:18px 14px;text-align:center" class="muted">
+                {% if project_id %}
+                  Không có dữ liệu (hoặc chưa có lô).
+                {% else %}
+                  Chưa chọn dự án.
+                {% endif %}
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  // --- CONFIG ---
+  const PROJECT_ID = {{ project_id or 'null' }};
+  const POLL_MS = 10000;
+  const DEFAULT_SIZE = 200;
+
+  // --- FORMAT HELPERS ---
+  function digitsOnly(v){
+    return String(v ?? '').replace(/[^\d]/g,'');
+  }
+  function groupVi(d){
+    d = digitsOnly(d);
+    if(!d) return '';
+    d = d.replace(/^0+(?=\d)/,'');
+    let out = '';
+    let cnt = 0;
+    for(let i=d.length-1;i>=0;i--){
+      out = d[i] + out;
+      cnt++;
+      if(cnt % 3 === 0 && i !== 0) out = '.' + out;
+    }
+    return out;
+  }
+  // CCCD: format 3-3-3-3. Nếu không đủ 12 số thì vẫn nhóm theo 3 từ trái qua (thực tế hay gặp 12 số).
+  function formatCCCDDots(cccd){
+    const d = digitsOnly(cccd);
+    if(!d) return '';
+    // nhóm 3 từ trái
+    return d.replace(/(.{3})/g, '$1.').replace(/\.$/, '');
+  }
+  function pad2(n){ return String(n).padStart(2,'0'); }
+  function nowVN(){
+    const d = new Date();
+    return `${pad2(d.getDate())}/${pad2(d.getMonth()+1)}/${d.getFullYear()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+  }
+
+  function setBadge(state){
+    const b = document.getElementById('netBadge');
+    b.className = 'p-badge ' + (state === 'ok' ? 'p-badge-ok' : state === 'warn' ? 'p-badge-warn' : 'p-badge-bad');
+    b.textContent = (state === 'ok' ? 'OK' : state === 'warn' ? 'RETRY' : 'ERROR');
+  }
+
+  function applyInitialFormatting(){
+    document.querySelectorAll('.money').forEach(el=>{
+      const v = el.getAttribute('data-value');
+      el.textContent = groupVi(v) || '—';
+    });
+    document.querySelectorAll('.cccd').forEach(el=>{
+      const raw = el.getAttribute('data-raw-cccd') || el.textContent || '';
+      el.textContent = formatCCCDDots(raw) || '—';
+    });
+  }
+
+  // --- BUILD API URL ---
+  // "lấy kết quả bằng api của trang trước đó đã gọi" + mặc định size=200
+  // Mình giả định list endpoint hiện tại là:
+  //   GET /auction/results/api/projects/{project_id}/lots?size=200&page=1&q=...&result_status=...
+  // Nếu endpoint thật khác, bạn chỉ cần đổi base path ở đây.
+  function buildApiUrl(){
+    if(!PROJECT_ID) return null;
+
+    const u = new URL(window.location.href);
+    const q = (u.searchParams.get('q') || '').trim();
+    const rs = (u.searchParams.get('result_status') || '').trim();
+
+    const api = new URL(window.location.origin + `/auction/results/api/projects/${PROJECT_ID}/lots`);
+    api.searchParams.set('page', '1');
+    api.searchParams.set('size', String(DEFAULT_SIZE));
+    if(q) api.searchParams.set('q', q);
+    if(rs) api.searchParams.set('result_status', rs);
+
+    return api.toString();
+  }
+
+  // --- UPDATE IN PLACE (không ảnh hưởng scroll) ---
+  function patchTable(rows){
+    const scrollBox = document.getElementById('scrollBox');
+    const savedTop = scrollBox ? scrollBox.scrollTop : 0;
+
+    // map existing rows
+    const map = new Map();
+    document.querySelectorAll('#tbody tr[data-lot-code]').forEach(tr=>{
+      map.set(tr.getAttribute('data-lot-code'), tr);
+    });
+
+    (rows || []).forEach(r=>{
+      const lotCode = r.lot_code || r.lotCode || '';
+      if(!lotCode) return;
+      const tr = map.get(lotCode);
+      if(!tr) return; // danh sách lô tĩnh → không thêm mới để tránh nhảy
+
+      const tds = tr.querySelectorAll('td');
+      if(!tds || tds.length < 4) return;
+
+      const winnerName = r.winner_name || r.winnerName || '';
+      const winnerCccd = r.winner_cccd || r.winnerCccd || '';
+      const winningPrice = r.winning_price_vnd || r.winningPriceVnd || '';
+
+      // Cột 2: tên
+      const nameTd = tds[1];
+      nameTd.innerHTML = winnerName
+        ? `<span class="name">${escapeHtml(winnerName)}</span>`
+        : `<span class="muted">—</span>`;
+
+      // Cột 3: CCCD (in đậm + format .)
+      const cccdTd = tds[2];
+      cccdTd.innerHTML = winnerCccd
+        ? `<span class="cccd" data-raw-cccd="${escapeHtml(winnerCccd)}">${escapeHtml(formatCCCDDots(winnerCccd))}</span>`
+        : `<span class="muted">—</span>`;
+
+      // Cột 4: giá trúng
+      const priceTd = tds[3];
+      priceTd.innerHTML = winningPrice
+        ? `<span class="money" data-value="${escapeHtml(String(winningPrice))}">${escapeHtml(groupVi(winningPrice))}</span>`
+        : `<span class="muted">—</span>`;
+    });
+
+    if(scrollBox){
+      scrollBox.scrollTop = savedTop; // restore vị trí cuộn
+    }
+  }
+
+  function escapeHtml(s){
+    return String(s ?? '')
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#039;');
+  }
+
+  async function pollOnce(){
+    const url = buildApiUrl();
+    if(!url){
+      setBadge('bad');
+      document.getElementById('lastUpdated').textContent = '—';
+      return;
+    }
+
+    try{
+      const res = await fetch(url, { headers: { "Accept":"application/json" } });
+      const js = await res.json();
+
+      if(!res.ok){
+        setBadge('warn');
+        document.getElementById('lastUpdated').textContent = nowVN();
+        return;
+      }
+
+      // format: { ok, data: [...], total } hoặc { data: [...], total }
+      const rows = (js && (js.data || (js.result && js.result.data))) || [];
+      patchTable(rows);
+
+      setBadge('ok');
+      document.getElementById('lastUpdated').textContent = nowVN();
+    }catch(e){
+      console.error(e);
+      setBadge('warn');
+      document.getElementById('lastUpdated').textContent = nowVN();
+    }
+  }
+
+  applyInitialFormatting();
+
+  // start polling
+  pollOnce();
+  setInterval(pollOnce, POLL_MS);
+</script>
+{% endblock %}
