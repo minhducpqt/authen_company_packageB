@@ -9,7 +9,7 @@
     Kết quả trúng đấu giá
   </h1>
   <p class="text-slate-500 text-sm mt-1">
-    Chọn dự án → xem lô, chọn khách đủ điều kiện và nhập <span class="font-semibold text-slate-800">giá trúng</span>.
+    Chọn dự án → xem lô, theo dõi <span class="font-semibold text-slate-800">kết quả trúng</span>.
   </p>
 </div>
 
@@ -68,17 +68,16 @@
   </div>
 
   <div class="flex items-center gap-3 ml-auto">
-    {# ✅ In tất cả (popup) #}
+    {# ✅ Present (open new tab) #}
     {% if project_id %}
       <button
         type="button"
-        class="h-10 px-4 rounded-xl bg-slate-200 text-slate-500 text-sm font-medium inline-flex items-center gap-2 cursor-not-allowed"
-        title="Đã tạm khóa chức năng in"
-        disabled
+        id="btnPresent"
+        class="h-10 px-4 rounded-xl bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 inline-flex items-center gap-2"
+        title="Mở màn hình trình chiếu kết quả (tab mới)"
       >
-        <i class="ri-printer-line"></i> In tất cả
+        <i class="ri-slideshow-2-line"></i> Present
       </button>
-
     {% endif %}
 
     {# ✅ Export #}
@@ -124,8 +123,6 @@
 
 <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
   <div class="overflow-x-auto">
-    {# ✅ FIX UI: cho phép scroll ngang nhẹ trên mobile (nếu cần) nhưng desktop sẽ fit,
-       cột Action luôn thấy vì đặt sticky #}
     <table class="min-w-[980px] w-full text-sm text-slate-700">
       <thead class="bg-slate-50 text-slate-500 border-b border-slate-200">
         <tr>
@@ -136,28 +133,12 @@
           <th class="px-4 py-2 text-right font-semibold">Giá khởi điểm</th>
           <th class="px-4 py-2 text-right font-semibold">Đặt trước</th>
           <th class="px-4 py-2 text-left font-semibold">Chốt</th>
-          <th class="px-4 py-2 text-center font-semibold">In</th>
-          <th class="px-4 py-2 text-right font-semibold sticky right-0 bg-slate-50">Hành động</th>
         </tr>
       </thead>
 
       <tbody class="divide-y divide-slate-100" id="lotsTbody">
       {% for r in rows %}
-        <tr class="hover:bg-slate-50 transition"
-            data-lot-code="{{ r.lot_code }}"
-            data-lot-name="{{ r.lot_name or '' }}"
-            data-starting-price="{{ r.starting_price_vnd or '' }}"
-            data-deposit="{{ r.deposit_vnd or '' }}"
-            data-result-status="{{ r.result_status or '' }}"
-            data-winner-id="{{ r.winner_customer_id or '' }}"
-            data-winner-name="{{ r.winner_name or '' }}"
-            data-winner-cccd="{{ r.winner_cccd or '' }}"
-            data-winning-price="{{ r.winning_price_vnd or '' }}"
-            data-finalized-by="{{ r.finalized_by or '' }}"
-            data-finalized-at="{{ r.finalized_at or '' }}"
-            data-note="{{ r.note or '' }}"
-            data-is-lucky-draw="{{ 1 if r.is_lucky_draw else 0 }}"
-        >
+        <tr class="hover:bg-slate-50 transition" data-lot-code="{{ r.lot_code }}">
           <td class="px-4 py-3 font-semibold text-slate-900 whitespace-nowrap">
             {{ r.lot_code }}
           </td>
@@ -204,39 +185,12 @@
             <div class="font-semibold text-slate-700">{{ r.finalized_by or '' }}</div>
             <div class="dt text-slate-500" data-iso="{{ r.finalized_at or '' }}">{{ r.finalized_at or '' }}</div>
           </td>
-
-          <td class="px-4 py-3 text-center whitespace-nowrap">
-            {% if (r.result_status or '') == 'WON' %}
-              <button
-                type="button"
-                class="h-9 w-9 rounded-xl bg-slate-200 text-slate-500 inline-flex items-center justify-center cursor-not-allowed"
-                title="Đã tạm khóa chức năng in"
-                disabled
-              >
-                <i class="ri-printer-line"></i>
-              </button>
-            {% else %}
-              <span class="text-slate-300">—</span>
-            {% endif %}
-
-          </td>
-
-          <td class="px-4 py-3 text-right whitespace-nowrap sticky right-0 bg-white">
-            <button type="button"
-              class="h-9 px-3 rounded-xl bg-slate-200 text-slate-500 text-sm font-medium cursor-not-allowed"
-              title="Đã tạm khóa nhập kết quả"
-              disabled
-            >
-              Nhập kết quả
-            </button>
-
-          </td>
         </tr>
       {% endfor %}
 
       {% if rows|length == 0 %}
         <tr>
-          <td colspan="9" class="px-4 py-6 text-center text-slate-400">
+          <td colspan="7" class="px-4 py-6 text-center text-slate-400">
             {% if project_id %}
               Không có lô phù hợp bộ lọc hiện tại.
             {% else %}
@@ -250,189 +204,14 @@
   </div>
 </div>
 
-<style>
-  .modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
-  .modal{
-    background:#fff;border:1px solid #e5e7eb;border-radius:18px;
-    max-width:760px;width:100%;
-    box-shadow:0 20px 60px rgba(15,23,42,.25);
-    overflow:visible;
-    position:relative;
-  }
-  .modal-h{padding:14px 16px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between}
-  .modal-b{padding:16px; overflow:visible;}
-  .modal-f{padding:14px 16px;border-top:1px solid #e5e7eb;display:flex;gap:10px;justify-content:flex-end}
-  .toast{position:fixed;right:16px;bottom:16px;z-index:60;display:none}
-
-  .ac-wrap{position:relative}
-  .ac-panel{
-    position:absolute; left:0; right:0; top:100%;
-    margin-top:6px;
-    background:#fff;
-    border:1px solid #e5e7eb;
-    border-radius:14px;
-    box-shadow:0 16px 40px rgba(15,23,42,.12);
-    max-height: 280px;
-    overflow:auto;
-    display:none;
-    z-index: 120;
-  }
-  .ac-item{padding:10px 12px; cursor:pointer; font-size:13px; line-height:1.2}
-  .ac-item:hover{background:#f1f5f9}
-  .ac-empty{padding:10px 12px; color:#94a3b8; font-size:13px}
-  .ac-meta{color:#64748b; font-size:12px; margin-top:2px}
-
-  /* ✅ modal in */
-  .print-modal{
-    max-width: 980px;
-    width: 100%;
-    height: min(86vh, 860px);
-    display:flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  .print-body{
-    padding:0;
-    flex:1;
-    overflow:hidden;
-    background:#fff;
-  }
-  .print-frame{
-    width:100%;
-    height:100%;
-    border:0;
-    background:#fff;
-  }
-</style>
-
-<!-- Modal nhập kết quả (giữ nguyên logic) -->
-<div id="resultModal" class="modal-backdrop" onclick="backdropClose(event)">
-  <div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-h">
-      <div>
-        <div class="text-sm text-slate-500">Nhập kết quả</div>
-        <div class="text-lg font-bold text-slate-900" id="mLotTitle">—</div>
-      </div>
-      <button class="h-9 w-9 rounded-xl border border-slate-200 hover:bg-slate-50" onclick="closeResultModal()">
-        <i class="ri-close-line text-xl text-slate-700"></i>
-      </button>
-    </div>
-
-    <div class="modal-b">
-      <div class="grid grid-cols-12 gap-3">
-        <div class="col-span-12 md:col-span-6">
-          <label class="text-xs font-semibold text-slate-500">Trạng thái</label>
-          <div class="mt-2 flex flex-wrap gap-2">
-            <label class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer">
-              <input type="radio" name="mStatus" value="WON" checked onchange="renderStatusFields(true)">
-              <span class="text-sm font-semibold text-emerald-700">WON</span>
-            </label>
-            <label class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer">
-              <input type="radio" name="mStatus" value="NO_SALE" onchange="renderStatusFields(true)">
-              <span class="text-sm font-semibold text-amber-700">NO_SALE</span>
-            </label>
-            <label class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer">
-              <input type="radio" name="mStatus" value="CANCELED" onchange="renderStatusFields(true)">
-              <span class="text-sm font-semibold text-rose-700">CANCELED</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="col-span-12 md:col-span-6">
-          <label class="text-xs font-semibold text-slate-500">Ghi chú (optional)</label>
-          <input id="mNote" class="mt-2 h-10 w-full rounded-xl border px-3 text-sm" placeholder="VD: Điều chỉnh giá trúng vì kiểm phiếu nhầm ...">
-        </div>
-
-        <div id="wonFields" class="col-span-12 grid grid-cols-12 gap-3 mt-1">
-          <div class="col-span-12 md:col-span-7">
-            <label class="text-xs font-semibold text-slate-500">Chọn khách đủ điều kiện</label>
-
-            <div class="ac-wrap">
-              <input id="mCustomerInput" class="mt-2 h-10 w-full rounded-xl border px-3 text-sm"
-                     placeholder="Gõ tên / CCCD / SĐT..."
-                     autocomplete="off"
-                     onfocus="openCustomerDropdown()"
-                     oninput="onCustomerInputChanged()"
-                     onkeydown="onCustomerKeydown(event)">
-              <input type="hidden" id="mCustomerId">
-              <div id="acPanel" class="ac-panel"></div>
-            </div>
-
-            <div class="text-xs text-slate-500 mt-1" id="mCustomerHint"></div>
-          </div>
-
-          <div class="col-span-12 md:col-span-5">
-            <label class="text-xs font-semibold text-slate-500">Giá trúng (VND)</label>
-            <input id="mPrice" type="text" inputmode="numeric"
-                   class="mt-2 h-10 w-full rounded-xl border px-3 text-sm"
-                   placeholder="VD: 12.345.000.000">
-            <div class="text-xs text-slate-500 mt-1">Chỉ nhận số nguyên VND (không có phần thập phân).</div>
-          </div>
-
-          <div class="col-span-12">
-            <label class="inline-flex items-center gap-2 mt-1 cursor-pointer select-none">
-              <input id="mLuckyDraw" type="checkbox" class="h-4 w-4 rounded border-slate-300">
-              <span class="text-sm text-slate-700">
-                Trúng theo hình thức <span class="font-semibold">Bốc thăm</span>
-              </span>
-            </label>
-            <div class="text-xs text-slate-500 mt-1">Mặc định không tích. Chỉ tích khi lô trúng là bốc thăm.</div>
-          </div>
-        </div>
-
-        <div class="col-span-12">
-          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-600">
-            <div class="flex flex-wrap gap-3">
-              <div><span class="font-semibold text-slate-800">Mã lô:</span> <span id="mLotCode">—</span></div>
-              <div><span class="font-semibold text-slate-800">Giá khởi điểm:</span> <span id="mStartingPrice">—</span></div>
-              <div><span class="font-semibold text-slate-800">Tiền đặt trước:</span> <span id="mDeposit">—</span></div>
-            </div>
-            <input type="hidden" id="mStartingRaw">
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <div class="modal-f">
-      <button class="h-10 px-4 rounded-xl border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              onclick="closeResultModal()">Đóng</button>
-      <button id="mSaveBtn" class="h-10 px-4 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700"
-              onclick="saveResult()">Lưu</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal IN (popup, không rời trang) -->
-<div id="printModal" class="modal-backdrop" onclick="printBackdropClose(event)">
-  <div class="modal print-modal" onclick="event.stopPropagation()">
-    <div class="modal-h">
-      <div>
-        <div class="text-sm text-slate-500">In phiếu</div>
-        <div class="text-lg font-bold text-slate-900" id="pTitle">—</div>
-      </div>
-      <div class="flex items-center gap-2">
-        <button class="h-9 px-3 rounded-xl bg-slate-200 text-slate-500 text-sm cursor-not-allowed"
-                title="Đã tạm khóa chức năng in"
-                disabled>
-          <i class="ri-printer-line"></i> In
-        </button>
-
-        <button class="h-9 w-9 rounded-xl border border-slate-200 hover:bg-slate-50" onclick="closePrintModal()">
-          <i class="ri-close-line text-xl text-slate-700"></i>
-        </button>
-      </div>
-    </div>
-    <div class="print-body">
-      <iframe id="printFrame" class="print-frame" src="about:blank"></iframe>
-    </div>
-  </div>
-</div>
-
 <!-- Toast -->
 <div id="toast" class="toast">
   <div class="bg-slate-900 text-white text-sm px-4 py-3 rounded-xl shadow-lg" id="toastMsg">OK</div>
 </div>
+
+<style>
+  .toast{position:fixed;right:16px;bottom:16px;z-index:60;display:none}
+</style>
 
 <script>
   const PROJECT_ID = {{ project_id or 'null' }};
@@ -491,17 +270,7 @@
     window.location.assign(u.toString());
   });
 
-  // ===== MODAL / DATA =====
-  let CURRENT_ROW = null;
-  let CURRENT_LOT_CODE = '';
-  let ELIGIBLE_CUSTOMERS = [];
-  let ELIGIBLE_LOADED_FOR_LOT = '';
-  let AC_OPEN = false;
-  let AC_ACTIVE_INDEX = -1;
-  let CUSTOMER_TOUCHED = false;
-
-  let AC_LAST_LIST = [];
-
+  // ===== TOAST =====
   function toast(msg){
     const t = document.getElementById('toast');
     const m = document.getElementById('toastMsg');
@@ -510,11 +279,7 @@
     setTimeout(()=> t.style.display='none', 2200);
   }
 
-  function backdropClose(e){
-    if(e.target && e.target.id === 'resultModal') closeResultModal();
-  }
-
-  // ===== MONEY HELPERS =====
+  // ===== MONEY HELPERS (for table render) =====
   function digitsOnly(v){
     let s = String(v ?? '').trim();
     if(!s) return '';
@@ -543,49 +308,6 @@
     return out;
   }
 
-  function parseMoneyVNDInt(s){
-    const d = digitsOnly(s);
-    if(!d) return null;
-    const n = Number(d);
-    if(!Number.isFinite(n) || n <= 0) return null;
-    if(d.length >= 16) return d;
-    return Math.trunc(n);
-  }
-
-  function formatMoneyInput(el){
-    const raw = String(el.value ?? '');
-    const start = el.selectionStart ?? raw.length;
-
-    const digitsBeforeCaret = raw.slice(0, start).replace(/\D/g, '').length;
-    const digits = raw.replace(/\D/g, '');
-
-    if(!digits){
-      el.value = '';
-      return;
-    }
-
-    const formatted = groupVi(digits);
-    el.value = formatted;
-
-    let pos = 0;
-    let seen = 0;
-    while(pos < formatted.length){
-      const ch = formatted.charCodeAt(pos);
-      if(ch >= 48 && ch <= 57){
-        seen++;
-        if(seen >= digitsBeforeCaret){
-          pos++;
-          break;
-        }
-      }
-      pos++;
-    }
-    if(digitsBeforeCaret === 0) pos = 0;
-    if(pos > formatted.length) pos = formatted.length;
-
-    try{ el.setSelectionRange(pos, pos); }catch(_){}
-  }
-
   function formatVNDInt(v){
     const d = digitsOnly(v);
     return d ? groupVi(d) : '';
@@ -598,21 +320,6 @@
       el.textContent = f || '—';
     });
   }
-
-  document.getElementById('mPrice')?.addEventListener('keydown', (e)=>{
-    if(e.key !== 'Backspace' && e.key !== 'Delete') return;
-    const el = e.target;
-    const v = el.value || '';
-    const p = el.selectionStart ?? 0;
-    if(p > 0 && v[p-1] === '.'){
-      e.preventDefault();
-      try{ el.setSelectionRange(p-1, p-1); }catch(_){}
-    }
-  });
-
-  document.getElementById('mPrice')?.addEventListener('input', (e)=>{
-    formatMoneyInput(e.target);
-  });
 
   // ===== DATETIME =====
   function pad2(n){ return String(n).padStart(2,'0'); }
@@ -639,390 +346,37 @@
   formatAllMoneyCells();
   formatAllDateCells();
 
-  function getStatus(){
-    const r = document.querySelector('input[name="mStatus"]:checked');
-    return r ? r.value : 'WON';
-  }
+  // ===== PRESENT (open tab) =====
+  function buildPresentUrl(){
+    // Chưa làm trang present thật — chỉ gắn action.
+    // Giữ filter giống trang hiện tại.
+    const u = currentUrl();
 
-  function openResultModal(btn){
-    const tr = btn.closest('tr');
-    CURRENT_ROW = tr;
-
-    const lotCode = tr.dataset.lotCode || '';
-    const lotName = tr.dataset.lotName || '';
-    const startingPrice = tr.dataset.startingPrice || '';
-    const deposit = tr.dataset.deposit || '';
-    const rs = (tr.dataset.resultStatus || '').toUpperCase();
-    const winnerId = tr.dataset.winnerId || '';
-    const winnerName = tr.dataset.winnerName || '';
-    const winnerCccd = tr.dataset.winnerCccd || '';
-    const winningPrice = tr.dataset.winningPrice || '';
-    const note = tr.dataset.note || '';
-    const lucky = tr.dataset.isLuckyDraw || '0';
-
-    CURRENT_LOT_CODE = lotCode;
-
-    document.getElementById('mLotTitle').textContent = `${lotCode} — ${lotName || '-'}`;
-    document.getElementById('mLotCode').textContent = lotCode || '—';
-    document.getElementById('mStartingPrice').textContent = formatVNDInt(startingPrice) || '—';
-    document.getElementById('mDeposit').textContent = formatVNDInt(deposit) || '—';
-    document.getElementById('mStartingRaw').value = String(startingPrice || '');
-
-    document.getElementById('mNote').value = note || '';
-
-    document.getElementById('mLuckyDraw').checked = (String(lucky) === '1' || String(lucky).toLowerCase() === 'true');
-
-    const radios = document.querySelectorAll('input[name="mStatus"]');
-    let set = false;
-    radios.forEach(r=>{
-      if(rs && r.value === rs){ r.checked=true; set=true; }
-    });
-    if(!set){
-      radios.forEach(r=> r.checked = (r.value === 'WON'));
+    const project = u.searchParams.get('project') || '';
+    if(!project){
+      return null;
     }
 
-    document.getElementById('mPrice').value = winningPrice ? groupVi(digitsOnly(winningPrice)) : '';
+    const q = u.searchParams.get('q') || '';
+    const rs = u.searchParams.get('result_status') || '';
+    const size = u.searchParams.get('size') || '';
 
-    CUSTOMER_TOUCHED = false;
-    const label = (winnerName ? `${winnerName}${winnerCccd ? ' — ' + winnerCccd : ''}` : '');
-    document.getElementById('mCustomerInput').value = label || '';
-    document.getElementById('mCustomerId').value = winnerId || '';
-    document.getElementById('mCustomerHint').textContent = '';
+    const p = new URL(window.location.origin + "/auction/results/present");
+    p.searchParams.set('project', project);
+    if(q) p.searchParams.set('q', q);
+    if(rs) p.searchParams.set('result_status', rs);
+    if(size) p.searchParams.set('size', size);
 
-    document.getElementById('resultModal').style.display='flex';
-
-    closeCustomerDropdown();
-    AC_ACTIVE_INDEX = -1;
-    AC_LAST_LIST = [];
-
-    renderStatusFields(false);
-
-    if(getStatus() === 'WON'){
-      ensureEligibleLoadedForCurrentLot(true);
-    }
+    return p.toString();
   }
 
-  function closeResultModal(){
-    document.getElementById('resultModal').style.display='none';
-    CURRENT_ROW = null;
-    CURRENT_LOT_CODE = '';
-    closeCustomerDropdown();
-    AC_ACTIVE_INDEX = -1;
-    CUSTOMER_TOUCHED = false;
-    AC_LAST_LIST = [];
-  }
-
-  function renderStatusFields(fromUserChange){
-    const status = getStatus();
-    const won = document.getElementById('wonFields');
-
-    if(status === 'WON'){
-      won.style.display = '';
-      if(fromUserChange){
-        ensureEligibleLoadedForCurrentLot(true);
-      }
-    }else{
-      won.style.display = 'none';
-      closeCustomerDropdown();
-    }
-  }
-
-  async function ensureEligibleLoadedForCurrentLot(force){
-    if(!CURRENT_LOT_CODE) return;
-
-    if(!force && ELIGIBLE_LOADED_FOR_LOT === CURRENT_LOT_CODE && ELIGIBLE_CUSTOMERS.length){
-      document.getElementById('mCustomerHint').textContent = `Có ${ELIGIBLE_CUSTOMERS.length} khách cho lô này.`;
+  document.getElementById('btnPresent')?.addEventListener('click', ()=>{
+    const url = buildPresentUrl();
+    if(!url){
+      toast("Vui lòng chọn dự án trước");
       return;
     }
-
-    const selectedId = document.getElementById('mCustomerId').value || '';
-    await loadEligibleCustomers(PROJECT_ID, CURRENT_LOT_CODE, selectedId);
-  }
-
-  async function loadEligibleCustomers(projectId, lotCode, selectedId){
-    document.getElementById('mCustomerHint').textContent = 'Đang tải danh sách khách...';
-    try{
-      const url = `/auction/results/api/projects/${projectId}/lots/${encodeURIComponent(lotCode)}/eligible-customers?limit=2000&include_unpaid=true`;
-      const r = await fetch(url, { headers: { "Accept": "application/json" } });
-      const js = await r.json();
-
-      if(!r.ok){
-        toast("Lỗi tải danh sách khách");
-        document.getElementById('mCustomerHint').textContent = 'Lỗi tải danh sách.';
-        return;
-      }
-
-      ELIGIBLE_CUSTOMERS = (js.data || []).map(x => ({
-        customer_id: x.customer_id ?? x.id ?? x.customerId,
-        full_name: x.full_name || x.customer_full_name || '',
-        cccd: x.cccd || '',
-        phone: x.phone || '',
-        deposit_paid: x.deposit_paid === true || x.status === 'PAID',
-        registered_at: x.registered_at || x.paid_at || ''
-      })).filter(x => x.customer_id);
-
-      ELIGIBLE_LOADED_FOR_LOT = lotCode;
-
-      document.getElementById('mCustomerHint').textContent =
-        `Có ${ELIGIBLE_CUSTOMERS.length} khách cho lô này.`;
-
-      if(selectedId){
-        const picked = ELIGIBLE_CUSTOMERS.find(x => String(x.customer_id) === String(selectedId));
-        if(picked){
-          document.getElementById('mCustomerInput').value = customerLabel(picked);
-          document.getElementById('mCustomerId').value = String(picked.customer_id);
-          CUSTOMER_TOUCHED = false;
-        }
-      }
-
-      const inp = document.getElementById('mCustomerInput');
-      if(document.activeElement === inp){
-        openCustomerDropdown();
-        renderCustomerPanel(filteredCustomers(false));
-      }
-    }catch(e){
-      console.error(e);
-      toast("Lỗi kết nối khi tải khách");
-      document.getElementById('mCustomerHint').textContent = 'Lỗi kết nối.';
-    }
-  }
-
-  function customerLabel(x){
-    const pieces = [];
-    if(x.full_name) pieces.push(x.full_name);
-    if(x.cccd) pieces.push(x.cccd);
-    if(x.phone) pieces.push(x.phone);
-    return pieces.join(" — ");
-  }
-
-  function openCustomerDropdown(){
-    if(getStatus() !== 'WON') return;
-    const panel = document.getElementById('acPanel');
-    panel.style.display = 'block';
-    AC_OPEN = true;
-    renderCustomerPanel(filteredCustomers(false));
-  }
-
-  function closeCustomerDropdown(){
-    const panel = document.getElementById('acPanel');
-    panel.style.display = 'none';
-    AC_OPEN = false;
-    AC_ACTIVE_INDEX = -1;
-    AC_LAST_LIST = [];
-  }
-
-  document.addEventListener('mousedown', (e)=>{
-    const wrap = document.querySelector('.ac-wrap');
-    if(!wrap) return;
-    if(!wrap.contains(e.target)){
-      closeCustomerDropdown();
-      noteResetIfUserDidNotPick();
-    }
+    window.open(url, "_blank", "noopener,noreferrer");
   });
-
-  function noteResetIfUserDidNotPick(){
-    if(!CUSTOMER_TOUCHED) return;
-
-    const inp = document.getElementById('mCustomerInput');
-    const hid = document.getElementById('mCustomerId');
-
-    if(hid.value){
-      const picked = ELIGIBLE_CUSTOMERS.find(x => String(x.customer_id) === String(hid.value));
-      const lbl = picked ? customerLabel(picked) : '';
-      if(lbl && inp.value.trim() !== lbl.trim()){
-        hid.value = '';
-      }
-    }
-  }
-
-  function renderCustomerPanel(list){
-    const panel = document.getElementById('acPanel');
-    if(!AC_OPEN) return;
-
-    AC_LAST_LIST = Array.isArray(list) ? list : [];
-
-    if(!ELIGIBLE_CUSTOMERS.length){
-      panel.innerHTML = `<div class="ac-empty">Danh sách đang tải hoặc không có dữ liệu.</div>`;
-      return;
-    }
-
-    if(!list.length){
-      panel.innerHTML = `<div class="ac-empty">Không có kết quả.</div>`;
-      return;
-    }
-
-    panel.innerHTML = list.map((x, idx)=>{
-      const safe = (s)=> (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      const label = safe(customerLabel(x));
-      const metaParts = [];
-      if(x.deposit_paid) metaParts.push('✓ đã đặt');
-      if(x.registered_at) metaParts.push(formatISOToVN(x.registered_at));
-      const meta = safe(metaParts.join(' • '));
-      const activeClass = (idx === AC_ACTIVE_INDEX) ? 'style="background:#f1f5f9"' : '';
-      return `
-        <div class="ac-item" ${activeClass} data-idx="${idx}" onclick="pickCustomerByIndex(${idx})">
-          <div class="font-semibold text-slate-900">${label || ('KH#' + x.customer_id)}</div>
-          ${meta ? `<div class="ac-meta">${meta}</div>` : ``}
-        </div>
-      `;
-    }).join('');
-  }
-
-  function filteredCustomers(useCurrentText=true){
-    const kw = useCurrentText ? (document.getElementById('mCustomerInput').value || '').trim().toLowerCase() : '';
-    if(!kw) return ELIGIBLE_CUSTOMERS.slice(0, 200);
-    const f = ELIGIBLE_CUSTOMERS.filter(x => (customerLabel(x)||'').toLowerCase().includes(kw));
-    return f.slice(0, 200);
-  }
-
-  function onCustomerInputChanged(){
-    CUSTOMER_TOUCHED = true;
-    noteResetIfUserDidNotPick();
-    if(!AC_OPEN) openCustomerDropdown();
-    const list = filteredCustomers(true);
-    AC_ACTIVE_INDEX = list.length ? 0 : -1;
-    renderCustomerPanel(list);
-  }
-
-  function pickCustomerByIndex(i){
-    const list = (Array.isArray(AC_LAST_LIST) && AC_LAST_LIST.length)
-      ? AC_LAST_LIST
-      : filteredCustomers(true);
-
-    const x = list[i];
-    if(!x) return;
-    document.getElementById('mCustomerInput').value = customerLabel(x);
-    document.getElementById('mCustomerId').value = String(x.customer_id);
-    CUSTOMER_TOUCHED = false;
-    closeCustomerDropdown();
-  }
-
-  function onCustomerKeydown(e){
-    if(!AC_OPEN) return;
-
-    const list = (Array.isArray(AC_LAST_LIST) && AC_LAST_LIST.length)
-      ? AC_LAST_LIST
-      : filteredCustomers(true);
-
-    if(!list.length) return;
-
-    if(e.key === 'ArrowDown'){
-      e.preventDefault();
-      AC_ACTIVE_INDEX = Math.min(list.length - 1, AC_ACTIVE_INDEX + 1);
-      renderCustomerPanel(list);
-      scrollActiveIntoView();
-    }else if(e.key === 'ArrowUp'){
-      e.preventDefault();
-      AC_ACTIVE_INDEX = Math.max(0, AC_ACTIVE_INDEX - 1);
-      renderCustomerPanel(list);
-      scrollActiveIntoView();
-    }else if(e.key === 'Enter'){
-      e.preventDefault();
-      pickCustomerByIndex(Math.max(0, AC_ACTIVE_INDEX));
-    }else if(e.key === 'Escape'){
-      e.preventDefault();
-      closeCustomerDropdown();
-    }
-  }
-
-  function scrollActiveIntoView(){
-    const panel = document.getElementById('acPanel');
-    const el = panel.querySelector(`.ac-item[data-idx="${AC_ACTIVE_INDEX}"]`);
-    if(el) el.scrollIntoView({ block: 'nearest' });
-  }
-
-  async function saveResult(){
-    if(!CURRENT_ROW) return;
-
-    const lotCode = CURRENT_ROW.dataset.lotCode;
-    const status = getStatus();
-    const note = (document.getElementById('mNote').value || '').trim();
-    const isLuckyDraw = document.getElementById('mLuckyDraw')?.checked === true;
-
-    let payload = { result_status: status, note: note || null, is_lucky_draw: isLuckyDraw };
-
-    if(status === 'WON'){
-      const winnerId = document.getElementById('mCustomerId').value;
-      const priceParsed = parseMoneyVNDInt(document.getElementById('mPrice').value);
-
-      if(!winnerId){
-        toast("Bạn chưa chọn khách trúng (hãy chọn từ danh sách gợi ý)");
-        document.getElementById('mCustomerInput')?.focus();
-        openCustomerDropdown();
-        return;
-      }
-      if(!priceParsed){
-        toast("Giá trúng không hợp lệ");
-        return;
-      }
-
-      payload.winner_customer_id = Number(winnerId);
-      payload.winning_price_vnd = priceParsed;
-    }
-
-    const btn = document.getElementById('mSaveBtn');
-    btn.disabled = true;
-    btn.textContent = "Đang lưu...";
-
-    try{
-      const r = await fetch(`/auction/results/api/projects/${PROJECT_ID}/lots/${encodeURIComponent(lotCode)}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      const js = await r.json();
-      if(!r.ok || !js.ok){
-        console.error(js);
-        toast("Lưu thất bại (xem log)");
-        return;
-      }
-
-      toast("Đã lưu kết quả");
-      closeResultModal();
-      window.location.reload();
-    }catch(e){
-      console.error(e);
-      toast("Lỗi kết nối khi lưu");
-    }finally{
-      btn.disabled = false;
-      btn.textContent = "Lưu";
-    }
-  }
-
-  // ===== PRINT POPUP =====
-  function printBackdropClose(e){
-    if(e.target && e.target.id === 'printModal') closePrintModal();
-  }
-  function closePrintModal(){
-    document.getElementById('printModal').style.display = 'none';
-    document.getElementById('printFrame').src = 'about:blank';
-  }
-  function printUrlForLot(projectId, lotCode){
-    return window.location.origin + "/auction/prints/projects/" + projectId + "/lots/" + encodeURIComponent(lotCode);
-  }
-  function printUrlForProject(projectId){
-    return window.location.origin + "/auction/prints/projects/" + projectId;
-  }
-  function openPrintModal(lotCode){
-    if(!PROJECT_ID){ toast("Bạn chưa chọn dự án"); return; }
-    document.getElementById('pTitle').textContent = `In phiếu — ${lotCode}`;
-    document.getElementById('printFrame').src = printUrlForLot(PROJECT_ID, lotCode);
-    document.getElementById('printModal').style.display = 'flex';
-  }
-  function openPrintAllModal(){
-    if(!PROJECT_ID){ toast("Bạn chưa chọn dự án"); return; }
-    document.getElementById('pTitle').textContent = `In tất cả phiếu trúng — Project #${PROJECT_ID}`;
-    document.getElementById('printFrame').src = printUrlForProject(PROJECT_ID);
-    document.getElementById('printModal').style.display = 'flex';
-  }
-  function triggerFramePrint(){
-    const fr = document.getElementById('printFrame');
-    try{
-      fr.contentWindow.focus();
-      fr.contentWindow.print();
-    }catch(e){
-      toast("Không thể gọi in trực tiếp. Hãy dùng Ctrl/Cmd+P trong khung.");
-    }
-  }
 </script>
 {% endblock %}
