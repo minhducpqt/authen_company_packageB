@@ -225,7 +225,7 @@
           </li>
 
         {# =========================================================
-           MENU: ACCOUNTANT (CẮT RIÊNG, KHÔNG DÙNG MENU ADMIN)
+           MENU: ACCOUNTANT (GIỮ NGUYÊN)
            ========================================================= #}
         {% elif is_accountant %}
 
@@ -317,9 +317,9 @@
           </li>
 
         {# =========================================================
-           MENU: STAFF/VIEWER (CẮT RIÊNG, KHÔNG DÙNG MENU ADMIN)
+           MENU: STAFF (GIỮ NGUYÊN NHƯ HIỆN TẠI)
            ========================================================= #}
-        {% elif is_staff or is_viewer %}
+        {% elif is_staff %}
 
           {# ===== 1. Dự án & Giao dịch (FULL 1.1-1.3) ===== #}
           <li class="side-title mt-0">1. Dự án & Giao dịch</li>
@@ -384,6 +384,41 @@
             <a class="side-link {% if request.url.path.startswith('/auction/results') %}active{% endif %}"
                href="/auction/results">
               <i class="ri-auction-line"></i> 5.4 Kết quả trúng đấu giá
+            </a>
+          </li>
+
+        {# =========================================================
+           MENU: VIEWER (CHỈ HIỆN 2.1, 2.2, 4.0, 4.1) - YÊU CẦU MỚI
+           ========================================================= #}
+        {% elif is_viewer %}
+
+          {# ===== 2. Giao dịch (CHỈ 2.1-2.2) ===== #}
+          <li class="side-title mt-0">2. Giao dịch</li>
+          <li>
+            <a class="side-link {% if request.url.path == '/transactions/dossiers' %}active{% endif %}"
+               href="/transactions/dossiers">
+              <i class="ri-file-list-2-line"></i> 2.1 Mua hồ sơ
+            </a>
+          </li>
+          <li>
+            <a class="side-link {% if request.url.path == '/transactions/deposits' %}active{% endif %}"
+               href="/transactions/deposits">
+              <i class="ri-hand-coin-line"></i> 2.2 Đặt cọc
+            </a>
+          </li>
+
+          {# ===== 4. Khách hàng (CHỈ 4.0-4.1) ===== #}
+          <li class="side-title mt-4">4. Khách hàng</li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/customers') and not request.url.path.startswith('/customers/documents') %}active{% endif %}"
+               href="/customers">
+              <i class="ri-team-line"></i> 4.0 Danh sách khách
+            </a>
+          </li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/_admin/customer-documents') %}active{% endif %}"
+               href="/_admin/customer-documents">
+              <i class="ri-file-shield-2-line"></i> 4.1 Giấy tờ phải nộp
             </a>
           </li>
 
