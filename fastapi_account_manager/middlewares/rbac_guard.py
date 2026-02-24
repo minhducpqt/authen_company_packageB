@@ -20,7 +20,6 @@ RBAC_ALLOW_PREFIXES = (
     "/apis/mobile/",  # ✅ NEW mobile gateway
 )
 
-
 # ===== ADMIN-ONLY PATHS (DENY LIST) =====
 ADMIN_ONLY_PREFIXES = (
     "/reports",
@@ -34,13 +33,25 @@ ADMIN_ONLY_PREFIXES = (
 )
 
 # ===== EXCEPTIONS: Non-admin vẫn được phép vào một số report export =====
+# NOTE: Fix bug thiếu dấu phẩy trong tuple ("/auction/results" "/announcements" -> bị dính chuỗi)
 REPORTS_NON_ADMIN_ALLOW_PREFIXES = (
     "/reports/dossiers/paid/detail/export",
     "/reports/dossiers/paid/summary/customer/export",
     "/reports/dossiers/paid/summary/types/export",
+
+    # (Các đường dẫn bạn đang cho phép non-admin vào)
     "/projects/payment-accounts",
-    "/auction",
-    "/announcements"
+    "/auction/sessions",
+    "/auction/results",
+    "/announcements",
+)
+
+# ===== ACCOUNTANT: mở rộng hơn STAFF/VIEWER =====
+# - /invoice-exports: thường không nằm trong ADMIN_ONLY_PREFIXES, nhưng allow rõ ràng cho chắc
+# - /auction/refunds: bị chặn bởi prefix "/auction" trong ADMIN_ONLY_PREFIXES nên cần allow
+ACCOUNTANT_ALLOW_PREFIXES = (
+    "/invoice-exports",
+    "/auction/refunds",
 )
 
 # ===== Helpers =====
@@ -97,10 +108,15 @@ def _is_reports_exception_allowed_for_non_admin(path: str) -> bool:
     return any(path.startswith(p) for p in REPORTS_NON_ADMIN_ALLOW_PREFIXES)
 
 
-def _is_admin_only(path: str) -> bool:
-    # ✅ ngoại lệ: cho non-admin đi vào đúng các report export cần thiết
+def _is_admin_only(path: str, role: str) -> bool:
+    # ✅ ngoại lệ: cho non-admin đi vào đúng các report export / allow-list cần thiết
     if _is_reports_exception_allowed_for_non_admin(path):
         return False
+
+    # ✅ ACCOUNTANT được phép vào thêm các prefix này (override deny-list)
+    if role == "ACCOUNTANT" and any(path.startswith(p) for p in ACCOUNTANT_ALLOW_PREFIXES):
+        return False
+
     return any(path.startswith(p) for p in ADMIN_ONLY_PREFIXES)
 
 
@@ -141,7 +157,7 @@ async def rbac_guard_middleware(request, call_next):
     logical_path = _normalize_path(path)
 
     # ❌ Non-admin + admin-only path => chặn
-    if _is_admin_only(logical_path):
+    if _is_admin_only(logical_path, role):
         if _is_api_like(path):
             return JSONResponse(
                 {"error": "forbidden", "role": role},
