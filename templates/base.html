@@ -12,10 +12,11 @@
 <body class="bg-slate-50">
   {% set logged_in = is_logged_in(request) %}
 
-  {# ===== Role flags (theo quy ước bạn chốt) ===== #}
+  {# ===== Role flags ===== #}
   {% set user_role = (request.cookies.get('user_role') or 'VIEWER')|upper %}
   {% set is_admin = (user_role == 'COMPANY_ADMIN') %}
-  {% set is_staff_like = (user_role in ['STAFF', 'VIEWER', 'ACCOUNTANT']) %}
+  {% set is_staff = (user_role == 'STAFF') %}
+  {% set is_viewer = (user_role == 'VIEWER') %}
   {% set is_accountant = (user_role == 'ACCOUNTANT') %}
 
   <!-- ===== Header ===== -->
@@ -89,155 +90,307 @@
     <aside id="appSidebarScroll" class="app-sidebar w-64 bg-white rounded-xl border border-slate-200 h-[84vh] overflow-y-auto">
       <ul class="p-2">
 
-        {# ✅ Dashboard/Tổng quan: CHỈ ADMIN #}
+        {# =========================================================
+           MENU: ADMIN (GIỮ Y NGUYÊN BẢN GỐC)
+           ========================================================= #}
         {% if is_admin %}
-        <li class="side-title mt-0">Dashboard</li>
-        <li>
-          <a class="side-link {% if request.url.path in ['/', '/reports'] %}active{% endif %}"
-             href="/reports">
-            <i class="ri-bar-chart-2-line"></i> Tổng quan
-          </a>
-        </li>
-        {% endif %}
 
-        {# ===== 1. Dự án & Giao dịch (Admin full) ===== #}
-        {% if is_admin %}
-        <li class="side-title mt-4">1. Dự án & Giao dịch</li>
-        <li>
-          <a class="side-link {% if request.url.path.startswith('/projects') and not request.url.path.startswith('/projects/payment-accounts') %}active{% endif %}"
-             href="/projects">
-            <i class="ri-community-line"></i> 1.1 Quản lý dự án
-          </a>
-        </li>
-        <li>
-          <a class="side-link {% if request.url.path.startswith('/projects/payment-accounts') %}active{% endif %}"
-             href="/projects/payment-accounts">
-            <i class="ri-cash-line"></i> 1.2 Cấu hình nhận tiền
-          </a>
-        </li>
-        <li>
-          <a class="side-link {% if request.url.path.startswith('/announcements') %}active{% endif %}"
-             href="/announcements">
-            <i class="ri-megaphone-line"></i> 1.3 Quản lý thông báo
-          </a>
-        </li>
-        {% endif %}
+          {# ✅ Dashboard/Tổng quan: CHỈ ADMIN #}
+          <li class="side-title mt-0">Dashboard</li>
+          <li>
+            <a class="side-link {% if request.url.path in ['/', '/reports'] %}active{% endif %}"
+               href="/reports">
+              <i class="ri-bar-chart-2-line"></i> Tổng quan
+            </a>
+          </li>
 
-        {# ===== 2. Giao dịch ===== #}
-        <li class="side-title mt-4">2. Giao dịch</li>
+          {# ===== 1. Dự án & Giao dịch (Admin full) ===== #}
+          <li class="side-title mt-4">1. Dự án & Giao dịch</li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/projects') and not request.url.path.startswith('/projects/payment-accounts') %}active{% endif %}"
+               href="/projects">
+              <i class="ri-community-line"></i> 1.1 Quản lý dự án
+            </a>
+          </li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/projects/payment-accounts') %}active{% endif %}"
+               href="/projects/payment-accounts">
+              <i class="ri-cash-line"></i> 1.2 Cấu hình nhận tiền
+            </a>
+          </li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/announcements') %}active{% endif %}"
+               href="/announcements">
+              <i class="ri-megaphone-line"></i> 1.3 Quản lý thông báo
+            </a>
+          </li>
 
-        {% if is_admin or is_staff_like %}
-        <li>
-          <a class="side-link {% if request.url.path == '/transactions/dossiers' %}active{% endif %}"
-             href="/transactions/dossiers">
-            <i class="ri-file-list-2-line"></i> 2.1 Mua hồ sơ
-          </a>
-        </li>
-        <li>
-          <a class="side-link {% if request.url.path == '/transactions/deposits' %}active{% endif %}"
-             href="/transactions/deposits">
-            <i class="ri-hand-coin-line"></i> 2.2 Đặt cọc
-          </a>
-        </li>
-        {% endif %}
+          {# ===== 2. Giao dịch ===== #}
+          <li class="side-title mt-4">2. Giao dịch</li>
+          <li>
+            <a class="side-link {% if request.url.path == '/transactions/dossiers' %}active{% endif %}"
+               href="/transactions/dossiers">
+              <i class="ri-file-list-2-line"></i> 2.1 Mua hồ sơ
+            </a>
+          </li>
+          <li>
+            <a class="side-link {% if request.url.path == '/transactions/deposits' %}active{% endif %}"
+               href="/transactions/deposits">
+              <i class="ri-hand-coin-line"></i> 2.2 Đặt cọc
+            </a>
+          </li>
+          <li>
+            <a class="side-link {% if request.url.path == '/transactions/summary' %}active{% endif %}"
+               href="/transactions/summary">
+              <i class="ri-dashboard-line"></i> 2.3 Tổng hợp
+            </a>
+          </li>
 
-        {% if is_admin %}
-        <li>
-          <a class="side-link {% if request.url.path == '/transactions/summary' %}active{% endif %}"
-             href="/transactions/summary">
-            <i class="ri-dashboard-line"></i> 2.3 Tổng hợp
-          </a>
-        </li>
-        {% endif %}
+          {# ===== 3. Kế toán & dòng tiền ===== #}
+          <li class="side-title mt-4">3. Kế toán & dòng tiền</li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/giao-dich-ngan-hang') %}active{% endif %}"
+               href="/giao-dich-ngan-hang">
+              <i class="ri-bank-card-line"></i> 3.1 Giao dịch ngân hàng
+            </a>
+          </li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/invoices/export') %}active{% endif %}"
+               href="/invoice-exports">
+              <i class="ri-file-paper-2-line"></i> 3.2 Xuất hoá đơn
+            </a>
+          </li>
 
-        {# ===== 3. Kế toán & dòng tiền ===== #}
-        {% if is_admin or is_accountant %}
-        <li class="side-title mt-4">3. Kế toán & dòng tiền</li>
-        <li>
-          <a class="side-link {% if request.url.path.startswith('/giao-dich-ngan-hang') %}active{% endif %}"
-             href="/giao-dich-ngan-hang">
-            <i class="ri-bank-card-line"></i> 3.1 Giao dịch ngân hàng
-          </a>
-        </li>
-        <li>
-          <a class="side-link {% if request.url.path.startswith('/invoices/export') %}active{% endif %}"
-             href="/invoice-exports">
-            <i class="ri-file-paper-2-line"></i> 3.2 Xuất hoá đơn
-          </a>
-        </li>
+          {# ===== 4. Khách hàng ===== #}
+          <li class="side-title mt-4">4. Khách hàng</li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/customers') and not request.url.path.startswith('/customers/documents') %}active{% endif %}"
+               href="/customers">
+              <i class="ri-team-line"></i> 4.0 Danh sách khách
+            </a>
+          </li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/_admin/customer-documents') %}active{% endif %}"
+               href="/_admin/customer-documents">
+              <i class="ri-file-shield-2-line"></i> 4.1 Giấy tờ phải nộp
+            </a>
+          </li>
 
-        {% endif %}
+          {# ===== 5. Phiên Đấu Giá (Admin full) ===== #}
+          <li class="side-title mt-4">5. Phiên Đấu Giá</li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/bid-attendance') %}active{% endif %}"
+               href="/bid-attendance">
+              <i class="ri-user-follow-line"></i> 5.1 Danh sách điểm danh
+            </a>
+          </li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/bid-tickets') %}active{% endif %}"
+               href="/bid-tickets">
+              <i class="ri-file-text-line"></i> 5.2 Phiếu trả giá
+            </a>
+          </li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/auction/sessions') %}active{% endif %}"
+               href="/auction/sessions">
+              <i class="ri-auction-line"></i> 5.3 Vận hành phiên
+            </a>
+          </li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/auction/results') %}active{% endif %}"
+               href="/auction/results">
+              <i class="ri-auction-line"></i> 5.4 Kết quả trúng đấu giá
+            </a>
+          </li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/auction/refunds') %}active{% endif %}"
+               href="/auction/refunds">
+              <i class="ri-refund-2-line"></i> 5.5 Hoàn tiền đặt trước
+            </a>
+          </li>
 
-        {# ===== 4. Khách hàng ===== #}
-        {% if is_admin or is_staff_like %}
-        <li class="side-title mt-4">4. Khách hàng</li>
-        <li>
-          <a class="side-link {% if request.url.path.startswith('/customers') and not request.url.path.startswith('/customers/documents') %}active{% endif %}"
-             href="/customers">
-            <i class="ri-team-line"></i> 4.0 Danh sách khách
-          </a>
-        </li>
-        <li>
-          <a class="side-link {% if request.url.path.startswith('/_admin/customer-documents') %}active{% endif %}"
-             href="/_admin/customer-documents">
-            <i class="ri-file-shield-2-line"></i> 4.1 Giấy tờ phải nộp
-          </a>
-        </li>
-        {% endif %}
+          {# ===== 6. Thiết lập (Admin full) ===== #}
+          <li class="side-title mt-4">6. Thiết lập</li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/settings/company') %}active{% endif %}"
+               href="/settings/company">
+              <i class="ri-building-4-line"></i> 6.1 Thông tin công ty
+            </a>
+          </li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/settings/bank-accounts') %}active{% endif %}"
+               href="/settings/bank-accounts">
+              <i class="ri-bank-line"></i> 6.2 Tài khoản ngân hàng
+            </a>
+          </li>
 
-        {# ===== 5. Phiên Đấu Giá (Admin full) ===== #}
-        {% if is_admin %}
-        <li class="side-title mt-4">5. Phiên Đấu Giá</li>
-        <li>
-          <a class="side-link {% if request.url.path.startswith('/bid-attendance') %}active{% endif %}"
-             href="/bid-attendance">
-            <i class="ri-user-follow-line"></i> 5.1 Danh sách điểm danh
-          </a>
-        </li>
-        <li>
-          <a class="side-link {% if request.url.path.startswith('/bid-tickets') %}active{% endif %}"
-             href="/bid-tickets">
-            <i class="ri-file-text-line"></i> 5.2 Phiếu trả giá
-          </a>
-        </li>
-        <li>
-          <a class="side-link {% if request.url.path.startswith('/auction/sessions') %}active{% endif %}"
-             href="/auction/sessions">
-            <i class="ri-auction-line"></i> 5.3 Vận hành phiên
-          </a>
-        </li>
-        <li>
-          <a class="side-link {% if request.url.path.startswith('/auction/results') %}active{% endif %}"
-             href="/auction/results">
-            <i class="ri-auction-line"></i> 5.4 Kết quả trúng đấu giá
-          </a>
-        </li>
-        <li>
-          <a class="side-link {% if request.url.path.startswith('/auction/refunds') %}active{% endif %}"
-             href="/auction/refunds">
-            <i class="ri-refund-2-line"></i> 5.5 Hoàn tiền đặt trước
-          </a>
-        </li>
-        {% endif %}
+        {# =========================================================
+           MENU: ACCOUNTANT (CẮT RIÊNG, KHÔNG DÙNG MENU ADMIN)
+           ========================================================= #}
+        {% elif is_accountant %}
 
-        {# ===== 6. Thiết lập (Admin full) ===== #}
-        {% if is_admin %}
-        <li class="side-title mt-4">6. Thiết lập</li>
-        <li>
-          <a class="side-link {% if request.url.path.startswith('/settings/company') %}active{% endif %}"
-             href="/settings/company">
-            <i class="ri-building-4-line"></i> 6.1 Thông tin công ty
-          </a>
-        </li>
-        <li>
-          <a class="side-link {% if request.url.path.startswith('/settings/bank-accounts') %}active{% endif %}"
-             href="/settings/bank-accounts">
-            <i class="ri-bank-line"></i> 6.2 Tài khoản ngân hàng
-          </a>
-        </li>
+          {# ===== 1. Dự án & Giao dịch (FULL 1.1-1.3) ===== #}
+          <li class="side-title mt-0">1. Dự án & Giao dịch</li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/projects') and not request.url.path.startswith('/projects/payment-accounts') %}active{% endif %}"
+               href="/projects">
+              <i class="ri-community-line"></i> 1.1 Quản lý dự án
+            </a>
+          </li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/projects/payment-accounts') %}active{% endif %}"
+               href="/projects/payment-accounts">
+              <i class="ri-cash-line"></i> 1.2 Cấu hình nhận tiền
+            </a>
+          </li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/announcements') %}active{% endif %}"
+               href="/announcements">
+              <i class="ri-megaphone-line"></i> 1.3 Quản lý thông báo
+            </a>
+          </li>
+
+          {# ===== 2. Giao dịch (CHỈ 2.1-2.2) ===== #}
+          <li class="side-title mt-4">2. Giao dịch</li>
+          <li>
+            <a class="side-link {% if request.url.path == '/transactions/dossiers' %}active{% endif %}"
+               href="/transactions/dossiers">
+              <i class="ri-file-list-2-line"></i> 2.1 Mua hồ sơ
+            </a>
+          </li>
+          <li>
+            <a class="side-link {% if request.url.path == '/transactions/deposits' %}active{% endif %}"
+               href="/transactions/deposits">
+              <i class="ri-hand-coin-line"></i> 2.2 Đặt cọc
+            </a>
+          </li>
+
+          {# ===== 3. Kế toán & dòng tiền (FULL 3.1-3.2) ===== #}
+          <li class="side-title mt-4">3. Kế toán & dòng tiền</li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/giao-dich-ngan-hang') %}active{% endif %}"
+               href="/giao-dich-ngan-hang">
+              <i class="ri-bank-card-line"></i> 3.1 Giao dịch ngân hàng
+            </a>
+          </li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/invoices/export') %}active{% endif %}"
+               href="/invoice-exports">
+              <i class="ri-file-paper-2-line"></i> 3.2 Xuất hoá đơn
+            </a>
+          </li>
+
+          {# ===== 4. Khách hàng (FULL 4.0-4.1) ===== #}
+          <li class="side-title mt-4">4. Khách hàng</li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/customers') and not request.url.path.startswith('/customers/documents') %}active{% endif %}"
+               href="/customers">
+              <i class="ri-team-line"></i> 4.0 Danh sách khách
+            </a>
+          </li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/_admin/customer-documents') %}active{% endif %}"
+               href="/_admin/customer-documents">
+              <i class="ri-file-shield-2-line"></i> 4.1 Giấy tờ phải nộp
+            </a>
+          </li>
+
+          {# ===== 5. Phiên Đấu Giá (CHỈ 5.3-5.4 + THÊM 5.5) ===== #}
+          <li class="side-title mt-4">5. Phiên Đấu Giá</li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/auction/sessions') %}active{% endif %}"
+               href="/auction/sessions">
+              <i class="ri-auction-line"></i> 5.3 Vận hành phiên
+            </a>
+          </li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/auction/results') %}active{% endif %}"
+               href="/auction/results">
+              <i class="ri-auction-line"></i> 5.4 Kết quả trúng đấu giá
+            </a>
+          </li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/auction/refunds') %}active{% endif %}"
+               href="/auction/refunds">
+              <i class="ri-refund-2-line"></i> 5.5 Hoàn tiền đặt trước
+            </a>
+          </li>
+
+        {# =========================================================
+           MENU: STAFF/VIEWER (CẮT RIÊNG, KHÔNG DÙNG MENU ADMIN)
+           ========================================================= #}
+        {% elif is_staff or is_viewer %}
+
+          {# ===== 1. Dự án & Giao dịch (FULL 1.1-1.3) ===== #}
+          <li class="side-title mt-0">1. Dự án & Giao dịch</li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/projects') and not request.url.path.startswith('/projects/payment-accounts') %}active{% endif %}"
+               href="/projects">
+              <i class="ri-community-line"></i> 1.1 Quản lý dự án
+            </a>
+          </li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/projects/payment-accounts') %}active{% endif %}"
+               href="/projects/payment-accounts">
+              <i class="ri-cash-line"></i> 1.2 Cấu hình nhận tiền
+            </a>
+          </li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/announcements') %}active{% endif %}"
+               href="/announcements">
+              <i class="ri-megaphone-line"></i> 1.3 Quản lý thông báo
+            </a>
+          </li>
+
+          {# ===== 2. Giao dịch (CHỈ 2.1-2.2) ===== #}
+          <li class="side-title mt-4">2. Giao dịch</li>
+          <li>
+            <a class="side-link {% if request.url.path == '/transactions/dossiers' %}active{% endif %}"
+               href="/transactions/dossiers">
+              <i class="ri-file-list-2-line"></i> 2.1 Mua hồ sơ
+            </a>
+          </li>
+          <li>
+            <a class="side-link {% if request.url.path == '/transactions/deposits' %}active{% endif %}"
+               href="/transactions/deposits">
+              <i class="ri-hand-coin-line"></i> 2.2 Đặt cọc
+            </a>
+          </li>
+
+          {# ===== 4. Khách hàng (FULL 4.0-4.1) ===== #}
+          <li class="side-title mt-4">4. Khách hàng</li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/customers') and not request.url.path.startswith('/customers/documents') %}active{% endif %}"
+               href="/customers">
+              <i class="ri-team-line"></i> 4.0 Danh sách khách
+            </a>
+          </li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/_admin/customer-documents') %}active{% endif %}"
+               href="/_admin/customer-documents">
+              <i class="ri-file-shield-2-line"></i> 4.1 Giấy tờ phải nộp
+            </a>
+          </li>
+
+          {# ===== 5. Phiên Đấu Giá (CHỈ 5.3-5.4) ===== #}
+          <li class="side-title mt-4">5. Phiên Đấu Giá</li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/auction/sessions') %}active{% endif %}"
+               href="/auction/sessions">
+              <i class="ri-auction-line"></i> 5.3 Vận hành phiên
+            </a>
+          </li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/auction/results') %}active{% endif %}"
+               href="/auction/results">
+              <i class="ri-auction-line"></i> 5.4 Kết quả trúng đấu giá
+            </a>
+          </li>
+
         {% endif %}
 
         {# ===== Tài khoản (mọi role) ===== #}
+        <li class="side-title mt-4"></li>
         <li>
           <a class="side-link {% if request.url.path.startswith('/account') %}active{% endif %}"
              href="/account">
@@ -336,45 +489,66 @@
   </script>
 
   <script>
-  (function () {
-    var el = document.getElementById("appSidebarScroll");
-    if (!el) return;
+(function () {
+  var el = document.getElementById("appSidebarScroll");
+  if (!el) return;
 
-    var project = (new URLSearchParams(location.search)).get("project_code") || "";
-    var key = "ADMIN_SIDEBAR_SCROLL:" + project;
+  // role từ cookie (đồng bộ với Jinja)
+  var role = (document.cookie.match(/(?:^|;\s*)user_role=([^;]+)/)?.[1] || "VIEWER").toUpperCase();
 
-    function restore() {
-      try {
-        var v = sessionStorage.getItem(key);
-        if (v != null) {
-          var n = parseInt(v, 10);
-          if (!isNaN(n)) el.scrollTop = n;
-        }
-      } catch (e) {}
-    }
+  // key theo role + pathname + project_code (nếu có)
+  var project = (new URLSearchParams(location.search)).get("project_code") || "";
+  var pathKey = (location.pathname || "/").replace(/\/+$/, "");
+  var key = "SIDEBAR_SCROLL:" + role + ":" + pathKey + ":" + project;
 
-    if (history.scrollRestoration) history.scrollRestoration = "manual";
+  function restore() {
+    try {
+      var v = sessionStorage.getItem(key);
+      if (v != null) {
+        var n = parseInt(v, 10);
+        if (!isNaN(n)) el.scrollTop = n;
+      }
+    } catch (e) {}
+  }
 
-    document.addEventListener("DOMContentLoaded", function () {
-      restore();
-      requestAnimationFrame(restore);
-      setTimeout(restore, 60);
+  function save() {
+    try { sessionStorage.setItem(key, String(el.scrollTop || 0)); } catch (e) {}
+  }
+
+  function scrollActiveIntoView() {
+    // đảm bảo item active luôn nằm trong vùng nhìn thấy (tránh “nhảy” xuống 2.1)
+    var active = el.querySelector("a.side-link.active");
+    if (!active) return;
+    try {
+      active.scrollIntoView({ block: "nearest" });
+    } catch (e) {}
+  }
+
+  if (history.scrollRestoration) history.scrollRestoration = "manual";
+
+  document.addEventListener("DOMContentLoaded", function () {
+    restore();
+    // sau khi restore, kéo active vào view để tránh cảm giác nhảy menu
+    requestAnimationFrame(function () {
+      scrollActiveIntoView();
     });
+    setTimeout(function () {
+      scrollActiveIntoView();
+    }, 50);
+  });
 
-    var t = null;
-    el.addEventListener("scroll", function () {
-      if (t) return;
-      t = setTimeout(function () {
-        try { sessionStorage.setItem(key, String(el.scrollTop || 0)); } catch (e) {}
-        t = null;
-      }, 120);
-    }, { passive: true });
+  var t = null;
+  el.addEventListener("scroll", function () {
+    if (t) return;
+    t = setTimeout(function () {
+      save();
+      t = null;
+    }, 120);
+  }, { passive: true });
 
-    window.addEventListener("beforeunload", function () {
-      try { sessionStorage.setItem(key, String(el.scrollTop || 0)); } catch (e) {}
-    });
-  })();
-  </script>
+  window.addEventListener("beforeunload", save);
+})();
+</script>
 
   <style>
     .app-shell {

@@ -38,6 +38,9 @@ REPORTS_NON_ADMIN_ALLOW_PREFIXES = (
     "/reports/dossiers/paid/detail/export",
     "/reports/dossiers/paid/summary/customer/export",
     "/reports/dossiers/paid/summary/types/export",
+    "/projects/payment-accounts",
+    "/auction",
+    "/announcements"
 )
 
 # ===== Helpers =====
