@@ -160,6 +160,12 @@
               <i class="ri-file-paper-2-line"></i> 3.2 Xuất hoá đơn
             </a>
           </li>
+        <li>
+          <a class="side-link {% if request.url.path.startswith('/billing') %}active{% endif %}"
+             href="/billing">
+            <i class="ri-bill-line"></i> 3.3 Billing
+          </a>
+        </li>
 
           {# ===== 4. Khách hàng ===== #}
           <li class="side-title mt-4">4. Khách hàng</li>
@@ -279,7 +285,12 @@
               <i class="ri-file-paper-2-line"></i> 3.2 Xuất hoá đơn
             </a>
           </li>
-
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/billing') %}active{% endif %}"
+               href="/billing">
+              <i class="ri-bill-line"></i> 3.3 Billing
+            </a>
+          </li>
           {# ===== 4. Khách hàng (FULL 4.0-4.1) ===== #}
           <li class="side-title mt-4">4. Khách hàng</li>
           <li>
@@ -357,6 +368,14 @@
             </a>
           </li>
 
+          {# ===== 3. Kế toán & dòng tiền (CHỈ BILLING) ===== #}
+          <li class="side-title mt-4">3. Kế toán & dòng tiền</li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/billing') %}active{% endif %}"
+               href="/billing">
+              <i class="ri-bill-line"></i> 3.3 Billing
+            </a>
+          </li>
           {# ===== 4. Khách hàng (FULL 4.0-4.1) ===== #}
           <li class="side-title mt-4">4. Khách hàng</li>
           <li>

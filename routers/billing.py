@@ -64,7 +64,6 @@ async def _api_patch_json(
 
 
 def _unauth_redirect(next_path: str) -> RedirectResponse:
-    # next param dạng encode đơn giản
     return RedirectResponse(url=f"/login?next={next_path}", status_code=303)
 
 
@@ -77,7 +76,6 @@ def _map_error(r: httpx.Response) -> JSONResponse:
         return JSONResponse({"error": "not_found"}, status_code=404)
     if r.status_code >= 500:
         return JSONResponse({"error": "server", "msg": r.text[:300]}, status_code=502)
-    # 4xx khác
     try:
         return JSONResponse(r.json(), status_code=r.status_code)
     except Exception:
@@ -85,53 +83,19 @@ def _map_error(r: httpx.Response) -> JSONResponse:
 
 
 # =========================================================
-# 8.x BILLING — PAGES (skeleton)
+# BILLING — PAGES
 # =========================================================
 
 @router.get("/billing", response_class=HTMLResponse)
 async def billing_home_page(request: Request):
-    """
-    Trang landing Billing:
-    - UI sẽ tự quyết show phần SUPER hay phần company dựa theo role cookie/template.
-    - Hiện tại chỉ render skeleton, data gọi qua /billing/*/data.
-    """
     token = get_access_token(request)
     if not token:
         return _unauth_redirect("%2Fbilling")
 
     return templates.TemplateResponse(
         "pages/billing/index.html",
-        {
-            "request": request,
-            "title": "8. Billing",
-        },
+        {"request": request, "title": "3.3 Billing"},
     )
-
-
-# =========================================================
-# A) COMPANY VIEW (token company) — STATUS / INVOICES / PAYMENTS
-# =========================================================
-
-@router.get("/billing/status/data", response_class=JSONResponse)
-async def billing_status_data(
-    request: Request,
-    # SUPER có thể truyền company_code; token company thì bỏ qua ở A
-    company_code: Optional[str] = Query(None),
-):
-    token = get_access_token(request)
-    if not token:
-        return JSONResponse({"error": "unauthorized"}, status_code=401)
-
-    params: List[Tuple[str, str | int]] = []
-    if company_code:
-        params.append(("company_code", company_code))
-
-    async with httpx.AsyncClient() as client:
-        r = await _api_get(client, "/api/v1/billing/status", token, params)
-
-    if r.status_code != 200:
-        return _map_error(r)
-    return JSONResponse(r.json(), status_code=200)
 
 
 @router.get("/billing/invoices", response_class=HTMLResponse)
@@ -148,11 +112,55 @@ async def billing_invoices_page(
         "pages/billing/invoices.html",
         {
             "request": request,
-            "title": "8.1 Hóa đơn tháng",
+            "title": "3.3 Billing — Hóa đơn tháng",
             "init_from_month": from_month or "",
             "init_to_month": to_month or "",
         },
     )
+
+
+@router.get("/billing/invoices/view/{invoice_id}", response_class=HTMLResponse)
+async def billing_invoice_detail_page(
+    request: Request,
+    invoice_id: int = Path(..., ge=1),
+):
+    token = get_access_token(request)
+    if not token:
+        return _unauth_redirect(f"%2Fbilling%2Finvoices%2Fview%2F{invoice_id}")
+
+    return templates.TemplateResponse(
+        "pages/billing/invoice_detail.html",
+        {
+            "request": request,
+            "title": "3.3 Billing — Chi tiết hóa đơn",
+            "invoice_id": invoice_id,
+        },
+    )
+
+
+# =========================================================
+# A) COMPANY VIEW (token company) — STATUS / INVOICES / PAYMENTS
+# =========================================================
+
+@router.get("/billing/status/data", response_class=JSONResponse)
+async def billing_status_data(
+    request: Request,
+    company_code: Optional[str] = Query(None),  # SUPER only
+):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    params: List[Tuple[str, str | int]] = []
+    if company_code:
+        params.append(("company_code", company_code))
+
+    async with httpx.AsyncClient() as client:
+        r = await _api_get(client, "/api/v1/billing/status", token, params)
+
+    if r.status_code != 200:
+        return _map_error(r)
+    return JSONResponse(r.json(), status_code=200)
 
 
 @router.get("/billing/invoices/data", response_class=JSONResponse)
@@ -256,6 +264,7 @@ async def billing_payments_data(
 
 # =========================================================
 # B) SUPER ADMIN — COMPANIES OVERVIEW / CONTRACTS / PAYMENTS / JOBS
+# (giữ nguyên các route admin bạn đã viết)
 # =========================================================
 
 @router.get("/billing/admin/companies", response_class=HTMLResponse)
@@ -273,7 +282,7 @@ async def billing_admin_companies_page(
         "pages/billing/admin_companies.html",
         {
             "request": request,
-            "title": "8.0 Billing — Tổng quan công ty (SUPER)",
+            "title": "Billing — Tổng quan công ty (SUPER)",
             "init_q": q or "",
             "init_page": page,
             "init_size": size,
@@ -318,7 +327,7 @@ async def billing_admin_contracts_page(
         "pages/billing/admin_contracts.html",
         {
             "request": request,
-            "title": "8.2 Billing — Hợp đồng (SUPER)",
+            "title": "Billing — Hợp đồng (SUPER)",
             "init_company_code": company_code or "",
             "init_active_only": bool(active_only),
         },
@@ -354,20 +363,6 @@ async def billing_admin_contracts_upsert(
     request: Request,
     payload: Dict[str, Any] = Body(...),
 ):
-    """
-    payload ví dụ:
-    {
-      "company_code": "kinhdo",
-      "billing_start_at": "2026-01-01",
-      "revenue_percent": 0.04,
-      "percent_min": 2000000,
-      "percent_max": 25000000,
-      "monthly_fixed_fee": 5000000,
-      "grace_days": 15,
-      "setup_fee": 0,
-      "is_active": true
-    }
-    """
     token = get_access_token(request)
     if not token:
         return JSONResponse({"error": "unauthorized"}, status_code=401)
@@ -385,16 +380,6 @@ async def billing_admin_payment_create(
     request: Request,
     payload: Dict[str, Any] = Body(...),
 ):
-    """
-    payload:
-    {
-      "company_code": "kinhdo",
-      "invoice_id": 123,
-      "amount": 5000000,
-      "paid_at": "2026-02-26T10:00:00+07:00",
-      "note": "CK tháng 2"
-    }
-    """
     token = get_access_token(request)
     if not token:
         return JSONResponse({"error": "unauthorized"}, status_code=401)
@@ -413,13 +398,6 @@ async def billing_admin_status_patch(
     company_code: str = Query(...),
     payload: Dict[str, Any] = Body(...),
 ):
-    """
-    payload:
-    {
-      "billing_status": "RUNNING" | "LOCKED",
-      "lock_until": "2026-03-05T00:00:00+07:00"
-    }
-    """
     token = get_access_token(request)
     if not token:
         return JSONResponse({"error": "unauthorized"}, status_code=401)
@@ -439,11 +417,6 @@ async def billing_admin_run_snapshot(
     request: Request,
     run_date: str = Query(..., description="YYYY-MM-DD"),
 ):
-    """
-    Force chạy giống cron 00:01:
-    - billing.fn_snapshot_projects_daily(run_date)
-    - billing.fn_refresh_company_status(now)
-    """
     token = get_access_token(request)
     if not token:
         return JSONResponse({"error": "unauthorized"}, status_code=401)
@@ -451,7 +424,13 @@ async def billing_admin_run_snapshot(
     params: List[Tuple[str, str | int]] = [("run_date", run_date)]
 
     async with httpx.AsyncClient() as client:
-        r = await _api_post_json(client, "/api/v1/billing/admin/jobs/run-snapshot", token, payload={}, params=params)
+        r = await _api_post_json(
+            client,
+            "/api/v1/billing/admin/jobs/run-snapshot",
+            token,
+            payload={},
+            params=params,
+        )
 
     if r.status_code != 200:
         return _map_error(r)

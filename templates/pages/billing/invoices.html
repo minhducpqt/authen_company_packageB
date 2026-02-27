@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="space-y-5">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-xl font-semibold text-slate-800">3.3 Billing — Hóa đơn tháng</h1>
+      <p class="text-sm text-slate-500">Danh sách hóa đơn theo tháng.</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="/billing"
+         class="px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm">
+        <i class="ri-arrow-left-line mr-1"></i> Quay lại
+      </a>
+      <button id="btnRefresh"
+              class="px-3 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 text-sm">
+        <i class="ri-refresh-line mr-1"></i> Làm mới
+      </button>
+    </div>
+  </div>
+
+  <div class="bg-white border border-slate-200 rounded-xl p-4">
+    <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+      <div class="md:col-span-2">
+        <label class="text-xs text-slate-600">Từ tháng (YYYY-MM-01)</label>
+        <input id="fromMonth" class="mt-1 w-full px-3 py-2 border border-slate-300 rounded-lg"
+               value="{{ init_from_month }}" placeholder="2026-01-01"/>
+      </div>
+      <div class="md:col-span-2">
+        <label class="text-xs text-slate-600">Đến tháng (YYYY-MM-01)</label>
+        <input id="toMonth" class="mt-1 w-full px-3 py-2 border border-slate-300 rounded-lg"
+               value="{{ init_to_month }}" placeholder="2026-12-01"/>
+      </div>
+      <div class="md:col-span-2 flex gap-2">
+        <button id="btnApply"
+                class="w-full px-3 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800">
+          Áp dụng
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+    <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+      <div class="font-semibold text-slate-800">Danh sách</div>
+      <div id="loading" class="text-xs text-slate-500 hidden">
+        <i class="ri-loader-2-line animate-spin mr-1"></i> Đang tải...
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-50 text-slate-600">
+          <tr>
+            <th class="text-left px-4 py-2">Tháng</th>
+            <th class="text-right px-4 py-2">Phí dự án</th>
+            <th class="text-right px-4 py-2">Hạ tầng</th>
+            <th class="text-right px-4 py-2">Tổng</th>
+            <th class="text-right px-4 py-2">Đã trả</th>
+            <th class="text-right px-4 py-2">Còn nợ</th>
+            <th class="text-left px-4 py-2">Trạng thái</th>
+            <th class="text-left px-4 py-2">Hạn</th>
+            <th class="text-right px-4 py-2">Chi tiết</th>
+          </tr>
+        </thead>
+        <tbody id="tbody" class="divide-y divide-slate-100"></tbody>
+      </table>
+    </div>
+
+    <div id="empty" class="p-6 text-center text-slate-500 hidden">Không có dữ liệu.</div>
+
+    <div class="px-4 py-3 border-t border-slate-100 flex items-center justify-between">
+      <div class="text-sm text-slate-600">
+        Tổng: <span id="total" class="font-semibold">0</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="prev"
+                class="px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm">
+          Prev
+        </button>
+        <div class="text-sm text-slate-600">
+          Page <span id="page" class="font-semibold">1</span>
+        </div>
+        <button id="next"
+                class="px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm">
+          Next
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const money = (v) => (Number(v||0)).toLocaleString('vi-VN') + ' đ';
+  const fmtDate = (s) => s ? String(s).slice(0,10) : '—';
+  const fmtMonth = (s) => s ? String(s).slice(0,7) : '—';
+
+  let state = { page: 1, size: 20, total: 0 };
+
+  function setLoading(on) { document.getElementById('loading')?.classList.toggle('hidden', !on); }
+
+  async function fetchJSON(url) {
+    const r = await fetch(url, { headers: { "Accept": "application/json" }});
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j?.error || 'error');
+    return j;
+  }
+
+  function badge(status) {
+    const s = String(status || '').toUpperCase();
+    if (s === 'PAID') return `<span class="px-2 py-1 rounded-full text-xs bg-emerald-50 text-emerald-700 border border-emerald-200">PAID</span>`;
+    if (s === 'PARTIAL') return `<span class="px-2 py-1 rounded-full text-xs bg-amber-50 text-amber-700 border border-amber-200">PARTIAL</span>`;
+    return `<span class="px-2 py-1 rounded-full text-xs bg-slate-50 text-slate-700 border border-slate-200">UNPAID</span>`;
+  }
+
+  async function load() {
+    setLoading(true);
+    try {
+      const from = document.getElementById('fromMonth').value.trim();
+      const to = document.getElementById('toMonth').value.trim();
+
+      const qs = new URLSearchParams();
+      qs.set('page', String(state.page));
+      qs.set('size', String(state.size));
+      if (from) qs.set('from_month', from);
+      if (to) qs.set('to_month', to);
+
+      const res = await fetchJSON('/billing/invoices/data?' + qs.toString());
+      const rows = res?.data || [];
+      state.total = Number(res?.total || 0);
+
+      document.getElementById('total').textContent = state.total;
+      document.getElementById('page').textContent = state.page;
+
+      const tbody = document.getElementById('tbody');
+      const empty = document.getElementById('empty');
+      tbody.innerHTML = '';
+
+      if (!rows.length) {
+        empty.classList.remove('hidden');
+      } else {
+        empty.classList.add('hidden');
+        for (const r of rows) {
+          tbody.insertAdjacentHTML('beforeend', `
+            <tr class="hover:bg-slate-50">
+              <td class="px-4 py-2 font-medium text-slate-800">${fmtMonth(r.billing_month)}</td>
+              <td class="px-4 py-2 text-right">${money(r.total_project_fee)}</td>
+              <td class="px-4 py-2 text-right">${money(r.monthly_fixed_fee)}</td>
+              <td class="px-4 py-2 text-right font-semibold">${money(r.total_fee_month)}</td>
+              <td class="px-4 py-2 text-right">${money(r.amount_paid)}</td>
+              <td class="px-4 py-2 text-right">${money(r.amount_outstanding)}</td>
+              <td class="px-4 py-2">${badge(r.status)}</td>
+              <td class="px-4 py-2">${fmtDate(r.due_date)}</td>
+              <td class="px-4 py-2 text-right">
+                <a class="text-indigo-600 hover:underline" href="/billing/invoices/view/${r.id}">Xem</a>
+              </td>
+            </tr>
+          `);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Không tải được danh sách hóa đơn.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  document.getElementById('btnRefresh')?.addEventListener('click', () => load());
+  document.getElementById('btnApply')?.addEventListener('click', () => { state.page = 1; load(); });
+
+  document.getElementById('prev')?.addEventListener('click', () => {
+    if (state.page > 1) { state.page--; load(); }
+  });
+  document.getElementById('next')?.addEventListener('click', () => {
+    const maxPage = Math.ceil((state.total || 0) / state.size);
+    if (state.page < maxPage) { state.page++; load(); }
+  });
+
+  load();
+</script>
+{% endblock %}
