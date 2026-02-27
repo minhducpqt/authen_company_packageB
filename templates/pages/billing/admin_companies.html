@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="space-y-5">
+
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-xl font-semibold text-slate-800">Billing (SUPER) — Quản lý Billing công ty</h1>
+      <p class="text-sm text-slate-500">Tổng quan công nợ, chạy cập nhật trạng thái, vào chi tiết từng công ty.</p>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <input id="runDate" type="date"
+             class="px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm"
+             value="" />
+      <button id="btnRunSnapshot"
+              class="px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-700">
+        <i class="ri-refresh-line mr-1"></i> Chạy cập nhật
+      </button>
+    </div>
+  </div>
+
+  <div class="bg-white border border-slate-200 rounded-xl p-4">
+    <div class="flex flex-col md:flex-row md:items-center gap-3">
+      <div class="flex-1">
+        <label class="text-xs text-slate-500">Tìm công ty (code / tên)</label>
+        <input id="q"
+               value="{{ init_q or '' }}"
+               placeholder="VD: kinhdo / Công ty ..."
+               class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm" />
+      </div>
+
+      <div class="flex items-center gap-2 pt-5 md:pt-6">
+        <button id="btnSearch"
+                class="px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm hover:bg-slate-50">
+          <i class="ri-search-line mr-1"></i> Tìm
+        </button>
+        <button id="btnReset"
+                class="px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm hover:bg-slate-50">
+          Reset
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+    <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+      <div class="text-sm text-slate-600">
+        <span id="totalText">—</span>
+      </div>
+      <div class="text-sm text-slate-500">
+        Page: <span id="pageText">{{ init_page or 1 }}</span>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-50 text-slate-600">
+          <tr>
+            <th class="text-left px-4 py-3">ID</th>
+            <th class="text-left px-4 py-3">Code</th>
+            <th class="text-left px-4 py-3">Tên công ty</th>
+            <th class="text-left px-4 py-3">Trạng thái</th>
+            <th class="text-right px-4 py-3">Công nợ hiện tại</th>
+            <th class="text-left px-4 py-3">Lock đến</th>
+            <th class="text-left px-4 py-3">Hạn thanh toán</th>
+            <th class="text-right px-4 py-3">Hành động</th>
+          </tr>
+        </thead>
+        <tbody id="tbody" class="divide-y divide-slate-100">
+          <tr>
+            <td colspan="8" class="px-4 py-6 text-center text-slate-500">Đang tải...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="px-4 py-3 border-t border-slate-100 flex items-center justify-between">
+      <div class="text-xs text-slate-500">* Công nợ được làm tròn về số nguyên.</div>
+      <div class="flex items-center gap-2">
+        <button id="btnPrev" class="px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm hover:bg-slate-50">Prev</button>
+        <button id="btnNext" class="px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm hover:bg-slate-50">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="hidden fixed bottom-6 right-6 z-[120]">
+    <div class="bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg text-sm" id="toastText">—</div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  const initPage = Number("{{ init_page or 1 }}") || 1;
+  const initSize = Number("{{ init_size or 50 }}") || 50;
+
+  let page = initPage;
+  const size = initSize;
+
+  const elQ = document.getElementById("q");
+  const elTbody = document.getElementById("tbody");
+  const elTotalText = document.getElementById("totalText");
+  const elPageText = document.getElementById("pageText");
+  const elRunDate = document.getElementById("runDate");
+
+  function showToast(msg){
+    const wrap = document.getElementById("toast");
+    const text = document.getElementById("toastText");
+    text.textContent = msg;
+    wrap.classList.remove("hidden");
+    setTimeout(()=>wrap.classList.add("hidden"), 2500);
+  }
+
+  function moneyInt(v){
+    const n = Math.round(Number(v||0));
+    return n.toLocaleString("vi-VN");
+  }
+
+  function fmtDateTime(v){
+    if(!v) return "";
+    const d = new Date(v);
+    if(isNaN(d.getTime())) return String(v);
+    const dd = String(d.getDate()).padStart(2,'0');
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const yyyy = d.getFullYear();
+    const hh = String(d.getHours()).padStart(2,'0');
+    const mi = String(d.getMinutes()).padStart(2,'0');
+    const ss = String(d.getSeconds()).padStart(2,'0');
+    return `${dd}-${mm}-${yyyy} ${hh}:${mi}:${ss}`;
+  }
+
+  function badgeStatus(s){
+    const st = String(s||"").toUpperCase();
+    if(st === "LOCKED") return `<span class="px-2 py-1 rounded-full text-xs bg-rose-100 text-rose-700">LOCKED</span>`;
+    return `<span class="px-2 py-1 rounded-full text-xs bg-emerald-100 text-emerald-700">RUNNING</span>`;
+  }
+
+  async function fetchCompanies(){
+    elTbody.innerHTML = `<tr><td colspan="8" class="px-4 py-6 text-center text-slate-500">Đang tải...</td></tr>`;
+    const q = (elQ.value||"").trim();
+    const params = new URLSearchParams();
+    params.set("page", String(page));
+    params.set("size", String(size));
+    if(q) params.set("q", q);
+
+    const r = await fetch(`/billing/admin/companies/data?` + params.toString(), { headers: { "Accept": "application/json" }});
+    const j = await r.json().catch(()=>({error:"bad_json"}));
+    if(!r.ok){
+      elTbody.innerHTML = `<tr><td colspan="8" class="px-4 py-6 text-center text-rose-600">Lỗi: ${j.msg || j.error || r.status}</td></tr>`;
+      return;
+    }
+
+    const rows = (j.data || []);
+    const total = Number(j.total || 0);
+    elTotalText.textContent = `Tổng: ${total.toLocaleString("vi-VN")} công ty`;
+    elPageText.textContent = String(j.page || page);
+
+    if(rows.length === 0){
+      elTbody.innerHTML = `<tr><td colspan="8" class="px-4 py-6 text-center text-slate-500">Không có dữ liệu</td></tr>`;
+      return;
+    }
+
+    elTbody.innerHTML = rows.map(x => {
+      const cc = x.company_code || "";
+      const debt = moneyInt(x.current_outstanding || 0);
+      return `
+        <tr class="hover:bg-slate-50">
+          <td class="px-4 py-3 text-slate-700">${x.company_id ?? ""}</td>
+          <td class="px-4 py-3">
+            <a class="text-indigo-600 hover:underline" href="/billing/admin/companies/view/${encodeURIComponent(cc)}">${cc}</a>
+          </td>
+          <td class="px-4 py-3 text-slate-700">${x.company_name || ""}</td>
+          <td class="px-4 py-3">${badgeStatus(x.billing_status)}</td>
+          <td class="px-4 py-3 text-right font-semibold text-slate-800">${debt}</td>
+          <td class="px-4 py-3 text-slate-600">${fmtDateTime(x.lock_until)}</td>
+          <td class="px-4 py-3 text-slate-600">${fmtDateTime(x.next_due_date)}</td>
+          <td class="px-4 py-3 text-right">
+            <a class="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs hover:bg-indigo-700"
+               href="/billing/admin/companies/view/${encodeURIComponent(cc)}">
+              Chi tiết
+            </a>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  async function runSnapshot(){
+    const d = elRunDate.value;
+    if(!d){
+      showToast("Vui lòng chọn ngày chạy");
+      return;
+    }
+    const ok = await window.confirmModal({ title:"Xác nhận", message:`Chạy cập nhật billing cho ngày ${d}?` });
+    if(!ok) return;
+
+    const r = await fetch(`/billing/admin/jobs/run-snapshot?run_date=${encodeURIComponent(d)}`, {
+      method: "POST",
+      headers: { "Accept": "application/json" }
+    });
+    const j = await r.json().catch(()=>({error:"bad_json"}));
+    if(!r.ok){
+      showToast(`Lỗi: ${j.msg || j.error || r.status}`);
+      return;
+    }
+    showToast(`OK: projects=${j.projects_snapshotted}, companies=${j.companies_refreshed}`);
+    await fetchCompanies();
+  }
+
+  document.getElementById("btnSearch").addEventListener("click", ()=>{ page=1; fetchCompanies(); });
+  document.getElementById("btnReset").addEventListener("click", ()=>{
+    elQ.value = "";
+    page = 1;
+    fetchCompanies();
+  });
+
+  document.getElementById("btnPrev").addEventListener("click", ()=>{
+    if(page>1){ page -= 1; fetchCompanies(); }
+  });
+  document.getElementById("btnNext").addEventListener("click", ()=>{
+    page += 1;
+    fetchCompanies();
+  });
+
+  document.getElementById("btnRunSnapshot").addEventListener("click", runSnapshot);
+
+  // default runDate = today
+  try{
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth()+1).padStart(2,'0');
+    const dd = String(now.getDate()).padStart(2,'0');
+    elRunDate.value = `${yyyy}-${mm}-${dd}`;
+  }catch(e){}
+
+  fetchCompanies();
+})();
+</script>
+{% endblock %}

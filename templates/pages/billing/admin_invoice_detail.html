@@ -1,0 +1,427 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="space-y-5">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-xl font-semibold text-slate-800">Billing — Chi tiết hóa đơn (SUPER)</h1>
+      <p class="text-sm text-slate-500">
+        Company: <span class="font-semibold">{{ company_code }}</span> —
+        Invoice ID: <span class="font-semibold">{{ invoice_id }}</span>
+      </p>
+    </div>
+    <div class="flex gap-2">
+      <a href="/billing/admin/companies/view/{{ company_code }}"
+         class="px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm">
+        <i class="ri-arrow-left-line mr-1"></i> Quay lại công ty
+      </a>
+
+      <button id="btnRefresh"
+              class="px-3 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 text-sm">
+        <i class="ri-refresh-line mr-1"></i> Làm mới
+      </button>
+    </div>
+  </div>
+
+  <!-- ACTIONS -->
+  <div class="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+    <div class="text-sm text-slate-600">
+      Thao tác thanh toán chỉ dành cho <span class="font-semibold">SUPER</span>.
+    </div>
+    <div class="flex gap-2">
+      <button id="btnConfirmPay"
+              class="px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm">
+        <i class="ri-wallet-3-line mr-1"></i> Xác nhận thanh toán
+      </button>
+      <button id="btnMarkPaid"
+              class="px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 text-sm">
+        <i class="ri-check-double-line mr-1"></i> Mark PAID ngay
+      </button>
+    </div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+    <div class="bg-white border border-slate-200 rounded-xl p-4">
+      <div class="text-xs text-slate-500">Tháng</div>
+      <div id="sMonth" class="text-lg font-semibold text-slate-800 mt-1">—</div>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-xl p-4">
+      <div class="text-xs text-slate-500">Tổng phí</div>
+      <div id="sTotal" class="text-lg font-semibold text-slate-800 mt-1">—</div>
+      <div class="text-xs text-slate-500 mt-1">Hạn: <span id="sDue">—</span></div>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-xl p-4">
+      <div class="text-xs text-slate-500">Đã trả</div>
+      <div id="sPaid" class="text-lg font-semibold text-slate-800 mt-1">—</div>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-xl p-4">
+      <div class="text-xs text-slate-500">Còn nợ</div>
+      <div id="sOut" class="text-lg font-semibold text-slate-800 mt-1">—</div>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-xl p-4">
+      <div class="text-xs text-slate-500">Trạng thái</div>
+      <div id="sStatus" class="mt-2">—</div>
+      <div id="sHint" class="text-xs text-slate-500 mt-2"></div>
+    </div>
+  </div>
+
+  <!-- PROJECTS -->
+  <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+    <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+      <div class="font-semibold text-slate-800">Chi tiết theo dự án</div>
+      <div id="loading1" class="text-xs text-slate-500 hidden">
+        <i class="ri-loader-2-line animate-spin mr-1"></i> Đang tải...
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-50 text-slate-600">
+          <tr>
+            <th class="text-left px-4 py-2">Dự án</th>
+            <th class="text-left px-4 py-2">Ngày đấu giá</th>
+            <th class="text-right px-4 py-2">Tiền hồ sơ</th>
+            <th class="text-right px-4 py-2">Chênh lệch</th>
+            <th class="text-right px-4 py-2">Base</th>
+            <th class="text-right px-4 py-2">Final fee</th>
+          </tr>
+        </thead>
+        <tbody id="tbProjects" class="divide-y divide-slate-100"></tbody>
+      </table>
+    </div>
+    <div id="emptyP" class="p-6 text-center text-slate-500 hidden">Không có dòng dự án.</div>
+  </div>
+
+  <!-- PAYMENTS -->
+  <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+    <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+      <div class="font-semibold text-slate-800">Thanh toán</div>
+      <div id="loading2" class="text-xs text-slate-500 hidden">
+        <i class="ri-loader-2-line animate-spin mr-1"></i> Đang tải...
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-50 text-slate-600">
+          <tr>
+            <th class="text-left px-4 py-2">Thời gian</th>
+            <th class="text-right px-4 py-2">Số tiền</th>
+            <th class="text-left px-4 py-2">Ghi chú</th>
+          </tr>
+        </thead>
+        <tbody id="tbPayments" class="divide-y divide-slate-100"></tbody>
+      </table>
+    </div>
+    <div id="emptyPay" class="p-6 text-center text-slate-500 hidden">Chưa có thanh toán.</div>
+  </div>
+</div>
+
+<!-- MODAL: Confirm payment -->
+<div id="payModal" class="hidden fixed inset-0 z-[120]">
+  <div class="absolute inset-0 bg-black/40"></div>
+  <div class="absolute inset-0 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div>
+          <div class="text-lg font-semibold text-slate-800">Xác nhận thanh toán</div>
+          <div class="text-xs text-slate-500">Company: {{ company_code }} — Invoice: {{ invoice_id }}</div>
+        </div>
+        <button id="payClose" class="text-slate-500 hover:text-slate-700">
+          <i class="ri-close-line text-xl"></i>
+        </button>
+      </div>
+
+      <div class="px-6 py-5 space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs text-slate-600">Số tiền</label>
+            <input id="payAmount" type="number" step="1" min="0"
+                   class="mt-1 w-full px-3 py-2 border border-slate-300 rounded-lg" />
+            <div class="text-xs text-slate-500 mt-1">Gợi ý: mặc định = số tiền còn nợ.</div>
+          </div>
+          <div>
+            <label class="text-xs text-slate-600">Thời gian thanh toán</label>
+            <input id="payAt" type="datetime-local"
+                   class="mt-1 w-full px-3 py-2 border border-slate-300 rounded-lg" />
+            <div class="text-xs text-slate-500 mt-1">Mặc định: thời điểm hiện tại.</div>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-xs text-slate-600">Ghi chú</label>
+          <input id="payNote" type="text"
+                 class="mt-1 w-full px-3 py-2 border border-slate-300 rounded-lg"
+                 placeholder="VD: chuyển khoản ngày..., người nhận..., ..." />
+        </div>
+
+        <div id="payErr" class="hidden text-sm text-rose-600"></div>
+      </div>
+
+      <div class="px-6 py-4 border-t border-slate-100 flex justify-end gap-2">
+        <button id="payCancel"
+                class="px-4 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50">
+          Hủy
+        </button>
+        <button id="paySubmit"
+                class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
+          Xác nhận
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const invoiceId = {{ invoice_id }};
+  const companyCode = {{ company_code | tojson }};
+
+  const pad2 = (n) => String(n).padStart(2, '0');
+
+  function fmtDateTime(s) {
+    if (!s) return '—';
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return String(s);
+    return `${pad2(d.getDate())}-${pad2(d.getMonth()+1)}-${d.getFullYear()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+  }
+
+  function fmtMonth(s) {
+    if (!s) return '—';
+    const str = String(s);
+    const y = str.slice(0, 4);
+    const m = str.slice(5, 7);
+    if (y && m) return `${m}-${y}`;
+    return str;
+  }
+
+  const money = (v) => {
+    const n = Math.round(Number(v || 0));
+    return n.toLocaleString('vi-VN') + ' đ';
+  };
+
+  function badge(status) {
+    const s = String(status || '').toUpperCase();
+    if (s === 'PAID') return `<span class="px-2 py-1 rounded-full text-xs bg-emerald-50 text-emerald-700 border border-emerald-200">PAID</span>`;
+    if (s === 'PARTIAL') return `<span class="px-2 py-1 rounded-full text-xs bg-amber-50 text-amber-700 border border-amber-200">PARTIAL</span>`;
+    return `<span class="px-2 py-1 rounded-full text-xs bg-slate-50 text-slate-700 border border-slate-200">UNPAID</span>`;
+  }
+
+  function setLoading(id, on) {
+    document.getElementById(id)?.classList.toggle('hidden', !on);
+  }
+
+  async function fetchJSON(url, opts) {
+    const r = await fetch(url, Object.assign({
+      headers: { "Accept": "application/json", "Content-Type": "application/json" }
+    }, opts || {}));
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j?.msg || j?.error || 'error');
+    return j;
+  }
+
+  // Hold latest invoice in memory for actions
+  let currentInvoice = null;
+
+  function isoFromLocalInput(dtLocal) {
+    // dtLocal from <input type=datetime-local> => "YYYY-MM-DDTHH:mm"
+    if (!dtLocal) return null;
+    // convert to ISO string with seconds; backend usually accepts ISO
+    const d = new Date(dtLocal);
+    if (isNaN(d.getTime())) return null;
+    return d.toISOString();
+  }
+
+  function openPayModal(defaultAmount) {
+    const modal = document.getElementById('payModal');
+    const err = document.getElementById('payErr');
+    err.classList.add('hidden');
+    err.textContent = '';
+
+    const amountEl = document.getElementById('payAmount');
+    amountEl.value = String(Math.max(0, Math.round(Number(defaultAmount || 0))));
+
+    const atEl = document.getElementById('payAt');
+    const now = new Date();
+    // datetime-local wants local time "YYYY-MM-DDTHH:MM"
+    const y = now.getFullYear();
+    const m = pad2(now.getMonth()+1);
+    const d = pad2(now.getDate());
+    const hh = pad2(now.getHours());
+    const mm = pad2(now.getMinutes());
+    atEl.value = `${y}-${m}-${d}T${hh}:${mm}`;
+
+    document.getElementById('payNote').value = '';
+
+    modal.classList.remove('hidden');
+  }
+
+  function closePayModal() {
+    document.getElementById('payModal')?.classList.add('hidden');
+  }
+
+  async function createPayment(amount, paidAtIso, note) {
+    const payload = {
+      company_code: companyCode,
+      invoice_id: invoiceId,
+      amount: Math.round(Number(amount || 0)),
+      paid_at: paidAtIso,
+      note: note || ''
+    };
+    return await fetchJSON('/billing/admin/payments/create', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+
+  async function loadAll() {
+    setLoading('loading1', true);
+    setLoading('loading2', true);
+
+    try {
+      // invoice
+      const inv = await fetchJSON(`/billing/invoices/${invoiceId}/data?company_code=${encodeURIComponent(companyCode)}`);
+      currentInvoice = inv || null;
+
+      document.getElementById('sMonth').textContent = fmtMonth(inv?.billing_month);
+      document.getElementById('sTotal').textContent = money(inv?.total_fee_month);
+      document.getElementById('sPaid').textContent  = money(inv?.amount_paid);
+      document.getElementById('sOut').textContent   = money(inv?.amount_outstanding);
+      document.getElementById('sDue').textContent   = fmtDateTime(inv?.due_date);
+      document.getElementById('sStatus').innerHTML  = badge(inv?.status);
+
+      const hint = document.getElementById('sHint');
+      const out = Math.round(Number(inv?.amount_outstanding || 0));
+      if (out <= 0) hint.textContent = 'Hóa đơn đã đủ/đã thanh toán.';
+      else hint.textContent = 'Có thể tạo payment để giảm công nợ (PARTIAL/PAID tự cập nhật).';
+
+      // projects
+      const projects = await fetchJSON(`/billing/invoices/${invoiceId}/projects/data?company_code=${encodeURIComponent(companyCode)}`);
+      const rowsP = projects?.data || [];
+      const tbP = document.getElementById('tbProjects');
+      const emptyP = document.getElementById('emptyP');
+      tbP.innerHTML = '';
+
+      if (!rowsP.length) {
+        emptyP.classList.remove('hidden');
+      } else {
+        emptyP.classList.add('hidden');
+        for (const r of rowsP) {
+          tbP.insertAdjacentHTML('beforeend', `
+            <tr class="hover:bg-slate-50">
+              <td class="px-4 py-2">
+                <div class="font-medium text-slate-800">${r.project_code || ''}</div>
+                <div class="text-xs text-slate-500">ID: ${r.project_id}</div>
+              </td>
+              <td class="px-4 py-2">${r.auction_at ? fmtDateTime(r.auction_at) : '—'}</td>
+              <td class="px-4 py-2 text-right">${money(r.total_dossier_amount)}</td>
+              <td class="px-4 py-2 text-right">${money(r.total_price_gap_amount)}</td>
+              <td class="px-4 py-2 text-right">${money(r.base_value)}</td>
+              <td class="px-4 py-2 text-right font-semibold">${money(r.final_fee)}</td>
+            </tr>
+          `);
+        }
+      }
+
+      // payments
+      const pays = await fetchJSON(`/billing/payments/data?company_code=${encodeURIComponent(companyCode)}&invoice_id=${invoiceId}&page=1&size=200`);
+      const rowsPay = pays?.data || [];
+      const tbPay = document.getElementById('tbPayments');
+      const emptyPay = document.getElementById('emptyPay');
+      tbPay.innerHTML = '';
+
+      if (!rowsPay.length) {
+        emptyPay.classList.remove('hidden');
+      } else {
+        emptyPay.classList.add('hidden');
+        for (const r of rowsPay) {
+          tbPay.insertAdjacentHTML('beforeend', `
+            <tr class="hover:bg-slate-50">
+              <td class="px-4 py-2">${r.paid_at ? fmtDateTime(r.paid_at) : '—'}</td>
+              <td class="px-4 py-2 text-right font-semibold">${money(r.amount)}</td>
+              <td class="px-4 py-2 text-slate-700">${r.note || ''}</td>
+            </tr>
+          `);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Không tải được dữ liệu invoice (SUPER).');
+    } finally {
+      setLoading('loading1', false);
+      setLoading('loading2', false);
+    }
+  }
+
+  // Actions
+  document.getElementById('btnRefresh')?.addEventListener('click', loadAll);
+
+  document.getElementById('btnConfirmPay')?.addEventListener('click', () => {
+    const outstanding = Math.round(Number(currentInvoice?.amount_outstanding || 0));
+    openPayModal(outstanding);
+  });
+
+  document.getElementById('btnMarkPaid')?.addEventListener('click', async () => {
+    const outstanding = Math.round(Number(currentInvoice?.amount_outstanding || 0));
+    if (outstanding <= 0) {
+      alert('Hóa đơn hiện không còn nợ.');
+      return;
+    }
+    const ok = await window.confirmModal({
+      title: 'Xác nhận',
+      message: `Mark PAID ngay bằng cách tạo payment = ${money(outstanding)} ?`
+    });
+    if (!ok) return;
+
+    try {
+      await createPayment(outstanding, new Date().toISOString(), 'MARK_PAID_BY_SUPER');
+      await loadAll();
+      alert('Đã tạo payment để mark PAID (nếu đủ số tiền).');
+    } catch (e) {
+      console.error(e);
+      alert('Không tạo được payment. Vui lòng thử lại.');
+    }
+  });
+
+  // Modal handlers
+  document.getElementById('payClose')?.addEventListener('click', closePayModal);
+  document.getElementById('payCancel')?.addEventListener('click', closePayModal);
+  document.getElementById('payModal')?.addEventListener('click', (e) => {
+    if (e.target && e.target.id === 'payModal') closePayModal();
+  });
+
+  document.getElementById('paySubmit')?.addEventListener('click', async () => {
+    const err = document.getElementById('payErr');
+    err.classList.add('hidden');
+    err.textContent = '';
+
+    const amount = Math.round(Number(document.getElementById('payAmount').value || 0));
+    const paidAtLocal = document.getElementById('payAt').value;
+    const paidAtIso = isoFromLocalInput(paidAtLocal) || new Date().toISOString();
+    const note = document.getElementById('payNote').value || '';
+
+    if (amount <= 0) {
+      err.textContent = 'Số tiền phải > 0';
+      err.classList.remove('hidden');
+      return;
+    }
+
+    const ok = await window.confirmModal({
+      title: 'Xác nhận',
+      message: `Tạo payment ${money(amount)} cho invoice ${invoiceId} (company ${companyCode})?`
+    });
+    if (!ok) return;
+
+    try {
+      await createPayment(amount, paidAtIso, note);
+      closePayModal();
+      await loadAll();
+      alert('Đã tạo payment.');
+    } catch (e) {
+      console.error(e);
+      err.textContent = 'Không tạo được payment: ' + (e?.message || 'error');
+      err.classList.remove('hidden');
+    }
+  });
+
+  // First load
+  loadAll();
+</script>
+{% endblock %}
