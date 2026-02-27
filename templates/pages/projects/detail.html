@@ -37,6 +37,9 @@
   {% set btc = bid_ticket_cfg or {} %}
   {% set show_price_step = (btc.show_price_step if (btc.show_price_step is not none) else true) %}
 
+  {# NEW: product_type #}
+  {% set pj_pt = (project.product_type or '') %}
+
   <style>
     /* ===== Project inline edit icon (small + discreet) ===== */
     .pj-edit-btn{
@@ -91,6 +94,16 @@
     #projectEditModal .pe-card{
       width: 96vw;
       max-width: 560px;
+    }
+
+    /* Product type modal */
+    #productTypeModal .pt-card{
+      width: 96vw;
+      max-width: 640px;
+    }
+    #productTypeHintModal .pth-card{
+      width: 96vw;
+      max-width: 860px;
     }
   </style>
 
@@ -160,6 +173,51 @@
         Đang: <span class="font-semibold">
           {% if is_per_sqm %}TÍNH THEO M²{% else %}TÍNH THEO CẢ LÔ{% endif %}
         </span>
+      </div>
+    </div>
+
+    <!-- ✅ NEW: Product type (hiển thị + edit + hint) -->
+    <div class="md:col-span-3 p-4 rounded-lg bg-slate-50 border border-slate-200">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <div class="text-slate-500 text-sm">Loại dự án (product type)</div>
+          <div class="mt-1 flex items-center gap-2 flex-wrap">
+            <span id="pj_product_type_badge"
+              class="inline-flex items-center px-2 py-1 rounded text-xs border
+              {% if pj_pt %} bg-indigo-50 text-indigo-700 border-indigo-200
+              {% else %} bg-slate-100 text-slate-600 border-slate-200 {% endif %}">
+              <span class="font-mono" id="pj_product_type_text">{{ pj_pt or '—' }}</span>
+            </span>
+
+            <span id="pj_product_type_label" class="text-sm text-slate-700">
+              <!-- label sẽ được fill từ API khi mở modal (nếu có) -->
+            </span>
+          </div>
+
+          <div class="mt-2 text-[11px] text-slate-500">
+            Dùng để cấu hình luồng nghiệp vụ/hiển thị theo từng loại dự án.
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="pj-edit-btn"
+            title="Xem mô tả/bảng giá các loại type"
+            onclick="openProductTypeHint()"
+          >
+            <i class="ri-information-line"></i>
+          </button>
+
+          <button
+            type="button"
+            class="pj-edit-btn"
+            title="Chỉnh sửa loại dự án"
+            onclick="openProductTypeEdit()"
+          >
+            <i class="ri-edit-2-line"></i>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -462,6 +520,145 @@
 </div>
 
 {# =========================================================
+   ✅ NEW: PRODUCT TYPE EDIT MODAL (fetch list -> select -> save -> confirm phrase -> call API update)
+   ========================================================= #}
+<div id="productTypeModal" class="fixed inset-0 bg-black/40 hidden z-50">
+  <div class="absolute inset-0 flex items-center justify-center p-3">
+    <div class="pt-card bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+        <div class="flex items-center gap-2">
+          <div class="h-8 w-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-700 border border-indigo-200">
+            <i class="ri-shape-line"></i>
+          </div>
+          <div>
+            <div class="text-sm font-semibold text-slate-800">Chỉnh sửa loại dự án (product type)</div>
+            <div class="text-xs text-slate-500">Chọn type trong danh sách, rồi bấm Lưu</div>
+          </div>
+        </div>
+
+        <button type="button"
+                class="h-9 w-9 inline-flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                onclick="closeProductTypeEdit()"
+                title="Đóng">
+          <i class="ri-close-line text-xl"></i>
+        </button>
+      </div>
+
+      <div class="p-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Loại dự án hiện tại</label>
+            <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+              <span class="font-mono" id="pt_current_code">{{ pj_pt or '—' }}</span>
+              <span class="text-slate-500" id="pt_current_label"></span>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Chọn loại dự án mới</label>
+            <select id="pt_select"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition"
+              onchange="onProductTypeChanged()">
+              <option value="">— Đang tải danh sách…</option>
+            </select>
+            <p class="mt-1 text-xs text-slate-500" id="pt_help">
+              Danh sách được lấy từ API product types.
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm hidden" id="pt_err_box">
+          <i class="ri-error-warning-line mr-1"></i> <span id="pt_err_text"></span>
+        </div>
+
+        <div class="flex justify-end gap-2 mt-4">
+          <button type="button"
+                  class="px-3 py-1.5 rounded-lg bg-slate-200 text-slate-700"
+                  onclick="closeProductTypeEdit()">
+            Hủy
+          </button>
+
+          <button id="ptSaveBtn"
+                  type="button"
+                  class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white opacity-50 cursor-not-allowed"
+                  onclick="saveProductType()"
+                  disabled>
+            Lưu
+          </button>
+        </div>
+
+        <div class="mt-3 text-[11px] text-slate-500">
+          Khi bấm <b>Lưu</b>, hệ thống sẽ yêu cầu nhập “<b>tôi xác nhận</b>” để tránh thao tác nhầm.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# =========================================================
+   ✅ NEW: PRODUCT TYPE HINT MODAL (bảng mô tả type)
+   ========================================================= #}
+<div id="productTypeHintModal" class="fixed inset-0 bg-black/40 hidden z-50">
+  <div class="absolute inset-0 flex items-center justify-center p-3">
+    <div class="pth-card bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+        <div class="flex items-center gap-2">
+          <div class="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600">
+            <i class="ri-file-list-3-line"></i>
+          </div>
+          <div>
+            <div class="text-sm font-semibold text-slate-800">Bảng mô tả các loại dự án (product type)</div>
+            <div class="text-xs text-slate-500">Giúp người dùng chọn đúng type khi cấu hình</div>
+          </div>
+        </div>
+
+        <button type="button"
+                class="h-9 w-9 inline-flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                onclick="closeProductTypeHint()"
+                title="Đóng">
+          <i class="ri-close-line text-xl"></i>
+        </button>
+      </div>
+
+      <div class="p-4">
+        <div class="text-sm text-slate-600 mb-3">
+          Bảng dưới sẽ ưu tiên lấy từ API (nếu API trả về mô tả). Nếu API không có mô tả, vẫn hiển thị code + tên.
+        </div>
+
+        <div class="overflow-x-auto border border-slate-200 rounded-lg">
+          <table class="min-w-full text-sm">
+            <thead class="bg-slate-50">
+              <tr class="text-left text-slate-600">
+                <th class="px-3 py-2 border-b w-[180px]">Code</th>
+                <th class="px-3 py-2 border-b w-[240px]">Tên/Label</th>
+                <th class="px-3 py-2 border-b">Mô tả / Gợi ý cấu hình</th>
+              </tr>
+            </thead>
+            <tbody id="pth_tbody">
+              <tr>
+                <td colspan="3" class="px-3 py-6 text-center text-slate-500">
+                  Đang tải danh sách…
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="mt-3 text-[11px] text-slate-500">
+          Gợi ý: nếu cần “bảng giá” chi tiết theo nghiệp vụ, bạn có thể bổ sung mô tả/fee/notes vào API product types để UI hiển thị đầy đủ.
+        </div>
+
+        <div class="flex justify-end mt-4">
+          <button type="button" class="px-3 py-1.5 rounded-lg bg-slate-200 text-slate-700" onclick="closeProductTypeHint()">
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# =========================================================
    ✅ NEW: PROJECT EDIT MODAL (name/location/description) with phrase confirm
    ========================================================= #}
 <div id="projectEditModal" class="fixed inset-0 bg-black/40 hidden z-50">
@@ -644,6 +841,302 @@
 
 <script>
   /* =========================================================
+     Product type endpoints (Service B proxy)
+     NOTE: Nếu route của bạn khác, chỉ cần đổi 2 URL này.
+     ========================================================= */
+  const PRODUCT_TYPES_LIST_URL = `/projects/api/product_types`;
+  const PRODUCT_TYPE_UPDATE_URL = `/projects/{{ project.id }}/product-type`;          // POST/PUT -> {product_type:"..."}
+
+  /* =========================================================
+     Shared helpers
+     ========================================================= */
+  function _norm(s){ return String(s || "").trim().toLowerCase(); }
+  function _byId(id){ return document.getElementById(id); }
+
+  function _safeJsonParse(txt){
+    try{ return JSON.parse(txt); }catch(e){ return null; }
+  }
+
+  function _extractTypes(payload){
+    // chấp nhận nhiều shape: array | {data:[]} | {items:[]} | {types:[]}
+    if (!payload) return [];
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload.data)) return payload.data;
+    if (Array.isArray(payload.items)) return payload.items;
+    if (Array.isArray(payload.types)) return payload.types;
+    return [];
+  }
+
+  function _pickTypeFields(x){
+    // normalize fields: code, label, description, note/fee
+    const code = x.code || x.product_type || x.key || x.value || "";
+    const label = x.label || x.name || x.title || "";
+    const desc = x.description || x.desc || x.note || "";
+    return {code:String(code||""), label:String(label||""), description:String(desc||"")};
+  }
+
+  /* =========================================================
+     #A: Product type UI
+     ========================================================= */
+  const _pt = {
+    modal: null,
+    hintModal: null,
+    select: null,
+    saveBtn: null,
+    errBox: null,
+    errText: null,
+    currentCode: "{{ pj_pt or '' }}",
+    typesCache: null,
+    selected: null,
+  };
+
+  function ptInit(){
+    if (_pt.modal) return;
+    _pt.modal = _byId("productTypeModal");
+    _pt.hintModal = _byId("productTypeHintModal");
+    _pt.select = _byId("pt_select");
+    _pt.saveBtn = _byId("ptSaveBtn");
+    _pt.errBox = _byId("pt_err_box");
+    _pt.errText = _byId("pt_err_text");
+  }
+
+  function ptSetError(msg){
+    ptInit();
+    if (!msg){
+      _pt.errBox.classList.add("hidden");
+      _pt.errText.textContent = "";
+      return;
+    }
+    _pt.errText.textContent = msg;
+    _pt.errBox.classList.remove("hidden");
+  }
+
+  async function fetchProductTypesIfNeeded(){
+    ptInit();
+    if (_pt.typesCache) return _pt.typesCache;
+
+    const res = await fetch(PRODUCT_TYPES_LIST_URL, {method:"GET", credentials:"same-origin"});
+    if (!res.ok){
+      const t = await res.text();
+      throw new Error(`Không lấy được danh sách type (HTTP ${res.status}). ${t || ""}`.trim());
+    }
+    const txt = await res.text();
+    const payload = _safeJsonParse(txt) || txt;
+    const arr = _extractTypes(payload).map(_pickTypeFields).filter(x => x.code);
+    _pt.typesCache = arr;
+    return arr;
+  }
+
+  function fillProductTypeLabelsIfPossible(){
+    // fill label cạnh badge (nếu API có)
+    if (!_pt.typesCache) return;
+    const cur = _pt.currentCode || "";
+    const hit = _pt.typesCache.find(x => _norm(x.code) === _norm(cur));
+    const labelEl = _byId("pj_product_type_label");
+    if (!labelEl) return;
+    labelEl.textContent = hit && hit.label ? ("— " + hit.label) : "";
+  }
+
+  function openProductTypeEdit(){
+    ptInit();
+    ptSetError(null);
+
+    _pt.selected = null;
+    _pt.saveBtn.disabled = true;
+    _pt.saveBtn.classList.add("opacity-50","cursor-not-allowed");
+
+    // show modal
+    _pt.modal.classList.remove("hidden");
+
+    // set current
+    _byId("pt_current_code").textContent = (_pt.currentCode || "—");
+
+    // load list
+    _pt.select.innerHTML = `<option value="">— Đang tải danh sách…</option>`;
+    (async ()=>{
+      try{
+        const types = await fetchProductTypesIfNeeded();
+
+        // update current label in modal
+        const curHit = types.find(x => _norm(x.code) === _norm(_pt.currentCode));
+        _byId("pt_current_label").textContent = (curHit && curHit.label) ? ("— " + curHit.label) : "";
+
+        // build options
+        const opts = [];
+        opts.push(`<option value="">— Chọn loại dự án —</option>`);
+        for (const t of types){
+          const selected = (_norm(t.code) === _norm(_pt.currentCode)) ? "selected" : "";
+          const suffix = t.label ? ` — ${escapeHtml(t.label)}` : "";
+          opts.push(`<option value="${escapeHtml(t.code)}" ${selected}>${escapeHtml(t.code)}${suffix}</option>`);
+        }
+        _pt.select.innerHTML = opts.join("");
+
+        fillProductTypeLabelsIfPossible();
+      }catch(e){
+        ptSetError(String(e && e.message ? e.message : e));
+        _pt.select.innerHTML = `<option value="">— Lỗi tải danh sách —</option>`;
+      }
+    })();
+  }
+
+  function closeProductTypeEdit(){
+    ptInit();
+    _pt.modal.classList.add("hidden");
+  }
+
+  function onProductTypeChanged(){
+    ptInit();
+    ptSetError(null);
+
+    const v = String(_pt.select.value || "").trim();
+    _pt.selected = v || null;
+
+    const ok = !!_pt.selected && _norm(_pt.selected) !== _norm(_pt.currentCode || "");
+    _pt.saveBtn.disabled = !ok;
+    if (ok){
+      _pt.saveBtn.classList.remove("opacity-50","cursor-not-allowed");
+    }else{
+      _pt.saveBtn.classList.add("opacity-50","cursor-not-allowed");
+    }
+  }
+
+  async function doUpdateProductType(){
+    ptInit();
+    if (!_pt.selected) return;
+
+    const payload = { product_type: _pt.selected };
+
+    const res = await fetch(PRODUCT_TYPE_UPDATE_URL, {
+      method: "POST", // nếu bạn dùng PUT thì đổi ở đây
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(payload),
+      credentials: "same-origin",
+    });
+
+    if (!res.ok){
+      const t = await res.text();
+      throw new Error(`Cập nhật type thất bại (HTTP ${res.status}). ${t || ""}`.trim());
+    }
+
+    // Update UI locally (không reload để mượt)
+    _pt.currentCode = _pt.selected;
+    const codeEl = _byId("pj_product_type_text");
+    if (codeEl) codeEl.textContent = _pt.currentCode || "—";
+
+    const badge = _byId("pj_product_type_badge");
+    if (badge){
+      // set style like "has value"
+      badge.className = "inline-flex items-center px-2 py-1 rounded text-xs border bg-indigo-50 text-indigo-700 border-indigo-200";
+    }
+
+    // update label next to badge (if we have)
+    if (_pt.typesCache){
+      const hit = _pt.typesCache.find(x => _norm(x.code) === _norm(_pt.currentCode));
+      const labelEl = _byId("pj_product_type_label");
+      if (labelEl) labelEl.textContent = (hit && hit.label) ? ("— " + hit.label) : "";
+    }
+
+    closeProductTypeEdit();
+  }
+
+  function saveProductType(){
+    ptInit();
+    if (_pt.saveBtn.disabled) return;
+
+    // show phrase confirm modal, and on confirm -> call API update
+    const selected = _pt.selected;
+    let label = "";
+    try{
+      if (_pt.typesCache){
+        const hit = _pt.typesCache.find(x => _norm(x.code) === _norm(selected));
+        label = hit && hit.label ? hit.label : "";
+      }
+    }catch(e){}
+
+    confirmWithPhrase(null, {
+      title: "Xác nhận thay đổi loại dự án",
+      descHtml:
+        "Bạn sắp đổi <b>loại dự án</b> sang: " +
+        `<b class="font-mono">${escapeHtml(selected)}</b>` +
+        (label ? ` — <b>${escapeHtml(label)}</b>` : "") +
+        ".<br><span class='text-slate-500 text-sm'>Thao tác này có thể ảnh hưởng các luồng nghiệp vụ theo dự án.</span>",
+      confirmText: "Xác nhận",
+      cancelText: "Hủy",
+      phrase: "tôi xác nhận",
+      onConfirm: async function(){
+        try{
+          await doUpdateProductType();
+        }catch(e){
+          ptSetError(String(e && e.message ? e.message : e));
+          // reopen modal if user closed it
+          try{ _pt.modal.classList.remove("hidden"); }catch(err){}
+        }
+      }
+    });
+  }
+
+  /* Hint modal */
+  function openProductTypeHint(){
+    ptInit();
+    _pt.hintModal.classList.remove("hidden");
+    renderProductTypeHintTable();
+  }
+  function closeProductTypeHint(){
+    ptInit();
+    _pt.hintModal.classList.add("hidden");
+  }
+
+  async function renderProductTypeHintTable(){
+    const tbody = _byId("pth_tbody");
+    if (!tbody) return;
+
+    tbody.innerHTML = `<tr><td colspan="3" class="px-3 py-6 text-center text-slate-500">Đang tải danh sách…</td></tr>`;
+
+    try{
+      const types = await fetchProductTypesIfNeeded();
+      if (!types.length){
+        tbody.innerHTML = `<tr><td colspan="3" class="px-3 py-6 text-center text-slate-500">Không có dữ liệu type.</td></tr>`;
+        return;
+      }
+
+      const rows = types.map(t => {
+        const desc = t.description ? escapeHtml(t.description) : "<span class='text-slate-400'>—</span>";
+        const label = t.label ? escapeHtml(t.label) : "<span class='text-slate-400'>—</span>";
+        return `
+          <tr>
+            <td class="px-3 py-2 border-b font-mono">${escapeHtml(t.code)}</td>
+            <td class="px-3 py-2 border-b">${label}</td>
+            <td class="px-3 py-2 border-b text-slate-700">${desc}</td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = rows.join("");
+      fillProductTypeLabelsIfPossible();
+    }catch(e){
+      tbody.innerHTML = `<tr><td colspan="3" class="px-3 py-6 text-center text-rose-600">Lỗi tải danh sách: ${escapeHtml(String(e && e.message ? e.message : e))}</td></tr>`;
+    }
+  }
+
+  /* Escape HTML for safe innerHTML */
+  function escapeHtml(s){
+    return String(s || "")
+      .replace(/&/g,"&amp;")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;")
+      .replace(/'/g,"&#039;");
+  }
+
+  /* click outside closes product modals */
+  document.addEventListener("click", function(e){
+    const m1 = _byId("productTypeModal");
+    if (m1 && !m1.classList.contains("hidden") && e.target === m1) closeProductTypeEdit();
+
+    const m2 = _byId("productTypeHintModal");
+    if (m2 && !m2.classList.contains("hidden") && e.target === m2) closeProductTypeHint();
+  });
+
+  /* =========================================================
      #1: Project edit modal (name/location/description) with phrase confirm
      ========================================================= */
   const _pe = {
@@ -670,8 +1163,6 @@
     _pe.saveBtn = document.getElementById("peSaveBtn");
     _pe.formEl = document.getElementById("projectEditForm");
   }
-
-  function _norm(s){ return String(s || "").trim().toLowerCase(); }
 
   function openProjectEdit(field){
     peInit();
@@ -796,7 +1287,6 @@
   /* =========================================================
      Existing: Lot edit modal (iframe) - unchanged logic
      ========================================================= */
-
   function openLotEditModal(lotId){
     const m = document.getElementById("lotEditModal");
     const f = document.getElementById("lotEditFrame");
@@ -834,6 +1324,11 @@
       if (cpm && !cpm.classList.contains("hidden")) return;
       const pem = document.getElementById("projectEditModal");
       if (pem && !pem.classList.contains("hidden")) return;
+      const ptm = document.getElementById("productTypeModal");
+      if (ptm && !ptm.classList.contains("hidden")) return;
+      const pth = document.getElementById("productTypeHintModal");
+      if (pth && !pth.classList.contains("hidden")) return;
+
       const m = document.getElementById("lotEditModal");
       if (m && !m.classList.contains("hidden")){
         closeLotEditModal();
@@ -922,7 +1417,8 @@
   });
 
   /* -------------------------
-     PHRASE CONFIRM MODAL (custom) - unchanged
+     PHRASE CONFIRM MODAL (custom)
+     ✅ UPDATED: hỗ trợ opts.onConfirm để dùng cho fetch API (product type)
   ------------------------- */
   let _cpm = {
     el: null,
@@ -954,9 +1450,15 @@
     _cpm.pendingPrev = (el && typeof el.checked === "boolean") ? (!el.checked) : null;
 
     _cpm.phrase = (opts && opts.phrase) ? String(opts.phrase) : "tôi xác nhận";
-    _cpm.onConfirm = function(){
-      if (el && el.form) el.form.submit();
-    };
+
+    // ✅ NEW: allow custom onConfirm callback (e.g., fetch API)
+    if (opts && typeof opts.onConfirm === "function"){
+      _cpm.onConfirm = opts.onConfirm;
+    }else{
+      _cpm.onConfirm = function(){
+        if (el && el.form) el.form.submit();
+      };
+    }
 
     _cpm.titleEl.textContent = (opts && opts.title) ? opts.title : "Xác nhận";
     _cpm.descEl.innerHTML = (opts && opts.descHtml) ? opts.descHtml : "";
@@ -1015,9 +1517,9 @@
     }
   });
 
-  /* -------------------------
+  /* =========================================================
      DEADLINE PICKER (dùng chung cho deadline + auction_at) - unchanged
-  ------------------------- */
+  ========================================================= */
   let currentField = null;
 
   function parseRaw(raw) {
@@ -1066,6 +1568,7 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
+    // deadlines init
     document.querySelectorAll(".js-deadline-btn").forEach(function (btn) {
       const field = btn.getAttribute("data-field");
       const rawAttr = btn.getAttribute("data-raw") || "";
@@ -1082,6 +1585,14 @@
         openPicker(field);
       });
     });
+
+    // best-effort: load types once to show label near badge
+    (async ()=>{
+      try{
+        await fetchProductTypesIfNeeded();
+        fillProductTypeLabelsIfPossible();
+      }catch(e){}
+    })();
   });
 
   function openPicker(fieldName) {

@@ -56,6 +56,8 @@ EP_AUCTION_MODE      = "/api/v1/projects/{project_id}/auction_mode"  # <-- NEW
 EP_AUCTION_CONFIG    = "/api/v1/projects/{project_id}/auction_config"   # <-- NEW
 EP_BID_TICKET_CONFIG = "/api/v1/projects/{project_id}/bid_ticket_config"  # <-- NEW
 
+EP_PRODUCT_TYPES      = "/api/v1/projects/product_types"                 # NEW
+EP_PRODUCT_TYPE_ITEMS = "/api/v1/projects/product_types/{product_type}"  # NEW
 
 # ==============================
 # helpers http
@@ -463,101 +465,6 @@ async def list_projects(
             "load_err": load_err,
         },
     )
-
-
-# =========================
-# 3) DETAIL (đặt SAU route tĩnh)
-# =========================
-@router.get("/{project_id}", response_class=HTMLResponse)
-async def project_detail(request: Request, project_id: int = Path(...)):
-    token = get_access_token(request)
-    me = await fetch_me(token)
-    if not me:
-        return RedirectResponse(url=f"/login?next={quote(f'/projects/{project_id}')}", status_code=303)
-
-    load_err = None
-    project = None
-    lots_page = {"data": [], "total": 0}
-
-    # NEW: auction config (extras.auction) từ Service A
-    auction_cfg = None
-    # NEW: bid_ticket config (extras.settings.bid_ticket) từ Service A
-    bid_ticket_cfg = None
-
-    try:
-        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
-            # 1) Lấy project
-            st, data = await _get_json(
-                client,
-                EP_DETAIL.format(project_id=project_id),
-                {"Authorization": f"Bearer {token}"},
-            )
-            if st == 200 and isinstance(data, dict):
-                project = data
-            else:
-                load_err = f"Không tải được dự án (HTTP {st})."
-
-            # 1b) Lấy auction_config (extras.auction)
-            if project:
-                cfg_st, cfg = await _get_json(
-                    client,
-                    EP_AUCTION_CONFIG.format(project_id=project_id),
-                    {"Authorization": f"Bearer {token}"},
-                )
-                if cfg_st == 200 and isinstance(cfg, dict):
-                    auction_cfg = cfg.get("auction") or {}
-                else:
-                    auction_cfg = None
-
-            # 1c) Lấy bid_ticket_config (extras.settings.bid_ticket)
-            if project:
-                bt_st, bt = await _get_json(
-                    client,
-                    EP_BID_TICKET_CONFIG.format(project_id=project_id),
-                    {"Authorization": f"Bearer {token}"},
-                )
-                if bt_st == 200 and isinstance(bt, dict):
-                    # API A trả: {"settings": {"bid_ticket": {"show_price_step": true}}}
-                    bid_ticket_cfg = ((bt.get("settings") or {}).get("bid_ticket") or {})
-                else:
-                    bid_ticket_cfg = None
-
-            # 2) Nếu có project_code thì lấy danh sách lô theo project_code
-            if project and project.get("project_code"):
-                # ✅ refactor: gọi helper nhưng phải y hệt call cũ (Authorization Bearer)
-                lst_st, lst = await sa_list_lots_by_project_code(
-                    client,
-                    token=token,
-                    project_code=project["project_code"],
-                    size=1000,
-                )
-                if lst_st == 200 and isinstance(lst, dict):
-                    lots_page = {
-                        "data": lst.get("data", []),
-                        "total": lst.get("total", 0),
-                    }
-                else:
-                    # không chặn trang — chỉ ghi nhận lỗi phần lots
-                    if not load_err:
-                        load_err = f"Không tải được danh sách lô (HTTP {lst_st})."
-
-    except Exception as e:
-        load_err = str(e)
-
-    return templates.TemplateResponse(
-        "pages/projects/detail.html",
-        {
-            "request": request,
-            "title": f"Dự án {project.get('project_code') if project else f'#{project_id}'}",
-            "me": me,
-            "project": project,
-            "lots_page": lots_page,
-            "auction_cfg": auction_cfg,  # NEW
-            "load_err": load_err,
-            "bid_ticket_cfg": bid_ticket_cfg,  # NEW
-        },
-    )
-
 
 # =========================
 # 4) CREATE (form + submit)
@@ -1318,3 +1225,183 @@ async def listing_projects(
         )
 
     return JSONResponse({"data": data}, status_code=200)
+
+@router.get("/api/product_types", response_class=JSONResponse)
+async def api_product_types(request: Request):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            r = await client.get(
+                EP_PRODUCT_TYPES,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+        if r.status_code != 200:
+            return JSONResponse(
+                {"error": "upstream", "status": r.status_code, "detail": (r.text or "")[:300]},
+                status_code=502,
+            )
+        return JSONResponse(r.json() or {}, status_code=200)
+    except Exception as e:
+        return JSONResponse({"error": "exception", "message": str(e)}, status_code=500)
+
+
+@router.get("/api/product_types/{product_type}", response_class=JSONResponse)
+async def api_product_type_items(request: Request, product_type: str = Path(...)):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    pt = (product_type or "").strip().upper()
+    if not pt:
+        return JSONResponse({"error": "bad_product_type"}, status_code=400)
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            r = await client.get(
+                EP_PRODUCT_TYPE_ITEMS.format(product_type=pt),
+                headers={"Authorization": f"Bearer {token}"},
+            )
+        if r.status_code != 200:
+            return JSONResponse(
+                {"error": "upstream", "status": r.status_code, "detail": (r.text or "")[:300]},
+                status_code=502,
+            )
+        return JSONResponse(r.json() or {}, status_code=200)
+    except Exception as e:
+        return JSONResponse({"error": "exception", "message": str(e)}, status_code=500)
+
+
+@router.post("/{project_id}/product-type")
+async def update_project_product_type(
+    request: Request,
+    project_id: int = Path(...),
+):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
+
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    pt = (body.get("product_type") or "").strip().upper()
+    if not pt:
+        return JSONResponse({"ok": False, "error": "missing_product_type"}, status_code=400)
+
+    payload = {"product_type": pt}
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            r = await client.put(
+                f"/api/v1/projects/{project_id}/product_type",
+                json=payload,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        if r.status_code != 200:
+            return JSONResponse(
+                {"ok": False, "error": "upstream_error", "detail": r.text},
+                status_code=502,
+            )
+
+        return JSONResponse({"ok": True})
+
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+
+# =========================
+# 3) DETAIL (đặt SAU route tĩnh)
+# =========================
+@router.get("/{project_id}", response_class=HTMLResponse)
+async def project_detail(request: Request, project_id: int = Path(...)):
+    token = get_access_token(request)
+    me = await fetch_me(token)
+    if not me:
+        return RedirectResponse(url=f"/login?next={quote(f'/projects/{project_id}')}", status_code=303)
+
+    load_err = None
+    project = None
+    lots_page = {"data": [], "total": 0}
+
+    # NEW: auction config (extras.auction) từ Service A
+    auction_cfg = None
+    # NEW: bid_ticket config (extras.settings.bid_ticket) từ Service A
+    bid_ticket_cfg = None
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
+            # 1) Lấy project
+            st, data = await _get_json(
+                client,
+                EP_DETAIL.format(project_id=project_id),
+                {"Authorization": f"Bearer {token}"},
+            )
+            if st == 200 and isinstance(data, dict):
+                project = data
+            else:
+                load_err = f"Không tải được dự án (HTTP {st})."
+
+            # 1b) Lấy auction_config (extras.auction)
+            if project:
+                cfg_st, cfg = await _get_json(
+                    client,
+                    EP_AUCTION_CONFIG.format(project_id=project_id),
+                    {"Authorization": f"Bearer {token}"},
+                )
+                if cfg_st == 200 and isinstance(cfg, dict):
+                    auction_cfg = cfg.get("auction") or {}
+                else:
+                    auction_cfg = None
+
+            # 1c) Lấy bid_ticket_config (extras.settings.bid_ticket)
+            if project:
+                bt_st, bt = await _get_json(
+                    client,
+                    EP_BID_TICKET_CONFIG.format(project_id=project_id),
+                    {"Authorization": f"Bearer {token}"},
+                )
+                if bt_st == 200 and isinstance(bt, dict):
+                    # API A trả: {"settings": {"bid_ticket": {"show_price_step": true}}}
+                    bid_ticket_cfg = ((bt.get("settings") or {}).get("bid_ticket") or {})
+                else:
+                    bid_ticket_cfg = None
+
+            # 2) Nếu có project_code thì lấy danh sách lô theo project_code
+            if project and project.get("project_code"):
+                # ✅ refactor: gọi helper nhưng phải y hệt call cũ (Authorization Bearer)
+                lst_st, lst = await sa_list_lots_by_project_code(
+                    client,
+                    token=token,
+                    project_code=project["project_code"],
+                    size=1000,
+                )
+                if lst_st == 200 and isinstance(lst, dict):
+                    lots_page = {
+                        "data": lst.get("data", []),
+                        "total": lst.get("total", 0),
+                    }
+                else:
+                    # không chặn trang — chỉ ghi nhận lỗi phần lots
+                    if not load_err:
+                        load_err = f"Không tải được danh sách lô (HTTP {lst_st})."
+
+    except Exception as e:
+        load_err = str(e)
+
+    return templates.TemplateResponse(
+        "pages/projects/detail.html",
+        {
+            "request": request,
+            "title": f"Dự án {project.get('project_code') if project else f'#{project_id}'}",
+            "me": me,
+            "project": project,
+            "lots_page": lots_page,
+            "auction_cfg": auction_cfg,  # NEW
+            "load_err": load_err,
+            "bid_ticket_cfg": bid_ticket_cfg,  # NEW
+        },
+    )
