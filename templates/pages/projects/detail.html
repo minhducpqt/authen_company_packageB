@@ -846,6 +846,7 @@
      ========================================================= */
   const PRODUCT_TYPES_LIST_URL = `/projects/api/product_types`;
   const PRODUCT_TYPE_UPDATE_URL = `/projects/{{ project.id }}/product-type`;          // POST/PUT -> {product_type:"..."}
+  const PRODUCT_TYPE_ITEMS_URL = (code) => `/projects/api/product_types/${encodeURIComponent(code)}`;
 
   /* =========================================================
      Shared helpers
@@ -925,6 +926,40 @@
     const arr = _extractTypes(payload).map(_pickTypeFields).filter(x => x.code);
     _pt.typesCache = arr;
     return arr;
+  }
+
+  async function fetchProductTypeItems(code){
+    const c = String(code || "").trim();
+    if (!c) return [];
+
+    const res = await fetch(PRODUCT_TYPE_ITEMS_URL(c), {method:"GET", credentials:"same-origin"});
+    if (!res.ok){
+      const t = await res.text();
+      throw new Error(`Không lấy được items của type ${c} (HTTP ${res.status}). ${t || ""}`.trim());
+    }
+    const payload = await res.json();
+    return Array.isArray(payload.items) ? payload.items : [];
+  }
+
+  function _fmtVND0(v){
+    const n = Number(v);
+    if (!isFinite(n)) return "0";
+    return Math.round(n).toLocaleString("vi-VN");
+  }
+
+  function buildHintHtmlFromItems(items){
+    if (!items || !items.length) return "<span class='text-slate-400'>—</span>";
+
+    // format: "Tên: 200.000đ (0 → < 10.000.000)"
+    const lines = items.map(it => {
+      const name = escapeHtml(it.name || it.code || "—");
+      const price = _fmtVND0(it.price_vnd ?? 0);
+      const minV = _fmtVND0(it.min_total_vnd ?? 0);
+      const maxV = _fmtVND0(it.max_total_vnd ?? 0);
+      return `<div><b>${name}</b>: ${price}đ <span class="text-slate-500">(${minV} → &lt; ${maxV})</span></div>`;
+    });
+
+    return lines.join("");
   }
 
   function fillProductTypeLabelsIfPossible(){
@@ -1099,21 +1134,39 @@
         return;
       }
 
-      const rows = types.map(t => {
-        const desc = t.description ? escapeHtml(t.description) : "<span class='text-slate-400'>—</span>";
+      // Render skeleton rows trước để UI không “đơ”
+      tbody.innerHTML = types.map(t => {
         const label = t.label ? escapeHtml(t.label) : "<span class='text-slate-400'>—</span>";
         return `
-          <tr>
+          <tr data-pt-row="${escapeHtml(t.code)}">
             <td class="px-3 py-2 border-b font-mono">${escapeHtml(t.code)}</td>
             <td class="px-3 py-2 border-b">${label}</td>
-            <td class="px-3 py-2 border-b text-slate-700">${desc}</td>
+            <td class="px-3 py-2 border-b text-slate-700">
+              <span class="text-slate-400">Đang tải…</span>
+            </td>
           </tr>
         `;
-      });
-      tbody.innerHTML = rows.join("");
+      }).join("");
+
+      // Lần lượt load items theo từng type để build “bảng giá”
+      for (const t of types){
+        const code = String(t.code || "").trim();
+        const row = tbody.querySelector(`tr[data-pt-row="${CSS.escape(code)}"]`);
+        if (!row) continue;
+        const tdDesc = row.children && row.children[2] ? row.children[2] : null;
+        if (!tdDesc) continue;
+
+        try{
+          const items = await fetchProductTypeItems(code);
+          tdDesc.innerHTML = buildHintHtmlFromItems(items);
+        }catch(e){
+          tdDesc.innerHTML = `<span class="text-rose-600">Lỗi tải items: ${escapeHtml(String(e?.message || e))}</span>`;
+        }
+      }
+
       fillProductTypeLabelsIfPossible();
     }catch(e){
-      tbody.innerHTML = `<tr><td colspan="3" class="px-3 py-6 text-center text-rose-600">Lỗi tải danh sách: ${escapeHtml(String(e && e.message ? e.message : e))}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="3" class="px-3 py-6 text-center text-rose-600">Lỗi tải danh sách: ${escapeHtml(String(e?.message || e))}</td></tr>`;
     }
   }
 
