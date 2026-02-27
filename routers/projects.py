@@ -33,7 +33,7 @@ from utils.excel_import import handle_import_preview  # chỉ dùng preview
 import json as pyjson  # cho decode JWT payload
 
 # ✅ import helper lots từ routers/lots.py (Service B)
-from routers.lots import sa_create_lot, sa_list_lots_by_project_code
+from routers.lots import sa_create_lot, sa_list_lots_by_project_code, sa_bulk_create_lots
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -241,24 +241,18 @@ async def import_preview(request: Request, file: UploadFile = File(...)):
         },
     )
 
-
 @router.post("/import/apply", response_class=HTMLResponse)
 async def import_apply(
     request: Request,
     payload: str = Form(...),
     company_code: str = Form(...),
 ):
-    """
-    Ghi từng dự án + lô:
-    - Project: POST; nếu đã tồn tại (409) → BÁO LỖI, KHÔNG GHI ĐÈ.
-    - Lot: POST; nếu 409 → bỏ qua (không ghi đè).
-    """
     token = get_access_token(request)
     me = await fetch_me(token)
     if not me:
         return RedirectResponse(url="/login?next=/projects/import", status_code=303)
 
-    # ⛔ Chặn cứng nếu FE cũ vẫn gửi force_replace
+    # chặn force_replace nếu FE cũ gửi
     try:
         form = await request.form()
         if form.get("force_replace"):
@@ -283,27 +277,27 @@ async def import_apply(
     except Exception:
         return templates.TemplateResponse(
             "pages/projects/import.html",
-            {
-                "request": request,
-                "title": "Nhập dự án từ Excel",
-                "me": me,
-                "err": "Payload không hợp lệ.",
-            },
+            {"request": request, "title": "Nhập dự án từ Excel", "me": me, "err": "Payload không hợp lệ."},
             status_code=400,
         )
 
     projects = data.get("projects") or []
-    lots     = data.get("lots") or []
+    lots = data.get("lots") or []
 
     errors: list[str] = []
     created_codes: list[str] = []
 
     headers = {"Authorization": f"Bearer {token}", "X-Company-Code": company_code}
 
-    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=30.0) as client:
-        # -----------------------
-        # 1) PROJECTS
-        # -----------------------
+    def _pretty(obj) -> str:
+        try:
+            if isinstance(obj, str):
+                return obj
+            return json.dumps(obj, ensure_ascii=False)
+        except Exception:
+            return str(obj)
+
+    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=60.0) as client:
         for p in projects:
             code = (p.get("project_code") or "").strip()
             name = (p.get("name") or "").strip()
@@ -312,105 +306,101 @@ async def import_apply(
                 errors.append("Thiếu project_code hoặc name.")
                 continue
 
-            body = {
+            # 1) create project
+            proj_body = {
                 "project_code": code,
                 "name": name,
                 "description": p.get("description") or None,
                 "location": p.get("location") or None,
                 "status": "INACTIVE",
             }
-
-            r = await client.post(EP_CREATE_PROJ, json=body, headers=headers)
+            r = await client.post(EP_CREATE_PROJ, json=proj_body, headers=headers)
 
             if r.status_code == 200:
                 created_codes.append(code)
-
             elif r.status_code == 409:
-                # ❌ KHÔNG GHI ĐÈ
                 errors.append(f"Dự án {code}: đã tồn tại, không cho phép ghi đè.")
-
+                # project lỗi -> bỏ luôn lots của project này
+                continue
             else:
                 try:
-                    msg = (r.json() or {}).get("detail") or (r.json() or {}).get("message") or ""
+                    js = r.json() if r.content else {}
                 except Exception:
-                    msg = ""
+                    js = {}
+                msg = (js or {}).get("detail") or (js or {}).get("message") or ""
                 errors.append(f"Dự án {code}: tạo thất bại (HTTP {r.status_code}) {msg}")
+                continue
 
-            # -----------------------
-            # 2) LOTS (theo project_code)
-            # -----------------------
+            # 2) gom lots theo project_code rồi gọi BULK (atomic theo project)
             proj_lots = [
                 l for l in lots
                 if (l.get("project_code") or "").strip().upper() == code.upper()
             ]
+            if not proj_lots:
+                continue
 
+            bulk_lots: list[dict] = []
             for l in proj_lots:
-                lot_body = {
-                    "company_code": company_code,
-                    "project_code": code,
-                    "lot_code": l.get("lot_code"),
-                    "name": l.get("name") or None,
-                    "description": l.get("description") or None,
-                    "starting_price": l.get("starting_price"),
-                    "deposit_amount": l.get("deposit_amount"),
-                    "area": l.get("area"),
-                    "bid_step_vnd": l.get("bid_step_vnd"),
-                    "status": "AVAILABLE",
-                }
+                lot_code = (l.get("lot_code") or "").strip()
+                # nếu thiếu lot_code, tự báo lỗi rõ ràng trước khi gọi A
+                if not lot_code:
+                    errors.append(f"Dự án {code}: có lô bị thiếu lot_code trong file Excel.")
+                    continue
 
-                rl_st, rl_js = await sa_create_lot(
-                    client,
-                    headers=headers,
-                    lot_body=lot_body,
+                bulk_lots.append(
+                    {
+                        "lot_code": lot_code,
+                        "name": l.get("name") or None,
+                        "description": l.get("description") or None,
+                        "starting_price": l.get("starting_price"),
+                        "deposit_amount": l.get("deposit_amount"),
+                        "bid_step_vnd": l.get("bid_step_vnd"),
+                        "area": l.get("area"),
+                        "status": "AVAILABLE",
+                    }
                 )
 
-                if rl_st in (200, 201, 204):
-                    continue
+            # nếu tất cả lot đều lỗi lot_code rỗng -> khỏi gọi bulk
+            if not bulk_lots:
+                continue
 
-                if rl_st == 409:
-                    # ❌ không ghi đè lot
-                    continue
+            st_bulk, js_bulk = await sa_bulk_create_lots(
+                client,
+                token=token,                 # ✅ bắt buộc vì helper bạn định nghĩa token: str
+                project_code=code,
+                lots=bulk_lots,
+                company_code=company_code,
+                headers=headers,
+            )
 
-                try:
-                    lmsg = (rl_js or {}).get("detail") or (rl_js or {}).get("message") or ""
-                except Exception:
-                    lmsg = ""
-
+            if st_bulk != 200:
+                detail = (js_bulk or {}).get("detail", js_bulk) if isinstance(js_bulk, dict) else js_bulk
                 errors.append(
-                    f"Lô {l.get('lot_code')} thuộc {code}: tạo thất bại (HTTP {rl_st}) {lmsg}"
+                    f"Dự án {code}: bulk lots thất bại (HTTP {st_bulk}) - { _pretty(detail) }"
                 )
 
-    # -----------------------
-    # KẾT LUẬN
-    # -----------------------
-    if not errors:
-        return RedirectResponse(
-            url=f"/projects?msg=import_ok&c={len(created_codes)}",
-            status_code=303,
+    # ✅ yêu cầu mới của bạn:
+    # - nếu có lỗi: đứng tại preview show lỗi
+    if errors:
+        return templates.TemplateResponse(
+            "pages/projects/import_preview.html",
+            {
+                "request": request,
+                "title": "Xem trước import dự án",
+                "me": me,
+                "company_code": company_code,
+                "payload_json": payload,
+                "preview": json.loads(payload),
+                "err": errors,
+            },
+            status_code=400,
         )
 
-    if created_codes:
-        # Partial OK
-        return RedirectResponse(
-            url=f"/projects?msg=import_ok&c={len(created_codes)}",
-            status_code=303,
-        )
-
-    # Không tạo được gì → quay lại preview
-    return templates.TemplateResponse(
-        "pages/projects/import_preview.html",
-        {
-            "request": request,
-            "title": "Xem trước import dự án",
-            "me": me,
-            "company_code": company_code,
-            "payload_json": payload,
-            "preview": json.loads(payload),
-            "err": errors,
-        },
-        status_code=400,
+    # - nếu không lỗi: redirect như cũ
+    return RedirectResponse(
+        url=f"/projects?msg=import_ok&c={len(created_codes)}",
+        status_code=303,
     )
-
 
 # =========================
 # 2) LIST

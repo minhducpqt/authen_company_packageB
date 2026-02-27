@@ -29,6 +29,7 @@ EP_LOT_DETAIL = "/api/v1/lots/{lot_id}"
 EP_LOT_DETAIL_FOR_EDIT = "/api/v1/lots/{lot_id}/detail_for_edit"
 EP_LOT_LOCK = "/api/v1/lots/{lot_id}/lock"
 EP_LOT_UNLOCK = "/api/v1/lots/{lot_id}/unlock"
+EP_LOT_BULK = "/api/v1/lots/bulk"
 
 
 # ==============================
@@ -128,6 +129,38 @@ async def sa_get_lot_detail_for_edit(
     r = await client.get(EP_LOT_DETAIL_FOR_EDIT.format(lot_id=lot_id), headers=h)
     return r.status_code, await _safe_json(r)
 
+
+async def sa_bulk_create_lots(
+    client: httpx.AsyncClient,
+    token: str,
+    project_code: str,
+    lots: list[dict],
+    company_code: Optional[str] = None,
+    headers: Optional[Dict[str, str]] = None,
+) -> Tuple[int, Optional[Dict[str, Any]]]:
+    """
+    Helper bulk create lots ở Service A.
+    POST /api/v1/lots/bulk
+    Payload:
+      {
+        "company_code": "...",   # optional nếu token đã scope company
+        "project_code": "...",
+        "lots": [...]
+      }
+    """
+    h = _merge_headers(token=token, company_code=company_code, headers=headers)
+
+    payload: Dict[str, Any] = {
+        "project_code": project_code,
+        "lots": lots,
+    }
+    # Service A bulk: company_scope or payload.company_code
+    # -> nếu token đã scope thì không cần, còn không thì gửi.
+    if company_code:
+        payload["company_code"] = company_code
+
+    r = await client.post(EP_LOT_BULK, json=payload, headers=h)
+    return r.status_code, await _safe_json(r)
 
 # =========================================================
 # ✅ Router endpoints (Service B) - proxy to Service A
@@ -259,6 +292,54 @@ async def api_update_lot(
         status_code=r.status_code,
     )
 
+
+@router.post("/api/bulk", response_class=JSONResponse)
+async def api_bulk_create_lots(
+    request: Request,
+    payload: Dict[str, Any] = Body(...),
+):
+    """
+    Proxy bulk create lots:
+      POST /lots/api/bulk
+    Body:
+      {
+        "project_code": "...",
+        "lots": [...],
+        "company_code": "..."   # optional
+      }
+    """
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    me = await fetch_me(token)
+    me_company = (me or {}).get("company_code")
+
+    project_code = (payload.get("project_code") or "").strip()
+    lots = payload.get("lots") or []
+    body_company = (payload.get("company_code") or "").strip() or None
+
+    if not project_code:
+        return JSONResponse({"error": "project_code_required"}, status_code=422)
+    if not isinstance(lots, list) or not lots:
+        return JSONResponse({"error": "lots_must_be_non_empty_list"}, status_code=422)
+
+    # ưu tiên company từ me, fallback từ body (phù hợp logic _merge_headers + A bulk)
+    company_code = me_company or body_company
+
+    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=60.0) as client:
+        st, data = await sa_bulk_create_lots(
+            client,
+            token=token,
+            project_code=project_code,
+            lots=lots,
+            company_code=company_code,
+        )
+
+    return JSONResponse(
+        data or {"error": "upstream_failed", "status": st},
+        status_code=st if st else 502,
+    )
 
 @router.post("/api/{lot_id}/lock", response_class=JSONResponse)
 async def api_lock_lot(
