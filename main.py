@@ -84,7 +84,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(
     title="Dashboard Công ty — v20",
     lifespan=lifespan,
-    # docs_url=None,  # TẮT /docs
+    docs_url=None,  # TẮT /docs
 )
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
