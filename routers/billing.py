@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import os
 from typing import Optional, List, Tuple, Any, Dict
 
@@ -139,7 +140,73 @@ async def billing_invoice_detail_page(
 
 
 # =========================================================
+# SUPER BILLING — PAGES (NEW)
+# =========================================================
+
+@router.get("/billing/admin/dashboard", response_class=HTMLResponse)
+async def billing_admin_dashboard_page(
+    request: Request,
+    from_month: Optional[str] = Query(None, description="YYYY-MM-01"),
+    to_month: Optional[str] = Query(None, description="YYYY-MM-01"),
+    q: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    size: int = Query(50, ge=1, le=200),
+):
+    """
+    Dashboard SUPER:
+    - Tổng doanh số VNTECHX theo khoảng tháng
+    - breakdown theo công ty
+    - có nút chạy cron (gọi run-snapshot)
+    """
+    token = get_access_token(request)
+    if not token:
+        return _unauth_redirect("%2Fbilling%2Fadmin%2Fdashboard")
+
+    return templates.TemplateResponse(
+        "pages/billing/admin_dashboard.html",
+        {
+            "request": request,
+            "title": "Billing — Dashboard (SUPER)",
+            "init_from_month": from_month or "",
+            "init_to_month": to_month or "",
+            "init_q": q or "",
+            "init_page": page,
+            "init_size": size,
+        },
+    )
+
+
+@router.get("/billing/admin/companies/view/{company_code}", response_class=HTMLResponse)
+async def billing_admin_company_detail_page(
+    request: Request,
+    company_code: str = Path(...),
+    from_month: Optional[str] = Query(None, description="YYYY-MM-01"),
+    to_month: Optional[str] = Query(None, description="YYYY-MM-01"),
+):
+    """
+    Trang chi tiết 1 công ty (SUPER):
+    - status, invoices, payments
+    - cấu hình contract (tái sử dụng admin_contracts.html hoặc template riêng)
+    """
+    token = get_access_token(request)
+    if not token:
+        return _unauth_redirect(f"%2Fbilling%2Fadmin%2Fcompanies%2Fview%2F{company_code}")
+
+    return templates.TemplateResponse(
+        "pages/billing/admin_company_detail.html",
+        {
+            "request": request,
+            "title": f"Billing — Công ty {company_code} (SUPER)",
+            "company_code": company_code,
+            "init_from_month": from_month or "",
+            "init_to_month": to_month or "",
+        },
+    )
+
+
+# =========================================================
 # A) COMPANY VIEW (token company) — STATUS / INVOICES / PAYMENTS
+# (GIỮ NGUYÊN)
 # =========================================================
 
 @router.get("/billing/status/data", response_class=JSONResponse)
@@ -264,7 +331,7 @@ async def billing_payments_data(
 
 # =========================================================
 # B) SUPER ADMIN — COMPANIES OVERVIEW / CONTRACTS / PAYMENTS / JOBS
-# (giữ nguyên các route admin bạn đã viết)
+# (GIỮ NGUYÊN các route đang hoạt động)
 # =========================================================
 
 @router.get("/billing/admin/companies", response_class=HTMLResponse)
@@ -431,6 +498,153 @@ async def billing_admin_run_snapshot(
             payload={},
             params=params,
         )
+
+    if r.status_code != 200:
+        return _map_error(r)
+    return JSONResponse(r.json(), status_code=200)
+
+
+# =========================================================
+# SUPER ADMIN — NEW JSON PROXIES (match Service A additions)
+# =========================================================
+
+@router.get("/billing/admin/dashboard/data", response_class=JSONResponse)
+async def billing_admin_dashboard_data(
+    request: Request,
+    from_month: Optional[str] = Query(None, description="YYYY-MM-01"),
+    to_month: Optional[str] = Query(None, description="YYYY-MM-01"),
+    q: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    size: int = Query(50, ge=1, le=200),
+):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    params: List[Tuple[str, str | int]] = [("page", page), ("size", size)]
+    if from_month:
+        params.append(("from_month", from_month))
+    if to_month:
+        params.append(("to_month", to_month))
+    if q:
+        params.append(("q", q))
+
+    async with httpx.AsyncClient() as client:
+        r = await _api_get(client, "/api/v1/billing/admin/dashboard", token, params)
+
+    if r.status_code != 200:
+        return _map_error(r)
+    return JSONResponse(r.json(), status_code=200)
+
+
+@router.get("/billing/admin/companies/{company_code}/status/data", response_class=JSONResponse)
+async def billing_admin_company_status_data(
+    request: Request,
+    company_code: str = Path(...),
+):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    async with httpx.AsyncClient() as client:
+        r = await _api_get(client, f"/api/v1/billing/admin/companies/{company_code}/status", token, params=[])
+
+    if r.status_code != 200:
+        return _map_error(r)
+    return JSONResponse(r.json(), status_code=200)
+
+
+@router.get("/billing/admin/companies/{company_code}/invoices/data", response_class=JSONResponse)
+async def billing_admin_company_invoices_data(
+    request: Request,
+    company_code: str = Path(...),
+    from_month: Optional[str] = Query(None),
+    to_month: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=200),
+):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    params: List[Tuple[str, str | int]] = [("page", page), ("size", size)]
+    if from_month:
+        params.append(("from_month", from_month))
+    if to_month:
+        params.append(("to_month", to_month))
+
+    async with httpx.AsyncClient() as client:
+        r = await _api_get(client, f"/api/v1/billing/admin/companies/{company_code}/invoices", token, params)
+
+    if r.status_code != 200:
+        return _map_error(r)
+    return JSONResponse(r.json(), status_code=200)
+
+
+@router.get("/billing/admin/companies/{company_code}/invoices/{invoice_id}/data", response_class=JSONResponse)
+async def billing_admin_company_invoice_detail_data(
+    request: Request,
+    company_code: str = Path(...),
+    invoice_id: int = Path(..., ge=1),
+):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    async with httpx.AsyncClient() as client:
+        r = await _api_get(
+            client,
+            f"/api/v1/billing/admin/companies/{company_code}/invoices/{invoice_id}",
+            token,
+            params=[],
+        )
+
+    if r.status_code != 200:
+        return _map_error(r)
+    return JSONResponse(r.json(), status_code=200)
+
+
+@router.get("/billing/admin/companies/{company_code}/invoices/{invoice_id}/projects/data", response_class=JSONResponse)
+async def billing_admin_company_invoice_projects_data(
+    request: Request,
+    company_code: str = Path(...),
+    invoice_id: int = Path(..., ge=1),
+):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    async with httpx.AsyncClient() as client:
+        r = await _api_get(
+            client,
+            f"/api/v1/billing/admin/companies/{company_code}/invoices/{invoice_id}/projects",
+            token,
+            params=[],
+        )
+
+    if r.status_code != 200:
+        return _map_error(r)
+    return JSONResponse(r.json(), status_code=200)
+
+
+@router.get("/billing/admin/companies/{company_code}/payments/data", response_class=JSONResponse)
+async def billing_admin_company_payments_data(
+    request: Request,
+    company_code: str = Path(...),
+    invoice_id: Optional[int] = Query(None, ge=1),
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=200),
+):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    params: List[Tuple[str, str | int]] = [("page", page), ("size", size)]
+    if invoice_id:
+        params.append(("invoice_id", invoice_id))
+
+    async with httpx.AsyncClient() as client:
+        r = await _api_get(client, f"/api/v1/billing/admin/companies/{company_code}/payments", token, params)
 
     if r.status_code != 200:
         return _map_error(r)
