@@ -75,12 +75,28 @@
 </div>
 
 <script>
+  const pad2 = (n) => String(n).padStart(2, '0');
+
+  function fmtDateTime(s) {
+    if (!s) return '—';
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return String(s);
+    return `${pad2(d.getDate())}-${pad2(d.getMonth()+1)}-${d.getFullYear()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+  }
+
+  function fmtMonth(s) {
+    if (!s) return '—';
+    const str = String(s);
+    const y = str.slice(0, 4);
+    const m = str.slice(5, 7);
+    if (y && m) return `${m}-${y}`;
+    return str;
+  }
+
   const money = (v) => {
-    const n = Number(v || 0);
+    const n = Math.round(Number(v || 0));
     return n.toLocaleString('vi-VN') + ' đ';
   };
-  const fmtDate = (s) => s ? String(s).slice(0, 10) : '—';
-  const fmtMonth = (s) => s ? String(s).slice(0, 7) : '—';
 
   function setLoading(on) {
     document.getElementById('loading')?.classList.toggle('hidden', !on);
@@ -105,9 +121,9 @@
     try {
       const st = await fetchJSON('/billing/status/data');
       document.getElementById('stStatus').textContent = st?.billing_status || '—';
-      document.getElementById('stLockUntil').textContent = st?.lock_until ? ('Lock đến: ' + st.lock_until) : '';
+      document.getElementById('stLockUntil').textContent = st?.lock_until ? ('Lock đến: ' + fmtDateTime(st.lock_until)) : '';
       document.getElementById('stOutstanding').textContent = money(st?.current_outstanding || 0);
-      document.getElementById('stNextDue').textContent = st?.next_due_date || '—';
+      document.getElementById('stNextDue').textContent = st?.next_due_date ? fmtDateTime(st.next_due_date) : '—';
 
       const inv = await fetchJSON('/billing/invoices/data?page=1&size=10');
       const rows = inv?.data || [];
@@ -132,7 +148,7 @@
               <td class="px-4 py-2 text-right">${money(r.amount_paid)}</td>
               <td class="px-4 py-2 text-right">${money(r.amount_outstanding)}</td>
               <td class="px-4 py-2">${badge(r.status)}</td>
-              <td class="px-4 py-2">${fmtDate(r.due_date)}</td>
+              <td class="px-4 py-2">${fmtDateTime(r.due_date)}</td>
               <td class="px-4 py-2 text-right">
                 <a class="text-indigo-600 hover:underline"
                    href="/billing/invoices/view/${r.id}">

@@ -92,9 +92,28 @@
 
 <script>
   const invoiceId = {{ invoice_id }};
-  const money = (v) => (Number(v||0)).toLocaleString('vi-VN') + ' đ';
-  const fmtDate = (s) => s ? String(s).slice(0,10) : '—';
-  const fmtMonth = (s) => s ? String(s).slice(0,7) : '—';
+  const pad2 = (n) => String(n).padStart(2, '0');
+
+  function fmtDateTime(s) {
+    if (!s) return '—';
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return String(s);
+    return `${pad2(d.getDate())}-${pad2(d.getMonth()+1)}-${d.getFullYear()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+  }
+
+  function fmtMonth(s) {
+    if (!s) return '—';
+    const str = String(s);
+    const y = str.slice(0, 4);
+    const m = str.slice(5, 7);
+    if (y && m) return `${m}-${y}`;
+    return str;
+  }
+
+  const money = (v) => {
+    const n = Math.round(Number(v || 0));
+    return n.toLocaleString('vi-VN') + ' đ';
+  };
 
   function setLoading(id, on) { document.getElementById(id)?.classList.toggle('hidden', !on); }
 
@@ -122,7 +141,7 @@
       document.getElementById('sTotal').textContent = money(inv?.total_fee_month);
       document.getElementById('sPaid').textContent  = money(inv?.amount_paid);
       document.getElementById('sOut').textContent   = money(inv?.amount_outstanding);
-      document.getElementById('sDue').textContent   = fmtDate(inv?.due_date);
+      document.getElementById('sDue').textContent   = fmtDateTime(inv?.due_date);
       document.getElementById('sStatus').innerHTML  = badge(inv?.status);
 
       const projects = await fetchJSON(`/billing/invoices/${invoiceId}/projects/data`);
@@ -142,7 +161,7 @@
                 <div class="font-medium text-slate-800">${r.project_code || ''}</div>
                 <div class="text-xs text-slate-500">ID: ${r.project_id}</div>
               </td>
-              <td class="px-4 py-2">${r.auction_at ? r.auction_at : '—'}</td>
+              <td class="px-4 py-2">${r.auction_at ? fmtDateTime(r.auction_at) : '—'}</td>
               <td class="px-4 py-2 text-right">${money(r.total_dossier_amount)}</td>
               <td class="px-4 py-2 text-right">${money(r.total_price_gap_amount)}</td>
               <td class="px-4 py-2 text-right">${money(r.base_value)}</td>
@@ -165,7 +184,7 @@
         for (const r of rowsPay) {
           tbPay.insertAdjacentHTML('beforeend', `
             <tr class="hover:bg-slate-50">
-              <td class="px-4 py-2">${r.paid_at || '—'}</td>
+              <td class="px-4 py-2">${r.paid_at ? fmtDateTime(r.paid_at) : '—'}</td>
               <td class="px-4 py-2 text-right font-semibold">${money(r.amount)}</td>
               <td class="px-4 py-2 text-slate-700">${r.note || ''}</td>
             </tr>
