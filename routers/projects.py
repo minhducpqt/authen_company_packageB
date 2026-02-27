@@ -75,6 +75,60 @@ async def _post_json(client: httpx.AsyncClient, url: str, headers: dict, payload
     except Exception:
         return r.status_code, None
 
+def _safe_str(x) -> str:
+    try:
+        return str(x)
+    except Exception:
+        return ""
+
+
+def _pack_toggle_error(status_code: int, data: dict | None) -> tuple[str, str, str]:
+    """
+    Return (err_msg, err_hint, err_fields)
+    - err_fields: dạng "- ...\n- ..."
+    """
+    err_msg = "Không thể thay đổi trạng thái dự án."
+    err_hint = ""
+    err_fields = ""
+
+    detail = None
+    if isinstance(data, dict):
+        detail = data.get("detail", data)
+
+    # detail string
+    if isinstance(detail, str) and detail.strip():
+        err_msg = detail.strip()
+        # gợi ý riêng cho 423
+        if status_code == 423:
+            err_hint = "Tài khoản công ty đang bị khóa do công nợ/chi phí. Vui lòng kiểm tra Billing hoặc liên hệ nhà cung cấp."
+        return err_msg, err_hint, err_fields
+
+    # detail dict
+    if isinstance(detail, dict):
+        if detail.get("msg"):
+            err_msg = _safe_str(detail.get("msg"))
+        if detail.get("hint"):
+            err_hint = _safe_str(detail.get("hint"))
+
+        errs = detail.get("errors")
+        if isinstance(errs, list):
+            lines = []
+            for e in errs:
+                if isinstance(e, dict):
+                    m = (e.get("message") or e.get("msg") or "").strip()
+                    f = (e.get("field") or "").strip()
+                    if m and f:
+                        lines.append(f"- {m} ({f})")
+                    elif m:
+                        lines.append(f"- {m}")
+            if lines:
+                err_fields = "\n".join(lines)
+
+    # fallback cho 423 nếu chưa có hint
+    if status_code == 423 and not err_hint:
+        err_hint = "Tài khoản công ty đang bị khóa do công nợ/chi phí. Vui lòng kiểm tra Billing hoặc liên hệ nhà cung cấp."
+
+    return err_msg, err_hint, err_fields
 
 def _b64url_decode(data: str) -> bytes:
     data += "=" * ((4 - len(data) % 4) % 4)
@@ -545,7 +599,6 @@ async def create_submit(
     to = "/projects?msg=created" if st == 200 else "/projects?err=create_failed"
     return RedirectResponse(url=to, status_code=303)
 
-
 # =========================
 # 5) TOGGLE (Admin)
 # =========================
@@ -560,20 +613,38 @@ async def toggle_project(
     if not token:
         return RedirectResponse(url=f"/login?next=/projects/{project_id}", status_code=303)
 
-    action = (action or "").lower()
+    action = (action or "").lower().strip()
     ep = EP_ENABLE if action == "enable" else EP_DISABLE if action == "disable" else None
+    redir = (next or "/projects").strip() or "/projects"
+
     if not ep:
-        redir = next or "/projects"
-        return RedirectResponse(url=f"{redir}?err=bad_action", status_code=303)
+        sep = "&" if "?" in redir else "?"
+        return RedirectResponse(url=f"{redir}{sep}err=bad_action&err_msg={quote('Thao tác không hợp lệ.')}", status_code=303)
 
     async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
-        st, _ = await _post_json(
+        st, data = await _post_json(
             client, ep.format(project_id=project_id), {"Authorization": f"Bearer {token}"}, None
         )
 
-    redir = next or "/projects"
-    to = f"{redir}?msg=toggled" if st == 200 else f"{redir}?err=toggle_failed"
-    return RedirectResponse(url=to, status_code=303)
+    if st == 200:
+        sep = "&" if "?" in redir else "?"
+        return RedirectResponse(url=f"{redir}{sep}msg=toggled", status_code=303)
+
+    # FAIL -> đẩy msg về UI
+    err_msg, err_hint, err_fields = _pack_toggle_error(st, data)
+
+    sep = "&" if "?" in redir else "?"
+    url = (
+        f"{redir}{sep}err=toggle_failed"
+        f"&err_code={st}"
+        f"&err_msg={quote(err_msg)}"
+    )
+    if err_hint:
+        url += f"&err_hint={quote(err_hint)}"
+    if err_fields:
+        url += f"&err_fields={quote(err_fields)}"
+
+    return RedirectResponse(url=url, status_code=303)
 
 
 # =========================

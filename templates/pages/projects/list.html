@@ -22,6 +22,35 @@
     </div>
   {% endif %}
 
+  {# ✅ NEW: show toggle error #}
+  {% set err = request.query_params.get('err') %}
+  {% if err == 'toggle_failed' %}
+    {% set err_msg = request.query_params.get('err_msg','') %}
+    {% set err_hint = request.query_params.get('err_hint','') %}
+    {% set err_fields = request.query_params.get('err_fields','') %}
+    {% set err_code = request.query_params.get('err_code','') %}
+
+    <div class="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700">
+      <div class="flex items-start gap-2">
+        <i class="ri-error-warning-line mt-0.5"></i>
+        <div class="space-y-1">
+          <div class="font-semibold">
+            {{ err_msg or 'Không thể thay đổi trạng thái dự án.' }}
+            {% if err_code %}<span class="text-xs font-normal text-rose-600">(HTTP {{ err_code }})</span>{% endif %}
+          </div>
+
+          {% if err_fields %}
+            <pre class="whitespace-pre-wrap text-sm text-rose-700 bg-white/60 border border-rose-100 rounded p-2">{{ err_fields }}</pre>
+          {% endif %}
+
+          {% if err_hint %}
+            <div class="text-sm text-rose-700">{{ err_hint }}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
   <form id="filterForm" action="/projects" method="get" class="flex flex-wrap gap-3 items-end mb-4">
     <div>
       <label class="block text-sm text-slate-600 mb-1">Tìm kiếm</label>
