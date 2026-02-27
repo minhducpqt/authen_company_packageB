@@ -763,25 +763,39 @@ async def dossiers_paid_summary_page(
     data_summary_customer: Dict[str, Any] | None = None
     data_totals_type: Dict[str, Any] | None = None
     st1 = st2 = None
+    error: Dict[str, Any] | None = None
 
     if selected_project:
-        params = {"project": selected_project, "expose_phone": "true"}  # luôn đủ param
-        st1, data1 = await _get_json("/api/v1/reports/dossiers/paid/summary-customer", token, params)
+        # luôn đủ param
+        params1 = {"project": selected_project, "expose_phone": "true"}
+        st1, data1 = await _get_json("/api/v1/reports/dossiers/paid/summary-customer", token, params1)
+
         st2, data2 = await _get_json(
             "/api/v1/reports/dossiers/paid/totals-by-type",
             token,
             {"project": selected_project},
         )
+
         if st1 == 200:
             data_summary_customer = data1
+        else:
+            error = {"where": "summary-customer", "status": st1, "body": data1}
+
         if st2 == 200:
             data_totals_type = data2
+        else:
+            # giữ lỗi đầu tiên, hoặc ghi đè nếu chưa có
+            if not error:
+                error = {"where": "totals-by-type", "status": st2, "body": data2}
+
+    else:
+        # chưa chọn project -> KHÔNG coi là lỗi gateway
+        error = {"where": "ui", "status": 0, "body": {"detail": "Vui lòng chọn dự án để xem tổng hợp."}}
 
     data = {
         "summary_customer": data_summary_customer or {"items": [], "count": 0, "status": st1},
         "totals_by_type": data_totals_type or {"items": [], "count": 0, "status": st2},
     }
-    ok = (st1 == 200) or (st2 == 200)
 
     ctx = {
         "request": request,
@@ -790,8 +804,11 @@ async def dossiers_paid_summary_page(
         "projects": projects,
         "project": selected_project,
         "data": data,
+        "error": error,  # template có thể dùng để show banner
     }
-    return templates.TemplateResponse("reports/dossiers_paid.html", ctx, status_code=200 if ok else 502)
+
+    # ✅ QUAN TRỌNG: SSR page luôn trả 200, không trả 502 kiểu "chết ở B"
+    return templates.TemplateResponse("reports/dossiers_paid.html", ctx, status_code=200)
 
 
 @router.get("/reports/dossiers/paid/summary/customer/export")
