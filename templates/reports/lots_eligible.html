@@ -763,13 +763,6 @@
                       <i class="ri-team-line"></i> Xem khách
                     </button>
                   </div>
-                  <div class="sub-actions" style="margin-top:8px">
-                    {% if project_id_val %}
-                      <a href="/reports/v2/projects/{{ project_id_val }}/lots/{{ lot_id }}" target="_blank" rel="noopener">
-                        <i class="ri-external-link-line"></i> Mở trang chi tiết
-                      </a>
-                    {% endif %}
-                  </div>
                 </td>
               </tr>
             {% endfor %}
@@ -800,9 +793,6 @@
         </div>
       </div>
       <div class="m-actions">
-        <a class="btn" id="mOpenDetail" href="javascript:void(0)" target="_blank" rel="noopener">
-          <i class="ri-external-link-line"></i> Mở trang chi tiết
-        </a>
         <button class="m-close" type="button" onclick="closeLotModal()" aria-label="Đóng">×</button>
       </div>
     </div>
