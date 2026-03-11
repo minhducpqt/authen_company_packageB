@@ -36,9 +36,16 @@ def _upstream_path(full_path: str) -> str:
 
 
 # Endpoints that MUST allow unauthenticated calls (no Authorization header)
+# Giữ nguyên các path cũ, chỉ bổ sung đúng 3 path public bank-sms mới.
 OPEN_PATHS = {
     "/auth/login",
     "/auth/refresh",
+
+    # Public mobile bank-sms APIs (NEW)
+    "/public/mobile/bank-sms/senders",
+    "/public/mobile/bank-sms/ingest",
+    "/public/mobile/bank-sms/ingest/bulk",
+
     # add more public auth endpoints here if needed
     # "/auth/forgot-password",
     # "/auth/reset-password",
