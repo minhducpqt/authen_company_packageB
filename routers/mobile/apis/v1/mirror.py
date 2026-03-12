@@ -41,10 +41,13 @@ OPEN_PATHS = {
     "/auth/login",
     "/auth/refresh",
 
-    # Public mobile bank-sms APIs (NEW)
+    # Public mobile bank-sms APIs
     "/public/mobile/bank-sms/senders",
     "/public/mobile/bank-sms/ingest",
     "/public/mobile/bank-sms/ingest/bulk",
+
+    # Public mobile device heartbeat APIs
+    "/public/mobile/device-heartbeat/ping",
 
     # add more public auth endpoints here if needed
     # "/auth/forgot-password",
