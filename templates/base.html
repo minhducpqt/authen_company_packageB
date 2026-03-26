@@ -385,8 +385,16 @@
             </a>
           </li>
 
-          {# ===== 3. Kế toán & dòng tiền (CHỈ BILLING) ===== #}
+          {# ===== 3. Kế toán & dòng tiền (THÊM 3.2) ===== #}
           <li class="side-title mt-4">3. Kế toán & dòng tiền</li>
+
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/invoice-exports') %}active{% endif %}"
+               href="/invoice-exports">
+              <i class="ri-file-paper-2-line"></i> 3.2 Xuất hoá đơn
+            </a>
+          </li>
+
           <li>
             <a class="side-link {% if request.url.path.startswith('/billing') %}active{% endif %}"
                href="/billing">
