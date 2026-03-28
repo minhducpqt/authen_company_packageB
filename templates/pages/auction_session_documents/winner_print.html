@@ -269,13 +269,22 @@
             {%- set company_name = (p.get('company_name') or '') -%}
             {%- set company_upper = (company_name | upper) -%}
 
-            {# ===== STARTING PRICE: MUST BE ORIGINAL (initial), not winning round =====
-            API mới bạn yêu cầu sẽ có 4 field duplicated.
-            - Ưu tiên dùng field mới (initial_*)
-            - Nếu chưa có (chưa deploy API), fallback về lot.starting_price_* (để không vỡ)
+            {# ===== STARTING PRICE: MUST BE ORIGINAL (initial round 1), not winning round =====
+            Ưu tiên field API A đang trả đúng:
+            - lot.starting_price_initial_total_vnd
+            - lot.starting_price_initial_per_sqm_vnd
+            Fallback về field cũ để không làm vỡ các case payload cũ.
             #}
-            {%- set init_start_total = (w.get('initial_starting_price_total_vnd') if w.get('initial_starting_price_total_vnd') is not none else lot.get('starting_price_total_vnd')) -%}
-            {%- set init_start_per   = (w.get('initial_starting_price_per_sqm_vnd') if w.get('initial_starting_price_per_sqm_vnd') is not none else lot.get('starting_price_per_sqm_vnd')) -%}
+            {%- set init_start_total = (
+              lot.get('starting_price_initial_total_vnd')
+              if lot.get('starting_price_initial_total_vnd') is not none
+              else lot.get('starting_price_total_vnd')
+            ) -%}
+            {%- set init_start_per = (
+              lot.get('starting_price_initial_per_sqm_vnd')
+              if lot.get('starting_price_initial_per_sqm_vnd') is not none
+              else lot.get('starting_price_per_sqm_vnd')
+            ) -%}
 
             {# round-winning start (đã có trong payload mới), KHÔNG in, giữ để debug nếu cần #}
             {%- set win_round_start_total = w.get('winning_round_starting_price_total_vnd') -%}
@@ -376,7 +385,7 @@
                             </td>
                           </tr>
 
-                          {# Giá khởi điểm: dùng giá khởi điểm BAN ĐẦU (initial) #}
+                          {# Giá khởi điểm: dùng giá khởi điểm BAN ĐẦU (round 1) #}
                           <tr>
                             <td class="label"><strong>Giá khởi điểm:</strong></td>
                             <td class="value">
