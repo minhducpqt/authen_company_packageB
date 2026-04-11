@@ -698,3 +698,21 @@ async def billing_admin_company_payments_data(
     if r.status_code != 200:
         return _map_error(r)
     return JSONResponse(r.json(), status_code=200)
+
+@router.get("/billing/invoices/pay/{invoice_id}", response_class=HTMLResponse)
+async def billing_invoice_pay_page(
+    request: Request,
+    invoice_id: int = Path(..., ge=1),
+):
+    token = get_access_token(request)
+    if not token:
+        return _unauth_redirect(f"%2Fbilling%2Finvoices%2Fpay%2F{invoice_id}")
+
+    return templates.TemplateResponse(
+        "pages/billing/invoice_pay.html",
+        {
+            "request": request,
+            "title": "3.3 Billing — Thanh toán hóa đơn",
+            "invoice_id": invoice_id,
+        },
+    )

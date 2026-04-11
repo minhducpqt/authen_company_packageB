@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="space-y-5">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-xl font-semibold text-slate-800">3.3 Billing — Thanh toán hóa đơn</h1>
+      <p class="text-sm text-slate-500">Quét QR hoặc chuyển khoản đúng số tiền và đúng nội dung để hệ thống đối soát nhanh hơn.</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="/billing/invoices"
+         class="px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm">
+        <i class="ri-arrow-left-line mr-1"></i> Danh sách hóa đơn
+      </a>
+      <a id="btnViewInvoice"
+         href="/billing/invoices/view/{{ invoice_id }}"
+         class="px-3 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 text-sm">
+        <i class="ri-file-text-line mr-1"></i> Xem chi tiết hóa đơn
+      </a>
+    </div>
+  </div>
+
+  <div id="loadingCard" class="bg-white border border-slate-200 rounded-xl p-6 text-sm text-slate-500">
+    <i class="ri-loader-2-line animate-spin mr-1"></i> Đang tải thông tin thanh toán...
+  </div>
+
+  <div id="errorCard" class="hidden bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">
+    Không tải được thông tin thanh toán. Vui lòng thử lại.
+  </div>
+
+  <div id="contentWrap" class="hidden space-y-5">
+    <!-- Summary -->
+    <div class="bg-white border border-slate-200 rounded-xl p-5">
+      <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div class="space-y-2">
+          <div class="text-sm text-slate-500">Hóa đơn cần thanh toán</div>
+          <div id="invoiceTitle" class="text-2xl font-semibold text-slate-800">—</div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+            <div>
+              <div class="text-xs text-slate-500">Mã công ty</div>
+              <div id="companyCode" class="text-sm font-medium text-slate-800">—</div>
+            </div>
+            <div>
+              <div class="text-xs text-slate-500">Hạn thanh toán</div>
+              <div id="dueDate" class="text-sm font-medium text-slate-800">—</div>
+            </div>
+            <div>
+              <div class="text-xs text-slate-500">Trạng thái</div>
+              <div id="statusBadge" class="text-sm">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="min-w-[260px] rounded-2xl border border-indigo-200 bg-indigo-50 px-5 py-4">
+          <div class="text-sm text-indigo-700">Số tiền cần thanh toán</div>
+          <div id="amountText" class="mt-2 text-3xl font-bold text-indigo-700">—</div>
+          <div class="mt-2 text-xs text-indigo-600">
+            Ưu tiên thanh toán đúng số tiền còn nợ của hóa đơn này.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment guide -->
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-5">
+      <!-- QR -->
+      <div class="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-5">
+        <div class="font-semibold text-slate-800">Quét mã QR thanh toán</div>
+        <div class="text-sm text-slate-500 mt-1">Dùng ứng dụng ngân hàng để quét mã VietQR bên dưới.</div>
+
+        <div class="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 flex items-center justify-center">
+          <img id="qrImage"
+               src=""
+               alt="VietQR"
+               class="max-w-full w-[320px] h-auto rounded-xl border border-slate-200 bg-white p-2" />
+        </div>
+
+        <div class="mt-4 text-xs text-slate-500 break-all">
+          QR đã chứa sẵn số tiền và nội dung chuyển khoản.
+        </div>
+      </div>
+
+      <!-- Bank info -->
+      <div class="lg:col-span-3 bg-white border border-slate-200 rounded-xl p-5">
+        <div class="font-semibold text-slate-800">Thông tin chuyển khoản</div>
+        <div class="text-sm text-slate-500 mt-1">Bạn có thể quét QR hoặc nhập tay theo thông tin dưới đây.</div>
+
+        <div class="mt-5 space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
+            <div class="text-sm text-slate-500">Đơn vị nhận tiền</div>
+            <div id="accountName" class="md:col-span-2 text-sm font-semibold text-slate-800">—</div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+            <div class="text-sm text-slate-500">Số tài khoản</div>
+            <div id="accountNumber" class="text-sm font-semibold text-slate-800">—</div>
+            <div class="md:text-right">
+              <button class="copy-btn px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm"
+                      data-copy-target="accountNumberRaw">
+                Copy
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
+            <div class="text-sm text-slate-500">Ngân hàng</div>
+            <div id="bankName" class="md:col-span-2 text-sm font-medium text-slate-800">—</div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
+            <div class="text-sm text-slate-500">Chi nhánh</div>
+            <div id="branchName" class="md:col-span-2 text-sm font-medium text-slate-800">—</div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+            <div class="text-sm text-slate-500">Số tiền</div>
+            <div id="amountInline" class="text-sm font-semibold text-slate-800">—</div>
+            <div class="md:text-right">
+              <button class="copy-btn px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm"
+                      data-copy-target="amountRaw">
+                Copy
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
+            <div class="text-sm text-slate-500">Nội dung chuyển khoản</div>
+            <div class="md:col-span-2">
+              <div class="flex flex-col md:flex-row gap-2 md:items-center">
+                <div id="transferContent"
+                     class="flex-1 text-sm font-semibold text-slate-800 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 break-all">
+                  —
+                </div>
+                <button class="copy-btn px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm"
+                        data-copy-target="transferContentRaw">
+                  Copy
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <div class="text-sm font-semibold text-amber-800">Lưu ý</div>
+          <ul class="mt-2 text-sm text-amber-700 space-y-1">
+            <li>• Vui lòng chuyển đúng số tiền còn nợ.</li>
+            <li>• Ghi đúng nội dung chuyển khoản để hệ thống đối soát nhanh hơn.</li>
+            <li>• Nếu hóa đơn đã được thanh toán trước đó, vui lòng kiểm tra lại trước khi chuyển khoản.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const INVOICE_ID = {{ invoice_id|int }};
+
+  const RECEIVER = {
+    account_name: "CÔNG TY TNHH CÔNG NGHỆ VNTECHX",
+    account_number: "87328888",
+    branch_name: "Techcombank Hoàng Mai",
+    bank_name: "Ngân hàng Thương Mại cổ phần Kỹ Thương Việt Nam",
+    bank_code: "TCB",
+    bank_bin: "970407",
+    short_name: "Techcombank"
+  };
+
+  let copyState = {
+    accountNumberRaw: "",
+    amountRaw: "",
+    transferContentRaw: ""
+  };
+
+  function pad2(n) {
+    return String(n).padStart(2, "0");
+  }
+
+  function fmtDateTime(s) {
+    if (!s) return "—";
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return String(s);
+    return `${pad2(d.getDate())}-${pad2(d.getMonth()+1)}-${d.getFullYear()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+  }
+
+  function fmtMonth(s) {
+    if (!s) return "—";
+    const str = String(s);
+    const y = str.slice(0, 4);
+    const m = str.slice(5, 7);
+    if (y && m) return `${m}-${y}`;
+    return str;
+  }
+
+  function money(v) {
+    const n = Math.round(Number(v || 0));
+    return n.toLocaleString("vi-VN") + " đ";
+  }
+
+  function badge(status) {
+    const s = String(status || "").toUpperCase();
+    if (s === "PAID") return `<span class="px-2 py-1 rounded-full text-xs bg-emerald-50 text-emerald-700 border border-emerald-200">PAID</span>`;
+    if (s === "PARTIAL") return `<span class="px-2 py-1 rounded-full text-xs bg-amber-50 text-amber-700 border border-amber-200">PARTIAL</span>`;
+    return `<span class="px-2 py-1 rounded-full text-xs bg-slate-50 text-slate-700 border border-slate-200">UNPAID</span>`;
+  }
+
+  function monthTokenForContent(billingMonth) {
+    if (!billingMonth) return "";
+    const str = String(billingMonth);
+    const y = str.slice(0, 4);
+    const m = str.slice(5, 7);
+    const mNum = Number(m || 0);
+    if (!y || !mNum) return str;
+    return `T${mNum}-${y}`;
+  }
+
+  async function fetchJSON(url) {
+    const r = await fetch(url, { headers: { "Accept": "application/json" }});
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j?.error || "error");
+    return j;
+  }
+
+  function buildQrUrl(amount, transferContent) {
+    const base = `https://img.vietqr.io/image/${RECEIVER.bank_code}-${RECEIVER.account_number}-compact2.jpg`;
+    const qs = new URLSearchParams({
+      amount: String(Math.round(Number(amount || 0))),
+      addInfo: transferContent,
+      accountName: RECEIVER.account_name
+    });
+    return `${base}?${qs.toString()}`;
+  }
+
+  async function copyText(text) {
+    await navigator.clipboard.writeText(text || "");
+  }
+
+  function bindCopyButtons() {
+    document.querySelectorAll(".copy-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const key = btn.getAttribute("data-copy-target");
+        const value = copyState[key] || "";
+        try {
+          await copyText(value);
+          const old = btn.textContent;
+          btn.textContent = "Đã copy";
+          setTimeout(() => { btn.textContent = old; }, 1200);
+        } catch (e) {
+          alert("Không copy được. Vui lòng thử lại.");
+        }
+      });
+    });
+  }
+
+  function resolveCompanyCode(row) {
+    return (
+      row?.company_code ||
+      row?.company?.company_code ||
+      row?.company?.code ||
+      row?.companyCode ||
+      "company"
+    );
+  }
+
+  function resolveAmount(row) {
+    const outstanding = Number(row?.amount_outstanding || 0);
+    if (outstanding > 0) return outstanding;
+    return Number(row?.total_fee_month || 0);
+  }
+
+  function render(row) {
+    const companyCode = resolveCompanyCode(row);
+    const amount = resolveAmount(row);
+    const monthLabel = fmtMonth(row?.billing_month);
+    const monthToken = monthTokenForContent(row?.billing_month);
+    const transferContent = `${companyCode} thanh toan ${monthToken}`.trim();
+    const qrUrl = buildQrUrl(amount, transferContent);
+
+    copyState.accountNumberRaw = RECEIVER.account_number;
+    copyState.amountRaw = String(Math.round(amount));
+    copyState.transferContentRaw = transferContent;
+
+    document.getElementById("invoiceTitle").textContent = `Thanh toán hóa đơn tháng ${monthLabel}`;
+    document.getElementById("companyCode").textContent = companyCode;
+    document.getElementById("dueDate").textContent = fmtDateTime(row?.due_date);
+    document.getElementById("statusBadge").innerHTML = badge(row?.status);
+
+    document.getElementById("amountText").textContent = money(amount);
+    document.getElementById("amountInline").textContent = money(amount);
+
+    document.getElementById("accountName").textContent = RECEIVER.account_name;
+    document.getElementById("accountNumber").textContent = RECEIVER.account_number;
+    document.getElementById("bankName").textContent = RECEIVER.bank_name;
+    document.getElementById("branchName").textContent = RECEIVER.branch_name;
+    document.getElementById("transferContent").textContent = transferContent;
+    document.getElementById("qrImage").src = qrUrl;
+
+    document.getElementById("loadingCard").classList.add("hidden");
+    document.getElementById("contentWrap").classList.remove("hidden");
+  }
+
+  async function loadPage() {
+    try {
+      const row = await fetchJSON(`/billing/invoices/${INVOICE_ID}/data`);
+      render(row);
+    } catch (e) {
+      console.error(e);
+      document.getElementById("loadingCard").classList.add("hidden");
+      document.getElementById("errorCard").classList.remove("hidden");
+    }
+  }
+
+  bindCopyButtons();
+  loadPage();
+</script>
+{% endblock %}

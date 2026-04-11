@@ -61,7 +61,7 @@
             <th class="text-right px-4 py-2">Còn nợ</th>
             <th class="text-left px-4 py-2">Trạng thái</th>
             <th class="text-left px-4 py-2">Hạn</th>
-            <th class="text-right px-4 py-2">Chi tiết</th>
+            <th class="text-right px-4 py-2">Thao tác</th>
           </tr>
         </thead>
         <tbody id="tbody" class="divide-y divide-slate-100"></tbody>
@@ -116,6 +116,39 @@
     return `<span class="px-2 py-1 rounded-full text-xs bg-slate-50 text-slate-700 border border-slate-200">UNPAID</span>`;
   }
 
+  function isPayable(row) {
+    const status = String(row?.status || '').toUpperCase();
+    const outstanding = Number(row?.amount_outstanding || 0);
+    return (status === 'UNPAID' || status === 'PARTIAL') && outstanding > 0;
+  }
+
+  function actionHtml(row) {
+    const viewLink = `
+      <a class="text-indigo-600 hover:underline"
+         href="/billing/invoices/view/${row.id}">
+         Xem
+      </a>
+    `;
+
+    if (!isPayable(row)) {
+      return `
+        <div class="inline-flex items-center gap-3">
+          ${viewLink}
+        </div>
+      `;
+    }
+
+    return `
+      <div class="inline-flex items-center gap-3">
+        <a class="text-indigo-600 hover:underline font-medium"
+           href="/billing/invoices/pay/${row.id}">
+           Thanh toán
+        </a>
+        ${viewLink}
+      </div>
+    `;
+  }
+
   async function loadAll() {
     setLoading(true);
     try {
@@ -150,10 +183,7 @@
               <td class="px-4 py-2">${badge(r.status)}</td>
               <td class="px-4 py-2">${fmtDateTime(r.due_date)}</td>
               <td class="px-4 py-2 text-right">
-                <a class="text-indigo-600 hover:underline"
-                   href="/billing/invoices/view/${r.id}">
-                   Xem
-                </a>
+                ${actionHtml(r)}
               </td>
             </tr>
           `);
