@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="space-y-5">
+
+  <div class="flex items-start justify-between gap-4">
+    <div class="min-w-0">
+      <a href="/billing/admin/companies" class="text-sm text-slate-500 hover:underline">← Quay lại danh sách</a>
+      <h1 class="text-xl font-semibold text-slate-800 mt-1">
+        Cấu hình phí Billing — <span class="text-indigo-700">{{ company_code }}</span>
+      </h1>
+      <p class="text-sm text-slate-500">Cấu hình phí rất ít khi thay đổi. Khi lưu, hệ thống sẽ tạo dòng cấu hình mới và giữ lịch sử dòng cũ.</p>
+    </div>
+    <div class="flex items-center gap-2 shrink-0">
+      <a href="/billing/admin/companies/view/{{ company_code }}"
+         class="px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm">
+        Xem chi tiết công ty
+      </a>
+      <button id="btnRefresh"
+              class="px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm">
+        <i class="ri-refresh-line mr-1"></i> Làm mới
+      </button>
+    </div>
+  </div>
+
+  <div id="loadingCard" class="bg-white border border-slate-200 rounded-xl p-6 text-sm text-slate-500">
+    <i class="ri-loader-2-line animate-spin mr-1"></i> Đang tải cấu hình phí...
+  </div>
+
+  <div id="errorCard" class="hidden bg-rose-50 border border-rose-200 rounded-xl p-4 text-sm text-rose-700">
+    Không tải được cấu hình phí. Vui lòng thử lại.
+  </div>
+
+  <div id="contentWrap" class="hidden space-y-5">
+    <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+      <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
+        <div>
+          <div class="font-semibold text-slate-800">Cấu hình phí hiện tại</div>
+          <div id="existsHint" class="text-xs text-slate-500 mt-1">—</div>
+        </div>
+        <button id="btnOpenEdit"
+                class="px-3 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 text-sm">
+          <i class="ri-edit-line mr-1"></i> Chỉnh sửa cấu hình
+        </button>
+      </div>
+
+      <div class="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+          <div class="text-xs text-slate-500">Ngày bắt đầu tính phí</div>
+          <div id="vBillingStart" class="mt-1 font-semibold text-slate-800">—</div>
+        </div>
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+          <div class="text-xs text-slate-500">Tỷ lệ phí</div>
+          <div id="vRevenuePercent" class="mt-1 font-semibold text-slate-800">—</div>
+        </div>
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+          <div class="text-xs text-slate-500">Cận dưới</div>
+          <div id="vPercentMin" class="mt-1 font-semibold text-slate-800">—</div>
+        </div>
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+          <div class="text-xs text-slate-500">Cận trên</div>
+          <div id="vPercentMax" class="mt-1 font-semibold text-slate-800">—</div>
+        </div>
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+          <div class="text-xs text-slate-500">Phí hạ tầng tháng</div>
+          <div id="vMonthlyFixed" class="mt-1 font-semibold text-slate-800">—</div>
+        </div>
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+          <div class="text-xs text-slate-500">Grace days</div>
+          <div id="vGraceDays" class="mt-1 font-semibold text-slate-800">—</div>
+        </div>
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+          <div class="text-xs text-slate-500">Setup fee</div>
+          <div id="vSetupFee" class="mt-1 font-semibold text-slate-800">—</div>
+        </div>
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+          <div class="text-xs text-slate-500">Trạng thái config</div>
+          <div id="vActive" class="mt-1 font-semibold text-slate-800">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+      <div class="font-semibold">Lưu ý</div>
+      <div class="mt-1">Việc thay đổi cấu hình chỉ ảnh hưởng các lần snapshot/tính phí mới sau khi lưu. Các invoice/ledger đã tạo trước đó không tự đổi ngược nếu không chạy lại logic riêng.</div>
+    </div>
+  </div>
+
+  <div id="toast" class="hidden fixed bottom-6 right-6 z-[120]">
+    <div class="bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg text-sm" id="toastText">—</div>
+  </div>
+</div>
+
+<!-- Edit modal -->
+<div id="editModal" class="hidden fixed inset-0 z-[110]">
+  <div class="absolute inset-0 bg-black/40"></div>
+  <div class="absolute inset-0 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-start justify-between gap-3">
+        <div>
+          <div class="text-lg font-semibold text-slate-800">Chỉnh sửa cấu hình phí</div>
+          <div class="text-xs text-slate-500">Company: {{ company_code }}</div>
+        </div>
+        <button id="btnCloseEdit" class="text-slate-500 hover:text-slate-700">
+          <i class="ri-close-line text-xl"></i>
+        </button>
+      </div>
+
+      <div class="px-6 py-5 space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="text-xs text-slate-600">Ngày bắt đầu tính phí</label>
+            <input id="fBillingStart" type="date" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 bg-white" />
+          </div>
+          <div>
+            <label class="text-xs text-slate-600">Tỷ lệ phí</label>
+            <input id="fRevenuePercent" type="number" step="0.0001" min="0" max="1" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 bg-white" />
+            <div class="text-xs text-slate-500 mt-1">Ví dụ: 0.04 tương ứng 4%</div>
+          </div>
+          <div>
+            <label class="text-xs text-slate-600">Cận dưới</label>
+            <input id="fPercentMin" type="number" step="1" min="0" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 bg-white" />
+          </div>
+          <div>
+            <label class="text-xs text-slate-600">Cận trên</label>
+            <input id="fPercentMax" type="number" step="1" min="0" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 bg-white" />
+          </div>
+          <div>
+            <label class="text-xs text-slate-600">Phí hạ tầng tháng</label>
+            <input id="fMonthlyFixed" type="number" step="1" min="0" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 bg-white" />
+          </div>
+          <div>
+            <label class="text-xs text-slate-600">Grace days</label>
+            <input id="fGraceDays" type="number" step="1" min="0" max="365" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 bg-white" />
+          </div>
+          <div>
+            <label class="text-xs text-slate-600">Setup fee</label>
+            <input id="fSetupFee" type="number" step="1" min="0" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 bg-white" />
+          </div>
+        </div>
+
+        <div id="formErr" class="hidden text-sm text-rose-600"></div>
+      </div>
+
+      <div class="px-6 py-4 border-t border-slate-100 flex justify-end gap-2">
+        <button id="btnCancelEdit" class="px-4 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50">Hủy</button>
+        <button id="btnSaveEdit" class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">Lưu cấu hình</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Typed confirm modal -->
+<div id="typedConfirmModal" class="hidden fixed inset-0 z-[120]">
+  <div class="absolute inset-0 bg-black/40"></div>
+  <div class="absolute inset-0 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-100">
+        <div class="text-lg font-semibold text-slate-800">Xác nhận thay đổi cấu hình phí</div>
+        <div class="text-sm text-slate-500 mt-1">Thao tác này sẽ tạo config active mới cho công ty {{ company_code }}.</div>
+      </div>
+      <div class="px-6 py-5 space-y-3">
+        <div class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          Nhập chính xác <span class="font-semibold">tôi xác nhận</span> để lưu cấu hình.
+        </div>
+        <input id="confirmText" type="text" autocomplete="off"
+               class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white"
+               placeholder="tôi xác nhận" />
+        <div id="confirmErr" class="hidden text-sm text-rose-600"></div>
+      </div>
+      <div class="px-6 py-4 border-t border-slate-100 flex justify-end gap-2">
+        <button id="btnCancelConfirm" class="px-4 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50">Hủy</button>
+        <button id="btnDoSave" class="px-4 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700">Xác nhận lưu</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const companyCode = {{ company_code | tojson }};
+  let currentContract = null;
+  let pendingPayload = null;
+
+  const $ = (id) => document.getElementById(id);
+
+  function showToast(msg){
+    const wrap = $("toast");
+    const text = $("toastText");
+    text.textContent = msg;
+    wrap.classList.remove("hidden");
+    setTimeout(()=>wrap.classList.add("hidden"), 2500);
+  }
+
+  function moneyInt(v){
+    const n = Math.round(Number(v||0));
+    return n.toLocaleString("vi-VN") + " đ";
+  }
+
+  function pct(v){
+    const n = Number(v || 0);
+    return (n * 100).toLocaleString("vi-VN", { maximumFractionDigits: 4 }) + "%";
+  }
+
+  function onlyDate(v){
+    if(!v) return "";
+    return String(v).slice(0, 10);
+  }
+
+  async function fetchJSON(url, opts){
+    const r = await fetch(url, Object.assign({
+      headers: { "Accept":"application/json", "Content-Type":"application/json" }
+    }, opts || {}));
+    const j = await r.json().catch(()=>({error:"bad_json"}));
+    if(!r.ok) throw new Error(j?.msg || j?.error || r.status);
+    return j;
+  }
+
+  function renderContract(payload){
+    const exists = Boolean(payload?.exists);
+    const d = payload?.data || {};
+    currentContract = d;
+
+    $("existsHint").textContent = exists
+      ? `Đang dùng config active ID #${d.id || "—"}`
+      : "Công ty chưa có config active. Hệ thống đang hiển thị bộ giá trị mặc định để bạn có thể lưu lần đầu.";
+
+    $("vBillingStart").textContent = onlyDate(d.billing_start_at) || "—";
+    $("vRevenuePercent").textContent = pct(d.revenue_percent);
+    $("vPercentMin").textContent = moneyInt(d.percent_min);
+    $("vPercentMax").textContent = moneyInt(d.percent_max);
+    $("vMonthlyFixed").textContent = moneyInt(d.monthly_fixed_fee);
+    $("vGraceDays").textContent = `${Number(d.grace_days || 0)} ngày`;
+    $("vSetupFee").textContent = moneyInt(d.setup_fee);
+    $("vActive").innerHTML = d.is_active
+      ? `<span class="px-2 py-1 rounded-full text-xs bg-emerald-50 text-emerald-700 border border-emerald-200">ACTIVE</span>`
+      : `<span class="px-2 py-1 rounded-full text-xs bg-slate-50 text-slate-700 border border-slate-200">INACTIVE</span>`;
+  }
+
+  async function loadContract(){
+    $("loadingCard").classList.remove("hidden");
+    $("errorCard").classList.add("hidden");
+    $("contentWrap").classList.add("hidden");
+    try{
+      const j = await fetchJSON(`/billing/admin/companies/${encodeURIComponent(companyCode)}/contract/current/data`);
+      renderContract(j);
+      $("contentWrap").classList.remove("hidden");
+    }catch(e){
+      console.error(e);
+      $("errorCard").classList.remove("hidden");
+    }finally{
+      $("loadingCard").classList.add("hidden");
+    }
+  }
+
+  function openEdit(){
+    const d = currentContract || {};
+    $("formErr").classList.add("hidden");
+    $("formErr").textContent = "";
+    $("fBillingStart").value = onlyDate(d.billing_start_at) || "2025-01-01";
+    $("fRevenuePercent").value = String(d.revenue_percent ?? 0.04);
+    $("fPercentMin").value = String(Math.round(Number(d.percent_min ?? 2000000)));
+    $("fPercentMax").value = String(Math.round(Number(d.percent_max ?? 25000000)));
+    $("fMonthlyFixed").value = String(Math.round(Number(d.monthly_fixed_fee ?? 5000000)));
+    $("fGraceDays").value = String(Math.round(Number(d.grace_days ?? 15)));
+    $("fSetupFee").value = String(Math.round(Number(d.setup_fee ?? 45000000)));
+    $("editModal").classList.remove("hidden");
+  }
+
+  function closeEdit(){
+    $("editModal").classList.add("hidden");
+  }
+
+  function openTypedConfirm(){
+    $("confirmText").value = "";
+    $("confirmErr").classList.add("hidden");
+    $("confirmErr").textContent = "";
+    $("typedConfirmModal").classList.remove("hidden");
+    setTimeout(()=>$("confirmText").focus(), 30);
+  }
+
+  function closeTypedConfirm(){
+    $("typedConfirmModal").classList.add("hidden");
+  }
+
+  function readForm(){
+    const payload = {
+      billing_start_at: $("fBillingStart").value,
+      revenue_percent: Number($("fRevenuePercent").value || 0),
+      percent_min: Math.round(Number($("fPercentMin").value || 0)),
+      percent_max: Math.round(Number($("fPercentMax").value || 0)),
+      monthly_fixed_fee: Math.round(Number($("fMonthlyFixed").value || 0)),
+      grace_days: Math.round(Number($("fGraceDays").value || 0)),
+      setup_fee: Math.round(Number($("fSetupFee").value || 0))
+    };
+
+    if(!payload.billing_start_at) throw new Error("Ngày bắt đầu tính phí là bắt buộc");
+    if(payload.revenue_percent < 0 || payload.revenue_percent > 1) throw new Error("Tỷ lệ phí phải nằm trong khoảng 0 đến 1");
+    if(payload.percent_min < 0 || payload.percent_max < 0) throw new Error("Cận dưới/cận trên phải >= 0");
+    if(payload.percent_max < payload.percent_min) throw new Error("Cận trên phải >= cận dưới");
+    if(payload.monthly_fixed_fee < 0 || payload.setup_fee < 0) throw new Error("Phí hạ tầng/setup fee phải >= 0");
+    if(payload.grace_days < 0 || payload.grace_days > 365) throw new Error("Grace days phải từ 0 đến 365");
+
+    return payload;
+  }
+
+  function prepareSave(){
+    try{
+      pendingPayload = readForm();
+    }catch(e){
+      $("formErr").textContent = e.message || "Dữ liệu không hợp lệ";
+      $("formErr").classList.remove("hidden");
+      return;
+    }
+
+    // Quan trọng: ẩn popup cấu hình trước khi hiện popup confirm để tránh chồng modal.
+    closeEdit();
+    openTypedConfirm();
+  }
+
+  async function doSave(){
+    const txt = ($("confirmText").value || "").trim();
+    if(txt !== "tôi xác nhận"){
+      $("confirmErr").textContent = "Bạn phải nhập đúng: tôi xác nhận";
+      $("confirmErr").classList.remove("hidden");
+      return;
+    }
+
+    try{
+      await fetchJSON(`/billing/admin/companies/${encodeURIComponent(companyCode)}/contract/current/update`, {
+        method: "PUT",
+        body: JSON.stringify(pendingPayload || {})
+      });
+      closeTypedConfirm();
+      pendingPayload = null;
+      showToast("Đã lưu cấu hình phí");
+      await loadContract();
+    }catch(e){
+      console.error(e);
+      $("confirmErr").textContent = "Không lưu được: " + (e?.message || "error");
+      $("confirmErr").classList.remove("hidden");
+    }
+  }
+
+  $("btnRefresh").addEventListener("click", loadContract);
+  $("btnOpenEdit").addEventListener("click", openEdit);
+  $("btnCloseEdit").addEventListener("click", closeEdit);
+  $("btnCancelEdit").addEventListener("click", closeEdit);
+  $("btnSaveEdit").addEventListener("click", prepareSave);
+  $("btnCancelConfirm").addEventListener("click", ()=>{
+    closeTypedConfirm();
+    // Nếu hủy confirm thì mở lại popup edit để người dùng không mất nội dung.
+    $("editModal").classList.remove("hidden");
+  });
+  $("btnDoSave").addEventListener("click", doSave);
+  $("typedConfirmModal").addEventListener("click", (e)=>{
+    if(e.target && e.target.id === "typedConfirmModal"){
+      closeTypedConfirm();
+      $("editModal").classList.remove("hidden");
+    }
+  });
+  $("editModal").addEventListener("click", (e)=>{
+    if(e.target && e.target.id === "editModal") closeEdit();
+  });
+
+  loadContract();
+})();
+</script>
+{% endblock %}

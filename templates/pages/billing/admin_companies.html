@@ -5,7 +5,7 @@
   <div class="flex items-center justify-between">
     <div>
       <h1 class="text-xl font-semibold text-slate-800">Billing (SUPER) — Quản lý Billing công ty</h1>
-      <p class="text-sm text-slate-500">Tổng quan công nợ, chạy cập nhật trạng thái, vào chi tiết từng công ty.</p>
+      <p class="text-sm text-slate-500">Tổng quan công nợ, chạy cập nhật trạng thái, vào chi tiết hoặc cấu hình phí từng công ty.</p>
     </div>
 
     <div class="flex items-center gap-2">
@@ -56,14 +56,14 @@
       <table class="min-w-full text-sm">
         <thead class="bg-slate-50 text-slate-600">
           <tr>
-            <th class="text-left px-4 py-3">ID</th>
-            <th class="text-left px-4 py-3">Code</th>
-            <th class="text-left px-4 py-3">Tên công ty</th>
-            <th class="text-left px-4 py-3">Trạng thái</th>
-            <th class="text-right px-4 py-3">Công nợ hiện tại</th>
-            <th class="text-left px-4 py-3">Lock đến</th>
-            <th class="text-left px-4 py-3">Hạn thanh toán</th>
-            <th class="text-right px-4 py-3">Hành động</th>
+            <th class="text-left px-4 py-3 whitespace-nowrap">ID</th>
+            <th class="text-left px-4 py-3 whitespace-nowrap">Code</th>
+            <th class="text-left px-4 py-3 whitespace-nowrap">Tên công ty</th>
+            <th class="text-left px-4 py-3 whitespace-nowrap">Trạng thái</th>
+            <th class="text-right px-4 py-3 whitespace-nowrap">Công nợ hiện tại</th>
+            <th class="text-left px-4 py-3 whitespace-nowrap">Lock đến</th>
+            <th class="text-left px-4 py-3 whitespace-nowrap">Hạn thanh toán</th>
+            <th class="text-right px-4 py-3 whitespace-nowrap">Hành động</th>
           </tr>
         </thead>
         <tbody id="tbody" class="divide-y divide-slate-100">
@@ -131,8 +131,8 @@
 
   function badgeStatus(s){
     const st = String(s||"").toUpperCase();
-    if(st === "LOCKED") return `<span class="px-2 py-1 rounded-full text-xs bg-rose-100 text-rose-700">LOCKED</span>`;
-    return `<span class="px-2 py-1 rounded-full text-xs bg-emerald-100 text-emerald-700">RUNNING</span>`;
+    if(st === "LOCKED") return `<span class="px-2 py-1 rounded-full text-xs bg-rose-100 text-rose-700 whitespace-nowrap">LOCKED</span>`;
+    return `<span class="px-2 py-1 rounded-full text-xs bg-emerald-100 text-emerald-700 whitespace-nowrap">RUNNING</span>`;
   }
 
   async function fetchCompanies(){
@@ -163,22 +163,28 @@
     elTbody.innerHTML = rows.map(x => {
       const cc = x.company_code || "";
       const debt = moneyInt(x.current_outstanding || 0);
+      const detailUrl = `/billing/admin/companies/view/${encodeURIComponent(cc)}`;
+      const configUrl = `/billing/admin/companies/${encodeURIComponent(cc)}/contract`;
       return `
         <tr class="hover:bg-slate-50">
-          <td class="px-4 py-3 text-slate-700">${x.company_id ?? ""}</td>
-          <td class="px-4 py-3">
-            <a class="text-indigo-600 hover:underline" href="/billing/admin/companies/view/${encodeURIComponent(cc)}">${cc}</a>
+          <td class="px-4 py-3 text-slate-700 whitespace-nowrap">${x.company_id ?? ""}</td>
+          <td class="px-4 py-3 whitespace-nowrap">
+            <a class="text-indigo-600 hover:underline" href="${detailUrl}">${cc}</a>
           </td>
           <td class="px-4 py-3 text-slate-700">${x.company_name || ""}</td>
-          <td class="px-4 py-3">${badgeStatus(x.billing_status)}</td>
-          <td class="px-4 py-3 text-right font-semibold text-slate-800">${debt}</td>
-          <td class="px-4 py-3 text-slate-600">${fmtDateTime(x.lock_until)}</td>
-          <td class="px-4 py-3 text-slate-600">${fmtDateTime(x.next_due_date)}</td>
-          <td class="px-4 py-3 text-right">
-            <a class="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs hover:bg-indigo-700"
-               href="/billing/admin/companies/view/${encodeURIComponent(cc)}">
-              Chi tiết
-            </a>
+          <td class="px-4 py-3 whitespace-nowrap">${badgeStatus(x.billing_status)}</td>
+          <td class="px-4 py-3 text-right font-semibold text-slate-800 whitespace-nowrap">${debt}</td>
+          <td class="px-4 py-3 text-slate-600 whitespace-nowrap">${fmtDateTime(x.lock_until)}</td>
+          <td class="px-4 py-3 text-slate-600 whitespace-nowrap">${fmtDateTime(x.next_due_date)}</td>
+          <td class="px-4 py-3 text-right whitespace-nowrap">
+            <div class="inline-flex items-center gap-2">
+              <a class="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs hover:bg-indigo-700" href="${detailUrl}">
+                Chi tiết
+              </a>
+              <a class="px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-700 text-xs hover:bg-slate-50" href="${configUrl}">
+                Cấu hình
+              </a>
+            </div>
           </td>
         </tr>
       `;
@@ -224,7 +230,6 @@
 
   document.getElementById("btnRunSnapshot").addEventListener("click", runSnapshot);
 
-  // default runDate = today
   try{
     const now = new Date();
     const yyyy = now.getFullYear();

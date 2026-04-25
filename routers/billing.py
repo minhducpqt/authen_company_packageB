@@ -90,6 +90,22 @@ async def _api_patch_json(
     )
 
 
+async def _api_put_json(
+    client: httpx.AsyncClient,
+    path: str,
+    token: str,
+    payload: Any,
+    params: List[Tuple[str, str | int]] | None = None,
+):
+    return await client.put(
+        f"{API_BASE_URL}{path}",
+        headers={"Authorization": f"Bearer {token}"},
+        params=params or [],
+        json=payload,
+        timeout=25.0,
+    )
+
+
 def _unauth_redirect(next_path: str) -> RedirectResponse:
     return RedirectResponse(url=f"/login?next={next_path}", status_code=303)
 
@@ -599,6 +615,56 @@ async def billing_admin_company_status_data(
     return JSONResponse(r.json(), status_code=200)
 
 
+@router.get("/billing/admin/companies/{company_code}/contract/current/data", response_class=JSONResponse)
+async def billing_admin_company_contract_current_data(
+    request: Request,
+    company_code: str = Path(...),
+):
+    guard = _super_guard_json(request)
+    if guard:
+        return guard
+
+    token = get_access_token(request)
+
+    async with httpx.AsyncClient() as client:
+        r = await _api_get(
+            client,
+            f"/api/v1/billing/admin/companies/{company_code}/contract/current",
+            token,
+            params=[],
+        )
+
+    if r.status_code != 200:
+        return _map_error(r)
+    return JSONResponse(r.json(), status_code=200)
+
+
+@router.put("/billing/admin/companies/{company_code}/contract/current/update", response_class=JSONResponse)
+async def billing_admin_company_contract_current_update(
+    request: Request,
+    company_code: str = Path(...),
+    payload: Dict[str, Any] = Body(...),
+):
+    guard = _super_guard_json(request)
+    if guard:
+        return guard
+
+    token = get_access_token(request)
+
+    async with httpx.AsyncClient() as client:
+        r = await _api_put_json(
+            client,
+            f"/api/v1/billing/admin/companies/{company_code}/contract/current",
+            token,
+            payload,
+            params=[],
+        )
+
+    if r.status_code != 200:
+        return _map_error(r)
+    return JSONResponse(r.json(), status_code=200)
+
+
 @router.get("/billing/admin/companies/{company_code}/invoices/data", response_class=JSONResponse)
 async def billing_admin_company_invoices_data(
     request: Request,
@@ -699,6 +765,7 @@ async def billing_admin_company_payments_data(
         return _map_error(r)
     return JSONResponse(r.json(), status_code=200)
 
+
 @router.get("/billing/invoices/pay/{invoice_id}", response_class=HTMLResponse)
 async def billing_invoice_pay_page(
     request: Request,
@@ -714,5 +781,26 @@ async def billing_invoice_pay_page(
             "request": request,
             "title": "3.3 Billing — Thanh toán hóa đơn",
             "invoice_id": invoice_id,
+        },
+    )
+
+@router.get("/billing/admin/companies/{company_code}/contract", response_class=HTMLResponse)
+async def billing_admin_company_contract_page(
+    request: Request,
+    company_code: str = Path(...),
+):
+    guard = _super_guard_page(
+        request,
+        f"%2Fbilling%2Fadmin%2Fcompanies%2F{company_code}%2Fcontract"
+    )
+    if guard:
+        return guard
+
+    return templates.TemplateResponse(
+        "pages/billing/admin_company_contract.html",
+        {
+            "request": request,
+            "title": f"Billing — Cấu hình phí {company_code} (SUPER)",
+            "company_code": company_code,
         },
     )
