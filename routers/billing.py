@@ -234,6 +234,26 @@ async def billing_admin_company_detail_page(
         },
     )
 
+@router.get("/billing/admin/companies/{company_code}/contract", response_class=HTMLResponse)
+async def billing_admin_company_contract_page(
+    request: Request,
+    company_code: str = Path(...),
+):
+    guard = _super_guard_page(
+        request,
+        f"%2Fbilling%2Fadmin%2Fcompanies%2F{company_code}%2Fcontract"
+    )
+    if guard:
+        return guard
+
+    return templates.TemplateResponse(
+        "pages/billing/admin_company_contract.html",
+        {
+            "request": request,
+            "title": f"Billing — Cấu hình phí {company_code} (SUPER)",
+            "company_code": company_code,
+        },
+    )
 
 @router.get("/billing/admin/invoices/view/{invoice_id}", response_class=HTMLResponse)
 async def billing_admin_invoice_detail_page(
@@ -781,26 +801,5 @@ async def billing_invoice_pay_page(
             "request": request,
             "title": "3.3 Billing — Thanh toán hóa đơn",
             "invoice_id": invoice_id,
-        },
-    )
-
-@router.get("/billing/admin/companies/{company_code}/contract", response_class=HTMLResponse)
-async def billing_admin_company_contract_page(
-    request: Request,
-    company_code: str = Path(...),
-):
-    guard = _super_guard_page(
-        request,
-        f"%2Fbilling%2Fadmin%2Fcompanies%2F{company_code}%2Fcontract"
-    )
-    if guard:
-        return guard
-
-    return templates.TemplateResponse(
-        "pages/billing/admin_company_contract.html",
-        {
-            "request": request,
-            "title": f"Billing — Cấu hình phí {company_code} (SUPER)",
-            "company_code": company_code,
         },
     )
