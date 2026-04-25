@@ -54,6 +54,20 @@
         <div class="min-w-[260px] rounded-2xl border border-indigo-200 bg-indigo-50 px-5 py-4">
           <div class="text-sm text-indigo-700">Số tiền cần thanh toán</div>
           <div id="amountText" class="mt-2 text-3xl font-bold text-indigo-700">—</div>
+          <div class="mt-3 space-y-1 text-xs text-indigo-700">
+            <div class="flex justify-between gap-3">
+              <span>Tổng chưa VAT</span>
+              <span id="subtotalText" class="font-semibold">—</span>
+            </div>
+            <div class="flex justify-between gap-3">
+              <span id="vatRateText">VAT</span>
+              <span id="vatAmountText" class="font-semibold">—</span>
+            </div>
+            <div class="flex justify-between gap-3 border-t border-indigo-200 pt-1">
+              <span>Tổng hóa đơn</span>
+              <span id="totalWithVatText" class="font-semibold">—</span>
+            </div>
+          </div>
           <div class="mt-2 text-xs text-indigo-600">
             Ưu tiên thanh toán đúng số tiền còn nợ của hóa đơn này.
           </div>
@@ -197,6 +211,17 @@
     return n.toLocaleString("vi-VN") + " đ";
   }
 
+  function totalWithVat(row) {
+    const v = Number(row?.total_fee_with_vat || 0);
+    return v > 0 ? v : Number(row?.total_fee_month || 0);
+  }
+
+  function vatRateLabel(rate) {
+    const n = Number(rate || 0);
+    if (!n) return "VAT";
+    return `VAT ${(n * 100).toFixed(0)}%`;
+  }
+
   function badge(status) {
     const s = String(status || "").toUpperCase();
     if (s === "PAID") return `<span class="px-2 py-1 rounded-full text-xs bg-emerald-50 text-emerald-700 border border-emerald-200">PAID</span>`;
@@ -265,7 +290,7 @@
   function resolveAmount(row) {
     const outstanding = Number(row?.amount_outstanding || 0);
     if (outstanding > 0) return outstanding;
-    return Number(row?.total_fee_month || 0);
+    return totalWithVat(row);
   }
 
   function render(row) {
@@ -287,6 +312,11 @@
 
     document.getElementById("amountText").textContent = money(amount);
     document.getElementById("amountInline").textContent = money(amount);
+
+    document.getElementById("subtotalText").textContent = money(row?.total_fee_month);
+    document.getElementById("vatRateText").textContent = vatRateLabel(row?.vat_rate);
+    document.getElementById("vatAmountText").textContent = money(row?.vat_amount);
+    document.getElementById("totalWithVatText").textContent = money(totalWithVat(row));
 
     document.getElementById("accountName").textContent = RECEIVER.account_name;
     document.getElementById("accountNumber").textContent = RECEIVER.account_number;

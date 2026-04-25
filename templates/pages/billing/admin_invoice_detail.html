@@ -44,22 +44,29 @@
     <div class="bg-white border border-slate-200 rounded-xl p-4">
       <div class="text-xs text-slate-500">Tháng</div>
       <div id="sMonth" class="text-lg font-semibold text-slate-800 mt-1">—</div>
-    </div>
-    <div class="bg-white border border-slate-200 rounded-xl p-4">
-      <div class="text-xs text-slate-500">Tổng phí</div>
-      <div id="sTotal" class="text-lg font-semibold text-slate-800 mt-1">—</div>
       <div class="text-xs text-slate-500 mt-1">Hạn: <span id="sDue">—</span></div>
     </div>
+
     <div class="bg-white border border-slate-200 rounded-xl p-4">
-      <div class="text-xs text-slate-500">Đã trả</div>
-      <div id="sPaid" class="text-lg font-semibold text-slate-800 mt-1">—</div>
+      <div class="text-xs text-slate-500">Tổng chưa VAT</div>
+      <div id="sTotal" class="text-lg font-semibold text-slate-800 mt-1">—</div>
     </div>
+
+    <div class="bg-white border border-slate-200 rounded-xl p-4">
+      <div class="text-xs text-slate-500">VAT</div>
+      <div id="sVat" class="text-lg font-semibold text-slate-800 mt-1">—</div>
+      <div id="sVatRate" class="text-xs text-slate-500 mt-1"></div>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-xl p-4">
+      <div class="text-xs text-slate-500">Tổng thanh toán</div>
+      <div id="sTotalWithVat" class="text-lg font-semibold text-indigo-700 mt-1">—</div>
+    </div>
+
     <div class="bg-white border border-slate-200 rounded-xl p-4">
       <div class="text-xs text-slate-500">Còn nợ</div>
       <div id="sOut" class="text-lg font-semibold text-slate-800 mt-1">—</div>
-    </div>
-    <div class="bg-white border border-slate-200 rounded-xl p-4">
-      <div class="text-xs text-slate-500">Trạng thái</div>
+      <div class="text-xs text-slate-500 mt-1">Đã trả: <span id="sPaid">—</span></div>
       <div id="sStatus" class="mt-2">—</div>
       <div id="sHint" class="text-xs text-slate-500 mt-2"></div>
     </div>
@@ -74,15 +81,17 @@
       </div>
     </div>
     <div class="overflow-x-auto">
-      <table class="min-w-full text-sm">
+      <table class="min-w-[1200px] text-sm">
         <thead class="bg-slate-50 text-slate-600">
           <tr>
-            <th class="text-left px-4 py-2">Dự án</th>
-            <th class="text-left px-4 py-2">Ngày đấu giá</th>
-            <th class="text-right px-4 py-2">Tiền hồ sơ</th>
-            <th class="text-right px-4 py-2">Chênh lệch</th>
-            <th class="text-right px-4 py-2">Base</th>
-            <th class="text-right px-4 py-2">Final fee</th>
+            <th class="text-left px-4 py-2 whitespace-nowrap">Dự án</th>
+            <th class="text-left px-4 py-2 whitespace-nowrap">Ngày đấu giá</th>
+            <th class="text-right px-4 py-2 whitespace-nowrap">Tiền hồ sơ</th>
+            <th class="text-right px-4 py-2 whitespace-nowrap">Chênh lệch</th>
+            <th class="text-right px-4 py-2 whitespace-nowrap">Base</th>
+            <th class="text-right px-4 py-2 whitespace-nowrap">Phí chưa VAT</th>
+            <th class="text-right px-4 py-2 whitespace-nowrap">VAT</th>
+            <th class="text-right px-4 py-2 whitespace-nowrap">Phí có VAT</th>
           </tr>
         </thead>
         <tbody id="tbProjects" class="divide-y divide-slate-100"></tbody>
@@ -197,6 +206,22 @@
     return n.toLocaleString('vi-VN') + ' đ';
   };
 
+  function totalWithVat(row) {
+    const v = Number(row?.total_fee_with_vat || 0);
+    return v > 0 ? v : Number(row?.total_fee_month || 0);
+  }
+
+  function finalFeeWithVat(row) {
+    const v = Number(row?.final_fee_with_vat || 0);
+    return v > 0 ? v : Number(row?.final_fee || 0);
+  }
+
+  function vatRateText(rate) {
+    const n = Number(rate || 0);
+    if (!n) return '';
+    return `Thuế suất ${Math.round(n * 100)}%`;
+  }
+
   function badge(status) {
     const s = String(status || '').toUpperCase();
     if (s === 'PAID') return `<span class="px-2 py-1 rounded-full text-xs bg-emerald-50 text-emerald-700 border border-emerald-200">PAID</span>`;
@@ -282,6 +307,9 @@
 
       document.getElementById('sMonth').textContent = fmtMonth(inv?.billing_month);
       document.getElementById('sTotal').textContent = money(inv?.total_fee_month);
+      document.getElementById('sVat').textContent = money(inv?.vat_amount);
+      document.getElementById('sVatRate').textContent = vatRateText(inv?.vat_rate);
+      document.getElementById('sTotalWithVat').textContent = money(totalWithVat(inv));
       document.getElementById('sPaid').textContent  = money(inv?.amount_paid);
       document.getElementById('sOut').textContent   = money(inv?.amount_outstanding);
       document.getElementById('sDue').textContent   = fmtDateTime(inv?.due_date);
@@ -294,7 +322,7 @@
 
       // projects
       const projects = await fetchJSON(`/billing/invoices/${invoiceId}/projects/data?company_code=${encodeURIComponent(companyCode)}`);
-      const rowsP = projects?.data || [];
+      const rowsP = (projects?.data || []).filter(r => Number(r?.final_fee || 0) > 0);
       const tbP = document.getElementById('tbProjects');
       const emptyP = document.getElementById('emptyP');
       tbP.innerHTML = '';
@@ -310,11 +338,13 @@
                 <div class="font-medium text-slate-800">${r.project_code || ''}</div>
                 <div class="text-xs text-slate-500">ID: ${r.project_id}</div>
               </td>
-              <td class="px-4 py-2">${r.auction_at ? fmtDateTime(r.auction_at) : '—'}</td>
-              <td class="px-4 py-2 text-right">${money(r.total_dossier_amount)}</td>
-              <td class="px-4 py-2 text-right">${money(r.total_price_gap_amount)}</td>
-              <td class="px-4 py-2 text-right">${money(r.base_value)}</td>
-              <td class="px-4 py-2 text-right font-semibold">${money(r.final_fee)}</td>
+              <td class="px-4 py-2 whitespace-nowrap">${r.auction_at ? fmtDateTime(r.auction_at) : '—'}</td>
+              <td class="px-4 py-2 text-right whitespace-nowrap">${money(r.total_dossier_amount)}</td>
+              <td class="px-4 py-2 text-right whitespace-nowrap">${money(r.total_price_gap_amount)}</td>
+              <td class="px-4 py-2 text-right whitespace-nowrap">${money(r.base_value)}</td>
+              <td class="px-4 py-2 text-right font-semibold whitespace-nowrap">${money(r.final_fee)}</td>
+              <td class="px-4 py-2 text-right whitespace-nowrap">${money(r.vat_amount)}</td>
+              <td class="px-4 py-2 text-right font-semibold text-indigo-700 whitespace-nowrap">${money(finalFeeWithVat(r))}</td>
             </tr>
           `);
         }

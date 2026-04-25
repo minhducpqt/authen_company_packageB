@@ -9,11 +9,11 @@
     </div>
     <div class="flex gap-2">
       <a href="/billing/invoices"
-         class="px-3 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 text-sm">
+         class="px-3 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 text-sm whitespace-nowrap">
         <i class="ri-file-list-2-line mr-1"></i> Danh sách hóa đơn
       </a>
       <button id="btnRefresh"
-              class="px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm">
+              class="px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm whitespace-nowrap">
         <i class="ri-refresh-line mr-1"></i> Làm mới
       </button>
     </div>
@@ -50,18 +50,22 @@
     </div>
 
     <div class="overflow-x-auto">
-      <table class="min-w-full text-sm">
+      <table class="min-w-[1380px] text-sm">
         <thead class="bg-slate-50 text-slate-600">
           <tr>
-            <th class="text-left px-4 py-2">Tháng</th>
-            <th class="text-right px-4 py-2">Phí dự án</th>
-            <th class="text-right px-4 py-2">Hạ tầng</th>
-            <th class="text-right px-4 py-2">Tổng</th>
-            <th class="text-right px-4 py-2">Đã trả</th>
-            <th class="text-right px-4 py-2">Còn nợ</th>
-            <th class="text-left px-4 py-2">Trạng thái</th>
-            <th class="text-left px-4 py-2">Hạn</th>
-            <th class="text-right px-4 py-2">Thao tác</th>
+            <th class="text-left px-4 py-2 whitespace-nowrap">Tháng</th>
+            <th class="text-right px-4 py-2 whitespace-nowrap">Phí dự án</th>
+            <th class="text-right px-4 py-2 whitespace-nowrap">Hạ tầng</th>
+            <th class="text-right px-4 py-2 whitespace-nowrap">Tổng chưa VAT</th>
+            <th class="text-right px-4 py-2 whitespace-nowrap">VAT</th>
+            <th class="text-right px-4 py-2 whitespace-nowrap">Tổng thanh toán</th>
+            <th class="text-right px-4 py-2 whitespace-nowrap">Đã trả</th>
+            <th class="text-right px-4 py-2 whitespace-nowrap">Còn nợ</th>
+            <th class="text-left px-4 py-2 whitespace-nowrap">Trạng thái</th>
+            <th class="text-left px-4 py-2 whitespace-nowrap">Hạn</th>
+            <th class="sticky right-0 z-20 bg-slate-50 text-right px-4 py-2 whitespace-nowrap border-l border-slate-200">
+              Thao tác
+            </th>
           </tr>
         </thead>
         <tbody id="tbody" class="divide-y divide-slate-100"></tbody>
@@ -111,28 +115,27 @@
 
   function badge(status) {
     const s = String(status || '').toUpperCase();
-    if (s === 'PAID') return `<span class="px-2 py-1 rounded-full text-xs bg-emerald-50 text-emerald-700 border border-emerald-200">PAID</span>`;
-    if (s === 'PARTIAL') return `<span class="px-2 py-1 rounded-full text-xs bg-amber-50 text-amber-700 border border-amber-200">PARTIAL</span>`;
-    return `<span class="px-2 py-1 rounded-full text-xs bg-slate-50 text-slate-700 border border-slate-200">UNPAID</span>`;
+    if (s === 'PAID') return `<span class="px-2 py-1 rounded-full text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap">PAID</span>`;
+    if (s === 'PARTIAL') return `<span class="px-2 py-1 rounded-full text-xs bg-amber-50 text-amber-700 border border-amber-200 whitespace-nowrap">PARTIAL</span>`;
+    return `<span class="px-2 py-1 rounded-full text-xs bg-slate-50 text-slate-700 border border-slate-200 whitespace-nowrap">UNPAID</span>`;
   }
 
-  function isPayable(row) {
-    const status = String(row?.status || '').toUpperCase();
-    const outstanding = Number(row?.amount_outstanding || 0);
-    return (status === 'UNPAID' || status === 'PARTIAL') && outstanding > 0;
+  function totalWithVat(row) {
+    const v = Number(row?.total_fee_with_vat || 0);
+    return v > 0 ? v : Number(row?.total_fee_month || 0);
   }
 
   function actionHtml(row) {
     const viewLink = `
-      <a class="text-indigo-600 hover:underline"
+      <a class="text-indigo-600 hover:underline whitespace-nowrap"
          href="/billing/invoices/view/${row.id}">
          Xem
       </a>
     `;
 
     return `
-      <div class="inline-flex items-center gap-3">
-        <a class="text-indigo-600 hover:underline font-medium"
+      <div class="inline-flex items-center gap-3 whitespace-nowrap">
+        <a class="text-indigo-600 hover:underline font-medium whitespace-nowrap"
            href="/billing/invoices/pay/${row.id}">
            Thanh toán
         </a>
@@ -165,16 +168,18 @@
 
         for (const r of rows) {
           tbody.insertAdjacentHTML('beforeend', `
-            <tr class="hover:bg-slate-50">
-              <td class="px-4 py-2 font-medium text-slate-800">${fmtMonth(r.billing_month)}</td>
-              <td class="px-4 py-2 text-right">${money(r.total_project_fee)}</td>
-              <td class="px-4 py-2 text-right">${money(r.monthly_fixed_fee)}</td>
-              <td class="px-4 py-2 text-right font-semibold">${money(r.total_fee_month)}</td>
-              <td class="px-4 py-2 text-right">${money(r.amount_paid)}</td>
-              <td class="px-4 py-2 text-right">${money(r.amount_outstanding)}</td>
-              <td class="px-4 py-2">${badge(r.status)}</td>
-              <td class="px-4 py-2">${fmtDateTime(r.due_date)}</td>
-              <td class="px-4 py-2 text-right">
+            <tr class="hover:bg-slate-50 group">
+              <td class="px-4 py-2 font-medium text-slate-800 whitespace-nowrap">${fmtMonth(r.billing_month)}</td>
+              <td class="px-4 py-2 text-right whitespace-nowrap">${money(r.total_project_fee)}</td>
+              <td class="px-4 py-2 text-right whitespace-nowrap">${money(r.monthly_fixed_fee)}</td>
+              <td class="px-4 py-2 text-right font-semibold whitespace-nowrap">${money(r.total_fee_month)}</td>
+              <td class="px-4 py-2 text-right whitespace-nowrap">${money(r.vat_amount)}</td>
+              <td class="px-4 py-2 text-right font-semibold text-indigo-700 whitespace-nowrap">${money(totalWithVat(r))}</td>
+              <td class="px-4 py-2 text-right whitespace-nowrap">${money(r.amount_paid)}</td>
+              <td class="px-4 py-2 text-right whitespace-nowrap">${money(r.amount_outstanding)}</td>
+              <td class="px-4 py-2 whitespace-nowrap">${badge(r.status)}</td>
+              <td class="px-4 py-2 whitespace-nowrap">${fmtDateTime(r.due_date)}</td>
+              <td class="sticky right-0 z-10 bg-white group-hover:bg-slate-50 px-4 py-2 text-right whitespace-nowrap border-l border-slate-200">
                 ${actionHtml(r)}
               </td>
             </tr>

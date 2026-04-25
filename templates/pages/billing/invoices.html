@@ -83,7 +83,9 @@
             <th class="text-left px-4 py-2">Tháng</th>
             <th class="text-right px-4 py-2">Phí dự án</th>
             <th class="text-right px-4 py-2">Hạ tầng</th>
-            <th class="text-right px-4 py-2">Tổng</th>
+            <th class="text-right px-4 py-2">Tổng chưa VAT</th>
+            <th class="text-right px-4 py-2">VAT</th>
+            <th class="text-right px-4 py-2">Tổng thanh toán</th>
             <th class="text-right px-4 py-2">Đã trả</th>
             <th class="text-right px-4 py-2">Còn nợ</th>
             <th class="text-left px-4 py-2">Trạng thái</th>
@@ -168,6 +170,11 @@
     return (status === 'UNPAID' || status === 'PARTIAL') && outstanding > 0;
   }
 
+  function totalWithVat(row) {
+    const v = Number(row?.total_fee_with_vat || 0);
+    return v > 0 ? v : Number(row?.total_fee_month || 0);
+  }
+
   function actionHtml(row) {
     const viewLink = `
       <a class="text-indigo-600 hover:underline"
@@ -175,14 +182,6 @@
          Xem
       </a>
     `;
-
-    if (!isPayable(row)) {
-      return `
-        <div class="inline-flex items-center gap-3">
-          ${viewLink}
-        </div>
-      `;
-    }
 
     return `
       <div class="inline-flex items-center gap-3">
@@ -303,6 +302,8 @@
               <td class="px-4 py-2 text-right">${money(r.total_project_fee)}</td>
               <td class="px-4 py-2 text-right">${money(r.monthly_fixed_fee)}</td>
               <td class="px-4 py-2 text-right font-semibold">${money(r.total_fee_month)}</td>
+              <td class="px-4 py-2 text-right">${money(r.vat_amount)}</td>
+              <td class="px-4 py-2 text-right font-semibold text-indigo-700">${money(totalWithVat(r))}</td>
               <td class="px-4 py-2 text-right">${money(r.amount_paid)}</td>
               <td class="px-4 py-2 text-right">${money(r.amount_outstanding)}</td>
               <td class="px-4 py-2">${badge(r.status)}</td>
