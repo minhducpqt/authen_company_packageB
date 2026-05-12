@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="bg-white rounded-xl border border-slate-200 p-5">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h1 class="text-xl font-semibold text-slate-800">Danh sách cấm đấu giá</h1>
+      <p class="text-sm text-slate-500 mt-1">
+        Tra cứu theo CCCD hoặc họ tên không dấu/có dấu. Dữ liệu dùng để cảnh báo khi xét điều kiện tham gia đấu giá.
+      </p>
+    </div>
+  </div>
+
+  <div class="flex flex-wrap items-center gap-3 mb-4">
+    <input id="qInput"
+           value="{{ init_q }}"
+           placeholder="Nhập CCCD hoặc họ tên..."
+           class="w-80 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+
+    <select id="statusInput"
+            class="px-3 py-2 border border-slate-300 rounded-lg text-sm">
+      <option value="">Tất cả trạng thái</option>
+      <option value="ACTIVE" {% if init_status == 'ACTIVE' %}selected{% endif %}>Đang cấm</option>
+      <option value="INACTIVE" {% if init_status == 'INACTIVE' %}selected{% endif %}>Tạm ngừng</option>
+      <option value="EXPIRED" {% if init_status == 'EXPIRED' %}selected{% endif %}>Hết hiệu lực</option>
+      <option value="ERROR" {% if init_status == 'ERROR' %}selected{% endif %}>Dữ liệu lỗi</option>
+    </select>
+
+    <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+      <input id="activeOnlyInput"
+             type="checkbox"
+             {% if init_active_only %}checked{% endif %}
+             class="rounded border-slate-300"/>
+      Chỉ còn hiệu lực
+    </label>
+
+    <button onclick="resetFilters()"
+            class="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 text-sm hover:bg-slate-50">
+      <i class="ri-refresh-line"></i> Reset
+    </button>
+  </div>
+
+  <div class="overflow-x-auto border border-slate-200 rounded-lg">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-50 text-slate-600">
+        <tr>
+          <th class="px-3 py-2 text-left">#</th>
+          <th class="px-3 py-2 text-left">Họ tên</th>
+          <th class="px-3 py-2 text-left">CCCD</th>
+          <th class="px-3 py-2 text-left">Cấm đến ngày</th>
+          <th class="px-3 py-2 text-left">Phạm vi/Ghi chú</th>
+          <th class="px-3 py-2 text-left">Trạng thái</th>
+        </tr>
+      </thead>
+      <tbody id="tbody" class="divide-y divide-slate-100">
+        <tr>
+          <td colspan="6" class="px-3 py-6 text-center text-slate-500">Đang tải...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="flex items-center justify-between mt-4">
+    <div id="summary" class="text-sm text-slate-500"></div>
+
+    <div class="flex items-center gap-2">
+      <button id="prevBtn"
+              onclick="changePage(-1)"
+              class="px-3 py-2 rounded-lg border border-slate-300 text-sm hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">
+        Trước
+      </button>
+      <span id="pageInfo" class="text-sm text-slate-600"></span>
+      <button id="nextBtn"
+              onclick="changePage(1)"
+              class="px-3 py-2 rounded-lg border border-slate-300 text-sm hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">
+        Sau
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let currentPage = {{ init_page or 1 }};
+  const pageSize = {{ init_size or 50 }};
+  let totalRows = 0;
+  let searchTimer = null;
+  let abortController = null;
+
+  function fmtDate(v) {
+    if (!v) return "";
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return v;
+    return d.toLocaleDateString("vi-VN");
+  }
+
+  function statusLabel(status) {
+    const s = (status || "").toUpperCase();
+    if (s === "ACTIVE") return "Đang cấm";
+    if (s === "INACTIVE") return "Tạm ngừng";
+    if (s === "EXPIRED") return "Hết hiệu lực";
+    if (s === "ERROR") return "Dữ liệu lỗi";
+    return s || "-";
+  }
+
+  function badgeStatus(status) {
+    const s = (status || "").toUpperCase();
+
+    let cls = "bg-slate-50 text-slate-600 border-slate-200";
+    if (s === "ACTIVE") cls = "bg-rose-50 text-rose-700 border-rose-200";
+    if (s === "INACTIVE") cls = "bg-amber-50 text-amber-700 border-amber-200";
+    if (s === "EXPIRED") cls = "bg-emerald-50 text-emerald-700 border-emerald-200";
+    if (s === "ERROR") cls = "bg-red-50 text-red-700 border-red-200";
+
+    return `<span class="px-2 py-1 rounded-full border text-xs whitespace-nowrap ${cls}">${statusLabel(s)}</span>`;
+  }
+
+  function scheduleSearch() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(function () {
+      loadData(1);
+    }, 350);
+  }
+
+  function resetFilters() {
+    document.getElementById("qInput").value = "";
+    document.getElementById("statusInput").value = "";
+    document.getElementById("activeOnlyInput").checked = false;
+    loadData(1);
+  }
+
+  async function loadData(page) {
+    currentPage = page || 1;
+
+    if (abortController) abortController.abort();
+    abortController = new AbortController();
+
+    const q = document.getElementById("qInput").value.trim();
+    const status = document.getElementById("statusInput").value;
+    const activeOnly = document.getElementById("activeOnlyInput").checked;
+
+    const params = new URLSearchParams();
+    params.set("page", currentPage);
+    params.set("size", pageSize);
+    params.set("active_only", activeOnly ? "true" : "false");
+    if (q) params.set("q", q);
+    if (status) params.set("status", status);
+
+    const tbody = document.getElementById("tbody");
+    tbody.innerHTML = `<tr><td colspan="6" class="px-3 py-6 text-center text-slate-500">Đang tải...</td></tr>`;
+
+    try {
+      const res = await fetch(`/auction-banned-persons/data?${params.toString()}`, {
+        signal: abortController.signal
+      });
+
+      const json = await res.json();
+
+      if (!res.ok) {
+        tbody.innerHTML = `<tr><td colspan="6" class="px-3 py-6 text-center text-rose-600">Lỗi tải dữ liệu</td></tr>`;
+        return;
+      }
+
+      const rows = json.data || [];
+      totalRows = json.total || 0;
+
+      if (!rows.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="px-3 py-6 text-center text-slate-500">Không có dữ liệu</td></tr>`;
+      } else {
+        tbody.innerHTML = rows.map((r, idx) => `
+          <tr class="hover:bg-slate-50">
+            <td class="px-3 py-2 text-slate-500">${(currentPage - 1) * pageSize + idx + 1}</td>
+            <td class="px-3 py-2 font-medium text-slate-800">${r.full_name || ""}</td>
+            <td class="px-3 py-2 font-mono text-slate-700">${r.cccd || ""}</td>
+            <td class="px-3 py-2 text-slate-700">${fmtDate(r.ban_end_date)}</td>
+            <td class="px-3 py-2 text-slate-600">${r.scope_text || ""}</td>
+            <td class="px-3 py-2">${badgeStatus(r.status)}</td>
+          </tr>
+        `).join("");
+      }
+
+      const maxPage = Math.max(1, Math.ceil(totalRows / pageSize));
+      document.getElementById("summary").textContent = `Tổng: ${totalRows} bản ghi`;
+      document.getElementById("pageInfo").textContent = `Trang ${currentPage}/${maxPage}`;
+      document.getElementById("prevBtn").disabled = currentPage <= 1;
+      document.getElementById("nextBtn").disabled = currentPage >= maxPage;
+
+    } catch (err) {
+      if (err.name === "AbortError") return;
+      tbody.innerHTML = `<tr><td colspan="6" class="px-3 py-6 text-center text-rose-600">Lỗi kết nối</td></tr>`;
+    }
+  }
+
+  function changePage(delta) {
+    const maxPage = Math.max(1, Math.ceil(totalRows / pageSize));
+    const next = Math.min(maxPage, Math.max(1, currentPage + delta));
+    if (next !== currentPage) loadData(next);
+  }
+
+  document.getElementById("qInput").addEventListener("input", scheduleSearch);
+  document.getElementById("statusInput").addEventListener("change", function () {
+    loadData(1);
+  });
+  document.getElementById("activeOnlyInput").addEventListener("change", function () {
+    loadData(1);
+  });
+
+  loadData(currentPage);
+</script>
+{% endblock %}

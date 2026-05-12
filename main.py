@@ -40,6 +40,8 @@ from fastapi_account_manager.middlewares.rbac_guard import rbac_guard_middleware
 from routers.invoice_exports import router as invoice_exports_router
 from routers.billing import router as billing_router
 
+from routers.auction_banned_persons import router as auction_banned_persons_router
+
 # ✅ Lots (tách từ projects.py)
 from routers.lots import router as lots_router  # <-- NEW
 
@@ -135,6 +137,8 @@ app.include_router(auction_session_winner_prints_router)
 app.include_router(auction_session_display.router)
 app.include_router(auction_documents_print_router)  # <-- NEW (attendance, future docs)
 
+
+app.include_router(auction_banned_persons_router)
 
 #Mobile
 mount_mobile_routers(app)
