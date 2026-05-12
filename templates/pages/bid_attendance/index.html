@@ -5,7 +5,7 @@
     <div>
       <h2 class="text-xl font-semibold text-slate-800">Danh sách điểm danh</h2>
       <p class="text-slate-500 text-sm">
-        Chọn dự án và xem danh sách khách hàng đủ điều kiện tham gia đấu giá (đã đánh số thứ tự).
+        Chọn dự án và xem danh sách khách hàng đủ điều kiện tham gia đấu giá.
       </p>
     </div>
     <a href="/projects" class="topbtn border border-slate-300 bg-white text-slate-700">
@@ -19,27 +19,21 @@
     </div>
   {% endif %}
 
-  <!-- BỘ LỌC -->
   <form
     id="filtersForm"
     method="get"
     action="/bid-attendance"
     class="mb-4 grid grid-cols-1 md:grid-cols-4 gap-3 items-end"
   >
-    <!-- Dự án: dropdown active projects -->
     <div>
       <label class="block text-xs font-medium text-slate-600 mb-1">Dự án</label>
-      <select
-        id="projectSelect"
-        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-      >
+      <select id="projectSelect" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
         <option value="">Chọn dự án</option>
       </select>
-      <!-- giữ giá trị để submit GET -->
       <input type="hidden" name="project_code" id="projectCodeInput" value="{{ filters.project_code }}">
+      <input type="hidden" name="mode" id="modeInput" value="{{ filters.mode or 'final' }}">
     </div>
 
-    <!-- Tìm khách -->
     <div>
       <label class="block text-xs font-medium text-slate-600 mb-1">
         Tìm khách (tên/CCCD/ĐT)
@@ -54,10 +48,17 @@
       />
     </div>
 
-    <!-- Spacer -->
-    <div class="hidden md:block"></div>
+    <div class="flex items-center gap-2 pb-2">
+      <input
+        id="onlyBannedCheckbox"
+        type="checkbox"
+        class="h-4 w-4 rounded border-slate-300 text-rose-600 focus:ring-rose-500"
+      />
+      <label for="onlyBannedCheckbox" class="text-sm text-slate-700 select-none">
+        Chỉ hiển thị khách bị cấm
+      </label>
+    </div>
 
-    <!-- Nút Lọc / Đặt lại + In danh sách -->
     <div class="flex flex-col gap-2 items-end">
       <div class="flex gap-2">
         <button
@@ -73,22 +74,22 @@
           Đặt lại
         </a>
       </div>
-        <button
-          type="button"
-          disabled
-          class="mt-1 px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-medium
-                 opacity-50 cursor-not-allowed hover:bg-emerald-600"
-        >
-          <i class="ri-printer-line mr-1"></i>In danh sách điểm danh
-        </button>
 
+      <button
+        type="button"
+        disabled
+        class="mt-1 px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-medium
+               opacity-50 cursor-not-allowed hover:bg-emerald-600"
+      >
+        <i class="ri-printer-line mr-1"></i>In danh sách điểm danh
+      </button>
     </div>
   </form>
 
-  <!-- BẢNG DANH SÁCH ĐIỂM DANH -->
   <div class="flex items-center justify-between mb-2">
     <div class="text-sm text-slate-500">
-      Tổng: {{ page.total }} khách đủ điều kiện (đã đánh số thứ tự theo dự án).
+      Tổng: {{ page.total }} khách.
+      <span id="localBanCount" class="ml-2 text-rose-600 font-medium"></span>
     </div>
   </div>
 
@@ -105,43 +106,76 @@
           <th class="px-2 py-2 border-b text-right">Thao tác</th>
         </tr>
       </thead>
-      <tbody>
+
+      <tbody id="attendanceTbody">
       {% for c in customers %}
-        <tr class="hover:bg-slate-50">
-          <td class="px-2 py-1.5 border-b font-mono text-[11px]">
+        {% set ban = c.auction_ban or {} %}
+        {% set is_banned = ban.get('is_banned') %}
+        <tr
+          class="attendance-row hover:bg-slate-50 {% if is_banned %}bg-rose-50 hover:bg-rose-100 text-rose-900{% endif %}"
+          data-is-banned="{% if is_banned %}1{% else %}0{% endif %}"
+        >
+          <td class="px-2 py-1.5 border-b font-mono text-[11px] {% if is_banned %}border-rose-200 font-bold{% endif %}">
             {{ c.stt_padded or c.stt or loop.index }}
           </td>
-          <td class="px-2 py-1.5 border-b">
-            <div class="font-medium text-slate-800">
+
+          <td class="px-2 py-1.5 border-b {% if is_banned %}border-rose-200{% endif %}">
+            <div class="font-medium {% if is_banned %}text-rose-800{% else %}text-slate-800{% endif %}">
               {{ c.customer_full_name }}
+              {% if is_banned %}
+                <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-600 text-white">
+                  <i class="ri-forbid-2-line mr-1"></i>Bị cấm đấu giá
+                </span>
+              {% endif %}
             </div>
-            <div class="text-[10px] text-slate-500">
+            <div class="text-[10px] {% if is_banned %}text-rose-600{% else %}text-slate-500{% endif %}">
               Dự án: <span class="font-mono">{{ c.project_code }}</span> — {{ c.project_name }}
             </div>
           </td>
-          <td class="px-2 py-1.5 border-b font-mono text-[11px]">
+
+          <td class="px-2 py-1.5 border-b font-mono text-[11px] {% if is_banned %}border-rose-200 font-bold text-rose-800{% endif %}">
             {{ c.cccd }}
           </td>
-          <td class="px-2 py-1.5 border-b text-[11px]">
+
+          <td class="px-2 py-1.5 border-b text-[11px] {% if is_banned %}border-rose-200{% endif %}">
             {{ c.phone }}
           </td>
-          <td class="px-2 py-1.5 border-b text-[11px]">
+
+          <td class="px-2 py-1.5 border-b text-[11px] {% if is_banned %}border-rose-200{% endif %}">
             {{ c.address }}
           </td>
-          <td class="px-2 py-1.5 border-b text-right font-semibold">
+
+          <td class="px-2 py-1.5 border-b text-right font-semibold {% if is_banned %}border-rose-200 text-rose-800{% endif %}">
             {{ c.customer_lot_count or 0 }}
           </td>
-          <td class="px-2 py-1.5 border-b text-right">
-            <a
-              href="/bid-attendance/detail?project_code={{ c.project_code }}&customer_id={{ c.customer_id }}"
-              class="px-2 py-1 rounded-md border border-slate-300 text-[11px] text-slate-700 hover:bg-slate-50 inline-flex items-center gap-1"
-              title="Xem chi tiết / Loại khách (hiếm)"
-            >
-              <i class="ri-eye-line"></i> Chi tiết
-            </a>
+
+          <td class="px-2 py-1.5 border-b text-right {% if is_banned %}border-rose-200{% endif %}">
+            <div class="inline-flex items-center gap-1 justify-end">
+              {% if is_banned %}
+                <button
+                  type="button"
+                  class="js-ban-detail px-2 py-1 rounded-md border border-rose-300 bg-white text-[11px] text-rose-700 hover:bg-rose-50 inline-flex items-center gap-1"
+                  title="Xem lý do bị cấm đấu giá"
+                  data-ban='{{ ban|tojson|forceescape }}'
+                  data-name="{{ c.customer_full_name|e }}"
+                  data-cccd="{{ c.cccd|e }}"
+                >
+                  <i class="ri-error-warning-line"></i> Lý do cấm
+                </button>
+              {% endif %}
+
+              <a
+                href="/bid-attendance/detail?project_code={{ c.project_code }}&customer_id={{ c.customer_id }}"
+                class="px-2 py-1 rounded-md border border-slate-300 text-[11px] text-slate-700 hover:bg-slate-50 inline-flex items-center gap-1 bg-white"
+                title="Xem chi tiết / Loại khách"
+              >
+                <i class="ri-eye-line"></i> Chi tiết
+              </a>
+            </div>
           </td>
         </tr>
       {% endfor %}
+
       {% if not customers or customers|length == 0 %}
         <tr>
           <td colspan="7" class="px-3 py-6 text-center text-slate-500">
@@ -151,21 +185,154 @@
       {% endif %}
       </tbody>
     </table>
+
+    <div id="noLocalBannedResult" class="hidden px-3 py-6 text-center text-slate-500 text-sm">
+      Không có khách bị cấm trong danh sách đã tải về.
+    </div>
+  </div>
+</div>
+
+<div
+  id="banModal"
+  class="fixed inset-0 z-[9999] hidden items-center justify-center bg-slate-900/50 px-4"
+>
+  <div class="w-full max-w-lg rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-rose-50">
+      <div>
+        <h3 class="text-base font-semibold text-rose-800">
+          <i class="ri-forbid-2-line mr-1"></i>Thông tin cấm đấu giá
+        </h3>
+        <p id="banModalSubTitle" class="text-xs text-rose-600 mt-0.5"></p>
+      </div>
+      <button
+        type="button"
+        id="banModalClose"
+        class="w-8 h-8 rounded-full hover:bg-white text-rose-700 flex items-center justify-center"
+        title="Đóng"
+      >
+        <i class="ri-close-line text-xl"></i>
+      </button>
+    </div>
+
+    <div class="p-5 space-y-3 text-sm">
+      <div class="grid grid-cols-3 gap-2">
+        <div class="text-slate-500">Trạng thái</div>
+        <div class="col-span-2 font-semibold text-rose-700" id="banStatus"></div>
+
+        <div class="text-slate-500">Khớp theo</div>
+        <div class="col-span-2 font-medium text-slate-800" id="banMatchedBy"></div>
+
+        <div class="text-slate-500">Thời gian cấm</div>
+        <div class="col-span-2 font-medium text-slate-800" id="banDateRange"></div>
+
+        <div class="text-slate-500">Phạm vi</div>
+        <div class="col-span-2 font-medium text-slate-800 whitespace-pre-line" id="banScope"></div>
+
+        <div class="text-slate-500">Lý do</div>
+        <div class="col-span-2 font-medium text-slate-800 whitespace-pre-line" id="banReason"></div>
+
+        <div class="text-slate-500">Số quyết định</div>
+        <div class="col-span-2 font-medium text-slate-800" id="banDecisionNo"></div>
+
+        <div class="text-slate-500">Nguồn</div>
+        <div class="col-span-2 font-medium text-slate-800" id="banSourceName"></div>
+
+        <div class="text-slate-500">Link nguồn</div>
+        <div class="col-span-2 font-medium" id="banSourceUrl"></div>
+      </div>
+    </div>
+
+    <div class="px-5 py-4 border-t border-slate-200 bg-slate-50 flex justify-end">
+      <button
+        type="button"
+        id="banModalCloseBottom"
+        class="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm text-slate-700 hover:bg-slate-100"
+      >
+        Đóng
+      </button>
+    </div>
   </div>
 </div>
 
 <script>
-  // Debounce helper
   let __debounceTimer;
+
   function debounce(fn, ms) {
     clearTimeout(__debounceTimer);
     __debounceTimer = setTimeout(fn, ms);
   }
 
-  // In danh sách điểm danh
+  function textOrDash(v) {
+    if (v === null || v === undefined || String(v).trim() === "") return "—";
+    return String(v);
+  }
+
+  function openBanModal(ban, name, cccd) {
+    const modal = document.getElementById("banModal");
+    document.getElementById("banModalSubTitle").textContent =
+      `${textOrDash(name)} — CCCD: ${textOrDash(cccd)}`;
+
+    document.getElementById("banStatus").textContent = textOrDash(ban.status || "ACTIVE");
+    document.getElementById("banMatchedBy").textContent = textOrDash(ban.matched_by);
+    document.getElementById("banDateRange").textContent =
+      `${textOrDash(ban.ban_start_date)} → ${textOrDash(ban.ban_end_date)}`;
+    document.getElementById("banScope").textContent = textOrDash(ban.scope_text);
+    document.getElementById("banReason").textContent = textOrDash(ban.reason);
+    document.getElementById("banDecisionNo").textContent = textOrDash(ban.decision_no);
+    document.getElementById("banSourceName").textContent = textOrDash(ban.source_name);
+
+    const sourceWrap = document.getElementById("banSourceUrl");
+    sourceWrap.innerHTML = "";
+    if (ban.source_url) {
+      const a = document.createElement("a");
+      a.href = ban.source_url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.className = "text-indigo-600 hover:underline break-all";
+      a.textContent = ban.source_url;
+      sourceWrap.appendChild(a);
+    } else {
+      sourceWrap.textContent = "—";
+    }
+
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+  }
+
+  function closeBanModal() {
+    const modal = document.getElementById("banModal");
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+  }
+
+  function applyLocalBannedFilter() {
+    const checked = document.getElementById("onlyBannedCheckbox").checked;
+    const rows = Array.from(document.querySelectorAll(".attendance-row"));
+    let visible = 0;
+
+    rows.forEach(row => {
+      const banned = row.dataset.isBanned === "1";
+      const show = !checked || banned;
+      row.classList.toggle("hidden", !show);
+      if (show) visible += 1;
+    });
+
+    const empty = document.getElementById("noLocalBannedResult");
+    if (empty) empty.classList.toggle("hidden", !(checked && visible === 0));
+  }
+
+  function updateLocalBanCount() {
+    const rows = Array.from(document.querySelectorAll(".attendance-row"));
+    const bannedCount = rows.filter(row => row.dataset.isBanned === "1").length;
+    const el = document.getElementById("localBanCount");
+    if (el) el.textContent = bannedCount > 0 ? `Có ${bannedCount} khách bị cấm trong danh sách đã tải.` : "";
+  }
+
   function printAttendanceList() {
     const projectCodeInput = document.getElementById("projectCodeInput");
+    const modeInput = document.getElementById("modeInput");
     const projectCode = (projectCodeInput && projectCodeInput.value || "").trim();
+    const mode = (modeInput && modeInput.value || "final").trim();
 
     if (!projectCode) {
       window.confirmModal({
@@ -175,7 +342,7 @@
       return;
     }
 
-    const url = `/bid-attendance/print?project_code=${encodeURIComponent(projectCode)}`;
+    const url = `/bid-attendance/print?project_code=${encodeURIComponent(projectCode)}&mode=${encodeURIComponent(mode)}`;
     window.open(url, "_blank");
   }
 
@@ -183,30 +350,61 @@
     const projectSelect = document.getElementById("projectSelect");
     const projectCodeInput = document.getElementById("projectCodeInput");
     const customerSearch = document.getElementById("customerSearch");
+    const modeInput = document.getElementById("modeInput");
+    const onlyBannedCheckbox = document.getElementById("onlyBannedCheckbox");
 
     function submitWithCurrentFilters() {
       const params = new URLSearchParams();
       const pj = projectCodeInput.value.trim();
       const q = customerSearch.value.trim();
+      const mode = (modeInput.value || "final").trim();
+
       if (pj) params.set("project_code", pj);
       if (q) params.set("customer_q", q);
+      if (mode) params.set("mode", mode);
+
       const qs = params.toString();
-      const url = qs ? `/bid-attendance?${qs}` : "/bid-attendance";
-      window.location.href = url;
+      window.location.href = qs ? `/bid-attendance?${qs}` : "/bid-attendance";
     }
 
-    // Auto search khi gõ tên/CCCD/ĐT (debounce)
     customerSearch.addEventListener("input", function () {
       debounce(submitWithCurrentFilters, 400);
     });
 
-    // Project dropdown -> đổi hidden + apply ngay
     projectSelect.addEventListener("change", function () {
       projectCodeInput.value = projectSelect.value || "";
       submitWithCurrentFilters();
     });
 
-    // ====== Load danh sách dự án active cho dropdown ======
+    if (onlyBannedCheckbox) {
+      onlyBannedCheckbox.addEventListener("change", applyLocalBannedFilter);
+    }
+
+    document.querySelectorAll(".js-ban-detail").forEach(btn => {
+      btn.addEventListener("click", function () {
+        let ban = {};
+        try {
+          ban = JSON.parse(this.dataset.ban || "{}");
+        } catch (_) {
+          ban = {};
+        }
+        openBanModal(ban, this.dataset.name || "", this.dataset.cccd || "");
+      });
+    });
+
+    document.getElementById("banModalClose")?.addEventListener("click", closeBanModal);
+    document.getElementById("banModalCloseBottom")?.addEventListener("click", closeBanModal);
+
+    document.getElementById("banModal")?.addEventListener("click", function (e) {
+      if (e.target === this) closeBanModal();
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeBanModal();
+    });
+
+    updateLocalBanCount();
+
     const ACTIVE_PROJ_URL = "/projects/options/active";
     const currentProjectCode = projectCodeInput.value || "";
 
@@ -215,10 +413,12 @@
       .then(js => {
         const list = js.data || js.items || [];
         projectSelect.innerHTML = '<option value="">Chọn dự án</option>';
+
         list.forEach(p => {
           const code = p.project_code || p.code || "";
           const name = p.name || code;
           if (!code) return;
+
           const opt = document.createElement("option");
           opt.value = code;
           opt.textContent = `${code} — ${name}`;
@@ -232,14 +432,11 @@
           if (onlyCode) {
             projectSelect.value = onlyCode;
             projectCodeInput.value = onlyCode;
-            // Auto apply lần đầu nếu chỉ có 1 dự án active
             submitWithCurrentFilters();
           }
         }
       })
-      .catch(() => {
-        // ignore
-      });
+      .catch(() => {});
   });
 </script>
 {% endblock %}
