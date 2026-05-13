@@ -1,104 +1,239 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="bg-white rounded-xl border border-slate-200 p-5">
-  <div class="flex items-center justify-between mb-4">
-    <div>
-      <h1 class="text-xl font-semibold text-slate-800">Danh sách cấm đấu giá</h1>
-      <p class="text-sm text-slate-500 mt-1">
-        Tra cứu theo CCCD hoặc họ tên không dấu/có dấu. Dữ liệu dùng để cảnh báo khi xét điều kiện tham gia đấu giá.
-      </p>
+<div class="space-y-5">
+
+  <!-- HEADER -->
+  <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center">
+            <i class="ri-shield-user-line text-2xl"></i>
+          </div>
+
+          <div>
+            <h1 class="text-2xl font-bold text-slate-800">
+              Danh sách cấm đấu giá
+            </h1>
+
+            <p class="text-sm text-slate-500 mt-1">
+              Dữ liệu tổng hợp từ nguồn công khai Bộ Tư pháp và các quyết định liên quan.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 flex-wrap">
+        <div class="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-600">
+          <i class="ri-database-2-line mr-1"></i>
+          Dữ liệu cập nhật tự động
+        </div>
+
+        <div class="px-3 py-2 rounded-xl bg-rose-50 border border-rose-200 text-sm text-rose-700">
+          <i class="ri-alert-line mr-1"></i>
+          Phục vụ kiểm tra điều kiện tham gia
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="flex flex-wrap items-center gap-3 mb-4">
-    <input id="qInput"
-           value="{{ init_q }}"
-           placeholder="Nhập CCCD hoặc họ tên..."
-           class="w-80 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+  <!-- FILTER -->
+  <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
 
-    <select id="statusInput"
-            class="px-3 py-2 border border-slate-300 rounded-lg text-sm">
-      <option value="">Tất cả trạng thái</option>
-      <option value="ACTIVE" {% if init_status == 'ACTIVE' %}selected{% endif %}>Đang cấm</option>
-      <option value="INACTIVE" {% if init_status == 'INACTIVE' %}selected{% endif %}>Tạm ngừng</option>
-      <option value="EXPIRED" {% if init_status == 'EXPIRED' %}selected{% endif %}>Hết hiệu lực</option>
-      <option value="ERROR" {% if init_status == 'ERROR' %}selected{% endif %}>Dữ liệu lỗi</option>
-    </select>
+      <div class="lg:col-span-5">
+        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+          Tìm kiếm
+        </label>
 
-    <label class="inline-flex items-center gap-2 text-sm text-slate-700">
-      <input id="activeOnlyInput"
-             type="checkbox"
-             {% if init_active_only %}checked{% endif %}
-             class="rounded border-slate-300"/>
-      Chỉ còn hiệu lực
-    </label>
+        <div class="relative">
+          <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
 
-    <button onclick="resetFilters()"
-            class="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 text-sm hover:bg-slate-50">
-      <i class="ri-refresh-line"></i> Reset
-    </button>
+          <input id="qInput"
+                 value="{{ init_q }}"
+                 placeholder="Nhập CCCD hoặc họ tên..."
+                 class="w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"/>
+        </div>
+      </div>
+
+      <div class="lg:col-span-3">
+        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+          Trạng thái
+        </label>
+
+        <select id="statusInput"
+                class="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500">
+          <option value="">Tất cả trạng thái</option>
+          <option value="ACTIVE" {% if init_status == 'ACTIVE' %}selected{% endif %}>Đang cấm</option>
+          <option value="INACTIVE" {% if init_status == 'INACTIVE' %}selected{% endif %}>Tạm ngừng</option>
+          <option value="EXPIRED" {% if init_status == 'EXPIRED' %}selected{% endif %}>Hết hiệu lực</option>
+          <option value="ERROR" {% if init_status == 'ERROR' %}selected{% endif %}>Dữ liệu lỗi</option>
+        </select>
+      </div>
+
+      <div class="lg:col-span-2 flex items-end">
+        <label class="inline-flex items-center gap-2 text-sm text-slate-700 h-[42px]">
+          <input id="activeOnlyInput"
+                 type="checkbox"
+                 {% if init_active_only %}checked{% endif %}
+                 class="rounded border-slate-300 text-rose-600 focus:ring-rose-500"/>
+
+          Chỉ còn hiệu lực
+        </label>
+      </div>
+
+      <div class="lg:col-span-2 flex items-end justify-end">
+        <button onclick="resetFilters()"
+                class="w-full lg:w-auto px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-sm hover:bg-slate-50 transition">
+          <i class="ri-refresh-line mr-1"></i>
+          Reset
+        </button>
+      </div>
+
+    </div>
   </div>
 
-  <div class="overflow-x-auto border border-slate-200 rounded-lg">
-    <table class="min-w-full text-sm">
-      <thead class="bg-slate-50 text-slate-600">
-        <tr>
-          <th class="px-3 py-2 text-left">#</th>
-          <th class="px-3 py-2 text-left">Họ tên</th>
-          <th class="px-3 py-2 text-left">CCCD</th>
-          <th class="px-3 py-2 text-left">Cấm đến ngày</th>
-          <th class="px-3 py-2 text-left">Phạm vi/Ghi chú</th>
-          <th class="px-3 py-2 text-left">Trạng thái</th>
-        </tr>
-      </thead>
-      <tbody id="tbody" class="divide-y divide-slate-100">
-        <tr>
-          <td colspan="6" class="px-3 py-6 text-center text-slate-500">Đang tải...</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  <!-- TABLE -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
 
-  <div class="flex items-center justify-between mt-4">
-    <div id="summary" class="text-sm text-slate-500"></div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+          <tr>
+            <th class="px-4 py-3 text-left font-semibold w-[60px]">#</th>
+            <th class="px-4 py-3 text-left font-semibold min-w-[220px]">Người bị cấm</th>
+            <th class="px-4 py-3 text-left font-semibold min-w-[150px]">CCCD</th>
+            <th class="px-4 py-3 text-left font-semibold min-w-[180px]">Hiệu lực</th>
+            <th class="px-4 py-3 text-left font-semibold min-w-[260px]">Phạm vi / Quyết định</th>
+            <th class="px-4 py-3 text-left font-semibold min-w-[140px]">Trạng thái</th>
+            <th class="px-4 py-3 text-center font-semibold min-w-[140px]">Thao tác</th>
+          </tr>
+        </thead>
 
-    <div class="flex items-center gap-2">
-      <button id="prevBtn"
-              onclick="changePage(-1)"
-              class="px-3 py-2 rounded-lg border border-slate-300 text-sm hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">
-        Trước
-      </button>
-      <span id="pageInfo" class="text-sm text-slate-600"></span>
-      <button id="nextBtn"
-              onclick="changePage(1)"
-              class="px-3 py-2 rounded-lg border border-slate-300 text-sm hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">
-        Sau
-      </button>
+        <tbody id="tbody" class="divide-y divide-slate-100 bg-white">
+          <tr>
+            <td colspan="7" class="px-4 py-10 text-center text-slate-500">
+              Đang tải dữ liệu...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="px-5 py-4 border-t border-slate-200 bg-slate-50 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+
+      <div id="summary" class="text-sm text-slate-500"></div>
+
+      <div class="flex items-center gap-2">
+        <button id="prevBtn"
+                onclick="changePage(-1)"
+                class="px-4 py-2 rounded-xl border border-slate-300 text-sm hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition">
+          <i class="ri-arrow-left-s-line"></i>
+          Trước
+        </button>
+
+        <div id="pageInfo"
+             class="px-4 py-2 rounded-xl bg-white border border-slate-200 text-sm text-slate-700">
+        </div>
+
+        <button id="nextBtn"
+                onclick="changePage(1)"
+                class="px-4 py-2 rounded-xl border border-slate-300 text-sm hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition">
+          Sau
+          <i class="ri-arrow-right-s-line"></i>
+        </button>
+      </div>
+
     </div>
   </div>
 </div>
+
+
+<!-- DETAIL MODAL -->
+<div id="detailModal"
+     class="fixed inset-0 z-50 hidden">
+
+  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"
+       onclick="closeDetailModal()"></div>
+
+  <div class="absolute inset-0 flex items-center justify-center p-4">
+    <div class="w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
+
+      <!-- HEADER -->
+      <div class="px-6 py-5 border-b border-slate-200 bg-gradient-to-r from-rose-50 to-orange-50">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-10 h-10 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center">
+                <i class="ri-alert-line text-xl"></i>
+              </div>
+
+              <div>
+                <h2 class="text-xl font-bold text-slate-800">
+                  Chi tiết cấm đấu giá
+                </h2>
+
+                <p class="text-sm text-slate-500">
+                  Thông tin nguồn và quyết định liên quan
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <button onclick="closeDetailModal()"
+                  class="w-10 h-10 rounded-xl border border-slate-200 hover:bg-white transition flex items-center justify-center text-slate-500">
+            <i class="ri-close-line text-xl"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- BODY -->
+      <div id="detailBody"
+           class="max-h-[75vh] overflow-y-auto p-6">
+        <div class="text-center text-slate-500 py-10">
+          Đang tải dữ liệu...
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 
 <script>
   let currentPage = {{ init_page or 1 }};
   const pageSize = {{ init_size or 50 }};
   let totalRows = 0;
+
   let searchTimer = null;
   let abortController = null;
 
   function fmtDate(v) {
-    if (!v) return "";
+    if (!v) return "-";
+
     const d = new Date(v);
     if (isNaN(d.getTime())) return v;
+
     return d.toLocaleDateString("vi-VN");
+  }
+
+  function escapeHtml(v) {
+    return (v || "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;");
   }
 
   function statusLabel(status) {
     const s = (status || "").toUpperCase();
+
     if (s === "ACTIVE") return "Đang cấm";
     if (s === "INACTIVE") return "Tạm ngừng";
     if (s === "EXPIRED") return "Hết hiệu lực";
     if (s === "ERROR") return "Dữ liệu lỗi";
+
     return s || "-";
   }
 
@@ -106,32 +241,53 @@
     const s = (status || "").toUpperCase();
 
     let cls = "bg-slate-50 text-slate-600 border-slate-200";
-    if (s === "ACTIVE") cls = "bg-rose-50 text-rose-700 border-rose-200";
-    if (s === "INACTIVE") cls = "bg-amber-50 text-amber-700 border-amber-200";
-    if (s === "EXPIRED") cls = "bg-emerald-50 text-emerald-700 border-emerald-200";
-    if (s === "ERROR") cls = "bg-red-50 text-red-700 border-red-200";
 
-    return `<span class="px-2 py-1 rounded-full border text-xs whitespace-nowrap ${cls}">${statusLabel(s)}</span>`;
-  }
+    if (s === "ACTIVE") {
+      cls = "bg-rose-50 text-rose-700 border-rose-200";
+    }
 
-  function scheduleSearch() {
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(function () {
-      loadData(1);
-    }, 350);
+    if (s === "INACTIVE") {
+      cls = "bg-amber-50 text-amber-700 border-amber-200";
+    }
+
+    if (s === "EXPIRED") {
+      cls = "bg-emerald-50 text-emerald-700 border-emerald-200";
+    }
+
+    if (s === "ERROR") {
+      cls = "bg-red-50 text-red-700 border-red-200";
+    }
+
+    return `
+      <span class="px-2.5 py-1 rounded-full border text-xs font-medium whitespace-nowrap ${cls}">
+        ${statusLabel(s)}
+      </span>
+    `;
   }
 
   function resetFilters() {
     document.getElementById("qInput").value = "";
     document.getElementById("statusInput").value = "";
     document.getElementById("activeOnlyInput").checked = false;
+
     loadData(1);
+  }
+
+  function scheduleSearch() {
+    clearTimeout(searchTimer);
+
+    searchTimer = setTimeout(function () {
+      loadData(1);
+    }, 350);
   }
 
   async function loadData(page) {
     currentPage = page || 1;
 
-    if (abortController) abortController.abort();
+    if (abortController) {
+      abortController.abort();
+    }
+
     abortController = new AbortController();
 
     const q = document.getElementById("qInput").value.trim();
@@ -139,14 +295,23 @@
     const activeOnly = document.getElementById("activeOnlyInput").checked;
 
     const params = new URLSearchParams();
+
     params.set("page", currentPage);
     params.set("size", pageSize);
     params.set("active_only", activeOnly ? "true" : "false");
+
     if (q) params.set("q", q);
     if (status) params.set("status", status);
 
     const tbody = document.getElementById("tbody");
-    tbody.innerHTML = `<tr><td colspan="6" class="px-3 py-6 text-center text-slate-500">Đang tải...</td></tr>`;
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" class="px-4 py-10 text-center text-slate-500">
+          Đang tải dữ liệu...
+        </td>
+      </tr>
+    `;
 
     try {
       const res = await fetch(`/auction-banned-persons/data?${params.toString()}`, {
@@ -156,7 +321,13 @@
       const json = await res.json();
 
       if (!res.ok) {
-        tbody.innerHTML = `<tr><td colspan="6" class="px-3 py-6 text-center text-rose-600">Lỗi tải dữ liệu</td></tr>`;
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="px-4 py-10 text-center text-rose-600">
+              Lỗi tải dữ liệu
+            </td>
+          </tr>
+        `;
         return;
       }
 
@@ -164,45 +335,362 @@
       totalRows = json.total || 0;
 
       if (!rows.length) {
-        tbody.innerHTML = `<tr><td colspan="6" class="px-3 py-6 text-center text-slate-500">Không có dữ liệu</td></tr>`;
-      } else {
-        tbody.innerHTML = rows.map((r, idx) => `
-          <tr class="hover:bg-slate-50">
-            <td class="px-3 py-2 text-slate-500">${(currentPage - 1) * pageSize + idx + 1}</td>
-            <td class="px-3 py-2 font-medium text-slate-800">${r.full_name || ""}</td>
-            <td class="px-3 py-2 font-mono text-slate-700">${r.cccd || ""}</td>
-            <td class="px-3 py-2 text-slate-700">${fmtDate(r.ban_end_date)}</td>
-            <td class="px-3 py-2 text-slate-600">${r.scope_text || ""}</td>
-            <td class="px-3 py-2">${badgeStatus(r.status)}</td>
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="px-4 py-10 text-center text-slate-500">
+              Không có dữ liệu
+            </td>
           </tr>
-        `).join("");
+        `;
+      } else {
+
+        tbody.innerHTML = rows.map((r, idx) => {
+
+          const isActive = (r.status || "").toUpperCase() === "ACTIVE";
+
+          return `
+            <tr class="hover:bg-slate-50 transition ${isActive ? 'bg-rose-50/40' : ''}">
+
+              <td class="px-4 py-4 align-top text-slate-400">
+                ${(currentPage - 1) * pageSize + idx + 1}
+              </td>
+
+              <td class="px-4 py-4 align-top">
+                <div class="font-semibold text-slate-800">
+                  ${escapeHtml(r.full_name || "-")}
+                </div>
+
+                ${r.address ? `
+                  <div class="text-xs text-slate-500 mt-1 line-clamp-2">
+                    <i class="ri-map-pin-line mr-1"></i>
+                    ${escapeHtml(r.address)}
+                  </div>
+                ` : ""}
+              </td>
+
+              <td class="px-4 py-4 align-top">
+                <div class="font-mono text-slate-700 font-medium">
+                  ${escapeHtml(r.cccd || "-")}
+                </div>
+
+                ${r.dob ? `
+                  <div class="text-xs text-slate-500 mt-1">
+                    NS: ${fmtDate(r.dob)}
+                  </div>
+                ` : ""}
+              </td>
+
+              <td class="px-4 py-4 align-top">
+                <div class="text-sm text-slate-700">
+                  ${fmtDate(r.ban_start_date)}
+                </div>
+
+                <div class="text-xs text-slate-500 mt-1">
+                  đến ${fmtDate(r.ban_end_date)}
+                </div>
+              </td>
+
+              <td class="px-4 py-4 align-top">
+                <div class="font-medium text-slate-700 line-clamp-2">
+                  ${escapeHtml(r.scope_text || "-")}
+                </div>
+
+                ${r.decision_no ? `
+                  <div class="mt-2 inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs">
+                    <i class="ri-file-list-3-line"></i>
+                    ${escapeHtml(r.decision_no)}
+                  </div>
+                ` : ""}
+              </td>
+
+              <td class="px-4 py-4 align-top">
+                ${badgeStatus(r.status)}
+              </td>
+
+              <td class="px-4 py-4 align-top text-center">
+                <button onclick="openDetailModal(${r.id})"
+                        class="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-rose-600 text-white text-sm hover:bg-rose-700 transition shadow-sm">
+                  <i class="ri-eye-line"></i>
+                  Chi tiết
+                </button>
+              </td>
+
+            </tr>
+          `;
+        }).join("");
       }
 
       const maxPage = Math.max(1, Math.ceil(totalRows / pageSize));
-      document.getElementById("summary").textContent = `Tổng: ${totalRows} bản ghi`;
-      document.getElementById("pageInfo").textContent = `Trang ${currentPage}/${maxPage}`;
+
+      document.getElementById("summary").textContent =
+        `Tổng: ${totalRows.toLocaleString("vi-VN")} bản ghi`;
+
+      document.getElementById("pageInfo").textContent =
+        `Trang ${currentPage}/${maxPage}`;
+
       document.getElementById("prevBtn").disabled = currentPage <= 1;
       document.getElementById("nextBtn").disabled = currentPage >= maxPage;
 
     } catch (err) {
-      if (err.name === "AbortError") return;
-      tbody.innerHTML = `<tr><td colspan="6" class="px-3 py-6 text-center text-rose-600">Lỗi kết nối</td></tr>`;
+
+      if (err.name === "AbortError") {
+        return;
+      }
+
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" class="px-4 py-10 text-center text-rose-600">
+            Lỗi kết nối máy chủ
+          </td>
+        </tr>
+      `;
     }
   }
 
   function changePage(delta) {
     const maxPage = Math.max(1, Math.ceil(totalRows / pageSize));
-    const next = Math.min(maxPage, Math.max(1, currentPage + delta));
-    if (next !== currentPage) loadData(next);
+
+    const next = Math.min(
+      maxPage,
+      Math.max(1, currentPage + delta)
+    );
+
+    if (next !== currentPage) {
+      loadData(next);
+    }
   }
 
-  document.getElementById("qInput").addEventListener("input", scheduleSearch);
-  document.getElementById("statusInput").addEventListener("change", function () {
-    loadData(1);
-  });
-  document.getElementById("activeOnlyInput").addEventListener("change", function () {
-    loadData(1);
-  });
+  async function openDetailModal(id) {
+
+    const modal = document.getElementById("detailModal");
+    const body = document.getElementById("detailBody");
+
+    modal.classList.remove("hidden");
+
+    body.innerHTML = `
+      <div class="text-center text-slate-500 py-10">
+        Đang tải dữ liệu...
+      </div>
+    `;
+
+    try {
+
+      const res = await fetch(`/auction-banned-persons/${id}/data`);
+      const r = await res.json();
+
+      if (!res.ok) {
+        body.innerHTML = `
+          <div class="text-center text-rose-600 py-10">
+            Không thể tải dữ liệu chi tiết
+          </div>
+        `;
+        return;
+      }
+
+      body.innerHTML = `
+        <div class="space-y-6">
+
+          <!-- PERSON -->
+          <div class="rounded-2xl border border-rose-200 bg-rose-50 p-5">
+            <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+
+              <div>
+                <div class="text-2xl font-bold text-slate-800">
+                  ${escapeHtml(r.full_name || "-")}
+                </div>
+
+                <div class="mt-2 flex flex-wrap items-center gap-2 text-sm">
+                  <div class="px-3 py-1 rounded-xl bg-white border border-slate-200 font-mono text-slate-700">
+                    CCCD: ${escapeHtml(r.cccd || "-")}
+                  </div>
+
+                  ${badgeStatus(r.status)}
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- INFO GRID -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+            <div class="rounded-2xl border border-slate-200 p-5">
+              <div class="text-sm font-semibold text-slate-800 mb-4">
+                Thông tin quyết định
+              </div>
+
+              <div class="space-y-3 text-sm">
+
+                <div>
+                  <div class="text-slate-400 mb-1">Số quyết định</div>
+                  <div class="font-medium text-slate-700">
+                    ${escapeHtml(r.decision_no || "-")}
+                  </div>
+                </div>
+
+                <div>
+                  <div class="text-slate-400 mb-1">Ngày quyết định</div>
+                  <div class="font-medium text-slate-700">
+                    ${fmtDate(r.decision_date)}
+                  </div>
+                </div>
+
+                <div>
+                  <div class="text-slate-400 mb-1">Đơn vị ban hành</div>
+                  <div class="font-medium text-slate-700">
+                    ${escapeHtml(r.issuer || "-")}
+                  </div>
+                </div>
+
+                <div>
+                  <div class="text-slate-400 mb-1">Thời hạn cấm</div>
+                  <div class="font-medium text-slate-700">
+                    ${escapeHtml(r.ban_duration || "-")}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <div class="rounded-2xl border border-slate-200 p-5">
+              <div class="text-sm font-semibold text-slate-800 mb-4">
+                Phạm vi & lý do
+              </div>
+
+              <div class="space-y-3 text-sm">
+
+                <div>
+                  <div class="text-slate-400 mb-1">Phạm vi cấm</div>
+                  <div class="font-medium text-slate-700 whitespace-pre-wrap">
+                    ${escapeHtml(r.scope_text || "-")}
+                  </div>
+                </div>
+
+                <div>
+                  <div class="text-slate-400 mb-1">Lý do/Ghi chú</div>
+                  <div class="font-medium text-slate-700 whitespace-pre-wrap">
+                    ${escapeHtml(r.reason || "-")}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+          <!-- SOURCE -->
+          <div class="rounded-2xl border border-slate-200 p-5">
+
+            <div class="flex items-center gap-2 mb-4">
+              <div class="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center">
+                <i class="ri-links-line"></i>
+              </div>
+
+              <div>
+                <div class="text-sm font-semibold text-slate-800">
+                  Nguồn dữ liệu
+                </div>
+
+                <div class="text-xs text-slate-500">
+                  Thông tin và tài liệu đối chiếu
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-3">
+
+              ${r.source_article_title ? `
+                <div class="rounded-xl border border-slate-200 p-4">
+                  <div class="text-xs text-slate-400 mb-1">
+                    Bài viết nguồn
+                  </div>
+
+                  <div class="font-medium text-slate-800">
+                    ${escapeHtml(r.source_article_title)}
+                  </div>
+
+                  ${r.source_url ? `
+                    <a href="${r.source_url}"
+                       target="_blank"
+                       class="mt-3 inline-flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800">
+                      <i class="ri-external-link-line"></i>
+                      Mở bài viết nguồn
+                    </a>
+                  ` : ""}
+                </div>
+              ` : ""}
+
+              ${r.source_file_url ? `
+                <div class="rounded-xl border border-slate-200 p-4">
+                  <div class="text-xs text-slate-400 mb-1">
+                    File quyết định / tài liệu đính kèm
+                  </div>
+
+                  <div class="font-medium text-slate-800 break-all">
+                    ${escapeHtml(r.source_file_name || "Tệp đính kèm")}
+                  </div>
+
+                  <a href="${r.source_file_url}"
+                     target="_blank"
+                     class="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900 text-white text-sm hover:bg-black transition">
+                    <i class="ri-file-pdf-line"></i>
+                    Mở tài liệu nguồn
+                  </a>
+                </div>
+              ` : ""}
+
+            </div>
+          </div>
+
+          <!-- SOURCE TEXT -->
+          ${r.source_text ? `
+            <div class="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+
+              <div class="flex items-center gap-2 mb-3">
+                <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
+                  <i class="ri-file-search-line"></i>
+                </div>
+
+                <div class="text-sm font-semibold text-slate-800">
+                  Đoạn trích đối chiếu
+                </div>
+              </div>
+
+              <div class="whitespace-pre-wrap text-sm leading-7 text-slate-700 font-mono bg-white rounded-xl border border-amber-200 p-4 max-h-[300px] overflow-auto">
+${escapeHtml(r.source_text)}
+              </div>
+            </div>
+          ` : ""}
+
+        </div>
+      `;
+
+    } catch (err) {
+
+      body.innerHTML = `
+        <div class="text-center text-rose-600 py-10">
+          Lỗi tải dữ liệu chi tiết
+        </div>
+      `;
+    }
+  }
+
+  function closeDetailModal() {
+    document.getElementById("detailModal").classList.add("hidden");
+  }
+
+  document.getElementById("qInput")
+    .addEventListener("input", scheduleSearch);
+
+  document.getElementById("statusInput")
+    .addEventListener("change", function () {
+      loadData(1);
+    });
+
+  document.getElementById("activeOnlyInput")
+    .addEventListener("change", function () {
+      loadData(1);
+    });
 
   loadData(currentPage);
 </script>

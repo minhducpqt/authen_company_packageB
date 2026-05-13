@@ -33,6 +33,26 @@ async def _api_get(
     )
 
 
+def _proxy_json_response(r: httpx.Response) -> JSONResponse:
+    if r.status_code == 401:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    if r.status_code >= 500:
+        return JSONResponse(
+            {"error": "server", "msg": r.text[:500]},
+            status_code=502,
+        )
+
+    if r.status_code >= 400:
+        try:
+            body = r.json()
+        except Exception:
+            body = {"detail": r.text[:500]}
+        return JSONResponse(body, status_code=r.status_code)
+
+    return JSONResponse(r.json(), status_code=200)
+
+
 # ======================================
 # LIST PAGE
 # ======================================
@@ -42,6 +62,8 @@ async def auction_banned_persons_page(
     q: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
     active_only: bool = Query(False),
+    source_name: Optional[str] = Query(None),
+    decision_no: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     size: int = Query(50, ge=10, le=200),
 ):
@@ -60,6 +82,8 @@ async def auction_banned_persons_page(
             "init_q": q or "",
             "init_status": status or "",
             "init_active_only": active_only,
+            "init_source_name": source_name or "",
+            "init_decision_no": decision_no or "",
             "init_page": page,
             "init_size": size,
         },
@@ -75,6 +99,8 @@ async def auction_banned_persons_data(
     q: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
     active_only: bool = Query(False),
+    source_name: Optional[str] = Query(None),
+    decision_no: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     size: int = Query(50, ge=10, le=200),
 ):
@@ -94,6 +120,12 @@ async def auction_banned_persons_data(
     if status:
         params.append(("status", status))
 
+    if source_name:
+        params.append(("source_name", source_name))
+
+    if decision_no:
+        params.append(("decision_no", decision_no))
+
     async with httpx.AsyncClient() as client:
         r = await _api_get(
             client,
@@ -102,23 +134,30 @@ async def auction_banned_persons_data(
             params,
         )
 
-    if r.status_code == 401:
+    return _proxy_json_response(r)
+
+
+# ======================================
+# DETAIL JSON PROXY
+# ======================================
+@router.get("/auction-banned-persons/{person_id}/data", response_class=JSONResponse)
+async def auction_banned_person_detail_data(
+    request: Request,
+    person_id: int,
+):
+    token = get_access_token(request)
+    if not token:
         return JSONResponse({"error": "unauthorized"}, status_code=401)
 
-    if r.status_code >= 500:
-        return JSONResponse(
-            {"error": "server", "msg": r.text[:500]},
-            status_code=502,
+    async with httpx.AsyncClient() as client:
+        r = await _api_get(
+            client,
+            f"/api/v1/auction-banned-persons/{person_id}",
+            token,
+            [],
         )
 
-    if r.status_code >= 400:
-        try:
-            body = r.json()
-        except Exception:
-            body = {"detail": r.text[:500]}
-        return JSONResponse(body, status_code=r.status_code)
-
-    return JSONResponse(r.json(), status_code=200)
+    return _proxy_json_response(r)
 
 
 # ======================================
@@ -141,14 +180,4 @@ async def auction_banned_person_check(
             [("cccd", cccd)],
         )
 
-    if r.status_code == 401:
-        return JSONResponse({"error": "unauthorized"}, status_code=401)
-
-    if r.status_code >= 400:
-        try:
-            body = r.json()
-        except Exception:
-            body = {"detail": r.text[:500]}
-        return JSONResponse(body, status_code=r.status_code)
-
-    return JSONResponse(r.json(), status_code=200)
+    return _proxy_json_response(r)
