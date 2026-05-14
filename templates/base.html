@@ -8,7 +8,262 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css">
   <link rel="stylesheet" href="/static/style.css"/>
+
+  <style>
+    :root{
+      --shell-brand:#4f46e5;
+      --shell-brand-2:#2563eb;
+      --shell-ink:#0f172a;
+      --shell-muted:#64748b;
+      --shell-line:#e2e8f0;
+      --shell-soft:#f8fafc;
+    }
+
+    body{
+      background:
+        radial-gradient(circle at top left, rgba(79,70,229,.08), transparent 28rem),
+        linear-gradient(180deg,#f8fafc 0%,#eef2ff 100%);
+    }
+
+    .app-topbar{
+      position:sticky;
+      top:0;
+      z-index:40;
+      height:54px;
+      background:linear-gradient(135deg,#312e81 0%,#4338ca 45%,#2563eb 100%);
+      box-shadow:0 10px 30px rgba(15,23,42,.14);
+    }
+
+    .app-brand-center{
+      position:absolute;
+      left:50%;
+      transform:translateX(-50%);
+      display:flex;
+      align-items:center;
+      gap:.62rem;
+      text-decoration:none;
+      color:#fff;
+      white-space:nowrap;
+    }
+
+    .app-brand-badge{
+      width:30px;
+      height:30px;
+      border-radius:10px;
+      display:grid;
+      place-items:center;
+      background:rgba(255,255,255,.14);
+      border:1px solid rgba(255,255,255,.16);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.12);
+    }
+
+    .app-brand-title{
+      font-size:.94rem;
+      line-height:1;
+      font-weight:800;
+      letter-spacing:.01em;
+    }
+
+    .app-mobile-menu-btn{
+      width:34px;
+      height:34px;
+      display:grid;
+      place-items:center;
+      border-radius:11px;
+      color:rgba(255,255,255,.95);
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.12);
+      transition:.18s ease;
+    }
+
+    .app-mobile-menu-btn:hover{
+      background:rgba(255,255,255,.18);
+      transform:translateY(-1px);
+    }
+
+    .avatar{
+      width:36px;
+      height:36px;
+      display:grid;
+      place-items:center;
+      border-radius:999px;
+      background:#fff;
+      box-shadow:0 8px 24px rgba(15,23,42,.16);
+      border:1px solid rgba(255,255,255,.45);
+    }
+
+    .app-user-menu{
+      animation:appMenuIn .15s ease-out;
+    }
+
+    @keyframes appMenuIn{
+      from{opacity:0;transform:translateY(-6px) scale(.98);}
+      to{opacity:1;transform:translateY(0) scale(1);}
+    }
+
+    .app-shell{
+      display:flex!important;
+      gap:1.25rem;
+      align-items:flex-start;
+    }
+
+    .app-shell .app-sidebar{
+      display:block!important;
+      flex:0 0 15.25rem;
+      position:sticky;
+      top:4.45rem;
+      height:calc(100vh - 5.35rem);
+      background:rgba(255,255,255,.92);
+      backdrop-filter:blur(14px);
+      border:1px solid rgba(226,232,240,.9);
+      box-shadow:0 14px 42px rgba(15,23,42,.06);
+    }
+
+    .app-shell .app-main{
+      flex:1 1 auto;
+      min-width:0;
+    }
+
+    .side-title{
+      padding:.72rem .82rem .30rem;
+      font-size:.67rem;
+      font-weight:800;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      color:#94a3b8;
+    }
+
+    .side-link{
+      position:relative;
+      display:flex;
+      align-items:center;
+      gap:.72rem;
+      min-height:38px;
+      padding:.56rem .72rem;
+      margin:.12rem .35rem;
+      border-radius:13px;
+      color:#334155;
+      font-size:.875rem;
+      font-weight:600;
+      transition:.18s ease;
+      border:1px solid transparent;
+    }
+
+    .side-link i{
+      width:21px;
+      height:21px;
+      display:grid;
+      place-items:center;
+      border-radius:8px;
+      font-size:.98rem;
+      color:#64748b;
+      background:#f1f5f9;
+      transition:.18s ease;
+      flex:0 0 21px;
+    }
+
+    .side-link:hover{
+      color:#1e293b;
+      background:#f8fafc;
+      border-color:#e2e8f0;
+      transform:translateX(2px);
+    }
+
+    .side-link:hover i{
+      color:#4f46e5;
+      background:#eef2ff;
+    }
+
+    .side-link.active{
+      color:#fff;
+      background:linear-gradient(135deg,#4f46e5 0%,#2563eb 100%);
+      box-shadow:0 10px 24px rgba(79,70,229,.22);
+    }
+
+    .side-link.active i{
+      color:#fff;
+      background:rgba(255,255,255,.18);
+    }
+
+    .side-link.active::before{
+      content:"";
+      position:absolute;
+      left:-4px;
+      top:50%;
+      transform:translateY(-50%);
+      width:4px;
+      height:23px;
+      border-radius:999px;
+      background:#4f46e5;
+    }
+
+    .app-confirm-card{
+      animation:appConfirmIn .16s ease-out;
+    }
+
+    @keyframes appConfirmIn{
+      from{opacity:0;transform:translateY(6px) scale(.98);}
+      to{opacity:1;transform:translateY(0) scale(1);}
+    }
+
+    .sidebar-mobile-backdrop{
+      display:none;
+    }
+
+    @media (max-width:1024px){
+      .app-brand-center{
+        position:static;
+        transform:none;
+        margin-left:.45rem;
+      }
+
+      .app-brand-title{
+        font-size:.9rem;
+      }
+
+      .app-shell{
+        display:block!important;
+      }
+
+      .app-shell .app-sidebar{
+        position:fixed;
+        z-index:60;
+        top:0;
+        left:0;
+        width:18rem;
+        height:100vh;
+        border-radius:0 22px 22px 0;
+        transform:translateX(-105%);
+        transition:.22s ease;
+      }
+
+      body.sidebar-open .app-sidebar{
+        transform:translateX(0);
+      }
+
+      .sidebar-mobile-backdrop{
+        display:block;
+        position:fixed;
+        inset:0;
+        z-index:55;
+        background:rgba(15,23,42,.42);
+        opacity:0;
+        pointer-events:none;
+        transition:.18s ease;
+      }
+
+      body.sidebar-open .sidebar-mobile-backdrop{
+        opacity:1;
+        pointer-events:auto;
+      }
+
+      .app-main{
+        margin-top:1rem;
+      }
+    }
+  </style>
 </head>
+
 <body class="bg-slate-50">
   {% set logged_in = is_logged_in(request) %}
 
@@ -21,44 +276,55 @@
   {% set is_accountant = (user_role == 'ACCOUNTANT') %}
 
   <!-- ===== Header ===== -->
-  <div class="bg-indigo-700 text-white">
-    <div class="max-w-screen-2xl mx-auto h-14 px-5 flex items-center justify-between">
+  <div class="app-topbar text-white">
+    <div class="max-w-screen-2xl mx-auto h-full px-5 flex items-center justify-between relative">
 
-      <div class="flex items-center gap-3">
-        <a href="/reports"
-           class="font-semibold text-lg tracking-wide hover:underline cursor-pointer">
-          Dashboard
-        </a>
+      <div class="flex items-center gap-2 z-10">
+        {% if not request.url.path.startswith('/login') %}
+        <button type="button"
+                onclick="toggleSidebarMobile()"
+                class="app-mobile-menu-btn lg:hidden">
+          <i class="ri-menu-2-line text-lg"></i>
+        </button>
+        {% endif %}
       </div>
 
-      <div class="flex items-center gap-4 text-xl">
-        <i class="ri-search-line cursor-pointer"></i>
-        <i class="ri-settings-3-line cursor-pointer"></i>
-        <i class="ri-notification-3-line cursor-pointer"></i>
+      <a href="/reports" class="app-brand-center">
+        <span class="app-brand-badge">
+          <i class="ri-auction-line text-base"></i>
+        </span>
+        <span class="app-brand-title">Hệ thống quản lý đấu giá</span>
+      </a>
 
+      <div class="flex items-center gap-3 z-10">
         <div class="relative">
           <button onclick="toggleUserMenu()" class="avatar focus:outline-none">
-            <i class="ri-user-3-fill text-indigo-700"></i>
+            <i class="ri-user-3-fill text-indigo-700 text-xl"></i>
           </button>
 
           <div id="userMenu"
-               class="hidden absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-lg z-50">
+               class="app-user-menu hidden absolute right-0 mt-3 w-64 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden">
+            <div class="px-4 py-3 bg-slate-50 border-b border-slate-100">
+              <div class="text-sm font-bold text-slate-800">Tài khoản hệ thống</div>
+              <div class="text-xs text-slate-500 mt-0.5">Vai trò: {{ user_role }}</div>
+            </div>
+
             <a href="/account/change-password-form"
-               class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+               class="block px-4 py-3 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700">
               <i class="ri-key-2-line mr-2"></i> Đổi mật khẩu
             </a>
 
             {# ✅ GIỮ NGUYÊN action cũ /account/logout, nhưng giờ backend đã xoá cookie role ở route này #}
             <form method="post" action="/account/logout" data-confirm="Đăng xuất khỏi thiết bị này?">
               <button type="submit"
-                      class="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                      class="block w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700">
                 <i class="ri-logout-box-line mr-2"></i> Đăng xuất
               </button>
             </form>
 
             <form method="post" action="/account/logout_all" data-confirm="Đăng xuất khỏi TẤT CẢ thiết bị?">
               <button type="submit"
-                      class="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                      class="block w-full text-left px-4 py-3 text-sm text-rose-600 hover:bg-rose-50">
                 <i class="ri-shut-down-line mr-2"></i> Đăng xuất tất cả
               </button>
             </form>
@@ -71,6 +337,15 @@
             if (!menu) return;
             menu.classList.toggle("hidden");
           }
+
+          function toggleSidebarMobile() {
+            document.body.classList.toggle("sidebar-open");
+          }
+
+          function closeSidebarMobile() {
+            document.body.classList.remove("sidebar-open");
+          }
+
           window.addEventListener("click", function(e) {
             const menu = document.getElementById("userMenu");
             const btn = document.querySelector(".avatar");
@@ -79,16 +354,22 @@
               menu.classList.add("hidden");
             }
           });
+
+          window.addEventListener("keydown", function(e) {
+            if (e.key === "Escape") closeSidebarMobile();
+          });
         </script>
       </div>
     </div>
   </div>
 
+  <div class="sidebar-mobile-backdrop" onclick="closeSidebarMobile()"></div>
+
   <!-- ===== Layout ===== -->
   <div class="max-w-screen-2xl mx-auto px-5 py-5 app-shell">
 
     {% if not request.url.path.startswith('/login') %}
-    <aside id="appSidebarScroll" class="app-sidebar w-64 bg-white rounded-xl border border-slate-200 h-[84vh] overflow-y-auto">
+    <aside id="appSidebarScroll" class="app-sidebar rounded-2xl overflow-y-auto">
       <ul class="p-2">
 
         {# =========================================================
@@ -116,7 +397,7 @@
           <li>
             <a class="side-link {% if request.url.path in ['/', '/reports'] %}active{% endif %}"
                href="/reports">
-              <i class="ri-bar-chart-2-line"></i> Tổng quan
+              <i class="ri-pie-chart-2-fill"></i> Tổng quan
             </a>
           </li>
 
@@ -230,7 +511,7 @@
           <li>
             <a class="side-link {% if request.url.path.startswith('/auction/results') %}active{% endif %}"
                href="/auction/results">
-              <i class="ri-auction-line"></i> 5.4 Kết quả trúng đấu giá
+              <i class="ri-award-line"></i> 5.4 Kết quả trúng đấu giá
             </a>
           </li>
           <li>
@@ -343,7 +624,7 @@
           <li>
             <a class="side-link {% if request.url.path.startswith('/auction/results') %}active{% endif %}"
                href="/auction/results">
-              <i class="ri-auction-line"></i> 5.4 Kết quả trúng đấu giá
+              <i class="ri-award-line"></i> 5.4 Kết quả trúng đấu giá
             </a>
           </li>
           <li>
@@ -437,7 +718,7 @@
           <li>
             <a class="side-link {% if request.url.path.startswith('/auction/results') %}active{% endif %}"
                href="/auction/results">
-              <i class="ri-auction-line"></i> 5.4 Kết quả trúng đấu giá
+              <i class="ri-award-line"></i> 5.4 Kết quả trúng đấu giá
             </a>
           </li>
 
@@ -479,7 +760,7 @@
         {% endif %}
 
         {# ===== Tài khoản (mọi role) ===== #}
-        <li class="side-title mt-4"></li>
+        <li class="side-title mt-4">Tài khoản</li>
         <li>
           <a class="side-link {% if request.url.path.startswith('/account') %}active{% endif %}"
              href="/account">
@@ -498,22 +779,27 @@
 
   <!-- ===== Confirm Modal ===== -->
   <div id="app-confirm" class="hidden fixed inset-0 z-[100]">
-    <div class="absolute inset-0 bg-black/40"></div>
+    <div class="absolute inset-0 bg-slate-950/50 backdrop-blur-sm"></div>
     <div class="absolute inset-0 flex items-center justify-center p-4">
-      <div class="bg-white rounded-2xl shadow-xl w-full max-w-md">
-        <div class="px-6 py-4 border-b border-slate-100">
-          <h3 id="confirm-title" class="text-lg font-semibold text-slate-800">Xác nhận</h3>
+      <div class="app-confirm-card bg-white rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 bg-slate-50">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 grid place-items-center">
+              <i class="ri-error-warning-line text-lg"></i>
+            </div>
+            <h3 id="confirm-title" class="text-lg font-semibold text-slate-800">Xác nhận</h3>
+          </div>
         </div>
         <div class="px-6 py-5">
           <p id="confirm-message" class="text-slate-600">Bạn có chắc chắn?</p>
         </div>
-        <div class="px-6 py-4 border-t border-slate-100 flex justify-end gap-3">
+        <div class="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50">
           <button id="confirm-cancel"
-                  class="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100">
+                  class="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-white">
             Cancel
           </button>
           <button id="confirm-ok"
-                  class="px-4 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700">
+                  class="px-4 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700 shadow-lg shadow-rose-600/20">
             OK
           </button>
         </div>
@@ -638,21 +924,5 @@
   window.addEventListener("beforeunload", save);
 })();
 </script>
-
-  <style>
-    .app-shell {
-      display: flex !important;
-      gap: 1.25rem;
-      align-items: flex-start;
-    }
-    .app-shell .app-sidebar {
-      display: block !important;
-      flex: 0 0 16rem;
-    }
-    .app-shell .app-main {
-      flex: 1 1 auto;
-      min-width: 0;
-    }
-  </style>
 </body>
 </html>
