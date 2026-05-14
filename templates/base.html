@@ -210,6 +210,105 @@
       display:none;
     }
 
+
+    /* ===== Desktop sidebar collapse (ADD ONLY) ===== */
+    .app-shell .app-sidebar{
+      width:15.25rem;
+      transition:flex-basis .22s ease, width .22s ease, box-shadow .22s ease, border-radius .22s ease;
+      overflow-x:hidden;
+    }
+
+    .side-label{
+      display:inline-block;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      transition:opacity .16s ease, max-width .18s ease, transform .18s ease;
+      max-width:12rem;
+    }
+
+    .sidebar-collapse-toggle{
+      width:34px;
+      height:34px;
+      display:grid;
+      place-items:center;
+      border-radius:11px;
+      color:rgba(255,255,255,.95);
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.12);
+      transition:.18s ease;
+    }
+
+    .sidebar-collapse-toggle:hover{
+      background:rgba(255,255,255,.18);
+      transform:translateY(-1px);
+    }
+
+    @media (min-width:1025px){
+      body.sidebar-collapsed .app-shell{
+        gap:1rem;
+      }
+
+      body.sidebar-collapsed .app-shell .app-sidebar{
+        flex-basis:4.85rem;
+        width:4.85rem;
+        border-radius:1.15rem;
+      }
+
+      body.sidebar-collapsed .app-sidebar ul{
+        padding-left:.45rem;
+        padding-right:.45rem;
+      }
+
+      body.sidebar-collapsed .side-title{
+        height:18px;
+        padding:.55rem .45rem .22rem;
+        color:transparent;
+        font-size:0;
+        letter-spacing:0;
+        position:relative;
+      }
+
+      body.sidebar-collapsed .side-title::after{
+        content:"";
+        position:absolute;
+        left:50%;
+        top:50%;
+        transform:translate(-50%,-50%);
+        width:26px;
+        height:1px;
+        border-radius:999px;
+        background:#e2e8f0;
+      }
+
+      body.sidebar-collapsed .side-link{
+        justify-content:center;
+        gap:0;
+        min-height:42px;
+        padding:.58rem .5rem;
+        margin:.16rem .18rem;
+      }
+
+      body.sidebar-collapsed .side-link i{
+        width:24px;
+        height:24px;
+        flex-basis:24px;
+        font-size:1.05rem;
+      }
+
+      body.sidebar-collapsed .side-link .side-label{
+        opacity:0;
+        max-width:0;
+        transform:translateX(-4px);
+        pointer-events:none;
+      }
+
+      body.sidebar-collapsed .side-link.active::before{
+        left:-5px;
+        height:24px;
+      }
+    }
+
     @media (max-width:1024px){
       .app-brand-center{
         position:static;
@@ -265,6 +364,15 @@
 </head>
 
 <body class="bg-slate-50">
+  <script>
+    (function () {
+      try {
+        if (localStorage.getItem("APP_SIDEBAR_COLLAPSED") === "1") {
+          document.body.classList.add("sidebar-collapsed");
+        }
+      } catch (e) {}
+    })();
+  </script>
   {% set logged_in = is_logged_in(request) %}
 
   {# ===== Role flags ===== #}
@@ -283,8 +391,17 @@
         {% if not request.url.path.startswith('/login') %}
         <button type="button"
                 onclick="toggleSidebarMobile()"
-                class="app-mobile-menu-btn lg:hidden">
+                class="app-mobile-menu-btn lg:hidden"
+                title="Mở menu">
           <i class="ri-menu-2-line text-lg"></i>
+        </button>
+        <button type="button"
+                id="btnSidebarDesktop"
+                onclick="toggleSidebarDesktop()"
+                class="sidebar-collapse-toggle hidden lg:grid"
+                title="Thu gọn menu"
+                aria-label="Thu gọn menu">
+          <i id="sidebarDesktopIcon" class="ri-side-bar-line text-lg"></i>
         </button>
         {% endif %}
       </div>
@@ -344,6 +461,30 @@
 
           function closeSidebarMobile() {
             document.body.classList.remove("sidebar-open");
+          }
+
+          function updateSidebarDesktopButton() {
+            const btn = document.getElementById("btnSidebarDesktop");
+            const icon = document.getElementById("sidebarDesktopIcon");
+            const collapsed = document.body.classList.contains("sidebar-collapsed");
+            if (btn) {
+              btn.title = collapsed ? "Mở rộng menu" : "Thu gọn menu";
+              btn.setAttribute("aria-label", collapsed ? "Mở rộng menu" : "Thu gọn menu");
+            }
+            if (icon) {
+              icon.className = collapsed ? "ri-side-bar-fill text-lg" : "ri-side-bar-line text-lg";
+            }
+          }
+
+          function toggleSidebarDesktop() {
+            document.body.classList.toggle("sidebar-collapsed");
+            try {
+              localStorage.setItem(
+                "APP_SIDEBAR_COLLAPSED",
+                document.body.classList.contains("sidebar-collapsed") ? "1" : "0"
+              );
+            } catch (e) {}
+            updateSidebarDesktopButton();
           }
 
           window.addEventListener("click", function(e) {
@@ -862,6 +1003,44 @@
       });
     })();
   </script>
+
+
+  <script>
+(function () {
+  function normalizeSidebarLabels() {
+    document.querySelectorAll(".side-link").forEach(function (link) {
+      if (link.querySelector(".side-label")) return;
+
+      var text = "";
+      Array.prototype.slice.call(link.childNodes).forEach(function (node) {
+        if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+          text += node.textContent.trim() + " ";
+        }
+      });
+      text = text.trim();
+
+      Array.prototype.slice.call(link.childNodes).forEach(function (node) {
+        if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+          link.removeChild(node);
+        }
+      });
+
+      if (text) {
+        var span = document.createElement("span");
+        span.className = "side-label";
+        span.textContent = text;
+        link.appendChild(span);
+        if (!link.getAttribute("title")) link.setAttribute("title", text);
+      }
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    normalizeSidebarLabels();
+    if (typeof updateSidebarDesktopButton === "function") updateSidebarDesktopButton();
+  });
+})();
+</script>
 
   <script>
 (function () {
