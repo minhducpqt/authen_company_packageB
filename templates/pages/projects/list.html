@@ -22,7 +22,6 @@
     </div>
   {% endif %}
 
-  {# ✅ NEW: show toggle error #}
   {% set err = request.query_params.get('err') %}
   {% if err == 'toggle_failed' %}
     {% set err_msg = request.query_params.get('err_msg','') %}
@@ -76,7 +75,7 @@
           <th class="px-3 py-2 border-b">Tên dự án</th>
           <th class="px-3 py-2 border-b">Trạng thái</th>
           <th class="px-3 py-2 border-b">Vị trí</th>
-          <th class="px-3 py-2 border-b">Thao tác</th>
+          <th class="px-3 py-2 border-b text-center whitespace-nowrap w-[120px]">Thao tác</th>
         </tr>
       </thead>
       <tbody>
@@ -93,15 +92,21 @@
             </span>
           </td>
           <td class="px-3 py-2 border-b">{{ p.location }}</td>
-          <td class="px-3 py-2 border-b">
-            <a href="/projects/{{ p.id }}" class="px-2 py-1 rounded border border-slate-300 hover:bg-slate-50">Chi tiết</a>
-            {% if me.role in ['SUPER_ADMIN','COMPANY_ADMIN'] %}
-              <button type="button"
-                      class="px-2 py-1 rounded border border-slate-300 hover:bg-slate-50"
-                      onclick="confirmToggle('{{ p.id }}','{{ 'disable' if p.status=='ACTIVE' else 'enable' }}','{{ filters.q }}','{{ filters.status }}')">
-                {{ 'Disable' if p.status=='ACTIVE' else 'Enable' }}
-              </button>
-            {% endif %}
+          <td class="px-3 py-2 border-b whitespace-nowrap">
+            <div class="flex items-center justify-center gap-2 min-w-[110px]">
+              <a href="/projects/{{ p.id }}"
+                 class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 whitespace-nowrap leading-none">
+                Chi tiết
+              </a>
+
+              {% if me.role in ['SUPER_ADMIN','COMPANY_ADMIN'] %}
+                <button type="button"
+                        class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 whitespace-nowrap leading-none"
+                        onclick="confirmToggle('{{ p.id }}','{{ 'disable' if p.status=='ACTIVE' else 'enable' }}','{{ filters.q }}','{{ filters.status }}')">
+                  {{ 'Disable' if p.status=='ACTIVE' else 'Enable' }}
+                </button>
+              {% endif %}
+            </div>
           </td>
         </tr>
       {% endfor %}
@@ -174,6 +179,7 @@
     const m = document.getElementById('confirmModal');
     m.classList.remove('hidden'); m.classList.add('flex');
   }
+
   function closeModal() {
     const m = document.getElementById('confirmModal');
     m.classList.add('hidden'); m.classList.remove('flex');

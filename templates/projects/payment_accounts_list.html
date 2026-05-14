@@ -9,70 +9,293 @@
     --ok:#059669; --warn:#b45309; --danger:#dc2626; --danger-700:#b91c1c;
     --ring:#a5b4fc;
   }
-  .page{background:var(--surface); border:1px solid var(--b); border-radius:18px; box-shadow:var(--shadow); padding:18px}
 
-  /* ===== Buttons (visible borders) ===== */
-  .btn{display:inline-flex; align-items:center; justify-content:center; gap:8px;
-       min-height:40px; padding:0 14px; border-radius:10px; font-weight:700;
-       border:1.25px solid var(--b2); background:#fff; color:#0f172a;
-       transition:background .15s ease, border-color .15s ease, box-shadow .15s ease, transform .02s ease}
+  .page{
+    background:var(--surface);
+    border:1px solid var(--b);
+    border-radius:18px;
+    box-shadow:var(--shadow);
+    padding:18px;
+  }
+
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-height:40px;
+    padding:0 14px;
+    border-radius:10px;
+    font-weight:700;
+    border:1.25px solid var(--b2);
+    background:#fff;
+    color:#0f172a;
+    transition:background .15s ease, border-color .15s ease, box-shadow .15s ease, transform .02s ease;
+    white-space:nowrap;
+  }
+
   .btn:hover{background:#f8fafc}
   .btn:active{transform:translateY(0.5px)}
   .btn:focus-visible{outline:none; box-shadow:0 0 0 3px var(--ring)}
-  .btn-primary{background:linear-gradient(#5750f2,#4f46e5); color:#fff; border-color:#4338ca}
-  .btn-primary:hover{background:linear-gradient(#4f46e5,#4338ca); border-color:#3730a3}
-  .btn-danger{background:linear-gradient(#ef4444,#dc2626); color:#fff; border-color:#b91c1c}
+
+  .btn-primary{
+    background:linear-gradient(#5750f2,#4f46e5);
+    color:#fff;
+    border-color:#4338ca;
+  }
+
+  .btn-primary:hover{
+    background:linear-gradient(#4f46e5,#4338ca);
+    border-color:#3730a3;
+  }
+
+  .btn-danger{
+    background:linear-gradient(#ef4444,#dc2626);
+    color:#fff;
+    border-color:#b91c1c;
+  }
+
   .btn-danger:hover{background:linear-gradient(#dc2626,#b91c1c)}
-  .btn-ghost{background:#fff; color:#334155; border-color:var(--b2)}
+
+  .btn-ghost{
+    background:#fff;
+    color:#334155;
+    border-color:var(--b2);
+  }
+
   .btn-ghost:hover{background:#f8fafc}
-  .btn-slate{background:#111827; color:#fff; border-color:#0b1220}
-  .btn-disabled{background:#e5e7eb !important; color:#475569 !important; border-color:#cbd5e1 !important; cursor:not-allowed; opacity:.85}
+
+  .btn-slate{
+    background:#111827;
+    color:#fff;
+    border-color:#0b1220;
+  }
+
+  .btn-disabled{
+    background:#e5e7eb !important;
+    color:#475569 !important;
+    border-color:#cbd5e1 !important;
+    cursor:not-allowed;
+    opacity:.85;
+  }
 
   .toolbar .btn{min-height:40px}
 
-  .pill{display:inline-flex; align-items:center; gap:8px; padding:8px 12px;
-        border:1px solid var(--b2); border-radius:12px; background:#fff; max-width:100%}
-  .pill .name{font-weight:800; color:#0f172a; white-space:nowrap}
-  .pill .acc{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-             color:#475569; font-size:12px; white-space:nowrap}
+  /* ===== Compact action buttons ===== */
+  .action-group{
+    display:inline-flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:6px;
+    flex-wrap:nowrap;
+  }
 
-  .status{display:inline-flex; align-items:center; border-radius:999px; font-size:12px; font-weight:800; padding:2px 8px; border:1px solid}
+  .btn-action{
+    min-height:32px;
+    height:32px;
+    padding:0 10px;
+    border-radius:9px;
+    font-size:12px;
+    font-weight:800;
+    gap:5px;
+    box-shadow:0 4px 12px rgba(15,23,42,.06);
+  }
+
+  .btn-action svg{
+    width:14px;
+    height:14px;
+    flex:0 0 auto;
+  }
+
+  .btn-action-edit{
+    background:#eef2ff;
+    color:#3730a3;
+    border-color:#c7d2fe;
+  }
+
+  .btn-action-edit:hover{
+    background:#e0e7ff;
+    border-color:#a5b4fc;
+  }
+
+  .btn-action-freeze{
+    background:#fff1f2;
+    color:#be123c;
+    border-color:#fecdd3;
+  }
+
+  .btn-action-freeze:hover{
+    background:#ffe4e6;
+    border-color:#fda4af;
+  }
+
+  .btn-action-disabled{
+    background:#f1f5f9 !important;
+    color:#94a3b8 !important;
+    border-color:#e2e8f0 !important;
+    box-shadow:none;
+    cursor:not-allowed;
+  }
+
+  /* ===== Bank account pill: ưu tiên STK, bank nhỏ bên dưới ===== */
+  .bank-card{
+    display:block;
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    padding:8px 10px;
+    border:1px solid #dbe4f0;
+    border-radius:12px;
+    background:linear-gradient(180deg,#fff,#f8fafc);
+    box-shadow:0 4px 12px rgba(15,23,42,.04);
+    overflow:hidden;
+  }
+
+  .bank-card .acc{
+    display:block;
+    max-width:100%;
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    color:#0f172a;
+    font-size:13px;
+    line-height:18px;
+    font-weight:900;
+    letter-spacing:.2px;
+  }
+
+  .bank-card .name{
+    display:block;
+    max-width:100%;
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    margin-top:2px;
+    color:#64748b;
+    font-size:11px;
+    line-height:15px;
+    font-weight:700;
+  }
+
+  .status{
+    display:inline-flex;
+    align-items:center;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:800;
+    padding:2px 8px;
+    border:1px solid;
+  }
+
   .st-active{background:#ecfdf5; color:#047857; border-color:#a7f3d0}
   .st-inactive{background:#fffbeb; color:#92400e; border-color:#fde68a}
   .st-closed{background:#f3f4f6; color:#334155; border-color:#e5e7eb}
 
-  .lock{display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px;
-        border-radius:8px; background:#fff; color:#b91c1c; border:1.25px solid #fecaca}
+  .lock{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:24px;
+    height:24px;
+    border-radius:8px;
+    background:#fff;
+    color:#b91c1c;
+    border:1.25px solid #fecaca;
+  }
 
   .muted{color:#64748b}
-  .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+  .mono{
+    font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  }
 
-  .table{width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed}
-  .th, .td{padding:12px 12px; border-bottom:1px solid var(--b);}
-  .head{background:#f1f5f9; color:#475569; font-weight:800}
+  .table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    table-layout:fixed;
+  }
 
-  /* Responsive column sizing */
-  .col-project{min-width:340px; width:40%}
-  .col-location{min-width:260px; width:24%}
-  .col-app, .col-dep{width:180px}
-  .col-actions{width:200px}
+  .th, .td{
+    padding:12px 12px;
+    border-bottom:1px solid var(--b);
+    vertical-align:top;
+  }
 
-  /* Modal */
-  .modal-backdrop{position:fixed; inset:0; background:rgba(2,6,23,.45); display:none; z-index:50}
-  .modal-wrap{position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:51}
-  .modal-card{width:100%; max-width:560px; background:#fff; border:1px solid var(--b); border-radius:16px; box-shadow:0 22px 70px rgba(2,6,23,.22)}
+  .head{
+    background:#f1f5f9;
+    color:#475569;
+    font-weight:800;
+  }
+
+  .col-project{min-width:340px; width:36%}
+  .col-location{min-width:220px; width:20%}
+  .col-app, .col-dep{width:190px}
+  .col-actions{width:168px}
+
+  .modal-backdrop{
+    position:fixed;
+    inset:0;
+    background:rgba(2,6,23,.45);
+    display:none;
+    z-index:50;
+  }
+
+  .modal-wrap{
+    position:fixed;
+    inset:0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:51;
+  }
+
+  .modal-card{
+    width:100%;
+    max-width:560px;
+    background:#fff;
+    border:1px solid var(--b);
+    border-radius:16px;
+    box-shadow:0 22px 70px rgba(2,6,23,.22);
+  }
+
   .modal-head{padding:16px 20px; border-bottom:1px solid var(--b)}
   .modal-body{padding:16px 20px}
-  .modal-foot{padding:14px 20px; border-top:1px solid var(--b); display:flex; gap:10px; justify-content:flex-end}
+  .modal-foot{
+    padding:14px 20px;
+    border-top:1px solid var(--b);
+    display:flex;
+    gap:10px;
+    justify-content:flex-end;
+  }
+
+  .kbd{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:0 8px;
+    min-width:44px;
+    height:32px;
+    border-radius:9px;
+    border:1.25px solid var(--b2);
+    background:#fff;
+    font-weight:900;
+    letter-spacing:2px;
+  }
+
   @media (max-width:640px){
     .modal-card{margin:16px; max-width:none}
-    .col-project{min-width:260px; width:44%}
-    .col-location{min-width:220px; width:28%}
-    .col-app, .col-dep{width:150px}
-    .col-actions{width:160px}
+    .col-project{min-width:260px; width:38%}
+    .col-location{min-width:200px; width:22%}
+    .col-app, .col-dep{width:170px}
+    .col-actions{width:148px}
+    .btn-action{
+      padding:0 8px;
+      font-size:11px;
+    }
   }
-  .kbd{display:inline-flex; align-items:center; justify-content:center; padding:0 8px; min-width:44px; height:32px;
-       border-radius:9px; border:1.25px solid var(--b2); background:#fff; font-weight:900; letter-spacing:2px}
 </style>
 
 <div class="page">
@@ -118,7 +341,6 @@
         {% set is_frozen = f.get("frozen") %}
 
         <tr>
-          <!-- Dự án -->
           <td class="td col-project">
             <div class="flex items-start gap-2">
               {% if is_frozen %}
@@ -145,12 +367,10 @@
             </div>
           </td>
 
-          <!-- Vị trí -->
           <td class="td col-location text-slate-700">
             {{ p.location or '—' }}
           </td>
 
-          <!-- Trạng thái -->
           <td class="td">
             {% set st = (p.status or '') %}
             <span class="status
@@ -162,55 +382,62 @@
             </span>
           </td>
 
-          <!-- Mua hồ sơ -->
           <td class="td col-app">
             {% if cba_app and cba_map.get(cba_app) %}
               {% set info = cba_map[cba_app] %}
-              <div class="pill">
-                <span class="name">{{ info.short_name }}</span>
+              <div class="bank-card" title="{{ info.account_number }} - {{ info.short_name }}">
                 <span class="acc">{{ info.account_number }}</span>
+                <span class="name">{{ info.short_name }}</span>
               </div>
             {% else %}
               <span class="muted text-xs">Chưa cấu hình</span>
             {% endif %}
           </td>
 
-          <!-- Đặt cọc -->
           <td class="td col-dep">
             {% if cba_dep and cba_map.get(cba_dep) %}
               {% set info2 = cba_map[cba_dep] %}
-              <div class="pill">
-                <span class="name">{{ info2.short_name }}</span>
+              <div class="bank-card" title="{{ info2.account_number }} - {{ info2.short_name }}">
                 <span class="acc">{{ info2.account_number }}</span>
+                <span class="name">{{ info2.short_name }}</span>
               </div>
             {% else %}
               <span class="muted text-xs">Chưa cấu hình</span>
             {% endif %}
           </td>
 
-          <!-- Thao tác -->
           <td class="td col-actions text-right">
-            <div class="inline-flex gap-2 items-center justify-end">
-              <button class="btn {% if is_frozen %}btn-disabled{% else %}btn-primary{% endif %}"
+            <div class="action-group">
+              <button class="btn btn-action {% if is_frozen %}btn-action-disabled{% else %}btn-action-edit{% endif %}"
                       type="button" data-edit="{{ p.id }}"
                       {% if is_frozen %}disabled aria-disabled="true" title="Đã đóng băng"{% endif %}>
-                Chỉnh sửa
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 20h9"/>
+                  <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+                </svg>
+                Sửa
               </button>
+
               {% if not is_frozen %}
-                <button class="btn btn-danger"
+                <button class="btn btn-action btn-action-freeze"
                         type="button"
                         data-open-freeze
                         data-project-id="{{ p.id }}"
                         data-project-code="{{ p.project_code }}"
                         data-project-name="{{ p.name }}">
-                  Đóng băng
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="5" y="11" width="14" height="10" rx="2"/>
+                    <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+                  </svg>
+                  Khóa
                 </button>
               {% endif %}
             </div>
           </td>
         </tr>
 
-        <!-- ROW EDIT -->
         <tr id="edit-row-{{ p.id }}" class="hidden bg-slate-50" data-frozen="{{ '1' if is_frozen else '0' }}">
           <td class="td" colspan="6">
             {% if is_frozen %}
@@ -252,6 +479,7 @@
           </td>
         </tr>
       {% endfor %}
+
       {% if projects|length == 0 %}
         <tr><td class="td text-center muted py-6" colspan="6">Không có dự án.</td></tr>
       {% endif %}
@@ -260,7 +488,6 @@
   </div>
 </div>
 
-<!-- ===== Modal Đóng băng (custom) ===== -->
 <div id="freeze-backdrop" class="modal-backdrop"></div>
 <div id="freeze-modal" class="modal-wrap" role="dialog" aria-modal="true" aria-labelledby="freeze-title">
   <div class="modal-card">
@@ -313,7 +540,6 @@
 
 <script>
   (function () {
-    // Toggle editor
     document.querySelectorAll('button[data-edit]').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-edit');
@@ -324,6 +550,7 @@
         row.classList.toggle('hidden');
       });
     });
+
     document.querySelectorAll('button[data-cancel]').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-cancel');
@@ -331,8 +558,8 @@
       });
     });
 
-    // ===== Format VN datetime for all .vn-dt =====
     function pad(n){ return String(n).padStart(2,'0'); }
+
     function formatVN(iso){
       try{
         const d = new Date(iso);
@@ -346,12 +573,12 @@
         return `${dd}/${mm}/${yyyy} ${hh}:${mi}:${ss}`;
       }catch(e){ return iso; }
     }
+
     document.querySelectorAll('.vn-dt[data-iso]').forEach(el=>{
       const iso = el.getAttribute('data-iso');
       el.textContent = formatVN(iso);
     });
 
-    // ===== Modal
     const $backdrop = document.getElementById('freeze-backdrop');
     const $modal    = document.getElementById('freeze-modal');
     const $pname    = document.getElementById('freeze-project-name');
@@ -404,18 +631,20 @@
         openModal({ id, code, name });
       });
     });
+
     $cancel.addEventListener('click', closeModal);
     $backdrop.addEventListener('click', closeModal);
     window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
-
     $regen.addEventListener('click', genCode);
 
     function validate(){
       const v = ($codeInput.value || '').trim();
       const ok = (v.length === 4 && v === currentCode);
       $confirm.disabled = !ok;
-      if (v.length === 4 && v !== currentCode) $error.classList.remove('hidden'); else $error.classList.add('hidden');
+      if (v.length === 4 && v !== currentCode) $error.classList.remove('hidden');
+      else $error.classList.add('hidden');
     }
+
     $codeInput.addEventListener('input', validate);
 
     document.getElementById('freeze-form').addEventListener('submit', (e) => {
@@ -424,7 +653,6 @@
         e.preventDefault();
         validate();
       }
-      // submit normally if ok
     });
   })();
 </script>
