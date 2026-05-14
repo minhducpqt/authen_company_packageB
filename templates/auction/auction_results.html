@@ -348,24 +348,25 @@
 
   // ===== PRESENT (open tab) =====
   function buildPresentUrl(){
-    // Chưa làm trang present thật — chỉ gắn action.
-    // Giữ filter giống trang hiện tại.
     const u = currentUrl();
 
-    const project = u.searchParams.get('project') || '';
+    // Ưu tiên lấy từ URL, nếu không có thì lấy trực tiếp từ select hiện tại
+    const project =
+      (u.searchParams.get('project') || document.getElementById('fProject')?.value || '').trim();
+
     if(!project){
       return null;
     }
 
-    const q = u.searchParams.get('q') || '';
-    const rs = u.searchParams.get('result_status') || '';
-    const size = u.searchParams.get('size') || '';
+    const q = (document.getElementById('fQ')?.value || u.searchParams.get('q') || '').trim();
+    const rs = (document.getElementById('fStatus')?.value || u.searchParams.get('result_status') || '').trim();
+    const size = (document.getElementById('fSize')?.value || u.searchParams.get('size') || '').trim();
 
     const p = new URL(window.location.origin + "/auction/results/present");
     p.searchParams.set('project', project);
     if(q) p.searchParams.set('q', q);
     if(rs) p.searchParams.set('result_status', rs);
-    if(size) p.searchParams.set('size', size);
+    if(size && Number(size) !== DEFAULT_SIZE) p.searchParams.set('size', size);
 
     return p.toString();
   }
