@@ -55,6 +55,7 @@ EP_COMPANY_PROFILE   = "/api/v1/company/profile"
 EP_AUCTION_MODE      = "/api/v1/projects/{project_id}/auction_mode"  # <-- NEW
 EP_AUCTION_CONFIG    = "/api/v1/projects/{project_id}/auction_config"   # <-- NEW
 EP_BID_TICKET_CONFIG = "/api/v1/projects/{project_id}/bid_ticket_config"  # <-- NEW
+EP_BID_STEP_POLICY  = "/api/v1/projects/{project_id}/bid_step_policy"  # <-- NEW
 
 EP_PRODUCT_TYPES      = "/api/v1/projects/product_types"                 # NEW
 EP_PRODUCT_TYPE_ITEMS = "/api/v1/projects/product_types/{product_type}"  # NEW
@@ -1303,6 +1304,269 @@ async def update_project_product_type(
     except Exception as e:
         return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
 
+
+# =========================
+# 11) BID STEP POLICY CONFIG (Service B → Service A)
+# =========================
+@router.get("/{project_id}/bid-step-policy", response_class=JSONResponse)
+async def get_project_bid_step_policy_b(
+    request: Request,
+    project_id: int = Path(...),
+):
+    """
+    Proxy GET cấu hình bước giá theo vòng:
+    B -> A: GET /api/v1/projects/{project_id}/bid_step_policy
+    """
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            r = await client.get(
+                EP_BID_STEP_POLICY.format(project_id=project_id),
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        if r.status_code != 200:
+            return JSONResponse(
+                {
+                    "ok": False,
+                    "error": "upstream_error",
+                    "status": r.status_code,
+                    "detail": (r.text or "")[:500],
+                },
+                status_code=502,
+            )
+
+        return JSONResponse(r.json() or {}, status_code=200)
+
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": "exception", "message": str(e)}, status_code=500)
+
+
+@router.put("/{project_id}/bid-step-policy", response_class=JSONResponse)
+async def update_project_bid_step_policy_b(
+    request: Request,
+    project_id: int = Path(...),
+):
+    """
+    Proxy PUT toàn bộ cấu hình bước giá theo vòng.
+    Body có thể là:
+      {
+        "default": {...},
+        "round_rules": [...]
+      }
+    hoặc:
+      {
+        "bid_step_policy": {
+          "default": {...},
+          "round_rules": [...]
+        }
+      }
+    """
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
+
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    if not isinstance(body, dict):
+        body = {}
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            r = await client.put(
+                EP_BID_STEP_POLICY.format(project_id=project_id),
+                json=body,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        if r.status_code != 200:
+            return JSONResponse(
+                {
+                    "ok": False,
+                    "error": "upstream_error",
+                    "status": r.status_code,
+                    "detail": (r.text or "")[:500],
+                },
+                status_code=502,
+            )
+
+        return JSONResponse(r.json() or {}, status_code=200)
+
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": "exception", "message": str(e)}, status_code=500)
+
+
+@router.post("/{project_id}/bid-step-policy/round-rules", response_class=JSONResponse)
+async def add_project_bid_step_round_rule_b(
+    request: Request,
+    project_id: int = Path(...),
+):
+    """
+    Proxy thêm/cập nhật 1 rule vòng.
+    Nếu body không có round_no, Service A sẽ tự thêm vòng kế tiếp.
+    """
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
+
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    if not isinstance(body, dict):
+        body = {}
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            r = await client.post(
+                f"/api/v1/projects/{project_id}/bid_step_policy/round_rules",
+                json=body,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        if r.status_code != 200:
+            return JSONResponse(
+                {
+                    "ok": False,
+                    "error": "upstream_error",
+                    "status": r.status_code,
+                    "detail": (r.text or "")[:500],
+                },
+                status_code=502,
+            )
+
+        return JSONResponse(r.json() or {}, status_code=200)
+
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": "exception", "message": str(e)}, status_code=500)
+
+
+@router.put("/{project_id}/bid-step-policy/round-rules/{round_no}", response_class=JSONResponse)
+async def update_project_bid_step_round_rule_b(
+    request: Request,
+    project_id: int = Path(...),
+    round_no: int = Path(..., ge=1),
+):
+    """
+    Proxy sửa rule của 1 vòng cụ thể.
+    """
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
+
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    if not isinstance(body, dict):
+        body = {}
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            r = await client.put(
+                f"/api/v1/projects/{project_id}/bid_step_policy/round_rules/{int(round_no)}",
+                json=body,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        if r.status_code != 200:
+            return JSONResponse(
+                {
+                    "ok": False,
+                    "error": "upstream_error",
+                    "status": r.status_code,
+                    "detail": (r.text or "")[:500],
+                },
+                status_code=502,
+            )
+
+        return JSONResponse(r.json() or {}, status_code=200)
+
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": "exception", "message": str(e)}, status_code=500)
+
+
+@router.delete("/{project_id}/bid-step-policy/round-rules/last", response_class=JSONResponse)
+async def delete_last_project_bid_step_round_rule_b(
+    request: Request,
+    project_id: int = Path(...),
+):
+    """
+    Proxy xoá cấu hình vòng cuối cùng.
+    """
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            r = await client.delete(
+                f"/api/v1/projects/{project_id}/bid_step_policy/round_rules/last",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        if r.status_code != 200:
+            return JSONResponse(
+                {
+                    "ok": False,
+                    "error": "upstream_error",
+                    "status": r.status_code,
+                    "detail": (r.text or "")[:500],
+                },
+                status_code=502,
+            )
+
+        return JSONResponse(r.json() or {}, status_code=200)
+
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": "exception", "message": str(e)}, status_code=500)
+
+
+@router.delete("/{project_id}/bid-step-policy/round-rules/{round_no}", response_class=JSONResponse)
+async def delete_project_bid_step_round_rule_b(
+    request: Request,
+    project_id: int = Path(...),
+    round_no: int = Path(..., ge=1),
+):
+    """
+    Proxy xoá cấu hình của 1 vòng cụ thể.
+    """
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            r = await client.delete(
+                f"/api/v1/projects/{project_id}/bid_step_policy/round_rules/{int(round_no)}",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        if r.status_code != 200:
+            return JSONResponse(
+                {
+                    "ok": False,
+                    "error": "upstream_error",
+                    "status": r.status_code,
+                    "detail": (r.text or "")[:500],
+                },
+                status_code=502,
+            )
+
+        return JSONResponse(r.json() or {}, status_code=200)
+
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": "exception", "message": str(e)}, status_code=500)
+
+
 # =========================
 # 3) DETAIL (đặt SAU route tĩnh)
 # =========================
@@ -1321,6 +1585,8 @@ async def project_detail(request: Request, project_id: int = Path(...)):
     auction_cfg = None
     # NEW: bid_ticket config (extras.settings.bid_ticket) từ Service A
     bid_ticket_cfg = None
+    # NEW: bid_step_policy (projects.extras.bid_step_policy) từ Service A
+    bid_step_policy = None
 
     try:
         async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
@@ -1360,6 +1626,18 @@ async def project_detail(request: Request, project_id: int = Path(...)):
                 else:
                     bid_ticket_cfg = None
 
+            # 1d) Lấy bid_step_policy (extras.bid_step_policy)
+            if project:
+                bsp_st, bsp = await _get_json(
+                    client,
+                    EP_BID_STEP_POLICY.format(project_id=project_id),
+                    {"Authorization": f"Bearer {token}"},
+                )
+                if bsp_st == 200 and isinstance(bsp, dict):
+                    bid_step_policy = bsp.get("bid_step_policy") or {}
+                else:
+                    bid_step_policy = None
+
             # 2) Nếu có project_code thì lấy danh sách lô theo project_code
             if project and project.get("project_code"):
                 # ✅ refactor: gọi helper nhưng phải y hệt call cũ (Authorization Bearer)
@@ -1393,5 +1671,6 @@ async def project_detail(request: Request, project_id: int = Path(...)):
             "auction_cfg": auction_cfg,  # NEW
             "load_err": load_err,
             "bid_ticket_cfg": bid_ticket_cfg,  # NEW
+            "bid_step_policy": bid_step_policy,  # NEW
         },
     )

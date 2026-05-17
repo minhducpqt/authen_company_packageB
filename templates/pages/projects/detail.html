@@ -292,6 +292,109 @@
     </div>
   </form>
 
+
+  {# NEW: Bid step policy config #}
+  {% set bsp = bid_step_policy or {} %}
+  <div class="mb-6">
+    <div class="p-4 rounded-lg bg-indigo-50 border border-indigo-200">
+      <div class="flex items-start justify-between gap-3 mb-3">
+        <div>
+          <h3 class="font-semibold text-slate-800">Cấu hình bước giá theo vòng</h3>
+          <p class="text-xs text-slate-500 mt-1">
+            Định nghĩa luật bước giá trước khi vận hành phiên. Vòng chưa cấu hình riêng sẽ dùng rule mặc định.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700"
+          onclick="saveBidStepPolicyFull()"
+        >
+          <i class="ri-save-3-line mr-1"></i> Lưu cấu hình
+        </button>
+      </div>
+
+      <div id="bsp_msg" class="hidden mb-3 p-3 rounded-lg text-sm"></div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Rule mặc định</label>
+          <select
+            id="bsp_default_rule"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition"
+            onchange="onBidStepDefaultRuleChanged()"
+          >
+            <option value="STEP">Bước giá cố định</option>
+            <option value="LOT_DEFAULT">Theo bước giá từng lô</option>
+            <option value="ANY_ABOVE_START">Không áp bước giá</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Bước giá mặc định</label>
+          <input
+            id="bsp_default_step"
+            type="text"
+            inputmode="numeric"
+            placeholder="VD: 200000"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition"
+          >
+          <p class="mt-1 text-[11px] text-slate-500">
+            Chỉ bắt buộc khi rule mặc định là <b>Bước giá cố định</b>.
+          </p>
+        </div>
+
+        <div class="rounded-lg bg-white/70 border border-indigo-100 px-3 py-2 text-xs text-slate-600">
+          <div class="font-semibold text-slate-700 mb-1">Ghi chú</div>
+          <div><b>Theo bước giá từng lô</b>: lấy từ cột bước giá trong bảng lô.</div>
+          <div><b>Không áp bước giá</b>: giá trả chỉ cần cao hơn giá khởi điểm theo quy chế.</div>
+        </div>
+      </div>
+
+      <div class="border border-indigo-100 rounded-lg bg-white overflow-hidden">
+        <div class="px-3 py-2 border-b border-indigo-100 flex items-center justify-between gap-2">
+          <div>
+            <div class="text-sm font-semibold text-slate-800">Rule riêng theo vòng</div>
+            <div class="text-xs text-slate-500">Rule ở đây sẽ ưu tiên hơn rule mặc định.</div>
+          </div>
+          <button
+            type="button"
+            class="inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-white hover:bg-slate-900"
+            onclick="addBidStepRoundRuleRow()"
+          >
+            <i class="ri-add-line mr-1"></i> Thêm vòng
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead class="bg-slate-50">
+              <tr class="text-left text-slate-600">
+                <th class="px-3 py-2 border-b w-[120px]">Vòng</th>
+                <th class="px-3 py-2 border-b min-w-[220px]">Rule</th>
+                <th class="px-3 py-2 border-b min-w-[180px]">Bước giá</th>
+                <th class="px-3 py-2 border-b text-right w-[120px]">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="bsp_round_rules_tbody">
+              <tr>
+                <td colspan="4" class="px-3 py-5 text-center text-slate-500">
+                  Chưa có rule riêng theo vòng.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="mt-3 text-[11px] text-slate-500 leading-relaxed">
+        Cấu hình bước giá áp dụng cho toàn bộ dự án đấu giá. Bạn có thể thiết lập riêng cho từng vòng đấu giá.
+        Các vòng chưa được cấu hình riêng sẽ tự động áp dụng “Quy tắc mặc định” ở phía trên.
+        Ví dụ: nếu đã cấu hình riêng đến vòng N, thì từ vòng N+1 trở đi sẽ dùng quy tắc mặc định.
+      </div>
+    </div>
+  </div>
+
   <!-- Deadlines -->
   <form method="post" action="/projects/{{ project.id }}/deadlines" class="mb-6">
     <div class="p-4 rounded-lg bg-indigo-50 border border-indigo-200">
@@ -848,11 +951,330 @@
   const PRODUCT_TYPE_UPDATE_URL = `/projects/{{ project.id }}/product-type`;          // POST/PUT -> {product_type:"..."}
   const PRODUCT_TYPE_ITEMS_URL = (code) => `/projects/api/product_types/${encodeURIComponent(code)}`;
 
+  const BID_STEP_POLICY_INITIAL = {{ (bid_step_policy or {}) | tojson }};
+  const BID_STEP_POLICY_UPDATE_URL = `/projects/{{ project.id }}/bid-step-policy`;
+
   /* =========================================================
      Shared helpers
      ========================================================= */
   function _norm(s){ return String(s || "").trim().toLowerCase(); }
   function _byId(id){ return document.getElementById(id); }
+
+  /* =========================================================
+     #B: Bid step policy UI
+     ========================================================= */
+  const _bsp = {
+    policy: null,
+    tbody: null,
+    msg: null,
+    defaultRule: null,
+    defaultStep: null,
+  };
+
+  function bspInit(){
+    if (_bsp.tbody) return;
+    _bsp.tbody = _byId("bsp_round_rules_tbody");
+    _bsp.msg = _byId("bsp_msg");
+    _bsp.defaultRule = _byId("bsp_default_rule");
+    _bsp.defaultStep = _byId("bsp_default_step");
+  }
+
+  function bspDefaultPolicy(){
+    return {
+      default: { round_no: null, rule: "STEP", bid_step_vnd: null },
+      round_rules: []
+    };
+  }
+
+  function normalizeBspRule(raw){
+    const v = String(raw || "").trim().toUpperCase();
+    if (["LOT_DEFAULT","STEP","ANY_ABOVE_START"].includes(v)) return v;
+    return "STEP";
+  }
+
+  function parseBspMoney(raw){
+    const s = String(raw ?? "").replace(/[^\d]/g, "");
+    if (!s) return null;
+    const n = Number(s);
+    return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
+  }
+
+  function formatBspMoney(v){
+    const n = Number(v);
+    if (!Number.isFinite(n) || n <= 0) return "";
+    return Math.round(n).toLocaleString("vi-VN");
+  }
+
+  function bspRuleLabel(rule){
+    const r = normalizeBspRule(rule);
+    if (r === "STEP") return "Bước giá cố định";
+    if (r === "LOT_DEFAULT") return "Theo bước giá từng lô";
+    return "Không áp bước giá";
+  }
+
+  function normalizeBidStepPolicy(raw){
+    const base = bspDefaultPolicy();
+    const src = raw && typeof raw === "object" ? raw : {};
+
+    const d = src.default && typeof src.default === "object" ? src.default : base.default;
+    const defaultRule = normalizeBspRule(d.rule);
+    base.default = {
+      round_no: null,
+      rule: defaultRule,
+      bid_step_vnd: defaultRule === "STEP" ? parseBspMoney(d.bid_step_vnd) : null
+    };
+
+    const arr = Array.isArray(src.round_rules) ? src.round_rules : [];
+    const map = new Map();
+    arr.forEach(x => {
+      if (!x || typeof x !== "object") return;
+      const rn = Number(x.round_no);
+      if (!Number.isInteger(rn) || rn <= 0) return;
+      const rule = normalizeBspRule(x.rule);
+      const item = {
+        round_no: rn,
+        rule,
+        bid_step_vnd: rule === "STEP" ? parseBspMoney(x.bid_step_vnd) : null
+      };
+      map.set(rn, item);
+    });
+
+    base.round_rules = Array.from(map.values()).sort((a,b) => Number(a.round_no) - Number(b.round_no));
+    return base;
+  }
+
+  function setBspMsg(type, msg){
+    bspInit();
+    if (!_bsp.msg) return;
+    if (!msg){
+      _bsp.msg.className = "hidden mb-3 p-3 rounded-lg text-sm";
+      _bsp.msg.textContent = "";
+      return;
+    }
+    const cls = type === "ok"
+      ? "bg-emerald-50 border border-emerald-200 text-emerald-700"
+      : "bg-rose-50 border border-rose-200 text-rose-700";
+    _bsp.msg.className = `mb-3 p-3 rounded-lg text-sm ${cls}`;
+    _bsp.msg.textContent = msg;
+  }
+
+  function onBidStepDefaultRuleChanged(){
+    bspInit();
+    const rule = normalizeBspRule(_bsp.defaultRule?.value);
+    if (_bsp.defaultStep){
+      _bsp.defaultStep.disabled = rule !== "STEP";
+      _bsp.defaultStep.classList.toggle("bg-slate-100", rule !== "STEP");
+      if (rule !== "STEP") _bsp.defaultStep.value = "";
+    }
+  }
+
+  function onBidStepRowRuleChanged(rowId){
+    const tr = document.querySelector(`tr[data-bsp-row="${CSS.escape(String(rowId))}"]`);
+    if (!tr) return;
+    const ruleEl = tr.querySelector(".js-bsp-rule");
+    const stepEl = tr.querySelector(".js-bsp-step");
+    const rule = normalizeBspRule(ruleEl ? ruleEl.value : "");
+    if (stepEl){
+      stepEl.disabled = rule !== "STEP";
+      stepEl.classList.toggle("bg-slate-100", rule !== "STEP");
+      if (rule !== "STEP") stepEl.value = "";
+    }
+  }
+
+  function renderBidStepPolicy(){
+    bspInit();
+    _bsp.policy = normalizeBidStepPolicy(_bsp.policy || BID_STEP_POLICY_INITIAL || {});
+
+    if (_bsp.defaultRule) _bsp.defaultRule.value = _bsp.policy.default.rule || "LOT_DEFAULT";
+    if (_bsp.defaultStep) _bsp.defaultStep.value = formatBspMoney(_bsp.policy.default.bid_step_vnd);
+    onBidStepDefaultRuleChanged();
+
+    if (!_bsp.tbody) return;
+
+    const rules = _bsp.policy.round_rules || [];
+    if (!rules.length){
+      _bsp.tbody.innerHTML = `
+        <tr>
+          <td colspan="4" class="px-3 py-5 text-center text-slate-500">
+            Chưa có rule riêng theo vòng.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    _bsp.tbody.innerHTML = rules.map((r) => {
+      const rowId = `round-${r.round_no}`;
+      const rule = normalizeBspRule(r.rule);
+      const stepDisabled = rule !== "STEP";
+      return `
+        <tr data-bsp-row="${escapeHtml(rowId)}" data-round-no="${escapeHtml(String(r.round_no))}">
+          <td class="px-3 py-2 border-b">
+            <input
+              type="number"
+              min="1"
+              class="js-bsp-round-no w-24 rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+              value="${escapeHtml(String(r.round_no))}"
+            >
+          </td>
+          <td class="px-3 py-2 border-b">
+            <select
+              class="js-bsp-rule w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm bg-white"
+              onchange="onBidStepRowRuleChanged('${escapeHtml(rowId)}')"
+            >
+              <option value="STEP" ${rule === "STEP" ? "selected" : ""}>Bước giá cố định</option>
+              <option value="LOT_DEFAULT" ${rule === "LOT_DEFAULT" ? "selected" : ""}>Theo bước giá từng lô</option>
+              <option value="ANY_ABOVE_START" ${rule === "ANY_ABOVE_START" ? "selected" : ""}>Không áp bước giá</option>
+            </select>
+          </td>
+          <td class="px-3 py-2 border-b">
+            <input
+              type="text"
+              inputmode="numeric"
+              class="js-bsp-step w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm ${stepDisabled ? "bg-slate-100" : "bg-white"}"
+              value="${escapeHtml(formatBspMoney(r.bid_step_vnd))}"
+              placeholder="VD: 200000"
+              ${stepDisabled ? "disabled" : ""}
+            >
+          </td>
+          <td class="px-3 py-2 border-b text-right">
+            <button
+              type="button"
+              class="inline-flex items-center justify-center h-8 w-8 rounded-lg text-rose-600 hover:bg-rose-50"
+              title="Xoá rule vòng này"
+              onclick="removeBidStepRoundRuleRow('${escapeHtml(rowId)}')"
+            >
+              <i class="ri-delete-bin-6-line"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  function collectBidStepPolicyFromUI(){
+    bspInit();
+
+    const defaultRule = normalizeBspRule(_bsp.defaultRule ? _bsp.defaultRule.value : "LOT_DEFAULT");
+    const defaultStep = defaultRule === "STEP" ? parseBspMoney(_bsp.defaultStep ? _bsp.defaultStep.value : "") : null;
+    if (defaultRule === "STEP" && !defaultStep){
+      throw new Error("Rule mặc định là Bước giá cố định thì phải nhập bước giá mặc định > 0.");
+    }
+
+    const byRound = new Map();
+    document.querySelectorAll("#bsp_round_rules_tbody tr[data-bsp-row]").forEach(tr => {
+      const rn = Number(tr.querySelector(".js-bsp-round-no")?.value || "");
+      if (!Number.isInteger(rn) || rn <= 0){
+        throw new Error("Số vòng phải là số nguyên >= 1.");
+      }
+
+      const rule = normalizeBspRule(tr.querySelector(".js-bsp-rule")?.value || "");
+      const step = rule === "STEP" ? parseBspMoney(tr.querySelector(".js-bsp-step")?.value || "") : null;
+      if (rule === "STEP" && !step){
+        throw new Error(`Vòng ${rn}: rule Bước giá cố định thì phải nhập bước giá > 0.`);
+      }
+
+      byRound.set(rn, { round_no: rn, rule, bid_step_vnd: step });
+    });
+
+    return {
+      default: {
+        round_no: null,
+        rule: defaultRule,
+        bid_step_vnd: defaultStep
+      },
+      round_rules: Array.from(byRound.values()).sort((a,b) => a.round_no - b.round_no)
+    };
+  }
+
+  function addBidStepRoundRuleRow(){
+    bspInit();
+    try{
+      _bsp.policy = collectBidStepPolicyFromUI();
+    }catch(e){
+      setBspMsg("err", String(e?.message || e));
+      return;
+    }
+
+    const rules = _bsp.policy.round_rules || [];
+    const maxRound = rules.reduce((m, x) => Math.max(m, Number(x.round_no || 0)), 0);
+    rules.push({
+      round_no: maxRound + 1,
+      rule: "STEP",
+      bid_step_vnd: null
+    });
+
+    _bsp.policy.round_rules = rules;
+    setBspMsg(null, null);
+    renderBidStepPolicy();
+  }
+
+  function removeBidStepRoundRuleRow(rowId){
+    bspInit();
+    const tr = document.querySelector(`tr[data-bsp-row="${CSS.escape(String(rowId))}"]`);
+    if (tr) tr.remove();
+    try{
+      _bsp.policy = collectBidStepPolicyFromUI();
+      renderBidStepPolicy();
+      setBspMsg(null, null);
+    }catch(e){
+      setBspMsg("err", String(e?.message || e));
+    }
+  }
+
+  async function doSaveBidStepPolicyFull(){
+    const policy = collectBidStepPolicyFromUI();
+
+    const res = await fetch(BID_STEP_POLICY_UPDATE_URL, {
+      method: "PUT",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ bid_step_policy: policy }),
+      credentials: "same-origin",
+    });
+
+    const txt = await res.text();
+    const payload = _safeJsonParse(txt) || txt;
+
+    if (!res.ok){
+      let msg = `Lưu cấu hình bước giá thất bại (HTTP ${res.status}).`;
+      if (payload && typeof payload === "object"){
+        msg += " " + (payload.detail || payload.error || payload.message || "");
+      }else if (txt){
+        msg += " " + txt.slice(0, 300);
+      }
+      throw new Error(msg.trim());
+    }
+
+    const data = payload && typeof payload === "object" ? (payload.data || payload) : {};
+    _bsp.policy = normalizeBidStepPolicy(data.bid_step_policy || policy);
+    renderBidStepPolicy();
+    setBspMsg("ok", "Đã lưu cấu hình bước giá theo vòng.");
+  }
+
+  function saveBidStepPolicyFull(){
+    try{
+      collectBidStepPolicyFromUI();
+    }catch(e){
+      setBspMsg("err", String(e?.message || e));
+      return;
+    }
+
+    confirmWithPhrase(null, {
+      title: "Xác nhận lưu cấu hình bước giá",
+      descHtml: "Bạn sắp lưu cấu hình <b>bước giá theo vòng</b> cho dự án này. Cấu hình này sẽ được dùng khi tạo phiên/vòng đấu.",
+      confirmText: "Xác nhận",
+      cancelText: "Hủy",
+      phrase: "tôi xác nhận",
+      onConfirm: async function(){
+        try{
+          await doSaveBidStepPolicyFull();
+        }catch(e){
+          setBspMsg("err", String(e?.message || e));
+        }
+      }
+    });
+  }
+
 
   function _safeJsonParse(txt){
     try{ return JSON.parse(txt); }catch(e){ return null; }
@@ -1638,6 +2060,14 @@
         openPicker(field);
       });
     });
+
+    // bid step policy init
+    try{
+      _bsp.policy = normalizeBidStepPolicy(BID_STEP_POLICY_INITIAL || {});
+      renderBidStepPolicy();
+    }catch(e){
+      setBspMsg("err", String(e?.message || e));
+    }
 
     // best-effort: load types once to show label near badge
     (async ()=>{
