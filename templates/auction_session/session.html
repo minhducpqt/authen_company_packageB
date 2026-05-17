@@ -1307,9 +1307,18 @@ Modal: Print One Bid Sheet (choose one customer)
   }
 
   function getBidStepVnd(lot){
-  const snap = getLotSnapshot(lot);
-  const step = Number(snap.bid_step_vnd || 0);
-  return (isFinite(step) && step > 0) ? step : 0;
+    const rule = safeText(lot?.bid_step_rule || '').toUpperCase();
+
+    if(rule === 'ANY_ABOVE_START'){
+      return 0;
+    }
+
+    const direct = Number(lot?.bid_step_vnd ?? lot?.round_bid_step_vnd ?? 0);
+    if(isFinite(direct) && direct > 0) return direct;
+
+    const snap = getLotSnapshot(lot);
+    const step = Number(snap.bid_step_vnd || 0);
+    return (isFinite(step) && step > 0) ? step : 0;
   }
 
   function stripToDigits(s){
