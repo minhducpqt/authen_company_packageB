@@ -405,11 +405,14 @@
       </tr>
 
       {% if show_price_step %}
+      {% set bid_step_rule = (t.bid_step_rule or 'LOT_DEFAULT') %}
       <tr>
         <td class="info-label">Bước giá ({{ bid_unit }})</td>
         <td class="info-sep">:</td>
         <td class="bold">
-          {% if t.bid_step_vnd is number %}
+          {% if bid_step_rule == 'ANY_ABOVE_START' %}
+            Không áp dụng
+          {% elif t.bid_step_vnd is number %}
             {{ "{:,.0f}".format(t.bid_step_vnd|float) }}
           {% endif %}
         </td>
