@@ -8,7 +8,7 @@ from fastapi import APIRouter, Request, Query, Path
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from starlette.responses import RedirectResponse
 
-from app.utils.templates import templates
+from utils.templates import templates
 
 SERVICE_A_BASE = os.getenv("SERVICE_A_BASE", "http://127.0.0.1:8824").rstrip("/")
 
