@@ -39,7 +39,7 @@ from routers.auction_documents_print import router as auction_documents_print_ro
 from fastapi_account_manager.middlewares.rbac_guard import rbac_guard_middleware
 from routers.invoice_exports import router as invoice_exports_router
 from routers.billing import router as billing_router
-
+from routers import reports_group
 from routers.auction_banned_persons import router as auction_banned_persons_router
 
 # ✅ Lots (tách từ projects.py)
@@ -120,6 +120,7 @@ app.include_router(auction_docs.router)
 app.include_router(bid_tickets_router.router)
 app.include_router(invoice_exports_router)
 app.include_router(billing_router)
+app.include_router(reports_group.router)
 
 # Bid attendance (list/print) + exclusions (detail/exclude/clear)
 app.include_router(bid_attendance_router.router)
