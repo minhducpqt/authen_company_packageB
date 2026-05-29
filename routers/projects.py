@@ -56,6 +56,9 @@ EP_AUCTION_MODE      = "/api/v1/projects/{project_id}/auction_mode"  # <-- NEW
 EP_AUCTION_CONFIG    = "/api/v1/projects/{project_id}/auction_config"   # <-- NEW
 EP_BID_TICKET_CONFIG = "/api/v1/projects/{project_id}/bid_ticket_config"  # <-- NEW
 EP_BID_STEP_POLICY  = "/api/v1/projects/{project_id}/bid_step_policy"  # <-- NEW
+EP_GROUP_AUCTION_CONFIG = "/api/v1/projects/{project_id}/group_auction_config"  # <-- NEW
+EP_GROUP_AUCTION_DEPOSIT_GROUPS = "/api/v1/projects/{project_id}/group_auction/deposit_groups"  # <-- NEW
+EP_GROUP_AUCTION_READINESS = "/api/v1/projects/{project_id}/group_auction/readiness"  # <-- NEW
 
 EP_PRODUCT_TYPES      = "/api/v1/projects/product_types"                 # NEW
 EP_PRODUCT_TYPE_ITEMS = "/api/v1/projects/product_types/{product_type}"  # NEW
@@ -77,6 +80,14 @@ async def _post_json(client: httpx.AsyncClient, url: str, headers: dict, payload
         return r.status_code, r.json()
     except Exception:
         return r.status_code, None
+
+async def _put_json(client: httpx.AsyncClient, url: str, headers: dict, payload: dict | None):
+    r = await client.put(url, headers=headers, json=payload or {})
+    try:
+        return r.status_code, r.json()
+    except Exception:
+        return r.status_code, None
+
 
 def _safe_str(x) -> str:
     try:
@@ -616,7 +627,17 @@ async def projects_data(
         def pick(x: dict) -> dict:
             code = x.get("project_code") or x.get("code")
             name = x.get("name") or code
-            return {"project_code": code, "name": name, "status": x.get("status")}
+            return {
+                "project_code": code,
+                "name": name,
+                "status": x.get("status"),
+                "id": x.get("id") or x.get("project_id"),
+                "group_auction": x.get("group_auction") or {
+                    "enabled": False,
+                    "registration_mode": "NORMAL",
+                    "ticket_mode": None,
+                },
+            }
 
         data = [pick(x) for x in items if x]
 
@@ -685,7 +706,15 @@ async def project_options_active(
         code = (p or {}).get("project_code") or (p or {}).get("code")
         name = (p or {}).get("name") or code
         if code:
-            data.append({"project_code": code, "name": name})
+            data.append({
+                "project_code": code,
+                "name": name,
+                "group_auction": (p or {}).get("group_auction") or {
+                    "enabled": False,
+                    "registration_mode": "NORMAL",
+                    "ticket_mode": None,
+                },
+            })
 
     return JSONResponse({"data": data}, status_code=200)
 
@@ -716,8 +745,14 @@ async def projects_options(
         items = data.get("data") or data.get("items") or data.get("rows") or []
         options = [
             {
+                "id": i.get("id") or i.get("project_id"),
                 "project_code": i.get("project_code") or i.get("code"),
                 "name": i.get("name") or i.get("project_name") or "",
+                "group_auction": i.get("group_auction") or {
+                    "enabled": False,
+                    "registration_mode": "NORMAL",
+                    "ticket_mode": None,
+                },
             }
             for i in items
             if (i.get("project_code") or i.get("code"))
@@ -1212,6 +1247,11 @@ async def listing_projects(
                 "project_code": code,
                 "name": name,
                 "status": (pp.get("status") or "").strip(),
+                "group_auction": pp.get("group_auction") or {
+                    "enabled": False,
+                    "registration_mode": "NORMAL",
+                    "ticket_mode": None,
+                },
             }
         )
 
@@ -1303,6 +1343,346 @@ async def update_project_product_type(
 
     except Exception as e:
         return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+
+
+
+# =========================
+# 10B) GROUP AUCTION CONFIG / DEPOSIT GROUPS (Service B → Service A)
+# =========================
+def _normal_group_auction_config() -> dict:
+    return {
+        "enabled": False,
+        "registration_mode": "NORMAL",
+        "ticket_mode": None,
+    }
+
+
+@router.get("/{project_id}/group-auction-config", response_class=JSONResponse)
+async def get_project_group_auction_config_b(
+    request: Request,
+    project_id: int = Path(...),
+):
+    """
+    Proxy GET cấu hình đấu giá theo nhóm cọc.
+    B -> A: GET /api/v1/projects/{project_id}/group_auction_config
+    """
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            r = await client.get(
+                EP_GROUP_AUCTION_CONFIG.format(project_id=project_id),
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        if r.status_code != 200:
+            return JSONResponse(
+                {
+                    "ok": False,
+                    "error": "upstream_error",
+                    "status": r.status_code,
+                    "detail": (r.text or "")[:500],
+                },
+                status_code=502,
+            )
+
+        return JSONResponse(r.json() or {}, status_code=200)
+
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": "exception", "message": str(e)}, status_code=500)
+
+
+@router.put("/{project_id}/group-auction-config", response_class=JSONResponse)
+async def update_project_group_auction_config_b(
+    request: Request,
+    project_id: int = Path(...),
+):
+    """
+    Proxy PUT cấu hình đấu giá theo nhóm cọc.
+    Body:
+      {
+        "enabled": true|false,
+        "registration_mode": "NORMAL"|"GROUP_AUCTION",
+        "ticket_mode": "PRE_SESSION"|"BLANK_TICKET"
+      }
+    """
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
+
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    if not isinstance(body, dict):
+        body = {}
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            r = await client.put(
+                EP_GROUP_AUCTION_CONFIG.format(project_id=project_id),
+                json=body,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        if r.status_code != 200:
+            return JSONResponse(
+                {
+                    "ok": False,
+                    "error": "upstream_error",
+                    "status": r.status_code,
+                    "detail": (r.text or "")[:500],
+                },
+                status_code=502,
+            )
+
+        return JSONResponse(r.json() or {}, status_code=200)
+
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": "exception", "message": str(e)}, status_code=500)
+
+
+@router.post("/{project_id}/group-auction-config")
+async def update_project_group_auction_config_form_b(
+    request: Request,
+    project_id: int = Path(...),
+    enabled_raw: str | None = Form(None),
+    ticket_mode: str = Form("PRE_SESSION"),
+):
+    """
+    Form submit từ trang detail.
+    - checkbox enabled_raw có mặt => enabled=true
+    - ticket_mode: PRE_SESSION | BLANK_TICKET
+    """
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(url=f"/login?next=/projects/{project_id}", status_code=303)
+
+    enabled = enabled_raw is not None
+    tm = (ticket_mode or "PRE_SESSION").strip().upper()
+    if tm not in ("PRE_SESSION", "BLANK_TICKET"):
+        tm = "PRE_SESSION"
+
+    payload = {
+        "enabled": enabled,
+        "registration_mode": "GROUP_AUCTION" if enabled else "NORMAL",
+        "ticket_mode": tm if enabled else None,
+    }
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            r = await client.put(
+                EP_GROUP_AUCTION_CONFIG.format(project_id=project_id),
+                json=payload,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        if r.status_code != 200:
+            return RedirectResponse(
+                url=f"/projects/{project_id}?err=group_auction_config_update_failed",
+                status_code=303,
+            )
+
+    except Exception:
+        return RedirectResponse(
+            url=f"/projects/{project_id}?err=group_auction_config_update_failed",
+            status_code=303,
+        )
+
+    return RedirectResponse(
+        url=f"/projects/{project_id}?msg=group_auction_config_updated",
+        status_code=303,
+    )
+
+
+@router.get("/{project_id}/group-auction/deposit-groups", response_class=JSONResponse)
+async def get_project_group_auction_deposit_groups_b(
+    request: Request,
+    project_id: int = Path(...),
+):
+    """
+    Proxy GET danh sách nhóm cọc tự sinh từ lots + config tiền hồ sơ.
+    B -> A: GET /api/v1/projects/{project_id}/group_auction/deposit_groups
+    """
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            r = await client.get(
+                EP_GROUP_AUCTION_DEPOSIT_GROUPS.format(project_id=project_id),
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        if r.status_code != 200:
+            return JSONResponse(
+                {
+                    "ok": False,
+                    "error": "upstream_error",
+                    "status": r.status_code,
+                    "detail": (r.text or "")[:500],
+                },
+                status_code=502,
+            )
+
+        return JSONResponse(r.json() or {}, status_code=200)
+
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": "exception", "message": str(e)}, status_code=500)
+
+
+@router.put("/{project_id}/group-auction/deposit-groups", response_class=JSONResponse)
+async def update_project_group_auction_deposit_groups_b(
+    request: Request,
+    project_id: int = Path(...),
+):
+    """
+    Proxy PUT lưu tiền hồ sơ cho từng nhóm cọc.
+    Body:
+      {
+        "groups": [
+          {
+            "deposit_amount_vnd": 200000000,
+            "dossier_fee_vnd": 100000,
+            "group_name": "Nhóm cọc 200 triệu",
+            "is_active": true
+          }
+        ]
+      }
+    """
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
+
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    if not isinstance(body, dict):
+        body = {}
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            r = await client.put(
+                EP_GROUP_AUCTION_DEPOSIT_GROUPS.format(project_id=project_id),
+                json=body,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        if r.status_code != 200:
+            return JSONResponse(
+                {
+                    "ok": False,
+                    "error": "upstream_error",
+                    "status": r.status_code,
+                    "detail": (r.text or "")[:500],
+                },
+                status_code=502,
+            )
+
+        return JSONResponse(r.json() or {}, status_code=200)
+
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": "exception", "message": str(e)}, status_code=500)
+
+
+@router.post("/{project_id}/group-auction/deposit-groups")
+async def update_project_group_auction_deposit_groups_form_b(
+    request: Request,
+    project_id: int = Path(...),
+    groups_json: str = Form(""),
+):
+    """
+    Form submit từ trang detail.
+    groups_json là JSON string:
+      {"groups":[...]}
+    hoặc list trực tiếp:
+      [...]
+    """
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(url=f"/login?next=/projects/{project_id}", status_code=303)
+
+    try:
+        obj = json.loads(groups_json or "{}")
+        if isinstance(obj, list):
+            payload = {"groups": obj}
+        elif isinstance(obj, dict):
+            payload = obj if "groups" in obj else {"groups": []}
+        else:
+            payload = {"groups": []}
+    except Exception:
+        return RedirectResponse(
+            url=f"/projects/{project_id}?err=group_auction_groups_bad_json",
+            status_code=303,
+        )
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            r = await client.put(
+                EP_GROUP_AUCTION_DEPOSIT_GROUPS.format(project_id=project_id),
+                json=payload,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        if r.status_code != 200:
+            return RedirectResponse(
+                url=f"/projects/{project_id}?err=group_auction_groups_update_failed",
+                status_code=303,
+            )
+
+    except Exception:
+        return RedirectResponse(
+            url=f"/projects/{project_id}?err=group_auction_groups_update_failed",
+            status_code=303,
+        )
+
+    return RedirectResponse(
+        url=f"/projects/{project_id}?msg=group_auction_groups_updated",
+        status_code=303,
+    )
+
+
+@router.get("/{project_id}/group-auction/readiness", response_class=JSONResponse)
+async def get_project_group_auction_readiness_b(
+    request: Request,
+    project_id: int = Path(...),
+):
+    """
+    Proxy GET readiness kiểm tra dự án nhóm cọc đã đủ cấu hình chưa.
+    B -> A: GET /api/v1/projects/{project_id}/group_auction/readiness
+    """
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            r = await client.get(
+                EP_GROUP_AUCTION_READINESS.format(project_id=project_id),
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        if r.status_code != 200:
+            return JSONResponse(
+                {
+                    "ok": False,
+                    "error": "upstream_error",
+                    "status": r.status_code,
+                    "detail": (r.text or "")[:500],
+                },
+                status_code=502,
+            )
+
+        return JSONResponse(r.json() or {}, status_code=200)
+
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": "exception", "message": str(e)}, status_code=500)
 
 
 # =========================
@@ -1587,6 +1967,10 @@ async def project_detail(request: Request, project_id: int = Path(...)):
     bid_ticket_cfg = None
     # NEW: bid_step_policy (projects.extras.bid_step_policy) từ Service A
     bid_step_policy = None
+    # NEW: group_auction config/groups/readiness từ Service A
+    group_auction_cfg = None
+    group_auction_groups = None
+    group_auction_readiness = None
 
     try:
         async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
@@ -1638,6 +2022,47 @@ async def project_detail(request: Request, project_id: int = Path(...)):
                 else:
                     bid_step_policy = None
 
+            # 1e) Lấy group_auction_config
+            if project:
+                ga_st, ga = await _get_json(
+                    client,
+                    EP_GROUP_AUCTION_CONFIG.format(project_id=project_id),
+                    {"Authorization": f"Bearer {token}"},
+                )
+                if ga_st == 200 and isinstance(ga, dict):
+                    group_auction_cfg = (
+                        ga.get("group_auction")
+                        or ga.get("data")
+                        or project.get("group_auction")
+                        or _normal_group_auction_config()
+                    )
+                else:
+                    group_auction_cfg = project.get("group_auction") or _normal_group_auction_config()
+
+            # 1f) Lấy nhóm cọc tự sinh + cấu hình tiền hồ sơ
+            if project:
+                gag_st, gag = await _get_json(
+                    client,
+                    EP_GROUP_AUCTION_DEPOSIT_GROUPS.format(project_id=project_id),
+                    {"Authorization": f"Bearer {token}"},
+                )
+                if gag_st == 200 and isinstance(gag, dict):
+                    group_auction_groups = gag.get("groups") or gag.get("items") or gag.get("data") or []
+                else:
+                    group_auction_groups = []
+
+            # 1g) Lấy readiness group auction
+            if project:
+                gar_st, gar = await _get_json(
+                    client,
+                    EP_GROUP_AUCTION_READINESS.format(project_id=project_id),
+                    {"Authorization": f"Bearer {token}"},
+                )
+                if gar_st == 200 and isinstance(gar, dict):
+                    group_auction_readiness = gar
+                else:
+                    group_auction_readiness = None
+
             # 2) Nếu có project_code thì lấy danh sách lô theo project_code
             if project and project.get("project_code"):
                 # ✅ refactor: gọi helper nhưng phải y hệt call cũ (Authorization Bearer)
@@ -1672,5 +2097,8 @@ async def project_detail(request: Request, project_id: int = Path(...)):
             "load_err": load_err,
             "bid_ticket_cfg": bid_ticket_cfg,  # NEW
             "bid_step_policy": bid_step_policy,  # NEW
+            "group_auction_cfg": group_auction_cfg or _normal_group_auction_config(),  # NEW
+            "group_auction_groups": group_auction_groups or [],  # NEW
+            "group_auction_readiness": group_auction_readiness,  # NEW
         },
     )

@@ -40,6 +40,13 @@
   {# NEW: product_type #}
   {% set pj_pt = (project.product_type or '') %}
 
+  {# NEW: group auction config, default NORMAL for old projects #}
+  {% set ga_cfg = group_auction_cfg or project.group_auction or {'enabled': false, 'registration_mode': 'NORMAL', 'ticket_mode': none} %}
+  {% set ga_enabled = ga_cfg.enabled %}
+  {% set ga_ticket_mode = ga_cfg.ticket_mode or 'PRE_SESSION' %}
+  {% set ga_groups = group_auction_groups or [] %}
+  {% set ga_ready = group_auction_readiness %}
+
   <style>
     /* ===== Project inline edit icon (small + discreet) ===== */
     .pj-edit-btn{
@@ -104,6 +111,33 @@
     #productTypeHintModal .pth-card{
       width: 96vw;
       max-width: 860px;
+    }
+
+    /* Group auction config */
+    .ga-card{
+      background: linear-gradient(180deg, rgba(238,242,255,.78), rgba(255,255,255,.96));
+    }
+    .ga-mode-card{
+      border:1px solid rgba(148,163,184,.55);
+      background:#fff;
+      border-radius:14px;
+      padding:12px;
+      cursor:pointer;
+      transition:.15s ease;
+    }
+    .ga-mode-card:hover{
+      border-color:rgba(79,70,229,.35);
+      box-shadow:0 0 0 3px rgba(79,70,229,.10);
+    }
+    .ga-mode-card input{ margin-top:2px; }
+    .ga-mode-card.is-active{
+      border-color:rgba(79,70,229,.65);
+      box-shadow:0 0 0 3px rgba(79,70,229,.14);
+      background:rgba(238,242,255,.72);
+    }
+    .ga-money-input{
+      text-align:right;
+      font-variant-numeric: tabular-nums;
     }
   </style>
 
@@ -251,6 +285,233 @@
       <div class="whitespace-pre-wrap" id="pj_description_text">{{ project.description or '—' }}</div>
     </div>
   </div>
+
+
+  <!-- NEW: Group Auction config -->
+  <div class="mb-6">
+    <div class="ga-card p-4 rounded-lg border border-indigo-200">
+      <div class="flex items-start justify-between gap-3 mb-3">
+        <div>
+          <h3 class="font-semibold text-slate-800">Cấu hình hình thức đăng ký đấu giá</h3>
+          <p class="text-xs text-slate-500 mt-1">
+            Dự án cũ mặc định là <b>Đấu thường</b>. Chỉ bật “Nhóm cọc” khi dự án bán hồ sơ/nộp cọc theo nhóm.
+          </p>
+        </div>
+
+        {% if ga_enabled %}
+          <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-violet-100 text-violet-700 border border-violet-200">
+            Đang bật nhóm cọc
+          </span>
+        {% else %}
+          <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-slate-100 text-slate-600 border border-slate-200">
+            Đấu thường
+          </span>
+        {% endif %}
+      </div>
+
+      {% if ga_ready and ga_enabled %}
+        {% set ga_is_ready = ga_ready.ready %}
+        <div class="mb-3 p-3 rounded-lg text-sm
+          {% if ga_is_ready %} bg-emerald-50 border border-emerald-200 text-emerald-700
+          {% else %} bg-amber-50 border border-amber-200 text-amber-800 {% endif %}">
+          <div class="font-semibold">
+            {% if ga_is_ready %}
+              <i class="ri-checkbox-circle-line mr-1"></i> Cấu hình nhóm cọc đã sẵn sàng.
+            {% else %}
+              <i class="ri-error-warning-line mr-1"></i> Cấu hình nhóm cọc chưa sẵn sàng.
+            {% endif %}
+          </div>
+
+          {% if ga_ready.errors %}
+            <ul class="mt-2 list-disc pl-5 text-xs">
+              {% for e in ga_ready.errors %}
+                <li>{{ e.message or e.msg or e.field or e }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+
+          {% if ga_ready.warnings %}
+            <ul class="mt-2 list-disc pl-5 text-xs">
+              {% for w in ga_ready.warnings %}
+                <li>{{ w.message or w.msg or w.field or w }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      <form method="post" action="/projects/{{ project.id }}/group-auction-config" class="space-y-3">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <label class="ga-mode-card {% if not ga_enabled %}is-active{% endif %}">
+            <div class="flex items-start gap-2">
+              <input
+                type="radio"
+                name="ga_mode_ui"
+                value="NORMAL"
+                class="mt-1 h-4 w-4 text-indigo-600 border-slate-300 focus:ring-0"
+                {% if not ga_enabled %}checked{% endif %}
+                onchange="onGroupAuctionModeUIChanged()"
+              >
+              <div>
+                <div class="text-sm font-semibold text-slate-800">Đấu thường</div>
+                <div class="text-xs text-slate-500 mt-1">
+                  Khách mua hồ sơ và nộp cọc theo từng lô như luồng hiện tại.
+                </div>
+              </div>
+            </div>
+          </label>
+
+          <label class="ga-mode-card {% if ga_enabled and ga_ticket_mode == 'PRE_SESSION' %}is-active{% endif %}">
+            <div class="flex items-start gap-2">
+              <input
+                type="radio"
+                name="ga_mode_ui"
+                value="PRE_SESSION"
+                class="mt-1 h-4 w-4 text-indigo-600 border-slate-300 focus:ring-0"
+                {% if ga_enabled and ga_ticket_mode == 'PRE_SESSION' %}checked{% endif %}
+                onchange="onGroupAuctionModeUIChanged()"
+              >
+              <div>
+                <div class="text-sm font-semibold text-slate-800">Nhóm cọc — chọn lô trước phiên</div>
+                <div class="text-xs text-slate-500 mt-1">
+                  Khách mua hồ sơ/nộp cọc theo nhóm, trước phiên admin nhập lô cụ thể rồi đưa về luồng cũ.
+                </div>
+              </div>
+            </div>
+          </label>
+
+          <label class="ga-mode-card {% if ga_enabled and ga_ticket_mode == 'BLANK_TICKET' %}is-active{% endif %}">
+            <div class="flex items-start gap-2">
+              <input
+                type="radio"
+                name="ga_mode_ui"
+                value="BLANK_TICKET"
+                class="mt-1 h-4 w-4 text-indigo-600 border-slate-300 focus:ring-0"
+                {% if ga_enabled and ga_ticket_mode == 'BLANK_TICKET' %}checked{% endif %}
+                onchange="onGroupAuctionModeUIChanged()"
+              >
+              <div>
+                <div class="text-sm font-semibold text-slate-800">Nhóm cọc — phiếu trắng</div>
+                <div class="text-xs text-slate-500 mt-1">
+                  Chỉ biết số suất hợp lệ theo nhóm; khi kiểm phiếu chỉ nhập phiếu trúng/vào vòng sau.
+                </div>
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <input type="hidden" id="ga_enabled_raw" name="enabled_raw" value="{% if ga_enabled %}1{% endif %}">
+        <input type="hidden" id="ga_ticket_mode" name="ticket_mode" value="{{ ga_ticket_mode }}">
+
+        <div class="flex items-center justify-between gap-3 pt-1">
+          <div class="text-[11px] text-slate-500">
+            Lưu ý: bật nhóm cọc chỉ thay đổi luồng bán hồ sơ/nộp cọc của dự án này, không ảnh hưởng các dự án cũ.
+          </div>
+
+          <button
+            type="button"
+            class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700"
+            onclick="saveGroupAuctionConfigWithConfirm(this)"
+          >
+            <i class="ri-save-3-line mr-1"></i> Lưu hình thức
+          </button>
+        </div>
+      </form>
+
+      <div id="ga_groups_box" class="mt-4 {% if not ga_enabled %}hidden{% endif %}">
+        <div class="border border-indigo-100 rounded-lg bg-white overflow-hidden">
+          <div class="px-3 py-2 border-b border-indigo-100 flex items-start justify-between gap-2">
+            <div>
+              <div class="text-sm font-semibold text-slate-800">Tiền hồ sơ theo nhóm cọc</div>
+              <div class="text-xs text-slate-500">
+                Nhóm cọc được tự sinh từ cột tiền đặt trước của danh sách lô. Admin chỉ nhập tiền hồ sơ/bộ cho từng nhóm.
+              </div>
+            </div>
+            <button
+              type="button"
+              class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-white hover:bg-slate-900"
+              onclick="saveGroupAuctionDepositGroups()"
+            >
+              <i class="ri-save-3-line mr-1"></i> Lưu nhóm cọc
+            </button>
+          </div>
+
+          <form id="gaGroupsForm" method="post" action="/projects/{{ project.id }}/group-auction/deposit-groups" onsubmit="return prepareGroupAuctionGroupsForm();">
+            <input type="hidden" id="ga_groups_json" name="groups_json" value="">
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-sm">
+                <thead class="bg-slate-50">
+                  <tr class="text-left text-slate-600">
+                    <th class="px-3 py-2 border-b">Nhóm cọc</th>
+                    <th class="px-3 py-2 border-b text-right">Số lô</th>
+                    <th class="px-3 py-2 border-b min-w-[220px]">Tên nhóm</th>
+                    <th class="px-3 py-2 border-b text-right min-w-[180px]">Tiền hồ sơ/bộ</th>
+                    <th class="px-3 py-2 border-b text-center w-[110px]">Bật</th>
+                  </tr>
+                </thead>
+                <tbody id="ga_groups_tbody">
+                  {% for g in ga_groups %}
+                    {% set dep = g.deposit_amount_vnd or 0 %}
+                    {% set fee = g.dossier_fee_vnd %}
+                    <tr data-ga-group-row="1" data-deposit="{{ dep }}">
+                      <td class="px-3 py-2 border-b">
+                        <div class="font-semibold text-slate-800 js-ga-deposit-label">{{ "{:,.0f}".format(dep) if dep is number else dep }}đ</div>
+                        <div class="text-[11px] text-slate-500">
+                          {% if g.first_lot_code or g.last_lot_code %}
+                            {{ g.first_lot_code or '—' }} → {{ g.last_lot_code or '—' }}
+                          {% else %}
+                            Tự sinh từ danh sách lô
+                          {% endif %}
+                        </div>
+                      </td>
+                      <td class="px-3 py-2 border-b text-right js-ga-lot-count">{{ g.lot_count or 0 }}</td>
+                      <td class="px-3 py-2 border-b">
+                        <input
+                          type="text"
+                          class="js-ga-group-name w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+                          value="{{ g.group_name or '' }}"
+                          placeholder="VD: Nhóm cọc 200 triệu"
+                        >
+                      </td>
+                      <td class="px-3 py-2 border-b text-right">
+                        <input
+                          type="text"
+                          inputmode="numeric"
+                          class="js-ga-dossier-fee ga-money-input w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+                          value="{{ "{:,.0f}".format(fee) if fee is number else (fee or '') }}"
+                          placeholder="VD: 200000"
+                        >
+                      </td>
+                      <td class="px-3 py-2 border-b text-center">
+                        <input
+                          type="checkbox"
+                          class="js-ga-active h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-0"
+                          {% if g.is_active is not sameas false %}checked{% endif %}
+                        >
+                      </td>
+                    </tr>
+                  {% endfor %}
+
+                  {% if not ga_groups %}
+                    <tr>
+                      <td colspan="5" class="px-3 py-6 text-center text-slate-500">
+                        Chưa có nhóm cọc. Hãy kiểm tra danh sách lô đã có tiền đặt trước hợp lệ chưa.
+                      </td>
+                    </tr>
+                  {% endif %}
+                </tbody>
+              </table>
+            </div>
+          </form>
+        </div>
+
+        <div class="mt-2 text-[11px] text-slate-500 leading-relaxed">
+          Nếu tiền đặt trước của lô thay đổi, tải lại trang để hệ thống tự gom lại nhóm cọc mới.
+        </div>
+      </div>
+    </div>
+  </div>
+
 
   <!-- NEW: Bid ticket config (toggle) -->
   <form method="post" action="/projects/{{ project.id }}/bid-ticket-config" class="mb-6">
@@ -954,11 +1215,175 @@
   const BID_STEP_POLICY_INITIAL = {{ (bid_step_policy or {}) | tojson }};
   const BID_STEP_POLICY_UPDATE_URL = `/projects/{{ project.id }}/bid-step-policy`;
 
+  const GROUP_AUCTION_CONFIG_FORM_URL = `/projects/{{ project.id }}/group-auction-config`;
+  const GROUP_AUCTION_GROUPS_FORM_URL = `/projects/{{ project.id }}/group-auction/deposit-groups`;
+
   /* =========================================================
      Shared helpers
      ========================================================= */
   function _norm(s){ return String(s || "").trim().toLowerCase(); }
   function _byId(id){ return document.getElementById(id); }
+
+  function parseGaMoney(raw){
+    const s = String(raw ?? "").replace(/[^\d]/g, "");
+    if (!s) return null;
+    const n = Number(s);
+    if (!Number.isFinite(n)) return null;
+    return Math.round(n);
+  }
+
+  function onGroupAuctionModeUIChanged(){
+    const selected = document.querySelector('input[name="ga_mode_ui"]:checked')?.value || "NORMAL";
+    const enabledEl = _byId("ga_enabled_raw");
+    const ticketEl = _byId("ga_ticket_mode");
+    const box = _byId("ga_groups_box");
+
+    document.querySelectorAll(".ga-mode-card").forEach(card => card.classList.remove("is-active"));
+    const checked = document.querySelector('input[name="ga_mode_ui"]:checked');
+    if (checked){
+      const card = checked.closest(".ga-mode-card");
+      if (card) card.classList.add("is-active");
+    }
+
+    if (selected === "NORMAL"){
+      if (enabledEl) enabledEl.value = "";
+      if (ticketEl) ticketEl.value = "PRE_SESSION";
+      if (box) box.classList.add("hidden");
+    }else{
+      if (enabledEl) enabledEl.value = "1";
+      if (ticketEl) ticketEl.value = selected === "BLANK_TICKET" ? "BLANK_TICKET" : "PRE_SESSION";
+      if (box) box.classList.remove("hidden");
+    }
+  }
+
+  function saveGroupAuctionConfigWithConfirm(btn){
+    const form = btn && btn.closest ? btn.closest("form") : null;
+    if (!form) return;
+
+    const selected = document.querySelector('input[name="ga_mode_ui"]:checked')?.value || "NORMAL";
+    let label = "ĐẤU THƯỜNG";
+    if (selected === "PRE_SESSION") label = "NHÓM CỌC — CHỌN LÔ TRƯỚC PHIÊN";
+    if (selected === "BLANK_TICKET") label = "NHÓM CỌC — PHIẾU TRẮNG";
+
+    confirmWithPhrase(null, {
+      title: "Xác nhận thay đổi hình thức đăng ký",
+      descHtml: "Bạn sắp chuyển hình thức dự án sang <b>" + escapeHtml(label) + "</b>.<br><span class='text-slate-500 text-sm'>Thao tác này chỉ áp dụng cho dự án hiện tại.</span>",
+      confirmText: "Xác nhận",
+      cancelText: "Hủy",
+      phrase: "tôi xác nhận",
+      onConfirm: function(){
+        form.submit();
+      }
+    });
+  }
+
+  function collectGroupAuctionGroups(){
+    const rows = Array.from(document.querySelectorAll('#ga_groups_tbody tr[data-ga-group-row="1"]'));
+    const groups = [];
+
+    for (const tr of rows){
+      const deposit = parseGaMoney(tr.getAttribute("data-deposit"));
+      const fee = parseGaMoney(tr.querySelector(".js-ga-dossier-fee")?.value || "");
+      const name = String(tr.querySelector(".js-ga-group-name")?.value || "").trim();
+      const active = !!tr.querySelector(".js-ga-active")?.checked;
+
+      if (!deposit || deposit <= 0){
+        throw new Error("Có nhóm cọc không hợp lệ.");
+      }
+      if (fee === null || fee < 0){
+        const label = tr.querySelector(".js-ga-deposit-label")?.textContent || deposit;
+        throw new Error("Vui lòng nhập tiền hồ sơ hợp lệ cho nhóm " + label + ".");
+      }
+
+      groups.push({
+        deposit_amount_vnd: deposit,
+        dossier_fee_vnd: fee,
+        group_name: name || null,
+        is_active: active,
+      });
+    }
+
+    return groups;
+  }
+
+  function prepareGroupAuctionGroupsForm(){
+    try{
+      const groups = collectGroupAuctionGroups();
+      const hidden = _byId("ga_groups_json");
+      if (hidden) hidden.value = JSON.stringify({groups});
+      return true;
+    }catch(e){
+      alert(String(e?.message || e));
+      return false;
+    }
+  }
+
+  function getGroupAuctionConfigPayloadFromUI(){
+    const selected = document.querySelector('input[name="ga_mode_ui"]:checked')?.value || "NORMAL";
+
+    if (selected === "NORMAL"){
+      return {
+        enabled: false,
+        registration_mode: "NORMAL",
+        ticket_mode: null,
+      };
+    }
+
+    return {
+      enabled: true,
+      registration_mode: "GROUP_AUCTION",
+      ticket_mode: selected === "BLANK_TICKET" ? "BLANK_TICKET" : "PRE_SESSION",
+    };
+  }
+
+  async function saveGroupAuctionConfigByFetch(){
+    const payload = getGroupAuctionConfigPayloadFromUI();
+
+    const res = await fetch(GROUP_AUCTION_CONFIG_FORM_URL, {
+      method: "PUT",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(payload),
+      credentials: "same-origin",
+    });
+
+    if (!res.ok){
+      const txt = await res.text();
+      throw new Error(`Lưu hình thức đăng ký thất bại (HTTP ${res.status}). ${txt || ""}`.trim());
+    }
+
+    return true;
+  }
+
+  function saveGroupAuctionDepositGroups(){
+    try{
+      collectGroupAuctionGroups();
+    }catch(e){
+      alert(String(e?.message || e));
+      return;
+    }
+
+    confirmWithPhrase(null, {
+      title: "Xác nhận lưu nhóm cọc",
+      descHtml: "Bạn sắp lưu <b>hình thức đăng ký đấu giá</b> và <b>tiền hồ sơ/bộ</b> cho các nhóm cọc của dự án này.<br><span class='text-slate-500 text-sm'>Nút này sẽ lưu cả việc dự án là đấu thường / nhóm cọc, tránh quên bấm “Lưu hình thức”.</span>",
+      confirmText: "Xác nhận",
+      cancelText: "Hủy",
+      phrase: "tôi xác nhận",
+      onConfirm: async function(){
+        const form = _byId("gaGroupsForm");
+        if (!form) return;
+
+        try{
+          await saveGroupAuctionConfigByFetch();
+        }catch(e){
+          alert(String(e?.message || e));
+          return;
+        }
+
+        if (prepareGroupAuctionGroupsForm()) form.submit();
+      }
+    });
+  }
+
 
   /* =========================================================
      #B: Bid step policy UI
@@ -2068,6 +2493,10 @@
     }catch(e){
       setBspMsg("err", String(e?.message || e));
     }
+
+    try{
+      onGroupAuctionModeUIChanged();
+    }catch(e){}
 
     // best-effort: load types once to show label near badge
     (async ()=>{
