@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+{% block title %}{{ title or 'Báo cáo dự án nhóm' }}{% endblock %}
+
+{% block content %}
+<style>
+  .gr-page{padding:18px;background:#f6f8fb;color:#0f172a;min-height:calc(100vh - 60px)}
+  .gr-wrap{max-width:1280px;margin:0 auto}
+  .gr-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .gr-title{margin:0;font-size:22px;font-weight:900;letter-spacing:-.02em}
+  .gr-sub{margin:6px 0 0;color:#64748b;font-size:13px}
+  .gr-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .gr-btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid #dbe3ef;background:#fff;color:#0f172a;text-decoration:none;border-radius:12px;padding:9px 12px;font-size:13px;font-weight:800;box-shadow:0 8px 22px rgba(15,23,42,.05)}
+  .gr-btn.primary{background:#16a34a;border-color:#16a34a;color:#fff}
+  .gr-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
+  .gr-tab{border:1px solid #dbe3ef;background:#fff;color:#334155;text-decoration:none;border-radius:999px;padding:8px 12px;font-size:13px;font-weight:800}
+  .gr-tab.active{background:#0f172a;color:#fff;border-color:#0f172a}
+  .gr-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+  .gr-card{background:#fff;border:1px solid #dbe3ef;border-radius:16px;padding:14px;box-shadow:0 10px 28px rgba(15,23,42,.06)}
+  .gr-card .lbl{font-size:12px;color:#64748b;margin-bottom:8px}
+  .gr-card .val{font-size:22px;font-weight:950;word-break:break-word}
+  .gr-panel{background:#fff;border:1px solid #dbe3ef;border-radius:18px;box-shadow:0 12px 30px rgba(15,23,42,.06);overflow:hidden}
+  .gr-panel-h{padding:12px 14px;border-bottom:1px solid #e6edf6;display:flex;align-items:center;justify-content:space-between;gap:10px;background:linear-gradient(180deg,#fff,#f8fafc)}
+  .gr-panel-h h3{margin:0;font-size:15px;font-weight:900}
+  .gr-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .gr-input,.gr-select{height:36px;border:1px solid #dbe3ef;border-radius:10px;padding:0 10px;background:#fff;color:#0f172a;font-size:13px}
+  .gr-table-wrap{overflow:auto;max-height:calc(100vh - 280px)}
+  table.gr-table{border-collapse:separate;border-spacing:0;width:100%;min-width:960px;font-size:13px}
+  .gr-table th{position:sticky;top:0;z-index:1;background:#f8fafc;color:#334155;text-align:left;font-size:12px;text-transform:none;white-space:nowrap;border-bottom:1px solid #e2e8f0;padding:10px}
+  .gr-table td{border-bottom:1px solid #eef2f7;padding:10px;vertical-align:top;white-space:nowrap}
+  .gr-table tr:hover td{background:#f8fafc}
+  .gr-pill{display:inline-flex;align-items:center;border-radius:999px;padding:4px 8px;font-size:12px;font-weight:900;border:1px solid #dbe3ef;background:#f8fafc;color:#334155}
+  .gr-pill.PAID,.gr-pill.CONFIRMED,.gr-pill.ACTIVE{background:#dcfce7;color:#166534;border-color:#bbf7d0}
+  .gr-pill.PARTIAL,.gr-pill.PENDING,.gr-pill.CREATED{background:#fef3c7;color:#92400e;border-color:#fde68a}
+  .gr-pill.CANCELED,.gr-pill.CANCELLED,.gr-pill.EXPIRED,.gr-pill.FAILED{background:#fee2e2;color:#991b1b;border-color:#fecaca}
+  .gr-empty{padding:30px;text-align:center;color:#64748b}
+  .gr-json{white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px;background:#0f172a;color:#d1fae5;border-radius:14px;padding:12px;overflow:auto;max-height:420px}
+  @media(max-width:900px){.gr-head{flex-direction:column}.gr-actions{justify-content:flex-start}.gr-grid{grid-template-columns:1fr 1fr}.gr-page{padding:12px}.gr-table-wrap{max-height:none}}
+  @media(max-width:560px){.gr-grid{grid-template-columns:1fr}.gr-tools{width:100%}.gr-input,.gr-select{width:100%}}
+</style>
+
+<div class="gr-page">
+  <div class="gr-wrap">
+    <div class="gr-head">
+      <div>
+        <h1 class="gr-title">{{ title or 'Báo cáo dự án nhóm' }}</h1>
+        <p class="gr-sub">Dự án ID: <b>{{ project_id }}</b> · Báo cáo dành cho dự án đấu giá theo nhóm cọc.</p>
+      </div>
+      <div class="gr-actions">
+        {% if page in ['groups','orders','customers','eligible_slots','txns'] %}
+        <a class="gr-btn primary" href="/reports/group/api/projects/{{ project_id }}/{{ 'eligible-slots' if page == 'eligible_slots' else page }}/export">Xuất Excel</a>
+        {% endif %}
+        <a class="gr-btn" href="/reports/group/api/projects/{{ project_id }}/{{ 'eligible-slots' if page == 'eligible_slots' else page }}" target="_blank">Xem JSON</a>
+      </div>
+    </div>
+
+    <div class="gr-tabs">
+      <a class="gr-tab {{ 'active' if page == 'summary' else '' }}" href="/reports/group/projects/{{ project_id }}/summary">Tổng quan</a>
+      <a class="gr-tab {{ 'active' if page == 'groups' else '' }}" href="/reports/group/projects/{{ project_id }}/groups">Nhóm cọc</a>
+      <a class="gr-tab {{ 'active' if page == 'orders' else '' }}" href="/reports/group/projects/{{ project_id }}/orders">Đơn nhóm</a>
+      <a class="gr-tab {{ 'active' if page == 'customers' else '' }}" href="/reports/group/projects/{{ project_id }}/customers">Khách hàng</a>
+      <a class="gr-tab {{ 'active' if page == 'eligible_slots' else '' }}" href="/reports/group/projects/{{ project_id }}/eligible-slots">Suất đủ ĐK</a>
+      <a class="gr-tab {{ 'active' if page == 'txns' else '' }}" href="/reports/group/projects/{{ project_id }}/txns">Giao dịch</a>
+    </div>
+
+    <div id="summaryCards" class="gr-grid"></div>
+
+    <div class="gr-panel">
+      <div class="gr-panel-h">
+        <h3 id="tableTitle">Dữ liệu</h3>
+        <div class="gr-tools">
+          {% if page == 'orders' %}
+          <select id="orderTypeFilter" class="gr-select">
+            <option value="">Tất cả loại đơn</option>
+            <option value="APPLICATION">Mua hồ sơ</option>
+            <option value="DEPOSIT">Đặt cọc</option>
+          </select>
+          <select id="statusFilter" class="gr-select">
+            <option value="">Tất cả trạng thái</option>
+            <option value="PENDING">PENDING</option>
+            <option value="PARTIAL">PARTIAL</option>
+            <option value="PAID">PAID</option>
+            <option value="EXPIRED">EXPIRED</option>
+            <option value="CANCELED">CANCELED</option>
+          </select>
+          {% endif %}
+          <input id="searchBox" class="gr-input" placeholder="Tìm nhanh...">
+        </div>
+      </div>
+      <div class="gr-table-wrap">
+        <table class="gr-table">
+          <thead><tr id="theadRow"></tr></thead>
+          <tbody id="tbodyRows"></tbody>
+        </table>
+        <div id="emptyBox" class="gr-empty" style="display:none">Không có dữ liệu.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script id="reportData" type="application/json">{{ data|tojson }}</script>
+<script>
+(function(){
+  const PAGE = {{ page|tojson }};
+  const PROJECT_ID = {{ project_id|tojson }};
+  const raw = JSON.parse(document.getElementById('reportData').textContent || '{}');
+
+  const moneyKeys = new Set(['total_vnd','paid_vnd','remaining_vnd','expected_amount_vnd','paid_amount_vnd','deposit_amount_vnd','unit_price_vnd','amount_vnd','receipt_amount_vnd','deposit_paid_amount_vnd','total_amount_vnd','application_amount_vnd','deposit_amount_total_vnd']);
+  const statusKeys = new Set(['status','order_status','qr_status','snapshot_status']);
+
+  const pageConfig = {
+    summary: {
+      title: 'Tổng quan',
+      cols: ['label','value'],
+    },
+    groups: {
+      title: 'Báo cáo theo nhóm cọc',
+      cols: ['deposit_amount_vnd','group_name','application_order_count','application_qty','application_amount_vnd','deposit_order_count','deposit_qty','deposit_amount_total_vnd','paid_order_count','partial_order_count','pending_order_count'],
+    },
+    orders: {
+      title: 'Danh sách đơn nhóm',
+      cols: ['group_order_code','order_type','status','customer_id','customer_full_name','cccd','deposit_amount_vnd','intent_qty','unit_price_vnd','expected_amount_vnd','paid_amount_vnd','remaining_vnd','paid_at','created_at'],
+    },
+    customers: {
+      title: 'Báo cáo khách hàng nhóm',
+      cols: ['customer_id','customer_full_name','cccd','phone','email','application_paid_qty','deposit_paid_amount_vnd','deposit_paid_slots','eligible_slots','total_expected_amount_vnd','total_paid_amount_vnd'],
+    },
+    eligible_slots: {
+      title: 'Suất đủ điều kiện',
+      cols: ['customer_id','customer_full_name','cccd','deposit_amount_vnd','application_paid_qty','deposit_paid_amount_vnd','deposit_paid_slots','eligible_slots','snapshot_status','snapshot_at'],
+    },
+    txns: {
+      title: 'Giao dịch nhóm',
+      cols: ['received_at','group_order_code','order_type','status','customer_id','customer_full_name','deposit_amount_vnd','amount_vnd','source','match_type','confidence','bank_inbox_id','ref_no','description','counter_account','counter_name'],
+    }
+  };
+
+  function flattenRows(obj){
+    if(Array.isArray(obj)) return obj;
+    if(Array.isArray(obj.items)) return obj.items;
+    if(Array.isArray(obj.rows)) return obj.rows;
+    if(Array.isArray(obj.data)) return obj.data;
+    if(Array.isArray(obj.groups)) return obj.groups;
+    if(Array.isArray(obj.orders)) return obj.orders;
+    if(Array.isArray(obj.customers)) return obj.customers;
+    if(Array.isArray(obj.txns)) return obj.txns;
+    if(Array.isArray(obj.receipts)) return obj.receipts;
+    if(PAGE === 'summary'){
+      const pairs = [];
+      Object.entries(obj || {}).forEach(([k,v])=>{
+        if(v && typeof v === 'object' && !Array.isArray(v)){
+          Object.entries(v).forEach(([kk,vv])=>{
+            if(typeof vv !== 'object') pairs.push({label: `${k}.${kk}`, value: vv});
+          });
+        }else if(!Array.isArray(v)) pairs.push({label:k,value:v});
+      });
+      return pairs;
+    }
+    return [];
+  }
+
+  function val(row, key){
+    if(row == null) return '';
+    if(key in row) return row[key];
+    const parts = key.split('.');
+    let cur = row;
+    for(const p of parts){ cur = cur && cur[p]; }
+    return cur == null ? '' : cur;
+  }
+
+  function fmt(key, value){
+    if(value == null) return '';
+    if(typeof value === 'object') return JSON.stringify(value);
+    const n = Number(value);
+    if(moneyKeys.has(key) && !Number.isNaN(n)) return n.toLocaleString('vi-VN');
+    return String(value);
+  }
+
+  function renderSummaryCards(rows){
+    const el = document.getElementById('summaryCards');
+    const numeric = [];
+    const src = raw && typeof raw === 'object' ? raw : {};
+    function walk(prefix, obj){
+      Object.entries(obj || {}).forEach(([k,v])=>{
+        const key = prefix ? `${prefix}.${k}` : k;
+        if(typeof v === 'number' || (/amount|count|qty|slot|total|paid|remaining/i.test(k) && !Number.isNaN(Number(v)))) numeric.push([key, v]);
+        else if(v && typeof v === 'object' && !Array.isArray(v)) walk(key, v);
+      });
+    }
+    walk('', src);
+    const cards = numeric.slice(0, 8);
+    if(!cards.length){ el.style.display='none'; return; }
+    el.innerHTML = cards.map(([k,v])=>`<div class="gr-card"><div class="lbl">${escapeHtml(label(k))}</div><div class="val">${escapeHtml(fmt(k,v))}</div></div>`).join('');
+  }
+
+  function label(s){
+    const mp = {
+      group_order_code:'Mã đơn', order_type:'Loại đơn', status:'Trạng thái', customer_id:'ID KH', customer_full_name:'Khách hàng', cccd:'CCCD', phone:'SĐT', email:'Email',
+      deposit_amount_vnd:'Nhóm cọc', intent_qty:'Số lượng', unit_price_vnd:'Đơn giá', expected_amount_vnd:'Phải thu', paid_amount_vnd:'Đã thu', remaining_vnd:'Còn lại', paid_at:'Thanh toán lúc', created_at:'Tạo lúc',
+      group_name:'Tên nhóm', application_order_count:'Đơn hồ sơ', application_qty:'SL hồ sơ', application_amount_vnd:'Tiền hồ sơ', deposit_order_count:'Đơn cọc', deposit_qty:'SL cọc', deposit_amount_total_vnd:'Tiền cọc', paid_order_count:'Đơn paid', partial_order_count:'Đơn partial', pending_order_count:'Đơn pending',
+      application_paid_qty:'HS đã mua', deposit_paid_amount_vnd:'Tiền cọc đã nộp', deposit_paid_slots:'Suất cọc', eligible_slots:'Suất đủ ĐK', snapshot_status:'Snapshot', snapshot_at:'Snapshot lúc',
+      received_at:'Nhận lúc', amount_vnd:'Số tiền', source:'Nguồn', match_type:'Kiểu match', confidence:'Tin cậy', bank_inbox_id:'Bank inbox', ref_no:'Mã GD', description:'Nội dung', counter_account:'TK chuyển', counter_name:'Tên chuyển', value:'Giá trị'
+    };
+    return mp[s] || String(s).replaceAll('_',' ');
+  }
+
+  function escapeHtml(s){ return String(s ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+
+  let rows = flattenRows(raw);
+  const config = pageConfig[PAGE] || pageConfig.summary;
+  const cols = config.cols && config.cols.length ? config.cols : (rows[0] ? Object.keys(rows[0]) : []);
+  document.getElementById('tableTitle').textContent = `${config.title} (${rows.length})`;
+  document.getElementById('theadRow').innerHTML = cols.map(c=>`<th>${escapeHtml(label(c))}</th>`).join('');
+
+  function renderTable(){
+    const q = (document.getElementById('searchBox')?.value || '').toLowerCase().trim();
+    let filtered = rows;
+    if(PAGE === 'orders'){
+      const st = document.getElementById('statusFilter')?.value || '';
+      const ot = document.getElementById('orderTypeFilter')?.value || '';
+      if(st) filtered = filtered.filter(r => String(val(r,'status') || '').toUpperCase() === st);
+      if(ot) filtered = filtered.filter(r => String(val(r,'order_type') || '').toUpperCase() === ot);
+    }
+    if(q) filtered = filtered.filter(r => JSON.stringify(r).toLowerCase().includes(q));
+
+    const tbody = document.getElementById('tbodyRows');
+    const empty = document.getElementById('emptyBox');
+    if(!filtered.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
+    empty.style.display='none';
+    tbody.innerHTML = filtered.map(row => '<tr>' + cols.map(c=>{
+      const rawVal = val(row,c);
+      const text = fmt(c, rawVal);
+      if(statusKeys.has(c)) return `<td><span class="gr-pill ${escapeHtml(String(rawVal).toUpperCase())}">${escapeHtml(text)}</span></td>`;
+      return `<td>${escapeHtml(text)}</td>`;
+    }).join('') + '</tr>').join('');
+    document.getElementById('tableTitle').textContent = `${config.title} (${filtered.length})`;
+  }
+
+  document.getElementById('searchBox')?.addEventListener('input', renderTable);
+  document.getElementById('statusFilter')?.addEventListener('change', renderTable);
+  document.getElementById('orderTypeFilter')?.addEventListener('change', renderTable);
+
+  renderSummaryCards(rows);
+  renderTable();
+})();
+</script>
+{% endblock %}
