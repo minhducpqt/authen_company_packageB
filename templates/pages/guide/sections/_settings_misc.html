@@ -1,0 +1,212 @@
+<section id="menu-6-1">
+  <h2><i class="ri-building-4-line text-indigo-600"></i> 6.1 Thông tin công ty</h2>
+  <div class="guide-meta">
+    <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: 6.1 Thông tin công ty</span>
+    <span class="guide-badge amber">COMPANY_ADMIN</span>
+  </div>
+
+  <h3>Mục đích</h3>
+  <p>Cập nhật thông tin pháp lý và liên hệ của công ty — hiển thị trên tài liệu in, trang khách hàng, email và hóa đơn.</p>
+
+  <h3>Trường thông tin</h3>
+  <table class="guide-table">
+    <thead><tr><th>Trường</th><th>Ghi chú</th></tr></thead>
+    <tbody>
+      <tr><td>Tên công ty</td><td>Tên đầy đủ trên giấy phép</td></tr>
+      <tr><td>Mã số thuế</td><td>Dùng cho hóa đơn điện tử</td></tr>
+      <tr><td>Địa chỉ</td><td>Trụ sở / địa chỉ liên hệ</td></tr>
+      <tr><td>Số điện thoại</td><td>Hotline hỗ trợ khách</td></tr>
+      <tr><td>Email</td><td>Email liên hệ chính thức</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Các bước</h3>
+  <ol class="guide-steps">
+    <li>Vào <strong>6.1 Thông tin công ty</strong>.</li>
+    <li>Kiểm tra / sửa các trường.</li>
+    <li>Bấm <strong>Lưu</strong> — chỉ COMPANY_ADMIN có quyền ghi.</li>
+  </ol>
+  <div class="guide-note guide-ok">
+    Nên cập nhật trước khi mở dự án đầu tiên — thông tin sai ảnh hưởng hóa đơn và tài liệu đấu giá in ra.
+  </div>
+</section>
+
+<section id="menu-6-2">
+  <h2><i class="ri-bank-line text-indigo-600"></i> 6.2 Tài khoản ngân hàng</h2>
+  <div class="guide-meta">
+    <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: 6.2 Tài khoản ngân hàng</span>
+    <span class="guide-badge amber">COMPANY_ADMIN</span>
+  </div>
+
+  <h3>Mục đích</h3>
+  <p>Quản lý <strong>tài khoản ngân hàng nhận tiền</strong> của công ty — dùng khi cấu hình 1.2 và hiển thị trên QR thanh toán khách.</p>
+
+  <h3>Thông tin một TK</h3>
+  <ul>
+    <li>Ngân hàng (chọn từ danh mục)</li>
+    <li>Số tài khoản, tên chủ tài khoản</li>
+    <li>Chi nhánh (nếu có)</li>
+    <li>Trạng thái active / inactive</li>
+  </ul>
+
+  <h3>Các bước</h3>
+  <ol class="guide-steps">
+    <li>Bấm <strong>Thêm tài khoản</strong>.</li>
+    <li>Chọn ngân hàng, nhập số TK và tên chủ TK (khớp sao kê).</li>
+    <li>Lưu → lặp nếu cần nhiều TK (tách hồ sơ / cọc).</li>
+    <li>Sang <strong>1.2 Cấu hình nhận tiền</strong> gán TK cho từng dự án.</li>
+  </ol>
+  <div class="guide-note guide-warn">
+    Tên chủ TK phải khớp thông tin ngân hàng — sai tên có thể khiến khách chuyển khoản bị treo hoặc khó đối soát.
+  </div>
+</section>
+
+<section id="menu-tai-khoan">
+  <h2><i class="ri-user-settings-line text-indigo-600"></i> Tài khoản hệ thống</h2>
+  <div class="guide-meta">
+    <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: Tài khoản</span>
+    <span class="guide-badge">Mọi role</span>
+  </div>
+
+  <h3>Mục đích</h3>
+  <p>Quản lý thông tin cá nhân, mật khẩu; COMPANY_ADMIN quản lý user công ty; SUPER_ADMIN quản lý công ty trên nền tảng.</p>
+
+  <h3>Mọi user</h3>
+  <ul>
+    <li>Xem username, vai trò, mã công ty</li>
+    <li>Cập nhật họ tên, SĐT, email, địa chỉ cá nhân</li>
+    <li><strong>Đổi mật khẩu</strong> — từ menu tài khoản hoặc mục Đổi mật khẩu trên header</li>
+    <li>Đăng xuất / Đăng xuất tất cả thiết bị</li>
+  </ul>
+
+  <h3>COMPANY_ADMIN — quản lý user công ty</h3>
+  <ol class="guide-steps">
+    <li>Form thêm user: username, mật khẩu, chọn role (STAFF / VIEWER / ACCOUNTANT / COMPANY_ADMIN).</li>
+    <li>Hệ thống tự thêm tiền tố <strong>mã công ty</strong> vào tên đăng nhập (ví dụ: <em>abc.nguyen</em>).</li>
+    <li>Danh sách user: <strong>Enable/Disable</strong>, <strong>Đặt lại mật khẩu</strong>.</li>
+  </ol>
+
+  <h3>SUPER_ADMIN — quản lý công ty</h3>
+  <ol class="guide-steps">
+    <li>Form thêm công ty: mã công ty, tên.</li>
+    <li>Bảng công ty: Enable/Disable, <strong>Chi tiết</strong>.</li>
+    <li>Trang chi tiết công ty: cấu hình email, thông tin bổ sung.</li>
+  </ol>
+</section>
+
+<section id="menu-billing-super">
+  <h2><i class="ri-building-4-line text-indigo-600"></i> Billing (SUPER)</h2>
+  <div class="guide-meta">
+    <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: Quản lý Billing công ty</span>
+    <span class="guide-badge amber">SUPER_ADMIN</span>
+  </div>
+
+  <h3>Mục đích</h3>
+  <p>Quản trị viên nền tảng VNTECHX quản lý <strong>hợp đồng phí và trạng thái billing</strong> của từng công ty tenant.</p>
+
+  <h3>Các trang chính</h3>
+  <table class="guide-table">
+    <thead><tr><th>Trang</th><th>Chức năng</th></tr></thead>
+    <tbody>
+      <tr><td>Quản lý Billing công ty</td><td>Danh sách công ty + trạng thái billing</td></tr>
+      <tr><td>Chi tiết công ty</td><td>Công nợ, hóa đơn, lịch sử thanh toán</td></tr>
+      <tr><td>Cấu hình phí (contract)</td><td>% doanh thu, min/max, phí cố định tháng, grace days</td></tr>
+      <tr><td>Dashboard SUPER</td><td>Tổng quan billing đa tenant</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Thao tác SUPER thường dùng</h3>
+  <ul>
+    <li>Cấu hình / sửa hợp đồng phí cho công ty mới</li>
+    <li><strong>Cập nhật trạng thái</strong> — chuyển công ty sang hoạt động bình thường hoặc tạm khóa (khi xử lý nợ thủ công)</li>
+    <li><strong>Tính lại phí</strong> — chạy bảng tính phí sau khi dự án đấu giá xong</li>
+    <li>Ghi nhận thanh toán phí công ty đã chuyển</li>
+  </ul>
+</section>
+
+<section id="thuat-ngu">
+  <h2><i class="ri-book-2-line text-indigo-600"></i> Thuật ngữ</h2>
+  <table class="guide-table">
+    <thead><tr><th>Thuật ngữ</th><th>Giải thích</th></tr></thead>
+    <tbody>
+      <tr><td>Hồ sơ (dossier)</td><td>Bộ giấy tờ / phí tham dự đấu giá theo loại sản phẩm (LAND, OTHER…)</td></tr>
+      <tr><td>Mua hồ sơ (APPLICATION)</td><td>Đơn khách trả phí để được tham gia đấu giá dự án</td></tr>
+      <tr><td>Đặt cọc / Đặt trước (DEPOSIT)</td><td>Tiền cọc theo lô; hoàn nếu không trúng</td></tr>
+      <tr><td>Lô (lot)</td><td>Đơn vị tài sản đấu giá trong dự án</td></tr>
+      <tr><td>Eligible</td><td>Đủ điều kiện — đủ hồ sơ, đã cọc, không bị loại/cấm</td></tr>
+      <tr><td>PER_LOT / PER_SQM</td><td>Đấu giá theo cả lô / theo mét vuông</td></tr>
+      <tr><td>Phiên (session)</td><td>Buổi đấu giá có nhiều vòng (round)</td></tr>
+      <tr><td>Round / Vòng</td><td>Một lượt xử lý nhóm lô trong phiên</td></tr>
+      <tr><td>Phiếu trả giá (bid ticket)</td><td>Phiếu in cho khách ghi giá tại phiên</td></tr>
+      <tr><td>Matched / Unmatched</td><td>Giao dịch ngân hàng đã / chưa khớp đơn</td></tr>
+      <tr><td>Billing</td><td>Phí dịch vụ nền tảng (công ty → VNTECHX)</td></tr>
+      <tr><td>Invoice export</td><td>Hóa đơn điện tử cho khách (công ty → khách)</td></tr>
+      <tr><td>Freeze</td><td>Khóa cấu hình TK nhận tiền — không cho sửa</td></tr>
+      <tr><td>Rebuild snapshot</td><td>Tính lại danh sách hoàn tiền cọc</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="faq">
+  <h2><i class="ri-question-line text-indigo-600"></i> FAQ &amp; xử lý lỗi</h2>
+  <table class="guide-table">
+    <thead><tr><th>Tình huống</th><th>Nguyên nhân thường gặp</th><th>Cách xử lý</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Không Enable được dự án</td>
+        <td>Thiếu deadline hoặc ngày đấu giá; thứ tự thời gian sai</td>
+        <td>Vào Chi tiết dự án → cấu hình đủ 3 mốc thời gian đúng thứ tự</td>
+      </tr>
+      <tr>
+        <td>Enable báo lỗi / Billing bị khóa</td>
+        <td>Công ty nợ phí nền tảng</td>
+        <td>Vào <strong>3.3 Billing</strong> → thanh toán hóa đơn → chờ trạng thái hoạt động bình thường</td>
+      </tr>
+      <tr>
+        <td>Không sửa được hạn mua hồ sơ</td>
+        <td>Đã qua deadline + 60 phút và có ≥ 5 cọc PAID</td>
+        <td>Rule khóa hệ thống — liên hệ SUPER nếu cần ngoại lệ</td>
+      </tr>
+      <tr>
+        <td>Khách không đặt cọc được</td>
+        <td>Thiếu hồ sơ / bị cấm / hết hạn cọc</td>
+        <td>4.2 Giấy tờ; 4.3 DS cấm; kiểm tra deadline dự án</td>
+      </tr>
+      <tr>
+        <td>QR thanh toán không tạo được</td>
+        <td>Chưa cấu hình TK nhận tiền</td>
+        <td>6.2 tạo TK → 1.2 gán TK mua hồ sơ và đặt cọc</td>
+      </tr>
+      <tr>
+        <td>Giao dịch ngân hàng Unmatched</td>
+        <td>Sai nội dung CK / chưa import sao kê</td>
+        <td>3.1 Import sao kê; nhắc khách ghi đúng DOS-/DEP-</td>
+      </tr>
+      <tr>
+        <td>Đơn PAID nhưng khách báo chưa đủ điều kiện</td>
+        <td>Cache báo cáo / thiếu giấy tờ</td>
+        <td>Refresh báo cáo Tổng quan; kiểm tra 4.2</td>
+      </tr>
+      <tr>
+        <td>Không thấy menu Tổng quan / Báo cáo</td>
+        <td>Role không phải COMPANY_ADMIN</td>
+        <td>Liên hệ admin cấp quyền hoặc dùng báo cáo export được phép</td>
+      </tr>
+      <tr>
+        <td>Bị redirect về Mua hồ sơ</td>
+        <td>Truy cập trang admin-only với role thấp</td>
+        <td>Đúng quy định phân quyền — chỉ dùng các mục menu bạn được phép</td>
+      </tr>
+      <tr>
+        <td>Hoàn tiền thiếu khách</td>
+        <td>Chưa rebuild / thiếu TK hoàn tiền / chưa cập nhật 5.4</td>
+        <td>5.4 kết quả → 5.5 Rebuild → 4.1 bổ sung TK hoàn</td>
+      </tr>
+      <tr>
+        <td>Không xóa được phiên đấu giá</td>
+        <td>Đã có kết quả lô</td>
+        <td>Chỉ xóa phiên nháp chưa có kết quả lô nào</td>
+      </tr>
+    </tbody>
+  </table>
+</section>

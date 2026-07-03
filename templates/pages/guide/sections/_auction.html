@@ -1,0 +1,196 @@
+<section id="menu-5-1">
+  <h2><i class="ri-user-follow-line text-indigo-600"></i> 5.1 Danh sách điểm danh</h2>
+  <div class="guide-meta">
+    <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: 5.1 Danh sách điểm danh</span>
+    <span class="guide-badge amber">COMPANY_ADMIN</span>
+  </div>
+
+  <h3>Mục đích</h3>
+  <p>Lấy danh sách khách <strong>đủ điều kiện tham dự đấu giá</strong> (theo lô) để in biên bản điểm danh tại hội trường ngày đấu giá.</p>
+
+  <h3>Bộ lọc</h3>
+  <ul>
+    <li><strong>Dự án</strong> (project_code) — bắt buộc</li>
+    <li><strong>Tìm khách:</strong> Tên / CCCD / SĐT</li>
+    <li><strong>Chế độ (mode):</strong>
+      <ul>
+        <li><strong>final</strong> — danh sách sau loại trừ thủ công (dùng thực tế ngày đấu giá)</li>
+        <li><strong>auto</strong> — danh sách tự động gốc từ hệ thống (trước loại trừ)</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h3>Loại trừ thủ công (exclusions)</h3>
+  <p>Admin có thể loại khách/lô khỏi danh sách điểm danh khi có lý do nghiệp vụ (thiếu giấy tờ tại chỗ, vi phạm quy chế, v.v.) — không xóa dữ liệu gốc, chỉ ảnh hưởng view <em>final</em>.</p>
+
+  <h3>In danh sách</h3>
+  <ol class="guide-steps">
+    <li>Chọn dự án → mode <strong>final</strong>.</li>
+    <li>Kiểm tra số lượng khách/lô.</li>
+    <li>Bấm <strong>In danh sách</strong>.</li>
+    <li>In và dùng tại hội trường điểm danh.</li>
+  </ol>
+</section>
+
+<section id="menu-5-2">
+  <h2><i class="ri-file-text-line text-indigo-600"></i> 5.2 Phiếu trả giá</h2>
+  <div class="guide-meta">
+    <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: 5.2 Phiếu trả giá</span>
+    <span class="guide-badge amber">COMPANY_ADMIN</span>
+  </div>
+
+  <h3>Mục đích</h3>
+  <p>In <strong>phiếu trả giá</strong> cho từng khách × lô — khách mang phiếu vào phiên đấu giá để ghi nhận giá trả.</p>
+
+  <h3>Bộ lọc</h3>
+  <ul>
+    <li>Dự án (dropdown dự án ACTIVE)</li>
+    <li>Lọc theo khách, lô (tùy UI)</li>
+  </ul>
+
+  <h3>Các bước in phiếu</h3>
+  <ol class="guide-steps">
+    <li>Chọn dự án.</li>
+    <li>Lọc danh sách ứng viên (bid ticket candidates).</li>
+    <li>Chọn một hoặc nhiều dòng → <strong>In phiếu đơn</strong> hoặc <strong>In hàng loạt</strong>.</li>
+    <li>Phát phiếu cho khách tại quầy / trước phiên.</li>
+  </ol>
+  <div class="guide-note">
+    Cấu hình hiển thị bước giá trên phiếu được thiết lập tại Chi tiết dự án (bid ticket config).
+  </div>
+</section>
+
+<section id="menu-5-3">
+  <h2><i class="ri-auction-line text-indigo-600"></i> 5.3 Vận hành phiên</h2>
+  <div class="guide-meta">
+    <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: 5.3 Vận hành phiên</span>
+    <span class="guide-badge">ADMIN · ACCOUNTANT · STAFF</span>
+  </div>
+
+  <h3>Mục đích</h3>
+  <p>Điều hành <strong>phiên đấu giá trực tiếp</strong>: tạo phiên, mở vòng, xử lý từng lô, ghi nhận người thắng hoặc chuyển vòng tiếp theo.</p>
+
+  <h3>Trạng thái phiên</h3>
+  <table class="guide-table">
+    <thead><tr><th>Status</th><th>Ý nghĩa</th><th>Thao tác được phép</th></tr></thead>
+    <tbody>
+      <tr><td>DRAFT</td><td>Nháp — đang chuẩn bị</td><td>Sửa lô trong phiên, xóa phiên (nếu chưa có kết quả)</td></tr>
+      <tr><td>OPEN</td><td>Đang diễn ra</td><td>Lock lô, quyết định, chuyển vòng</td></tr>
+      <tr><td>PAUSED</td><td>Tạm dừng</td><td>Nghỉ giữa phiên</td></tr>
+      <tr><td>CLOSED</td><td>Đã kết thúc</td><td>Chỉ xem / in biên bản</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Quy trình vận hành đầy đủ</h3>
+  <ol class="guide-steps">
+    <li>Vào <strong>5.3 Vận hành phiên</strong> → chọn dự án ACTIVE.</li>
+    <li><strong>Tạo phiên mới</strong> — chọn các lô eligible cần đấu.</li>
+    <li><strong>Bắt đầu phiên</strong> — chuyển DRAFT → OPEN.</li>
+    <li>Với <strong>vòng hiện tại (round)</strong>:
+      <ul>
+        <li><strong>Lock lô</strong> — khóa lô đang xử lý, tránh sửa song song.</li>
+        <li>Nhập / xác nhận giá và <strong>Quyết định (decide)</strong>:
+          <ul>
+            <li><strong>WINNER</strong> — có người thắng (HIGHEST / MANUAL / LOTTERY)</li>
+            <li><strong>NEXT_ROUND</strong> — chưa có kết quả cuối, chọn khách sang vòng sau</li>
+          </ul>
+        </li>
+        <li><strong>Unlock</strong> khi cần mở lại lô.</li>
+      </ul>
+    </li>
+    <li><strong>Chuyển vòng tiếp theo</strong> khi xong tất cả lô trong vòng.</li>
+    <li>Lặp đến hết lô → <strong>Cập nhật trạng thái CLOSED</strong>.</li>
+    <li>In tài liệu: phiếu trả giá, biên bản, danh sách thắng (từ UI phiên).</li>
+  </ol>
+
+  <h3>Phương thức xác định người thắng</h3>
+  <table class="guide-table">
+    <thead><tr><th>Win method</th><th>Khi dùng</th></tr></thead>
+    <tbody>
+      <tr><td>HIGHEST</td><td>Giá cao nhất trong vòng (mặc định)</td></tr>
+      <tr><td>MANUAL</td><td>Chủ tọa chọn người thắng thủ công</td></tr>
+      <tr><td>LOTTERY</td><td>Bốc thăm khi hòa giá / theo quy chế</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Quyền theo vai trò</h3>
+  <ul>
+    <li><strong>STAFF:</strong> vận hành decide trong phiên OPEN.</li>
+    <li><strong>COMPANY_ADMIN:</strong> thêm lock/delete phiên, xóa vòng (khi chưa có kết quả).</li>
+  </ul>
+
+  <div class="guide-note guide-warn">
+    Chỉ xóa phiên/vòng khi <strong>chưa ghi nhận kết quả</strong> cho bất kỳ lô nào.
+    Sau khi CLOSED — chuyển sang 5.4 để xác nhận và chỉnh kết quả nếu cần.
+  </div>
+</section>
+
+<section id="menu-5-4">
+  <h2><i class="ri-award-line text-indigo-600"></i> 5.4 Kết quả trúng đấu giá</h2>
+  <div class="guide-meta">
+    <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: 5.4 Kết quả trúng đấu giá</span>
+    <span class="guide-badge">ADMIN · ACCOUNTANT · STAFF</span>
+  </div>
+
+  <h3>Mục đích</h3>
+  <p>Xem, chỉnh sửa và công bố <strong>người trúng đấu giá theo từng lô</strong> sau phiên (hoặc bổ sung nếu vận hành phiên chưa đầy đủ).</p>
+
+  <h3>Chức năng chính</h3>
+  <ul>
+    <li>Danh sách lô + người thắng + giá trúng</li>
+    <li><strong>Cập nhật người thắng</strong> từng lô</li>
+    <li><strong>Bulk upsert</strong> — cập nhật hàng loạt</li>
+    <li><strong>Export XLSX</strong> danh sách thắng</li>
+    <li><strong>Chế độ trình chiếu</strong> — màn hình lớn để công bố kết quả tại hội trường</li>
+    <li>In biên bản / phiếu thông báo trúng</li>
+  </ul>
+
+  <h3>Các bước sau phiên</h3>
+  <ol class="guide-steps">
+    <li>Chọn dự án đã CLOSED phiên.</li>
+    <li>Đối chiếu kết quả phiên 5.3 với biên bản giấy.</li>
+    <li>Sửa lô sai (nếu có) → Lưu.</li>
+    <li>Export Excel làm cơ sở hồ sơ và hoàn tiền.</li>
+    <li>Bật Present mode nếu công bố công khai tại hội trường.</li>
+  </ol>
+</section>
+
+<section id="menu-5-5">
+  <h2><i class="ri-refund-2-line text-indigo-600"></i> 5.5 Hoàn tiền đặt trước</h2>
+  <div class="guide-meta">
+    <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: 5.5 Hoàn tiền đặt trước</span>
+    <span class="guide-badge">COMPANY_ADMIN · ACCOUNTANT</span>
+  </div>
+
+  <h3>Mục đích</h3>
+  <p>Lập danh sách khách <strong>được hoàn tiền cọc</strong> (không trúng đấu giá) và xuất file chuyển khoản hoàn.</p>
+
+  <h3>Hai tab chính</h3>
+  <table class="guide-table">
+    <thead><tr><th>Tab</th><th>Nội dung</th></tr></thead>
+    <tbody>
+      <tr><td>Danh sách hoàn</td><td>Ứng viên hoàn tiền — lọc theo dự án, eligible, trust score</td></tr>
+      <tr><td>Kiểm tra (audit)</td><td>Đối soát snapshot — phát hiện sai lệch</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Điều kiện hoàn tiền</h3>
+  <ul>
+    <li>Khách đã <strong>PAID</strong> cọc lô</li>
+    <li><strong>Không trúng</strong> lô đó (theo kết quả 5.4)</li>
+    <li>Có <strong>tài khoản hoàn tiền</strong> trên hồ sơ khách (4.1)</li>
+  </ul>
+
+  <h3>Quy trình kế toán</h3>
+  <ol class="guide-steps">
+    <li>Hoàn tất cập nhật kết quả tại 5.4.</li>
+    <li>Vào 5.5 → chọn dự án.</li>
+    <li>Bấm <strong>Rebuild snapshot</strong> để hệ thống tính lại danh sách hoàn.</li>
+    <li>Rà soát tab Danh sách — lọc eligible, kiểm tra trust score (LOW/MEDIUM/HIGH).</li>
+    <li><strong>Download XLSX</strong> — file chuyển khoản ngân hàng.</li>
+    <li>Thực hiện hoàn tiền ngoài hệ thống → đối chiếu tab Kiểm tra.</li>
+  </ol>
+  <div class="guide-note">
+    Trust score phản ánh mức tin cậy dữ liệu TK hoàn tiền — ưu tiên xử lý thủ công các dòng LOW trước khi chuyển khoản.
+  </div>
+</section>

@@ -1,0 +1,157 @@
+<section id="menu-1-1">
+  <h2><i class="ri-community-line text-indigo-600"></i> 1.1 Quản lý dự án</h2>
+  <div class="guide-meta">
+    <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: 1.1 Quản lý dự án</span>
+    <span class="guide-badge">ADMIN · ACCOUNTANT · STAFF</span>
+  </div>
+
+  <h3>Mục đích</h3>
+  <p>Tạo và quản lý dự án đấu giá, danh sách lô, cấu hình thời hạn và chế độ đấu giá. Đây là điểm bắt đầu của mọi chiến dịch.</p>
+
+  <h3>Trang danh sách dự án</h3>
+  <h4>Cột hiển thị</h4>
+  <ul>
+    <li><strong>Mã dự án</strong> — mã duy nhất trong công ty.</li>
+    <li><strong>Tên dự án</strong>, <strong>Vị trí</strong>, <strong>Trạng thái</strong>.</li>
+  </ul>
+  <h4>Trạng thái dự án</h4>
+  <table class="guide-table">
+    <thead><tr><th>Trạng thái</th><th>Ý nghĩa</th></tr></thead>
+    <tbody>
+      <tr><td>INACTIVE</td><td>Nháp — chưa mở cho khách</td></tr>
+      <tr><td>ACTIVE</td><td>Đang mở — khách mua hồ sơ, đặt cọc</td></tr>
+      <tr><td>CLOSED</td><td>Đã đóng — kết thúc chiến dịch</td></tr>
+    </tbody>
+  </table>
+  <h4>Nút thao tác trên danh sách</h4>
+  <ul>
+    <li><strong>Template</strong> — tải file Excel mẫu (cấu trúc dự án + lô).</li>
+    <li><strong>Import</strong> — upload Excel → xem trước → xác nhận import hàng loạt.</li>
+    <li><strong>Chi tiết</strong> — mở trang cấu hình đầy đủ.</li>
+    <li><strong>Enable / Disable</strong> — bật/tắt dự án (chỉ COMPANY_ADMIN).</li>
+  </ul>
+  <h4>Bộ lọc</h4>
+  <p>Tìm theo tên hoặc mã; lọc trạng thái ALL / ACTIVE / INACTIVE.</p>
+
+  <h3>Tạo dự án mới</h3>
+  <p>Từ trang danh sách dự án, chọn <strong>Thêm dự án</strong> (hoặc nút tạo mới tương đương).</p>
+  <ol class="guide-steps">
+    <li>Nhập <strong>Mã dự án</strong> * (duy nhất, không trùng).</li>
+    <li>Nhập <strong>Tên dự án</strong> *.</li>
+    <li>Nhập Vị trí, Mô tả (tùy chọn).</li>
+    <li>Bấm <strong>Tạo dự án</strong> → vào Chi tiết để cấu hình tiếp.</li>
+  </ol>
+
+  <h3>Import dự án + lô bằng Excel</h3>
+  <ol class="guide-steps">
+    <li>Tải <strong>Template</strong> từ danh sách dự án.</li>
+    <li>Điền thông tin dự án và lô theo đúng cột mẫu.</li>
+    <li>Bấm <strong>Import</strong> → chọn file → <strong>Xem trước import</strong>.</li>
+    <li>Kiểm tra dòng lỗi/cảnh báo (nếu có) → <strong>Apply</strong> để tạo trên hệ thống.</li>
+  </ol>
+
+  <h3>Trang Chi tiết dự án</h3>
+  <p>Trung tâm cấu hình trước khi Enable. Các hạng mục quan trọng:</p>
+  <table class="guide-table">
+    <thead><tr><th>Hạng mục</th><th>Mô tả</th></tr></thead>
+    <tbody>
+      <tr><td>Thời hạn mua hồ sơ</td><td>Hết hạn khách mua hồ sơ tham dự</td></tr>
+      <tr><td>Thời hạn đặt cọc</td><td>Hết hạn đặt cọc lô</td></tr>
+      <tr><td>Ngày giờ đấu giá</td><td>Thời điểm tổ chức phiên</td></tr>
+      <tr><td>Địa điểm</td><td>Tỉnh/thành, địa điểm tổ chức</td></tr>
+      <tr><td>Loại sản phẩm</td><td>LAND (đất) / OTHER — quyết định catalog hồ sơ</td></tr>
+      <tr><td>Chế độ đấu giá</td><td><strong>Cả lô</strong> (PER_LOT) hoặc <strong>Theo m²</strong> (PER_SQM)</td></tr>
+      <tr><td>Cấu hình phiếu trả giá</td><td>Hiển thị bước giá trên phiếu in</td></tr>
+      <tr><td>Chính sách bước giá</td><td>Quy tắc bước nhảy giá trong phiên</td></tr>
+      <tr><td>Danh sách lô</td><td>Mã lô, diện tích, giá khởi điểm, cọc, bước giá, hồ sơ yêu cầu</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Quản lý lô trong dự án</h3>
+  <ul>
+    <li><strong>Thêm lô</strong> — nhập thông tin từng lô.</li>
+    <li><strong>Sửa lô</strong> — biểu tượng bút (có thể bật chế độ sửa lô ở cuối trang).</li>
+    <li><strong>Khóa / Mở khóa lô</strong> — chuẩn bị trước phiên đấu giá.</li>
+    <li>Có thể mở trang <strong>Sửa lô</strong> riêng khi cần chỉnh nhiều thông tin.</li>
+  </ul>
+  <div class="guide-note guide-warn">
+    Sau khi dự án ACTIVE, nếu đã qua <strong>thời hạn mua hồ sơ + 60 phút</strong> và có <strong>≥ 5 đơn cọc PAID</strong>,
+    hệ thống <strong>khóa sửa</strong> thời hạn mua hồ sơ.
+  </div>
+
+  <h3>Enable dự án — điều kiện bắt buộc</h3>
+  <ol class="guide-steps">
+    <li>Đã cấu hình <strong>thời hạn mua hồ sơ</strong>.</li>
+    <li>Đã cấu hình <strong>thời hạn đặt cọc</strong>.</li>
+    <li>Đã cấu hình <strong>ngày giờ đấu giá</strong>.</li>
+    <li>Thứ tự thời gian: mua hồ sơ ≤ đặt cọc ≤ ngày đấu giá.</li>
+    <li>Công ty <strong>không bị khóa Billing</strong> (xem 3.3).</li>
+    <li>Đã gán TK nhận tiền tại 1.2 (khuyến nghị trước khi khách thanh toán).</li>
+  </ol>
+  <p>Bấm <strong>Enable</strong> trên danh sách hoặc trong chi tiết → trạng thái chuyển <strong>ACTIVE</strong>.</p>
+</section>
+
+<section id="menu-1-2">
+  <h2><i class="ri-cash-line text-indigo-600"></i> 1.2 Cấu hình nhận tiền</h2>
+  <div class="guide-meta">
+    <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: 1.2 Cấu hình nhận tiền</span>
+    <span class="guide-badge amber">COMPANY_ADMIN</span>
+  </div>
+
+  <h3>Mục đích</h3>
+  <p>Gán tài khoản ngân hàng công ty cho từng dự án để khách chuyển khoản đúng TK khi mua hồ sơ và đặt cọc.</p>
+
+  <h3>Hai loại tài khoản nhận</h3>
+  <table class="guide-table">
+    <thead><tr><th>Loại</th><th>Dùng cho</th></tr></thead>
+    <tbody>
+      <tr><td>TK mua hồ sơ (APPLICATION)</td><td>Thanh toán phí hồ sơ tham dự</td></tr>
+      <tr><td>TK đặt cọc (DEPOSIT)</td><td>Thanh toán tiền cọc theo lô</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Các bước cấu hình</h3>
+  <ol class="guide-steps">
+    <li>Tạo TK ngân hàng công ty tại <strong>6.2 Tài khoản ngân hàng</strong> trước.</li>
+    <li>Vào <strong>1.2 Cấu hình nhận tiền</strong>.</li>
+    <li>Chọn dự án → gán TK cho <em>mua hồ sơ</em> và <em>đặt cọc</em>.</li>
+    <li>Bấm <strong>Lưu</strong>.</li>
+  </ol>
+
+  <h3>Freeze (đóng băng cấu hình)</h3>
+  <p>Khi chiến dịch đang chạy, có thể <strong>Freeze</strong> để không ai sửa nhầm TK nhận tiền. Cần quyền admin để Unfreeze khi có thay đổi hợp lệ.</p>
+
+  <div class="guide-note">
+    Nếu thiếu cấu hình TK, khách có thể không tạo được mã QR thanh toán hoặc chuyển sai tài khoản — giao dịch sẽ khó đối soát ở mục 3.1.
+  </div>
+</section>
+
+<section id="menu-1-3">
+  <h2><i class="ri-megaphone-line text-indigo-600"></i> 1.3 Quản lý thông báo</h2>
+  <div class="guide-meta">
+    <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: 1.3 Quản lý thông báo</span>
+    <span class="guide-badge amber">COMPANY_ADMIN</span>
+  </div>
+
+  <h3>Mục đích</h3>
+  <p>Đăng thông báo hiển thị trên <strong>trang khách hàng</strong> (website công khai): lịch đấu giá, hướng dẫn nộp hồ sơ, thay đổi quy trình, v.v.</p>
+
+  <h3>Trạng thái thông báo</h3>
+  <table class="guide-table">
+    <thead><tr><th>Trạng thái</th><th>Hiển thị</th></tr></thead>
+    <tbody>
+      <tr><td>DRAFT (Nháp)</td><td>Chưa public — chỉ admin thấy</td></tr>
+      <tr><td>PUBLISHED (Đang hiển thị)</td><td>Khách thấy trên trang công khai</td></tr>
+      <tr><td>ARCHIVED (Đã ẩn)</td><td>Đã gỡ khỏi trang khách</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Các bước tạo thông báo</h3>
+  <ol class="guide-steps">
+    <li>Bấm <strong>Thêm thông báo</strong>.</li>
+    <li>Nhập tiêu đề, nội dung/mô tả, thời gian hiển thị (nếu có).</li>
+    <li>Chọn trạng thái <strong>PUBLISHED</strong> khi sẵn sàng public.</li>
+    <li>Lưu — kiểm tra trên trang khách.</li>
+  </ol>
+  <p><strong>Bộ lọc:</strong> tìm theo tiêu đề/mô tả; lọc Tất cả / Đang hiển thị / Nháp / Đã ẩn.</p>
+</section>

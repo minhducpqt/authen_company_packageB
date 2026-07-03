@@ -41,6 +41,7 @@ from routers.invoice_exports import router as invoice_exports_router
 from routers.billing import router as billing_router
 
 from routers.auction_banned_persons import router as auction_banned_persons_router
+from routers.guide import router as guide_router
 
 # ✅ Lots (tách từ projects.py)
 from routers.lots import router as lots_router  # <-- NEW
@@ -139,6 +140,7 @@ app.include_router(auction_documents_print_router)  # <-- NEW (attendance, futur
 
 
 app.include_router(auction_banned_persons_router)
+app.include_router(guide_router)
 
 #Mobile
 mount_mobile_routers(app)

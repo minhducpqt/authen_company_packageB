@@ -1,0 +1,113 @@
+<section id="menu-2-1">
+  <h2><i class="ri-file-list-2-line text-indigo-600"></i> 2.1 Mua hồ sơ</h2>
+  <div class="guide-meta">
+    <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: 2.1 Mua hồ sơ</span>
+    <span class="guide-badge">Mọi role (trừ SUPER)</span>
+  </div>
+
+  <h3>Mục đích</h3>
+  <p>Theo dõi khách hàng <strong>mua hồ sơ tham dự đấu giá</strong>: ai đã trả, ai đang chờ, ai có QR chưa thanh toán.</p>
+
+  <h3>Giao diện chính</h3>
+  <h4>Cột dữ liệu</h4>
+  <ul>
+    <li>Khách hàng, CCCD, SĐT</li>
+    <li>Tiền đã mua, Đã trả, Pending, QR chờ thanh toán</li>
+  </ul>
+  <h4>Bộ lọc</h4>
+  <ul>
+    <li><strong>Trạng thái dự án:</strong> ACTIVE / INACTIVE / ALL</li>
+    <li><strong>Dự án:</strong> chọn một dự án cụ thể</li>
+    <li><strong>Tìm khách:</strong> Tên / CCCD / SĐT</li>
+    <li>Phân trang: 25 / 50 / 100 dòng</li>
+  </ul>
+  <h4>Thao tác</h4>
+  <ul>
+    <li><strong>Nạp</strong> — làm mới dữ liệu từ hệ thống.</li>
+    <li><strong>Export XLSX</strong> — khi đã chọn dự án.</li>
+    <li><strong>Click một dòng khách</strong> — mở panel chi tiết bên phải.</li>
+  </ul>
+
+  <h3>Panel chi tiết khách</h3>
+  <p>Các tab trong drawer:</p>
+  <table class="guide-table">
+    <thead><tr><th>Tab</th><th>Nội dung</th></tr></thead>
+    <tbody>
+      <tr><td>Đã trả</td><td>Đơn hồ sơ đã thanh toán (PAID)</td></tr>
+      <tr><td>Pending</td><td>Đơn chờ thanh toán</td></tr>
+      <tr><td>QR active</td><td>QR VietQR đang hiệu lực</td></tr>
+      <tr><td>Tất cả đơn</td><td>Toàn bộ lịch sử đơn APPLICATION</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Mã tham chiếu chuyển khoản</h3>
+  <p>Khách chuyển khoản với nội dung chứa mã prefix <strong>DOS-</strong>. Kế toán đối soát tại 3.1 Giao dịch ngân hàng.</p>
+
+  <h3>Trạng thái đơn hàng</h3>
+  <table class="guide-table">
+    <thead><tr><th>Status</th><th>Ý nghĩa</th><th>Xử lý</th></tr></thead>
+    <tbody>
+      <tr><td>PENDING</td><td>Chờ thanh toán</td><td>Theo dõi / nhắc khách / đối soát ngân hàng</td></tr>
+      <tr><td>PAID</td><td>Đã thanh toán</td><td>Khách được tính số dư hồ sơ</td></tr>
+      <tr><td>CANCELED</td><td>Đã hủy</td><td>Không còn hiệu lực</td></tr>
+      <tr><td>EXPIRED</td><td>Hết hạn QR/đơn</td><td>Khách cần tạo đơn mới</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="menu-2-2">
+  <h2><i class="ri-hand-coin-line text-indigo-600"></i> 2.2 Đặt cọc</h2>
+  <div class="guide-meta">
+    <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: 2.2 Đặt cọc</span>
+    <span class="guide-badge">Mọi role (trừ SUPER)</span>
+  </div>
+
+  <h3>Mục đích</h3>
+  <p>Theo dõi khách <strong>đặt cọc theo lô</strong> — bước bắt buộc trước khi tham dự đấu giá lô đó.</p>
+
+  <h3>Khác biệt so với 2.1</h3>
+  <ul>
+    <li>Dữ liệu tập trung đơn loại <strong>DEPOSIT</strong> (cọc lô).</li>
+    <li>Mã chuyển khoản prefix <strong>DEP-</strong>.</li>
+    <li>Mỗi đơn gắn với <strong>lô cụ thể</strong> trong dự án.</li>
+  </ul>
+
+  <h3>Điều kiện khách đặt cọc được</h3>
+  <ol class="guide-steps">
+    <li>Đã mua đủ <strong>loại hồ sơ</strong> mà lô yêu cầu.</li>
+    <li>Dự án đang <strong>ACTIVE</strong> và trong thời hạn đặt cọc.</li>
+    <li>Khách không nằm trong <strong>DS cấm đấu giá</strong> (4.3).</li>
+  </ol>
+  <div class="guide-note">
+    Nếu khách báo không đặt cọc được → kiểm tra <strong>4.2 Giấy tờ phải nộp</strong> và báo cáo KH không đủ điều kiện tại Tổng quan.
+  </div>
+
+  <h3>Cách sử dụng trang</h3>
+  <p>Giao diện và thao tác giống 2.1: lọc dự án → Nạp → click khách xem chi tiết → Export XLSX.</p>
+  <p>Hỗ trợ <strong>thanh toán một phần</strong>: cột Đã trả có thể nhỏ hơn tổng tiền cọc cho đến khi đủ PAID.</p>
+</section>
+
+<section id="menu-2-3">
+  <h2><i class="ri-dashboard-line text-indigo-600"></i> 2.3 Tổng hợp</h2>
+  <div class="guide-meta">
+    <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: 2.3 Tổng hợp</span>
+    <span class="guide-badge amber">COMPANY_ADMIN</span>
+  </div>
+
+  <h3>Mục đích</h3>
+  <p>Xem <strong>gộp</strong> thông tin mua hồ sơ và đặt cọc trên một màn hình — tiện cho quản trị theo dõi tổng thể giao dịch dự án.</p>
+
+  <h3>Khi nào dùng</h3>
+  <ul>
+    <li>Họp nội bộ báo cáo tiến độ thu hồ sơ + cọc.</li>
+    <li>So sánh nhanh volume giao dịch giữa hai loại trên cùng dự án.</li>
+    <li>Không thay thế báo cáo chi tiết tại Tổng quan — bổ sung cho view vận hành.</li>
+  </ul>
+
+  <h3>Các bước</h3>
+  <ol class="guide-steps">
+    <li>Chọn dự án và bộ lọc (tương tự 2.1/2.2).</li>
+    <li>Bấm <strong>Nạp</strong> để tải dữ liệu tổng hợp.</li>
+    <li>Click khách để xem chi tiết đơn (nếu UI hỗ trợ drawer tương tự).</li>
+  </ol>
+</section>

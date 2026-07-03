@@ -1,0 +1,122 @@
+<section id="gioi-thieu">
+  <h2><i class="ri-information-line text-indigo-600"></i> Giới thiệu</h2>
+  <p>
+    <strong>Hệ thống quản lý đấu giá</strong> là portal nội bộ giúp công ty tổ chức đấu giá quản lý trọn vòng đời
+    một dự án: từ lúc khởi tạo dự án và lô, cấu hình nhận tiền, mở bán hồ sơ, thu cọc, đối soát ngân hàng,
+    chuẩn bị điểm danh — cho đến vận hành phiên đấu giá trực tiếp, ghi nhận kết quả, hoàn tiền cọc và xuất hóa đơn.
+  </p>
+  <h3>Portal dành cho ai?</h3>
+  <p>Nhân viên công ty đấu giá: quản trị, vận hành, kế toán, nhân viên hỗ trợ. <strong>Không phải</strong> trang dành cho khách hàng cuối (khách dùng trang công khai riêng).</p>
+  <h3>Hai loại menu trên màn hình</h3>
+  <ul>
+    <li><strong>Menu portal (sidebar trái ngoài cùng):</strong> điều hướng chức năng nghiệp vụ — thay đổi theo vai trò.</li>
+    <li><strong>Mục lục sổ tay (trên trang Hướng dẫn):</strong> tra cứu tài liệu — có thể thu gọn để đọc nội dung rộng hơn.</li>
+  </ul>
+  <div class="guide-note">
+    <strong>Mẹo đọc sổ tay:</strong> Bấm nút mũi tên ← trên mục lục để thu gọn; bấm thanh dọc <em>Mục lục</em> bên trái để mở lại và chọn mục khác.
+  </div>
+</section>
+
+<section id="vai-tro">
+  <h2><i class="ri-shield-user-line text-indigo-600"></i> Vai trò người dùng</h2>
+  <p>Mỗi tài khoản có một vai trò. Vai trò quyết định menu hiển thị và trang nào truy cập được.</p>
+  <table class="guide-table">
+    <thead>
+      <tr><th>Vai trò</th><th>Menu chính</th><th>Ghi chú</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>COMPANY_ADMIN</strong></td>
+        <td>Đầy đủ: Tổng quan, dự án, giao dịch, kế toán, khách, phiên ĐG, thiết lập</td>
+        <td>Quản trị viên công ty; Enable dự án; quản lý user</td>
+      </tr>
+      <tr>
+        <td><strong>ACCOUNTANT</strong></td>
+        <td>Dự án, giao dịch (2.1–2.2), ngân hàng, billing, hoàn tiền, phiên 5.3–5.5</td>
+        <td>Không có Tổng quan, 2.3, điểm danh, phiếu trả giá, DS cấm</td>
+      </tr>
+      <tr>
+        <td><strong>STAFF</strong></td>
+        <td>Dự án, giao dịch, khách, phiên 5.3–5.4, xuất HĐ, billing (xem)</td>
+        <td>Không ngân hàng, không hoàn tiền</td>
+      </tr>
+      <tr>
+        <td><strong>VIEWER</strong></td>
+        <td>2.1 Mua hồ sơ, 2.2 Đặt cọc, Danh sách khách, Giấy tờ</td>
+        <td>Chỉ xem, không cấu hình</td>
+      </tr>
+      <tr>
+        <td><strong>SUPER_ADMIN</strong></td>
+        <td>Billing công ty, Tài khoản (quản lý công ty nền tảng)</td>
+        <td>VNTECHX — không menu vận hành dự án</td>
+      </tr>
+    </tbody>
+  </table>
+  <h3>Sau khi đăng nhập</h3>
+  <ul>
+    <li><strong>Quản trị công ty</strong> — thường vào <em>Tổng quan</em> sau khi đăng nhập.</li>
+    <li><strong>STAFF / ACCOUNTANT / VIEWER</strong> → luôn vào <em>2.1 Mua hồ sơ</em>.</li>
+    <li><strong>SUPER_ADMIN</strong> → vào <em>Tài khoản</em>.</li>
+  </ul>
+  <div class="guide-note guide-warn">
+    Nếu bạn bị chuyển về Mua hồ sơ khi mở trang khác, nghĩ là vai trò không đủ quyền — liên hệ COMPANY_ADMIN.
+  </div>
+</section>
+
+<section id="checklist">
+  <h2><i class="ri-checkbox-multiple-line text-indigo-600"></i> Checklist mở dự án đấu giá</h2>
+  <p>Thực hiện <strong>theo thứ tự</strong> trước ngày đấu giá:</p>
+  <ol class="guide-checklist">
+    <li><strong>6.1</strong> Cập nhật thông tin công ty</li>
+    <li><strong>6.2</strong> Tạo tài khoản ngân hàng công ty</li>
+    <li><strong>1.1</strong> Tạo dự án + import/thêm lô</li>
+    <li><strong>1.1 Chi tiết</strong> Cấu hình deadline, ngày đấu giá, chế độ đấu giá, bước giá</li>
+    <li><strong>1.2</strong> Gán TK nhận tiền mua hồ sơ &amp; đặt cọc</li>
+    <li><strong>3.3</strong> Kiểm tra Billing — công ty không LOCKED</li>
+    <li><strong>1.1</strong> Enable dự án (ACTIVE)</li>
+    <li><strong>1.3</strong> Đăng thông báo (nếu cần)</li>
+    <li><strong>2.1, 2.2</strong> Theo dõi mua hồ sơ &amp; đặt cọc</li>
+    <li><strong>3.1</strong> Đối soát giao dịch ngân hàng</li>
+    <li><strong>Tổng quan</strong> Chạy báo cáo đủ/không đủ điều kiện</li>
+    <li><strong>5.1, 5.2</strong> In điểm danh &amp; phiếu trả giá</li>
+    <li><strong>5.3</strong> Vận hành phiên đấu giá</li>
+    <li><strong>5.4</strong> Xác nhận kết quả trúng</li>
+    <li><strong>5.5, 3.2</strong> Hoàn tiền cọc &amp; xuất hóa đơn khách</li>
+  </ol>
+</section>
+
+<section id="tong-quan">
+  <h2><i class="ri-pie-chart-2-fill text-indigo-600"></i> Tổng quan (Báo cáo)</h2>
+  <div class="guide-meta">
+    <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: Tổng quan</span>
+    <span class="guide-badge amber"><i class="ri-shield-user-line"></i> Quản trị công ty</span>
+  </div>
+  <h3>Mục đích</h3>
+  <p>Hub truy cập nhanh các báo cáo thống kê theo dự án: lô/khách đủ điều kiện, thống kê cọc, mua hồ sơ. Dùng trước ngày đấu giá để kiểm tra sẵn sàng.</p>
+  <h3>Giao diện</h3>
+  <ul>
+    <li>Các <strong>card báo cáo</strong> — bấm để mở báo cáo chi tiết.</li>
+    <li><strong>Dự án đang hoạt động</strong> — chọn dự án cụ thể (khi có nhiều dự án ACTIVE).</li>
+    <li>Nếu có ≥ 2 dự án, card mặc định mở theo dự án đầu tiên — đổi dự án ở danh sách bên dưới.</li>
+  </ul>
+  <h3>Danh sách báo cáo</h3>
+  <table class="guide-table">
+    <thead><tr><th>Báo cáo</th><th>Nội dung</th><th>Khi nào dùng</th></tr></thead>
+    <tbody>
+      <tr><td>Lô đủ điều kiện (V2)</td><td>Lô sẵn sàng mở đấu giá</td><td>Trước phiên — xác nhận lô vào phiên</td></tr>
+      <tr><td>Lô không đủ điều kiện (V2)</td><td>Lô thiếu cọc/hồ sơ/…</td><td>Xử lý lô chưa đạt</td></tr>
+      <tr><td>Thống kê tiền đặt trước</td><td>Tổng cọc theo lô</td><td>Kế toán / đối chiếu</td></tr>
+      <tr><td>KH đủ điều kiện (V2)</td><td>Khách được tham dự</td><td>Trước điểm danh</td></tr>
+      <tr><td>KH không đủ điều kiện (V2)</td><td>Khách bị loại + lý do</td><td>Giải thích / xử lý khiếu nại</td></tr>
+      <tr><td>Mua hồ sơ — chi tiết</td><td>Từng loại hồ sơ đã mua</td><td>Đối soát doanh thu hồ sơ</td></tr>
+      <tr><td>Mua hồ sơ — tổng hợp</td><td>Theo khách / theo loại</td><td>Báo cáo tổng hợp</td></tr>
+    </tbody>
+  </table>
+  <h3>Các bước sử dụng</h3>
+  <ol class="guide-steps">
+    <li>Vào menu <strong>Tổng quan</strong>.</li>
+    <li>Chọn dự án ACTIVE cần xem (nếu có nhiều dự án).</li>
+    <li>Bấm card báo cáo cần tra cứu.</li>
+    <li>Trên trang báo cáo: lọc (nếu có) → xem bảng → <strong>Export XLSX</strong> khi cần lưu file.</li>
+  </ol>
+</section>

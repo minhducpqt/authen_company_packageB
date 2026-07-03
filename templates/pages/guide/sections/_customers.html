@@ -1,0 +1,93 @@
+<section id="menu-4-1">
+  <h2><i class="ri-team-line text-indigo-600"></i> 4.1 Danh sách khách</h2>
+  <div class="guide-meta">
+    <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: 4.1 Danh sách khách</span>
+    <span class="guide-badge">ADMIN · ACCOUNTANT · STAFF · VIEWER</span>
+  </div>
+
+  <h3>Mục đích</h3>
+  <p>Tra cứu và quản lý <strong>hồ sơ khách hàng</strong> đã đăng ký / giao dịch với công ty: thông tin cá nhân, liên hệ, tài khoản hoàn tiền.</p>
+
+  <h3>Trang danh sách</h3>
+  <h4>Cột hiển thị</h4>
+  <p>Họ tên, CCCD, Địa chỉ, SĐT, Email.</p>
+  <h4>Tìm kiếm</h4>
+  <ul>
+    <li>Họ tên (không dấu), CCCD, địa chỉ</li>
+    <li>Phân trang: 50 / 100 / 200</li>
+  </ul>
+  <h4>Thao tác</h4>
+  <ul>
+    <li><strong>Tìm</strong> — áp dụng bộ lọc</li>
+    <li><strong>Chi tiết</strong> — mở trang thông tin đầy đủ của khách</li>
+  </ul>
+
+  <h3>Trang chi tiết khách</h3>
+  <p>Xem và (nếu có quyền) sửa:</p>
+  <ul>
+    <li>Thông tin liên hệ: SĐT, email, địa chỉ</li>
+    <li><strong>Tài khoản hoàn tiền</strong> — bắt buộc trước khi hoàn cọc (5.5)</li>
+    <li>Lịch sử giao dịch liên quan (tùy UI)</li>
+  </ul>
+  <div class="guide-note">
+    CCCD là định danh chính (12 số). Khách thường tự đăng ký qua trang công khai; staff có thể hỗ trợ đăng ký qua luồng authed-customers trên backend.
+  </div>
+</section>
+
+<section id="menu-4-2">
+  <h2><i class="ri-file-shield-2-line text-indigo-600"></i> 4.2 Giấy tờ phải nộp</h2>
+  <div class="guide-meta">
+    <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: 4.2 Giấy tờ phải nộp</span>
+    <span class="guide-badge">ADMIN · ACCOUNTANT · STAFF · VIEWER</span>
+  </div>
+
+  <h3>Mục đích</h3>
+  <p>Kiểm tra từng khách trong từng dự án đã <strong>nộp đủ giấy tờ</strong> theo yêu cầu chưa — cơ sở xác định đủ điều kiện đặt cọc và tham dự đấu giá.</p>
+
+  <h3>Bộ lọc</h3>
+  <ul>
+    <li><strong>Dự án</strong> — bắt buộc chọn để xem danh sách</li>
+    <li><strong>Tìm</strong> tên / CCCD</li>
+    <li><strong>Trạng thái:</strong> ALL / COMPLETE (đủ) / MISSING (thiếu)</li>
+  </ul>
+
+  <h3>Trang chi tiết giấy tờ</h3>
+  <p>Click khách → xem từng loại giấy tờ: đã nộp / còn thiếu / danh sách lô đã đặt cọc.</p>
+
+  <h3>Cách dùng trong vận hành</h3>
+  <ol class="guide-steps">
+    <li>Chọn dự án ACTIVE.</li>
+    <li>Lọc <strong>MISSING</strong> — danh sách khách cần nhắc bổ sung.</li>
+    <li>Liên hệ khách nộp giấy tờ trên trang công khai hoặc qua quy trình nội bộ.</li>
+    <li>Sau khi đủ giấy tờ — khách mới đặt cọc được (2.2).</li>
+  </ol>
+</section>
+
+<section id="menu-4-3">
+  <h2><i class="ri-user-forbid-line text-indigo-600"></i> 4.3 DS cấm đấu giá</h2>
+  <div class="guide-meta">
+    <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: 4.3 DS cấm đấu giá</span>
+    <span class="guide-badge amber">COMPANY_ADMIN</span>
+  </div>
+
+  <h3>Mục đích</h3>
+  <p>Quản lý danh sách người <strong>bị cấm tham gia đấu giá</strong> theo quyết định hành chính hoặc quy định nội bộ. Hệ thống kiểm tra khi khách đăng ký / đặt cọc.</p>
+
+  <h3>Thông tin một bản ghi</h3>
+  <ul>
+    <li>Họ tên, CCCD (hoặc định danh)</li>
+    <li>Số quyết định, cơ quan ban hành</li>
+    <li>Thời hạn cấm, trạng thái active/inactive</li>
+    <li>Nguồn dữ liệu (source)</li>
+  </ul>
+
+  <h3>Bộ lọc</h3>
+  <p>Tìm kiếm (q), trạng thái, active_only, số quyết định, tên nguồn.</p>
+
+  <h3>Thao tác</h3>
+  <ol class="guide-steps">
+    <li>Thêm bản ghi mới khi có quyết định cấm.</li>
+    <li>Cập nhật / vô hiệu hóa khi hết thời hạn cấm.</li>
+    <li>Dùng chức năng <strong>check</strong> (nếu có trên UI) để tra CCCD trước phiên.</li>
+  </ol>
+</section>

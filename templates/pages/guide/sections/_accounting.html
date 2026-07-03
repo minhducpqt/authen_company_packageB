@@ -1,0 +1,137 @@
+<section id="menu-3-1">
+  <h2><i class="ri-bank-card-line text-indigo-600"></i> 3.1 Giao dịch ngân hàng</h2>
+  <div class="guide-meta">
+    <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: 3.1 Giao dịch ngân hàng</span>
+    <span class="guide-badge">COMPANY_ADMIN · ACCOUNTANT</span>
+  </div>
+
+  <h3>Mục đích</h3>
+  <p>Quản lý <strong>sao kê / giao dịch tiền vào</strong> tài khoản ngân hàng công ty và đối chiếu với đơn mua hồ sơ (DOS-) / đặt cọc (DEP-).</p>
+
+  <h3>Nguồn dữ liệu giao dịch</h3>
+  <ul>
+    <li>Đồng bộ tự động từ ngân hàng.</li>
+    <li>Ứng dụng điện thoại đọc tin nhắn SMS ngân hàng (nếu công ty dùng).</li>
+    <li><strong>Import file sao kê</strong> (Excel theo mẫu ngân hàng).</li>
+    <li>Nhập tay (quản trị / kế toán).</li>
+  </ul>
+
+  <h3>Bộ lọc trên trang</h3>
+  <table class="guide-table">
+    <thead><tr><th>Bộ lọc</th><th>Ý nghĩa</th></tr></thead>
+    <tbody>
+      <tr><td>Tài khoản</td><td>TK ngân hàng công ty cần xem</td></tr>
+      <tr><td>Từ ngày / Đến ngày</td><td>Khoảng thời gian giao dịch</td></tr>
+      <tr><td>Matched</td><td>ALL / MATCHED / UNMATCHED — đã khớp đơn hay chưa</td></tr>
+      <tr><td>No ref only</td><td>Chỉ giao dịch không parse được mã ref</td></tr>
+      <tr><td>Tìm kiếm</td><td>Free-text trong nội dung giao dịch</td></tr>
+      <tr><td>Trạng thái</td><td>NEW / MATCHED / IGNORED</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Trạng thái giao dịch</h3>
+  <table class="guide-table">
+    <thead><tr><th>Status</th><th>Ý nghĩa</th></tr></thead>
+    <tbody>
+      <tr><td>NEW</td><td>Mới — chưa khớp với đơn hàng</td></tr>
+      <tr><td>MATCHED</td><td>Đã khớp — đơn tương ứng chuyển PAID (hoặc cộng paid_vnd)</td></tr>
+      <tr><td>IGNORED</td><td>Đánh dấu bỏ qua (không phải thu hồ sơ/cọc)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Import sao kê</h3>
+  <p>Từ trang <strong>3.1 Giao dịch ngân hàng</strong>, chọn chức năng <strong>Import sao kê</strong>.</p>
+  <ol class="guide-steps">
+    <li>Chọn <strong>tài khoản ngân hàng</strong> tương ứng file sao kê.</li>
+    <li>Upload file (Woori XLS hoặc format được hỗ trợ).</li>
+    <li>Xem <strong>preview</strong> — kiểm tra số dòng, số tiền, ngày.</li>
+    <li>Xác nhận <strong>Apply</strong> để import hàng loạt.</li>
+    <li>Quay lại 3.1, lọc UNMATCHED để xử lý các dòng chưa khớp.</li>
+  </ol>
+
+  <h3>Quy trình đối soát hàng ngày</h3>
+  <ol class="guide-steps">
+    <li>Import sao kê hoặc chờ đồng bộ tự động.</li>
+    <li>Lọc <strong>UNMATCHED</strong> — xử lý dòng chưa khớp.</li>
+    <li>Đối chiếu với Pending tại 2.1 / 2.2 — kiểm tra khách chuyển thiếu/sai nội dung.</li>
+    <li>Sau khi MATCHED — xác nhận đơn chuyển PAID trên 2.1/2.2.</li>
+  </ol>
+  <div class="guide-note">
+    Mã tham chiếu trong nội dung chuyển khoản thường bắt đầu bằng <strong>DOS-</strong> (mua hồ sơ) hoặc <strong>DEP-</strong> (đặt cọc) — khách cần ghi đúng mã khi chuyển khoản thủ công.
+  </div>
+</section>
+
+<section id="menu-3-2">
+  <h2><i class="ri-file-paper-2-line text-indigo-600"></i> 3.2 Xuất hoá đơn</h2>
+  <div class="guide-meta">
+    <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: 3.2 Xuất hoá đơn</span>
+    <span class="guide-badge">ADMIN · ACCOUNTANT · STAFF</span>
+  </div>
+
+  <h3>Mục đích</h3>
+  <p>Xuất <strong>hóa đơn điện tử cho khách hàng</strong> (phí mua hồ sơ, phí đặt cọc) — tích hợp hệ thống hóa đơn (BKAV). <strong>Khác</strong> với Billing 3.3 (phí nền tảng).</p>
+
+  <h3>Giao diện</h3>
+  <ul>
+    <li>Chọn <strong>dự án</strong> cần xuất hóa đơn.</li>
+    <li>Danh sách <strong>log export</strong> — lịch sử các lần xuất.</li>
+    <li>Trạng thái từng log: thành công / lỗi / đang xử lý.</li>
+  </ul>
+
+  <h3>Các bước xuất hóa đơn</h3>
+  <ol class="guide-steps">
+    <li>Vào <strong>3.2 Xuất hoá đơn</strong>.</li>
+    <li>Chọn dự án ACTIVE đã có giao dịch PAID.</li>
+    <li>Bấm tạo <strong>export mới</strong> (theo kỳ / batch tùy cấu hình).</li>
+    <li>Chờ hệ thống xử lý → tải file log / kết quả.</li>
+    <li>Kiểm tra log lỗi — xử lý các dòng fail (thiếu MST khách, v.v.).</li>
+  </ol>
+  <div class="guide-note guide-ok">
+    Nên xuất sau khi giao dịch đã PAID và thông tin khách (MST nếu cần) đã đầy đủ tại 4.1.
+  </div>
+</section>
+
+<section id="menu-3-3">
+  <h2><i class="ri-bill-line text-indigo-600"></i> 3.3 Billing</h2>
+  <div class="guide-meta">
+    <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: 3.3 Billing</span>
+    <span class="guide-badge">ADMIN · ACCOUNTANT · STAFF (xem)</span>
+  </div>
+
+  <h3>Mục đích</h3>
+  <p>Theo dõi <strong>công nợ phí dịch vụ nền tảng</strong> — công ty trả cho VNTECHX theo hợp đồng (% doanh thu, phí min/max, phí cố định tháng).</p>
+
+  <h3>Thông tin hiển thị</h3>
+  <ul>
+    <li><strong>Trạng thái công ty:</strong> RUNNING hoặc LOCKED</li>
+    <li><strong>Công nợ hiện tại</strong>, hạn thanh toán gần nhất</li>
+    <li>Bảng <strong>Hóa đơn tháng</strong> gần đây</li>
+  </ul>
+
+  <h3>Trạng thái Billing</h3>
+  <table class="guide-table">
+    <thead><tr><th>Trạng thái</th><th>Ý nghĩa</th><th>Hậu quả</th></tr></thead>
+    <tbody>
+      <tr><td>RUNNING</td><td>Bình thường</td><td>Enable dự án được phép</td></tr>
+      <tr><td>LOCKED</td><td>Nợ phí / quá hạn</td><td><strong>Không Enable dự án mới</strong> (lỗi 423)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Các màn hình liên quan</h3>
+  <ul>
+    <li><strong>Danh sách hóa đơn tháng</strong> — xem tất cả hóa đơn billing</li>
+    <li><strong>Chi tiết hóa đơn</strong> — breakdown phí theo từng dự án</li>
+    <li><strong>Thanh toán hóa đơn</strong> — hướng dẫn và thông tin chuyển khoản phí</li>
+  </ul>
+
+  <h3>Các bước xử lý công nợ</h3>
+  <ol class="guide-steps">
+    <li>Vào 3.3 Billing — kiểm tra trạng thái và công nợ.</li>
+    <li>Mở hóa đơn tháng UNPAID / PARTIAL.</li>
+    <li>Thanh toán theo hướng dẫn → chờ cập nhật trạng thái PAID.</li>
+    <li>Sau khi RUNNING — có thể Enable dự án mới.</li>
+  </ol>
+  <div class="guide-note guide-warn">
+    Phí billing tính sau đấu giá dựa trên doanh thu hồ sơ + chênh lệch giá trúng đấu giá — không liên quan trực tiếp hóa đơn khách ở 3.2.
+  </div>
+</section>

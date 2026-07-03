@@ -1,0 +1,473 @@
+{% extends "base.html" %}
+{% block title %}Hướng dẫn sử dụng{% endblock %}
+
+{% block content %}
+<style>
+  .guide-shell {
+    display: flex;
+    gap: 0;
+    align-items: flex-start;
+    position: relative;
+  }
+
+  .guide-toc-wrap {
+    flex: 0 0 16.75rem;
+    position: sticky;
+    top: 4.5rem;
+    max-height: calc(100vh - 5.5rem);
+    display: flex;
+    align-items: stretch;
+    transition: flex-basis 0.22s ease, width 0.22s ease;
+    z-index: 5;
+  }
+
+  .guide-toc-panel {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    background: rgba(255, 255, 255, 0.97);
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem 0 0 1rem;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+    overflow: hidden;
+  }
+
+  .guide-toc-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+    background: linear-gradient(180deg, #f8fafc 0%, #fff 100%);
+  }
+
+  .guide-toc-head-title {
+    font-size: 0.67rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+    white-space: nowrap;
+  }
+
+  .guide-toc-toggle {
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    color: #64748b;
+    cursor: pointer;
+    transition: 0.15s ease;
+  }
+
+  .guide-toc-toggle:hover {
+    color: #4f46e5;
+    border-color: #c7d2fe;
+    background: #eef2ff;
+  }
+
+  .guide-toc {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 0.55rem 0.65rem 0.75rem;
+  }
+
+  .guide-toc-group {
+    margin-top: 0.45rem;
+  }
+
+  .guide-toc-group-label {
+    font-size: 0.62rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #94a3b8;
+    padding: 0.35rem 0.45rem 0.2rem;
+  }
+
+  .guide-toc a {
+    display: block;
+    padding: 0.38rem 0.5rem;
+    margin: 0.06rem 0;
+    border-radius: 0.6rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #475569;
+    text-decoration: none;
+    transition: 0.15s ease;
+    line-height: 1.35;
+  }
+
+  .guide-toc a:hover {
+    background: #f8fafc;
+    color: #1e293b;
+  }
+
+  .guide-toc a.is-active {
+    background: linear-gradient(135deg, #4f46e5 0%, #2563eb 100%);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(79, 70, 229, 0.2);
+  }
+
+  .guide-toc-rail {
+    flex: 0 0 2rem;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-left: none;
+    border-radius: 0 1rem 1rem 0;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+    cursor: pointer;
+    color: #64748b;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    user-select: none;
+  }
+
+  .guide-toc-rail:hover {
+    color: #4f46e5;
+    background: #eef2ff;
+  }
+
+  .guide-shell.toc-collapsed .guide-toc-wrap {
+    flex: 0 0 2rem;
+  }
+
+  .guide-shell.toc-collapsed .guide-toc-panel {
+    display: none;
+  }
+
+  .guide-shell.toc-collapsed .guide-toc-rail {
+    display: flex;
+  }
+
+  .guide-body {
+    flex: 1 1 auto;
+    min-width: 0;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-left: none;
+    border-radius: 0 1rem 1rem 0;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+    overflow: hidden;
+  }
+
+  .guide-shell.toc-collapsed .guide-body {
+    border-left: 1px solid #e2e8f0;
+    border-radius: 1rem;
+  }
+
+  .guide-hero {
+    padding: 1.35rem 1.75rem;
+    border-bottom: 1px solid #e2e8f0;
+    background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%);
+  }
+
+  .guide-content {
+    padding: 1.35rem 1.75rem 2.25rem;
+  }
+
+  .guide-content section {
+    scroll-margin-top: 5.5rem;
+    padding-bottom: 2rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .guide-content section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+
+  .guide-content h2 {
+    font-size: 1.22rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 0.65rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .guide-content h3 {
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 1.15rem 0 0.45rem;
+  }
+
+  .guide-content h4 {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #334155;
+    margin: 0.85rem 0 0.35rem;
+  }
+
+  .guide-content p, .guide-content li {
+    color: #475569;
+    font-size: 0.925rem;
+    line-height: 1.68;
+  }
+
+  .guide-content ul, .guide-content ol {
+    margin: 0.45rem 0 0.7rem 1.2rem;
+  }
+
+  .guide-content li { margin: 0.22rem 0; }
+
+  .guide-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin: 0.55rem 0 0.85rem;
+  }
+
+  .guide-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.22rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #475569;
+  }
+
+  .guide-badge.indigo { background: #eef2ff; border-color: #c7d2fe; color: #4338ca; }
+  .guide-badge.amber { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+
+  .guide-note {
+    margin: 0.7rem 0;
+    padding: 0.72rem 0.95rem;
+    border-radius: 0.75rem;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+    font-size: 0.86rem;
+  }
+
+  .guide-warn { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+  .guide-ok { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
+
+  .guide-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.84rem;
+    margin: 0.65rem 0 0.95rem;
+  }
+
+  .guide-table th, .guide-table td {
+    border: 1px solid #e2e8f0;
+    padding: 0.5rem 0.62rem;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .guide-table th { background: #f8fafc; font-weight: 700; color: #334155; }
+
+  .guide-steps {
+    counter-reset: gstep;
+    list-style: none;
+    margin-left: 0 !important;
+    padding-left: 0;
+  }
+
+  .guide-steps li {
+    counter-increment: gstep;
+    position: relative;
+    padding-left: 2rem;
+    margin: 0.55rem 0;
+  }
+
+  .guide-steps li::before {
+    content: counter(gstep);
+    position: absolute;
+    left: 0;
+    top: 0.1rem;
+    width: 1.35rem;
+    height: 1.35rem;
+    border-radius: 999px;
+    background: #4f46e5;
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 800;
+    display: grid;
+    place-items: center;
+  }
+
+  .guide-checklist li {
+    list-style: none;
+    position: relative;
+    padding-left: 1.45rem;
+  }
+
+  .guide-checklist li::before {
+    content: "☐";
+    position: absolute;
+    left: 0;
+    color: #6366f1;
+    font-weight: 700;
+  }
+
+  @media (max-width: 1024px) {
+    .guide-shell { flex-direction: column; }
+    .guide-toc-wrap {
+      position: static;
+      max-height: none;
+      width: 100%;
+      flex: none !important;
+    }
+    .guide-toc-panel { border-radius: 1rem; }
+    .guide-body { border: 1px solid #e2e8f0; border-radius: 1rem; margin-top: 0.75rem; }
+    .guide-toc-rail { display: none !important; }
+    .guide-shell.toc-collapsed .guide-toc-panel { display: flex; }
+  }
+</style>
+
+<div class="guide-shell" id="guideShell">
+
+  <div class="guide-toc-wrap">
+    <div class="guide-toc-panel" id="guideTocPanel">
+      <div class="guide-toc-head">
+        <span class="guide-toc-head-title">Mục lục</span>
+        <button type="button" class="guide-toc-toggle" id="guideTocCollapse" title="Thu gọn mục lục" aria-label="Thu gọn mục lục">
+          <i class="ri-arrow-left-s-line text-lg"></i>
+        </button>
+      </div>
+      <nav class="guide-toc" id="guideToc" aria-label="Mục lục hướng dẫn">
+        <div class="guide-toc-group">
+          <div class="guide-toc-group-label">Bắt đầu</div>
+          <a href="#gioi-thieu">Giới thiệu</a>
+          <a href="#vai-tro">Vai trò người dùng</a>
+          <a href="#checklist">Checklist mở dự án</a>
+        </div>
+        <div class="guide-toc-group">
+          <div class="guide-toc-group-label">Dashboard</div>
+          <a href="#tong-quan">Tổng quan (Báo cáo)</a>
+        </div>
+        <div class="guide-toc-group">
+          <div class="guide-toc-group-label">1. Dự án</div>
+          <a href="#menu-1-1">1.1 Quản lý dự án</a>
+          <a href="#menu-1-2">1.2 Cấu hình nhận tiền</a>
+          <a href="#menu-1-3">1.3 Quản lý thông báo</a>
+        </div>
+        <div class="guide-toc-group">
+          <div class="guide-toc-group-label">2. Giao dịch</div>
+          <a href="#menu-2-1">2.1 Mua hồ sơ</a>
+          <a href="#menu-2-2">2.2 Đặt cọc</a>
+          <a href="#menu-2-3">2.3 Tổng hợp</a>
+        </div>
+        <div class="guide-toc-group">
+          <div class="guide-toc-group-label">3. Kế toán</div>
+          <a href="#menu-3-1">3.1 Giao dịch ngân hàng</a>
+          <a href="#menu-3-2">3.2 Xuất hoá đơn</a>
+          <a href="#menu-3-3">3.3 Billing</a>
+        </div>
+        <div class="guide-toc-group">
+          <div class="guide-toc-group-label">4. Khách hàng</div>
+          <a href="#menu-4-1">4.1 Danh sách khách</a>
+          <a href="#menu-4-2">4.2 Giấy tờ phải nộp</a>
+          <a href="#menu-4-3">4.3 DS cấm đấu giá</a>
+        </div>
+        <div class="guide-toc-group">
+          <div class="guide-toc-group-label">5. Phiên đấu giá</div>
+          <a href="#menu-5-1">5.1 Danh sách điểm danh</a>
+          <a href="#menu-5-2">5.2 Phiếu trả giá</a>
+          <a href="#menu-5-3">5.3 Vận hành phiên</a>
+          <a href="#menu-5-4">5.4 Kết quả trúng</a>
+          <a href="#menu-5-5">5.5 Hoàn tiền đặt trước</a>
+        </div>
+        <div class="guide-toc-group">
+          <div class="guide-toc-group-label">6. Thiết lập</div>
+          <a href="#menu-6-1">6.1 Thông tin công ty</a>
+          <a href="#menu-6-2">6.2 Tài khoản ngân hàng</a>
+        </div>
+        <div class="guide-toc-group">
+          <div class="guide-toc-group-label">Khác</div>
+          <a href="#menu-tai-khoan">Tài khoản hệ thống</a>
+          <a href="#menu-billing-super">Billing (SUPER)</a>
+          <a href="#thuat-ngu">Thuật ngữ</a>
+          <a href="#faq">FAQ &amp; xử lý lỗi</a>
+        </div>
+      </nav>
+    </div>
+    <div class="guide-toc-rail" id="guideTocExpand" title="Mở mục lục" aria-label="Mở mục lục">
+      <span>Mục lục</span>
+    </div>
+  </div>
+
+  <article class="guide-body">
+    <header class="guide-hero">
+      <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+        <i class="ri-book-open-line text-indigo-600 text-3xl"></i>
+        Sổ tay hướng dẫn sử dụng
+      </h1>
+      <p class="text-slate-500 text-sm mt-1">
+        Tra cứu chi tiết từng mục menu portal. Bấm <strong>←</strong> trên mục lục để thu gọn, mở rộng vùng đọc nội dung.
+      </p>
+    </header>
+    <div class="guide-content">
+      {% include "pages/guide/sections/_intro.html" %}
+      {% include "pages/guide/sections/_projects.html" %}
+      {% include "pages/guide/sections/_transactions.html" %}
+      {% include "pages/guide/sections/_accounting.html" %}
+      {% include "pages/guide/sections/_customers.html" %}
+      {% include "pages/guide/sections/_auction.html" %}
+      {% include "pages/guide/sections/_settings_misc.html" %}
+    </div>
+  </article>
+</div>
+
+<script>
+(function () {
+  var shell = document.getElementById("guideShell");
+  var btnCollapse = document.getElementById("guideTocCollapse");
+  var btnExpand = document.getElementById("guideTocExpand");
+  var storageKey = "GUIDE_TOC_COLLAPSED";
+
+  function setCollapsed(on) {
+    if (!shell) return;
+    shell.classList.toggle("toc-collapsed", !!on);
+    try { localStorage.setItem(storageKey, on ? "1" : "0"); } catch (e) {}
+  }
+
+  try {
+    if (localStorage.getItem(storageKey) === "1") setCollapsed(true);
+  } catch (e) {}
+
+  if (btnCollapse) btnCollapse.addEventListener("click", function () { setCollapsed(true); });
+  if (btnExpand) btnExpand.addEventListener("click", function () { setCollapsed(false); });
+
+  var tocLinks = document.querySelectorAll("#guideToc a[href^='#']");
+  var sections = [];
+  tocLinks.forEach(function (a) {
+    var id = a.getAttribute("href").slice(1);
+    var el = document.getElementById(id);
+    if (el) sections.push({ link: a, el: el });
+  });
+
+  function setActive() {
+    var scrollY = window.scrollY + 90;
+    var current = sections[0];
+    sections.forEach(function (s) {
+      if (s.el.offsetTop <= scrollY) current = s;
+    });
+    tocLinks.forEach(function (a) { a.classList.remove("is-active"); });
+    if (current) current.link.classList.add("is-active");
+  }
+
+  window.addEventListener("scroll", setActive, { passive: true });
+  setActive();
+})();
+</script>
+{% endblock %}
