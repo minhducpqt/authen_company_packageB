@@ -5,7 +5,7 @@ from typing import Optional, List, Tuple, Any, Dict
 
 import httpx
 from fastapi import APIRouter, Request, Query, Path, Body
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
 from utils.templates import templates
 from utils.auth import get_access_token
@@ -400,6 +400,40 @@ async def billing_invoice_projects_data(
     if r.status_code != 200:
         return _map_error(r)
     return JSONResponse(r.json(), status_code=200)
+
+
+@router.get("/billing/invoices/{invoice_id}/export.xlsx")
+async def billing_invoice_export_xlsx(
+    request: Request,
+    invoice_id: int = Path(..., ge=1),
+    company_code: Optional[str] = Query(None),  # SUPER only
+):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    params: List[Tuple[str, str | int]] = []
+    if company_code:
+        params.append(("company_code", company_code))
+
+    url = f"{API_BASE_URL}/api/v1/billing/invoices/{invoice_id}/export.xlsx"
+    headers = {"Authorization": f"Bearer {token}"}
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        r = await client.get(url, headers=headers, params=params)
+
+    if r.status_code != 200:
+        return _map_error(r)
+
+    filename = f"billing_invoice_{invoice_id}.xlsx"
+    cd = r.headers.get("content-disposition") or ""
+    if "filename=" in cd:
+        filename = cd.split("filename=")[-1].strip().strip('"')
+
+    return Response(
+        content=r.content,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.get("/billing/payments/data", response_class=JSONResponse)

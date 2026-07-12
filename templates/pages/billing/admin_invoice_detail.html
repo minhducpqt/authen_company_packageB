@@ -15,6 +15,12 @@
         <i class="ri-arrow-left-line mr-1"></i> Quay lại công ty
       </a>
 
+      <a id="btnExport"
+         href="/billing/invoices/{{ invoice_id }}/export.xlsx?company_code={{ company_code }}"
+         class="px-3 py-2 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 text-sm">
+        <i class="ri-file-excel-2-line mr-1"></i> Export Excel
+      </a>
+
       <button id="btnRefresh"
               class="px-3 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 text-sm">
         <i class="ri-refresh-line mr-1"></i> Làm mới
@@ -72,10 +78,41 @@
     </div>
   </div>
 
+  <!-- FIXED FEE -->
+  <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+    <div class="px-4 py-3 border-b border-slate-100">
+      <div class="font-semibold text-slate-800">Phí duy trì hệ thống cố định hàng tháng</div>
+      <div class="text-xs text-slate-500 mt-0.5">Khoản phí hạ tầng / duy trì theo hợp đồng (không phụ thuộc dự án).</div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-50 text-slate-600">
+          <tr>
+            <th class="text-left px-4 py-2">Khoản mục</th>
+            <th class="text-right px-4 py-2">Chưa VAT</th>
+            <th class="text-right px-4 py-2">VAT</th>
+            <th class="text-right px-4 py-2">Tổng có VAT</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="bg-emerald-50/40">
+            <td class="px-4 py-3 font-medium text-slate-800">Phí duy trì hệ thống cố định</td>
+            <td id="fixedFee" class="px-4 py-3 text-right font-semibold">—</td>
+            <td id="fixedVat" class="px-4 py-3 text-right">—</td>
+            <td id="fixedWithVat" class="px-4 py-3 text-right font-semibold text-indigo-700">—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- PROJECTS -->
   <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
     <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-      <div class="font-semibold text-slate-800">Chi tiết theo dự án</div>
+      <div>
+        <div class="font-semibold text-slate-800">Chi tiết theo dự án</div>
+        <div class="text-xs text-slate-500 mt-0.5">Phí phát sinh theo từng dự án đấu giá trong tháng.</div>
+      </div>
       <div id="loading1" class="text-xs text-slate-500 hidden">
         <i class="ri-loader-2-line animate-spin mr-1"></i> Đang tải...
       </div>
@@ -319,6 +356,14 @@
       const out = Math.round(Number(inv?.amount_outstanding || 0));
       if (out <= 0) hint.textContent = 'Hóa đơn đã đủ/đã thanh toán.';
       else hint.textContent = 'Có thể tạo payment để giảm công nợ (PARTIAL/PAID tự cập nhật).';
+
+      const fixedFee = Number(inv?.monthly_fixed_fee || 0);
+      const vatRate = Number(inv?.vat_rate || 0);
+      const fixedVat = Math.round(fixedFee * vatRate);
+      const fixedWithVat = Math.round(fixedFee + fixedVat);
+      document.getElementById('fixedFee').textContent = money(fixedFee);
+      document.getElementById('fixedVat').textContent = money(fixedVat);
+      document.getElementById('fixedWithVat').textContent = money(fixedWithVat);
 
       // projects
       const projects = await fetchJSON(`/billing/invoices/${invoiceId}/projects/data?company_code=${encodeURIComponent(companyCode)}`);
