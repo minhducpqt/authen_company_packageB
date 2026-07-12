@@ -4,7 +4,7 @@
   <div class="flex items-center justify-between">
     <div>
       <h1 class="text-xl font-semibold text-slate-800">3.3 Billing — Thanh toán hóa đơn</h1>
-      <p class="text-sm text-slate-500">Quét QR hoặc chuyển khoản đúng số tiền và đúng nội dung để hệ thống đối soát tự động.</p>
+      <p class="text-sm text-slate-500">Quét QR hoặc chuyển khoản đúng số tiền. Nội dung CK bắt buộc giữ nguyên (bắt đầu bằng mã Fxxxxx).</p>
     </div>
     <div class="flex gap-2">
       <a href="/billing/invoices"
@@ -28,6 +28,26 @@
   </div>
 
   <div id="contentWrap" class="hidden space-y-5">
+    <!-- Mandatory content warning -->
+    <div class="rounded-xl border-2 border-rose-300 bg-rose-50 px-4 py-4">
+      <div class="flex items-start gap-3">
+        <div class="mt-0.5 text-rose-600 text-xl leading-none">
+          <i class="ri-error-warning-fill"></i>
+        </div>
+        <div class="space-y-1">
+          <div class="text-base font-semibold text-rose-800">
+            Bắt buộc: nội dung chuyển khoản phải bắt đầu bằng mã <span class="font-mono">Fxxxxx</span>
+          </div>
+          <div class="text-sm text-rose-700">
+            Hãy bấm <span class="font-semibold">Copy nội dung CK</span> và dán nguyên vào app ngân hàng.
+            <span class="font-semibold">Không sửa, không thêm, không xóa</span> bất kỳ ký tự nào
+            (đặc biệt không bỏ mã <span class="font-mono" id="payRefBanner">Fxxxxx</span> ở đầu).
+            Sai nội dung → hệ thống không đối soát tự động được.
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Summary -->
     <div class="bg-white border border-slate-200 rounded-xl p-5">
       <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -90,7 +110,7 @@
         </div>
 
         <div class="mt-4 text-xs text-slate-500 break-all">
-          QR đã chứa sẵn số tiền và nội dung chuyển khoản.
+          QR đã chứa sẵn số tiền và nội dung CK (có mã Fxxxxx ở đầu). Nếu app ngân hàng cho sửa nội dung, hãy giữ nguyên.
         </div>
       </div>
 
@@ -132,32 +152,37 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
-            <div class="text-sm text-slate-500">Nội dung chuyển khoản</div>
-            <div class="md:col-span-2">
-              <div class="flex flex-col md:flex-row gap-2 md:items-center">
-                <div id="transferContent"
-                     class="flex-1 text-sm font-semibold text-slate-800 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 break-all">
-                  —
+          <div class="rounded-xl border-2 border-rose-200 bg-rose-50/60 p-4 space-y-3">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <div class="text-sm font-semibold text-rose-800">Nội dung chuyển khoản (bắt buộc giữ nguyên)</div>
+                <div class="text-xs text-rose-700 mt-0.5">
+                  Phải bắt đầu bằng mã đối soát
+                  <span id="payRef" class="font-mono font-bold">—</span>
                 </div>
-                <button class="copy-btn px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm"
-                        data-copy-target="transferContentRaw">
-                  Copy
-                </button>
               </div>
-              <div class="mt-1 text-xs text-slate-500">
-                Mã đối soát: <span id="payRef" class="font-mono font-semibold text-slate-700">—</span>
-              </div>
+              <button class="copy-btn shrink-0 px-3 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700 text-sm font-medium"
+                      data-copy-target="transferContentRaw">
+                Copy nội dung CK
+              </button>
+            </div>
+            <div id="transferContent"
+                 class="text-sm font-semibold text-slate-900 rounded-xl border border-rose-200 bg-white px-3 py-3 break-all font-mono">
+              —
+            </div>
+            <div class="text-xs text-rose-700">
+              Copy → dán nguyên vào app ngân hàng. Không tự soạn lại nội dung.
             </div>
           </div>
         </div>
 
         <div class="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4">
           <div class="text-sm font-semibold text-amber-800">Lưu ý</div>
-          <ul class="mt-2 text-sm text-amber-700 space-y-1">
-            <li>• Vui lòng chuyển đúng số tiền còn nợ.</li>
-            <li>• Ghi đúng nội dung chuyển khoản (có mã đối soát) để hệ thống xác nhận tự động.</li>
-            <li>• Nếu hóa đơn đã được thanh toán trước đó, vui lòng kiểm tra lại trước khi chuyển khoản.</li>
+          <ul class="mt-2 text-sm text-amber-800 space-y-1">
+            <li>• <span class="font-semibold">Bắt buộc</span> nội dung CK bắt đầu bằng mã <span class="font-mono">Fxxxxx</span> đúng như hệ thống cung cấp.</li>
+            <li>• Hãy <span class="font-semibold">Copy nội dung CK</span> và giữ nguyên — không sửa / không đảo thứ tự.</li>
+            <li>• Chuyển đúng số tiền còn nợ để hóa đơn được xác nhận đủ.</li>
+            <li>• Nếu hóa đơn đã thanh toán trước đó, kiểm tra lại trước khi chuyển.</li>
           </ul>
         </div>
       </div>
@@ -270,6 +295,8 @@
       receiver.bank_name || receiver.short_name || "—";
     document.getElementById("transferContent").textContent = transferContent || "—";
     document.getElementById("payRef").textContent = payRef || "—";
+    const bannerRef = document.getElementById("payRefBanner");
+    if (bannerRef) bannerRef.textContent = payRef || "Fxxxxx";
     document.getElementById("qrImage").src = info?.qr_url || "";
 
     document.getElementById("loadingCard").classList.add("hidden");
