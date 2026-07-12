@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="space-y-5">
+
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-xl font-semibold text-slate-800">Billing (SUPER) — Giao dịch ngân hàng</h1>
+      <p class="text-sm text-slate-500">
+        Chỉ hiển thị giao dịch vào các STK cấu hình nhận phí phần mềm (active + inactive).
+      </p>
+    </div>
+    <button id="btnRefresh"
+            class="px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm">
+      <i class="ri-refresh-line mr-1"></i> Làm mới
+    </button>
+  </div>
+
+  <div class="bg-white border border-slate-200 rounded-xl p-4">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div>
+        <label class="text-xs text-slate-500">STK platform</label>
+        <select id="accountNumber"
+                class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm">
+          <option value="">Tất cả</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-xs text-slate-500">Từ ngày/giờ</label>
+        <input id="fromTime" type="datetime-local"
+               class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm" />
+      </div>
+      <div>
+        <label class="text-xs text-slate-500">Đến ngày/giờ</label>
+        <input id="toTime" type="datetime-local"
+               class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm" />
+      </div>
+      <div>
+        <label class="text-xs text-slate-500">Tìm (mô tả / mã / TK đối ứng)</label>
+        <input id="q" placeholder="VD: F00036"
+               class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm" />
+      </div>
+    </div>
+    <div class="mt-3 flex items-center gap-2">
+      <button id="btnSearch"
+              class="px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm hover:bg-slate-50">
+        <i class="ri-search-line mr-1"></i> Tìm
+      </button>
+      <button id="btnReset"
+              class="px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm hover:bg-slate-50">
+        Reset
+      </button>
+      <div id="loading" class="text-xs text-slate-500 hidden">
+        <i class="ri-loader-2-line animate-spin mr-1"></i> Đang tải...
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+    <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+      <div class="text-sm text-slate-600">Tổng: <span id="totalText">—</span></div>
+      <div class="text-sm text-slate-500">Page: <span id="pageText">1</span></div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="min-w-[1400px] text-sm">
+        <thead class="bg-slate-50 text-slate-600">
+          <tr>
+            <th class="text-left px-4 py-3 whitespace-nowrap">Thời gian</th>
+            <th class="text-left px-4 py-3 whitespace-nowrap">STK nhận</th>
+            <th class="text-left px-4 py-3 whitespace-nowrap">Platform</th>
+            <th class="text-right px-4 py-3 whitespace-nowrap">Số tiền</th>
+            <th class="text-left px-4 py-3 whitespace-nowrap">Nội dung</th>
+            <th class="text-left px-4 py-3 whitespace-nowrap">Mã ref</th>
+            <th class="text-left px-4 py-3 whitespace-nowrap">TK đối ứng</th>
+            <th class="text-left px-4 py-3 whitespace-nowrap">Inbox status</th>
+            <th class="text-left px-4 py-3 whitespace-nowrap">Billing</th>
+            <th class="text-left px-4 py-3 whitespace-nowrap">company_code</th>
+          </tr>
+        </thead>
+        <tbody id="tbody" class="divide-y divide-slate-100">
+          <tr>
+            <td colspan="10" class="px-4 py-6 text-center text-slate-500">Đang tải...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="px-4 py-3 border-t border-slate-100 flex items-center justify-between">
+      <div class="text-xs text-slate-500">Nguồn: bank_transactions_inbox ∩ platform_bank_accounts</div>
+      <div class="flex items-center gap-2">
+        <button id="btnPrev" class="px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm hover:bg-slate-50">Prev</button>
+        <button id="btnNext" class="px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm hover:bg-slate-50">Next</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  let page = 1;
+  const size = 50;
+
+  function pad2(n) { return String(n).padStart(2, "0"); }
+
+  function fmtDateTime(s) {
+    if (!s) return "—";
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return String(s);
+    return `${pad2(d.getDate())}-${pad2(d.getMonth()+1)}-${d.getFullYear()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+  }
+
+  function money(v) {
+    const n = Math.round(Number(v || 0));
+    return n.toLocaleString("vi-VN") + " đ";
+  }
+
+  function setLoading(on) {
+    document.getElementById("loading")?.classList.toggle("hidden", !on);
+  }
+
+  async function fetchJSON(url) {
+    const r = await fetch(url, { headers: { "Accept": "application/json" }});
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j?.error || j?.msg || "error");
+    return j;
+  }
+
+  function localInputToIso(v) {
+    if (!v) return "";
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return "";
+    return d.toISOString();
+  }
+
+  function statusBadge(status) {
+    const s = String(status || "").toUpperCase();
+    if (s === "MATCHED") return `<span class="px-2 py-1 rounded-full text-xs bg-emerald-50 text-emerald-700 border border-emerald-200">MATCHED</span>`;
+    if (s === "IGNORED") return `<span class="px-2 py-1 rounded-full text-xs bg-slate-50 text-slate-600 border border-slate-200">IGNORED</span>`;
+    return `<span class="px-2 py-1 rounded-full text-xs bg-amber-50 text-amber-700 border border-amber-200">${s || "NEW"}</span>`;
+  }
+
+  function billingCell(row) {
+    if (row.billing_payment_id) {
+      const flags = [];
+      if (row.is_overpay) flags.push("OVERPAY");
+      if (row.needs_review) flags.push("REVIEW");
+      const flagHtml = flags.length
+        ? ` <span class="text-amber-700 text-xs">(${flags.join(", ")})</span>`
+        : "";
+      return `
+        <div class="whitespace-nowrap">
+          <div class="font-medium text-emerald-700">${row.billing_payment_source || "AUTO"} #${row.billing_payment_id}</div>
+          <div class="text-xs text-slate-500">inv ${row.billing_invoice_id || "—"} · ${row.billing_company_code || "—"}</div>
+          ${flagHtml}
+        </div>
+      `;
+    }
+    return `<span class="text-slate-400 text-xs">Chưa khớp billing</span>`;
+  }
+
+  function platformBadge(active) {
+    if (active === true || active === "t" || active === "true") {
+      return `<span class="px-2 py-0.5 rounded-full text-[11px] bg-emerald-50 text-emerald-700 border border-emerald-200">active</span>`;
+    }
+    return `<span class="px-2 py-0.5 rounded-full text-[11px] bg-slate-50 text-slate-600 border border-slate-200">inactive</span>`;
+  }
+
+  async function loadAccounts() {
+    const res = await fetchJSON("/billing/admin/platform-bank-accounts/data");
+    const rows = res?.data || [];
+    const sel = document.getElementById("accountNumber");
+    const cur = sel.value;
+    sel.innerHTML = `<option value="">Tất cả</option>`;
+    for (const a of rows) {
+      const opt = document.createElement("option");
+      opt.value = a.account_number;
+      const state = a.is_active ? "active" : "inactive";
+      opt.textContent = `${a.account_number} · ${a.short_name || a.bank_code || ""} (${state})`;
+      sel.appendChild(opt);
+    }
+    if (cur) sel.value = cur;
+  }
+
+  async function load() {
+    setLoading(true);
+    try {
+      const qs = new URLSearchParams();
+      qs.set("page", String(page));
+      qs.set("size", String(size));
+      const q = document.getElementById("q").value.trim();
+      const acc = document.getElementById("accountNumber").value.trim();
+      const fromIso = localInputToIso(document.getElementById("fromTime").value);
+      const toIso = localInputToIso(document.getElementById("toTime").value);
+      if (q) qs.set("q", q);
+      if (acc) qs.set("account_number", acc);
+      if (fromIso) qs.set("from_time", fromIso);
+      if (toIso) qs.set("to_time", toIso);
+
+      const res = await fetchJSON("/billing/admin/platform-bank-transactions/data?" + qs.toString());
+      const rows = res?.data || [];
+      const total = Number(res?.total || 0);
+      document.getElementById("totalText").textContent = total;
+      document.getElementById("pageText").textContent = page;
+
+      const tbody = document.getElementById("tbody");
+      tbody.innerHTML = "";
+      if (!rows.length) {
+        tbody.innerHTML = `<tr><td colspan="10" class="px-4 py-6 text-center text-slate-500">Không có giao dịch.</td></tr>`;
+      } else {
+        for (const r of rows) {
+          tbody.insertAdjacentHTML("beforeend", `
+            <tr class="hover:bg-slate-50 align-top">
+              <td class="px-4 py-3 whitespace-nowrap">${fmtDateTime(r.txn_time)}</td>
+              <td class="px-4 py-3 whitespace-nowrap font-mono text-xs">${r.account_number || "—"}</td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <div class="text-xs text-slate-700">${r.platform_account_name || "—"}</div>
+                <div class="mt-1">${platformBadge(r.platform_account_active)}</div>
+              </td>
+              <td class="px-4 py-3 text-right whitespace-nowrap font-semibold">${money(r.amount)}</td>
+              <td class="px-4 py-3 max-w-[360px]">
+                <div class="text-xs text-slate-700 break-words">${r.description || "—"}</div>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap font-mono text-xs">${r.ref_extracted || "—"}</td>
+              <td class="px-4 py-3 whitespace-nowrap font-mono text-xs">${r.counter_account || "—"}</td>
+              <td class="px-4 py-3 whitespace-nowrap">${statusBadge(r.status)}</td>
+              <td class="px-4 py-3">${billingCell(r)}</td>
+              <td class="px-4 py-3 whitespace-nowrap text-xs">${r.company_code || "—"}</td>
+            </tr>
+          `);
+        }
+      }
+
+      document.getElementById("btnPrev").disabled = page <= 1;
+      document.getElementById("btnNext").disabled = page * size >= total;
+    } catch (e) {
+      console.error(e);
+      alert("Không tải được giao dịch ngân hàng platform.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  document.getElementById("btnSearch")?.addEventListener("click", () => { page = 1; load(); });
+  document.getElementById("btnReset")?.addEventListener("click", () => {
+    document.getElementById("q").value = "";
+    document.getElementById("accountNumber").value = "";
+    document.getElementById("fromTime").value = "";
+    document.getElementById("toTime").value = "";
+    page = 1;
+    load();
+  });
+  document.getElementById("btnRefresh")?.addEventListener("click", load);
+  document.getElementById("btnPrev")?.addEventListener("click", () => { if (page > 1) { page -= 1; load(); } });
+  document.getElementById("btnNext")?.addEventListener("click", () => { page += 1; load(); });
+
+  loadAccounts().then(load).catch((e) => {
+    console.error(e);
+    load();
+  });
+})();
+</script>
+{% endblock %}

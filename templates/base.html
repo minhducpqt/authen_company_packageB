@@ -521,9 +521,15 @@
         <li class="side-title mt-0">Billing (SUPER)</li>
 
         <li>
-          <a class="side-link {% if request.url.path.startswith('/billing/admin') %}active{% endif %}"
+          <a class="side-link {% if request.url.path.startswith('/billing/admin/companies') or request.url.path.startswith('/billing/admin/invoices') or request.url.path.startswith('/billing/admin/contracts') %}active{% endif %}"
              href="/billing/admin/companies">
             <i class="ri-building-4-line"></i> Quản lý Billing công ty
+          </a>
+        </li>
+        <li>
+          <a class="side-link {% if request.url.path.startswith('/billing/admin/bank-transactions') %}active{% endif %}"
+             href="/billing/admin/bank-transactions">
+            <i class="ri-bank-line"></i> Giao dịch ngân hàng
           </a>
         </li>
 

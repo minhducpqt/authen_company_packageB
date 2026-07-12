@@ -456,6 +456,74 @@ async def billing_admin_companies_page(
     )
 
 
+@router.get("/billing/admin/bank-transactions", response_class=HTMLResponse)
+async def billing_admin_bank_transactions_page(request: Request):
+    guard = _super_guard_page(request, "%2Fbilling%2Fadmin%2Fbank-transactions")
+    if guard:
+        return guard
+
+    return templates.TemplateResponse(
+        "pages/billing/admin_bank_transactions.html",
+        {
+            "request": request,
+            "title": "Billing — Giao dịch ngân hàng (SUPER)",
+        },
+    )
+
+
+@router.get("/billing/admin/platform-bank-accounts/data", response_class=JSONResponse)
+async def billing_admin_platform_bank_accounts_data(request: Request):
+    guard = _super_guard_json(request)
+    if guard:
+        return guard
+
+    token = get_access_token(request)
+    async with httpx.AsyncClient() as client:
+        r = await _api_get(client, "/api/v1/billing/admin/platform-bank-accounts", token)
+
+    if r.status_code != 200:
+        return _map_error(r)
+    return JSONResponse(r.json(), status_code=200)
+
+
+@router.get("/billing/admin/platform-bank-transactions/data", response_class=JSONResponse)
+async def billing_admin_platform_bank_transactions_data(
+    request: Request,
+    q: Optional[str] = Query(None),
+    account_number: Optional[str] = Query(None),
+    from_time: Optional[str] = Query(None),
+    to_time: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    size: int = Query(50, ge=1, le=200),
+):
+    guard = _super_guard_json(request)
+    if guard:
+        return guard
+
+    token = get_access_token(request)
+    params: List[Tuple[str, str | int]] = [("page", page), ("size", size)]
+    if q:
+        params.append(("q", q))
+    if account_number:
+        params.append(("account_number", account_number))
+    if from_time:
+        params.append(("from_time", from_time))
+    if to_time:
+        params.append(("to_time", to_time))
+
+    async with httpx.AsyncClient() as client:
+        r = await _api_get(
+            client,
+            "/api/v1/billing/admin/platform-bank-transactions",
+            token,
+            params,
+        )
+
+    if r.status_code != 200:
+        return _map_error(r)
+    return JSONResponse(r.json(), status_code=200)
+
+
 @router.get("/billing/admin/companies/data", response_class=JSONResponse)
 async def billing_admin_companies_data(
     request: Request,
