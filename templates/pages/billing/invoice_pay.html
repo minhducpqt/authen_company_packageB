@@ -4,7 +4,7 @@
   <div class="flex items-center justify-between">
     <div>
       <h1 class="text-xl font-semibold text-slate-800">3.3 Billing — Thanh toán hóa đơn</h1>
-      <p class="text-sm text-slate-500">Quét QR hoặc chuyển khoản đúng số tiền và đúng nội dung để hệ thống đối soát nhanh hơn.</p>
+      <p class="text-sm text-slate-500">Quét QR hoặc chuyển khoản đúng số tiền và đúng nội dung để hệ thống đối soát tự động.</p>
     </div>
     <div class="flex gap-2">
       <a href="/billing/invoices"
@@ -121,11 +121,6 @@
             <div id="bankName" class="md:col-span-2 text-sm font-medium text-slate-800">—</div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
-            <div class="text-sm text-slate-500">Chi nhánh</div>
-            <div id="branchName" class="md:col-span-2 text-sm font-medium text-slate-800">—</div>
-          </div>
-
           <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
             <div class="text-sm text-slate-500">Số tiền</div>
             <div id="amountInline" class="text-sm font-semibold text-slate-800">—</div>
@@ -150,6 +145,9 @@
                   Copy
                 </button>
               </div>
+              <div class="mt-1 text-xs text-slate-500">
+                Mã đối soát: <span id="payRef" class="font-mono font-semibold text-slate-700">—</span>
+              </div>
             </div>
           </div>
         </div>
@@ -158,7 +156,7 @@
           <div class="text-sm font-semibold text-amber-800">Lưu ý</div>
           <ul class="mt-2 text-sm text-amber-700 space-y-1">
             <li>• Vui lòng chuyển đúng số tiền còn nợ.</li>
-            <li>• Ghi đúng nội dung chuyển khoản để hệ thống đối soát nhanh hơn.</li>
+            <li>• Ghi đúng nội dung chuyển khoản (có mã đối soát) để hệ thống xác nhận tự động.</li>
             <li>• Nếu hóa đơn đã được thanh toán trước đó, vui lòng kiểm tra lại trước khi chuyển khoản.</li>
           </ul>
         </div>
@@ -169,16 +167,6 @@
 
 <script>
   const INVOICE_ID = {{ invoice_id|int }};
-
-  const RECEIVER = {
-    account_name: "CÔNG TY TNHH CÔNG NGHỆ VNTECHX",
-    account_number: "87328888",
-    branch_name: "Techcombank Hoàng Mai",
-    bank_name: "Ngân hàng Thương Mại cổ phần Kỹ Thương Việt Nam",
-    bank_code: "TCB",
-    bank_bin: "970407",
-    short_name: "Techcombank"
-  };
 
   let copyState = {
     accountNumberRaw: "",
@@ -211,11 +199,6 @@
     return n.toLocaleString("vi-VN") + " đ";
   }
 
-  function totalWithVat(row) {
-    const v = Number(row?.total_fee_with_vat || 0);
-    return v > 0 ? v : Number(row?.total_fee_month || 0);
-  }
-
   function vatRateLabel(rate) {
     const n = Number(rate || 0);
     if (!n) return "VAT";
@@ -229,31 +212,11 @@
     return `<span class="px-2 py-1 rounded-full text-xs bg-slate-50 text-slate-700 border border-slate-200">UNPAID</span>`;
   }
 
-  function monthTokenForContent(billingMonth) {
-    if (!billingMonth) return "";
-    const str = String(billingMonth);
-    const y = str.slice(0, 4);
-    const m = str.slice(5, 7);
-    const mNum = Number(m || 0);
-    if (!y || !mNum) return str;
-    return `T${mNum}-${y}`;
-  }
-
   async function fetchJSON(url) {
     const r = await fetch(url, { headers: { "Accept": "application/json" }});
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(j?.error || "error");
     return j;
-  }
-
-  function buildQrUrl(amount, transferContent) {
-    const base = `https://img.vietqr.io/image/${RECEIVER.bank_code}-${RECEIVER.account_number}-compact2.jpg`;
-    const qs = new URLSearchParams({
-      amount: String(Math.round(Number(amount || 0))),
-      addInfo: transferContent,
-      accountName: RECEIVER.account_name
-    });
-    return `${base}?${qs.toString()}`;
   }
 
   async function copyText(text) {
@@ -277,53 +240,37 @@
     });
   }
 
-  function resolveCompanyCode(row) {
-    return (
-      row?.company_code ||
-      row?.company?.company_code ||
-      row?.company?.code ||
-      row?.companyCode ||
-      "company"
-    );
-  }
+  function render(info) {
+    const receiver = info?.receiver || {};
+    const amount = Number(info?.amount || 0);
+    const monthLabel = fmtMonth(info?.billing_month);
+    const transferContent = info?.transfer_content || "";
+    const payRef = info?.pay_ref || "";
 
-  function resolveAmount(row) {
-    const outstanding = Number(row?.amount_outstanding || 0);
-    if (outstanding > 0) return outstanding;
-    return totalWithVat(row);
-  }
-
-  function render(row) {
-    const companyCode = resolveCompanyCode(row);
-    const amount = resolveAmount(row);
-    const monthLabel = fmtMonth(row?.billing_month);
-    const monthToken = monthTokenForContent(row?.billing_month);
-    const transferContent = `${companyCode} thanh toan ${monthToken}`.trim();
-    const qrUrl = buildQrUrl(amount, transferContent);
-
-    copyState.accountNumberRaw = RECEIVER.account_number;
+    copyState.accountNumberRaw = receiver.account_number || "";
     copyState.amountRaw = String(Math.round(amount));
     copyState.transferContentRaw = transferContent;
 
     document.getElementById("invoiceTitle").textContent = `Thanh toán hóa đơn tháng ${monthLabel}`;
-    document.getElementById("companyCode").textContent = companyCode;
-    document.getElementById("dueDate").textContent = fmtDateTime(row?.due_date);
-    document.getElementById("statusBadge").innerHTML = badge(row?.status);
+    document.getElementById("companyCode").textContent = info?.company_code || "—";
+    document.getElementById("dueDate").textContent = fmtDateTime(info?.due_date);
+    document.getElementById("statusBadge").innerHTML = badge(info?.status);
 
     document.getElementById("amountText").textContent = money(amount);
     document.getElementById("amountInline").textContent = money(amount);
 
-    document.getElementById("subtotalText").textContent = money(row?.total_fee_month);
-    document.getElementById("vatRateText").textContent = vatRateLabel(row?.vat_rate);
-    document.getElementById("vatAmountText").textContent = money(row?.vat_amount);
-    document.getElementById("totalWithVatText").textContent = money(totalWithVat(row));
+    document.getElementById("subtotalText").textContent = money(info?.total_fee_month);
+    document.getElementById("vatRateText").textContent = vatRateLabel(info?.vat_rate);
+    document.getElementById("vatAmountText").textContent = money(info?.vat_amount);
+    document.getElementById("totalWithVatText").textContent = money(info?.total_fee_with_vat);
 
-    document.getElementById("accountName").textContent = RECEIVER.account_name;
-    document.getElementById("accountNumber").textContent = RECEIVER.account_number;
-    document.getElementById("bankName").textContent = RECEIVER.bank_name;
-    document.getElementById("branchName").textContent = RECEIVER.branch_name;
-    document.getElementById("transferContent").textContent = transferContent;
-    document.getElementById("qrImage").src = qrUrl;
+    document.getElementById("accountName").textContent = receiver.account_name || "—";
+    document.getElementById("accountNumber").textContent = receiver.account_number || "—";
+    document.getElementById("bankName").textContent =
+      receiver.bank_name || receiver.short_name || "—";
+    document.getElementById("transferContent").textContent = transferContent || "—";
+    document.getElementById("payRef").textContent = payRef || "—";
+    document.getElementById("qrImage").src = info?.qr_url || "";
 
     document.getElementById("loadingCard").classList.add("hidden");
     document.getElementById("contentWrap").classList.remove("hidden");
@@ -331,8 +278,8 @@
 
   async function loadPage() {
     try {
-      const row = await fetchJSON(`/billing/invoices/${INVOICE_ID}/data`);
-      render(row);
+      const info = await fetchJSON(`/billing/invoices/${INVOICE_ID}/payment-info/data`);
+      render(info);
     } catch (e) {
       console.error(e);
       document.getElementById("loadingCard").classList.add("hidden");

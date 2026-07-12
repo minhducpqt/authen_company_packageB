@@ -353,6 +353,33 @@ async def billing_invoice_detail_data(
     return JSONResponse(r.json(), status_code=200)
 
 
+@router.get("/billing/invoices/{invoice_id}/payment-info/data", response_class=JSONResponse)
+async def billing_invoice_payment_info_data(
+    request: Request,
+    invoice_id: int = Path(..., ge=1),
+    company_code: Optional[str] = Query(None),  # SUPER only
+):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    params: List[Tuple[str, str | int]] = []
+    if company_code:
+        params.append(("company_code", company_code))
+
+    async with httpx.AsyncClient() as client:
+        r = await _api_get(
+            client,
+            f"/api/v1/billing/invoices/{invoice_id}/payment-info",
+            token,
+            params,
+        )
+
+    if r.status_code != 200:
+        return _map_error(r)
+    return JSONResponse(r.json(), status_code=200)
+
+
 @router.get("/billing/invoices/{invoice_id}/projects/data", response_class=JSONResponse)
 async def billing_invoice_projects_data(
     request: Request,
