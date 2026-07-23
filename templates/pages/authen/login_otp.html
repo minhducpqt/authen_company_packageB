@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-md mx-auto mt-16 bg-white rounded-xl shadow p-6">
+  <h1 class="text-2xl font-semibold mb-2">Xác thực OTP</h1>
+  <p class="text-sm text-slate-600 mb-4">
+    {{ purpose_label }} — Mã OTP đã gửi tới Telegram quản trị viên. Liên hệ quản trị viên để lấy mã.
+  </p>
+
+  {% if error %}
+  <div class="mb-4 p-3 rounded bg-red-50 text-red-700 text-sm">{{ error }}</div>
+  {% endif %}
+  {% if msg %}
+  <div class="mb-4 p-3 rounded bg-green-50 text-green-700 text-sm">{{ msg }}</div>
+  {% endif %}
+
+  <form method="post" action="/login/otp" class="space-y-4">
+    <input type="hidden" name="next" value="{{ next }}"/>
+    <input type="hidden" name="challenge_id" value="{{ challenge_id }}"/>
+
+    <div>
+      <label class="block text-sm mb-1">Mã OTP (6 số)</label>
+      <input name="otp_code" required pattern="[0-9]{4,8}" maxlength="8"
+             class="w-full border rounded px-3 py-2 text-center text-lg tracking-widest"
+             placeholder="000000" autocomplete="one-time-code"/>
+    </div>
+
+    <label class="flex items-center gap-2 text-sm">
+      <input type="checkbox" name="trust_device" value="1" checked class="rounded"/>
+      Tin cậy thiết bị này (lần sau không cần OTP)
+    </label>
+
+    <button class="w-full py-2 rounded bg-black text-white hover:opacity-90">Xác nhận</button>
+  </form>
+
+  <form method="post" action="/login/otp/resend" class="mt-4">
+    <input type="hidden" name="challenge_id" value="{{ challenge_id }}"/>
+    <input type="hidden" name="next" value="{{ next }}"/>
+    <input type="hidden" name="purpose_label" value="{{ purpose_label }}"/>
+    <button type="submit" class="w-full py-2 rounded border text-sm hover:bg-slate-50">Gửi lại mã OTP</button>
+  </form>
+
+  <p class="mt-4 text-center text-sm">
+    <a href="/login" class="text-indigo-600 hover:underline">Quay lại đăng nhập</a>
+  </p>
+</div>
+{% endblock %}

@@ -318,4 +318,6 @@ async def logout_all(request: Request):
     except Exception:
         pass
     resp = RedirectResponse(url="/login", status_code=303)
-    return _clear_auth_cookies(resp)
+    resp = _clear_auth_cookies(resp)
+    resp.delete_cookie(os.getenv("DEVICE_COOKIE_NAME", "device_id"), path="/")
+    return resp

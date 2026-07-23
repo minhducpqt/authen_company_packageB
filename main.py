@@ -14,6 +14,7 @@ from fastapi_account_manager.middlewares.auth_guard import auth_guard_middleware
 # Routers
 from fastapi_account_manager.routers.auth import router as auth_router
 from routers.account import router as account_router
+from routers.otp_admin import router as otp_admin_router
 from routers.projects import router as projects_router
 from routers.project_payment_accounts import router as ppa_router
 from routers.customers import router as customers_router
@@ -102,6 +103,7 @@ app.include_router(ppa_router)
 app.include_router(auth_router)
 app.include_router(dashboard_router)
 app.include_router(account_router)
+app.include_router(otp_admin_router)
 app.include_router(projects_router)
 
 # ✅ lots router (đặt gần projects để dễ quản lý)

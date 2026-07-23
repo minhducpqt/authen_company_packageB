@@ -1,0 +1,383 @@
+{% extends "base.html" %}
+{% block title %}Cấu hình OTP — {{ company_code|upper }}{% endblock %}
+{% block content %}
+<style>
+:root{
+  --b:#e2e8f0;--muted:#64748b;--txt:#0f172a;
+  --ok:#10b981;--warn:#f59e0b;--err:#ef4444;--info:#2563eb;--violet:#7c3aed
+}
+.page-wrap{max-width:1180px;margin:0 auto;padding-bottom:32px}
+.h1{font-size:24px;font-weight:800;color:var(--txt);margin:12px 0 4px;letter-spacing:-.02em}
+.sub{font-size:14px;color:var(--muted);line-height:1.5}
+.card{background:#fff;border:1px solid var(--b);border-radius:16px;padding:18px 20px;box-shadow:0 8px 28px rgba(15,23,42,.06);margin-bottom:16px}
+.card-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.card-tt{font-size:16px;font-weight:800;color:var(--txt);margin:0}
+.card-desc{font-size:13px;color:var(--muted);margin-top:4px;line-height:1.45}
+.badge{font-size:11px;font-weight:700;border-radius:999px;padding:3px 10px;display:inline-flex;align-items:center;gap:5px;letter-spacing:.02em;text-transform:uppercase}
+.badge.ok{background:rgba(16,185,129,.12);color:#047857;border:1px solid rgba(16,185,129,.28)}
+.badge.off{background:rgba(100,116,139,.1);color:#475569;border:1px solid rgba(100,116,139,.22)}
+.badge.info{background:rgba(37,99,235,.1);color:#1d4ed8;border:1px solid rgba(37,99,235,.22)}
+.badge.warn{background:rgba(245,158,11,.12);color:#b45309;border:1px solid rgba(245,158,11,.28)}
+.badge.err{background:rgba(239,68,68,.1);color:#b91c1c;border:1px solid rgba(239,68,68,.25)}
+.badge.violet{background:rgba(124,58,237,.1);color:#6d28d9;border:1px solid rgba(124,58,237,.22)}
+.alert{border-radius:12px;padding:12px 14px;font-size:14px;margin-bottom:14px;display:flex;align-items:flex-start;gap:10px}
+.alert.ok{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46}
+.alert.err{background:#fef2f2;border:1px solid #fecaca;color:#991b1b}
+.alert.info{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 14px;border-radius:10px;border:1px solid transparent;font-size:13px;font-weight:700;cursor:pointer;transition:opacity .15s}
+.btn:hover{opacity:.92}
+.btn-primary{background:#0f172a;color:#fff}
+.btn-secondary{background:#fff;color:#0f172a;border-color:var(--b)}
+.btn-danger{background:#fff;color:#b91c1c;border-color:#fecaca}
+.btn-sm{padding:6px 10px;font-size:12px;border-radius:8px}
+.btn-ghost{background:transparent;color:#475569;border:none;padding:6px 8px}
+.input,.select{width:100%;border:1px solid var(--b);border-radius:10px;padding:9px 11px;font-size:14px;background:#fff;color:var(--txt)}
+.input:focus,.select:focus{outline:2px solid rgba(37,99,235,.25);border-color:#93c5fd}
+.label{display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+.help{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.4}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#64748b;border-bottom:1px solid var(--b);padding:10px 8px;text-align:left;background:#f8fafc}
+.tbl td{border-bottom:1px solid #f1f5f9;padding:12px 8px;font-size:14px;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tbody tr:hover{background:#fafafa}
+.code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:2px 6px;color:#334155}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:900px){.grid-2,.grid-4{grid-template-columns:1fr}}
+.policy-card{border:1px solid var(--b);border-radius:14px;padding:16px;background:linear-gradient(180deg,#fff,#fafbff)}
+.policy-card + .policy-card{margin-top:12px}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 18px;background:linear-gradient(135deg,#f8fafc,#eef2ff);border:1px solid #dbeafe;border-radius:14px}
+.toggle-copy h4{margin:0;font-size:15px;font-weight:800;color:var(--txt)}
+.toggle-copy p{margin:4px 0 0;font-size:13px;color:var(--muted)}
+.switch{position:relative;width:48px;height:28px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;cursor:pointer;inset:0;background:#cbd5e1;border-radius:999px;transition:.2s}
+.slider:before{position:absolute;content:"";height:22px;width:22px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.switch input:checked + .slider{background:#2563eb}
+.switch input:checked + .slider:before{transform:translateX(20px)}
+.form-panel{border:1px dashed #cbd5e1;border-radius:14px;padding:16px;background:#fcfdff}
+.empty{padding:28px 16px;text-align:center;color:var(--muted);font-size:14px}
+.empty-icon{font-size:28px;margin-bottom:8px;opacity:.55}
+.section-tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#475569;background:#f1f5f9;border-radius:8px;padding:4px 8px;margin-bottom:10px}
+.pill-web{background:#ede9fe;color:#5b21b6;border:1px solid #ddd6fe;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+.sms-disabled{opacity:.72;position:relative}
+.sms-disabled .overlay-note{font-size:12px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;margin-bottom:12px}
+.actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+.stat-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.stat-chip{font-size:12px;background:#f8fafc;border:1px solid var(--b);border-radius:999px;padding:4px 10px;color:#475569}
+</style>
+
+{% set msg_map = {
+  'settings_saved': 'Đã lưu cấu hình master OTP.',
+  'policy_saved': 'Đã lưu nghiệp vụ OTP.',
+  'recipient_added': 'Đã thêm người nhận OTP.',
+  'recipient_deleted': 'Đã xóa người nhận.',
+  'test_sent': 'Đã gửi tin test Telegram.'
+} %}
+{% set err_map = {
+  'settings_failed': 'Không lưu được cấu hình master.',
+  'policy_failed': 'Không lưu được nghiệp vụ OTP.',
+  'recipient_failed': 'Không thêm được người nhận.',
+  'recipient_delete_failed': 'Không xóa được người nhận.',
+  'test_failed': 'Gửi test Telegram thất bại.'
+} %}
+
+<div class="page-wrap">
+  <a href="/account/company/{{ company_code }}" class="text-sm text-indigo-600 hover:text-indigo-700 font-medium">&larr; Quay lại chi tiết công ty</a>
+
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:8px">
+    <div>
+      <h1 class="h1">Cấu hình OTP — <span style="color:#2563eb">{{ company_code|upper }}</span></h1>
+      <p class="sub">Quản lý xác thực OTP cho đăng nhập web và nghiệp vụ nhạy cảm. <span class="pill-web">Chỉ WEB</span> — Mobile app không đổi.</p>
+    </div>
+    <div>
+      {% if settings.otp_enabled %}
+        <span class="badge ok">● OTP đang bật</span>
+      {% else %}
+        <span class="badge off">○ OTP đang tắt</span>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if load_err %}
+  <div class="alert err"><span>⚠</span><span>{{ load_err }}</span></div>
+  {% endif %}
+  {% if msg %}
+  <div class="alert ok"><span>✓</span><span>{{ msg_map.get(msg, 'Đã lưu thay đổi.') }}</span></div>
+  {% endif %}
+  {% if err %}
+  <div class="alert err"><span>✕</span><span>{{ err_map.get(err, 'Thao tác thất bại. Vui lòng thử lại.') }}</span></div>
+  {% endif %}
+
+  <!-- Master -->
+  <div class="card">
+    <div class="card-hd">
+      <div>
+        <h2 class="card-tt">Master switch</h2>
+        <p class="card-desc">Bật/tắt toàn bộ module OTP cho công ty này. Khi tắt, nhân viên login web không qua OTP (trừ SUPER_ADMIN theo rule hệ thống).</p>
+      </div>
+    </div>
+    <form method="post" action="/account/company/{{ company_code }}/otp/settings">
+      <div class="toggle-row">
+        <div class="toggle-copy">
+          <h4>Bật OTP cho {{ company_code|upper }}</h4>
+          <p>Sau khi bật, cần cấu hình Telegram và bật từng nghiệp vụ bên dưới.</p>
+        </div>
+        <label class="switch" title="Bật OTP">
+          <input type="checkbox" name="otp_enabled" value="1" {% if settings.otp_enabled %}checked{% endif %} onchange="this.form.submit()"/>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="stat-row">
+        <span class="stat-chip">Phạm vi: {{ settings.apply_to or 'WEB' }}</span>
+        <span class="stat-chip">Telegram: {{ telegram_recipients|selectattr('is_active')|list|length }} recipient</span>
+        <span class="stat-chip">Nghiệp vụ bật: {{ policies|selectattr('enabled')|list|length }}/{{ policies|length }}</span>
+      </div>
+    </form>
+  </div>
+
+  <!-- Policies -->
+  <div class="card">
+    <div class="card-hd">
+      <div>
+        <span class="section-tag">📋 Nghiệp vụ</span>
+        <h2 class="card-tt">Chính sách OTP theo hành động</h2>
+        <p class="card-desc">Mỗi nghiệp vụ có TTL, số lần nhập sai và gửi lại riêng. OTP gửi qua Telegram tới danh sách recipient khớp <code class="code">purpose</code>.</p>
+      </div>
+    </div>
+
+    {% for p in policies %}
+    <div class="policy-card">
+      <form method="post" action="/account/company/{{ company_code }}/otp/policies/{{ p.purpose }}">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+          <div>
+            <div style="font-weight:800;font-size:15px;color:var(--txt)">{{ p.purpose_label or p.purpose }}</div>
+            <div class="help"><code class="code">{{ p.purpose }}</code></div>
+          </div>
+          <div>
+            {% if p.enabled %}
+              <span class="badge ok">Đang bật</span>
+            {% else %}
+              <span class="badge off">Đang tắt</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="grid-4" style="margin-bottom:12px">
+          <label>
+            <span class="label">Bật nghiệp vụ</span>
+            <select name="enabled" class="select">
+              <option value="0" {% if not p.enabled %}selected{% endif %}>Tắt</option>
+              <option value="1" {% if p.enabled %}selected{% endif %}>Bật</option>
+            </select>
+          </label>
+          <label>
+            <span class="label">Thời hạn OTP (giây)</span>
+            <input type="number" name="ttl_sec" value="{{ p.ttl_sec or 300 }}" class="input" min="60" max="3600"/>
+            <div class="help">Mặc định 300 = 5 phút</div>
+          </label>
+          <label>
+            <span class="label">Sai tối đa</span>
+            <input type="number" name="max_attempts" value="{{ p.max_attempts or 5 }}" class="input" min="1" max="20"/>
+          </label>
+          <label>
+            <span class="label">Gửi lại tối đa</span>
+            <input type="number" name="max_resend" value="{{ p.max_resend or 3 }}" class="input" min="0" max="10"/>
+          </label>
+        </div>
+        <div style="display:flex;justify-content:flex-end">
+          <button type="submit" class="btn btn-primary btn-sm">Lưu nghiệp vụ</button>
+        </div>
+      </form>
+    </div>
+    {% else %}
+    <div class="empty"><div class="empty-icon">📭</div>Chưa có nghiệp vụ OTP.</div>
+    {% endfor %}
+  </div>
+
+  <!-- Telegram -->
+  <div class="card">
+    <div class="card-hd">
+      <div>
+        <span class="section-tag">✈️ Telegram</span>
+        <h2 class="card-tt">Người nhận OTP qua Telegram</h2>
+        <p class="card-desc">Bot token lấy từ cấu hình <code class="code">telebot/</code> hiện tại. Chat ID user dương hoặc group <code class="code">-100...</code>.</p>
+      </div>
+    </div>
+
+    <div class="form-panel" style="margin-bottom:16px">
+      <form method="post" action="/account/company/{{ company_code }}/otp/recipients">
+        <input type="hidden" name="channel" value="TELEGRAM"/>
+        <div class="grid-2" style="margin-bottom:10px">
+          <label>
+            <span class="label">Nhãn hiển thị</span>
+            <input name="target_label" placeholder="VD: Chủ DN, Nhóm admin" class="input"/>
+          </label>
+          <label>
+            <span class="label">Telegram Chat ID *</span>
+            <input name="target" placeholder="505550041 hoặc -1001234567890" class="input" required/>
+          </label>
+        </div>
+        <input type="hidden" name="purposes" value="*"/>
+        <div class="grid-2">
+          <label>
+            <span class="label">Ưu tiên</span>
+            <input name="priority" type="number" value="1" class="input" min="1"/>
+            <div class="help">Recipient Telegram luôn nhận OTP cho <strong>tất cả nghiệp vụ</strong>.</div>
+          </label>
+        </div>
+        <div style="margin-top:14px;display:flex;justify-content:flex-end">
+          <button type="submit" class="btn btn-primary">+ Thêm Telegram</button>
+        </div>
+      </form>
+    </div>
+
+    {% set active_tg = telegram_recipients|selectattr('is_active')|list %}
+    {% if active_tg %}
+    <div style="overflow-x:auto">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Nhãn</th>
+            <th>Chat ID</th>
+            <th>Ưu tiên</th>
+            <th style="text-align:right">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for r in active_tg %}
+          <tr>
+            <td><strong>{{ r.target_label or '—' }}</strong></td>
+            <td><code class="code">{{ r.target }}</code></td>
+            <td>{{ r.priority or 1 }}</td>
+            <td>
+              <div class="actions">
+                <form method="post" action="/account/company/{{ company_code }}/otp/recipients/{{ r.id }}/test">
+                  <button type="submit" class="btn btn-secondary btn-sm">Gửi test</button>
+                </form>
+                <form method="post" action="/account/company/{{ company_code }}/otp/recipients/{{ r.id }}/delete" onsubmit="return confirm('Xóa recipient này?')">
+                  <button type="submit" class="btn btn-danger btn-sm">Xóa</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty"><div class="empty-icon">💬</div>Chưa có Telegram recipient. Thêm ít nhất 1 chat ID để gửi OTP.</div>
+    {% endif %}
+  </div>
+
+  <!-- SMS -->
+  <div class="card sms-disabled">
+    <div class="overlay-note">📱 SMS — Phase 2: có thể lưu SĐT trước, hệ thống chưa gửi SMS thật.</div>
+    <div class="card-hd">
+      <div>
+        <span class="section-tag">📱 SMS</span>
+        <h2 class="card-tt">Người nhận OTP qua SMS</h2>
+        <p class="card-desc">Lưu trước danh sách SĐT. Khi bật SMS adapter, OTP sẽ gửi tự động theo config.</p>
+      </div>
+      <span class="badge warn">Sắp có</span>
+    </div>
+
+    <div class="form-panel" style="margin-bottom:12px">
+      <form method="post" action="/account/company/{{ company_code }}/otp/recipients">
+        <input type="hidden" name="channel" value="SMS"/>
+        <div class="grid-2">
+          <label>
+            <span class="label">Nhãn</span>
+            <input name="target_label" placeholder="KT trưởng" class="input"/>
+          </label>
+          <label>
+            <span class="label">Số điện thoại</span>
+            <input name="target" placeholder="84901234567" class="input"/>
+          </label>
+        </div>
+        <input type="hidden" name="purposes" value="*"/>
+        <input type="hidden" name="priority" value="1"/>
+        <div style="margin-top:12px;text-align:right">
+          <button type="submit" class="btn btn-secondary btn-sm">Lưu SĐT (chưa gửi)</button>
+        </div>
+      </form>
+    </div>
+
+    {% set active_sms = sms_recipients|selectattr('is_active')|list %}
+    {% if active_sms %}
+    <table class="tbl">
+      <thead><tr><th>Nhãn</th><th>SĐT</th><th></th></tr></thead>
+      <tbody>
+      {% for r in active_sms %}
+        <tr>
+          <td>{{ r.target_label or '—' }}</td>
+          <td><code class="code">{{ r.target }}</code></td>
+          <td style="text-align:right">
+            <form method="post" action="/account/company/{{ company_code }}/otp/recipients/{{ r.id }}/delete" class="inline">
+              <button type="submit" class="btn btn-danger btn-sm">Xóa</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+
+  <!-- History -->
+  <div class="card">
+    <div class="card-hd">
+      <div>
+        <span class="section-tag">🕘 Audit</span>
+        <h2 class="card-tt">Lịch sử OTP gần đây</h2>
+        <p class="card-desc">30 lần phát sinh OTP mới nhất (không hiển thị mã OTP).</p>
+      </div>
+    </div>
+
+    {% if challenges %}
+    <div style="overflow-x:auto">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Thời gian</th>
+            <th>Tài khoản</th>
+            <th>Nghiệp vụ</th>
+            <th>Trạng thái</th>
+            <th>Gửi Telegram</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for c in challenges %}
+          <tr>
+            <td style="white-space:nowrap">{{ c.created_at }}</td>
+            <td><strong>{{ c.requester_username or '—' }}</strong></td>
+            <td><code class="code">{{ c.purpose }}</code></td>
+            <td>
+              {% if c.status == 'VERIFIED' %}
+                <span class="badge ok">{{ c.status }}</span>
+              {% elif c.status in ['EXPIRED','CANCELLED','LOCKED'] %}
+                <span class="badge warn">{{ c.status }}</span>
+              {% else %}
+                <span class="badge info">{{ c.status }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if c.delivery_status == 'SENT' %}
+                <span class="badge ok">{{ c.delivery_status }}</span>
+              {% elif c.delivery_status == 'FAILED' %}
+                <span class="badge err">{{ c.delivery_status }}</span>
+              {% else %}
+                <span class="badge off">{{ c.delivery_status }}</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty"><div class="empty-icon">📋</div>Chưa có lịch sử OTP cho công ty này.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

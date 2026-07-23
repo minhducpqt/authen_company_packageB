@@ -12,6 +12,7 @@ SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 ACCESS_COOKIE_NAME = os.getenv("ACCESS_COOKIE_NAME", "access_token")
 REFRESH_COOKIE_NAME = os.getenv("REFRESH_COOKIE_NAME", "refresh_token")
 ROLE_COOKIE_NAME = os.getenv("ROLE_COOKIE_NAME", "user_role")
+DEVICE_COOKIE_NAME = os.getenv("DEVICE_COOKIE_NAME", "device_id")
 
 COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
 COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "Lax")
@@ -74,58 +75,7 @@ def _first_menu_for_non_admin(role: str | None) -> str:
     return "/transactions/dossiers"
 
 
-@router.get("/login", response_class=HTMLResponse)
-async def login_form(request: Request, next: str | None = "/"):
-    return templates.TemplateResponse(
-        "pages/authen/login.html",
-        {"request": request, "next": next or "/"}
-    )
-
-
-@router.post("/login")
-async def login_submit(
-    request: Request,
-    username: str = Form(...),
-    password: str = Form(...),
-    next: str = Form("/")
-):
-    # 1) Gọi Service A /auth/login
-    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=8.0) as client:
-        r = await client.post("/auth/login", json={"username": username, "password": password})
-
-    if r.status_code != 200:
-        return templates.TemplateResponse(
-            "pages/authen/login.html",
-            {"request": request, "next": next or "/", "error": "Sai tài khoản hoặc mật khẩu"},
-            status_code=401
-        )
-
-    # 2) Lấy token
-    data = r.json() if r.headers.get("content-type", "").startswith("application/json") else {}
-    access = data.get("access_token")
-    refresh = data.get("refresh_token")
-
-    # 3) Safe next (logic cũ)
-    safe_next = _safe_next(next or "/")
-
-    # 4) Best-effort fetch role
-    role = None
-    try:
-        role = await _best_effort_fetch_role(access)
-    except Exception:
-        role = None
-
-    role_u = (role or "").upper().strip()
-
-    # ✅ RULE MỚI:
-    # - Nếu COMPANY_ADMIN: GIỮ redirect như cũ (tôn trọng next)
-    # - Nếu KHÔNG phải admin: ÉP về menu item đầu tiên của role (bỏ qua next)
-    if role_u != "COMPANY_ADMIN":
-        safe_next = _first_menu_for_non_admin(role_u)
-
-    # 5) RedirectResponse + set cookies
-    resp = RedirectResponse(url=safe_next, status_code=303)
-
+def _set_auth_cookies(resp: RedirectResponse, access: str | None, refresh: str | None, role: str | None):
     if access:
         resp.set_cookie(
             key=ACCESS_COOKIE_NAME, value=access, httponly=True,
@@ -136,16 +86,211 @@ async def login_submit(
             key=REFRESH_COOKIE_NAME, value=refresh, httponly=True,
             secure=COOKIE_SECURE, samesite=COOKIE_SAMESITE, path="/"
         )
-
-    # role cookie: xoá trước để tránh dính role cũ
     resp.delete_cookie(ROLE_COOKIE_NAME, path="/")
-    if role_u:
+    if role:
         resp.set_cookie(
-            key=ROLE_COOKIE_NAME, value=role_u, httponly=True,
+            key=ROLE_COOKIE_NAME, value=role, httponly=True,
             secure=COOKIE_SECURE, samesite=COOKIE_SAMESITE, path="/"
         )
 
+
+def _set_device_cookie(resp, device_id: str | None):
+    if device_id:
+        resp.set_cookie(
+            key=DEVICE_COOKIE_NAME,
+            value=device_id,
+            httponly=True,
+            secure=COOKIE_SECURE,
+            samesite=COOKIE_SAMESITE,
+            max_age=365 * 24 * 3600,
+            path="/",
+        )
+
+
+def _forward_cookies(request: Request) -> dict:
+    did = request.cookies.get(DEVICE_COOKIE_NAME)
+    return {DEVICE_COOKIE_NAME: did} if did else {}
+
+
+async def _finalize_login(request: Request, data: dict, safe_next: str):
+    access = data.get("access_token")
+    refresh = data.get("refresh_token")
+    role = None
+    try:
+        role = await _best_effort_fetch_role(access)
+    except Exception:
+        role = None
+    role_u = (role or data.get("role") or "").upper().strip()
+    if role_u != "COMPANY_ADMIN":
+        safe_next = _first_menu_for_non_admin(role_u)
+    resp = RedirectResponse(url=safe_next, status_code=303)
+    _set_auth_cookies(resp, access, refresh, role_u)
+    _set_device_cookie(resp, data.get("device_id"))
     return resp
+
+
+@router.get("/login", response_class=HTMLResponse)
+async def login_form(request: Request, next: str | None = "/"):
+    return templates.TemplateResponse(
+        "pages/authen/login.html",
+        {"request": request, "next": next or "/"}
+    )
+
+
+@router.get("/login/otp", response_class=HTMLResponse)
+async def login_otp_form(
+    request: Request,
+    challenge_id: str,
+    next: str | None = "/",
+    purpose_label: str | None = None,
+):
+    return templates.TemplateResponse(
+        "pages/authen/login_otp.html",
+        {
+            "request": request,
+            "challenge_id": challenge_id,
+            "next": next or "/",
+            "purpose_label": purpose_label or "Xác thực OTP",
+        },
+    )
+
+
+@router.post("/login")
+async def login_submit(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+    next: str = Form("/")
+):
+    safe_next = _safe_next(next or "/")
+    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
+        r = await client.post(
+            "/auth/web/login",
+            json={"username": username, "password": password},
+            cookies=_forward_cookies(request),
+        )
+
+    if r.status_code == 401:
+        return templates.TemplateResponse(
+            "pages/authen/login.html",
+            {"request": request, "next": safe_next, "error": "Sai tài khoản hoặc mật khẩu"},
+            status_code=401,
+        )
+    if r.status_code >= 400:
+        detail = "Đăng nhập thất bại"
+        try:
+            body = r.json()
+            if isinstance(body, dict):
+                detail = body.get("detail") if isinstance(body.get("detail"), str) else detail
+        except Exception:
+            pass
+        return templates.TemplateResponse(
+            "pages/authen/login.html",
+            {"request": request, "next": safe_next, "error": detail},
+            status_code=r.status_code,
+        )
+
+    data = r.json() if r.headers.get("content-type", "").startswith("application/json") else {}
+
+    if data.get("otp_required"):
+        from urllib.parse import urlencode
+        q = urlencode({
+            "challenge_id": data.get("challenge_id"),
+            "next": safe_next,
+            "purpose_label": data.get("purpose_label") or "",
+        })
+        return RedirectResponse(url=f"/login/otp?{q}", status_code=303)
+
+    return await _finalize_login(request, data, safe_next)
+
+
+@router.post("/login/otp")
+async def login_otp_submit(
+    request: Request,
+    challenge_id: str = Form(...),
+    otp_code: str = Form(...),
+    next: str = Form("/"),
+    trust_device: str | None = Form(None),
+):
+    safe_next = _safe_next(next or "/")
+    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
+        r = await client.post(
+            "/auth/web/otp/verify",
+            json={
+                "challenge_id": challenge_id,
+                "otp_code": otp_code.strip(),
+                "trust_device": trust_device == "1",
+            },
+            cookies=_forward_cookies(request),
+        )
+
+    if r.status_code >= 400:
+        err = "Mã OTP không đúng hoặc đã hết hạn"
+        try:
+            body = r.json()
+            d = body.get("detail")
+            if isinstance(d, dict):
+                code = d.get("error")
+                if code == "EXPIRED":
+                    err = "Mã OTP đã hết hạn. Vui lòng đăng nhập lại."
+                elif code == "INVALID_OTP":
+                    left = d.get("attempts_left")
+                    err = "Mã OTP không đúng" + (f" (còn {left} lần)" if left is not None else "")
+                elif code in ("CHALLENGE_NOT_FOUND", "CANCELLED"):
+                    err = "Phiên OTP không còn hiệu lực. Vui lòng đăng nhập lại."
+                elif code == "LOCKED":
+                    err = "Đã nhập sai quá số lần cho phép. Vui lòng đăng nhập lại."
+        except Exception:
+            pass
+        return templates.TemplateResponse(
+            "pages/authen/login_otp.html",
+            {
+                "request": request,
+                "challenge_id": challenge_id,
+                "next": safe_next,
+                "purpose_label": "Xác thực OTP",
+                "error": err,
+            },
+            status_code=400,
+        )
+
+    data = r.json()
+    return await _finalize_login(request, data, safe_next)
+
+
+@router.post("/login/otp/resend")
+async def login_otp_resend(
+    request: Request,
+    challenge_id: str = Form(...),
+    next: str = Form("/"),
+    purpose_label: str = Form("Xác thực OTP"),
+):
+    safe_next = _safe_next(next or "/")
+    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
+        r = await client.post(
+            "/auth/web/otp/resend",
+            json={"challenge_id": challenge_id},
+        )
+    msg = None
+    err = None
+    new_challenge_id = challenge_id
+    if r.status_code == 200:
+        body = r.json()
+        new_challenge_id = body.get("challenge_id") or challenge_id
+        msg = "Đã gửi lại mã OTP qua Telegram."
+    else:
+        err = "Không thể gửi lại OTP. Thử đăng nhập lại."
+    return templates.TemplateResponse(
+        "pages/authen/login_otp.html",
+        {
+            "request": request,
+            "challenge_id": new_challenge_id,
+            "next": safe_next,
+            "purpose_label": purpose_label,
+            "msg": msg,
+            "error": err,
+        },
+    )
 
 
 @router.get("/logout")
@@ -155,7 +300,6 @@ async def logout(request: Request):
     resp.delete_cookie(REFRESH_COOKIE_NAME, path="/")
     resp.delete_cookie(ROLE_COOKIE_NAME, path="/")
 
-    # Gọi Service A /auth/logout (best-effort)
     try:
         acc = request.cookies.get(ACCESS_COOKIE_NAME)
         rt = request.cookies.get(REFRESH_COOKIE_NAME)
@@ -171,7 +315,6 @@ async def logout(request: Request):
     return resp
 
 
-# ✅ UI base.html đang POST /account/logout & /account/logout_all
 @router.post("/account/logout")
 async def account_logout(request: Request):
     resp = RedirectResponse(url="/login", status_code=303)
@@ -200,6 +343,7 @@ async def account_logout_all(request: Request):
     resp.delete_cookie(ACCESS_COOKIE_NAME, path="/")
     resp.delete_cookie(REFRESH_COOKIE_NAME, path="/")
     resp.delete_cookie(ROLE_COOKIE_NAME, path="/")
+    resp.delete_cookie(DEVICE_COOKIE_NAME, path="/")
 
     try:
         acc = request.cookies.get(ACCESS_COOKIE_NAME)
