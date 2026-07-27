@@ -134,12 +134,20 @@ def _read_sheets(file_bytes: bytes) -> Tuple[List[Dict[str, Any]], List[Dict[str
             except Exception:
                 return "NaN"
 
-        rec["starting_price"] = _to_float(rec.get("starting_price"))
-        rec["deposit_amount"] = _to_float(rec.get("deposit_amount"))
+        def _to_vnd(v):
+            f = _to_float(v)
+            if f == "NaN":
+                return "NaN"
+            if f is None:
+                return None
+            return int(round(f))
+
+        rec["starting_price"] = _to_vnd(rec.get("starting_price"))
+        rec["deposit_amount"] = _to_vnd(rec.get("deposit_amount"))
         rec["area"]           = _to_float(rec.get("area"))
 
         # ⭐ NEW: bước giá mỗi lô (optional)
-        rec["bid_step_vnd"]   = _to_float(rec.get("bid_step_vnd"))
+        rec["bid_step_vnd"]   = _to_vnd(rec.get("bid_step_vnd"))
 
         lots.append(rec)
 
@@ -379,8 +387,8 @@ async def handle_import_projects(file: UploadFile, access: str) -> Dict[str, Any
             "lot_code": lcode,
             "name": _normalize_text(r.get("name")),
             "description": _normalize_text(r.get("description")),
-            "starting_price": float(sp) if str(sp) not in ("", "nan", "None") else None,
-            "deposit_amount": float(dp) if str(dp) not in ("", "nan", "None") else None,
+            "starting_price": int(round(float(sp))) if str(sp) not in ("", "nan", "None") else None,
+            "deposit_amount": int(round(float(dp))) if str(dp) not in ("", "nan", "None") else None,
             "area": float(area) if str(area) not in ("", "nan", "None") else None,
         })
 
