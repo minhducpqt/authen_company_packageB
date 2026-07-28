@@ -23,7 +23,8 @@
       --line-num:rgba(0,0,0,0.14);
       --line-auth:rgba(0,0,0,0.22);
       --line-text:rgba(0,0,0,0.22);
-      /* Vùng in khả dụng A4 sau @page margin (297 - 18) */
+      /* Vùng in khả dụng A4 sau @page margin (210−24, 297−18) */
+      --page-w:186mm;
       --page-h:279mm;
       --footer-h:48mm;
     }
@@ -41,7 +42,8 @@
     }
 
     .page{
-      width:210mm;
+      width:var(--page-w);
+      max-width:var(--page-w);
       height:var(--page-h);
       max-height:var(--page-h);
       margin:10px auto;
@@ -50,12 +52,12 @@
       box-sizing:border-box;
       position:relative;
       page-break-after:always;
-      page-break-inside:avoid;
-      break-inside:avoid;
+      break-after:page;
       padding:0;
       display:flex;
       flex-direction:column;
       overflow:hidden;
+      contain:layout style paint;
     }
 
     .page-body{
@@ -67,13 +69,24 @@
     }
 
     @media print{
-      html, body{ background:#fff; }
+      html, body{
+        background:#fff;
+        margin:0;
+        padding:0;
+        overflow:hidden;
+      }
       .page{
-        margin:0 auto;
+        width:100%;
+        max-width:100%;
+        margin:0;
         box-shadow:none;
         height:var(--page-h);
         max-height:var(--page-h);
         overflow:hidden;
+        break-inside:avoid-page;
+      }
+      .page-footer{
+        break-inside:avoid;
       }
     }
 
@@ -172,6 +185,7 @@
       margin-bottom:1.8mm;
       font-size:12.4pt;
       flex-shrink:0;
+      box-sizing:border-box;
     }
 
     .asset-strip .label{
@@ -183,18 +197,12 @@
       margin-bottom:0.8mm;
     }
 
-    .asset-strip .asset-intro{
-      margin:0 0 0.5mm;
-      font-size:12.4pt;
-      line-height:1.32;
-      color:rgba(0,0,0,0.82);
-    }
-
-    .asset-strip .project-name{
+    .asset-strip .asset-desc{
       margin:0;
-      font-weight:700;
       font-size:12.4pt;
       line-height:1.32;
+      text-align:justify;
+      color:rgba(0,0,0,0.88);
       word-break:break-word;
       overflow-wrap:anywhere;
       display:-webkit-box;
@@ -213,6 +221,7 @@
       margin-bottom:1.8mm;
       align-items:stretch;
       flex-shrink:0;
+      min-width:0;
     }
 
     .panel{
@@ -220,6 +229,8 @@
       border-radius:var(--radius);
       background:#fff;
       overflow:hidden;
+      min-width:0;
+      box-sizing:border-box;
     }
 
     .panel-head{
@@ -342,6 +353,11 @@
       margin:0 0 1.2mm;
       color:rgba(0,0,0,0.88);
       line-height:1.32;
+      display:-webkit-box;
+      -webkit-box-orient:vertical;
+      -webkit-line-clamp:2;
+      line-clamp:2;
+      overflow:hidden;
     }
 
     .price-wrap{
@@ -490,12 +506,22 @@
       text-align:justify;
       margin:0 0 0.8mm;
       line-height:1.3;
+      display:-webkit-box;
+      -webkit-box-orient:vertical;
+      -webkit-line-clamp:3;
+      line-clamp:3;
+      overflow:hidden;
     }
 
     .legal-block .notes{
       font-size:10.8pt;
       color:var(--muted);
       line-height:1.34;
+      display:-webkit-box;
+      -webkit-box-orient:vertical;
+      -webkit-line-clamp:2;
+      line-clamp:2;
+      overflow:hidden;
     }
 
     /* ── FOOTER: QR + chữ ký (luôn giữ cuối trang 1) ── */
@@ -666,8 +692,12 @@
     <!-- TÀI SẢN -->
     <section class="asset-strip">
       <div class="label">Tài sản đấu giá</div>
-      <p class="asset-intro">Quyền sử dụng đất thuộc dự án</p>
-      <p class="project-name">{{ t.project_name }}</p>
+      <p class="asset-desc">
+        Quyền sử dụng đất thuộc dự án
+        "<span class="bold">{{ t.project_name }}</span>",
+        lô đất số <span class="bold">{{ t.lot_code }}</span>{% if t.area_m2 is number %},
+        diện tích <span class="bold">{{ "{:,.2f}".format(t.area_m2|float) }}</span> m².{% else %}.{% endif %}
+      </p>
     </section>
 
     <!-- KHÁCH | ĐẤU GIÁ -->
@@ -722,16 +752,6 @@
             <tr>
               <td class="info-label">Lô đăng ký</td><td class="info-sep">:</td>
               <td class="info-value bold">{{ t.lot_code }}</td>
-            </tr>
-            <tr>
-              <td class="info-label">Diện tích</td><td class="info-sep">:</td>
-              <td class="info-value">
-                {% if t.area_m2 is number %}
-                  {{ "{:,.2f}".format(t.area_m2|float) }} m²
-                {% else %}
-                  —
-                {% endif %}
-              </td>
             </tr>
             <tr>
               <td class="info-label">Giá KĐ ({{ price_unit }})</td><td class="info-sep">:</td>
