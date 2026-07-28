@@ -6,7 +6,7 @@
   <style>
     @page{
       size: A4;
-      margin: 12mm 14mm;
+      margin: 9mm 12mm;
     }
 
     :root{
@@ -23,6 +23,9 @@
       --line-num:rgba(0,0,0,0.14);
       --line-auth:rgba(0,0,0,0.22);
       --line-text:rgba(0,0,0,0.22);
+      /* Vùng in khả dụng A4 sau @page margin (297 - 18) */
+      --page-h:279mm;
+      --footer-h:50mm;
     }
 
     html, body{
@@ -30,27 +33,48 @@
       padding:0;
       background:#e5e7eb;
       font-family:"Times New Roman", Times, serif;
-      font-size:13.2pt;
+      font-size:12pt;
       color:var(--ink);
-      line-height:1.38;
+      line-height:1.32;
       -webkit-print-color-adjust:exact;
       print-color-adjust:exact;
     }
 
     .page{
       width:210mm;
+      height:var(--page-h);
+      max-height:var(--page-h);
       margin:10px auto;
       background:#fff;
       box-shadow:0 0 6px rgba(0,0,0,0.16);
       box-sizing:border-box;
       position:relative;
       page-break-after:always;
+      page-break-inside:avoid;
+      break-inside:avoid;
       padding:0;
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+    }
+
+    .page-body{
+      flex:1 1 auto;
+      min-height:0;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
     }
 
     @media print{
       html, body{ background:#fff; }
-      .page{ margin:0; box-shadow:none; }
+      .page{
+        margin:0 auto;
+        box-shadow:none;
+        height:var(--page-h);
+        max-height:var(--page-h);
+        overflow:hidden;
+      }
     }
 
     .bold{ font-weight:700; }
@@ -60,9 +84,10 @@
     /* ── HEADER ── */
     .sheet-header{
       position:relative;
-      padding-bottom:3mm;
+      padding-bottom:2mm;
       border-bottom:1pt solid var(--border);
-      margin-bottom:3.5mm;
+      margin-bottom:2mm;
+      flex-shrink:0;
     }
 
     .masthead{
@@ -72,30 +97,31 @@
     }
 
     .masthead .gov{
-      font-size:15.5pt;
+      font-size:14.5pt;
       font-weight:900;
       text-transform:uppercase;
-      letter-spacing:0.12mm;
+      letter-spacing:0.1mm;
     }
 
     .masthead .motto{
-      font-size:13.2pt;
+      font-size:12.5pt;
       font-weight:700;
-      margin-top:0.8mm;
+      margin-top:0.5mm;
     }
 
     .masthead .divider{
-      margin:1.8mm 0 2.2mm;
+      margin:1.2mm 0 1.6mm;
       letter-spacing:0.5mm;
       color:var(--muted);
-      font-size:11pt;
+      font-size:10.5pt;
     }
 
     .masthead .doc-title{
-      font-size:19pt;
+      font-size:17.5pt;
       font-weight:900;
       text-transform:uppercase;
-      letter-spacing:0.35mm;
+      letter-spacing:0.3mm;
+      line-height:1.15;
     }
 
     /* Góc phải: mã lô — giữ ý đồ kiểm phiếu nhanh */
@@ -142,10 +168,10 @@
       border:1pt solid var(--border);
       border-left:3pt solid var(--border-strong);
       border-radius:var(--radius);
-      padding:2.8mm 3.5mm;
-      margin-bottom:3.5mm;
-      font-size:12.6pt;
-      text-align:justify;
+      padding:2mm 3mm;
+      margin-bottom:2mm;
+      font-size:11.8pt;
+      flex-shrink:0;
     }
 
     .asset-strip .label{
@@ -154,16 +180,39 @@
       font-size:10.5pt;
       letter-spacing:0.18mm;
       color:var(--muted);
-      margin-bottom:1mm;
+      margin-bottom:0.8mm;
+    }
+
+    .asset-strip .asset-intro{
+      margin:0 0 0.6mm;
+      font-size:12pt;
+      line-height:1.32;
+      color:rgba(0,0,0,0.82);
+    }
+
+    .asset-strip .project-name{
+      margin:0;
+      font-weight:700;
+      font-size:11.8pt;
+      line-height:1.3;
+      word-break:break-word;
+      overflow-wrap:anywhere;
+      display:-webkit-box;
+      -webkit-box-orient:vertical;
+      -webkit-line-clamp:3;
+      line-clamp:3;
+      overflow:hidden;
+      max-height:calc(1.3em * 3);
     }
 
     /* ── TWO-COLUMN BODY ── */
     .main-grid{
       display:grid;
       grid-template-columns:1fr 1fr;
-      gap:3.5mm;
-      margin-bottom:3.5mm;
+      gap:2.5mm;
+      margin-bottom:2mm;
       align-items:stretch;
+      flex-shrink:0;
     }
 
     .panel{
@@ -171,14 +220,13 @@
       border-radius:var(--radius);
       background:#fff;
       overflow:hidden;
-      page-break-inside:avoid;
     }
 
     .panel-head{
       background:var(--surface-2);
       border-bottom:1pt solid var(--border);
-      padding:1.8mm 3mm;
-      font-size:10.8pt;
+      padding:1.2mm 2.5mm;
+      font-size:10pt;
       font-weight:800;
       text-transform:uppercase;
       letter-spacing:0.22mm;
@@ -186,7 +234,7 @@
     }
 
     .panel-body{
-      padding:2mm 3mm 2.5mm;
+      padding:1.5mm 2.5mm 2mm;
     }
 
     .info-table{
@@ -195,15 +243,15 @@
     }
 
     .info-table td{
-      padding:1.1mm 0;
+      padding:0.65mm 0;
       vertical-align:top;
     }
 
     .info-label{
-      width:27mm;
+      width:26mm;
       white-space:nowrap;
       font-weight:700;
-      font-size:11.8pt;
+      font-size:11pt;
       color:rgba(0,0,0,0.78);
     }
 
@@ -213,7 +261,16 @@
     }
 
     .info-value{
-      font-size:12.8pt;
+      font-size:11.8pt;
+    }
+
+    .info-value.clamp-2{
+      display:-webkit-box;
+      -webkit-box-orient:vertical;
+      -webkit-line-clamp:2;
+      line-clamp:2;
+      overflow:hidden;
+      word-break:break-word;
     }
 
     .stt-badge{
@@ -231,9 +288,9 @@
     .dotline{
       display:block;
       position:relative;
-      height:9mm;
+      height:7.5mm;
       min-width:100%;
-      line-height:1.55;
+      line-height:1.45;
     }
 
     .dotline::before{
@@ -252,15 +309,15 @@
 
     /* ── PRICE SECTION (hero — kiểm giá nhanh) ── */
     .price-section{
-      margin-bottom:3mm;
-      page-break-inside:avoid;
+      margin-bottom:1.5mm;
+      flex-shrink:0;
     }
 
     .section-bar{
       display:flex;
       align-items:center;
-      gap:2.5mm;
-      margin-bottom:2.2mm;
+      gap:2mm;
+      margin-bottom:1.5mm;
     }
 
     .section-bar::before{
@@ -280,25 +337,26 @@
     }
 
     .intro-text{
-      font-size:11.6pt;
+      font-size:11pt;
       text-align:justify;
-      margin-bottom:2.5mm;
+      margin:0 0 1.5mm;
       color:rgba(0,0,0,0.88);
+      line-height:1.3;
     }
 
     .price-wrap{
-      border:1.4pt solid var(--border-strong);
+      border:1.2pt solid var(--border-strong);
       background:var(--surface);
-      border-radius:calc(var(--radius) + 0.4mm);
-      padding:3.8mm 4mm;
+      border-radius:var(--radius);
+      padding:2.5mm 3mm;
       box-sizing:border-box;
     }
 
     .price-grid{
       display:grid;
-      grid-template-columns:38mm 1fr;
-      column-gap:3.5mm;
-      row-gap:2.6mm;
+      grid-template-columns:34mm 1fr;
+      column-gap:2.5mm;
+      row-gap:1.8mm;
       align-items:start;
     }
 
@@ -322,10 +380,10 @@
     .price-number-left{
       display:flex;
       align-items:flex-end;
-      gap:4mm;
-      min-height:13mm;
-      padding:1.2mm 1.5mm 0.8mm;
-      border:1.4pt solid var(--border-strong);
+      gap:3mm;
+      min-height:11mm;
+      padding:1mm 1.2mm 0.6mm;
+      border:1.2pt solid var(--border-strong);
       background:#fff;
       border-radius:var(--radius);
       box-sizing:border-box;
@@ -334,11 +392,11 @@
     .price-number-write{
       flex:1;
       position:relative;
-      font-size:22pt;
+      font-size:20pt;
       font-weight:900;
-      letter-spacing:0.12mm;
+      letter-spacing:0.1mm;
       line-height:1.05;
-      min-height:11mm;
+      min-height:9mm;
     }
 
     .price-number-write::before{
@@ -368,34 +426,34 @@
       background:#fff;
       border-radius:var(--radius);
       box-sizing:border-box;
-      padding:1mm 0.8mm;
+      padding:0.8mm 0.6mm;
       display:flex;
       flex-direction:column;
       justify-content:center;
       align-items:center;
       text-align:center;
-      min-height:13mm;
+      min-height:11mm;
     }
 
     .lot-badge .lot-label{
-      font-size:9.5pt;
+      font-size:9pt;
       font-weight:700;
       color:var(--muted);
-      letter-spacing:0.18mm;
+      letter-spacing:0.15mm;
       text-transform:uppercase;
       line-height:1.05;
-      margin-bottom:0.5mm;
+      margin-bottom:0.3mm;
     }
 
     .lot-badge .lot-value{
-      font-size:19pt;
+      font-size:17pt;
       font-weight:900;
       line-height:1;
       white-space:nowrap;
     }
 
     .line-dotted{
-      height:10mm;
+      height:8.5mm;
       position:relative;
     }
 
@@ -414,38 +472,46 @@
     }
 
     .line-dotted + .line-dotted{
-      margin-top:2.4mm;
+      margin-top:1.6mm;
     }
 
     /* ── LEGAL ── */
     .legal-block{
       border-top:1pt solid var(--border);
-      padding-top:2.8mm;
-      margin-bottom:2mm;
+      padding-top:1.5mm;
+      margin-bottom:0;
+      flex:1 1 auto;
+      min-height:0;
+      overflow:hidden;
     }
 
     .legal-block .commitment{
-      font-size:11.6pt;
+      font-size:10.8pt;
       text-align:justify;
-      margin-bottom:2mm;
+      margin:0 0 1mm;
+      line-height:1.28;
     }
 
     .legal-block .notes{
-      font-size:10.6pt;
+      font-size:10pt;
       color:var(--muted);
-      line-height:1.45;
+      line-height:1.32;
     }
 
-    /* ── FOOTER: QR + chữ ký ── */
+    /* ── FOOTER: QR + chữ ký (luôn giữ cuối trang 1) ── */
     .page-footer{
+      flex:0 0 var(--footer-h);
+      min-height:var(--footer-h);
+      max-height:var(--footer-h);
       display:grid;
-      grid-template-columns:46mm 1fr;
+      grid-template-columns:40mm 1fr;
       align-items:end;
-      gap:6mm;
-      margin-top:2.5mm;
-      padding-top:2.5mm;
+      gap:4mm;
+      margin-top:auto;
+      padding-top:2mm;
       border-top:1pt dashed var(--border);
-      page-break-inside:avoid;
+      box-sizing:border-box;
+      overflow:hidden;
     }
 
     .page-footer--sig-only{
@@ -457,45 +523,43 @@
       border:1pt solid var(--border);
       border-radius:var(--radius);
       background:var(--surface);
-      padding:2.4mm;
+      padding:1.8mm;
       box-sizing:border-box;
     }
 
     .qr-visual{
       background:#fff;
       border:1pt solid rgba(0,0,0,0.1);
-      border-radius:1.6mm;
-      padding:1.8mm;
+      border-radius:1.4mm;
+      padding:1.2mm;
       box-sizing:border-box;
     }
 
     .qr-box img{
-      width:34mm;
-      height:34mm;
+      width:28mm;
+      height:28mm;
       display:block;
       margin:0 auto;
     }
 
     .qr-caption{
-      font-size:8.6pt;
+      font-size:8pt;
       font-weight:700;
       color:var(--muted);
-      margin-top:1.6mm;
-      letter-spacing:0.06mm;
+      margin-top:1mm;
+      letter-spacing:0.05mm;
     }
 
     .signature-block{
       justify-self:end;
       width:100%;
-      max-width:74mm;
+      max-width:72mm;
       text-align:center;
-      font-size:12.8pt;
-      line-height:1.35;
-      page-break-inside:avoid;
+      font-size:12pt;
+      line-height:1.3;
       display:flex;
       flex-direction:column;
       align-items:center;
-      margin-bottom:1mm;
     }
 
     .sig-meta{
@@ -511,8 +575,8 @@
 
     .sig-pad{
       width:88%;
-      min-height:24mm;
-      margin-top:1.2mm;
+      min-height:18mm;
+      margin-top:1mm;
     }
   </style>
 </head>
@@ -575,6 +639,8 @@
 
   <div class="page">
 
+    <div class="page-body">
+
     <!-- HEADER -->
     <header class="sheet-header">
       <aside class="lot-flag" aria-label="Mã lô">
@@ -600,14 +666,8 @@
     <!-- TÀI SẢN -->
     <section class="asset-strip">
       <div class="label">Tài sản đấu giá</div>
-      Quyền sử dụng đất thuộc dự án
-      "<span class="bold">{{ t.project_name }}</span>",
-      lô đất số <span class="bold">{{ t.lot_code }}</span>
-      {% if t.area_m2 is number %}
-        , diện tích <span class="bold">{{ "{:,.2f}".format(t.area_m2|float) }}</span> m².
-      {% else %}
-        .
-      {% endif %}
+      <p class="asset-intro">Quyền sử dụng đất thuộc dự án</p>
+      <p class="project-name">{{ t.project_name }}</p>
     </section>
 
     <!-- KHÁCH | ĐẤU GIÁ -->
@@ -618,7 +678,7 @@
           <table class="info-table">
             <tr>
               <td class="info-label">Khách hàng</td><td class="info-sep">:</td>
-              <td class="info-value bold">{{ t.customer_full_name }}</td>
+              <td class="info-value bold clamp-2">{{ t.customer_full_name }}</td>
             </tr>
             <tr>
               <td class="info-label">Mã khách</td><td class="info-sep">:</td>
@@ -634,7 +694,7 @@
             </tr>
             <tr>
               <td class="info-label">Địa chỉ</td><td class="info-sep">:</td>
-              <td class="info-value">{{ t.address }}</td>
+              <td class="info-value clamp-2">{{ t.address }}</td>
             </tr>
             <tr>
               <td class="info-label">Điện thoại</td><td class="info-sep">:</td>
@@ -657,11 +717,21 @@
           <table class="info-table">
             <tr>
               <td class="info-label">Kính gửi</td><td class="info-sep">:</td>
-              <td class="info-value">{{ t.company_name or 'Đơn vị tổ chức đấu giá' }}</td>
+              <td class="info-value clamp-2">{{ t.company_name or 'Đơn vị tổ chức đấu giá' }}</td>
             </tr>
             <tr>
               <td class="info-label">Lô đăng ký</td><td class="info-sep">:</td>
               <td class="info-value bold">{{ t.lot_code }}</td>
+            </tr>
+            <tr>
+              <td class="info-label">Diện tích</td><td class="info-sep">:</td>
+              <td class="info-value">
+                {% if t.area_m2 is number %}
+                  {{ "{:,.2f}".format(t.area_m2|float) }} m²
+                {% else %}
+                  —
+                {% endif %}
+              </td>
             </tr>
             <tr>
               <td class="info-label">Giá KĐ ({{ price_unit }})</td><td class="info-sep">:</td>
@@ -738,6 +808,8 @@
         phiếu không rách, nát; điền đầy đủ thông tin.
       </div>
     </section>
+
+    </div><!-- /.page-body -->
 
     <!-- FOOTER -->
     <footer class="page-footer{% if not t.qr_data_uri %} page-footer--sig-only{% endif %}">
