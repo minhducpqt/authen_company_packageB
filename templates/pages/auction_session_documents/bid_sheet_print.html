@@ -6,7 +6,23 @@
   <style>
     @page{
       size: A4;
-      margin: 14mm 14mm; /* lề gọn để tiêu ngữ lên cao */
+      margin: 12mm 14mm;
+    }
+
+    :root{
+      --ink:#111;
+      --muted:rgba(0,0,0,0.58);
+      --border:rgba(0,0,0,0.24);
+      --border-strong:rgba(0,0,0,0.42);
+      --surface:#f6f7f9;
+      --surface-2:#eceff3;
+      --radius:2.4mm;
+      --line-dots:"................................................................................................................................................................................";
+      --line-fs:9.2pt;
+      --line-ls:0.55mm;
+      --line-num:rgba(0,0,0,0.14);
+      --line-auth:rgba(0,0,0,0.22);
+      --line-text:rgba(0,0,0,0.22);
     }
 
     html, body{
@@ -14,370 +30,489 @@
       padding:0;
       background:#e5e7eb;
       font-family:"Times New Roman", Times, serif;
-      font-size:13.5pt; /* tăng chữ toàn trang */
-      color:#000;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+      font-size:13.2pt;
+      color:var(--ink);
+      line-height:1.38;
+      -webkit-print-color-adjust:exact;
+      print-color-adjust:exact;
     }
 
     .page{
       width:210mm;
       margin:10px auto;
       background:#fff;
-      box-shadow:0 0 6px rgba(0,0,0,0.18);
+      box-shadow:0 0 6px rgba(0,0,0,0.16);
       box-sizing:border-box;
       position:relative;
       page-break-after:always;
-      padding:0; /* dùng @page margin */
+      padding:0;
     }
 
     @media print{
       html, body{ background:#fff; }
-      .page{ margin:0; box-shadow:none; padding:0; }
+      .page{ margin:0; box-shadow:none; }
     }
 
-    .center { text-align:center; }
-    .bold { font-weight:700; }
+    .bold{ font-weight:700; }
+    .small{ font-size:11.6pt; }
+    .note{ font-size:10.8pt; color:var(--muted); }
 
-    .title { font-size:20pt; font-weight:900; text-transform:uppercase; }
-    .gov   { font-size:16pt; font-weight:900; text-transform:uppercase; }
-
-    .mt-1  { margin-top:2.5mm; }
-    .mt-2  { margin-top:3.5mm; }
-    .mt-3  { margin-top:5mm; }
-    .mb-2  { margin-bottom:3.5mm; }
-
-    .small { font-size:12pt; }
-    .note  { font-size:11.2pt; }
-
-    .divider{
-      text-align:center;
-      margin:1.5mm 0 4mm;
-    }
-
-    /* Vùng đầu trang: chừa góc phải cho mã lô, tránh đè tiêu ngữ */
-    .page-head{
+    /* ── HEADER ── */
+    .sheet-header{
       position:relative;
-      margin-bottom:1mm;
-    }
-    .head-center{
-      padding-right:54mm;
-      box-sizing:border-box;
+      padding-bottom:3mm;
+      border-bottom:1pt solid var(--border);
+      margin-bottom:3.5mm;
     }
 
-    /* Góc phải trên: mã lô to rõ, cỡ chữ linh hoạt theo độ dài */
-    .flag-box{
-      position:absolute;
-      top:0mm;
-      right:0mm;
-      left:auto;
-      z-index:2;
-      font-size:10pt;
-      border:1.2pt solid #333;
-      padding:3px 8px 4px;
-      line-height:1.15;
-      background:#f3f4f6;
+    .masthead{
       text-align:center;
-      max-width:52mm;
-      width:max-content;
+      padding-right:50mm;
       box-sizing:border-box;
     }
 
-    .flag-lot{
+    .masthead .gov{
+      font-size:15.5pt;
+      font-weight:900;
+      text-transform:uppercase;
+      letter-spacing:0.12mm;
+    }
+
+    .masthead .motto{
+      font-size:13.2pt;
+      font-weight:700;
+      margin-top:0.8mm;
+    }
+
+    .masthead .divider{
+      margin:1.8mm 0 2.2mm;
+      letter-spacing:0.5mm;
+      color:var(--muted);
+      font-size:11pt;
+    }
+
+    .masthead .doc-title{
+      font-size:19pt;
+      font-weight:900;
+      text-transform:uppercase;
+      letter-spacing:0.35mm;
+    }
+
+    /* Góc phải: mã lô — giữ ý đồ kiểm phiếu nhanh */
+    .lot-flag{
+      position:absolute;
+      top:0;
+      right:0;
+      z-index:2;
+      min-width:46mm;
+      max-width:54mm;
+      border:1.2pt solid var(--border-strong);
+      border-radius:var(--radius);
+      background:var(--surface);
+      padding:2.5mm 3mm 2.8mm;
+      text-align:center;
+      box-sizing:border-box;
+    }
+
+    .lot-flag .flag-lot{
       display:block;
       font-weight:900;
-      line-height:1.08;
+      line-height:1.05;
       white-space:nowrap;
-      border:2pt solid rgba(0,0,0,0.72);
+      border:2pt solid rgba(0,0,0,0.68);
       background:#fff;
-      border-radius:2.5mm;
-      margin:1px 0 4px;
+      border-radius:2mm;
+      margin-bottom:1.5mm;
       box-sizing:border-box;
-      max-width:100%;
-      overflow:visible;
     }
 
-    .flag-code{
-      font-size:9pt;
+    .lot-flag .flag-code{
+      font-size:8.8pt;
       font-weight:700;
+      letter-spacing:0.06mm;
+      color:var(--muted);
       white-space:nowrap;
-      letter-spacing:0.08mm;
-      color:rgba(0,0,0,0.78);
-      max-width:100%;
       overflow:hidden;
       text-overflow:ellipsis;
+    }
+
+    /* ── ASSET STRIP ── */
+    .asset-strip{
+      background:var(--surface);
+      border:1pt solid var(--border);
+      border-left:3pt solid var(--border-strong);
+      border-radius:var(--radius);
+      padding:2.8mm 3.5mm;
+      margin-bottom:3.5mm;
+      font-size:12.6pt;
+      text-align:justify;
+    }
+
+    .asset-strip .label{
+      font-weight:800;
+      text-transform:uppercase;
+      font-size:10.5pt;
+      letter-spacing:0.18mm;
+      color:var(--muted);
+      margin-bottom:1mm;
+    }
+
+    /* ── TWO-COLUMN BODY ── */
+    .main-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:3.5mm;
+      margin-bottom:3.5mm;
+      align-items:stretch;
+    }
+
+    .panel{
+      border:1pt solid var(--border);
+      border-radius:var(--radius);
+      background:#fff;
+      overflow:hidden;
+      page-break-inside:avoid;
+    }
+
+    .panel-head{
+      background:var(--surface-2);
+      border-bottom:1pt solid var(--border);
+      padding:1.8mm 3mm;
+      font-size:10.8pt;
+      font-weight:800;
+      text-transform:uppercase;
+      letter-spacing:0.22mm;
+      color:rgba(0,0,0,0.72);
+    }
+
+    .panel-body{
+      padding:2mm 3mm 2.5mm;
     }
 
     .info-table{
       width:100%;
       border-collapse:collapse;
-      margin-top:1.6mm;
-      margin-bottom:1.6mm;
     }
+
     .info-table td{
-      padding:0.75mm 0;
+      padding:1.1mm 0;
       vertical-align:top;
     }
-    .info-label{
-      width:44mm;
-      white-space:nowrap;
-      font-weight:800;
-    }
-    .info-sep{ width:4mm; }
 
-    /* STT phiên: khung vừa, đậm vừa phải */
+    .info-label{
+      width:27mm;
+      white-space:nowrap;
+      font-weight:700;
+      font-size:11.8pt;
+      color:rgba(0,0,0,0.78);
+    }
+
+    .info-sep{
+      width:3mm;
+      color:var(--muted);
+    }
+
+    .info-value{
+      font-size:12.8pt;
+    }
+
     .stt-badge{
       display:inline-block;
-      font-size:13.5pt;
-      font-weight:700;
-      padding:1px 9px 2px;
-      border:1pt solid rgba(0,0,0,0.32);
-      background:#f8f9fa;
-      border-radius:1.5mm;
-      letter-spacing:0.25mm;
-      line-height:1.25;
+      font-size:13pt;
+      font-weight:800;
+      padding:0.5mm 2.5mm;
+      border:1pt solid var(--border-strong);
+      background:#fff;
+      border-radius:1.4mm;
+      letter-spacing:0.2mm;
+      line-height:1.2;
     }
 
-    /* =============================
-       ✅ CHỈ CHỈNH LINE THEO YÊU CẦU MỚI
-       - Giá trả (số): GIỮ NGUYÊN như hiện tại
-       - Uỷ quyền: ĐẬM HƠN (dễ nhìn)
-       - Giá trả (chữ): ĐẬM HƠN (vì nằm trên nền xám)
-       ============================= */
-    :root{
-      --line-dots: "................................................................................................................................................................................";
-      --line-fs: 9.2pt;          /* nhỏ, mịn */
-      --line-ls: 0.55mm;         /* mịn */
-      --line-num: rgba(0,0,0,0.14);  /* ✅ GIỮ NGUYÊN cho giá trả (số) */
-      --line-auth: rgba(0,0,0,0.22); /* ✅ uỷ quyền: đậm hơn */
-      --line-text: rgba(0,0,0,0.22); /* ✅ giá trả (chữ): đậm hơn vì nền xám */
-    }
-
-    /* Giá bằng chữ: 2 dòng line */
-    .line-dotted{
-      height:10mm;
-      position:relative;
-    }
-    .line-dotted::before{
-      content: var(--line-dots);
-      position:absolute;
-      left:0;
-      right:0;
-      bottom:2.1mm;
-      font-size:var(--line-fs);
-      letter-spacing:var(--line-ls);
-      color:var(--line-text); /* ✅ đậm hơn */
-      white-space:nowrap;
-      overflow:hidden;
-      pointer-events:none;
-    }
-    .line-dotted + .line-dotted{
-      margin-top:2.6mm;
-    }
-
-    /* Uỷ quyền: dùng line rõ hơn */
     .dotline{
       display:block;
       position:relative;
       height:9mm;
-      min-width:45mm;
+      min-width:100%;
       line-height:1.55;
     }
-    .dotline.long{ min-width:120mm; }
+
     .dotline::before{
-      content: var(--line-dots);
+      content:var(--line-dots);
       position:absolute;
       left:0;
       right:0;
       bottom:1.9mm;
       font-size:var(--line-fs);
       letter-spacing:var(--line-ls);
-      color:var(--line-auth); /* ✅ dễ nhìn hơn */
+      color:var(--line-auth);
       white-space:nowrap;
       overflow:hidden;
       pointer-events:none;
     }
 
-    .signature-block{
-      width:100%;
-      max-width:72mm;
-      text-align:center;
-      page-break-inside:avoid;
-      justify-self:end;
-    }
-
-    /* Chân trang: QR (nửa trái) — chữ ký (nửa phải), căn cân đối */
-    .page-footer{
-      display:grid;
-      grid-template-columns:minmax(0, 1fr) minmax(0, 1fr);
-      align-items:end;
-      column-gap:8mm;
-      margin-top:7mm;
+    /* ── PRICE SECTION (hero — kiểm giá nhanh) ── */
+    .price-section{
+      margin-bottom:3mm;
       page-break-inside:avoid;
     }
-    .page-footer--sig-only{
-      grid-template-columns:1fr;
-    }
-    .page-footer--sig-only .signature-block{
-      grid-column:1;
+
+    .section-bar{
+      display:flex;
+      align-items:center;
+      gap:2.5mm;
+      margin-bottom:2.2mm;
     }
 
-    /* QR định danh — khối vuông gọn, căn giữa nửa trái trang */
-    .qr-box{
-      justify-self:center;
-      width:42mm;
-      text-align:center;
-      line-height:1.15;
-      border:1.2pt solid rgba(0,0,0,0.36);
-      background:#f4f5f7;
-      border-radius:2.6mm;
-      padding:2.8mm 2.6mm 2.4mm;
-      box-sizing:border-box;
-    }
-    .qr-visual{
-      background:#fff;
-      border:1pt solid rgba(0,0,0,0.12);
-      border-radius:1.8mm;
-      padding:2mm;
-      box-sizing:border-box;
-    }
-    .qr-box img{
-      width:34mm;
-      height:34mm;
-      display:block;
-      margin:0 auto;
-    }
-    .qr-caption{
-      font-size:8.8pt;
-      font-weight:700;
-      color:rgba(0,0,0,0.65);
-      margin-top:1.8mm;
-      letter-spacing:0.08mm;
+    .section-bar::before{
+      content:"";
+      width:3.5mm;
+      height:3.5mm;
+      background:var(--ink);
+      border-radius:0.6mm;
+      flex-shrink:0;
     }
 
-    /* =============================
-       BOX GIÁ TRẢ (SỐ + MÃ LÔ + CHỮ TRONG 1 KHUNG)
-       ============================= */
+    .section-bar .title{
+      font-size:12.8pt;
+      font-weight:900;
+      text-transform:uppercase;
+      letter-spacing:0.28mm;
+    }
+
+    .intro-text{
+      font-size:11.6pt;
+      text-align:justify;
+      margin-bottom:2.5mm;
+      color:rgba(0,0,0,0.88);
+    }
+
     .price-wrap{
-      border:1.2pt solid rgba(0,0,0,0.55);
-      background:#f6f7f9;
-      border-radius:3mm;
-      padding:4.2mm 4.2mm;
+      border:1.4pt solid var(--border-strong);
+      background:var(--surface);
+      border-radius:calc(var(--radius) + 0.4mm);
+      padding:3.8mm 4mm;
       box-sizing:border-box;
-      box-shadow: inset 0 0 0 0.6pt rgba(255,255,255,0.8);
     }
 
     .price-grid{
       display:grid;
-      grid-template-columns: 42mm 1fr;
-      column-gap:4mm;
-      row-gap:2.8mm;
+      grid-template-columns:38mm 1fr;
+      column-gap:3.5mm;
+      row-gap:2.6mm;
       align-items:start;
     }
 
     .price-k{
       font-weight:900;
       text-transform:uppercase;
-      font-size:12.5pt;
-      line-height:1.15;
-      padding-top:0.6mm;
+      font-size:11.8pt;
+      line-height:1.2;
+      padding-top:1mm;
       white-space:nowrap;
+      color:rgba(0,0,0,0.82);
     }
 
-    /* Hàng giá bằng số: chia 70/30 */
     .price-number-row{
       display:grid;
-      grid-template-columns: 70% 30%;
-      gap:3mm;
+      grid-template-columns:68% 32%;
+      gap:2.5mm;
       align-items:stretch;
     }
 
     .price-number-left{
       display:flex;
       align-items:flex-end;
-      gap:6mm;
-      min-height:12mm;
-      padding:1mm 1mm 0.6mm 1mm;
-      border:1.3pt solid rgba(0,0,0,0.35);
+      gap:4mm;
+      min-height:13mm;
+      padding:1.2mm 1.5mm 0.8mm;
+      border:1.4pt solid var(--border-strong);
       background:#fff;
-      border-radius:2mm;
+      border-radius:var(--radius);
       box-sizing:border-box;
     }
 
-    /* ✅ GIỮ NGUYÊN line giá trả (số) như hiện tại (mịn, nhỏ, mờ) */
     .price-number-write{
       flex:1;
       position:relative;
       font-size:22pt;
       font-weight:900;
-      letter-spacing:0.15mm;
+      letter-spacing:0.12mm;
       line-height:1.05;
       min-height:11mm;
     }
+
     .price-number-write::before{
-      content: var(--line-dots);
+      content:var(--line-dots);
       position:absolute;
       left:0;
       right:0;
       bottom:1.05mm;
       font-size:var(--line-fs);
       letter-spacing:var(--line-ls);
-      color:var(--line-num); /* ✅ giữ nguyên */
+      color:var(--line-num);
       white-space:nowrap;
       overflow:hidden;
       pointer-events:none;
     }
 
     .price-unit{
-      font-size:13pt;
+      font-size:12.5pt;
       font-weight:900;
       white-space:nowrap;
       padding-bottom:1mm;
+      color:rgba(0,0,0,0.75);
     }
 
-    /* Ô mã lô (label nhạt + value to đậm) */
     .lot-badge{
-      border:1.0pt solid rgba(0,0,0,0.22);
-      background:#fbfbfc;
-      border-radius:2mm;
+      border:1.2pt solid var(--border);
+      background:#fff;
+      border-radius:var(--radius);
       box-sizing:border-box;
-      padding:1.2mm 1mm;
+      padding:1mm 0.8mm;
       display:flex;
       flex-direction:column;
       justify-content:center;
       align-items:center;
       text-align:center;
-      min-height:12mm;
+      min-height:13mm;
     }
+
     .lot-badge .lot-label{
-      font-size:10.5pt;
-      font-weight:600;
-      color:rgba(0,0,0,0.55);
-      letter-spacing:0.2mm;
+      font-size:9.5pt;
+      font-weight:700;
+      color:var(--muted);
+      letter-spacing:0.18mm;
       text-transform:uppercase;
       line-height:1.05;
-      margin-bottom:0.6mm;
+      margin-bottom:0.5mm;
     }
+
     .lot-badge .lot-value{
-      font-size:20pt;
+      font-size:19pt;
       font-weight:900;
-      line-height:1.0;
+      line-height:1;
       white-space:nowrap;
     }
 
-    .price-hint{
+    .line-dotted{
+      height:10mm;
+      position:relative;
+    }
+
+    .line-dotted::before{
+      content:var(--line-dots);
+      position:absolute;
+      left:0;
+      right:0;
+      bottom:2.1mm;
+      font-size:var(--line-fs);
+      letter-spacing:var(--line-ls);
+      color:var(--line-text);
+      white-space:nowrap;
+      overflow:hidden;
+      pointer-events:none;
+    }
+
+    .line-dotted + .line-dotted{
+      margin-top:2.4mm;
+    }
+
+    /* ── LEGAL ── */
+    .legal-block{
+      border-top:1pt solid var(--border);
+      padding-top:2.8mm;
+      margin-bottom:2mm;
+    }
+
+    .legal-block .commitment{
+      font-size:11.6pt;
+      text-align:justify;
+      margin-bottom:2mm;
+    }
+
+    .legal-block .notes{
+      font-size:10.6pt;
+      color:var(--muted);
+      line-height:1.45;
+    }
+
+    /* ── FOOTER: QR + chữ ký ── */
+    .page-footer{
+      display:grid;
+      grid-template-columns:46mm 1fr;
+      align-items:end;
+      gap:6mm;
+      margin-top:2.5mm;
+      padding-top:2.5mm;
+      border-top:1pt dashed var(--border);
+      page-break-inside:avoid;
+    }
+
+    .page-footer--sig-only{
+      grid-template-columns:1fr;
+    }
+
+    .qr-box{
+      text-align:center;
+      border:1pt solid var(--border);
+      border-radius:var(--radius);
+      background:var(--surface);
+      padding:2.4mm;
+      box-sizing:border-box;
+    }
+
+    .qr-visual{
+      background:#fff;
+      border:1pt solid rgba(0,0,0,0.1);
+      border-radius:1.6mm;
+      padding:1.8mm;
+      box-sizing:border-box;
+    }
+
+    .qr-box img{
+      width:34mm;
+      height:34mm;
+      display:block;
+      margin:0 auto;
+    }
+
+    .qr-caption{
+      font-size:8.6pt;
+      font-weight:700;
+      color:var(--muted);
+      margin-top:1.6mm;
+      letter-spacing:0.06mm;
+    }
+
+    .signature-block{
+      justify-self:end;
+      width:100%;
+      max-width:74mm;
+      text-align:center;
+      font-size:12.8pt;
+      line-height:1.35;
+      page-break-inside:avoid;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      margin-bottom:1mm;
+    }
+
+    .sig-meta{
+      display:flex;
+      flex-direction:column;
+      gap:0.6mm;
+    }
+
+    .signature-block .sig-title{
+      font-weight:800;
+      margin-top:0;
+    }
+
+    .sig-pad{
+      width:88%;
+      min-height:24mm;
       margin-top:1.2mm;
-      font-size:10.8pt;
-      font-weight:400;
-      color:#111;
-    }
-
-    .price-text-lines{
-      margin-top:0.3mm;
-    }
-
-    @media print{
-      body { -webkit-print-color-adjust: exact; }
     }
   </style>
 </head>
@@ -440,30 +575,31 @@
 
   <div class="page">
 
-    <div class="page-head">
-      <div class="flag-box">
-        <div
+    <!-- HEADER -->
+    <header class="sheet-header">
+      <aside class="lot-flag" aria-label="Mã lô">
+        <span
           class="flag-lot"
           style="font-size:{{ lot_flag_fs }}; padding:{{ lot_flag_pad }}; letter-spacing:{{ lot_flag_ls }};"
-        >{{ lot_code_display }}</div>
-        <div class="flag-code">{{ stt_code }}-C{{ t.customer_id }}-S{{ qty_lots }}{% if t.session_id %}-P{{ t.session_id }}{% endif %}</div>
-      </div>
+        >{{ lot_code_display }}</span>
+        <span class="flag-code">{{ stt_code }}-C{{ t.customer_id }}-S{{ qty_lots }}{% if t.session_id %}-P{{ t.session_id }}{% endif %}</span>
+      </aside>
 
-      <div class="head-center">
-        <div class="center gov">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
-        <div class="center bold">Độc lập – Tự do – Hạnh phúc</div>
+      <div class="masthead">
+        <div class="gov">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+        <div class="motto">Độc lập – Tự do – Hạnh phúc</div>
         <div class="divider">-----------------o0o-----------------</div>
-
         {% if show_round %}
-          <div class="center title">PHIẾU TRẢ GIÁ (VÒNG {{ t.round_no }})</div>
+          <h1 class="doc-title">PHIẾU TRẢ GIÁ (VÒNG {{ t.round_no }})</h1>
         {% else %}
-          <div class="center title">PHIẾU TRẢ GIÁ</div>
+          <h1 class="doc-title">PHIẾU TRẢ GIÁ</h1>
         {% endif %}
       </div>
-    </div>
+    </header>
 
-    <div class="mt-2">
-      <span class="bold">Tài sản đấu giá:</span>
+    <!-- TÀI SẢN -->
+    <section class="asset-strip">
+      <div class="label">Tài sản đấu giá</div>
       Quyền sử dụng đất thuộc dự án
       "<span class="bold">{{ t.project_name }}</span>",
       lô đất số <span class="bold">{{ t.lot_code }}</span>
@@ -472,117 +608,139 @@
       {% else %}
         .
       {% endif %}
+    </section>
+
+    <!-- KHÁCH | ĐẤU GIÁ -->
+    <div class="main-grid">
+      <section class="panel">
+        <div class="panel-head">Thông tin khách hàng</div>
+        <div class="panel-body">
+          <table class="info-table">
+            <tr>
+              <td class="info-label">Khách hàng</td><td class="info-sep">:</td>
+              <td class="info-value bold">{{ t.customer_full_name }}</td>
+            </tr>
+            <tr>
+              <td class="info-label">Mã khách</td><td class="info-sep">:</td>
+              <td class="info-value">C{{ t.customer_id }}</td>
+            </tr>
+            <tr>
+              <td class="info-label">STT</td><td class="info-sep">:</td>
+              <td class="info-value">{% if stt_code %}<span class="stt-badge">{{ stt_code }}</span>{% endif %}</td>
+            </tr>
+            <tr>
+              <td class="info-label">CCCD</td><td class="info-sep">:</td>
+              <td class="info-value">{{ t.cccd }}</td>
+            </tr>
+            <tr>
+              <td class="info-label">Địa chỉ</td><td class="info-sep">:</td>
+              <td class="info-value">{{ t.address }}</td>
+            </tr>
+            <tr>
+              <td class="info-label">Điện thoại</td><td class="info-sep">:</td>
+              <td class="info-value">{{ t.phone }}</td>
+            </tr>
+            <tr>
+              <td class="info-label">Uỷ quyền</td><td class="info-sep">:</td>
+              <td class="info-value">
+                <span class="note">(Chỉ ghi họ tên &amp; CCCD nếu có)</span><br/>
+                <span class="dotline">&nbsp;</span>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">Thông tin đấu giá</div>
+        <div class="panel-body">
+          <table class="info-table">
+            <tr>
+              <td class="info-label">Kính gửi</td><td class="info-sep">:</td>
+              <td class="info-value">{{ t.company_name or 'Đơn vị tổ chức đấu giá' }}</td>
+            </tr>
+            <tr>
+              <td class="info-label">Lô đăng ký</td><td class="info-sep">:</td>
+              <td class="info-value bold">{{ t.lot_code }}</td>
+            </tr>
+            <tr>
+              <td class="info-label">Giá KĐ ({{ price_unit }})</td><td class="info-sep">:</td>
+              <td class="info-value bold">
+                {% if t.starting_price_vnd is number %}
+                  {{ "{:,.0f}".format(t.starting_price_vnd|float) }}
+                {% else %}
+                  0
+                {% endif %}
+              </td>
+            </tr>
+            {% if show_price_step %}
+            {% set bid_step_rule = (t.bid_step_rule or 'LOT_DEFAULT') %}
+            <tr>
+              <td class="info-label">Bước giá ({{ bid_unit }})</td><td class="info-sep">:</td>
+              <td class="info-value bold">
+                {% if bid_step_rule == 'ANY_ABOVE_START' %}
+                  Không áp dụng
+                {% elif t.bid_step_vnd is number %}
+                  {{ "{:,.0f}".format(t.bid_step_vnd|float) }}
+                {% endif %}
+              </td>
+            </tr>
+            {% endif %}
+          </table>
+        </div>
+      </section>
     </div>
 
-    <div class="mt-2">
-      <span class="bold">Kính gửi:</span>
-      {{ t.company_name or 'Đơn vị tổ chức đấu giá' }}
-    </div>
+    <!-- NỘI DUNG TRẢ GIÁ -->
+    <section class="price-section">
+      <div class="section-bar">
+        <span class="title">Nội dung trả giá</span>
+      </div>
+      <p class="intro-text">
+        Sau khi nghiên cứu kỹ hồ sơ mời tham gia đấu giá và xem tài sản đấu giá nêu trên,
+        tôi quyết định trả giá như sau:
+      </p>
 
-    <table class="info-table mt-2">
-      <tr><td class="info-label">Khách hàng</td><td class="info-sep">:</td><td>{{ t.customer_full_name }}</td></tr>
-      <tr><td class="info-label">Mã khách</td><td class="info-sep">:</td><td>C{{ t.customer_id }}</td></tr>
-      <tr>
-        <td class="info-label">STT</td>
-        <td class="info-sep">:</td>
-        <td>{% if stt_code %}<span class="stt-badge">{{ stt_code }}</span>{% endif %}</td>
-      </tr>
-      <tr><td class="info-label">CCCD</td><td class="info-sep">:</td><td>{{ t.cccd }}</td></tr>
-      <tr><td class="info-label">Địa chỉ</td><td class="info-sep">:</td><td>{{ t.address }}</td></tr>
-      <tr><td class="info-label">Điện thoại</td><td class="info-sep">:</td><td>{{ t.phone }}</td></tr>
-      <tr>
-        <td class="info-label">Uỷ quyền</td>
-        <td class="info-sep">:</td>
-        <td>
-          <span class="small">(Chỉ ghi họ tên & CCCD nếu có)</span><br/>
-          <span class="dotline long">&nbsp;</span>
-        </td>
-      </tr>
-    </table>
-
-    <div class="mt-2 small" style="text-align: justify;">
-      Sau khi nghiên cứu kỹ hồ sơ mời tham gia đấu giá và xem tài sản đấu giá nêu trên,
-      tôi quyết định trả giá như sau:
-    </div>
-
-    <div class="center bold mt-2">NỘI DUNG TRẢ GIÁ</div>
-
-    <table class="info-table mt-1">
-      <tr>
-        <td class="info-label">Lô đăng ký</td><td class="info-sep">:</td>
-        <td class="bold">{{ t.lot_code }}</td>
-      </tr>
-
-      <tr>
-        <td class="info-label">Giá khởi điểm ({{ price_unit }})</td>
-        <td class="info-sep">:</td>
-        <td class="bold">
-          {% if t.starting_price_vnd is number %}
-            {{ "{:,.0f}".format(t.starting_price_vnd|float) }}
-          {% else %}
-            0
-          {% endif %}
-        </td>
-      </tr>
-
-      {% if show_price_step %}
-      {% set bid_step_rule = (t.bid_step_rule or 'LOT_DEFAULT') %}
-      <tr>
-        <td class="info-label">Bước giá ({{ bid_unit }})</td>
-        <td class="info-sep">:</td>
-        <td class="bold">
-          {% if bid_step_rule == 'ANY_ABOVE_START' %}
-            Không áp dụng
-          {% elif t.bid_step_vnd is number %}
-            {{ "{:,.0f}".format(t.bid_step_vnd|float) }}
-          {% endif %}
-        </td>
-      </tr>
-      {% endif %}
-    </table>
-
-    <!-- BOX CHUNG -->
-    <div class="mt-2 price-wrap">
-      <div class="price-grid">
-
-        <div class="price-k">Giá trả (số)</div>
-        <div>
-          <div class="price-number-row">
-            <!-- 70%: chỗ viết giá -->
-            <div class="price-number-left">
-              <div class="price-number-write">&nbsp;</div>
-              <div class="price-unit">{{ unit_label }}</div>
-            </div>
-
-            <!-- 30%: mã lô -->
-            <div class="lot-badge">
-              <div class="lot-label">Mã lô</div>
-              <div class="lot-value">{{ t.lot_code }}</div>
+      <div class="price-wrap">
+        <div class="price-grid">
+          <div class="price-k">Giá trả (số)</div>
+          <div>
+            <div class="price-number-row">
+              <div class="price-number-left">
+                <div class="price-number-write">&nbsp;</div>
+                <div class="price-unit">{{ unit_label }}</div>
+              </div>
+              <div class="lot-badge">
+                <div class="lot-label">Mã lô</div>
+                <div class="lot-value">{{ t.lot_code }}</div>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="price-k">Giá trả (chữ)</div>
-        <div class="price-text-lines">
-          <div class="line-dotted"></div>
-          <div class="line-dotted"></div>
+          <div class="price-k">Giá trả (chữ)</div>
+          <div>
+            <div class="line-dotted"></div>
+            <div class="line-dotted"></div>
+          </div>
         </div>
-
       </div>
-    </div>
+    </section>
 
-    <div class="mt-2 small" style="text-align: justify;">
-      Tôi cam kết hoàn toàn chịu trách nhiệm về mức giá đã trả trên Phiếu trả giá này
-      và thực hiện nghiêm túc Quy chế đấu giá tài sản cùng các quy định pháp luật có liên quan.
-    </div>
+    <!-- CAM KẾT -->
+    <section class="legal-block">
+      <p class="commitment">
+        Tôi cam kết hoàn toàn chịu trách nhiệm về mức giá đã trả trên Phiếu trả giá này
+        và thực hiện nghiêm túc Quy chế đấu giá tài sản cùng các quy định pháp luật có liên quan.
+      </p>
+      <div class="notes">
+        <span class="bold" style="color:var(--ink);">Ghi chú:</span>
+        Phiếu hợp lệ do {{ t.company_name or 'Đơn vị tổ chức đấu giá' }} phát hành;
+        phiếu không rách, nát; điền đầy đủ thông tin.
+      </div>
+    </section>
 
-    <div class="mt-2 note">
-      <span class="bold">Ghi chú:</span><br/>
-      - Phiếu hợp lệ là phiếu phát hành bởi {{ t.company_name or 'Đơn vị tổ chức đấu giá' }};<br/>
-      - Phiếu không rách, nát; điền đầy đủ thông tin.
-    </div>
-
-    <div class="page-footer{% if not t.qr_data_uri %} page-footer--sig-only{% endif %}">
+    <!-- FOOTER -->
+    <footer class="page-footer{% if not t.qr_data_uri %} page-footer--sig-only{% endif %}">
       {% if t.qr_data_uri %}
       <div class="qr-box">
         <div class="qr-visual">
@@ -593,12 +751,14 @@
       {% endif %}
 
       <div class="signature-block">
-        {# ✅ #3: bỏ dòng gạch chấm "................................," #}
-        Ngày ...... tháng ...... năm ......<br/><br/>
-        <span class="bold">Khách hàng tham gia đấu giá</span><br/>
-        <span class="note">(Ký và ghi rõ họ tên)</span>
+        <div class="sig-meta">
+          <div class="sig-date">Ngày ...... tháng ...... năm ......</div>
+          <div class="sig-title">Khách hàng tham gia đấu giá</div>
+          <div class="note">(Ký và ghi rõ họ tên)</div>
+        </div>
+        <div class="sig-pad" aria-hidden="true"></div>
       </div>
-    </div>
+    </footer>
 
   </div>
 {% endfor %}
