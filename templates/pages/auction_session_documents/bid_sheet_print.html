@@ -519,7 +519,7 @@
 <body>
 
 {% for t in tickets %}
-  {% set auction_mode = t.auction_mode or 'PER_LOT' %}
+  {% set auction_mode = (t.auction_mode or t.bid_price_unit or 'PER_LOT')|upper %}
   {% set is_per_sqm = (auction_mode == 'PER_SQM') %}
   {% set unit_label = is_per_sqm and 'VND/m²' or 'VND/lô' %}
   {% set price_unit = unit_label %}
@@ -666,7 +666,7 @@
             <tr>
               <td class="info-label">Giá KĐ ({{ price_unit }})</td><td class="info-sep">:</td>
               <td class="info-value bold">
-                {% if t.starting_price_vnd is number %}
+                {% if t.starting_price_vnd is not none and t.starting_price_vnd != '' %}
                   {{ "{:,.0f}".format(t.starting_price_vnd|float) }}
                 {% else %}
                   0

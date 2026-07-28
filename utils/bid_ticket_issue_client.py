@@ -9,6 +9,7 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
+from utils.bid_sheet_print import normalize_tickets_for_print
 from utils.bid_ticket_qr import qr_png_data_uri
 
 SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
@@ -38,6 +39,8 @@ async def attach_qr_to_tickets(
     """
     if not tickets:
         return tickets
+
+    tickets = normalize_tickets_for_print([dict(t) for t in tickets])
 
     src = (source or _issue_source_for_print_ctx(print_ctx)).upper()
     items: List[Dict[str, Any]] = []
