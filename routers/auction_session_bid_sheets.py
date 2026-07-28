@@ -11,6 +11,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from utils.templates import templates
 from utils.auth import get_access_token, fetch_me
+from utils.bid_ticket_issue_client import attach_qr_to_tickets
 
 router = APIRouter(prefix="/auction-sessions/bid-sheets", tags=["auction_session_bid_sheets"])
 
@@ -66,6 +67,21 @@ def _err_html(msg: str, code: int = 500) -> HTMLResponse:
 
 def _not_found_html(msg: str = "Không có phiếu nào để in.") -> HTMLResponse:
     return HTMLResponse(f"<h1>{msg}</h1>", status_code=404)
+
+
+async def _attach_session_qr(
+    token: str,
+    tickets: List[Dict[str, Any]],
+    print_ctx: Dict[str, Any],
+) -> List[Dict[str, Any]]:
+    sid = print_ctx.get("session_id")
+    return await attach_qr_to_tickets(
+        token,
+        tickets,
+        source="SESSION",
+        print_ctx=print_ctx,
+        default_session_id=int(sid) if sid is not None else None,
+    )
 
 
 # =========================================================
@@ -125,18 +141,21 @@ async def print_bid_sheets_for_round_lot(
     if not tickets:
         return _not_found_html()
 
+    print_ctx = {
+        "mode": "AUCTION_SESSION_ROUND_LOT",
+        "round_lot_id": int(round_lot_id),
+        "sort_mode": (sort_mode or "").upper(),
+        **(meta or {}),
+    }
+    tickets = await _attach_session_qr(token, tickets, print_ctx)
+
     return templates.TemplateResponse(
         PRINT_TEMPLATE,
         {
             "request": request,
             "me": me,
             "tickets": tickets,
-            "print_ctx": {
-                "mode": "AUCTION_SESSION_ROUND_LOT",
-                "round_lot_id": int(round_lot_id),
-                "sort_mode": (sort_mode or "").upper(),
-                **(meta or {}),
-            },
+            "print_ctx": print_ctx,
         },
     )
 
@@ -176,18 +195,21 @@ async def print_bid_sheets_for_round(
     if not tickets:
         return _not_found_html()
 
+    print_ctx = {
+        "mode": "AUCTION_SESSION_ROUND",
+        "round_id": int(round_id),
+        "sort_mode": (sort_mode or "").upper(),
+        **(meta or {}),
+    }
+    tickets = await _attach_session_qr(token, tickets, print_ctx)
+
     return templates.TemplateResponse(
         PRINT_TEMPLATE,
         {
             "request": request,
             "me": me,
             "tickets": tickets,
-            "print_ctx": {
-                "mode": "AUCTION_SESSION_ROUND",
-                "round_id": int(round_id),
-                "sort_mode": (sort_mode or "").upper(),
-                **(meta or {}),
-            },
+            "print_ctx": print_ctx,
         },
     )
 
@@ -227,18 +249,21 @@ async def print_bid_sheets_for_session(
     if not tickets:
         return _not_found_html()
 
+    print_ctx = {
+        "mode": "AUCTION_SESSION_SESSION",
+        "session_id": int(session_id),
+        "sort_mode": (sort_mode or "").upper(),
+        **(meta or {}),
+    }
+    tickets = await _attach_session_qr(token, tickets, print_ctx)
+
     return templates.TemplateResponse(
         PRINT_TEMPLATE,
         {
             "request": request,
             "me": me,
             "tickets": tickets,
-            "print_ctx": {
-                "mode": "AUCTION_SESSION_SESSION",
-                "session_id": int(session_id),
-                "sort_mode": (sort_mode or "").upper(),
-                **(meta or {}),
-            },
+            "print_ctx": print_ctx,
         },
     )
 
@@ -283,19 +308,22 @@ async def print_one_bid_sheet(
     if not tickets:
         return _not_found_html("Không tìm thấy phiếu để in.")
 
+    print_ctx = {
+        "mode": "AUCTION_SESSION_ONE",
+        "round_lot_id": int(round_lot_id),
+        "customer_id": int(customer_id),
+        "sort_mode": (sort_mode or "").upper(),
+        **(meta or {}),
+    }
+    tickets = await _attach_session_qr(token, tickets, print_ctx)
+
     return templates.TemplateResponse(
         PRINT_TEMPLATE,
         {
             "request": request,
             "me": me,
             "tickets": tickets,
-            "print_ctx": {
-                "mode": "AUCTION_SESSION_ONE",
-                "round_lot_id": int(round_lot_id),
-                "customer_id": int(customer_id),
-                "sort_mode": (sort_mode or "").upper(),
-                **(meta or {}),
-            },
+            "print_ctx": print_ctx,
         },
     )
 
@@ -365,16 +393,19 @@ async def print_selected_bid_sheets(
     if not tickets:
         return _not_found_html()
 
+    print_ctx = {
+        "mode": "AUCTION_SESSION_SELECTED",
+        "sort_mode": (sort_mode or "").upper(),
+        **(meta or {}),
+    }
+    tickets = await _attach_session_qr(token, tickets, print_ctx)
+
     return templates.TemplateResponse(
         PRINT_TEMPLATE,
         {
             "request": request,
             "me": me,
             "tickets": tickets,
-            "print_ctx": {
-                "mode": "AUCTION_SESSION_SELECTED",
-                "sort_mode": (sort_mode or "").upper(),
-                **(meta or {}),
-            },
+            "print_ctx": print_ctx,
         },
     )

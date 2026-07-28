@@ -199,11 +199,49 @@
     }
 
     .signature-block{
-      width:60%;
-      margin-left:auto;
+      width:56%;
       text-align:center;
-      margin-top:9mm;
       page-break-inside:avoid;
+    }
+
+    /* Chân trang: QR trái — chữ ký phải */
+    .page-footer{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-end;
+      gap:8mm;
+      margin-top:7mm;
+      min-height:34mm;
+      page-break-inside:avoid;
+    }
+    .page-footer--sig-only{
+      justify-content:flex-end;
+    }
+
+    /* QR định danh — khung đồng bộ với flag-box / price-wrap */
+    .qr-box{
+      flex:0 0 auto;
+      width:30mm;
+      text-align:center;
+      line-height:1.15;
+      border:1.1pt solid rgba(0,0,0,0.32);
+      background:#f8f9fa;
+      border-radius:2.2mm;
+      padding:2.8mm 2.4mm 2.4mm;
+      box-sizing:border-box;
+    }
+    .qr-box img{
+      width:21mm;
+      height:21mm;
+      display:block;
+      margin:0 auto;
+    }
+    .qr-caption{
+      font-size:8.6pt;
+      font-weight:600;
+      color:rgba(0,0,0,0.62);
+      margin-top:1.4mm;
+      letter-spacing:0.06mm;
     }
 
     /* =============================
@@ -533,11 +571,20 @@
       - Phiếu không rách, nát; điền đầy đủ thông tin.
     </div>
 
-    <div class="signature-block">
-      {# ✅ #3: bỏ dòng gạch chấm "................................," #}
-      Ngày ...... tháng ...... năm ......<br/><br/>
-      <span class="bold">Khách hàng tham gia đấu giá</span><br/>
-      <span class="note">(Ký và ghi rõ họ tên)</span>
+    <div class="page-footer{% if not t.qr_data_uri %} page-footer--sig-only{% endif %}">
+      {% if t.qr_data_uri %}
+      <div class="qr-box">
+        <img src="{{ t.qr_data_uri }}" alt="QR định danh"/>
+        <div class="qr-caption">QR định danh</div>
+      </div>
+      {% endif %}
+
+      <div class="signature-block">
+        {# ✅ #3: bỏ dòng gạch chấm "................................," #}
+        Ngày ...... tháng ...... năm ......<br/><br/>
+        <span class="bold">Khách hàng tham gia đấu giá</span><br/>
+        <span class="note">(Ký và ghi rõ họ tên)</span>
+      </div>
     </div>
 
   </div>

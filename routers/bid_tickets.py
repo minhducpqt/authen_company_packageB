@@ -10,6 +10,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from utils.templates import templates
 from utils.auth import get_access_token, fetch_me
+from utils.bid_ticket_issue_client import attach_qr_to_tickets
 
 router = APIRouter(prefix="/bid-tickets", tags=["bid_tickets"])
 
@@ -17,6 +18,23 @@ SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 
 # Mẫu in chung với luồng phiên đấu giá (in ngoài phiên: không có vòng)
 PRINT_TEMPLATE = "pages/auction_session_documents/bid_sheet_print.html"
+
+
+async def _tickets_with_qr(
+    access_token: str,
+    tickets: List[Dict[str, Any]],
+    *,
+    source: str = "PRE_SESSION",
+    print_ctx: Optional[Dict[str, Any]] = None,
+    default_session_id: Optional[int] = None,
+) -> List[Dict[str, Any]]:
+    return await attach_qr_to_tickets(
+        access_token,
+        tickets,
+        source=source,
+        print_ctx=print_ctx,
+        default_session_id=default_session_id,
+    )
 
 
 async def _get_json(
@@ -361,6 +379,8 @@ async def print_bid_tickets(
         )
     )
 
+    rows = await _tickets_with_qr(token, rows, source="PRE_SESSION")
+
     return templates.TemplateResponse(
         PRINT_TEMPLATE,
         {
@@ -419,6 +439,8 @@ async def print_all_bid_tickets(
             t.get("lot_code") or "",
         )
     )
+
+    rows = await _tickets_with_qr(token, rows, source="PRE_SESSION")
 
     return templates.TemplateResponse(
         PRINT_TEMPLATE,
@@ -507,6 +529,8 @@ async def print_selected_bid_tickets(
 
     if not tickets:
         return HTMLResponse("<h1>Không lấy được dữ liệu phiếu để in.</h1>", status_code=404)
+
+    tickets = await _tickets_with_qr(token, tickets, source="PRE_SESSION")
 
     # Sort đã do A quyết định; B giữ nguyên.
     return templates.TemplateResponse(
@@ -651,21 +675,30 @@ async def print_tied_bid_tickets_next_round(
             )
         )
 
+    print_ctx = {
+        "mode": "TIED_NEXT_ROUND",
+        "session_id": int(session_id),
+        "only_lot_id": int(only_lot_id) if only_lot_id is not None else None,
+        "project_code": project_code,
+        "project_name": project.get("project_name"),
+        "pairs_count": len(items),
+        "sort_type": sort_type,
+    }
+    tickets = await _tickets_with_qr(
+        token,
+        tickets,
+        source="TIED",
+        print_ctx=print_ctx,
+        default_session_id=int(session_id),
+    )
+
     return templates.TemplateResponse(
         PRINT_TEMPLATE,
         {
             "request": request,
             "me": me,
             "tickets": tickets,
-            "print_ctx": {
-                "mode": "TIED_NEXT_ROUND",
-                "session_id": int(session_id),
-                "only_lot_id": int(only_lot_id) if only_lot_id is not None else None,
-                "project_code": project_code,
-                "project_name": project.get("project_name"),
-                "pairs_count": len(items),
-                "sort_type": sort_type,
-            },
+            "print_ctx": print_ctx,
         },
     )
 
