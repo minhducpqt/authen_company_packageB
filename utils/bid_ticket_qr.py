@@ -13,9 +13,10 @@ except ImportError:  # pragma: no cover
     ERROR_CORRECT_M = None
 
 
-def qr_png_data_uri(token: str, box_size: int = 4) -> Optional[str]:
+def qr_png_data_uri(token: str, box_size: int = 7) -> Optional[str]:
     """
     Sinh data URI PNG cho QR in trên phiếu.
+    box_size=7: đủ sắc nét khi in ~34mm.
     """
     text = (token or "").strip()
     if not text:
@@ -27,7 +28,7 @@ def qr_png_data_uri(token: str, box_size: int = 4) -> Optional[str]:
         version=None,
         error_correction=ERROR_CORRECT_M,
         box_size=box_size,
-        border=1,
+        border=2,
     )
     qr.add_data(text)
     qr.make(fit=True)

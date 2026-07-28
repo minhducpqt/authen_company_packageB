@@ -37,6 +37,7 @@
       </select>
       <!-- giữ giá trị để submit GET -->
       <input type="hidden" name="project_code" id="projectCodeInput" value="{{ filters.project_code }}">
+      <input type="hidden" name="tab" id="tabInput" value="{{ active_tab or 'customers' }}">
       <div class="mt-1 text-[11px] text-slate-500">
         * Bắt buộc chọn dự án để tải dữ liệu / in phiếu.
       </div>
@@ -93,26 +94,27 @@
       <!-- Ưu tiên THEO KHÁCH -->
       <button
         type="button"
-        class="px-3 py-2 border-b-2 font-medium js-tab-btn"
-        data-tab="tab-customers"
+        class="px-3 py-2 border-b-2 font-medium js-tab-btn {% if active_tab != 'lots' %}border-b-indigo-600 text-indigo-700{% else %}border-b-transparent text-slate-500{% endif %}"
+        data-tab="customers"
       >
         Theo KHÁCH
       </button>
       <button
         type="button"
-        class="px-3 py-2 border-b-2 font-medium js-tab-btn"
-        data-tab="tab-lots"
+        class="px-3 py-2 border-b-2 font-medium js-tab-btn {% if active_tab == 'lots' %}border-b-indigo-600 text-indigo-700{% else %}border-b-transparent text-slate-500{% endif %}"
+        data-tab="lots"
       >
         Theo LÔ
       </button>
     </nav>
   </div>
 
-  <!-- TAB 1: THEO KHÁCH -->
+  {% if active_tab == 'customers' %}
+  <!-- TAB: THEO KHÁCH -->
   <div id="tab-customers" class="tab-panel">
     <div class="flex items-center justify-between mb-2">
       <div class="text-sm text-slate-500">
-        Tổng: {{ customers|length }} khách đủ điều kiện (có ít nhất 1 lô deposit đủ chuẩn).
+        Tổng: {{ customers_total or 0 }} khách đủ điều kiện (có ít nhất 1 lô deposit đủ chuẩn).
       </div>
       <div class="flex gap-2">
         <button
@@ -225,9 +227,9 @@
       {% endif %}
     </div>
   </div>
-
-  <!-- TAB 2: THEO LÔ (GROUPED) -->
-  <div id="tab-lots" class="tab-panel hidden">
+  {% else %}
+  <!-- TAB: THEO LÔ -->
+  <div id="tab-lots" class="tab-panel">
     <div class="flex items-center justify-between mb-2">
       <div class="text-sm text-slate-500">
         Tổng: {{ lots_total or 0 }} lô ({{ pairs_total or 0 }} dòng khách-lô).
@@ -376,6 +378,7 @@
       {% endif %}
     </div>
   </div>
+  {% endif %}
 </div>
 
 <!-- CUSTOM CONFIRM MODAL -->
@@ -416,13 +419,6 @@
 
 <!-- JS -->
 <script>
-  // Debounce helper
-  let __debounceTimer;
-  function debounce(fn, ms) {
-    clearTimeout(__debounceTimer);
-    __debounceTimer = setTimeout(fn, ms);
-  }
-
   // Custom confirm
   let confirmCallback = null;
   function showConfirm(message, onOk) {
@@ -513,26 +509,35 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     const tabBtns = document.querySelectorAll(".js-tab-btn");
-    const panels = document.querySelectorAll(".tab-panel");
+    const tabInput = document.getElementById("tabInput");
+    const projectSelect = document.getElementById("projectSelect");
+    const projectCodeInput2 = document.getElementById("projectCodeInput");
+    const customerSearch = document.getElementById("customerSearch");
+    const lotCodeInput = document.getElementById("lotCodeInput");
 
-    function activateTab(name) {
-      panels.forEach(p => {
-        if (p.id === name) p.classList.remove("hidden");
-        else p.classList.add("hidden");
-      });
-      tabBtns.forEach(b => {
-        const active = b.dataset.tab === name;
-        b.classList.toggle("border-b-indigo-600", active);
-        b.classList.toggle("text-indigo-700", active);
-        b.classList.toggle("border-b-transparent", !active);
-        b.classList.toggle("text-slate-500", !active);
-      });
+    function submitWithCurrentFilters() {
+      const params = new URLSearchParams();
+      const pj = (projectCodeInput2 && projectCodeInput2.value.trim()) || "";
+      const q = (customerSearch && customerSearch.value.trim()) || "";
+      const lot = (lotCodeInput && lotCodeInput.value.trim()) || "";
+      const tab = (tabInput && tabInput.value.trim()) || "customers";
+
+      if (pj) params.set("project_code", pj);
+      if (q) params.set("customer_q", q);
+      if (lot) params.set("lot_code", lot);
+      if (tab === "lots") params.set("tab", "lots");
+
+      const qs = params.toString();
+      const url = qs ? `/bid-tickets?${qs}` : "/bid-tickets";
+      window.location.href = url;
     }
 
-    // Mặc định: Theo KHÁCH
-    activateTab("tab-customers");
     tabBtns.forEach(b => {
-      b.addEventListener("click", () => activateTab(b.dataset.tab));
+      b.addEventListener("click", function () {
+        const nextTab = (b.dataset.tab || "customers").trim();
+        if (tabInput) tabInput.value = nextTab;
+        submitWithCurrentFilters();
+      });
     });
 
     // Chọn all rows tab "Theo LÔ"
@@ -570,33 +575,7 @@
       });
     }
 
-    // ====== FILTERS: auto apply ======
-    const projectSelect = document.getElementById("projectSelect");
-    const projectCodeInput2 = document.getElementById("projectCodeInput");
-    const customerSearch = document.getElementById("customerSearch");
-    const lotCodeInput = document.getElementById("lotCodeInput");
-
-    function submitWithCurrentFilters() {
-      const params = new URLSearchParams();
-      const pj = projectCodeInput2.value.trim();
-      const q = customerSearch.value.trim();
-      const lot = lotCodeInput.value.trim();
-
-      if (pj) params.set("project_code", pj);
-      if (q) params.set("customer_q", q);
-      if (lot) params.set("lot_code", lot);
-
-      const qs = params.toString();
-      const url = qs ? `/bid-tickets?${qs}` : "/bid-tickets";
-      window.location.href = url;
-    }
-
-    if (customerSearch) {
-      customerSearch.addEventListener("input", function () {
-        debounce(submitWithCurrentFilters, 400);
-      });
-    }
-
+    // ====== FILTERS ======
     if (projectSelect) {
       projectSelect.addEventListener("change", function () {
         projectCodeInput2.value = projectSelect.value || "";

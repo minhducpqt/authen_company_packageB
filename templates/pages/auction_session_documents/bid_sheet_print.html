@@ -209,39 +209,50 @@
       display:flex;
       justify-content:space-between;
       align-items:flex-end;
-      gap:8mm;
+      gap:10mm;
       margin-top:7mm;
-      min-height:34mm;
+      min-height:44mm;
       page-break-inside:avoid;
     }
     .page-footer--sig-only{
       justify-content:flex-end;
     }
 
-    /* QR định danh — khung đồng bộ với flag-box / price-wrap */
+    /* QR định danh — khung đồng bộ flag-box / price-wrap, kích thước quét tay */
     .qr-box{
       flex:0 0 auto;
-      width:30mm;
+      width:42mm;
       text-align:center;
       line-height:1.15;
-      border:1.1pt solid rgba(0,0,0,0.32);
-      background:#f8f9fa;
-      border-radius:2.2mm;
-      padding:2.8mm 2.4mm 2.4mm;
+      border:1.2pt solid rgba(0,0,0,0.38);
+      background:linear-gradient(180deg, #fafbfc 0%, #f0f2f5 100%);
+      border-radius:2.8mm;
+      padding:3.2mm 3mm 2.8mm;
+      box-sizing:border-box;
+      box-shadow:inset 0 0 0 0.5pt rgba(255,255,255,0.9);
+    }
+    /* Nền trắng viền mỏng = quiet zone thẩm mỹ + dễ quét */
+    .qr-frame{
+      display:inline-block;
+      background:#fff;
+      border:1pt solid rgba(0,0,0,0.14);
+      border-radius:2mm;
+      padding:2mm;
       box-sizing:border-box;
     }
     .qr-box img{
-      width:21mm;
-      height:21mm;
+      width:34mm;
+      height:34mm;
       display:block;
       margin:0 auto;
     }
     .qr-caption{
-      font-size:8.6pt;
-      font-weight:600;
-      color:rgba(0,0,0,0.62);
-      margin-top:1.4mm;
-      letter-spacing:0.06mm;
+      font-size:9pt;
+      font-weight:700;
+      color:rgba(0,0,0,0.68);
+      margin-top:2mm;
+      letter-spacing:0.14mm;
+      text-transform:uppercase;
     }
 
     /* =============================
@@ -574,7 +585,9 @@
     <div class="page-footer{% if not t.qr_data_uri %} page-footer--sig-only{% endif %}">
       {% if t.qr_data_uri %}
       <div class="qr-box">
-        <img src="{{ t.qr_data_uri }}" alt="QR định danh"/>
+        <div class="qr-frame">
+          <img src="{{ t.qr_data_uri }}" alt="QR định danh"/>
+        </div>
         <div class="qr-caption">QR định danh</div>
       </div>
       {% endif %}

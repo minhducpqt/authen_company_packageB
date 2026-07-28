@@ -113,104 +113,21 @@ async def _auto_pick_project_code_if_missing(
 # ======================================================================
 # PAGE: INDEX
 # ======================================================================
-@router.get("", response_class=HTMLResponse)
-async def bid_tickets_page(
-    request: Request,
-    project_code: Optional[str] = Query(None),
-    customer_q: Optional[str] = Query(None, description="Tên khách / CCCD / điện thoại"),
-    lot_code: Optional[str] = Query(None),
-    page: int = Query(1, ge=1),
-    size: int = Query(10000, ge=1, le=10000),
-):
-    """
-    Màn hình quản lý/in phiếu trả giá.
-    - BẮT BUỘC có project_code mới tải dữ liệu (chống trộn dự án).
-    - Nếu chưa có project_code:
-        + auto chọn nếu có 1 ACTIVE hoặc chọn ACTIVE cuối danh sách
-    - Tab 1: Theo KHÁCH (group theo customer_id)
-    - Tab 2: Theo LÔ (group theo lot_id, sort lot_id asc, customers asc)
-    """
-    token = get_access_token(request)
-    me = await fetch_me(token)
-    if not me:
-        return RedirectResponse(
-            url=f"/login?next={quote('/bid-tickets')}",
-            status_code=303,
-        )
+def _summarize_bid_ticket_rows(rows: List[Dict[str, Any]]) -> Tuple[int, int]:
+    customer_ids: set[int] = set()
+    lot_keys: set[Tuple[str, int]] = set()
+    for r in rows:
+        cid = r.get("customer_id")
+        if cid is not None:
+            customer_ids.add(int(cid))
+        pj2 = (r.get("project_code") or "").strip()
+        lid = r.get("lot_id")
+        if pj2 and lid is not None:
+            lot_keys.add((pj2, int(lid)))
+    return len(customer_ids), len(lot_keys)
 
-    pj = (project_code or "").strip()
 
-    if not pj:
-        picked = await _auto_pick_project_code_if_missing(
-            token=token,
-            me=me,
-            incoming_filters={
-                "customer_q": customer_q or "",
-                "lot_code": lot_code or "",
-                "page": page,
-                "size": size,
-            },
-        )
-        if picked:
-            qs = [f"project_code={quote(picked)}"]
-            if customer_q:
-                qs.append(f"customer_q={quote(customer_q)}")
-            if lot_code:
-                qs.append(f"lot_code={quote(lot_code)}")
-            if page and page != 1:
-                qs.append(f"page={page}")
-            if size:
-                qs.append(f"size={size}")
-            return RedirectResponse(url="/bid-tickets?" + "&".join(qs), status_code=303)
-
-        return templates.TemplateResponse(
-            "pages/bid_tickets/index.html",
-            {
-                "request": request,
-                "title": "Phiếu trả giá",
-                "me": me,
-                "filters": {
-                    "project_code": "",
-                    "customer_q": customer_q or "",
-                    "lot_code": lot_code or "",
-                },
-                "page": {"data": [], "page": 1, "size": size, "total": 0},
-                "rows": [],
-                "customers": [],
-                "lots": [],
-                "lots_total": 0,
-                "pairs_total": 0,
-                "load_err": "Vui lòng chọn dự án trước khi thao tác / in phiếu.",
-            },
-        )
-
-    params: Dict[str, Any] = {
-        "page": page,
-        "size": size,
-        "project_code": pj,
-    }
-    if lot_code:
-        params["lot_code"] = lot_code
-    if customer_q:
-        params["customer_q"] = customer_q
-
-    headers = {"Authorization": f"Bearer {token}"}
-    data: Dict[str, Any] = {"data": [], "page": page, "size": size, "total": 0}
-    load_err: Optional[str] = None
-
-    try:
-        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=20.0) as client:
-            st, js = await _get_json(client, "/api/v1/report/bid_tickets", headers, params)
-            if st == 200 and isinstance(js, dict):
-                data = js
-            else:
-                load_err = f"Không tải được dữ liệu phiếu trả giá (HTTP {st})."
-    except Exception as e:
-        load_err = str(e)
-
-    rows: List[Dict[str, Any]] = data.get("data") or []
-
-    # TAB 1: group theo khách
+def _group_bid_ticket_customers(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     customers: Dict[int, Dict[str, Any]] = {}
     for r in rows:
         cid = r.get("customer_id")
@@ -243,8 +160,10 @@ async def bid_tickets_page(
             c.get("stt") or 10**9,
         )
     )
+    return customers_list
 
-    # TAB 2: group theo lô
+
+def _group_bid_ticket_lots(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     lots_map: Dict[Tuple[str, int], Dict[str, Any]] = {}
     for r in rows:
         pj2 = (r.get("project_code") or "").strip()
@@ -259,7 +178,6 @@ async def bid_tickets_page(
                 "project_name": r.get("project_name"),
                 "project_id": r.get("project_id"),
                 "auction_mode": r.get("auction_mode"),
-
                 "lot_id": lid,
                 "lot_code": r.get("lot_code"),
                 "lot_description": r.get("lot_description"),
@@ -268,23 +186,128 @@ async def bid_tickets_page(
                 "bid_step_vnd": r.get("bid_step_vnd"),
                 "deposit_amount_vnd": r.get("deposit_amount_vnd"),
                 "lot_status": r.get("lot_status"),
-
                 "deposit_customer_count": r.get("deposit_customer_count"),
                 "total_deposit_amount_per_lot": r.get("total_deposit_amount_per_lot"),
-
                 "customers": [],
             }
-
         lots_map[key]["customers"].append(r)
 
     lots_list = list(lots_map.values())
     lots_list.sort(key=lambda l: (l.get("lot_id") or 10**18, l.get("lot_code") or ""))
-
     for l in lots_list:
         l["customers"].sort(key=lambda rr: (rr.get("customer_id") or 10**18))
+    return lots_list
 
-    lots_total = len(lots_list)
+
+@router.get("", response_class=HTMLResponse)
+async def bid_tickets_page(
+    request: Request,
+    project_code: Optional[str] = Query(None),
+    customer_q: Optional[str] = Query(None, description="Tên khách / CCCD / điện thoại"),
+    lot_code: Optional[str] = Query(None),
+    tab: str = Query("customers", description="customers | lots"),
+    page: int = Query(1, ge=1),
+    size: int = Query(10000, ge=1, le=10000),
+):
+    """
+    Màn hình quản lý/in phiếu trả giá.
+    - BẮT BUỘC có project_code mới tải dữ liệu (chống trộn dự án).
+    - Nếu chưa có project_code:
+        + auto chọn nếu có 1 ACTIVE hoặc chọn ACTIVE cuối danh sách
+    - Tab 1: Theo KHÁCH (group theo customer_id)
+    - Tab 2: Theo LÔ (group theo lot_id, sort lot_id asc, customers asc)
+    """
+    token = get_access_token(request)
+    me = await fetch_me(token)
+    if not me:
+        return RedirectResponse(
+            url=f"/login?next={quote('/bid-tickets')}",
+            status_code=303,
+        )
+
+    pj = (project_code or "").strip()
+
+    active_tab = "lots" if (tab or "").strip().lower() == "lots" else "customers"
+
+    if not pj:
+        picked = await _auto_pick_project_code_if_missing(
+            token=token,
+            me=me,
+            incoming_filters={
+                "customer_q": customer_q or "",
+                "lot_code": lot_code or "",
+                "page": page,
+                "size": size,
+            },
+        )
+        if picked:
+            qs = [f"project_code={quote(picked)}"]
+            if customer_q:
+                qs.append(f"customer_q={quote(customer_q)}")
+            if lot_code:
+                qs.append(f"lot_code={quote(lot_code)}")
+            if active_tab == "lots":
+                qs.append("tab=lots")
+            if page and page != 1:
+                qs.append(f"page={page}")
+            return RedirectResponse(url="/bid-tickets?" + "&".join(qs), status_code=303)
+
+        return templates.TemplateResponse(
+            "pages/bid_tickets/index.html",
+            {
+                "request": request,
+                "title": "Phiếu trả giá",
+                "me": me,
+                "active_tab": active_tab,
+                "filters": {
+                    "project_code": "",
+                    "customer_q": customer_q or "",
+                    "lot_code": lot_code or "",
+                },
+                "customers": [],
+                "lots": [],
+                "lots_total": 0,
+                "pairs_total": 0,
+                "customers_total": 0,
+                "load_err": "Vui lòng chọn dự án trước khi thao tác / in phiếu.",
+            },
+        )
+
+    params: Dict[str, Any] = {
+        "page": page,
+        "size": size,
+        "project_code": pj,
+        "include_total": False,
+    }
+    if lot_code:
+        params["lot_code"] = lot_code
+    if customer_q:
+        params["customer_q"] = customer_q
+
+    headers = {"Authorization": f"Bearer {token}"}
+    data: Dict[str, Any] = {"data": [], "page": page, "size": size, "total": 0}
+    load_err: Optional[str] = None
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=20.0) as client:
+            st, js = await _get_json(client, "/api/v1/report/bid_tickets", headers, params)
+            if st == 200 and isinstance(js, dict):
+                data = js
+            else:
+                load_err = f"Không tải được dữ liệu phiếu trả giá (HTTP {st})."
+    except Exception as e:
+        load_err = str(e)
+
+    rows: List[Dict[str, Any]] = data.get("data") or []
+    customers_total, lots_total = _summarize_bid_ticket_rows(rows)
     pairs_total = len(rows)
+
+    if active_tab == "lots":
+        customers_list: List[Dict[str, Any]] = []
+        lots_list = _group_bid_ticket_lots(rows)
+    else:
+        customers_list = _group_bid_ticket_customers(rows)
+        lots_list = []
 
     return templates.TemplateResponse(
         "pages/bid_tickets/index.html",
@@ -292,17 +315,17 @@ async def bid_tickets_page(
             "request": request,
             "title": "Phiếu trả giá",
             "me": me,
+            "active_tab": active_tab,
             "filters": {
                 "project_code": pj,
                 "customer_q": customer_q or "",
                 "lot_code": lot_code or "",
             },
-            "page": data,
-            "rows": rows,
             "customers": customers_list,
             "lots": lots_list,
             "lots_total": lots_total,
             "pairs_total": pairs_total,
+            "customers_total": customers_total,
             "load_err": load_err,
         },
     )
