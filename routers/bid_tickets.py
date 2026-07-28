@@ -15,6 +15,9 @@ router = APIRouter(prefix="/bid-tickets", tags=["bid_tickets"])
 
 SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 
+# Mẫu in chung với luồng phiên đấu giá (in ngoài phiên: không có vòng)
+PRINT_TEMPLATE = "pages/auction_session_documents/bid_sheet_print.html"
+
 
 async def _get_json(
     client: httpx.AsyncClient,
@@ -359,7 +362,7 @@ async def print_bid_tickets(
     )
 
     return templates.TemplateResponse(
-        "pages/bid_tickets/print.html",
+        PRINT_TEMPLATE,
         {
             "request": request,
             "me": me,
@@ -418,7 +421,7 @@ async def print_all_bid_tickets(
     )
 
     return templates.TemplateResponse(
-        "pages/bid_tickets/print.html",
+        PRINT_TEMPLATE,
         {
             "request": request,
             "me": me,
@@ -507,7 +510,7 @@ async def print_selected_bid_tickets(
 
     # Sort đã do A quyết định; B giữ nguyên.
     return templates.TemplateResponse(
-        "pages/bid_tickets/print.html",
+        PRINT_TEMPLATE,
         {
             "request": request,
             "me": me,
@@ -519,7 +522,7 @@ async def print_selected_bid_tickets(
 # ======================================================================
 # NEW: PRINT-TIED (NEXT ROUND)
 # - B gọi A lấy pairs đang TIED theo counting session
-# - Sau đó gọi A bulk bid_tickets/selected để render print.html
+# - Sau đó gọi A bulk bid_tickets/selected để render PRINT_TEMPLATE
 # ======================================================================
 from typing import Literal
 
@@ -649,7 +652,7 @@ async def print_tied_bid_tickets_next_round(
         )
 
     return templates.TemplateResponse(
-        "pages/bid_tickets/print.html",
+        PRINT_TEMPLATE,
         {
             "request": request,
             "me": me,

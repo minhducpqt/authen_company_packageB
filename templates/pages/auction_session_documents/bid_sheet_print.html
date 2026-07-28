@@ -55,43 +55,57 @@
       margin:1.5mm 0 4mm;
     }
 
-    /* =========================================
-       ✅ Flag góc trái trên (theo yêu cầu mới)
-       - Bỏ chữ "Lô:"
-       - Đóng khung riêng mã lô, font to
-       - Dòng dưới: STT-Cxxx-Syyy-Pzz
-       ========================================= */
-    .flag-box{
-      position:absolute;
-      top:0mm;
-      left:0mm;
-      font-size:10pt;
-      border:1px solid #444;
-      padding:2px 7px;
-      line-height:1.18;
-      background:#f9fafb;
-      text-align:center;
+    /* Vùng đầu trang: chừa góc phải cho mã lô, tránh đè tiêu ngữ */
+    .page-head{
+      position:relative;
+      margin-bottom:1mm;
     }
-
-    .flag-lot{
-      display:inline-block;
-      font-size:20pt;
-      font-weight:900;
-      line-height:1.0;
-      white-space:nowrap;
-      padding:2px 10px 3px;
-      border:1.4pt solid rgba(0,0,0,0.65);
-      background:#fff;
-      border-radius:2mm;
-      margin:2px 0 3px;
+    .head-center{
+      padding-right:54mm;
       box-sizing:border-box;
     }
 
+    /* Góc phải trên: mã lô to rõ, cỡ chữ linh hoạt theo độ dài */
+    .flag-box{
+      position:absolute;
+      top:0mm;
+      right:0mm;
+      left:auto;
+      z-index:2;
+      font-size:10pt;
+      border:1.2pt solid #333;
+      padding:3px 8px 4px;
+      line-height:1.15;
+      background:#f3f4f6;
+      text-align:center;
+      max-width:52mm;
+      width:max-content;
+      box-sizing:border-box;
+    }
+
+    .flag-lot{
+      display:block;
+      font-weight:900;
+      line-height:1.08;
+      white-space:nowrap;
+      border:2pt solid rgba(0,0,0,0.72);
+      background:#fff;
+      border-radius:2.5mm;
+      margin:1px 0 4px;
+      box-sizing:border-box;
+      max-width:100%;
+      overflow:visible;
+    }
+
     .flag-code{
-      font-size:10.5pt;
+      font-size:9pt;
       font-weight:700;
       white-space:nowrap;
-      letter-spacing:0.15mm;
+      letter-spacing:0.08mm;
+      color:rgba(0,0,0,0.78);
+      max-width:100%;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
 
     .info-table{
@@ -110,6 +124,19 @@
       font-weight:800;
     }
     .info-sep{ width:4mm; }
+
+    /* STT phiên: khung vừa, đậm vừa phải */
+    .stt-badge{
+      display:inline-block;
+      font-size:13.5pt;
+      font-weight:700;
+      padding:1px 9px 2px;
+      border:1pt solid rgba(0,0,0,0.32);
+      background:#f8f9fa;
+      border-radius:1.5mm;
+      letter-spacing:0.25mm;
+      line-height:1.25;
+    }
 
     /* =============================
        ✅ CHỈ CHỈNH LINE THEO YÊU CẦU MỚI
@@ -314,7 +341,7 @@
   {% set price_unit = unit_label %}
   {% set bid_unit = unit_label %}
 
-  {# ✅ Sxxx = số lô đấu của khách trong ROUND (ưu tiên field từ API: customer_lot_count) #}
+  {# Sxxx = số lô của khách (ưu tiên customer_lot_count từ API) #}
   {% set qty_lots = (t.customer_lot_count if (t.customer_lot_count is not none) else (tickets
     | selectattr('round_id', 'equalto', t.round_id)
     | selectattr('customer_id', 'equalto', t.customer_id)
@@ -325,26 +352,66 @@
   {% set stt_code = t.stt_padded or (t.stt or '') %}
   {% set show_price_step = (t.show_price_step if (t.show_price_step is not none) else true) %}
 
-  {# ✅ đấu 1 vòng / nhiều vòng: mặc định coi là nhiều vòng nếu thiếu field #}
-  {% set is_multi_round = (t.is_multi_round if (t.is_multi_round is not none) else true) %}
+  {# Chỉ hiện vòng khi in từ phiên (có session_id) và dự án nhiều vòng #}
+  {% set is_multi_round = (t.is_multi_round if (t.is_multi_round is not none) else false) %}
+  {% set show_round = (
+    t.session_id is not none
+    and is_multi_round
+    and t.round_no is not none
+    and t.round_no != ''
+  ) %}
+
+  {% set lot_code_display = t.lot_code or '' %}
+  {% set lot_len = lot_code_display|length %}
+  {% if lot_len <= 4 %}
+    {% set lot_flag_fs = '30pt' %}
+    {% set lot_flag_pad = '4px 14px 5px' %}
+    {% set lot_flag_ls = '0.35mm' %}
+  {% elif lot_len <= 6 %}
+    {% set lot_flag_fs = '26pt' %}
+    {% set lot_flag_pad = '3px 12px 4px' %}
+    {% set lot_flag_ls = '0.25mm' %}
+  {% elif lot_len <= 8 %}
+    {% set lot_flag_fs = '22pt' %}
+    {% set lot_flag_pad = '3px 10px 4px' %}
+    {% set lot_flag_ls = '0.18mm' %}
+  {% elif lot_len <= 10 %}
+    {% set lot_flag_fs = '18pt' %}
+    {% set lot_flag_pad = '2px 8px 3px' %}
+    {% set lot_flag_ls = '0.10mm' %}
+  {% elif lot_len <= 12 %}
+    {% set lot_flag_fs = '15pt' %}
+    {% set lot_flag_pad = '2px 6px 3px' %}
+    {% set lot_flag_ls = '0.05mm' %}
+  {% else %}
+    {% set lot_flag_fs = '13pt' %}
+    {% set lot_flag_pad = '2px 5px 3px' %}
+    {% set lot_flag_ls = '0mm' %}
+  {% endif %}
 
   <div class="page">
 
-    <div class="flag-box">
-      <div class="flag-lot">{{ t.lot_code }}</div>
-      <div class="flag-code">{{ stt_code }}-C{{ t.customer_id }}-S{{ qty_lots }}-P{{ t.session_id }}</div>
+    <div class="page-head">
+      <div class="flag-box">
+        <div
+          class="flag-lot"
+          style="font-size:{{ lot_flag_fs }}; padding:{{ lot_flag_pad }}; letter-spacing:{{ lot_flag_ls }};"
+        >{{ lot_code_display }}</div>
+        <div class="flag-code">{{ stt_code }}-C{{ t.customer_id }}-S{{ qty_lots }}{% if t.session_id %}-P{{ t.session_id }}{% endif %}</div>
+      </div>
+
+      <div class="head-center">
+        <div class="center gov">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+        <div class="center bold">Độc lập – Tự do – Hạnh phúc</div>
+        <div class="divider">-----------------o0o-----------------</div>
+
+        {% if show_round %}
+          <div class="center title">PHIẾU TRẢ GIÁ (VÒNG {{ t.round_no }})</div>
+        {% else %}
+          <div class="center title">PHIẾU TRẢ GIÁ</div>
+        {% endif %}
+      </div>
     </div>
-
-    <div class="center gov">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
-    <div class="center bold">Độc lập – Tự do – Hạnh phúc</div>
-    <div class="divider">-----------------o0o-----------------</div>
-
-    {# ✅ Tiêu đề theo config #}
-    {% if is_multi_round %}
-      <div class="center title">PHIẾU TRẢ GIÁ (VÒNG {{ t.round_no }})</div>
-    {% else %}
-      <div class="center title">PHIẾU TRẢ GIÁ</div>
-    {% endif %}
 
     <div class="mt-2">
       <span class="bold">Tài sản đấu giá:</span>
@@ -366,6 +433,11 @@
     <table class="info-table mt-2">
       <tr><td class="info-label">Khách hàng</td><td class="info-sep">:</td><td>{{ t.customer_full_name }}</td></tr>
       <tr><td class="info-label">Mã khách</td><td class="info-sep">:</td><td>C{{ t.customer_id }}</td></tr>
+      <tr>
+        <td class="info-label">STT</td>
+        <td class="info-sep">:</td>
+        <td>{% if stt_code %}<span class="stt-badge">{{ stt_code }}</span>{% endif %}</td>
+      </tr>
       <tr><td class="info-label">CCCD</td><td class="info-sep">:</td><td>{{ t.cccd }}</td></tr>
       <tr><td class="info-label">Địa chỉ</td><td class="info-sep">:</td><td>{{ t.address }}</td></tr>
       <tr><td class="info-label">Điện thoại</td><td class="info-sep">:</td><td>{{ t.phone }}</td></tr>
