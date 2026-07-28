@@ -6,6 +6,7 @@ from urllib.parse import quote
 
 from fastapi_account_manager.middlewares.auth_guard import ACCESS_COOKIE_NAME
 from utils.templates import templates
+from utils.device_cookie import clear_device_cookies_for_user
 
 router = APIRouter(prefix="/account", tags=["account"])
 
@@ -310,6 +311,8 @@ async def logout(request: Request):
 
 @router.post("/logout_all")
 async def logout_all(request: Request):
+    me = await _me(request)
+    username = (me or {}).get("username")
     acc = request.cookies.get(ACCESS_COOKIE) or request.cookies.get(ACCESS_COOKIE_NAME)
     try:
         async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=8.0) as client:
@@ -319,5 +322,5 @@ async def logout_all(request: Request):
         pass
     resp = RedirectResponse(url="/login", status_code=303)
     resp = _clear_auth_cookies(resp)
-    resp.delete_cookie(os.getenv("DEVICE_COOKIE_NAME", "device_id"), path="/")
+    clear_device_cookies_for_user(resp, username)
     return resp

@@ -5,6 +5,11 @@ import httpx
 import os
 from urllib.parse import urlparse
 from utils.templates import templates
+from utils.device_cookie import (
+    clear_device_cookies_for_user,
+    forward_device_cookies,
+    set_device_cookie_for_user,
+)
 
 router = APIRouter(tags=["auth"])
 
@@ -12,7 +17,6 @@ SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 ACCESS_COOKIE_NAME = os.getenv("ACCESS_COOKIE_NAME", "access_token")
 REFRESH_COOKIE_NAME = os.getenv("REFRESH_COOKIE_NAME", "refresh_token")
 ROLE_COOKIE_NAME = os.getenv("ROLE_COOKIE_NAME", "user_role")
-DEVICE_COOKIE_NAME = os.getenv("DEVICE_COOKIE_NAME", "device_id")
 
 COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
 COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "Lax")
@@ -94,25 +98,27 @@ def _set_auth_cookies(resp: RedirectResponse, access: str | None, refresh: str |
         )
 
 
-def _set_device_cookie(resp, device_id: str | None):
-    if device_id:
-        resp.set_cookie(
-            key=DEVICE_COOKIE_NAME,
-            value=device_id,
-            httponly=True,
-            secure=COOKIE_SECURE,
-            samesite=COOKIE_SAMESITE,
-            max_age=365 * 24 * 3600,
-            path="/",
-        )
+def _set_device_cookie(resp: RedirectResponse, username: str, device_id: str | None):
+    set_device_cookie_for_user(resp, username, device_id)
 
 
-def _forward_cookies(request: Request) -> dict:
-    did = request.cookies.get(DEVICE_COOKIE_NAME)
-    return {DEVICE_COOKIE_NAME: did} if did else {}
+async def _current_username(request: Request) -> str | None:
+    acc = request.cookies.get(ACCESS_COOKIE_NAME)
+    if not acc:
+        return None
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=6.0) as client:
+            r = await client.get("/auth/me", headers={"Authorization": f"Bearer {acc}"})
+        if r.status_code != 200:
+            return None
+        data = r.json() if r.headers.get("content-type", "").startswith("application/json") else {}
+        u = (data.get("username") or "").strip()
+        return u or None
+    except Exception:
+        return None
 
 
-async def _finalize_login(request: Request, data: dict, safe_next: str):
+async def _finalize_login(request: Request, data: dict, safe_next: str, username: str):
     access = data.get("access_token")
     refresh = data.get("refresh_token")
     role = None
@@ -125,7 +131,7 @@ async def _finalize_login(request: Request, data: dict, safe_next: str):
         safe_next = _first_menu_for_non_admin(role_u)
     resp = RedirectResponse(url=safe_next, status_code=303)
     _set_auth_cookies(resp, access, refresh, role_u)
-    _set_device_cookie(resp, data.get("device_id"))
+    _set_device_cookie(resp, username, data.get("device_id"))
     return resp
 
 
@@ -143,6 +149,7 @@ async def login_otp_form(
     challenge_id: str,
     next: str | None = "/",
     purpose_label: str | None = None,
+    username: str | None = None,
 ):
     return templates.TemplateResponse(
         "pages/authen/login_otp.html",
@@ -151,6 +158,7 @@ async def login_otp_form(
             "challenge_id": challenge_id,
             "next": next or "/",
             "purpose_label": purpose_label or "Xác thực OTP",
+            "username": (username or "").strip(),
         },
     )
 
@@ -163,11 +171,12 @@ async def login_submit(
     next: str = Form("/")
 ):
     safe_next = _safe_next(next or "/")
+    username_clean = (username or "").strip()
     async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
         r = await client.post(
             "/auth/web/login",
             json={"username": username, "password": password},
-            cookies=_forward_cookies(request),
+            cookies=forward_device_cookies(request, username_clean),
         )
 
     if r.status_code == 401:
@@ -198,10 +207,11 @@ async def login_submit(
             "challenge_id": data.get("challenge_id"),
             "next": safe_next,
             "purpose_label": data.get("purpose_label") or "",
+            "username": username_clean,
         })
         return RedirectResponse(url=f"/login/otp?{q}", status_code=303)
 
-    return await _finalize_login(request, data, safe_next)
+    return await _finalize_login(request, data, safe_next, username_clean)
 
 
 @router.post("/login/otp")
@@ -210,9 +220,11 @@ async def login_otp_submit(
     challenge_id: str = Form(...),
     otp_code: str = Form(...),
     next: str = Form("/"),
+    username: str = Form(""),
     trust_device: str | None = Form(None),
 ):
     safe_next = _safe_next(next or "/")
+    username_clean = (username or "").strip()
     async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
         r = await client.post(
             "/auth/web/otp/verify",
@@ -221,7 +233,7 @@ async def login_otp_submit(
                 "otp_code": otp_code.strip(),
                 "trust_device": trust_device == "1",
             },
-            cookies=_forward_cookies(request),
+            cookies=forward_device_cookies(request, username_clean),
         )
 
     if r.status_code >= 400:
@@ -249,13 +261,14 @@ async def login_otp_submit(
                 "challenge_id": challenge_id,
                 "next": safe_next,
                 "purpose_label": "Xác thực OTP",
+                "username": username_clean,
                 "error": err,
             },
             status_code=400,
         )
 
     data = r.json()
-    return await _finalize_login(request, data, safe_next)
+    return await _finalize_login(request, data, safe_next, username_clean)
 
 
 @router.post("/login/otp/resend")
@@ -264,6 +277,7 @@ async def login_otp_resend(
     challenge_id: str = Form(...),
     next: str = Form("/"),
     purpose_label: str = Form("Xác thực OTP"),
+    username: str = Form(""),
 ):
     safe_next = _safe_next(next or "/")
     async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
@@ -287,6 +301,7 @@ async def login_otp_resend(
             "challenge_id": new_challenge_id,
             "next": safe_next,
             "purpose_label": purpose_label,
+            "username": (username or "").strip(),
             "msg": msg,
             "error": err,
         },
@@ -339,11 +354,12 @@ async def account_logout(request: Request):
 
 @router.post("/account/logout_all")
 async def account_logout_all(request: Request):
+    username = await _current_username(request)
     resp = RedirectResponse(url="/login", status_code=303)
     resp.delete_cookie(ACCESS_COOKIE_NAME, path="/")
     resp.delete_cookie(REFRESH_COOKIE_NAME, path="/")
     resp.delete_cookie(ROLE_COOKIE_NAME, path="/")
-    resp.delete_cookie(DEVICE_COOKIE_NAME, path="/")
+    clear_device_cookies_for_user(resp, username)
 
     try:
         acc = request.cookies.get(ACCESS_COOKIE_NAME)

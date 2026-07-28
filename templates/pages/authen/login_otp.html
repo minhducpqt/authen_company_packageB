@@ -16,6 +16,7 @@
   <form method="post" action="/login/otp" class="space-y-4">
     <input type="hidden" name="next" value="{{ next }}"/>
     <input type="hidden" name="challenge_id" value="{{ challenge_id }}"/>
+    <input type="hidden" name="username" value="{{ username or '' }}"/>
 
     <div>
       <label class="block text-sm mb-1">Mã OTP (6 số)</label>
@@ -36,6 +37,7 @@
     <input type="hidden" name="challenge_id" value="{{ challenge_id }}"/>
     <input type="hidden" name="next" value="{{ next }}"/>
     <input type="hidden" name="purpose_label" value="{{ purpose_label }}"/>
+    <input type="hidden" name="username" value="{{ username or '' }}"/>
     <button type="submit" class="w-full py-2 rounded border text-sm hover:bg-slate-50">Gửi lại mã OTP</button>
   </form>
 
