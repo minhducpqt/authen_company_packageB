@@ -199,44 +199,45 @@
     }
 
     .signature-block{
-      width:56%;
+      width:100%;
+      max-width:72mm;
       text-align:center;
       page-break-inside:avoid;
+      justify-self:end;
     }
 
-    /* Chân trang: QR trái — chữ ký phải */
+    /* Chân trang: QR (nửa trái) — chữ ký (nửa phải), căn cân đối */
     .page-footer{
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-end;
-      gap:10mm;
+      display:grid;
+      grid-template-columns:minmax(0, 1fr) minmax(0, 1fr);
+      align-items:end;
+      column-gap:8mm;
       margin-top:7mm;
-      min-height:44mm;
       page-break-inside:avoid;
     }
     .page-footer--sig-only{
-      justify-content:flex-end;
+      grid-template-columns:1fr;
+    }
+    .page-footer--sig-only .signature-block{
+      grid-column:1;
     }
 
-    /* QR định danh — khung đồng bộ flag-box / price-wrap, kích thước quét tay */
+    /* QR định danh — khối vuông gọn, căn giữa nửa trái trang */
     .qr-box{
-      flex:0 0 auto;
+      justify-self:center;
       width:42mm;
       text-align:center;
       line-height:1.15;
-      border:1.2pt solid rgba(0,0,0,0.38);
-      background:linear-gradient(180deg, #fafbfc 0%, #f0f2f5 100%);
-      border-radius:2.8mm;
-      padding:3.2mm 3mm 2.8mm;
+      border:1.2pt solid rgba(0,0,0,0.36);
+      background:#f4f5f7;
+      border-radius:2.6mm;
+      padding:2.8mm 2.6mm 2.4mm;
       box-sizing:border-box;
-      box-shadow:inset 0 0 0 0.5pt rgba(255,255,255,0.9);
     }
-    /* Nền trắng viền mỏng = quiet zone thẩm mỹ + dễ quét */
-    .qr-frame{
-      display:inline-block;
+    .qr-visual{
       background:#fff;
-      border:1pt solid rgba(0,0,0,0.14);
-      border-radius:2mm;
+      border:1pt solid rgba(0,0,0,0.12);
+      border-radius:1.8mm;
       padding:2mm;
       box-sizing:border-box;
     }
@@ -247,12 +248,11 @@
       margin:0 auto;
     }
     .qr-caption{
-      font-size:9pt;
+      font-size:8.8pt;
       font-weight:700;
-      color:rgba(0,0,0,0.68);
-      margin-top:2mm;
-      letter-spacing:0.14mm;
-      text-transform:uppercase;
+      color:rgba(0,0,0,0.65);
+      margin-top:1.8mm;
+      letter-spacing:0.08mm;
     }
 
     /* =============================
@@ -585,7 +585,7 @@
     <div class="page-footer{% if not t.qr_data_uri %} page-footer--sig-only{% endif %}">
       {% if t.qr_data_uri %}
       <div class="qr-box">
-        <div class="qr-frame">
+        <div class="qr-visual">
           <img src="{{ t.qr_data_uri }}" alt="QR định danh"/>
         </div>
         <div class="qr-caption">QR định danh</div>
