@@ -205,12 +205,6 @@
       color:rgba(0,0,0,0.88);
       word-break:break-word;
       overflow-wrap:anywhere;
-      display:-webkit-box;
-      -webkit-box-orient:vertical;
-      -webkit-line-clamp:3;
-      line-clamp:3;
-      overflow:hidden;
-      max-height:calc(1.32em * 3);
     }
 
     /* ── TWO-COLUMN BODY ── */
@@ -695,8 +689,12 @@
       <p class="asset-desc">
         Quyền sử dụng đất thuộc dự án
         "<span class="bold">{{ t.project_name }}</span>",
-        lô đất số <span class="bold">{{ t.lot_code }}</span>{% if t.area_m2 is number %},
-        diện tích <span class="bold">{{ "{:,.2f}".format(t.area_m2|float) }}</span> m².{% else %}.{% endif %}
+        lô đất số <span class="bold">{{ t.lot_code }}</span>
+        {%- if t.area_m2 is not none and t.area_m2 != '' and (t.area_m2|float) > 0 -%}
+        , diện tích <span class="bold">{{ "{:,.2f}".format(t.area_m2|float) }}</span> m².
+        {%- else -%}
+        .
+        {%- endif -%}
       </p>
     </section>
 
@@ -752,6 +750,16 @@
             <tr>
               <td class="info-label">Lô đăng ký</td><td class="info-sep">:</td>
               <td class="info-value bold">{{ t.lot_code }}</td>
+            </tr>
+            <tr>
+              <td class="info-label">Diện tích</td><td class="info-sep">:</td>
+              <td class="info-value">
+                {% if t.area_m2 is not none and t.area_m2 != '' and (t.area_m2|float) > 0 %}
+                  {{ "{:,.2f}".format(t.area_m2|float) }} m²
+                {% else %}
+                  —
+                {% endif %}
+              </td>
             </tr>
             <tr>
               <td class="info-label">Giá KĐ ({{ price_unit }})</td><td class="info-sep">:</td>
