@@ -6,16 +6,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Nhãn túi clearbag — Vòng {{ round_no or "?" }}</title>
   <style>
-    @page {
-      size: A4 portrait;
-      margin: 6mm;
-    }
+    @page { size: A4 portrait; margin: 5mm; }
 
     * { box-sizing: border-box; }
 
     html, body {
-      margin: 0;
-      padding: 0;
+      margin: 0; padding: 0;
       color: #111;
       font-family: "Times New Roman", Times, serif;
       -webkit-print-color-adjust: exact;
@@ -23,281 +19,261 @@
     }
 
     .toolbar {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      justify-content: flex-end;
-      padding: 10px;
-      background: #f6f7f9;
-      border-bottom: 1px solid #e5e7eb;
+      display: flex; gap: 8px; align-items: center; justify-content: flex-end;
+      padding: 10px; background: #f6f7f9; border-bottom: 1px solid #e5e7eb;
     }
     .btn {
-      appearance: none;
-      border: 1px solid #111;
-      background: #fff;
-      padding: 6px 10px;
-      font-size: 12px;
-      cursor: pointer;
-      border-radius: 6px;
+      appearance: none; border: 1px solid #111; background: #fff;
+      padding: 6px 10px; font-size: 12px; cursor: pointer; border-radius: 6px;
     }
     @media print { .toolbar { display: none !important; } }
 
     @media screen {
       body { background: #e9edf3; }
-      .toolbar {
-        width: 210mm;
-        margin: 10px auto 0;
-        border-radius: 10px 10px 0 0;
-      }
+      .toolbar { width: 210mm; margin: 10px auto 0; border-radius: 10px 10px 0 0; }
       .a4-page {
-        width: 210mm;
-        height: 297mm;
-        margin: 0 auto 16px;
-        background: #fff;
-        box-shadow: 0 10px 28px rgba(0,0,0,.14);
-        border: 1px solid rgba(0,0,0,.1);
-        padding: 6mm;
-        display: flex;
-        flex-direction: column;
+        width: 210mm; height: 297mm; margin: 0 auto 16px;
+        background: #fff; box-shadow: 0 10px 28px rgba(0,0,0,.14);
+        border: 1px solid rgba(0,0,0,.1); padding: 5mm;
+        display: flex; flex-direction: column;
       }
     }
 
     @media print {
       .a4-page {
-        width: 100%;
-        height: 285mm;
-        page-break-after: always;
-        break-after: page;
-        padding: 0;
-        display: flex;
-        flex-direction: column;
+        width: 100%; height: 287mm;
+        page-break-after: always; break-after: page;
+        padding: 0; display: flex; flex-direction: column;
       }
-      .a4-page:last-child {
-        page-break-after: auto;
-        break-after: auto;
-      }
+      .a4-page:last-child { page-break-after: auto; break-after: auto; }
     }
 
+    /* ── half-A4 label shell ── */
     .label-slot {
-      flex: 1 1 0;
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
-      border: 1.2pt solid #222;
-      border-radius: 2mm;
-      padding: 3.5mm 4mm 3mm;
-      background: #fff;
+      flex: 1 1 0; min-height: 0;
+      display: flex; flex-direction: column;
+      border: 1.3pt solid #1a1a1a;
+      border-radius: 1.5mm;
       overflow: hidden;
+      background: #fff;
     }
 
     .cut-line {
-      flex: 0 0 auto;
-      height: 0;
-      margin: 2.5mm 4mm;
-      border-top: 0.8pt dashed #888;
+      flex: 0 0 auto; height: 0;
+      margin: 2mm 6mm;
+      border-top: 0.9pt dashed #777;
       position: relative;
     }
+    .cut-line::before,
     .cut-line::after {
-      content: "✂ cắt";
-      position: absolute;
-      right: 0;
-      top: -7px;
-      font-size: 6pt;
-      color: #888;
-      background: #fff;
-      padding-left: 3px;
+      content: ""; position: absolute; top: -1.5mm;
+      width: 3mm; height: 3mm;
+      border: 0.9pt dashed #777; border-radius: 50%; background: #fff;
     }
-    @media print {
-      .cut-line::after { color: #666; }
-    }
+    .cut-line::before { left: -1mm; }
+    .cut-line::after  { right: -1mm; }
 
-    .lbl-title {
-      font-size: 7.5pt;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.02em;
-      line-height: 1.15;
-      margin: 0 0 1mm;
-      color: #444;
+    /* ── 1. Header strip ── */
+    .hdr {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.5mm 3.5mm;
+      background: #f3f3f3;
+      color: #222;
+      border-bottom: 0.8pt solid #1a1a1a;
+      font-size: 6.5pt; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
     }
-
-    .lot-hero {
-      display: flex;
-      align-items: baseline;
-      flex-wrap: wrap;
-      gap: 2mm 3mm;
-      margin-bottom: 1mm;
-      line-height: 1;
-    }
-    .lot-hero-label {
-      font-size: 7pt;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: #555;
+    .hdr-badge {
+      background: #fff; color: #1a1a1a;
+      font-size: 7.5pt; font-weight: 800;
       letter-spacing: 0.04em;
+      padding: 0.8mm 2.5mm; border-radius: 1mm;
+      border: 0.7pt solid #333;
     }
-    .lot-hero-code {
-      font-size: 16pt;
-      font-weight: 800;
-      letter-spacing: 0.02em;
-      color: #000;
+
+    /* ── 2. Identity: lot code + meta ── */
+    .identity {
+      display: grid;
+      grid-template-columns: 32mm 1fr;
+      gap: 0;
+      border-bottom: 0.6pt solid #ccc;
     }
-    .lot-hero-round {
-      font-size: 8pt;
-      font-weight: 700;
-      color: #333;
-      margin-left: auto;
+    .lot-box {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      border-right: 0.6pt solid #ccc;
+      background: #f8f8f8;
+      padding: 2mm 1.5mm;
+      min-height: 22mm;
     }
-    .lot-hero-desc {
-      width: 100%;
-      font-size: 6.8pt;
-      color: #444;
-      line-height: 1.2;
+    .lot-box .lot-k {
+      font-size: 5.5pt; font-weight: 700;
+      text-transform: uppercase; color: #666;
+      letter-spacing: 0.08em; margin-bottom: 0.5mm;
+    }
+    .lot-box .lot-v {
+      font-size: 17pt; font-weight: 900;
+      line-height: 1; color: #000;
+      text-align: center; word-break: break-all;
+    }
+    .id-meta {
+      padding: 2mm 3mm;
+      display: flex; flex-direction: column; justify-content: center;
+      gap: 0.8mm;
+    }
+    .id-meta .proj {
+      font-size: 7pt; font-weight: 700; line-height: 1.2;
+    }
+    .id-meta .desc {
+      font-size: 6.5pt; color: #333; line-height: 1.25;
+      display: -webkit-box; -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .id-meta .issued-pill {
+      display: inline-block; align-self: flex-start;
+      font-size: 6.5pt; font-weight: 700;
+      background: #eee; border: 0.5pt solid #bbb;
+      border-radius: 1mm; padding: 0.6mm 2mm;
       margin-top: 0.5mm;
     }
 
-    .lbl-sub {
-      font-size: 7pt;
-      line-height: 1.25;
-      margin-bottom: 0.6mm;
-    }
-    .lbl-sub b { font-weight: 700; }
-
-    .lbl-divider {
-      border: none;
-      border-top: 0.6pt solid #bbb;
-      margin: 1.8mm 0 1.6mm;
-    }
-
-    .stats-row {
+    /* ── 3. Ops panel: phiếu + kết quả ── */
+    .ops {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 2mm;
-      font-size: 7pt;
-      line-height: 1.2;
-      margin-bottom: 1.5mm;
+      grid-template-columns: 1fr 1fr;
+      border-bottom: 0.6pt solid #ccc;
     }
-    .stat-box {
-      border: 0.6pt solid #ccc;
+    .ops-pane {
+      padding: 1.8mm 2.5mm 2mm;
+    }
+    .ops-pane + .ops-pane {
+      border-left: 0.6pt solid #ccc;
+    }
+    .ops-h {
+      font-size: 5.8pt; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: #555; margin-bottom: 1.2mm;
+      padding-bottom: 0.6mm;
+      border-bottom: 0.5pt solid #ddd;
+    }
+
+    /* ticket counters 2×2 */
+    .ticket-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2mm;
+    }
+    .tcell {
+      border: 0.6pt solid #aaa;
       border-radius: 1mm;
-      padding: 1.2mm 1.5mm;
-      min-height: 7mm;
+      padding: 0.8mm 1.5mm;
+      min-height: 9mm;
+      display: flex; flex-direction: column;
     }
-    .stat-box .k {
-      display: block;
-      font-size: 6.2pt;
-      color: #444;
-      margin-bottom: 0.5mm;
+    .tcell.filled { background: #f4f4f4; }
+    .tcell.write  { background: #fff; }
+    .tcell .tk {
+      font-size: 5.5pt; color: #555;
+      text-transform: uppercase; letter-spacing: 0.04em;
+      margin-bottom: 0.8mm;
     }
-    .stat-box .v {
-      font-weight: 700;
-      font-size: 8pt;
-    }
-    .stat-box.blank .v {
-      font-weight: 400;
-      color: #999;
-      letter-spacing: 1px;
-    }
-
-    .result-block {
-      font-size: 7pt;
-      line-height: 1.35;
-      margin-bottom: 1.5mm;
-    }
-    .result-line {
-      display: flex;
-      align-items: baseline;
-      gap: 2mm;
-      margin-bottom: 1mm;
-      flex-wrap: wrap;
-    }
-    .result-line .lbl { white-space: nowrap; }
-    .fill-line {
+    .tcell .tv {
       flex: 1;
-      min-width: 20mm;
-      border-bottom: 0.6pt solid #333;
-      height: 3.5mm;
+      font-size: 11pt; font-weight: 800;
+      line-height: 1;
+      display: flex; align-items: flex-end;
     }
-    .checks {
-      display: inline-flex;
-      gap: 4mm;
-      align-items: center;
-    }
-    .chk {
-      display: inline-flex;
-      align-items: center;
-      gap: 1mm;
-    }
-    .chk-box {
-      width: 3mm;
-      height: 3mm;
-      border: 0.6pt solid #222;
-      display: inline-block;
-      vertical-align: middle;
+    .tcell.write .tv {
+      font-size: 8pt; font-weight: 400; color: #ccc;
+      align-items: center; justify-content: center;
+      min-height: 5mm;
     }
 
-    .cust-title {
-      font-size: 6.8pt;
-      font-weight: 700;
-      text-transform: uppercase;
-      margin: 0 0 1.2mm;
-      color: #222;
+    /* result fields */
+    .res-field { margin-bottom: 1.5mm; }
+    .res-field:last-child { margin-bottom: 0; }
+    .res-field .rk {
+      font-size: 6pt; color: #444; margin-bottom: 0.5mm;
+    }
+    .res-field .rfill {
+      border-bottom: 0.7pt solid #333;
+      min-height: 5mm;
+    }
+    .res-checks {
+      display: flex; gap: 4mm; align-items: center;
+      font-size: 6.5pt; margin-top: 0.5mm;
+    }
+    .res-chk {
+      display: inline-flex; align-items: center; gap: 1mm;
+    }
+    .res-chk i {
+      display: inline-block;
+      width: 3.2mm; height: 3.2mm;
+      border: 0.7pt solid #222;
+    }
+    .res-next {
+      display: flex; align-items: baseline; gap: 2mm;
+      font-size: 6pt;
+    }
+    .res-next .rfill {
+      flex: 1; max-width: 14mm;
+      border-bottom: 0.7pt solid #333;
+      min-height: 4mm;
+    }
+
+    /* ── 4. Customer reference ── */
+    .ref {
+      flex: 1 1 auto; min-height: 0;
+      display: flex; flex-direction: column;
+      background: #fafafa;
+      padding: 1.5mm 2.5mm 2mm;
+    }
+    .ref-h {
+      font-size: 5.8pt; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: #666; margin-bottom: 1mm;
+      display: flex; justify-content: space-between; align-items: baseline;
+    }
+    .ref-h em {
+      font-style: normal; font-weight: 400;
+      font-size: 5.5pt; color: #999;
     }
 
     .cust-grid {
-      flex: 1 1 auto;
-      min-height: 0;
+      flex: 1 1 auto; min-height: 0;
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
       gap: 0 2mm;
-      font-size: 6pt;
-      line-height: 1.15;
       align-content: start;
     }
-
-    .cust-col {
-      min-width: 0;
-    }
+    .cust-col { min-width: 0; }
 
     .cust-item {
-      padding: 0.5mm 0;
-      border-bottom: 0.4pt dotted #ddd;
+      padding: 0.45mm 0;
+      border-bottom: 0.35pt dotted #ccc;
       break-inside: avoid;
     }
     .cust-item .nm {
-      font-weight: 400;
-      font-size: 6.2pt;
-      line-height: 1.2;
+      font-size: 6pt; line-height: 1.2; font-weight: 400;
     }
-    .cust-item .nm .stt {
-      font-weight: 700;
-    }
+    .cust-item .nm .stt { font-weight: 800; }
     .cust-item .meta {
-      color: #444;
-      font-size: 5.8pt;
-      margin-top: 0.25mm;
+      font-size: 5.5pt; color: #555;
+      margin-top: 0.2mm; line-height: 1.15;
       word-break: break-all;
-      font-weight: 400;
     }
 
     .cust-more {
       grid-column: 1 / -1;
-      font-size: 6.5pt;
-      font-style: italic;
-      color: #555;
-      margin-top: 1mm;
       text-align: center;
+      font-size: 6pt; font-style: italic; color: #888;
+      padding-top: 0.8mm;
     }
 
     .label-empty {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #bbb;
-      font-size: 8pt;
-      border: 1pt dashed #ddd;
-      border-radius: 2mm;
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      color: #ccc; font-size: 9pt;
+      border: 1pt dashed #ddd; border-radius: 2mm;
     }
   </style>
 </head>
@@ -310,113 +286,109 @@
   <button class="btn" type="button" onclick="window.print()">In</button>
 </div>
 
+{% macro render_cust_col(custs) -%}
+  {% for c in custs %}
+  <div class="cust-item">
+    <div class="nm"><span class="stt">{{ c.stt or "—" }}</span> — {{ c.full_name or "—" }}</div>
+    <div class="meta">
+      {{ c.customer_code or "—" }}
+      · {% if c.birth_year %}{{ c.birth_year }}{% else %}—{% endif %}
+      · {{ c.cccd or "—" }}
+    </div>
+  </div>
+  {% endfor %}
+{%- endmacro %}
+
 {% macro render_label(lot) -%}
   {% if not lot %}
   <div class="label-empty">—</div>
   {% else %}
   <div class="label-slot">
-    <div class="lbl-title">Nhãn túi clearbag</div>
-    <div class="lot-hero">
-      <span class="lot-hero-label">Mã lô</span>
-      <span class="lot-hero-code">{{ lot.lot_code or "—" }}</span>
-      <span class="lot-hero-round">Vòng {{ round_no or "?" }}</span>
-      {% if lot.lot_description %}
-      <div class="lot-hero-desc">{{ lot.lot_description }}</div>
-      {% endif %}
-    </div>
-    <div class="lbl-sub">
-      <b>Dự án:</b> {{ project_code or "—" }}
-      {% if project_name %} — {{ project_name }}{% endif %}
+
+    {# ── header ── #}
+    <div class="hdr">
+      <span>Nhãn túi clearbag</span>
+      <span class="hdr-badge">Vòng {{ round_no or "?" }}</span>
     </div>
 
-    <hr class="lbl-divider"/>
-
-    <div class="stats-row">
-      <div class="stat-box">
-        <span class="k">Phát ra</span>
-        <span class="v">{{ lot.issued_count or 0 }}</span>
+    {# ── identity ── #}
+    <div class="identity">
+      <div class="lot-box">
+        <div class="lot-k">Mã lô</div>
+        <div class="lot-v">{{ lot.lot_code or "—" }}</div>
       </div>
-      <div class="stat-box blank">
-        <span class="k">Thu về</span>
-        <span class="v">____</span>
-      </div>
-      <div class="stat-box blank">
-        <span class="k">Hợp lệ</span>
-        <span class="v">____</span>
-      </div>
-      <div class="stat-box blank">
-        <span class="k">Không HL</span>
-        <span class="v">____</span>
+      <div class="id-meta">
+        <div class="proj">{{ project_code or "—" }}{% if project_name %} — {{ project_name }}{% endif %}</div>
+        {% if lot.lot_description %}
+        <div class="desc">{{ lot.lot_description }}</div>
+        {% endif %}
+        <div class="issued-pill">Đã phát {{ lot.issued_count or 0 }} phiếu</div>
       </div>
     </div>
 
-    <div class="result-block">
-      <div class="result-line">
-        <span class="lbl">Giá cao nhất:</span>
-        <span class="fill-line"></span>
-      </div>
-      <div class="result-line">
-        <span class="lbl">Trúng:</span>
-        <span class="checks">
-          <span class="chk"><span class="chk-box"></span> Có</span>
-          <span class="chk"><span class="chk-box"></span> Chưa</span>
-        </span>
-      </div>
-      <div class="result-line">
-        <span class="lbl">Số khách vòng {{ next_round_no or "?" }}:</span>
-        <span class="fill-line" style="max-width:18mm;flex:0 1 18mm;"></span>
-      </div>
-    </div>
-
-    <hr class="lbl-divider"/>
-
-    <div class="cust-title">Danh sách khách đã phát phiếu</div>
-    {% set custs = lot.customers or [] %}
-    {% set col_n = ((custs|length + 2) // 3) if custs|length > 0 else 0 %}
-    {% set col1 = custs[:col_n] %}
-    {% set col2 = custs[col_n:col_n * 2] %}
-    {% set col3 = custs[col_n * 2:] %}
-    <div class="cust-grid">
-      <div class="cust-col">
-        {% for c in col1 %}
-        <div class="cust-item">
-          <div class="nm"><span class="stt">{{ c.stt or "—" }}</span> — {{ c.full_name or "—" }}</div>
-          <div class="meta">
-            {{ c.customer_code or "—" }}
-            · {% if c.birth_year %}{{ c.birth_year }}{% else %}—{% endif %}
-            · {{ c.cccd or "—" }}
+    {# ── operations ── #}
+    <div class="ops">
+      <div class="ops-pane">
+        <div class="ops-h">Phiếu trả giá</div>
+        <div class="ticket-grid">
+          <div class="tcell filled">
+            <div class="tk">Phát ra</div>
+            <div class="tv">{{ lot.issued_count or 0 }}</div>
+          </div>
+          <div class="tcell write">
+            <div class="tk">Thu về</div>
+            <div class="tv">&nbsp;</div>
+          </div>
+          <div class="tcell write">
+            <div class="tk">Hợp lệ</div>
+            <div class="tv">&nbsp;</div>
+          </div>
+          <div class="tcell write">
+            <div class="tk">Không HL</div>
+            <div class="tv">&nbsp;</div>
           </div>
         </div>
-        {% endfor %}
       </div>
-      <div class="cust-col">
-        {% for c in col2 %}
-        <div class="cust-item">
-          <div class="nm"><span class="stt">{{ c.stt or "—" }}</span> — {{ c.full_name or "—" }}</div>
-          <div class="meta">
-            {{ c.customer_code or "—" }}
-            · {% if c.birth_year %}{{ c.birth_year }}{% else %}—{% endif %}
-            · {{ c.cccd or "—" }}
+      <div class="ops-pane">
+        <div class="ops-h">Kết quả đấu</div>
+        <div class="res-field">
+          <div class="rk">Giá cao nhất</div>
+          <div class="rfill"></div>
+        </div>
+        <div class="res-field">
+          <div class="rk">Đã tìm người trúng</div>
+          <div class="res-checks">
+            <span class="res-chk"><i></i> Có</span>
+            <span class="res-chk"><i></i> Chưa</span>
           </div>
         </div>
-        {% endfor %}
-      </div>
-      <div class="cust-col">
-        {% for c in col3 %}
-        <div class="cust-item">
-          <div class="nm"><span class="stt">{{ c.stt or "—" }}</span> — {{ c.full_name or "—" }}</div>
-          <div class="meta">
-            {{ c.customer_code or "—" }}
-            · {% if c.birth_year %}{{ c.birth_year }}{% else %}—{% endif %}
-            · {{ c.cccd or "—" }}
+        <div class="res-field">
+          <div class="res-next">
+            <span class="rk" style="margin:0;">KH vòng {{ next_round_no or "?" }}:</span>
+            <span class="rfill"></span>
           </div>
         </div>
-        {% endfor %}
       </div>
-      {% if lot.has_more %}
-      <div class="cust-more">… còn 30+</div>
-      {% endif %}
     </div>
+
+    {# ── customer reference ── #}
+    <div class="ref">
+      <div class="ref-h">
+        <span>Khách đã phát phiếu</span>
+        <em>STT · mã · NS · CCCD</em>
+      </div>
+      {% set custs = lot.customers or [] %}
+      {% set col_n = ((custs|length + 2) // 3) if custs|length > 0 else 0 %}
+      <div class="cust-grid">
+        <div class="cust-col">{{ render_cust_col(custs[:col_n]) }}</div>
+        <div class="cust-col">{{ render_cust_col(custs[col_n:col_n * 2]) }}</div>
+        <div class="cust-col">{{ render_cust_col(custs[col_n * 2:]) }}</div>
+        {% if lot.has_more %}
+        <div class="cust-more">… còn 30+</div>
+        {% endif %}
+      </div>
+    </div>
+
   </div>
   {% endif %}
 {%- endmacro %}
