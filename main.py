@@ -35,6 +35,7 @@ from routers import bid_tickets as bid_tickets_router
 from routers.auction_counting import router as auction_counting_router
 from routers.auction_sessions import router as auction_sessions_router
 from routers.auction_session_bid_sheets import router as auction_session_bid_sheets_router
+from routers.auction_session_lot_clearbag_labels import router as auction_session_lot_clearbag_labels_router
 from routers.auction_session_winner_prints import router as auction_session_winner_prints_router
 from routers.auction_documents_print import router as auction_documents_print_router
 from fastapi_account_manager.middlewares.rbac_guard import rbac_guard_middleware
@@ -136,6 +137,7 @@ app.include_router(auction_prints_router)
 app.include_router(auction_counting_router)
 app.include_router(auction_sessions_router)
 app.include_router(auction_session_bid_sheets_router)
+app.include_router(auction_session_lot_clearbag_labels_router)
 app.include_router(auction_session_winner_prints_router)
 app.include_router(auction_session_display.router)
 app.include_router(auction_documents_print_router)  # <-- NEW (attendance, future docs)

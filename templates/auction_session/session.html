@@ -862,6 +862,9 @@
       <button class="miniBtn primary" type="button" onclick="printRoundWinners()">
         <i class="ri-printer-line"></i> In phiếu trúng (vòng)
       </button>
+      <button class="miniBtn ghost" type="button" onclick="printRoundClearbagLabels()" title="In nhãn túi clearbag (vòng hiện tại)" style="padding:4px 8px;font-size:11px;">
+        <i class="ri-price-tag-3-line"></i> In nhãn
+      </button>
     </div>
   </div>
 
@@ -2071,6 +2074,15 @@ Modal: Print One Bid Sheet (choose one customer)
   return;
   }
   window.open(`/auction-sessions/bid-sheets/print/rounds/${roundId}?sort_mode=STT_LOT`, '_blank');
+  }
+
+  function printRoundClearbagLabels(){
+  const roundId = getCurrentRoundId();
+  if(!roundId){
+  toast("Không tìm thấy round_id của vòng hiện tại. Kiểm tra dữ liệu ROUNDS có field id/round_id.");
+  return;
+  }
+  window.open(`/auction-sessions/lot-clearbag-labels/print/rounds/${roundId}?autoprint=1`, '_blank');
   }
 
 

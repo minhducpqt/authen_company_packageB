@@ -1,0 +1,446 @@
+{# templates/pages/auction_session_documents/lot_clearbag_label_print.html #}
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Nhãn túi clearbag — Vòng {{ round_no or "?" }}</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 6mm;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      color: #111;
+      font-family: "Times New Roman", Times, serif;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 10px;
+      background: #f6f7f9;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .btn {
+      appearance: none;
+      border: 1px solid #111;
+      background: #fff;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+    @media print { .toolbar { display: none !important; } }
+
+    @media screen {
+      body { background: #e9edf3; }
+      .toolbar {
+        width: 210mm;
+        margin: 10px auto 0;
+        border-radius: 10px 10px 0 0;
+      }
+      .a4-page {
+        width: 210mm;
+        height: 297mm;
+        margin: 0 auto 16px;
+        background: #fff;
+        box-shadow: 0 10px 28px rgba(0,0,0,.14);
+        border: 1px solid rgba(0,0,0,.1);
+        padding: 6mm;
+        display: flex;
+        flex-direction: column;
+      }
+    }
+
+    @media print {
+      .a4-page {
+        width: 100%;
+        height: 285mm;
+        page-break-after: always;
+        break-after: page;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .a4-page:last-child {
+        page-break-after: auto;
+        break-after: auto;
+      }
+    }
+
+    .label-slot {
+      flex: 1 1 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      border: 1.2pt solid #222;
+      border-radius: 2mm;
+      padding: 3.5mm 4mm 3mm;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .cut-line {
+      flex: 0 0 auto;
+      height: 0;
+      margin: 2.5mm 4mm;
+      border-top: 0.8pt dashed #888;
+      position: relative;
+    }
+    .cut-line::after {
+      content: "✂ cắt";
+      position: absolute;
+      right: 0;
+      top: -7px;
+      font-size: 6pt;
+      color: #888;
+      background: #fff;
+      padding-left: 3px;
+    }
+    @media print {
+      .cut-line::after { color: #666; }
+    }
+
+    .lbl-title {
+      font-size: 7.5pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      line-height: 1.15;
+      margin: 0 0 1mm;
+      color: #444;
+    }
+
+    .lot-hero {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 2mm 3mm;
+      margin-bottom: 1mm;
+      line-height: 1;
+    }
+    .lot-hero-label {
+      font-size: 7pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #555;
+      letter-spacing: 0.04em;
+    }
+    .lot-hero-code {
+      font-size: 16pt;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      color: #000;
+    }
+    .lot-hero-round {
+      font-size: 8pt;
+      font-weight: 700;
+      color: #333;
+      margin-left: auto;
+    }
+    .lot-hero-desc {
+      width: 100%;
+      font-size: 6.8pt;
+      color: #444;
+      line-height: 1.2;
+      margin-top: 0.5mm;
+    }
+
+    .lbl-sub {
+      font-size: 7pt;
+      line-height: 1.25;
+      margin-bottom: 0.6mm;
+    }
+    .lbl-sub b { font-weight: 700; }
+
+    .lbl-divider {
+      border: none;
+      border-top: 0.6pt solid #bbb;
+      margin: 1.8mm 0 1.6mm;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2mm;
+      font-size: 7pt;
+      line-height: 1.2;
+      margin-bottom: 1.5mm;
+    }
+    .stat-box {
+      border: 0.6pt solid #ccc;
+      border-radius: 1mm;
+      padding: 1.2mm 1.5mm;
+      min-height: 7mm;
+    }
+    .stat-box .k {
+      display: block;
+      font-size: 6.2pt;
+      color: #444;
+      margin-bottom: 0.5mm;
+    }
+    .stat-box .v {
+      font-weight: 700;
+      font-size: 8pt;
+    }
+    .stat-box.blank .v {
+      font-weight: 400;
+      color: #999;
+      letter-spacing: 1px;
+    }
+
+    .result-block {
+      font-size: 7pt;
+      line-height: 1.35;
+      margin-bottom: 1.5mm;
+    }
+    .result-line {
+      display: flex;
+      align-items: baseline;
+      gap: 2mm;
+      margin-bottom: 1mm;
+      flex-wrap: wrap;
+    }
+    .result-line .lbl { white-space: nowrap; }
+    .fill-line {
+      flex: 1;
+      min-width: 20mm;
+      border-bottom: 0.6pt solid #333;
+      height: 3.5mm;
+    }
+    .checks {
+      display: inline-flex;
+      gap: 4mm;
+      align-items: center;
+    }
+    .chk {
+      display: inline-flex;
+      align-items: center;
+      gap: 1mm;
+    }
+    .chk-box {
+      width: 3mm;
+      height: 3mm;
+      border: 0.6pt solid #222;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .cust-title {
+      font-size: 6.8pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin: 0 0 1.2mm;
+      color: #222;
+    }
+
+    .cust-grid {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0 2mm;
+      font-size: 6pt;
+      line-height: 1.15;
+      align-content: start;
+    }
+
+    .cust-col {
+      min-width: 0;
+    }
+
+    .cust-item {
+      padding: 0.5mm 0;
+      border-bottom: 0.4pt dotted #ddd;
+      break-inside: avoid;
+    }
+    .cust-item .nm {
+      font-weight: 400;
+      font-size: 6.2pt;
+      line-height: 1.2;
+    }
+    .cust-item .nm .stt {
+      font-weight: 700;
+    }
+    .cust-item .meta {
+      color: #444;
+      font-size: 5.8pt;
+      margin-top: 0.25mm;
+      word-break: break-all;
+      font-weight: 400;
+    }
+
+    .cust-more {
+      grid-column: 1 / -1;
+      font-size: 6.5pt;
+      font-style: italic;
+      color: #555;
+      margin-top: 1mm;
+      text-align: center;
+    }
+
+    .label-empty {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #bbb;
+      font-size: 8pt;
+      border: 1pt dashed #ddd;
+      border-radius: 2mm;
+    }
+  </style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span style="font-size:12px;color:#555;">
+    Vòng {{ round_no or "?" }} — {{ total_lots or 0 }} lô — {{ project_code or "" }}
+  </span>
+  <button class="btn" type="button" onclick="window.print()">In</button>
+</div>
+
+{% macro render_label(lot) -%}
+  {% if not lot %}
+  <div class="label-empty">—</div>
+  {% else %}
+  <div class="label-slot">
+    <div class="lbl-title">Nhãn túi clearbag</div>
+    <div class="lot-hero">
+      <span class="lot-hero-label">Mã lô</span>
+      <span class="lot-hero-code">{{ lot.lot_code or "—" }}</span>
+      <span class="lot-hero-round">Vòng {{ round_no or "?" }}</span>
+      {% if lot.lot_description %}
+      <div class="lot-hero-desc">{{ lot.lot_description }}</div>
+      {% endif %}
+    </div>
+    <div class="lbl-sub">
+      <b>Dự án:</b> {{ project_code or "—" }}
+      {% if project_name %} — {{ project_name }}{% endif %}
+    </div>
+
+    <hr class="lbl-divider"/>
+
+    <div class="stats-row">
+      <div class="stat-box">
+        <span class="k">Phát ra</span>
+        <span class="v">{{ lot.issued_count or 0 }}</span>
+      </div>
+      <div class="stat-box blank">
+        <span class="k">Thu về</span>
+        <span class="v">____</span>
+      </div>
+      <div class="stat-box blank">
+        <span class="k">Hợp lệ</span>
+        <span class="v">____</span>
+      </div>
+      <div class="stat-box blank">
+        <span class="k">Không HL</span>
+        <span class="v">____</span>
+      </div>
+    </div>
+
+    <div class="result-block">
+      <div class="result-line">
+        <span class="lbl">Giá cao nhất:</span>
+        <span class="fill-line"></span>
+      </div>
+      <div class="result-line">
+        <span class="lbl">Trúng:</span>
+        <span class="checks">
+          <span class="chk"><span class="chk-box"></span> Có</span>
+          <span class="chk"><span class="chk-box"></span> Chưa</span>
+        </span>
+      </div>
+      <div class="result-line">
+        <span class="lbl">Số khách vòng {{ next_round_no or "?" }}:</span>
+        <span class="fill-line" style="max-width:18mm;flex:0 1 18mm;"></span>
+      </div>
+    </div>
+
+    <hr class="lbl-divider"/>
+
+    <div class="cust-title">Danh sách khách đã phát phiếu</div>
+    {% set custs = lot.customers or [] %}
+    {% set col_n = ((custs|length + 2) // 3) if custs|length > 0 else 0 %}
+    {% set col1 = custs[:col_n] %}
+    {% set col2 = custs[col_n:col_n * 2] %}
+    {% set col3 = custs[col_n * 2:] %}
+    <div class="cust-grid">
+      <div class="cust-col">
+        {% for c in col1 %}
+        <div class="cust-item">
+          <div class="nm"><span class="stt">{{ c.stt or "—" }}</span> — {{ c.full_name or "—" }}</div>
+          <div class="meta">
+            {{ c.customer_code or "—" }}
+            · {% if c.birth_year %}{{ c.birth_year }}{% else %}—{% endif %}
+            · {{ c.cccd or "—" }}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="cust-col">
+        {% for c in col2 %}
+        <div class="cust-item">
+          <div class="nm"><span class="stt">{{ c.stt or "—" }}</span> — {{ c.full_name or "—" }}</div>
+          <div class="meta">
+            {{ c.customer_code or "—" }}
+            · {% if c.birth_year %}{{ c.birth_year }}{% else %}—{% endif %}
+            · {{ c.cccd or "—" }}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="cust-col">
+        {% for c in col3 %}
+        <div class="cust-item">
+          <div class="nm"><span class="stt">{{ c.stt or "—" }}</span> — {{ c.full_name or "—" }}</div>
+          <div class="meta">
+            {{ c.customer_code or "—" }}
+            · {% if c.birth_year %}{{ c.birth_year }}{% else %}—{% endif %}
+            · {{ c.cccd or "—" }}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% if lot.has_more %}
+      <div class="cust-more">… còn 30+</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+{%- endmacro %}
+
+{% for top_lot, bottom_lot in pages %}
+<div class="a4-page">
+  {{ render_label(top_lot) }}
+  <div class="cut-line"></div>
+  {{ render_label(bottom_lot) }}
+</div>
+{% endfor %}
+
+{% if autoprint %}
+<script>
+(function () {
+  const key = "lot_clearbag_autoprint_done:" + location.pathname + location.search;
+  if (sessionStorage.getItem(key)) return;
+  sessionStorage.setItem(key, "1");
+  window.addEventListener("load", function () {
+    setTimeout(function () { window.print(); }, 350);
+  });
+})();
+</script>
+{% endif %}
+
+</body>
+</html>
