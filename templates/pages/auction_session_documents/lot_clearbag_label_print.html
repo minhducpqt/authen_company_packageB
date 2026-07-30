@@ -136,6 +136,13 @@
       border-radius: 1mm; padding: 0.6mm 2mm;
       margin-top: 0.5mm;
     }
+    .id-meta .start-price {
+      font-size: 6.8pt; line-height: 1.25;
+      margin-top: 0.6mm;
+    }
+    .id-meta .start-price b {
+      font-size: 7.5pt; font-weight: 800;
+    }
 
     /* ── 3. Ops panel: phiếu + kết quả ── */
     .ops {
@@ -321,6 +328,14 @@
         <div class="proj">{{ project_code or "—" }}{% if project_name %} — {{ project_name }}{% endif %}</div>
         {% if lot.lot_description %}
         <div class="desc">{{ lot.lot_description }}</div>
+        {% endif %}
+        {% set pu = (lot.bid_price_unit or lot.auction_mode or 'PER_LOT')|upper %}
+        {% if lot.starting_price_vnd is not none and lot.starting_price_vnd != '' %}
+        <div class="start-price">
+          Giá KĐ vòng {{ round_no or "?" }}
+          ({% if pu == 'PER_SQM' %}đ/m²{% else %}đ{% endif %}):
+          <b>{{ "{:,.0f}".format(lot.starting_price_vnd|float) }}</b>
+        </div>
         {% endif %}
         <div class="issued-pill">Đã phát {{ lot.issued_count or 0 }} phiếu</div>
       </div>
