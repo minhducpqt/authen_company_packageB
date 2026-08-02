@@ -120,6 +120,7 @@
   </div>
 </div>
 
+<script src="/static/js/transactions_project_memory.js"></script>
 <script>
 (function(){
   const DATA_URL = "/transactions/summary/data";
@@ -151,8 +152,7 @@
   elSearch.value = "{{ init_q or '' }}";
   elProject.dataset.init = "{{ init_project_code or '' }}";
 
-  // ✅ mặc định ACTIVE như 2.1/2.2
-  elProjectStatus.value = "ACTIVE";
+  TxProjectMemory.restoreStatusFilter(elProjectStatus, !!(elProject.dataset.init || "").trim());
 
   let t; const debounce=(fn,ms=350)=>{clearTimeout(t); t=setTimeout(fn,ms);};
 
@@ -355,6 +355,7 @@
     const js = await r.json();
     const list = js.data ?? js.items ?? [];
 
+    const prev = elProject.value;
     elProject.innerHTML = `<option value="">Tất cả dự án</option>`;
 
     for (const p of list){
@@ -371,8 +372,9 @@
     }
 
     const initCode = (elProject.dataset.init || "").trim();
-    if (initCode) {
-      elProject.value = initCode;
+    const picked = TxProjectMemory.pickProjectCode(elProject, prev, initCode);
+    if (picked) {
+      elProject.value = picked;
     } else if ((list || []).length === 1) {
       const only = list[0] || {};
       const onlyCode = (only.project_code || only.code || "").trim();
@@ -409,11 +411,15 @@
   }
 
   // events
-  elProject.onchange = ()=>{ syncSelectTitle(); loadData(); };
+  elProject.onchange = ()=>{
+    TxProjectMemory.rememberByCode(elProject, elProjectStatus);
+    syncSelectTitle();
+    loadData();
+  };
 
   elProjectStatus.onchange = async ()=>{
     elProject.dataset.init = "";
-    elProject.value = "";
+    TxProjectMemory.rememberByCode(elProject, elProjectStatus);
     syncSelectTitle();
     await loadProjects();
     elPage.value = 1;

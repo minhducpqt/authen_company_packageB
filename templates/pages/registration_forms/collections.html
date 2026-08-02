@@ -151,6 +151,7 @@
   </div>
 </div>
 
+<script src="/static/js/transactions_project_memory.js"></script>
 <script>
 (function(){
   const DATA_URL = "/registration-forms/collections/data";
@@ -195,9 +196,6 @@
   const INIT_Q = {{ (init_q or '')|tojson }};
   const INIT_STATUS = {{ (init_collection_status or '')|tojson }};
 
-  const LS_KEY_PROJECT = "reg_form_collections:last_project_id";
-  const LS_KEY_PROJ_STATUS = "reg_form_collections:last_project_status";
-
   let currentProjectId = null;
   let currentProjectCode = "";
   let searchTimer = null;
@@ -235,44 +233,6 @@
 
   function syncProjectCode(){
     currentProjectCode = selectedProjectCode();
-  }
-
-  function rememberProjectSelection(){
-    try {
-      const pid = (elProject.value || "").trim();
-      const st = (elProjectStatus.value || "ACTIVE").trim();
-      if (pid) localStorage.setItem(LS_KEY_PROJECT, pid);
-      else localStorage.removeItem(LS_KEY_PROJECT);
-      if (st) localStorage.setItem(LS_KEY_PROJ_STATUS, st);
-    } catch (e) {}
-  }
-
-  function restoreProjectStatusFilter(){
-    if (INIT_PROJECT_ID) return;
-    try {
-      const st = (localStorage.getItem(LS_KEY_PROJ_STATUS) || "").trim();
-      if (st && elProjectStatus.querySelector(`option[value="${CSS.escape(st)}"]`)) {
-        elProjectStatus.value = st;
-      }
-    } catch (e) {}
-  }
-
-  function pickSavedProjectId(prev){
-    if (prev && elProject.querySelector(`option[value="${CSS.escape(prev)}"]`)) {
-      return prev;
-    }
-    const fromUrl = (INIT_PROJECT_ID || "").trim();
-    if (fromUrl && elProject.querySelector(`option[value="${CSS.escape(fromUrl)}"]`)) {
-      return fromUrl;
-    }
-    try {
-      const saved = (localStorage.getItem(LS_KEY_PROJECT) || "").trim();
-      if (saved && elProject.querySelector(`option[value="${CSS.escape(saved)}"]`)) {
-        return saved;
-      }
-      if (saved) localStorage.removeItem(LS_KEY_PROJECT);
-    } catch (e) {}
-    return "";
   }
 
   function openDoc(cccd){
@@ -373,7 +333,7 @@
       opt.dataset.projectCode = code;
       elProject.appendChild(opt);
     }
-    const picked = pickSavedProjectId(prev);
+    const picked = TxProjectMemory.pickProjectId(elProject, prev, INIT_PROJECT_ID);
     if (picked) elProject.value = picked;
     if (elProject.value) {
       syncProjectCode();
@@ -556,11 +516,11 @@
   });
 
   elProjectStatus.addEventListener("change", () => {
-    rememberProjectSelection();
+    TxProjectMemory.rememberById(elProject, elProjectStatus);
     loadProjects();
   });
   elProject.addEventListener("change", () => {
-    rememberProjectSelection();
+    TxProjectMemory.rememberById(elProject, elProjectStatus);
     syncProjectCode();
     applyFilters();
   });
@@ -571,7 +531,7 @@
   if (INIT_Q) elSearch.value = INIT_Q;
   if (INIT_STATUS) elStatus.value = INIT_STATUS;
 
-  restoreProjectStatusFilter();
+  TxProjectMemory.restoreStatusFilter(elProjectStatus, !!INIT_PROJECT_ID);
   loadProjects();
 })();
 </script>

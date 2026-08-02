@@ -157,6 +157,7 @@
   </div>
 </div>
 
+<script src="/static/js/transactions_project_memory.js"></script>
 <script>
 (function(){
   const DATA_URL = "/transactions/dossiers/data";
@@ -193,8 +194,7 @@
   elSearch.value = "{{ init_q or '' }}";
   elProject.dataset.init = "{{ init_project_code or '' }}";
 
-  // ✅ status mặc định ACTIVE
-  elProjectStatus.value = "ACTIVE";
+  TxProjectMemory.restoreStatusFilter(elProjectStatus, !!(elProject.dataset.init || "").trim());
 
   // debounce
   let t; const debounce = (fn,ms=350)=>{clearTimeout(t); t=setTimeout(fn,ms);};
@@ -422,6 +422,7 @@
     const js = await r.json();
     const list = js.data ?? js.items ?? [];
 
+    const prev = elProject.value;
     elProject.innerHTML = `<option value="">Tất cả dự án</option>`;
 
     for (const p of list){
@@ -437,10 +438,10 @@
       elProject.appendChild(opt);
     }
 
-    // restore init project_code if exists and still in list
     const initCode = (elProject.dataset.init || "").trim();
-    if (initCode) {
-      elProject.value = initCode;
+    const picked = TxProjectMemory.pickProjectCode(elProject, prev, initCode);
+    if (picked) {
+      elProject.value = picked;
     } else if ((list || []).length === 1) {
       const only = list[0] || {};
       const onlyCode = (only.project_code || only.code || "").trim();
@@ -479,12 +480,16 @@
   }
 
   // events (giữ nguyên logic; chỉ thêm syncExportBtn)
-  elProject.onchange = ()=>{ syncSelectTitle(); syncExportBtn(); loadData(); };
+  elProject.onchange = ()=>{
+    TxProjectMemory.rememberByCode(elProject, elProjectStatus);
+    syncSelectTitle();
+    syncExportBtn();
+    loadData();
+  };
 
   elProjectStatus.onchange = async ()=>{
-    // đổi status -> reload projects, reset project selection, reload data
-    elProject.dataset.init = "";     // không cố giữ init khi user đã đổi status
-    elProject.value = "";
+    elProject.dataset.init = "";
+    TxProjectMemory.rememberByCode(elProject, elProjectStatus);
     syncSelectTitle();
     syncExportBtn();
     await loadProjects();
