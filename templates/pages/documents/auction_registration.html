@@ -48,6 +48,7 @@
       --col-gap: 6mm;
 
       /* QR đơn đăng ký — cố định góc trái dưới trang 1 (không ảnh hưởng layout nội dung) */
+      --page-w: 210mm;
       --page-h: 297mm;
       --qr-size: 25mm;
       --qr-left: 15mm;
@@ -64,26 +65,48 @@
     }
 
     .page{
-      width: 210mm;
+      width: var(--page-w);
+      max-width: var(--page-w);
       margin: 10px auto;
       background:#fff;
       box-shadow: 0 0 6px rgba(0,0,0,.18);
       box-sizing: border-box;
       padding: var(--pad-y) var(--pad-x);
+      position: relative;
+      page-break-after: always;
+      break-after: page;
     }
 
-    /* Trang 1: positioning context cho QR overlay (không đổi padding / flow nội dung) */
+    /* Preview màn hình: mỗi .page = một tờ A4 (khớp khung in thật) */
+    @media screen {
+      .page{
+        min-height: var(--page-h);
+      }
+    }
+
+    /* Trang 1: positioning context cho QR overlay */
     .page-1{
-      position: relative;
       overflow: visible;
     }
 
     @media print{
-      html, body{ background:#fff; }
-      .page{
-        width:210mm;
+      html, body{
+        background:#fff;
         margin:0;
+        padding:0;
+      }
+      .page{
+        width: var(--page-w);
+        max-width: var(--page-w);
+        min-height: auto;
+        margin:0 auto;
         box-shadow:none;
+        page-break-after: always;
+        break-after: page;
+      }
+      .page:last-child{
+        page-break-after: auto;
+        break-after: auto;
       }
       .page-1{
         overflow: visible;

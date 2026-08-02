@@ -118,7 +118,7 @@
 <div id="docModal" class="fixed inset-0 hidden z-50">
   <div class="absolute inset-0 bg-black/50" id="docBackdrop"></div>
   <div class="absolute inset-4 sm:inset-10 bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden">
-    <div class="px-4 py-3 border-b flex items-center justify-between">
+    <div class="px-4 py-3 border-b flex items-center justify-between shrink-0">
       <div class="font-semibold">Đơn đăng ký tham gia đấu giá</div>
       <div class="flex items-center gap-2">
         <button id="btnDocDownload" type="button" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
@@ -129,7 +129,9 @@
         </button>
       </div>
     </div>
-    <iframe id="docFrame" class="flex-1 w-full" style="border:0" title="Đơn đăng ký"></iframe>
+    <div class="flex-1 overflow-auto bg-slate-200/80 p-4">
+      <iframe id="docFrame" class="block mx-auto bg-white shadow-md" style="border:0; width:210mm; min-height:297mm;" title="Đơn đăng ký"></iframe>
+    </div>
   </div>
 </div>
 
@@ -288,7 +290,15 @@
     docModal.classList.remove("hidden");
     docFrame.onload = () => {
       try {
-        docFrame.contentDocument.title = `${COMPANY || "COMPANY"}_${cccd}_${project_code}.pdf`;
+        const doc = docFrame.contentDocument;
+        const filename = `${COMPANY || "COMPANY"}_${cccd}_${project_code}.pdf`;
+        if (doc) doc.title = filename;
+        const h = Math.max(
+          doc?.documentElement?.scrollHeight || 0,
+          doc?.body?.scrollHeight || 0,
+          1123 /* ~297mm fallback px */
+        );
+        docFrame.style.height = h + "px";
       } catch (e) {}
     };
   }
@@ -296,6 +306,7 @@
   function closeDoc(){
     docModal.classList.add("hidden");
     docFrame.src = "about:blank";
+    docFrame.style.height = "";
   }
 
   function fmtVnd(n){
