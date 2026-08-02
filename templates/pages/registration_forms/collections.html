@@ -289,11 +289,10 @@
 
   function shouldPausePolling(){
     return (
-      !currentProjectId ||
+      !elProject.value ||
       document.visibilityState !== "visible" ||
       isDocModalOpen() ||
-      manualLoadInFlight ||
-      pollInFlight
+      manualLoadInFlight
     );
   }
 
@@ -553,7 +552,7 @@
   }
 
   async function pollRevision(){
-    if (shouldPausePolling()) return;
+    if (pollInFlight || shouldPausePolling()) return;
     const pid = elProject.value;
     if (!pid) return;
 
@@ -566,7 +565,6 @@
       if (shouldPausePolling()) return;
 
       if (!r.ok) {
-        // Fallback khi API revision chưa có hoặc lỗi tạm thời
         await loadData({ silent: true, poll: true, forceRender: true });
         return;
       }
@@ -574,13 +572,13 @@
       const js = await r.json();
       renderStats(js.stats);
       const revision = js.revision || "";
-      const changed = !lastRevision || Boolean(js.changed);
-
-      if (revision) lastRevision = revision;
+      const changed = Boolean(js.changed);
 
       if (changed) {
+        if (revision) lastRevision = revision;
         await loadData({ silent: true, poll: true, forceRender: true });
       } else {
+        if (revision) lastRevision = revision;
         setPollStatus(`Cập nhật lúc ${new Date().toLocaleTimeString("vi-VN")}`);
       }
     } catch (e) {
@@ -667,7 +665,7 @@
       }
 
       if (seq === loadSeq && !silent && !isDocModalOpen()) {
-        startPolling(false);
+        startPolling(true);
       }
     } finally {
       if (seq === loadSeq) {
