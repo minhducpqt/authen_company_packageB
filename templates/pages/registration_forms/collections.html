@@ -453,7 +453,9 @@
     docModal.classList.add("hidden");
     docFrame.src = "about:blank";
     docFrame.style.height = "";
-    startPolling();
+    lastRevision = "";
+    lastRowsFingerprint = "";
+    startPolling(true);
   }
 
   function fmtVnd(n){
@@ -483,7 +485,7 @@
 
   function applyFilters(){
     resetPage();
-    loadData();
+    loadData({ silent: false });
   }
 
   function buildParams(){
@@ -525,7 +527,6 @@
     if (elProject.value) {
       syncProjectCode();
       applyFilters();
-      startPolling();
     } else {
       elBody.innerHTML = '<tr><td class="py-6 px-4 text-slate-400" colspan="11">Chọn dự án để xem danh sách.</td></tr>';
       elTotal.textContent = "Tổng: 0";
@@ -535,11 +536,6 @@
     }
   }
 
-  function applyFilters(){
-    resetPage();
-    loadData({ silent: false });
-  }
-
   function stopPolling(){
     if (pollTimer) {
       clearInterval(pollTimer);
@@ -547,10 +543,13 @@
     }
   }
 
-  function startPolling(){
+  function startPolling(immediate){
     stopPolling();
-    if (!currentProjectId) return;
+    if (!elProject.value || isDocModalOpen()) return;
     pollTimer = setInterval(pollRevision, POLL_MS);
+    if (immediate !== false) {
+      void pollRevision();
+    }
   }
 
   async function pollRevision(){
@@ -564,22 +563,32 @@
       p.set("project_id", pid);
       if (lastRevision) p.set("since", lastRevision);
       const r = await fetch(`${REVISION_URL}?${p.toString()}`);
-      if (!r.ok || shouldPausePolling()) return;
+      if (shouldPausePolling()) return;
+
+      if (!r.ok) {
+        // Fallback khi API revision chưa có hoặc lỗi tạm thời
+        await loadData({ silent: true, poll: true, forceRender: true });
+        return;
+      }
 
       const js = await r.json();
       renderStats(js.stats);
       const revision = js.revision || "";
-      const changed = Boolean(js.changed);
+      const changed = !lastRevision || Boolean(js.changed);
 
       if (revision) lastRevision = revision;
 
       if (changed) {
-        await loadData({ silent: true, poll: true });
+        await loadData({ silent: true, poll: true, forceRender: true });
       } else {
         setPollStatus(`Cập nhật lúc ${new Date().toLocaleTimeString("vi-VN")}`);
       }
     } catch (e) {
-      /* im lặng — lần poll sau thử lại */
+      try {
+        await loadData({ silent: true, poll: true, forceRender: true });
+      } catch (e2) {
+        /* im lặng — lần poll sau thử lại */
+      }
     } finally {
       pollInFlight = false;
     }
@@ -588,6 +597,7 @@
   async function loadData(opts = {}){
     const silent = Boolean(opts.silent);
     const fromPoll = Boolean(opts.poll);
+    const forceRender = Boolean(opts.forceRender);
     const params = buildParams();
     if (!params) {
       elBody.innerHTML = '<tr><td class="py-6 px-4 text-slate-400" colspan="11">Chọn dự án để xem danh sách.</td></tr>';
@@ -633,7 +643,7 @@
       elTotal.textContent = `Tổng: ${total}`;
 
       const fp = rowsFingerprint(rows);
-      const tableChanged = fp !== lastRowsFingerprint;
+      const tableChanged = forceRender || fp !== lastRowsFingerprint;
 
       if (tableChanged) {
         lastRowsFingerprint = fp;
@@ -654,6 +664,10 @@
           const name = tr?.querySelector(".font-medium")?.textContent || drawerTitle.textContent || "Khách";
           openDetail(openDetailCid, name, { silent: true });
         }
+      }
+
+      if (seq === loadSeq && !silent && !isDocModalOpen()) {
+        startPolling(false);
       }
     } finally {
       if (seq === loadSeq) {
@@ -798,16 +812,14 @@
     lastRowsFingerprint = "";
     stopPolling();
     applyFilters();
-    startPolling();
   });
   elStatus.addEventListener("change", applyFilters);
   elSize.addEventListener("change", applyFilters);
   elSearch.addEventListener("input", scheduleSearch);
 
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible" && currentProjectId && !isDocModalOpen()) {
-      pollRevision();
-      startPolling();
+    if (document.visibilityState === "visible" && elProject.value && !isDocModalOpen()) {
+      startPolling(true);
     } else if (document.visibilityState !== "visible") {
       stopPolling();
     }
