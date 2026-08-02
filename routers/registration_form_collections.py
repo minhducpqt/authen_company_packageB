@@ -64,6 +64,36 @@ async def collections_page(
     )
 
 
+@router.get("/registration-forms/collections/revision", response_class=JSONResponse)
+async def collections_revision(
+    request: Request,
+    project_id: int = Query(..., ge=1),
+    since: Optional[str] = Query(None),
+):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    params: List[Tuple[str, str | int]] = [("project_id", project_id)]
+    if since:
+        params.append(("since", since))
+
+    async with httpx.AsyncClient() as client:
+        r = await _api_get(
+            client,
+            "/api/v1/registration-forms/collections/revision",
+            token,
+            params,
+        )
+
+    if r.status_code == 401:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    if r.status_code >= 500:
+        return JSONResponse({"error": "server", "msg": r.text[:300]}, status_code=502)
+
+    return JSONResponse(r.json(), status_code=r.status_code)
+
+
 @router.get("/registration-forms/collections/data", response_class=JSONResponse)
 async def collections_data(
     request: Request,

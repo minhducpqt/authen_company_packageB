@@ -9,20 +9,75 @@
   <div class="text-sm text-slate-500 mt-1">
     Theo dõi khách đã nộp đơn đăng ký (quét QR) trong dự án — chỉ khách đã cọc PAID.
   </div>
-  <div class="flex flex-wrap gap-3 mt-3 text-xs">
-    <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded border border-emerald-200 bg-emerald-50 text-emerald-800">
-      <span class="w-2.5 h-2.5 rounded-sm bg-emerald-400"></span> Đã thu
-    </span>
-    <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded border border-amber-200 bg-amber-50 text-amber-800">
-      <span class="w-2.5 h-2.5 rounded-sm bg-amber-400"></span> Cảnh báo
-    </span>
-    <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded border border-red-200 bg-red-50 text-red-800">
-      <span class="w-2.5 h-2.5 rounded-sm bg-red-400"></span> Chưa thu
-    </span>
+  <div id="statsRow" class="collection-stats mt-3">
+    <div class="collection-stats__item collection-stats__item--ok">
+      <span id="statCollected" class="collection-stats__num">—</span>
+      <span class="collection-stats__label">Đã thu</span>
+    </div>
+    <div class="collection-stats__item collection-stats__item--warn">
+      <span id="statWarn" class="collection-stats__num">—</span>
+      <span class="collection-stats__label">Cảnh báo</span>
+    </div>
+    <div class="collection-stats__item collection-stats__item--pending">
+      <span id="statNotCollected" class="collection-stats__num">—</span>
+      <span class="collection-stats__label">Chưa thu</span>
+    </div>
   </div>
+  <div id="pollStatus" class="text-xs text-slate-400 mt-1.5 hidden"></div>
 </div>
 
 <style>
+  .collection-stats {
+    display: inline-flex;
+    align-items: stretch;
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+    overflow: hidden;
+    width: fit-content;
+    max-width: 100%;
+  }
+  .collection-stats__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 5.25rem;
+    padding: 0.5rem 1rem;
+    border-right: 1px solid #e2e8f0;
+  }
+  .collection-stats__item:last-child {
+    border-right: 0;
+  }
+  .collection-stats__num {
+    font-size: 1.375rem;
+    line-height: 1.2;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+  .collection-stats__label {
+    margin-top: 0.125rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+  .collection-stats__item--ok {
+    background: #ecfdf5;
+  }
+  .collection-stats__item--ok .collection-stats__num { color: #047857; }
+  .collection-stats__item--ok .collection-stats__label { color: #059669; }
+  .collection-stats__item--warn {
+    background: #fffbeb;
+  }
+  .collection-stats__item--warn .collection-stats__num { color: #b45309; }
+  .collection-stats__item--warn .collection-stats__label { color: #d97706; }
+  .collection-stats__item--pending {
+    background: #fef2f2;
+  }
+  .collection-stats__item--pending .collection-stats__num { color: #b91c1c; }
+  .collection-stats__item--pending .collection-stats__label { color: #dc2626; }
   #collectionsTable tbody tr:hover > td {
     background: rgba(248, 250, 252, 0.9);
   }
@@ -93,7 +148,7 @@
     </div>
   </div>
 
-  <div class="border-t border-slate-100 overflow-x-auto">
+  <div class="border-t border-slate-100 overflow-x-auto" id="tableScroll">
     <table class="w-full text-sm" id="collectionsTable">
       <thead class="bg-slate-50">
         <tr class="text-left text-slate-600">
@@ -165,8 +220,10 @@
 <script>
 (function(){
   const DATA_URL = "/registration-forms/collections/data";
+  const REVISION_URL = "/registration-forms/collections/revision";
   const SUB_URL = (cid, pid) => `/registration-forms/collections/customers/${cid}/submissions?project_id=${pid}`;
   const PROJ_URL = "/projects/options/listing_projects";
+  const POLL_MS = 3000;
   const DOC_URL = (company_code, project_code, cccd) => {
     const p = new URLSearchParams();
     if (company_code) p.set("company_code", company_code);
@@ -186,6 +243,11 @@
   const elSize = document.getElementById("sizeSelect");
   const elBody = document.getElementById("dataBody");
   const elTotal = document.getElementById("totalInfo");
+  const elTableScroll = document.getElementById("tableScroll");
+  const statCollected = document.getElementById("statCollected");
+  const statWarn = document.getElementById("statWarn");
+  const statNotCollected = document.getElementById("statNotCollected");
+  const pollStatus = document.getElementById("pollStatus");
   const btnPrev = document.getElementById("prevBtn");
   const btnNext = document.getElementById("nextBtn");
   const btnRefresh = document.getElementById("refreshBtn");
@@ -210,6 +272,118 @@
   let currentProjectCode = "";
   let searchTimer = null;
   let loadSeq = 0;
+  let pollTimer = null;
+  let lastRevision = "";
+  let lastRowsFingerprint = "";
+  let pollInFlight = false;
+  let manualLoadInFlight = false;
+  let openDetailCid = null;
+
+  function isDocModalOpen(){
+    return !docModal.classList.contains("hidden");
+  }
+
+  function isDrawerOpen(){
+    return !drawer.classList.contains("hidden");
+  }
+
+  function shouldPausePolling(){
+    return (
+      !currentProjectId ||
+      document.visibilityState !== "visible" ||
+      isDocModalOpen() ||
+      manualLoadInFlight ||
+      pollInFlight
+    );
+  }
+
+  function resetStats(){
+    statCollected.textContent = "—";
+    statWarn.textContent = "—";
+    statNotCollected.textContent = "—";
+    pollStatus.classList.add("hidden");
+    pollStatus.textContent = "";
+  }
+
+  function renderStats(stats){
+    if (!stats) {
+      resetStats();
+      return;
+    }
+    statCollected.textContent = String(stats.COLLECTED ?? 0);
+    statWarn.textContent = String(stats.COLLECTED_WARN ?? 0);
+    statNotCollected.textContent = String(stats.NOT_COLLECTED ?? 0);
+  }
+
+  function setPollStatus(text){
+    if (!text) {
+      pollStatus.classList.add("hidden");
+      pollStatus.textContent = "";
+      return;
+    }
+    pollStatus.textContent = text;
+    pollStatus.classList.remove("hidden");
+  }
+
+  function rowsFingerprint(rows){
+    return JSON.stringify((rows || []).map(r => ([
+      r.customer_id,
+      r.collection_status,
+      r.submitted_count,
+      r.missing_lots_flag,
+      r.latest_collected_at,
+    ])));
+  }
+
+  function renderRows(rows){
+    if (!rows.length) {
+      elBody.innerHTML = '<tr><td class="py-6 px-4 text-slate-400" colspan="11">Không có dữ liệu.</td></tr>';
+      return;
+    }
+    elBody.innerHTML = rows.map(row => {
+      const cid = row.customer_id;
+      const name = escHtml(row.customer_full_name || "—");
+      const cccdRaw = row.cccd || "";
+      const cccd = escHtml(cccdRaw || "—");
+      const warn = row.missing_lots_flag
+        ? `<span class="text-amber-800 text-xs font-medium" title="${escHtml((row.missing_lot_codes||[]).join(', '))}"><i class="ri-error-warning-line"></i> Đơn thiếu lô</span>`
+        : '<span class="text-slate-500 text-xs">—</span>';
+      const subCount = Number(row.submitted_count || 0);
+      const subCell = subCount > 0
+        ? `<span class="font-semibold text-slate-800">${subCount}</span>`
+        : '<span class="text-slate-500">0</span>';
+      const hasCollected = subCount > 0;
+      const detailBtn = hasCollected
+        ? `<button type="button"
+              class="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-500 hover:text-indigo-700 hover:bg-indigo-50"
+              data-action="detail" data-cid="${cid}" title="Chi tiết phiếu đã thu">
+            <i class="ri-file-list-3-line text-[15px]"></i>
+          </button>`
+        : `<span class="text-slate-300 text-xs">—</span>`;
+      const sttLabel = row.stt_padded || (row.stt != null ? String(row.stt).padStart(3, "0") : "—");
+      const canPrint = Boolean(cccdRaw);
+      const printBtn = canPrint
+        ? `<button type="button" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-xs font-medium text-slate-700"
+               data-action="print-doc" data-cccd="${escHtml(cccdRaw)}" title="In đơn đăng ký">
+             <i class="ri-printer-line"></i> In
+           </button>`
+        : `<span class="text-slate-400 text-xs">—</span>`;
+      return `
+        <tr class="border-t border-slate-100 hover:bg-slate-50/50" data-customer-id="${cid}">
+          <td class="py-3 px-4 text-slate-600 font-mono text-xs">${sttLabel}</td>
+          <td class="py-3 px-4 font-medium text-slate-900">${name}</td>
+          <td class="py-3 px-4">${cccd}</td>
+          <td class="py-3 px-4">${escHtml(row.phone || "—")}</td>
+          <td class="py-3 px-4 text-right">${row.current_lot_count ?? 0}</td>
+          <td class="py-3 px-4 text-right whitespace-nowrap">${fmtVnd(row.total_deposit_vnd)}</td>
+          <td class="py-3 px-3 col-status whitespace-nowrap">${statusBadge(row)}</td>
+          <td class="py-3 px-2 col-submitted text-center tabular-nums">${subCell}</td>
+          <td class="py-3 px-4">${warn}</td>
+          <td class="py-3 px-4 text-center">${printBtn}</td>
+          <td class="py-3 px-2 text-center">${detailBtn}</td>
+        </tr>`;
+    }).join("");
+  }
 
   function escHtml(s){
     return String(s ?? "")
@@ -257,6 +431,7 @@
       alert("Khách chưa có CCCD — không thể in đơn.");
       return;
     }
+    stopPolling();
     docFrame.src = DOC_URL(COMPANY, project_code, cccd);
     docModal.classList.remove("hidden");
     docFrame.onload = () => {
@@ -278,6 +453,7 @@
     docModal.classList.add("hidden");
     docFrame.src = "about:blank";
     docFrame.style.height = "";
+    startPolling();
   }
 
   function fmtVnd(n){
@@ -301,7 +477,7 @@
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => {
       resetPage();
-      loadData();
+      loadData({ silent: false });
     }, 400);
   }
 
@@ -349,90 +525,143 @@
     if (elProject.value) {
       syncProjectCode();
       applyFilters();
+      startPolling();
     } else {
       elBody.innerHTML = '<tr><td class="py-6 px-4 text-slate-400" colspan="11">Chọn dự án để xem danh sách.</td></tr>';
       elTotal.textContent = "Tổng: 0";
       currentProjectId = null;
+      resetStats();
+      stopPolling();
     }
   }
 
-  async function loadData(){
+  function applyFilters(){
+    resetPage();
+    loadData({ silent: false });
+  }
+
+  function stopPolling(){
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  }
+
+  function startPolling(){
+    stopPolling();
+    if (!currentProjectId) return;
+    pollTimer = setInterval(pollRevision, POLL_MS);
+  }
+
+  async function pollRevision(){
+    if (shouldPausePolling()) return;
+    const pid = elProject.value;
+    if (!pid) return;
+
+    pollInFlight = true;
+    try {
+      const p = new URLSearchParams();
+      p.set("project_id", pid);
+      if (lastRevision) p.set("since", lastRevision);
+      const r = await fetch(`${REVISION_URL}?${p.toString()}`);
+      if (!r.ok || shouldPausePolling()) return;
+
+      const js = await r.json();
+      renderStats(js.stats);
+      const revision = js.revision || "";
+      const changed = Boolean(js.changed);
+
+      if (revision) lastRevision = revision;
+
+      if (changed) {
+        await loadData({ silent: true, poll: true });
+      } else {
+        setPollStatus(`Cập nhật lúc ${new Date().toLocaleTimeString("vi-VN")}`);
+      }
+    } catch (e) {
+      /* im lặng — lần poll sau thử lại */
+    } finally {
+      pollInFlight = false;
+    }
+  }
+
+  async function loadData(opts = {}){
+    const silent = Boolean(opts.silent);
+    const fromPoll = Boolean(opts.poll);
     const params = buildParams();
     if (!params) {
       elBody.innerHTML = '<tr><td class="py-6 px-4 text-slate-400" colspan="11">Chọn dự án để xem danh sách.</td></tr>';
       elTotal.textContent = "Tổng: 0";
       currentProjectId = null;
+      lastRevision = "";
+      lastRowsFingerprint = "";
+      resetStats();
+      stopPolling();
       return;
     }
+
     const seq = ++loadSeq;
     currentProjectId = elProject.value;
-    elBody.innerHTML = '<tr><td class="py-6 px-4 text-slate-400" colspan="11">Đang tải...</td></tr>';
-    btnRefresh.disabled = true;
-    btnRefresh.classList.add("opacity-60");
+
+    if (!silent) {
+      manualLoadInFlight = true;
+      elBody.innerHTML = '<tr><td class="py-6 px-4 text-slate-400" colspan="11">Đang tải...</td></tr>';
+      btnRefresh.disabled = true;
+      btnRefresh.classList.add("opacity-60");
+    }
+
+    const scrollTop = silent ? elTableScroll.scrollTop : 0;
+
     try {
       const r = await fetch(`${DATA_URL}?${params.toString()}`);
       if (seq !== loadSeq) return;
       if (!r.ok) {
-        elBody.innerHTML = '<tr><td class="py-6 px-4 text-red-500" colspan="11">Lỗi tải dữ liệu.</td></tr>';
+        if (!silent) {
+          elBody.innerHTML = '<tr><td class="py-6 px-4 text-red-500" colspan="11">Lỗi tải dữ liệu.</td></tr>';
+        }
         return;
       }
+
       const js = await r.json();
       const rows = js.data || [];
       const total = js.total ?? rows.length;
+      const meta = js.meta || {};
+
+      renderStats(meta.stats);
+      if (meta.revision) lastRevision = meta.revision;
+
       elTotal.textContent = `Tổng: ${total}`;
 
-      if (!rows.length) {
-        elBody.innerHTML = '<tr><td class="py-6 px-4 text-slate-400" colspan="11">Không có dữ liệu.</td></tr>';
-        return;
+      const fp = rowsFingerprint(rows);
+      const tableChanged = fp !== lastRowsFingerprint;
+
+      if (tableChanged) {
+        lastRowsFingerprint = fp;
+        if (silent) {
+          elTableScroll.scrollTop = scrollTop;
+        }
+        renderRows(rows);
       }
 
-      elBody.innerHTML = rows.map(row => {
-        const cid = row.customer_id;
-        const name = escHtml(row.customer_full_name || "—");
-        const cccdRaw = row.cccd || "";
-        const cccd = escHtml(cccdRaw || "—");
-        const warn = row.missing_lots_flag
-          ? `<span class="text-amber-800 text-xs font-medium" title="${escHtml((row.missing_lot_codes||[]).join(', '))}"><i class="ri-error-warning-line"></i> Đơn thiếu lô</span>`
-          : '<span class="text-slate-500 text-xs">—</span>';
-        const subCount = Number(row.submitted_count || 0);
-        const subCell = subCount > 0
-          ? `<span class="font-semibold text-slate-800">${subCount}</span>`
-          : '<span class="text-slate-500">0</span>';
-        const hasCollected = subCount > 0;
-        const detailBtn = hasCollected
-          ? `<button type="button"
-                class="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-500 hover:text-indigo-700 hover:bg-indigo-50"
-                data-action="detail" data-cid="${cid}" title="Chi tiết phiếu đã thu">
-              <i class="ri-file-list-3-line text-[15px]"></i>
-            </button>`
-          : `<span class="text-slate-300 text-xs">—</span>`;
-        const sttLabel = row.stt_padded || (row.stt != null ? String(row.stt).padStart(3, "0") : "—");
-        const canPrint = Boolean(cccdRaw);
-        const printBtn = canPrint
-          ? `<button type="button" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-xs font-medium text-slate-700"
-                 data-action="print-doc" data-cccd="${escHtml(cccdRaw)}" title="In đơn đăng ký">
-               <i class="ri-printer-line"></i> In
-             </button>`
-          : `<span class="text-slate-400 text-xs">—</span>`;
-        return `
-          <tr class="border-t border-slate-100 hover:bg-slate-50/50">
-            <td class="py-3 px-4 text-slate-600 font-mono text-xs">${sttLabel}</td>
-            <td class="py-3 px-4 font-medium text-slate-900">${name}</td>
-            <td class="py-3 px-4">${cccd}</td>
-            <td class="py-3 px-4">${escHtml(row.phone || "—")}</td>
-            <td class="py-3 px-4 text-right">${row.current_lot_count ?? 0}</td>
-            <td class="py-3 px-4 text-right whitespace-nowrap">${fmtVnd(row.total_deposit_vnd)}</td>
-            <td class="py-3 px-3 col-status whitespace-nowrap">${statusBadge(row)}</td>
-            <td class="py-3 px-2 col-submitted text-center tabular-nums">${subCell}</td>
-            <td class="py-3 px-4">${warn}</td>
-            <td class="py-3 px-4 text-center">${printBtn}</td>
-            <td class="py-3 px-2 text-center">${detailBtn}</td>
-          </tr>`;
-      }).join("");
+      if (fromPoll || silent) {
+        setPollStatus(`Cập nhật lúc ${new Date().toLocaleTimeString("vi-VN")}`);
+      }
+
+      if (silent && isDrawerOpen() && openDetailCid) {
+        const stillVisible = rows.some(row => String(row.customer_id) === String(openDetailCid));
+        if (stillVisible) {
+          const tr = elBody.querySelector(`tr[data-customer-id="${openDetailCid}"]`);
+          const name = tr?.querySelector(".font-medium")?.textContent || drawerTitle.textContent || "Khách";
+          openDetail(openDetailCid, name, { silent: true });
+        }
+      }
     } finally {
       if (seq === loadSeq) {
-        btnRefresh.disabled = false;
-        btnRefresh.classList.remove("opacity-60");
+        if (!silent) {
+          manualLoadInFlight = false;
+          btnRefresh.disabled = false;
+          btnRefresh.classList.remove("opacity-60");
+        }
       }
     }
   }
@@ -445,15 +674,21 @@
   function closeDrawer(){
     drawer.classList.add("hidden");
     drawerContent.innerHTML = "";
+    openDetailCid = null;
   }
 
-  async function openDetail(cid, label){
+  async function openDetail(cid, label, opts = {}){
     if (!currentProjectId) return;
-    openDrawer(label);
-    drawerContent.innerHTML = '<div class="text-slate-400">Đang tải...</div>';
+    openDetailCid = String(cid);
+    if (!opts.silent) {
+      openDrawer(label);
+      drawerContent.innerHTML = '<div class="text-slate-400">Đang tải...</div>';
+    }
     const r = await fetch(SUB_URL(cid, currentProjectId));
     if (!r.ok) {
-      drawerContent.innerHTML = '<div class="text-red-500">Lỗi tải chi tiết.</div>';
+      if (!opts.silent) {
+        drawerContent.innerHTML = '<div class="text-red-500">Lỗi tải chi tiết.</div>';
+      }
       return;
     }
     const js = await r.json();
@@ -538,31 +773,47 @@
     }
   });
 
-  btnRefresh.addEventListener("click", () => loadData());
+  btnRefresh.addEventListener("click", () => loadData({ silent: false }));
 
   btnPrev.addEventListener("click", () => {
     const p = Math.max(1, Number(elPage.value || 1) - 1);
     elPage.value = String(p);
-    loadData();
+    loadData({ silent: false });
   });
 
   btnNext.addEventListener("click", () => {
     elPage.value = String(Number(elPage.value || 1) + 1);
-    loadData();
+    loadData({ silent: false });
   });
 
   elProjectStatus.addEventListener("change", () => {
     TxProjectMemory.rememberById(elProject, elProjectStatus);
+    stopPolling();
     loadProjects();
   });
   elProject.addEventListener("change", () => {
     TxProjectMemory.rememberById(elProject, elProjectStatus);
     syncProjectCode();
+    lastRevision = "";
+    lastRowsFingerprint = "";
+    stopPolling();
     applyFilters();
+    startPolling();
   });
   elStatus.addEventListener("change", applyFilters);
   elSize.addEventListener("change", applyFilters);
   elSearch.addEventListener("input", scheduleSearch);
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && currentProjectId && !isDocModalOpen()) {
+      pollRevision();
+      startPolling();
+    } else if (document.visibilityState !== "visible") {
+      stopPolling();
+    }
+  });
+
+  window.addEventListener("beforeunload", stopPolling);
 
   if (INIT_Q) elSearch.value = INIT_Q;
   if (INIT_STATUS) elStatus.value = INIT_STATUS;
