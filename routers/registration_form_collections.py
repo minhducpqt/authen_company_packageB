@@ -37,7 +37,7 @@ async def collections_page(
     q: Optional[str] = Query(None),
     collection_status: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
-    size: int = Query(50, ge=1, le=200),
+    size: int = Query(100, ge=1, le=200),
 ):
     token = get_access_token(request)
     if not token:
@@ -71,7 +71,7 @@ async def collections_data(
     q: Optional[str] = Query(None),
     collection_status: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
-    size: int = Query(50, ge=1, le=200),
+    size: int = Query(100, ge=1, le=200),
 ):
     token = get_access_token(request)
     if not token:
