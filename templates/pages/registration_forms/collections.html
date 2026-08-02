@@ -1,0 +1,568 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="mb-4">
+  <h1 class="text-2xl font-semibold text-slate-900 flex items-center gap-2">
+    <i class="ri-file-check-line text-indigo-600"></i>
+    Quản lý đơn thu
+  </h1>
+  <div class="text-sm text-slate-500 mt-1">
+    Theo dõi khách đã nộp đơn đăng ký (quét QR) trong dự án — chỉ khách đã cọc PAID.
+  </div>
+  <div class="flex flex-wrap gap-3 mt-3 text-xs">
+    <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded border border-emerald-200 bg-emerald-50 text-emerald-800">
+      <span class="w-2.5 h-2.5 rounded-sm bg-emerald-400"></span> Đã thu, đủ lô
+    </span>
+    <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded border border-amber-200 bg-amber-50 text-amber-800">
+      <span class="w-2.5 h-2.5 rounded-sm bg-amber-400"></span> Đã thu, thiếu lô
+    </span>
+    <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded border border-red-200 bg-red-50 text-red-800">
+      <span class="w-2.5 h-2.5 rounded-sm bg-red-400"></span> Chưa thu
+    </span>
+  </div>
+</div>
+
+<style>
+  #collectionsTable tbody tr:hover > td {
+    background: rgba(248, 250, 252, 0.9);
+  }
+</style>
+
+<div class="bg-white rounded-xl border border-slate-200" id="pageRoot" data-company="{{ company_code or '' }}">
+  <div class="p-4">
+    <div class="grid grid-cols-12 gap-4 items-end">
+      <div class="col-span-12 md:col-span-3">
+        <label class="block text-sm text-slate-500 mb-1">Trạng thái dự án</label>
+        <select id="projectStatusSelect" class="w-full border rounded-lg px-3 py-2">
+          <option value="ALL">Tất cả</option>
+          <option value="ACTIVE" selected>ACTIVE</option>
+          <option value="INACTIVE">INACTIVE</option>
+        </select>
+      </div>
+
+      <div class="col-span-12 md:col-span-5">
+        <label class="block text-sm text-slate-500 mb-1">Dự án <span class="text-red-500">*</span></label>
+        <select id="projectSelect" class="w-full border rounded-lg px-3 py-2">
+          <option value="">— Chọn dự án —</option>
+        </select>
+      </div>
+
+      <div class="col-span-12 md:col-span-4">
+        <label class="block text-sm text-slate-500 mb-1">Trạng thái thu đơn</label>
+        <select id="statusSelect" class="w-full border rounded-lg px-3 py-2">
+          <option value="">Tất cả</option>
+          <option value="COLLECTED">Đã thu</option>
+          <option value="NOT_COLLECTED">Chưa thu</option>
+        </select>
+      </div>
+
+      <div class="col-span-12 md:col-span-8">
+        <label class="block text-sm text-slate-500 mb-1">Tìm khách (Tên/CCCD/SĐT)</label>
+        <input id="searchInput" type="text" placeholder="Gõ để tìm..." class="w-full border rounded-lg px-3 py-2">
+      </div>
+
+      <div class="col-span-6 md:col-span-1">
+        <label class="block text-sm text-slate-500 mb-1">Trang</label>
+        <input id="pageInput" type="number" min="1" value="{{ init_page or 1 }}" class="w-full border rounded-lg px-3 py-2">
+      </div>
+
+      <div class="col-span-6 md:col-span-1">
+        <label class="block text-sm text-slate-500 mb-1">Size</label>
+        <select id="sizeSelect" class="w-full border rounded-lg px-3 py-2">
+          {% for n in [25,50,100] %}
+          <option value="{{n}}" {% if (init_size or 50) == n %}selected{% endif %}>{{n}}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-span-12 md:col-span-2 flex md:justify-end">
+        <button id="refreshBtn" type="button" title="Làm mới dữ liệu hiện tại"
+                class="h-10 w-full md:w-auto px-5 rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50">
+          <i class="ri-refresh-line"></i> Refresh
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="border-t border-slate-100 overflow-x-auto">
+    <table class="w-full text-sm" id="collectionsTable">
+      <thead class="bg-slate-50">
+        <tr class="text-left text-slate-600">
+          <th class="py-3 px-4 w-14">STT</th>
+          <th class="py-3 px-4">Khách</th>
+          <th class="py-3 px-4">CCCD</th>
+          <th class="py-3 px-4">SĐT</th>
+          <th class="py-3 px-4 text-right">Lô cọc</th>
+          <th class="py-3 px-4 text-right whitespace-nowrap">Tổng cọc (VND)</th>
+          <th class="py-3 px-4">Trạng thái</th>
+          <th class="py-3 px-4 text-right">Số đơn đã nộp</th>
+          <th class="py-3 px-4">Cảnh báo</th>
+          <th class="py-3 px-4 text-center whitespace-nowrap">In đơn</th>
+        </tr>
+      </thead>
+      <tbody id="dataBody">
+        <tr><td class="py-6 px-4 text-slate-400" colspan="10">Chọn dự án để xem danh sách.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="p-4 flex items-center justify-between text-sm text-slate-500">
+    <div id="totalInfo">Tổng: 0</div>
+    <div class="flex items-center gap-2">
+      <button id="prevBtn" class="px-3 py-1 rounded border">Trước</button>
+      <button id="nextBtn" class="px-3 py-1 rounded border">Sau</button>
+    </div>
+  </div>
+</div>
+
+<div id="docModal" class="fixed inset-0 hidden z-50">
+  <div class="absolute inset-0 bg-black/50" id="docBackdrop"></div>
+  <div class="absolute inset-4 sm:inset-10 bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden">
+    <div class="px-4 py-3 border-b flex items-center justify-between">
+      <div class="font-semibold">Đơn đăng ký tham gia đấu giá</div>
+      <div class="flex items-center gap-2">
+        <button id="btnDocDownload" type="button" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
+          <i class="ri-printer-line"></i> In / PDF
+        </button>
+        <button id="btnDocClose" type="button" class="h-9 w-9 rounded-full hover:bg-slate-100 flex items-center justify-center">
+          <i class="ri-close-line text-xl"></i>
+        </button>
+      </div>
+    </div>
+    <iframe id="docFrame" class="flex-1 w-full" style="border:0" title="Đơn đăng ký"></iframe>
+  </div>
+</div>
+
+<div id="drawer" class="fixed inset-0 hidden z-40">
+  <div class="absolute inset-0 bg-black/40" id="drawerBackdrop"></div>
+  <div class="absolute right-0 top-0 h-full w-full sm:w-[620px] bg-white shadow-2xl flex flex-col">
+    <div class="px-5 py-4 border-b flex items-center justify-between">
+      <div class="space-y-0.5">
+        <div class="text-xs text-slate-500">Đơn đã nộp (COLLECTED)</div>
+        <div id="drawerTitle" class="font-semibold">—</div>
+      </div>
+      <button id="drawerClose" class="h-8 w-8 rounded-full hover:bg-slate-100 flex items-center justify-center">
+        <i class="ri-close-line text-xl"></i>
+      </button>
+    </div>
+    <div class="flex-1 overflow-auto p-5 space-y-4" id="drawerContent"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const DATA_URL = "/registration-forms/collections/data";
+  const SUB_URL = (cid, pid) => `/registration-forms/collections/customers/${cid}/submissions?project_id=${pid}`;
+  const PROJ_URL = "/projects/options/listing_projects";
+  const DOC_URL = (company_code, project_code, cccd) => {
+    const p = new URLSearchParams();
+    if (company_code) p.set("company_code", company_code);
+    p.set("project_code", project_code);
+    p.set("cccd", cccd);
+    return `/documents/auction/registration?${p.toString()}`;
+  };
+
+  const root = document.getElementById("pageRoot");
+  const COMPANY = root?.dataset.company || "";
+
+  const elProjectStatus = document.getElementById("projectStatusSelect");
+  const elProject = document.getElementById("projectSelect");
+  const elStatus = document.getElementById("statusSelect");
+  const elSearch = document.getElementById("searchInput");
+  const elPage = document.getElementById("pageInput");
+  const elSize = document.getElementById("sizeSelect");
+  const elBody = document.getElementById("dataBody");
+  const elTotal = document.getElementById("totalInfo");
+  const btnPrev = document.getElementById("prevBtn");
+  const btnNext = document.getElementById("nextBtn");
+  const btnRefresh = document.getElementById("refreshBtn");
+
+  const drawer = document.getElementById("drawer");
+  const drawerBackdrop = document.getElementById("drawerBackdrop");
+  const drawerClose = document.getElementById("drawerClose");
+  const drawerTitle = document.getElementById("drawerTitle");
+  const drawerContent = document.getElementById("drawerContent");
+
+  const docModal = document.getElementById("docModal");
+  const docBackdrop = document.getElementById("docBackdrop");
+  const docFrame = document.getElementById("docFrame");
+  const btnDocClose = document.getElementById("btnDocClose");
+  const btnDocDownload = document.getElementById("btnDocDownload");
+
+  const INIT_PROJECT_ID = "{{ init_project_id or '' }}";
+  const INIT_Q = {{ (init_q or '')|tojson }};
+  const INIT_STATUS = {{ (init_collection_status or '')|tojson }};
+
+  const LS_KEY_PROJECT = "reg_form_collections:last_project_id";
+  const LS_KEY_PROJ_STATUS = "reg_form_collections:last_project_status";
+
+  let currentProjectId = null;
+  let currentProjectCode = "";
+  let searchTimer = null;
+  let loadSeq = 0;
+
+  function escHtml(s){
+    return String(s ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function rowStatusClass(row){
+    if (row.collection_status !== "COLLECTED") return "row-not-collected";
+    if (row.missing_lots_flag) return "row-collected-warn";
+    return "row-collected-ok";
+  }
+
+  function statusBadge(row){
+    const cls = rowStatusClass(row);
+    if (cls === "row-collected-ok") {
+      return '<span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">Đã thu</span>';
+    }
+    if (cls === "row-collected-warn") {
+      return '<span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300">Đã thu, thiếu lô</span>';
+    }
+    return '<span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-red-100 text-red-800 border border-red-300">Chưa thu</span>';
+  }
+
+  function selectedProjectCode(){
+    const opt = elProject.selectedOptions?.[0];
+    return opt?.dataset.projectCode || currentProjectCode || "";
+  }
+
+  function syncProjectCode(){
+    currentProjectCode = selectedProjectCode();
+  }
+
+  function rememberProjectSelection(){
+    try {
+      const pid = (elProject.value || "").trim();
+      const st = (elProjectStatus.value || "ACTIVE").trim();
+      if (pid) localStorage.setItem(LS_KEY_PROJECT, pid);
+      else localStorage.removeItem(LS_KEY_PROJECT);
+      if (st) localStorage.setItem(LS_KEY_PROJ_STATUS, st);
+    } catch (e) {}
+  }
+
+  function restoreProjectStatusFilter(){
+    if (INIT_PROJECT_ID) return;
+    try {
+      const st = (localStorage.getItem(LS_KEY_PROJ_STATUS) || "").trim();
+      if (st && elProjectStatus.querySelector(`option[value="${CSS.escape(st)}"]`)) {
+        elProjectStatus.value = st;
+      }
+    } catch (e) {}
+  }
+
+  function pickSavedProjectId(prev){
+    if (prev && elProject.querySelector(`option[value="${CSS.escape(prev)}"]`)) {
+      return prev;
+    }
+    const fromUrl = (INIT_PROJECT_ID || "").trim();
+    if (fromUrl && elProject.querySelector(`option[value="${CSS.escape(fromUrl)}"]`)) {
+      return fromUrl;
+    }
+    try {
+      const saved = (localStorage.getItem(LS_KEY_PROJECT) || "").trim();
+      if (saved && elProject.querySelector(`option[value="${CSS.escape(saved)}"]`)) {
+        return saved;
+      }
+      if (saved) localStorage.removeItem(LS_KEY_PROJECT);
+    } catch (e) {}
+    return "";
+  }
+
+  function openDoc(cccd){
+    syncProjectCode();
+    const project_code = currentProjectCode;
+    if (!project_code) {
+      alert("Vui lòng chọn dự án trước khi in đơn.");
+      return;
+    }
+    if (!cccd || cccd === "—") {
+      alert("Khách chưa có CCCD — không thể in đơn.");
+      return;
+    }
+    docFrame.src = DOC_URL(COMPANY, project_code, cccd);
+    docModal.classList.remove("hidden");
+    docFrame.onload = () => {
+      try {
+        docFrame.contentDocument.title = `${COMPANY || "COMPANY"}_${cccd}_${project_code}.pdf`;
+      } catch (e) {}
+    };
+  }
+
+  function closeDoc(){
+    docModal.classList.add("hidden");
+    docFrame.src = "about:blank";
+  }
+
+  function fmtVnd(n){
+    const v = Number(n || 0);
+    return v.toLocaleString("vi-VN");
+  }
+
+  function fmtDt(iso){
+    if (!iso) return "—";
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString("vi-VN");
+    } catch(e){ return iso; }
+  }
+
+  function resetPage(){
+    elPage.value = "1";
+  }
+
+  function scheduleSearch(){
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+      resetPage();
+      loadData();
+    }, 400);
+  }
+
+  function applyFilters(){
+    resetPage();
+    loadData();
+  }
+
+  function buildParams(){
+    const pid = elProject.value;
+    if (!pid) return null;
+    const p = new URLSearchParams();
+    p.set("project_id", pid);
+    p.set("page", elPage.value || "1");
+    p.set("size", elSize.value || "50");
+    const q = (elSearch.value || "").trim();
+    if (q) p.set("q", q);
+    const st = elStatus.value;
+    if (st) p.set("collection_status", st);
+    return p;
+  }
+
+  async function loadProjects(){
+    const st = elProjectStatus.value || "ACTIVE";
+    const url = `${PROJ_URL}?status=${encodeURIComponent(st)}&size=1000`;
+    const r = await fetch(url);
+    if (!r.ok) return;
+    const js = await r.json();
+    const items = js.data || js.items || [];
+    const prev = elProject.value;
+    elProject.innerHTML = '<option value="">— Chọn dự án —</option>';
+    for (const p of items) {
+      const pid = p.id ?? p.project_id;
+      if (!pid) continue;
+      const code = p.project_code || p.code || "";
+      const name = p.name || "";
+      const opt = document.createElement("option");
+      opt.value = String(pid);
+      opt.textContent = code ? `${code} — ${name}` : name;
+      opt.dataset.projectCode = code;
+      elProject.appendChild(opt);
+    }
+    const picked = pickSavedProjectId(prev);
+    if (picked) elProject.value = picked;
+    if (elProject.value) {
+      syncProjectCode();
+      applyFilters();
+    } else {
+      elBody.innerHTML = '<tr><td class="py-6 px-4 text-slate-400" colspan="10">Chọn dự án để xem danh sách.</td></tr>';
+      elTotal.textContent = "Tổng: 0";
+      currentProjectId = null;
+    }
+  }
+
+  async function loadData(){
+    const params = buildParams();
+    if (!params) {
+      elBody.innerHTML = '<tr><td class="py-6 px-4 text-slate-400" colspan="10">Chọn dự án để xem danh sách.</td></tr>';
+      elTotal.textContent = "Tổng: 0";
+      currentProjectId = null;
+      return;
+    }
+    const seq = ++loadSeq;
+    currentProjectId = elProject.value;
+    elBody.innerHTML = '<tr><td class="py-6 px-4 text-slate-400" colspan="10">Đang tải...</td></tr>';
+    btnRefresh.disabled = true;
+    btnRefresh.classList.add("opacity-60");
+    try {
+      const r = await fetch(`${DATA_URL}?${params.toString()}`);
+      if (seq !== loadSeq) return;
+      if (!r.ok) {
+        elBody.innerHTML = '<tr><td class="py-6 px-4 text-red-500" colspan="10">Lỗi tải dữ liệu.</td></tr>';
+        return;
+      }
+      const js = await r.json();
+      const rows = js.data || [];
+      const total = js.total ?? rows.length;
+      elTotal.textContent = `Tổng: ${total}`;
+
+      if (!rows.length) {
+        elBody.innerHTML = '<tr><td class="py-6 px-4 text-slate-400" colspan="10">Không có dữ liệu.</td></tr>';
+        return;
+      }
+
+      elBody.innerHTML = rows.map(row => {
+        const cid = row.customer_id;
+        const name = escHtml(row.customer_full_name || "—");
+        const cccdRaw = row.cccd || "";
+        const cccd = escHtml(cccdRaw || "—");
+        const warn = row.missing_lots_flag
+          ? `<span class="text-amber-800 text-xs font-medium" title="${escHtml((row.missing_lot_codes||[]).join(', '))}"><i class="ri-error-warning-line"></i> Đơn thiếu lô</span>`
+          : '<span class="text-slate-500 text-xs">—</span>';
+        const subCount = Number(row.submitted_count || 0);
+        const subCell = subCount > 0
+          ? `<button type="button" class="text-indigo-700 hover:underline font-semibold" data-action="submissions" data-cid="${cid}">${subCount}</button>`
+          : '<span class="text-slate-500">0</span>';
+        const sttLabel = row.stt_padded || (row.stt != null ? String(row.stt).padStart(3, "0") : "—");
+        const canPrint = Boolean(cccdRaw);
+        const printBtn = canPrint
+          ? `<button type="button" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-xs font-medium text-slate-700"
+                 data-action="print-doc" data-cccd="${escHtml(cccdRaw)}" title="In đơn đăng ký">
+               <i class="ri-printer-line"></i> In
+             </button>`
+          : `<span class="text-slate-400 text-xs">—</span>`;
+        return `
+          <tr class="border-t border-slate-100 hover:bg-slate-50/50">
+            <td class="py-3 px-4 text-slate-600 font-mono text-xs">${sttLabel}</td>
+            <td class="py-3 px-4 font-medium text-slate-900">${name}</td>
+            <td class="py-3 px-4">${cccd}</td>
+            <td class="py-3 px-4">${escHtml(row.phone || "—")}</td>
+            <td class="py-3 px-4 text-right">${row.current_lot_count ?? 0}</td>
+            <td class="py-3 px-4 text-right whitespace-nowrap">${fmtVnd(row.total_deposit_vnd)}</td>
+            <td class="py-3 px-4">${statusBadge(row)}</td>
+            <td class="py-3 px-4 text-right">${subCell}</td>
+            <td class="py-3 px-4">${warn}</td>
+            <td class="py-3 px-4 text-center">${printBtn}</td>
+          </tr>`;
+      }).join("");
+    } finally {
+      if (seq === loadSeq) {
+        btnRefresh.disabled = false;
+        btnRefresh.classList.remove("opacity-60");
+      }
+    }
+  }
+
+  function openDrawer(title){
+    drawerTitle.textContent = title;
+    drawer.classList.remove("hidden");
+  }
+
+  function closeDrawer(){
+    drawer.classList.add("hidden");
+    drawerContent.innerHTML = "";
+  }
+
+  async function openSubmissions(cid, label){
+    if (!currentProjectId) return;
+    openDrawer(label);
+    drawerContent.innerHTML = '<div class="text-slate-400">Đang tải...</div>';
+    const r = await fetch(SUB_URL(cid, currentProjectId));
+    if (!r.ok) {
+      drawerContent.innerHTML = '<div class="text-red-500">Lỗi tải chi tiết.</div>';
+      return;
+    }
+    const js = await r.json();
+    const items = js.data || [];
+    if (!items.length) {
+      drawerContent.innerHTML = '<div class="text-slate-400">Chưa có đơn COLLECTED.</div>';
+      return;
+    }
+    drawerContent.innerHTML = items.map((it, idx) => {
+      const lots = it.lot_snapshot || [];
+      const lotRows = lots.map(l => `
+        <tr class="border-t">
+          <td class="py-1 pr-2">${l.lot_code || "—"}</td>
+          <td class="py-1 pr-2 text-right">${l.area_m2 != null ? Number(l.area_m2).toLocaleString("vi-VN") : "—"}</td>
+          <td class="py-1 text-right">${l.deposit_amount_vnd != null ? fmtVnd(l.deposit_amount_vnd) : "—"}</td>
+        </tr>`).join("");
+      return `
+        <div class="border rounded-xl p-4 ${idx ? "mt-3" : ""}">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="text-xs text-slate-500">Thu lúc</div>
+              <div class="font-semibold">${fmtDt(it.collected_at)}</div>
+              <div class="text-xs text-slate-500 mt-1">Bởi: ${it.collected_by_username || "—"}</div>
+            </div>
+            <div class="text-right text-xs text-slate-500">
+              <div>${it.lot_count || lots.length} lô</div>
+              <div class="font-mono">${it.jti || ""}</div>
+            </div>
+          </div>
+          <table class="w-full text-xs mt-3">
+            <thead><tr class="text-slate-500">
+              <th class="text-left pb-1">Lô</th>
+              <th class="text-right pb-1">m²</th>
+              <th class="text-right pb-1">Cọc</th>
+            </tr></thead>
+            <tbody>${lotRows || '<tr><td colspan="3" class="text-slate-400 py-2">—</td></tr>'}</tbody>
+          </table>
+        </div>`;
+    }).join("");
+  }
+
+  elBody.addEventListener("click", (ev) => {
+    const printBtn = ev.target.closest("[data-action=print-doc]");
+    if (printBtn) {
+      openDoc(printBtn.dataset.cccd || "");
+      return;
+    }
+    const btn = ev.target.closest("[data-action=submissions]");
+    if (!btn) return;
+    const cid = btn.dataset.cid;
+    const tr = btn.closest("tr");
+    const name = tr?.querySelector(".font-medium")?.textContent || "Khách";
+    openSubmissions(cid, name);
+  });
+
+  drawerBackdrop.addEventListener("click", closeDrawer);
+  drawerClose.addEventListener("click", closeDrawer);
+  btnDocClose.addEventListener("click", closeDoc);
+  docBackdrop.addEventListener("click", closeDoc);
+  btnDocDownload.addEventListener("click", () => {
+    try {
+      docFrame.contentWindow.focus();
+      docFrame.contentWindow.print();
+    } catch (e) {
+      alert("Không thể mở hộp thoại in. Vui lòng kiểm tra popup blocker.");
+    }
+  });
+
+  btnRefresh.addEventListener("click", () => loadData());
+
+  btnPrev.addEventListener("click", () => {
+    const p = Math.max(1, Number(elPage.value || 1) - 1);
+    elPage.value = String(p);
+    loadData();
+  });
+
+  btnNext.addEventListener("click", () => {
+    elPage.value = String(Number(elPage.value || 1) + 1);
+    loadData();
+  });
+
+  elProjectStatus.addEventListener("change", () => {
+    rememberProjectSelection();
+    loadProjects();
+  });
+  elProject.addEventListener("change", () => {
+    rememberProjectSelection();
+    syncProjectCode();
+    applyFilters();
+  });
+  elStatus.addEventListener("change", applyFilters);
+  elSize.addEventListener("change", applyFilters);
+  elSearch.addEventListener("input", scheduleSearch);
+
+  if (INIT_Q) elSearch.value = INIT_Q;
+  if (INIT_STATUS) elStatus.value = INIT_STATUS;
+
+  restoreProjectStatusFilter();
+  loadProjects();
+})();
+</script>
+
+{% endblock %}

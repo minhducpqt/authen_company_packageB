@@ -16,6 +16,8 @@ from fastapi.responses import (
 
 from utils.auth import get_access_token  # dùng giống các router khác của B
 from utils.templates import templates
+from utils.bid_ticket_qr import qr_png_data_uri
+from utils.registration_form_issue_client import issue_registration_form_qr
 
 # Trùng convention cũ
 SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
@@ -125,12 +127,32 @@ async def view_auction_registration(
 
     # Render HTML từ template in A4
     today = datetime.date.today()
+
+    registration_qr_data_uri = None
+    try:
+        customer = data.get("customer") or {}
+        project = data.get("project") or {}
+        project_id = project.get("id")
+        customer_id = customer.get("id")
+        if project_id is not None and customer_id is not None:
+            jti = await issue_registration_form_qr(
+                access_token,
+                project_id=int(project_id),
+                customer_id=int(customer_id),
+                source="DEPOSITS_PAGE",
+            )
+            if jti:
+                registration_qr_data_uri = qr_png_data_uri(jti, box_size=6)
+    except Exception:
+        registration_qr_data_uri = None
+
     html = templates.get_template("pages/documents/auction_registration.html").render(
         request=request,
         title="Đơn đăng ký tham gia đấu giá",
         data=data,        # chính là ComposeDocResponse từ A
         today=today,
         year=today.year,
+        registration_qr_data_uri=registration_qr_data_uri,
     )
 
     # Nếu download=html -> trả file .html đính kèm

@@ -25,6 +25,7 @@ from routers.bank_import.router import router as bank_import_router
 from routers.send_info_dossier import router as send_info_dossier_router
 from routers.dossier_buyers import router as dossier_buyers_router
 from routers import transactions  # <-- NEW
+from routers import registration_form_collections  # <-- registration form collections
 from routers.api_proxy import router as api_proxy_router  # <-- NEW
 from routers.reports import router as reports_router
 from routers.reports_export import router as reports_export_router
@@ -117,6 +118,7 @@ app.include_router(bank_transactions.router)
 app.include_router(bank_import_router)
 app.include_router(dossier_buyers_router)
 app.include_router(transactions.router)  # <-- NEW
+app.include_router(registration_form_collections.router)
 app.include_router(reports_router)
 app.include_router(reports_export_router)
 app.include_router(company_mailers.router)
