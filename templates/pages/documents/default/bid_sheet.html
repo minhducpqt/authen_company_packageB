@@ -630,6 +630,7 @@
   ) %}
 
   {% set lot_code_display = t.lot_code or '' %}
+  {% set is_blank_ticket = (t.ticket_mode or '') == 'BLANK_TICKET' %}
   {% set lot_len = lot_code_display|length %}
   {% if lot_len <= 4 %}
     {% set lot_flag_fs = '30pt' %}
@@ -663,11 +664,17 @@
 
     <!-- HEADER -->
     <header class="sheet-header">
-      <aside class="lot-flag" aria-label="Mã lô">
+      <aside class="lot-flag" aria-label="{% if is_blank_ticket %}Phiếu trả giá{% else %}Mã lô{% endif %}">
+        {% if is_blank_ticket %}
+        <span class="flag-lot" style="font-size:16pt; padding:4px 10px 5px; letter-spacing:0.1mm;">
+          Phiếu {{ t.ticket_seq or '?' }}/{{ t.ticket_total or qty_lots }}
+        </span>
+        {% else %}
         <span
           class="flag-lot"
           style="font-size:{{ lot_flag_fs }}; padding:{{ lot_flag_pad }}; letter-spacing:{{ lot_flag_ls }};"
         >{{ lot_code_display }}</span>
+        {% endif %}
         <span class="flag-code">{{ stt_code }}-C{{ t.customer_id }}-S{{ qty_lots }}{% if t.session_id %}-P{{ t.session_id }}{% endif %}</span>
       </aside>
 
@@ -687,6 +694,16 @@
     <section class="asset-strip">
       <div class="label">Tài sản đấu giá</div>
       <p class="asset-desc">
+        {% if is_blank_ticket %}
+        Quyền sử dụng đất thuộc dự án
+        "<span class="bold">{{ t.project_name }}</span>"
+        {%- if t.group_name -%}
+        , nhóm cọc <span class="bold">{{ t.group_name }}</span>
+        {%- elif t.deposit_vnd -%}
+        , nhóm cọc <span class="bold">{{ "{:,.0f}".format(t.deposit_vnd|float) }} VND</span>
+        {%- endif -%}
+        . Khách hàng tự ghi <span class="bold">mã lô</span> và <span class="bold">giá trả</span> vào phiếu.
+        {% else %}
         Quyền sử dụng đất thuộc dự án
         "<span class="bold">{{ t.project_name }}</span>",
         lô đất số <span class="bold">{{ t.lot_code }}</span>
@@ -695,6 +712,7 @@
         {%- else -%}
         .
         {%- endif -%}
+        {% endif %}
       </p>
     </section>
 
@@ -749,22 +767,40 @@
             </tr>
             <tr>
               <td class="info-label">Lô đăng ký</td><td class="info-sep">:</td>
-              <td class="info-value bold">{{ t.lot_code }}</td>
+              <td class="info-value bold">
+                {% if is_blank_ticket %}
+                  <span class="dotline">&nbsp;</span>
+                {% else %}
+                  {{ t.lot_code }}
+                {% endif %}
+              </td>
             </tr>
             <tr>
               <td class="info-label">Diện tích</td><td class="info-sep">:</td>
               <td class="info-value">
-                {% if t.area_m2 is not none and t.area_m2 != '' and (t.area_m2|float) > 0 %}
+                {% if is_blank_ticket %}
+                  <span class="note">(Khách ghi theo lô chọn)</span>
+                {% elif t.area_m2 is not none and t.area_m2 != '' and (t.area_m2|float) > 0 %}
                   {{ "{:,.2f}".format(t.area_m2|float) }} m²
                 {% else %}
                   —
                 {% endif %}
               </td>
             </tr>
+            {% if is_blank_ticket and (t.group_name or t.deposit_vnd) %}
+            <tr>
+              <td class="info-label">Nhóm cọc</td><td class="info-sep">:</td>
+              <td class="info-value bold">
+                {{ t.group_name or ('Nhóm ' ~ "{:,.0f}".format(t.deposit_vnd|float) ~ ' VND') }}
+              </td>
+            </tr>
+            {% endif %}
             <tr>
               <td class="info-label">Giá KĐ ({{ price_unit }})</td><td class="info-sep">:</td>
               <td class="info-value bold">
-                {% if t.starting_price_vnd is not none and t.starting_price_vnd != '' %}
+                {% if is_blank_ticket %}
+                  <span class="note">(Theo lô khách chọn)</span>
+                {% elif t.starting_price_vnd is not none and t.starting_price_vnd != '' %}
                   {{ "{:,.0f}".format(t.starting_price_vnd|float) }}
                 {% else %}
                   0
@@ -810,7 +846,13 @@
               </div>
               <div class="lot-badge">
                 <div class="lot-label">Mã lô</div>
-                <div class="lot-value">{{ t.lot_code }}</div>
+                <div class="lot-value">
+                  {% if is_blank_ticket %}
+                    <span class="dotline">&nbsp;</span>
+                  {% else %}
+                    {{ t.lot_code }}
+                  {% endif %}
+                </div>
               </div>
             </div>
           </div>
@@ -832,6 +874,9 @@
       </p>
       <div class="notes">
         <span class="bold" style="color:var(--ink);">Ghi chú:</span>
+        {% if is_blank_ticket %}
+        Phiếu đấu nhóm — khách tự điền <span class="bold">mã lô</span> và <span class="bold">giá trả</span>;
+        {% endif %}
         Phiếu hợp lệ do {{ t.company_name or 'Đơn vị tổ chức đấu giá' }} phát hành;
         phiếu không rách, nát; điền đầy đủ thông tin.
       </div>

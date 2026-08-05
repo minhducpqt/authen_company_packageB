@@ -83,6 +83,16 @@ async def _a_get_json(
     return r.status_code, (js if isinstance(js, dict) else {"data": js})
 
 
+def _detect_registration_mode(ui: Dict[str, Any]) -> str:
+    for lot in (ui or {}).get("lots") or []:
+        for p in lot.get("participants") or []:
+            extras = p.get("extras") if isinstance(p.get("extras"), dict) else {}
+            ga = extras.get("group_auction") if isinstance(extras, dict) else {}
+            if isinstance(ga, dict) and ga.get("registration_mode"):
+                return str(ga["registration_mode"]).upper()
+    return "NORMAL"
+
+
 def _build_print_items(attendance_rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     Convert attendance rows into template-friendly items.
@@ -134,11 +144,16 @@ def _build_print_items(attendance_rows: List[Dict[str, Any]]) -> List[Dict[str, 
     return out
 
 
-def _aggregate_attendance_from_round_ui(ui: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], int, int]:
+def _aggregate_attendance_from_round_ui(
+    ui: Dict[str, Any],
+    *,
+    registration_mode: str = "NORMAL",
+) -> Tuple[List[Dict[str, Any]], int, int]:
     """
     Build attendance aggregated by customer_id from round UI payload (Service A).
     Returns: (attendance_rows_sorted, lot_count, customer_count)
     """
+    is_group = (registration_mode or "").upper() == "GROUP_AUCTION"
     lots = (ui or {}).get("lots") or []
     lot_count = len(lots)
 
@@ -193,6 +208,15 @@ def _aggregate_attendance_from_round_ui(ui: Dict[str, Any]) -> Tuple[List[Dict[s
                     if rba is not None:
                         by_cid[cid]["refund_bank_accounts"] = rba
 
+            if is_group and by_cid[cid].get("deposit_lot_count") is None:
+                extras = p.get("extras") if isinstance(p.get("extras"), dict) else None
+                ga = (extras or {}).get("group_auction") if isinstance(extras, dict) else None
+                if isinstance(ga, dict) and ga.get("customer_deposit_lot_count") is not None:
+                    try:
+                        by_cid[cid]["deposit_lot_count"] = int(ga["customer_deposit_lot_count"])
+                    except Exception:
+                        pass
+
             # stt: keep smallest
             stt0 = by_cid[cid].get("stt")
             stt1 = p.get("stt")
@@ -206,8 +230,11 @@ def _aggregate_attendance_from_round_ui(ui: Dict[str, Any]) -> Tuple[List[Dict[s
 
     data: List[Dict[str, Any]] = []
     for cid, item in by_cid.items():
-        lots_of_c = lotset_by_cid.get(cid) or set()
-        item["lot_count"] = len(lots_of_c)
+        if is_group and item.get("deposit_lot_count") is not None:
+            item["lot_count"] = int(item["deposit_lot_count"])
+        else:
+            lots_of_c = lotset_by_cid.get(cid) or set()
+            item["lot_count"] = len(lots_of_c)
         data.append(item)
 
     def _sort_key(x: Dict[str, Any]):
@@ -267,6 +294,7 @@ async def print_attendance_list(
 
     project_name = sess_data.get("project_name") or sess_data.get("p_project_name") or ""
     project_code = sess_data.get("project_code") or sess_data.get("p_project_code") or ""
+    registration_mode = "NORMAL"
 
     # 2) current round
     round_no = 1
@@ -294,7 +322,11 @@ async def print_attendance_list(
         timeout=60.0,
     )
     if st_ui == 200 and isinstance(ui, dict):
-        attendance_rows, lot_count, customer_count = _aggregate_attendance_from_round_ui(ui)
+        reg_mode = _detect_registration_mode(ui)
+        registration_mode = reg_mode
+        attendance_rows, lot_count, customer_count = _aggregate_attendance_from_round_ui(
+            ui, registration_mode=reg_mode
+        )
     else:
         if not error:
             error = {"message": f"Không tải được dữ liệu vòng (status={st_ui})", "body": ui}
@@ -316,6 +348,7 @@ async def print_attendance_list(
         "lot_count": lot_count,
         "customer_count": customer_count,
         "round_no": int(round_no),
+        "registration_mode": registration_mode,
     }
 
     project = {"name": project_name or project_code or "", "project_code": project_code or ""}
@@ -407,6 +440,7 @@ async def print_attendance_public_notice(
 
     project_name = sess_data.get("project_name") or sess_data.get("p_project_name") or ""
     project_code = sess_data.get("project_code") or sess_data.get("p_project_code") or ""
+    registration_mode = "NORMAL"
 
     # 2) current round
     round_no = 1
@@ -433,7 +467,11 @@ async def print_attendance_public_notice(
         timeout=60.0,
     )
     if st_ui == 200 and isinstance(ui, dict):
-        attendance_rows, lot_count, customer_count = _aggregate_attendance_from_round_ui(ui)
+        reg_mode = _detect_registration_mode(ui)
+        registration_mode = reg_mode
+        attendance_rows, lot_count, customer_count = _aggregate_attendance_from_round_ui(
+            ui, registration_mode=reg_mode
+        )
     else:
         if not error:
             error = {"message": f"Không tải được dữ liệu vòng (status={st_ui})", "body": ui}
@@ -455,6 +493,7 @@ async def print_attendance_public_notice(
         "lot_count": lot_count,
         "customer_count": customer_count,
         "round_no": int(round_no),
+        "registration_mode": registration_mode,
     }
 
     project = {"name": project_name or project_code or "", "project_code": project_code or ""}

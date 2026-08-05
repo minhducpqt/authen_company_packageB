@@ -51,8 +51,13 @@
     </a>
     <a href="/bid-attendance?project_code={{ group_projects[0].project_code or group_projects[0].code }}"
        class="border border-slate-200 rounded-2xl p-4 hover:border-indigo-200 hover:shadow-sm transition">
-      <div class="font-semibold text-slate-900">Danh sách điểm danh</div>
-      <p class="text-xs text-slate-500 mt-1">Chốt STT từ khách đủ ĐK vận hành phiên.</p>
+      <div class="font-semibold text-slate-900">STT trước phiên</div>
+      <p class="text-xs text-slate-500 mt-1">Xem/chốt STT khách đủ ĐK (tham khảo). In chính thức sau Start phiên.</p>
+    </a>
+    <a href="/bid-tickets?project_code={{ group_projects[0].project_code or group_projects[0].code }}"
+       class="border border-slate-200 rounded-2xl p-4 hover:border-violet-200 hover:shadow-sm transition">
+      <div class="font-semibold text-slate-900">Phiếu trả giá</div>
+      <p class="text-xs text-slate-500 mt-1">In phiếu trắng mã lô — số phiếu = số lô cọc hợp lệ.</p>
     </a>
     <a href="/reports/v2/projects/{{ default_group_pid }}/groups/customers/ineligible"
        class="border border-slate-200 rounded-2xl p-4 hover:border-rose-200 hover:shadow-sm transition">
@@ -78,7 +83,8 @@
             <a href="/reports/v2/projects/{{ pid }}/groups/eligible" class="px-2 py-1 rounded-full bg-indigo-50 text-indigo-700">Nhóm đủ</a>
             <a href="/reports/v2/projects/{{ pid }}/groups/ineligible" class="px-2 py-1 rounded-full bg-rose-50 text-rose-700">Nhóm không đủ</a>
             <a href="/reports/v2/projects/{{ pid }}/groups/customers/eligible" class="px-2 py-1 rounded-full bg-emerald-50 text-emerald-700">KH đủ</a>
-            <a href="/bid-attendance?project_code={{ code }}" class="px-2 py-1 rounded-full bg-indigo-50 text-indigo-700">Điểm danh</a>
+            <a href="/bid-attendance?project_code={{ code }}" class="px-2 py-1 rounded-full bg-indigo-50 text-indigo-700">STT trước phiên</a>
+            <a href="/bid-tickets?project_code={{ code }}" class="px-2 py-1 rounded-full bg-violet-50 text-violet-700">Phiếu TG</a>
             <a href="/reports/v2/projects/{{ pid }}/groups/customers/ineligible" class="px-2 py-1 rounded-full bg-rose-50 text-rose-700">KH không đủ</a>
           </div>
         </div>
