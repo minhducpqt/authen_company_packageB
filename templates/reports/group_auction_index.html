@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Báo cáo đấu nhóm{% endblock %}
+
+{% block content %}
+{% set group_projects = group_projects or [] %}
+{% set default_group_pid = (group_projects[0].id or group_projects[0].project_id) if group_projects|length >= 1 else None %}
+
+<div class="mb-6">
+  <div class="flex items-start justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900 flex items-center gap-2">
+        <i class="ri-group-line text-teal-600 text-3xl"></i>
+        Báo cáo đấu nhóm
+      </h1>
+      <p class="text-slate-500 text-sm mt-1">
+        Danh sách khách / nhóm cọc đủ điều kiện vận hành phiên — chỉ áp dụng dự án hình thức đấu nhóm.
+      </p>
+    </div>
+    <a href="/reports" class="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-indigo-700">
+      <i class="ri-arrow-left-line"></i> Báo cáo (đấu lô)
+    </a>
+  </div>
+</div>
+
+{% if group_projects|length == 0 %}
+<div class="bg-white border border-slate-200 rounded-2xl p-8 text-center text-slate-500">
+  Chưa có dự án ACTIVE nào ở hình thức <b>Đấu nhóm</b>.
+</div>
+{% else %}
+
+<div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mb-8">
+  <div class="px-4 py-3 border-b border-slate-200 bg-gradient-to-r from-teal-50 to-white">
+    <div class="text-sm font-semibold text-slate-900">Tổng quan đấu nhóm</div>
+    <div class="text-xs text-slate-500">Mở theo dự án mặc định: {{ group_projects[0].project_code or group_projects[0].code }}</div>
+  </div>
+  <div class="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+    <a href="/reports/v2/projects/{{ default_group_pid }}/groups/eligible"
+       class="border border-slate-200 rounded-2xl p-4 hover:border-teal-200 hover:shadow-sm transition">
+      <div class="font-semibold text-slate-900">Nhóm cọc đủ ĐK</div>
+      <p class="text-xs text-slate-500 mt-1">Nhóm có từ 2 khách cọc đúng hạn.</p>
+    </a>
+    <a href="/reports/v2/projects/{{ default_group_pid }}/groups/ineligible"
+       class="border border-slate-200 rounded-2xl p-4 hover:border-rose-200 hover:shadow-sm transition">
+      <div class="font-semibold text-slate-900">Nhóm cọc không đủ</div>
+      <p class="text-xs text-slate-500 mt-1">Nhóm dưới 2 khách — không mở đấu.</p>
+    </a>
+    <a href="/reports/v2/projects/{{ default_group_pid }}/groups/customers/eligible"
+       class="border border-slate-200 rounded-2xl p-4 hover:border-emerald-200 hover:shadow-sm transition">
+      <div class="font-semibold text-slate-900">KH đủ điều kiện</div>
+      <p class="text-xs text-slate-500 mt-1">Khách thuộc nhóm cọc đủ ĐK.</p>
+    </a>
+    <a href="/reports/v2/projects/{{ default_group_pid }}/groups/customers/ineligible"
+       class="border border-slate-200 rounded-2xl p-4 hover:border-rose-200 hover:shadow-sm transition">
+      <div class="font-semibold text-slate-900">KH không đủ ĐK</div>
+      <p class="text-xs text-slate-500 mt-1">Cấm đấu giá, loại tay, hoặc nhóm ít người.</p>
+    </a>
+  </div>
+</div>
+
+<div class="bg-white border rounded-2xl shadow-sm p-4">
+  <div class="text-sm font-semibold text-slate-900 mb-3">Dự án đấu nhóm</div>
+  <div class="space-y-3">
+    {% for p in group_projects %}
+      {% set code = p.project_code or p.code %}
+      {% set pid = p.id or p.project_id %}
+      <div class="border border-slate-100 rounded-xl px-4 py-3 bg-slate-50/60">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <span class="text-xs font-semibold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full">{{ code }}</span>
+            <div class="text-sm font-semibold mt-1">{{ p.name }}</div>
+          </div>
+          <div class="flex flex-wrap gap-2 text-xs">
+            <a href="/reports/v2/projects/{{ pid }}/groups/eligible" class="px-2 py-1 rounded-full bg-indigo-50 text-indigo-700">Nhóm đủ</a>
+            <a href="/reports/v2/projects/{{ pid }}/groups/ineligible" class="px-2 py-1 rounded-full bg-rose-50 text-rose-700">Nhóm không đủ</a>
+            <a href="/reports/v2/projects/{{ pid }}/groups/customers/eligible" class="px-2 py-1 rounded-full bg-emerald-50 text-emerald-700">KH đủ</a>
+            <a href="/reports/v2/projects/{{ pid }}/groups/customers/ineligible" class="px-2 py-1 rounded-full bg-rose-50 text-rose-700">KH không đủ</a>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

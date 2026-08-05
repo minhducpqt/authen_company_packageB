@@ -547,6 +547,12 @@
               <i class="ri-pie-chart-2-fill"></i> Tổng quan
             </a>
           </li>
+          <li>
+            <a class="side-link {% if request.url.path.startswith('/reports/group-auction') or ('/groups/' in request.url.path) %}active{% endif %}"
+               href="/reports/group-auction">
+              <i class="ri-group-line"></i> Báo cáo đấu nhóm
+            </a>
+          </li>
 
           {# ===== 1. Dự án & Giao dịch (Admin full) ===== #}
           <li class="side-title mt-4">1. Dự án & Giao dịch</li>

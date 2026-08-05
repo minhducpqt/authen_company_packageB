@@ -404,7 +404,7 @@
           <td class="w-area center">{{ g.group_total_lots|default(0) }}</td>
           <td class="w-area center">{{ g.participating_qty|default(g.qty|default(0)) }}</td>
           <td class="w-price">
-            {{ g.total_deposit_vnd|default(0)|int }}
+            {{ "{:,.0f}".format(g.total_deposit_vnd|default(0)|float) }}
           </td>
         </tr>
         {% endfor %}

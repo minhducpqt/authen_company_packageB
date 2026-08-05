@@ -1447,3 +1447,256 @@ async def v2_customer_lot_txns_json(
     if st != 200:
         return JSONResponse({"error": "service_a_failed", "status": st, "body": js}, status_code=502)
     return JSONResponse(js, status_code=200)
+
+
+# ============================================================
+# GROUP_AUCTION — hub + báo cáo đủ điều kiện (Phase 1)
+# ============================================================
+
+@router.get("/reports/group-auction", response_class=HTMLResponse)
+async def reports_group_auction_home(request: Request):
+    """Hub báo cáo riêng cho dự án đấu nhóm — không thay đổi menu báo cáo đấu lô."""
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(url="/login?next=%2Freports%2Fgroup-auction", status_code=303)
+
+    projects, _ = await _load_projects(token, None)
+    group_projects = [
+        p for p in (projects or [])
+        if str(p.get("registration_mode") or "NORMAL").upper() == "GROUP_AUCTION"
+    ]
+
+    return templates.TemplateResponse(
+        "reports/group_auction_index.html",
+        {
+            "request": request,
+            "group_projects": group_projects,
+        },
+    )
+
+
+async def _group_report_ctx(
+    request: Request,
+    token: str,
+    project_id: int,
+    limit: Optional[int],
+    api_suffix: str,
+    expose_phone: bool = False,
+) -> dict:
+    limit2 = _clamp_int(limit, default=DEFAULT_LIMIT_REPORTS_V2, min_value=1, max_value=MAX_LIMIT_REPORTS_V2)
+    projects, _ = await _load_projects(token, None)
+    selected_code = ""
+    for p in (projects or []):
+        pid = p.get("id") or p.get("project_id")
+        if pid == project_id:
+            selected_code = (p.get("project_code") or p.get("code") or "").strip().upper()
+            break
+
+    params: Dict[str, Any] = {"limit": limit2}
+    if expose_phone:
+        params["expose_phone"] = "1"
+
+    st, js = await _get_json(
+        f"/api/v2/reports/projects/{project_id}/{api_suffix}",
+        token,
+        params,
+    )
+    data = js if st == 200 and isinstance(js, dict) else {"items": [], "count": 0}
+    error = None if st == 200 else {"status": st, "body": js}
+
+    return {
+        "request": request,
+        "projects": projects,
+        "project": selected_code,
+        "project_id": project_id,
+        "limit": limit2,
+        "data": data,
+        "error": error,
+    }
+
+
+@router.get("/reports/v2/projects/{project_id}/groups/eligible", response_class=HTMLResponse)
+async def v2_groups_eligible_page(request: Request, project_id: int = Path(..., ge=1), limit: Optional[int] = Query(10000)):
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(url="/login?next=%2Freports", status_code=303)
+    ctx = await _group_report_ctx(request, token, project_id, limit, "groups/eligible")
+    ctx.update({
+        "page_title": "Nhóm cọc đủ điều kiện",
+        "page_icon": "ri-checkbox-circle-line text-emerald-600",
+        "page_desc": "Nhóm cọc có từ 2 khách cọc đúng hạn (đấu nhóm).",
+        "base_path": "/reports/v2/projects/__PID__/groups/eligible",
+        "export_path": f"/reports/v2/projects/{project_id}/groups/eligible/export",
+        "table_columns": [
+            {"key": "deposit_vnd", "label": "Mức cọc (VNĐ)", "mono": True},
+            {"key": "group_name", "label": "Tên nhóm"},
+            {"key": "group_total_lots", "label": "Tổng lô nhóm", "mono": True},
+            {"key": "eligible_customer_count", "label": "Số khách ĐK", "mono": True},
+            {"key": "eligible_lot_count", "label": "Số lô đã cọc", "mono": True},
+            {"key": "eligible_deposit_amount", "label": "Tổng tiền cọc", "money": True},
+        ],
+    })
+    return templates.TemplateResponse("reports/group_eligibility.html", ctx)
+
+
+@router.get("/reports/v2/projects/{project_id}/groups/eligible/export")
+async def v2_groups_eligible_export(request: Request, project_id: int = Path(..., ge=1), limit: Optional[int] = Query(None)):
+    token = get_access_token(request)
+    if not token:
+        return _unauth()
+    limit2 = _clamp_int(limit, default=DEFAULT_LIMIT_REPORTS_V2, min_value=1, max_value=MAX_LIMIT_REPORTS_V2)
+    return await _proxy_xlsx(
+        f"/api/v2/reports/projects/{project_id}/groups/eligible",
+        token,
+        {"limit": limit2, "format": "xlsx"},
+        f"groups_eligible_p{project_id}.xlsx",
+    )
+
+
+@router.get("/reports/v2/projects/{project_id}/groups/ineligible", response_class=HTMLResponse)
+async def v2_groups_ineligible_page(request: Request, project_id: int = Path(..., ge=1), limit: Optional[int] = Query(10000)):
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(url="/login?next=%2Freports", status_code=303)
+    ctx = await _group_report_ctx(request, token, project_id, limit, "groups/ineligible")
+    ctx.update({
+        "page_title": "Nhóm cọc không đủ điều kiện",
+        "page_icon": "ri-alert-line text-rose-600",
+        "page_desc": "Nhóm cọc có dưới 2 khách cọc đúng hạn — toàn bộ lô trong nhóm không mở đấu.",
+        "base_path": "/reports/v2/projects/__PID__/groups/ineligible",
+        "export_path": f"/reports/v2/projects/{project_id}/groups/ineligible/export",
+        "table_columns": [
+            {"key": "deposit_vnd", "label": "Mức cọc (VNĐ)", "mono": True},
+            {"key": "group_name", "label": "Tên nhóm"},
+            {"key": "total_customers_paid", "label": "Số khách cọc", "mono": True},
+            {"key": "eligible_customer_count", "label": "Số khách ĐK", "mono": True},
+            {"key": "ineligible_reason", "label": "Lý do"},
+        ],
+    })
+    return templates.TemplateResponse("reports/group_eligibility.html", ctx)
+
+
+@router.get("/reports/v2/projects/{project_id}/groups/ineligible/export")
+async def v2_groups_ineligible_export(request: Request, project_id: int = Path(..., ge=1), limit: Optional[int] = Query(None)):
+    token = get_access_token(request)
+    if not token:
+        return _unauth()
+    limit2 = _clamp_int(limit, default=DEFAULT_LIMIT_REPORTS_V2, min_value=1, max_value=MAX_LIMIT_REPORTS_V2)
+    return await _proxy_xlsx(
+        f"/api/v2/reports/projects/{project_id}/groups/ineligible",
+        token,
+        {"limit": limit2, "format": "xlsx"},
+        f"groups_ineligible_p{project_id}.xlsx",
+    )
+
+
+@router.get("/reports/v2/projects/{project_id}/groups/customers/eligible", response_class=HTMLResponse)
+async def v2_group_customers_eligible_page(
+    request: Request,
+    project_id: int = Path(..., ge=1),
+    limit: Optional[int] = Query(10000),
+    expose_phone: Optional[int] = Query(0),
+):
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(url="/login?next=%2Freports", status_code=303)
+    expose = int(expose_phone or 0) == 1
+    ctx = await _group_report_ctx(
+        request, token, project_id, limit, "groups/customers/eligible", expose_phone=expose,
+    )
+    export_qs = "?expose_phone=1" if expose else ""
+    ctx.update({
+        "page_title": "Khách đủ điều kiện (đấu nhóm)",
+        "page_icon": "ri-user-star-line text-emerald-600",
+        "page_desc": "Khách thuộc ít nhất một nhóm cọc có từ 2 người cọc đúng hạn.",
+        "base_path": "/reports/v2/projects/__PID__/groups/customers/eligible",
+        "export_path": f"/reports/v2/projects/{project_id}/groups/customers/eligible/export{export_qs}",
+        "table_columns": [
+            {"key": "customer_full_name", "label": "Họ tên"},
+            {"key": "cccd", "label": "CCCD"},
+            {"key": "deposit_vnd", "label": "Nhóm cọc (VNĐ)", "mono": True},
+            {"key": "group_name", "label": "Tên nhóm"},
+            {"key": "participating_lot_count", "label": "Số lô tham gia", "mono": True},
+            {"key": "total_deposit_amount_group", "label": "Tổng cọc nhóm", "money": True},
+        ],
+    })
+    return templates.TemplateResponse("reports/group_eligibility.html", ctx)
+
+
+@router.get("/reports/v2/projects/{project_id}/groups/customers/eligible/export")
+async def v2_group_customers_eligible_export(
+    request: Request,
+    project_id: int = Path(..., ge=1),
+    limit: Optional[int] = Query(None),
+    expose_phone: Optional[int] = Query(0),
+):
+    token = get_access_token(request)
+    if not token:
+        return _unauth()
+    limit2 = _clamp_int(limit, default=DEFAULT_LIMIT_REPORTS_V2, min_value=1, max_value=MAX_LIMIT_REPORTS_V2)
+    params: Dict[str, Any] = {"limit": limit2, "format": "xlsx"}
+    if int(expose_phone or 0) == 1:
+        params["expose_phone"] = "1"
+    return await _proxy_xlsx(
+        f"/api/v2/reports/projects/{project_id}/groups/customers/eligible",
+        token,
+        params,
+        f"group_customers_eligible_p{project_id}.xlsx",
+    )
+
+
+@router.get("/reports/v2/projects/{project_id}/groups/customers/ineligible", response_class=HTMLResponse)
+async def v2_group_customers_ineligible_page(
+    request: Request,
+    project_id: int = Path(..., ge=1),
+    limit: Optional[int] = Query(10000),
+    expose_phone: Optional[int] = Query(0),
+):
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(url="/login?next=%2Freports", status_code=303)
+    expose = int(expose_phone or 0) == 1
+    ctx = await _group_report_ctx(
+        request, token, project_id, limit, "groups/customers/ineligible", expose_phone=expose,
+    )
+    export_qs = "?expose_phone=1" if expose else ""
+    ctx.update({
+        "page_title": "Khách không đủ điều kiện (đấu nhóm)",
+        "page_icon": "ri-user-forbid-line text-rose-600",
+        "page_desc": "Khách cọc nhưng bị loại, cấm đấu giá, hoặc nhóm cọc chưa đủ 2 người.",
+        "base_path": "/reports/v2/projects/__PID__/groups/customers/ineligible",
+        "export_path": f"/reports/v2/projects/{project_id}/groups/customers/ineligible/export{export_qs}",
+        "table_columns": [
+            {"key": "customer_full_name", "label": "Họ tên"},
+            {"key": "cccd", "label": "CCCD"},
+            {"key": "deposit_vnd", "label": "Nhóm cọc (VNĐ)", "mono": True},
+            {"key": "group_name", "label": "Tên nhóm"},
+            {"key": "participating_lot_count", "label": "Số lô", "mono": True},
+            {"key": "group_eligible_customer_count", "label": "KH ĐK trong nhóm", "mono": True},
+            {"key": "ineligible_reason", "label": "Lý do"},
+        ],
+    })
+    return templates.TemplateResponse("reports/group_eligibility.html", ctx)
+
+
+@router.get("/reports/v2/projects/{project_id}/groups/customers/ineligible/export")
+async def v2_group_customers_ineligible_export(
+    request: Request,
+    project_id: int = Path(..., ge=1),
+    limit: Optional[int] = Query(None),
+    expose_phone: Optional[int] = Query(0),
+):
+    token = get_access_token(request)
+    if not token:
+        return _unauth()
+    limit2 = _clamp_int(limit, default=DEFAULT_LIMIT_REPORTS_V2, min_value=1, max_value=MAX_LIMIT_REPORTS_V2)
+    params: Dict[str, Any] = {"limit": limit2, "format": "xlsx"}
+    if int(expose_phone or 0) == 1:
+        params["expose_phone"] = "1"
+    return await _proxy_xlsx(
+        f"/api/v2/reports/projects/{project_id}/groups/customers/ineligible",
+        token,
+        params,
+        f"group_customers_ineligible_p{project_id}.xlsx",
+    )
+
