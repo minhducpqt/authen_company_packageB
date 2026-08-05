@@ -55,6 +55,7 @@ EP_PUBLIC_PROJECTS   = "/api/v1/projects/public"
 EP_COMPANY_PROFILE   = "/api/v1/company/profile"
 EP_AUCTION_MODE      = "/api/v1/projects/{project_id}/auction_mode"
 EP_REGISTRATION_MODE = "/api/v1/projects/{project_id}/registration_mode"
+EP_DEPOSIT_GROUP_FEES = "/api/v1/projects/{project_id}/deposit-group-fees"
 EP_AUCTION_CONFIG    = "/api/v1/projects/{project_id}/auction_config"
 EP_BID_TICKET_CONFIG = "/api/v1/projects/{project_id}/bid_ticket_config"  # <-- NEW
 EP_BID_STEP_POLICY  = "/api/v1/projects/{project_id}/bid_step_policy"  # <-- NEW
@@ -937,6 +938,65 @@ async def update_project_registration_mode(
         url=f"/projects/{project_id}?msg=registration_mode_updated",
         status_code=303,
     )
+
+
+@router.get("/api/{project_id}/deposit-group-fees", response_class=JSONResponse)
+async def api_get_deposit_group_fees(request: Request, project_id: int = Path(...)):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
+    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=15.0) as client:
+        r = await client.get(
+            EP_DEPOSIT_GROUP_FEES.format(project_id=project_id),
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    try:
+        body = r.json()
+    except Exception:
+        body = {"ok": False, "error": r.text}
+    return JSONResponse(body, status_code=r.status_code)
+
+
+@router.put("/api/{project_id}/deposit-group-fees", response_class=JSONResponse)
+async def api_put_deposit_group_fees(
+    request: Request,
+    project_id: int = Path(...),
+):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
+    try:
+        payload = await request.json()
+    except Exception:
+        payload = {}
+    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=15.0) as client:
+        r = await client.put(
+            EP_DEPOSIT_GROUP_FEES.format(project_id=project_id),
+            json=payload,
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    try:
+        body = r.json()
+    except Exception:
+        body = {"ok": False, "error": r.text}
+    return JSONResponse(body, status_code=r.status_code)
+
+
+@router.post("/api/{project_id}/deposit-group-fees/sync", response_class=JSONResponse)
+async def api_sync_deposit_group_fees(request: Request, project_id: int = Path(...)):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
+    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=15.0) as client:
+        r = await client.post(
+            f"/api/v1/projects/{project_id}/deposit-group-fees/sync",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    try:
+        body = r.json()
+    except Exception:
+        body = {"ok": False, "error": r.text}
+    return JSONResponse(body, status_code=r.status_code)
 
 
 # =========================

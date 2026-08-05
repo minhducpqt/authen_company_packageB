@@ -205,6 +205,42 @@
       </form>
     </div>
 
+    {% if is_group_auction %}
+    <!-- Nhóm cọc & phí hồ sơ (đấu nhóm) -->
+    <div class="md:col-span-3 p-4 rounded-lg bg-teal-50 border border-teal-200">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <div>
+          <div class="text-slate-700 text-sm font-semibold">Nhóm cọc &amp; phí mua hồ sơ</div>
+          <div class="text-[11px] text-slate-500 mt-0.5">
+            Tự tổng hợp từ lô (<code>deposit_vnd</code>). Phí mặc định theo bảng giá <code>*_GROUP</code>; admin có thể sửa từng dự án.
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button type="button" id="dgf-sync-btn" class="btn-secondary text-xs px-3 py-1.5">Đồng bộ lại từ lô</button>
+          <button type="button" id="dgf-save-btn" class="btn-primary text-xs px-3 py-1.5 bg-teal-700">Lưu phí hồ sơ</button>
+        </div>
+      </div>
+      <div id="dgf-status" class="text-xs text-slate-500 mb-2">Đang tải…</div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm border border-slate-200 rounded-lg overflow-hidden bg-white">
+          <thead class="bg-slate-100 text-slate-600 text-left">
+            <tr>
+              <th class="py-2 px-3">Mức cọc (VND)</th>
+              <th class="py-2 px-3">Số lô</th>
+              <th class="py-2 px-3">Khoảng mã lô</th>
+              <th class="py-2 px-3">Phí hồ sơ / bộ</th>
+              <th class="py-2 px-3">Mặc định</th>
+              <th class="py-2 px-3"></th>
+            </tr>
+          </thead>
+          <tbody id="dgf-tbody">
+            <tr><td colspan="6" class="py-4 px-3 text-slate-400 text-center">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
     <!-- ✅ NEW: Product type (hiển thị + edit + hint) -->
     <div class="md:col-span-3 p-4 rounded-lg bg-slate-50 border border-slate-200">
       <div class="flex items-start justify-between gap-3">
@@ -2144,6 +2180,132 @@
 
     closePicker();
   }
+
+  {% if is_group_auction %}
+  const DGF_PROJECT_ID = {{ project.id }};
+  let _dgfRows = [];
+
+  function _fmtVnd(n) {
+    const x = Number(n || 0);
+    return x.toLocaleString("vi-VN");
+  }
+
+  function _parseVnd(s) {
+    return Number(String(s || "").replace(/[^\d]/g, "")) || 0;
+  }
+
+  function renderDepositGroupFees(rows) {
+    _dgfRows = rows || [];
+    const tbody = document.getElementById("dgf-tbody");
+    const st = document.getElementById("dgf-status");
+    if (!tbody) return;
+    if (!_dgfRows.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="py-4 px-3 text-slate-400 text-center">Chưa có lô / nhóm cọc</td></tr>';
+      if (st) st.textContent = "Chưa có dữ liệu.";
+      return;
+    }
+    tbody.innerHTML = _dgfRows.map((r, idx) => {
+      const dep = r.deposit_amount_vnd || r.deposit_vnd;
+      const lotRange = (r.first_lot_code && r.last_lot_code && r.first_lot_code !== r.last_lot_code)
+        ? `${r.first_lot_code} → ${r.last_lot_code}`
+        : (r.first_lot_code || "—");
+      const custom = r.is_custom_fee ? '<span class="text-teal-700 font-medium">Đã sửa</span>' : '<span class="text-slate-400">Mặc định</span>';
+      const def = r.default_fee_vnd != null ? _fmtVnd(r.default_fee_vnd) : "—";
+      return `
+        <tr data-idx="${idx}">
+          <td class="py-2 px-3 font-mono">${_fmtVnd(dep)}</td>
+          <td class="py-2 px-3">${r.lot_count ?? 0}</td>
+          <td class="py-2 px-3 text-xs text-slate-600">${lotRange}</td>
+          <td class="py-2 px-3">
+            <input type="text" class="input text-sm w-32 dgf-fee" data-dep="${dep}"
+              value="${_fmtVnd(r.dossier_fee_vnd)}" />
+          </td>
+          <td class="py-2 px-3 text-xs">${def}</td>
+          <td class="py-2 px-3">
+            <button type="button" class="text-xs text-indigo-600 hover:underline dgf-reset" data-dep="${dep}">Mặc định</button>
+          </td>
+        </tr>`;
+    }).join("");
+    if (st) st.textContent = `${_dgfRows.length} nhóm cọc`;
+  }
+
+  async function loadDepositGroupFees() {
+    const st = document.getElementById("dgf-status");
+    if (st) st.textContent = "Đang tải…";
+    const r = await fetch(`/projects/api/${DGF_PROJECT_ID}/deposit-group-fees`, { credentials: "same-origin" });
+    const d = await r.json();
+    if (!r.ok || !d.ok) {
+      if (st) st.textContent = d.detail || d.error || "Không tải được nhóm cọc.";
+      return;
+    }
+    renderDepositGroupFees(d.items || []);
+  }
+
+  async function saveDepositGroupFees() {
+    const items = [];
+    document.querySelectorAll(".dgf-fee").forEach((inp) => {
+      const dep = Number(inp.getAttribute("data-dep"));
+      const fee = _parseVnd(inp.value);
+      if (dep > 0) items.push({ deposit_vnd: dep, dossier_fee_vnd: fee });
+    });
+    const st = document.getElementById("dgf-status");
+    if (st) st.textContent = "Đang lưu…";
+    const r = await fetch(`/projects/api/${DGF_PROJECT_ID}/deposit-group-fees`, {
+      method: "PUT",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items }),
+    });
+    const d = await r.json();
+    if (!r.ok || !d.ok) {
+      if (st) st.textContent = d.detail || d.error || "Lưu thất bại.";
+      alert(st.textContent);
+      return;
+    }
+    renderDepositGroupFees(d.items || []);
+    if (st) st.textContent = "Đã lưu phí hồ sơ.";
+  }
+
+  async function syncDepositGroupFees() {
+    const st = document.getElementById("dgf-status");
+    if (st) st.textContent = "Đang đồng bộ…";
+    const r = await fetch(`/projects/api/${DGF_PROJECT_ID}/deposit-group-fees/sync`, {
+      method: "POST",
+      credentials: "same-origin",
+    });
+    const d = await r.json();
+    if (!r.ok || !d.ok) {
+      if (st) st.textContent = d.detail || d.error || "Đồng bộ thất bại.";
+      return;
+    }
+    renderDepositGroupFees(d.items || []);
+    if (st) st.textContent = "Đã đồng bộ từ lô.";
+  }
+
+  document.addEventListener("click", (ev) => {
+    const btn = ev.target.closest(".dgf-reset");
+    if (!btn) return;
+    const dep = Number(btn.getAttribute("data-dep"));
+    (async () => {
+      const r = await fetch(`/projects/api/${DGF_PROJECT_ID}/deposit-group-fees`, {
+        method: "PUT",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: [{ deposit_vnd: dep, reset_to_default: true }] }),
+      });
+      const d = await r.json();
+      if (d.ok) renderDepositGroupFees(d.items || []);
+    })();
+  });
+
+  document.addEventListener("DOMContentLoaded", () => {
+    loadDepositGroupFees();
+    const saveBtn = document.getElementById("dgf-save-btn");
+    const syncBtn = document.getElementById("dgf-sync-btn");
+    if (saveBtn) saveBtn.addEventListener("click", saveDepositGroupFees);
+    if (syncBtn) syncBtn.addEventListener("click", syncDepositGroupFees);
+  });
+  {% endif %}
 </script>
 
 {% endblock %}
