@@ -271,8 +271,11 @@
   {# Rút gọn biến #}
   {% set refund   = data.refund_bank or {} %}
   {% set project  = data.project or {} %}
+  {% set registration_mode = (project.registration_mode or data.registration_mode or 'NORMAL')|upper %}
+  {% set is_group_auction = registration_mode == 'GROUP_AUCTION' %}
+  {% set deposit_groups = data.deposit_groups or [] %}
   {% set lots     = data.lots or [] %}
-  {% set total_lots = lots|length %}
+  {% set total_lots = deposit_groups|length if is_group_auction else lots|length %}
 
   {# =======================
      RULE (CHIA ĐỀU):
@@ -381,6 +384,43 @@
     </div>
   {% endmacro %}
 
+  {# ===== Macro bảng nhóm cọc (đấu nhóm) — 1 bảng full-width ===== #}
+  {% macro render_deposit_groups_table(groups_list, start_index) %}
+    <table class="lots group-reg-table">
+      <thead>
+        <tr>
+          <th class="w-stt">STT</th>
+          <th class="w-name">Nhóm lô đất (mức cọc)</th>
+          <th class="w-area">Tổng số lô đất của nhóm</th>
+          <th class="w-area">Tổng số lô tham gia</th>
+          <th class="w-price">Tổng tiền cọc đã nộp (VNĐ)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for g in groups_list %}
+        <tr>
+          <td class="center">{{ start_index + loop.index }}</td>
+          <td class="lot-code">{{ g.group_label or g.group_name or ('Nhóm lô đất — tiền cọc ' ~ (g.deposit_vnd_label or g.deposit_vnd)) }}</td>
+          <td class="w-area center">{{ g.group_total_lots|default(0) }}</td>
+          <td class="w-area center">{{ g.participating_qty|default(g.qty|default(0)) }}</td>
+          <td class="w-price">
+            {{ g.total_deposit_vnd|default(0)|int }}
+          </td>
+        </tr>
+        {% endfor %}
+        {% if groups_list|length == 0 %}
+        <tr>
+          <td class="center">1</td>
+          <td>&nbsp;</td>
+          <td class="w-area"></td>
+          <td class="w-area"></td>
+          <td class="w-price"></td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  {% endmacro %}
+
   <!-- =======================
        PAGE 1 (FULL NỘI DUNG + BẢNG THEO MODE)
        ======================= -->
@@ -472,8 +512,13 @@
       <span class="bold">{{ project.description or project.name or "" }}</span>
     </div>
 
-    <!-- ===== BẢNG LÔ (CHỐT RULE) ===== -->
-    {% if total_lots < TWO_COL_MIN %}
+    <!-- ===== BẢNG LÔ / NHÓM LÔ (CHỐT RULE) ===== -->
+    {% if is_group_auction %}
+    <div class="mb-1 small">
+      <span class="bold">Danh sách nhóm lô đăng ký tham gia đấu giá (hình thức đấu nhóm):</span>
+    </div>
+    {{ render_deposit_groups_table(deposit_groups, 0) }}
+    {% elif total_lots < TWO_COL_MIN %}
       {{ render_lots_table(lots, 0) }}
 
     {% elif total_lots <= TWO_COL_MAX %}
@@ -488,7 +533,11 @@
     <!-- Cam kết -->
     <div class="bold mb-1">Tôi xin cam kết:</div>
     <ol class="small mb-2" style="margin-top:0;">
+      {% if is_group_auction %}
+      <li>Tôi là người duy nhất đại diện cho hộ gia đình đăng ký tham gia đấu giá các nhóm lô nêu trên và không thuộc trường hợp không đủ điều kiện đăng ký tham gia đấu giá theo Luật ĐGTS.</li>
+      {% else %}
       <li>Tôi là người duy nhất đại diện cho hộ gia đình đăng ký tham gia đấu giá lô/thửa đất trên và không thuộc trường hợp không đủ điều kiện đăng ký tham gia đấu giá theo Luật ĐGTS.</li>
+      {% endif %}
       <li>Đã xem tài sản đấu giá, xem giấy tờ về quyền sở hữu, sử dụng tài sản trên. Đã nhận, đọc và hiểu rõ nội dung tại Thông báo đấu giá tài sản và Quy chế đấu giá tài sản của Công ty; tự nguyện đăng ký tham gia đấu giá tại phiên nêu trên.</li>
       <li>Chấp nhận tham gia đấu giá theo hình thức, điều kiện mà Công ty lựa chọn cho phiên đấu giá.</li>
       <li>Khi tham gia đấu giá, tôi cam kết thực hiện đúng Quy chế đấu giá tài sản mà Công ty đã ban hành và các quy định pháp luật có liên quan đến việc bán đấu giá tài sản.</li>
@@ -507,7 +556,7 @@
        TRANG 2+ (CHỈ DÙNG KHI >20)
        FULL-WIDTH, STT TIẾP TỤC
        ======================= -->
-  {% if total_lots > TWO_COL_MAX and lots_rest|length > 0 %}
+  {% if not is_group_auction and total_lots > TWO_COL_MAX and lots_rest|length > 0 %}
     {% set rest_total = lots_rest|length %}
     {% set pages = (rest_total + APPENDIX_PER_PAGE - 1) // APPENDIX_PER_PAGE %}
 
