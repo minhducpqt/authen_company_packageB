@@ -9,7 +9,8 @@ from fastapi import APIRouter, Request, Path, Query
 from fastapi.responses import HTMLResponse
 
 from utils.templates import templates
-from utils.auth import get_access_token
+from utils.auth import get_access_token, fetch_me
+from utils.document_templates.registry import DocKind, company_code_from_me, resolve_template
 
 router = APIRouter(tags=["auction_sessions:documents_print"])
 
@@ -324,8 +325,13 @@ async def print_attendance_list(
     # optional debug payload if you still want
     attendance_payload = {"ok": True, "session": session_out, "data": attendance_rows}
 
+    token_cc = get_access_token(request)
+    me = await fetch_me(token_cc) if token_cc else None
+    cc = company_code_from_me(me) or str(sess_data.get("company_code") or "").strip().lower()
+    attendance_tpl = resolve_template(cc, DocKind.ATTENDANCE_SESSION)
+
     return templates.TemplateResponse(
-        "pages/auction_session_documents/attendance_print.html",
+        attendance_tpl,
         {
             "request": request,
             "title": title or "Danh sách điểm danh người tham gia đấu giá",
@@ -460,8 +466,13 @@ async def print_attendance_public_notice(
     # raw payload (optional debug)
     attendance_payload = {"ok": True, "session": session_out, "data": attendance_rows}
 
+    token_cc = get_access_token(request)
+    me = await fetch_me(token_cc) if token_cc else None
+    cc = company_code_from_me(me) or str(sess_data.get("company_code") or "").strip().lower()
+    notice_tpl = resolve_template(cc, DocKind.ATTENDANCE_PUBLIC_NOTICE)
+
     return templates.TemplateResponse(
-        "pages/auction_session_documents/attendance_public_notice.html",
+        notice_tpl,
         {
             "request": request,
             "title": title or "Danh sách STT tham dự đấu giá",

@@ -11,13 +11,15 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from utils.templates import templates
 from utils.auth import get_access_token, fetch_me
 from utils.bid_ticket_issue_client import attach_qr_to_tickets
+from utils.document_templates.registry import DocKind, company_code_from_me, resolve_template
 
 router = APIRouter(prefix="/bid-tickets", tags=["bid_tickets"])
 
 SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 
-# Mẫu in chung với luồng phiên đấu giá (in ngoài phiên: không có vòng)
-PRINT_TEMPLATE = "pages/auction_session_documents/bid_sheet_print.html"
+
+def _bid_sheet_template(me: Optional[Dict[str, Any]]) -> str:
+    return resolve_template(company_code_from_me(me), DocKind.BID_SHEET)
 
 
 async def _tickets_with_qr(
@@ -405,7 +407,7 @@ async def print_bid_tickets(
     rows = await _tickets_with_qr(token, rows, source="PRE_SESSION")
 
     return templates.TemplateResponse(
-        PRINT_TEMPLATE,
+        _bid_sheet_template(me),
         {
             "request": request,
             "me": me,
@@ -466,7 +468,7 @@ async def print_all_bid_tickets(
     rows = await _tickets_with_qr(token, rows, source="PRE_SESSION")
 
     return templates.TemplateResponse(
-        PRINT_TEMPLATE,
+        _bid_sheet_template(me),
         {
             "request": request,
             "me": me,
@@ -557,7 +559,7 @@ async def print_selected_bid_tickets(
 
     # Sort đã do A quyết định; B giữ nguyên.
     return templates.TemplateResponse(
-        PRINT_TEMPLATE,
+        _bid_sheet_template(me),
         {
             "request": request,
             "me": me,
@@ -716,7 +718,7 @@ async def print_tied_bid_tickets_next_round(
     )
 
     return templates.TemplateResponse(
-        PRINT_TEMPLATE,
+        _bid_sheet_template(me),
         {
             "request": request,
             "me": me,

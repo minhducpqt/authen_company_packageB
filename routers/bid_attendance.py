@@ -11,6 +11,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from utils.templates import templates
 from utils.auth import get_access_token, fetch_me
+from utils.document_templates.registry import DocKind, company_code_from_me, resolve_template
 
 router = APIRouter(prefix="/bid-attendance", tags=["bid_attendance"])
 
@@ -211,7 +212,7 @@ async def print_bid_attendance(
     )
 
     return templates.TemplateResponse(
-        "pages/bid_attendance/print.html",
+        resolve_template(company_code_from_me(me), DocKind.ATTENDANCE_PRE),
         {
             "request": request,
             "me": me,

@@ -10,7 +10,8 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 
 from utils.templates import templates
-from utils.auth import get_access_token
+from utils.auth import get_access_token, fetch_me
+from utils.document_templates.registry import DocKind, extract_company_code, resolve_template
 
 router = APIRouter(tags=["auction_session_winner_printing"])
 
@@ -84,6 +85,18 @@ def _as_int(v: Any, default: int = 0) -> int:
         return int(v)
     except Exception:
         return default
+
+
+async def _winner_confirm_template(request: Request, data: Dict[str, Any]) -> str:
+    token = get_access_token(request)
+    me = await fetch_me(token) if token else None
+    project = data.get("project") or {}
+    if not project and data.get("groups"):
+        groups = data.get("groups") or []
+        if groups and isinstance(groups[0], dict):
+            project = groups[0].get("project") or {}
+    cc = extract_company_code(me=me, project=project, session=data.get("session"))
+    return resolve_template(cc, DocKind.WINNER_CONFIRM)
 
 
 # =========================================================
@@ -183,9 +196,10 @@ async def page_print_session_winners(
     session_id: int = Path(..., ge=1),
 ):
     data = await _svc_get(request, f"/api/v1/auction-sessions/print/sessions/{session_id}/winners")
+    winner_tpl = await _winner_confirm_template(request, data)
 
     return templates.TemplateResponse(
-        "pages/auction_session_documents/winner_print.html",
+        winner_tpl,
         {
             "request": request,
             "title": "In phiếu trúng đấu giá (toàn phiên)",
@@ -211,9 +225,10 @@ async def page_print_round_winners(
         request,
         f"/api/v1/auction-sessions/print/sessions/{session_id}/rounds/{round_no}/winners",
     )
+    winner_tpl = await _winner_confirm_template(request, data)
 
     return templates.TemplateResponse(
-        "pages/auction_session_documents/winner_print.html",
+        winner_tpl,
         {
             "request": request,
             "title": f"In phiếu trúng đấu giá (vòng {round_no})",
@@ -243,8 +258,10 @@ async def page_print_customer_winners_in_session(
         f"/api/v1/auction-sessions/print/sessions/{session_id}/customers/{customer_id}/winners",
     )
 
+    winner_tpl = await _winner_confirm_template(request, data)
+
     return templates.TemplateResponse(
-        "pages/auction_session_documents/winner_print.html",
+        winner_tpl,
         {
             "request": request,
             "title": "In phiếu trúng đấu giá (theo khách hàng)",
@@ -266,9 +283,10 @@ async def page_print_by_round_lot_id(
     round_lot_id: int = Path(..., ge=1),
 ):
     data = await _svc_get(request, f"/api/v1/auction-sessions/print/round-lots/{round_lot_id}/winner")
+    winner_tpl = await _winner_confirm_template(request, data)
 
     return templates.TemplateResponse(
-        "pages/auction_session_documents/winner_print.html",
+        winner_tpl,
         {
             "request": request,
             "title": "In phiếu trúng đấu giá (lẻ theo lô-vòng)",
@@ -301,9 +319,10 @@ async def page_print_selected_winners_post(
 
     groups = data.get("groups") or []
     total_items = _as_int(data.get("total_items"), 0)
+    winner_tpl = await _winner_confirm_template(request, data)
 
     return templates.TemplateResponse(
-        "pages/auction_session_documents/winner_print.html",
+        winner_tpl,
         {
             "request": request,
             "title": "In phiếu trúng đấu giá (chọn nhiều)",
@@ -342,9 +361,10 @@ async def page_print_selected_winners_get(
 
     groups = data.get("groups") or []
     total_items = _as_int(data.get("total_items"), 0)
+    winner_tpl = await _winner_confirm_template(request, data)
 
     return templates.TemplateResponse(
-        "pages/auction_session_documents/winner_print.html",
+        winner_tpl,
         {
             "request": request,
             "title": "In phiếu trúng đấu giá (chọn nhiều)",

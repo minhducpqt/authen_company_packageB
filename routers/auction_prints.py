@@ -10,7 +10,8 @@ from fastapi import APIRouter, Request, HTTPException, Query
 from fastapi.responses import HTMLResponse
 
 from utils.templates import templates
-from utils.auth import get_access_token
+from utils.auth import get_access_token, fetch_me
+from utils.document_templates.registry import DocKind, extract_company_code, resolve_template
 
 router = APIRouter(tags=["auction:prints"])
 
@@ -145,8 +146,14 @@ async def view_winner_slip(
         except Exception:
             pass
 
+    me = await fetch_me(token)
+    winner_tpl = resolve_template(
+        extract_company_code(me=me, project=data.get("project") or {}),
+        DocKind.WINNER_SLIP,
+    )
+
     return templates.TemplateResponse(
-        "auction/winner_slip.html",
+        winner_tpl,
         {
             "request": request,
             "data": data,
@@ -183,8 +190,14 @@ async def view_project_winner_slips(
     if AUCTION_PRINT_DEBUG:
         _log(f"total items after filter = {len(items)}")
 
+    me = await fetch_me(token)
+    winner_tpl = resolve_template(
+        extract_company_code(me=me, project=data.get("project") or {}),
+        DocKind.WINNER_SLIPS_PROJECT,
+    )
+
     return templates.TemplateResponse(
-        "auction/winner_slips_project.html",
+        winner_tpl,
         {
             "request": request,
             "data": data,
