@@ -42,6 +42,7 @@ SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 # Endpoints Service A (projects.py)
 EP_LIST              = "/api/v1/projects"
 EP_CREATE_PROJ       = "/api/v1/projects"
+EP_DEFAULT_REG_MODE  = "/api/v1/projects/defaults/registration-mode"
 EP_DETAIL            = "/api/v1/projects/{project_id}"
 EP_ENABLE            = "/api/v1/projects/{project_id}/enable"
 EP_DISABLE           = "/api/v1/projects/{project_id}/disable"
@@ -461,6 +462,12 @@ async def list_projects(
 # =========================
 # 4) CREATE (form + submit)
 # =========================
+REGISTRATION_MODE_LABELS = {
+    "NORMAL": "Đấu lô (mặc định)",
+    "GROUP_AUCTION": "Đấu nhóm",
+}
+
+
 @router.get("/create", response_class=HTMLResponse)
 async def create_form(request: Request):
     token = get_access_token(request)
@@ -468,13 +475,18 @@ async def create_form(request: Request):
     if not me:
         return RedirectResponse(url="/login?next=/projects/create", status_code=303)
 
-    from utils.company_project_defaults import (
-        default_registration_mode_for_company,
-        REGISTRATION_MODE_LABELS,
-    )
-
-    company_code = (me or {}).get("company_code") or ""
-    default_reg_mode = default_registration_mode_for_company(company_code)
+    default_reg_mode = "NORMAL"
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            r = await client.get(
+                EP_DEFAULT_REG_MODE,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            if r.status_code == 200:
+                js = r.json() or {}
+                default_reg_mode = js.get("registration_mode") or "NORMAL"
+    except Exception:
+        pass
 
     return templates.TemplateResponse(
         "pages/projects/create.html",
@@ -501,21 +513,15 @@ async def create_submit(
     if not token:
         return RedirectResponse(url="/login?next=/projects/create", status_code=303)
 
-    from utils.company_project_defaults import default_registration_mode_for_company
-
-    me = await fetch_me(token)
-    company_code = (me or {}).get("company_code") if me else None
     reg_mode = (registration_mode or "").strip().upper()
-    if reg_mode not in ("NORMAL", "GROUP_AUCTION"):
-        reg_mode = default_registration_mode_for_company(company_code)
-
     payload = {
         "project_code": (project_code or "").strip(),
         "name": (name or "").strip(),
         "description": (description or "").strip() or None,
         "location": (location or "").strip() or None,
-        "registration_mode": reg_mode,
     }
+    if reg_mode in ("NORMAL", "GROUP_AUCTION"):
+        payload["registration_mode"] = reg_mode
 
     async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
         st, _ = await _post_json(client, EP_CREATE_PROJ, {"Authorization": f"Bearer {token}"}, payload)
