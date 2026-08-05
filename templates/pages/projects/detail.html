@@ -32,6 +32,8 @@
 
   {% set auction_mode = (project.auction_mode or 'PER_LOT') %}
   {% set is_per_sqm = (auction_mode == 'PER_SQM') %}
+  {% set registration_mode = (project.registration_mode or 'NORMAL') %}
+  {% set is_group_auction = (registration_mode == 'GROUP_AUCTION') %}
 
   {# NEW: bid ticket config default = true nếu không có key #}
   {% set btc = bid_ticket_cfg or {} %}
@@ -174,6 +176,33 @@
           {% if is_per_sqm %}TÍNH THEO M²{% else %}TÍNH THEO CẢ LÔ{% endif %}
         </span>
       </div>
+    </div>
+
+    <!-- Hình thức đấu: NORMAL / GROUP_AUCTION -->
+    <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
+      <div class="text-slate-500 text-sm mb-1">Hình thức đấu</div>
+      <form method="post" action="/projects/{{ project.id }}/registration-mode"
+            class="flex flex-col gap-2">
+        <select
+          name="registration_mode"
+          class="input text-sm max-w-xs"
+          onchange="confirmWithPhrase(this, {
+            title: 'Xác nhận đổi hình thức đấu',
+            descHtml: 'Bạn sắp chuyển sang <b>' + (this.value === 'GROUP_AUCTION' ? 'ĐẤU NHÓM' : 'ĐẤU LÔ (MẶC ĐỊNH)') + '</b>. Luồng mua hồ sơ / đặt cọc sẽ khác.',
+            confirmText: 'Xác nhận',
+            cancelText: 'Hủy',
+            phrase: 'tôi xác nhận',
+          })"
+        >
+          <option value="NORMAL" {% if not is_group_auction %}selected{% endif %}>Đấu lô (mặc định)</option>
+          <option value="GROUP_AUCTION" {% if is_group_auction %}selected{% endif %}>Đấu nhóm</option>
+        </select>
+        <div class="text-[11px] text-slate-500">
+          Đang: <span class="font-semibold {% if is_group_auction %}text-teal-700{% endif %}">
+            {% if is_group_auction %}Đấu nhóm{% else %}Đấu lô (mặc định){% endif %}
+          </span>
+        </div>
+      </form>
     </div>
 
     <!-- ✅ NEW: Product type (hiển thị + edit + hint) -->

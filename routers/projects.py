@@ -52,8 +52,9 @@ EP_IMPORT_XLSX       = "/api/v1/projects/import_xlsx"   # (nếu dùng Service A
 EP_DEADLINES         = "/api/v1/projects/{project_id}/deadlines"
 EP_PUBLIC_PROJECTS   = "/api/v1/projects/public"
 EP_COMPANY_PROFILE   = "/api/v1/company/profile"
-EP_AUCTION_MODE      = "/api/v1/projects/{project_id}/auction_mode"  # <-- NEW
-EP_AUCTION_CONFIG    = "/api/v1/projects/{project_id}/auction_config"   # <-- NEW
+EP_AUCTION_MODE      = "/api/v1/projects/{project_id}/auction_mode"
+EP_REGISTRATION_MODE = "/api/v1/projects/{project_id}/registration_mode"
+EP_AUCTION_CONFIG    = "/api/v1/projects/{project_id}/auction_config"
 EP_BID_TICKET_CONFIG = "/api/v1/projects/{project_id}/bid_ticket_config"  # <-- NEW
 EP_BID_STEP_POLICY  = "/api/v1/projects/{project_id}/bid_step_policy"  # <-- NEW
 
@@ -466,9 +467,24 @@ async def create_form(request: Request):
     me = await fetch_me(token)
     if not me:
         return RedirectResponse(url="/login?next=/projects/create", status_code=303)
+
+    from utils.company_project_defaults import (
+        default_registration_mode_for_company,
+        REGISTRATION_MODE_LABELS,
+    )
+
+    company_code = (me or {}).get("company_code") or ""
+    default_reg_mode = default_registration_mode_for_company(company_code)
+
     return templates.TemplateResponse(
         "pages/projects/create.html",
-        {"request": request, "title": "Thêm dự án", "me": me},
+        {
+            "request": request,
+            "title": "Thêm dự án",
+            "me": me,
+            "default_registration_mode": default_reg_mode,
+            "registration_mode_labels": REGISTRATION_MODE_LABELS,
+        },
     )
 
 
@@ -479,16 +495,26 @@ async def create_submit(
     name: str = Form(...),
     description: str = Form(""),
     location: str = Form(""),
+    registration_mode: str = Form(""),
 ):
     token = get_access_token(request)
     if not token:
         return RedirectResponse(url="/login?next=/projects/create", status_code=303)
+
+    from utils.company_project_defaults import default_registration_mode_for_company
+
+    me = await fetch_me(token)
+    company_code = (me or {}).get("company_code") if me else None
+    reg_mode = (registration_mode or "").strip().upper()
+    if reg_mode not in ("NORMAL", "GROUP_AUCTION"):
+        reg_mode = default_registration_mode_for_company(company_code)
 
     payload = {
         "project_code": (project_code or "").strip(),
         "name": (name or "").strip(),
         "description": (description or "").strip() or None,
         "location": (location or "").strip() or None,
+        "registration_mode": reg_mode,
     }
 
     async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
@@ -855,6 +881,54 @@ async def update_project_auction_mode(
 
     return RedirectResponse(
         url=f"/projects/{project_id}?msg=auction_mode_updated",
+        status_code=303,
+    )
+
+
+@router.post("/{project_id}/registration-mode")
+async def update_project_registration_mode(
+    request: Request,
+    project_id: int = Path(...),
+    registration_mode: str = Form(...),
+):
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(
+            url=f"/login?next=/projects/{project_id}",
+            status_code=303,
+        )
+
+    mode = (registration_mode or "").strip().upper()
+    if mode not in ("NORMAL", "GROUP_AUCTION"):
+        return RedirectResponse(
+            url=f"/projects/{project_id}?err=registration_mode_update_failed",
+            status_code=303,
+        )
+
+    payload = {"registration_mode": mode}
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            r = await client.put(
+                EP_REGISTRATION_MODE.format(project_id=project_id),
+                json=payload,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        if r.status_code != 200:
+            return RedirectResponse(
+                url=f"/projects/{project_id}?err=registration_mode_update_failed",
+                status_code=303,
+            )
+    except Exception as e:
+        print("🔥 EXCEPTION update_project_registration_mode:", e)
+        return RedirectResponse(
+            url=f"/projects/{project_id}?err=registration_mode_update_failed",
+            status_code=303,
+        )
+
+    return RedirectResponse(
+        url=f"/projects/{project_id}?msg=registration_mode_updated",
         status_code=303,
     )
 

@@ -17,6 +17,21 @@
       </div>
 
       <div>
+        <label class="label">Hình thức đấu</label>
+        <select name="registration_mode" class="input">
+          {% for code, label in registration_mode_labels.items() %}
+          <option value="{{ code }}" {% if code == default_registration_mode %}selected{% endif %}>
+            {{ label }}
+          </option>
+          {% endfor %}
+        </select>
+        <p class="text-xs text-slate-500 mt-1">
+          Mặc định theo công ty: <span class="font-semibold">{{ registration_mode_labels.get(default_registration_mode, default_registration_mode) }}</span>.
+          Có thể đổi sau khi tạo dự án.
+        </p>
+      </div>
+
+      <div>
         <label class="label">Vị trí</label>
         <input name="location" class="input" placeholder="Địa điểm / khu vực">
       </div>
