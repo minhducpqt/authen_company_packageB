@@ -362,7 +362,7 @@ async def print_attendance_list(
 # =========================================================
 # PRINT: Public notice (A4) — STT lookup board (NO SIGNATURE)
 #   - Data source & flow: identical to attendance_print above
-#   - Template: pages/auction_session_documents/attendance_public_notice.html
+#   - Template: pages/documents/default/attendance_public_notice.html
 # =========================================================
 @router.get(
     "/auction/sessions/{session_id}/documents/attendance/public-notice",

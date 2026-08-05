@@ -2,14 +2,31 @@
 """
 Chọn mẫu giấy tờ in HTML theo công ty.
 
-- Công ty không có entry trong COMPANY_TEMPLATES → dùng DEFAULT_TEMPLATES (mẫu hiện tại).
-- Thêm mẫu riêng: tạo file HTML trong templates/.../custom/{company}/ rồi khai báo ở COMPANY_TEMPLATES.
+Cấu trúc template (relative templates/):
+  pages/documents/default/     — mẫu mặc định (tất cả công ty không override)
+  pages/documents/kinhdo/      — mẫu riêng KINHDO (đặt cùng tên file)
+  pages/documents/kido/        — mẫu riêng KIDO
+  pages/documents/vnt/         — mẫu riêng VNT
+  pages/documents/{company}/   — công ty khác
 
-Ví dụ KINHDO hiện dùng mẫu default (không khai báo override).
+Tên file theo DocKind (xem TEMPLATE_FILES).
+
+Resolve:
+  1. COMPANY_TEMPLATES (hardcode path tường minh, nếu có)
+  2. File tồn tại trong pages/documents/{company}/ → dùng tự động
+  3. Fallback pages/documents/default/
 """
 from __future__ import annotations
 
+import os
 from typing import Any, Dict, Optional
+
+# templates/ root (Service B)
+_TEMPLATES_ROOT = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..", "templates")
+)
+
+_DOCUMENTS_ROOT = "pages/documents"
 
 
 class DocKind:
@@ -23,26 +40,43 @@ class DocKind:
     ATTENDANCE_PUBLIC_NOTICE = "attendance_public_notice"
 
 
-DEFAULT_TEMPLATES: Dict[str, str] = {
-    DocKind.REGISTRATION: "pages/documents/auction_registration.html",
-    DocKind.BID_SHEET: "pages/auction_session_documents/bid_sheet_print.html",
-    DocKind.WINNER_CONFIRM: "pages/auction_session_documents/winner_print.html",
-    DocKind.WINNER_SLIP: "auction/winner_slip.html",
-    DocKind.WINNER_SLIPS_PROJECT: "auction/winner_slips_project.html",
-    DocKind.ATTENDANCE_PRE: "pages/bid_attendance/print.html",
-    DocKind.ATTENDANCE_SESSION: "pages/auction_session_documents/attendance_print.html",
-    DocKind.ATTENDANCE_PUBLIC_NOTICE: (
-        "pages/auction_session_documents/attendance_public_notice.html"
-    ),
+TEMPLATE_FILES: Dict[str, str] = {
+    DocKind.REGISTRATION: "registration.html",
+    DocKind.BID_SHEET: "bid_sheet.html",
+    DocKind.WINNER_CONFIRM: "winner_confirm.html",
+    DocKind.WINNER_SLIP: "winner_slip.html",
+    DocKind.WINNER_SLIPS_PROJECT: "winner_slips_project.html",
+    DocKind.ATTENDANCE_PRE: "attendance_pre.html",
+    DocKind.ATTENDANCE_SESSION: "attendance_session.html",
+    DocKind.ATTENDANCE_PUBLIC_NOTICE: "attendance_public_notice.html",
 }
 
-# company_code (lower) → { doc_kind → template path (Jinja, relative templates root) }
+
+def default_template_path(doc_kind: str) -> str:
+    fname = TEMPLATE_FILES[doc_kind]
+    return f"{_DOCUMENTS_ROOT}/default/{fname}"
+
+
+def company_template_path(company_code: str, doc_kind: str) -> str:
+    cc = (company_code or "").strip().lower()
+    fname = TEMPLATE_FILES[doc_kind]
+    return f"{_DOCUMENTS_ROOT}/{cc}/{fname}"
+
+
+DEFAULT_TEMPLATES: Dict[str, str] = {
+    kind: default_template_path(kind) for kind in TEMPLATE_FILES
+}
+
+# Override tường minh (tuỳ chọn — nếu tên file khác convention)
 COMPANY_TEMPLATES: Dict[str, Dict[str, str]] = {
     # "kinhdo": {
-    #     DocKind.REGISTRATION: DEFAULT_TEMPLATES[DocKind.REGISTRATION],
-    #     ...
+    #     DocKind.REGISTRATION: company_template_path("kinhdo", DocKind.REGISTRATION),
     # },
 }
+
+
+def _template_file_exists(rel_path: str) -> bool:
+    return os.path.isfile(os.path.join(_TEMPLATES_ROOT, rel_path))
 
 
 def company_code_from_me(me: Optional[Dict[str, Any]]) -> str:
@@ -81,16 +115,16 @@ def extract_company_code(
 
 
 def resolve_template(company_code: Optional[str], doc_kind: str) -> str:
-    """
-    Trả về đường dẫn template Jinja.
-    Luôn fallback về DEFAULT_TEMPLATES nếu không có override.
-    """
+    if doc_kind not in TEMPLATE_FILES:
+        raise ValueError(f"Unknown doc_kind: {doc_kind}")
+
     cc = (company_code or "").strip().lower()
     if cc:
-        custom = (COMPANY_TEMPLATES.get(cc) or {}).get(doc_kind)
-        if custom:
-            return custom
-    default = DEFAULT_TEMPLATES.get(doc_kind)
-    if not default:
-        raise ValueError(f"Unknown doc_kind: {doc_kind}")
-    return default
+        explicit = (COMPANY_TEMPLATES.get(cc) or {}).get(doc_kind)
+        if explicit:
+            return explicit
+        company_rel = company_template_path(cc, doc_kind)
+        if _template_file_exists(company_rel):
+            return company_rel
+
+    return default_template_path(doc_kind)
