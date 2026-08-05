@@ -49,6 +49,11 @@
       <div class="font-semibold text-slate-900">KH đủ điều kiện</div>
       <p class="text-xs text-slate-500 mt-1">Khách thuộc nhóm cọc đủ ĐK.</p>
     </a>
+    <a href="/bid-attendance?project_code={{ group_projects[0].project_code or group_projects[0].code }}"
+       class="border border-slate-200 rounded-2xl p-4 hover:border-indigo-200 hover:shadow-sm transition">
+      <div class="font-semibold text-slate-900">Danh sách điểm danh</div>
+      <p class="text-xs text-slate-500 mt-1">Chốt STT từ khách đủ ĐK vận hành phiên.</p>
+    </a>
     <a href="/reports/v2/projects/{{ default_group_pid }}/groups/customers/ineligible"
        class="border border-slate-200 rounded-2xl p-4 hover:border-rose-200 hover:shadow-sm transition">
       <div class="font-semibold text-slate-900">KH không đủ ĐK</div>
@@ -73,6 +78,7 @@
             <a href="/reports/v2/projects/{{ pid }}/groups/eligible" class="px-2 py-1 rounded-full bg-indigo-50 text-indigo-700">Nhóm đủ</a>
             <a href="/reports/v2/projects/{{ pid }}/groups/ineligible" class="px-2 py-1 rounded-full bg-rose-50 text-rose-700">Nhóm không đủ</a>
             <a href="/reports/v2/projects/{{ pid }}/groups/customers/eligible" class="px-2 py-1 rounded-full bg-emerald-50 text-emerald-700">KH đủ</a>
+            <a href="/bid-attendance?project_code={{ code }}" class="px-2 py-1 rounded-full bg-indigo-50 text-indigo-700">Điểm danh</a>
             <a href="/reports/v2/projects/{{ pid }}/groups/customers/ineligible" class="px-2 py-1 rounded-full bg-rose-50 text-rose-700">KH không đủ</a>
           </div>
         </div>

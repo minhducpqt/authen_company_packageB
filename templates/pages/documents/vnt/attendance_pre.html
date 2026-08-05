@@ -167,7 +167,11 @@
   <div class="center" style="margin: 3mm 0 6mm;">-----------------o0o-----------------</div>
 
   <!-- Tiêu đề -->
-  <div class="center title">DANH SÁCH ĐIỂM DANH NGƯỜI THAM GIA ĐẤU GIÁ</div>
+  {% set is_group = (registration_mode or '')|upper == 'GROUP_AUCTION' %}
+  <div class="center title">
+    DANH SÁCH ĐIỂM DANH NGƯỜI THAM GIA ĐẤU GIÁ
+    {% if is_group %}<div style="font-size:12pt;margin-top:2mm;">(Hình thức đấu nhóm)</div>{% endif %}
+  </div>
 
   <!-- Bảng điểm danh -->
   <table>
@@ -177,7 +181,7 @@
         <th class="col-name">Họ và tên / Địa chỉ</th>
         <th class="col-cccd">CCCD</th>
         <th class="col-phone">SĐT</th>
-        <th class="col-lot-count">SL</th>
+        <th class="col-lot-count">{{ 'SL nhóm' if is_group else 'SL' }}</th>
         <th class="col-sign">Ký nhận</th>
       </tr>
     </thead>
@@ -206,7 +210,11 @@
           {{ c.phone }}
         </td>
         <td class="col-lot-count">
-          {{ c.customer_lot_count or 0 }}
+          {% if is_group %}
+            {{ c.customer_group_count or c.customer_lot_count or 0 }}
+          {% else %}
+            {{ c.customer_lot_count or 0 }}
+          {% endif %}
         </td>
         <td class="col-sign"></td>
       </tr>

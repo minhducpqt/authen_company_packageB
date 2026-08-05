@@ -6,6 +6,11 @@
       <h2 class="text-xl font-semibold text-slate-800">Danh sách điểm danh</h2>
       <p class="text-slate-500 text-sm">
         Chọn dự án và xem danh sách khách hàng đủ điều kiện tham gia đấu giá.
+        {% if registration_mode == 'GROUP_AUCTION' %}
+          <span class="inline-flex items-center ml-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-50 text-teal-700 border border-teal-200">
+            Đấu nhóm
+          </span>
+        {% endif %}
       </p>
     </div>
     <a href="/projects" class="topbtn border border-slate-300 bg-white text-slate-700">
@@ -77,9 +82,9 @@
 
       <button
         type="button"
-        disabled
-        class="mt-1 px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-medium
-               opacity-50 cursor-not-allowed hover:bg-emerald-600"
+        id="btnPrintAttendance"
+        onclick="printAttendanceList()"
+        class="mt-1 px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700"
       >
         <i class="ri-printer-line mr-1"></i>In danh sách điểm danh
       </button>
@@ -102,7 +107,13 @@
           <th class="px-2 py-2 border-b">CCCD</th>
           <th class="px-2 py-2 border-b">Số điện thoại</th>
           <th class="px-2 py-2 border-b">Địa chỉ</th>
-          <th class="px-2 py-2 border-b text-right">Số lô tham gia đấu</th>
+          <th class="px-2 py-2 border-b text-right" id="colParticipationHeader">
+            {% if registration_mode == 'GROUP_AUCTION' %}
+              Số nhóm tham gia
+            {% else %}
+              Số lô tham gia đấu
+            {% endif %}
+          </th>
           <th class="px-2 py-2 border-b text-right">Thao tác</th>
         </tr>
       </thead>
@@ -146,7 +157,15 @@
           </td>
 
           <td class="px-2 py-1.5 border-b text-right font-semibold {% if is_banned %}border-rose-200 text-rose-800{% endif %}">
-            {{ c.customer_lot_count or 0 }}
+            {% set row_mode = (c.registration_mode or registration_mode or '')|upper %}
+            {% if row_mode == 'GROUP_AUCTION' %}
+              {{ c.customer_group_count or 0 }}
+              {% if c.customer_lot_count %}
+                <span class="block text-[10px] font-normal text-slate-500">{{ c.customer_lot_count }} lô</span>
+              {% endif %}
+            {% else %}
+              {{ c.customer_lot_count or 0 }}
+            {% endif %}
           </td>
 
           <td class="px-2 py-1.5 border-b text-right {% if is_banned %}border-rose-200{% endif %}">

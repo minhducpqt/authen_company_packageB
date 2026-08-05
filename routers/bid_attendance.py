@@ -119,6 +119,8 @@ async def bid_attendance_page(
         load_err = str(e)
 
     customers: List[Dict[str, Any]] = data.get("data") or []
+    meta: Dict[str, Any] = data.get("meta") or {}
+    registration_mode = (meta.get("registration_mode") or "").upper()
 
     # Đảm bảo sort theo project_code, rồi STT (điểm danh)
     customers.sort(
@@ -141,6 +143,8 @@ async def bid_attendance_page(
             },
             "page": data,
             "customers": customers,
+            "meta": meta,
+            "registration_mode": registration_mode,
             "load_err": load_err,
         },
     )
@@ -217,7 +221,8 @@ async def print_bid_attendance(
             "request": request,
             "me": me,
             "project_code": project_code,
-            "mode": mode_norm,  # <<< NEW: template có thể in tiêu đề "AUTO" / "FINAL"
+            "mode": mode_norm,
+            "registration_mode": (js.get("meta") or {}).get("registration_mode") or "",
             "customers": customers,
         },
     )
