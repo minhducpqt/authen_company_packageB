@@ -100,3 +100,18 @@ async def company_profile_save(
         return RedirectResponse(url=to, status_code=303)
     except Exception:
         return RedirectResponse(url="/settings/company?err=save_failed", status_code=303)
+
+
+@router.post("")
+async def company_profile_save_root(
+    request: Request,
+    name: str = Form(""),
+    tax_code: str = Form(""),
+    address: str = Form(""),
+    phone: str = Form(""),
+    email: str = Form(""),
+):
+    """Alias — form cũ POST /settings/company."""
+    return await company_profile_save(
+        request, name=name, tax_code=tax_code, address=address, phone=phone, email=email
+    )

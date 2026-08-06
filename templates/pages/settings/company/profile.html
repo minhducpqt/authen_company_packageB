@@ -21,6 +21,17 @@
     {{ load_err }}
   </div>
 {% endif %}
+{% if request.query_params.get('msg') == 'saved' %}
+  <div class="p-3 rounded-xl bg-emerald-50 text-emerald-800 text-sm mb-5 border border-emerald-100">
+    Đã lưu thông tin công ty.
+  </div>
+{% elif request.query_params.get('err') %}
+  <div class="p-3 rounded-xl bg-red-50 text-red-700 text-sm mb-5 border border-red-100">
+    {% if request.query_params.get('err') == 'forbidden' %}Bạn không có quyền chỉnh sửa.
+    {% elif request.query_params.get('err') == 'save_failed' %}Lưu thất bại. Vui lòng thử lại.
+    {% else %}Có lỗi xảy ra.{% endif %}
+  </div>
+{% endif %}
 
 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm max-w-5xl">
   <!-- Header -->
@@ -102,7 +113,7 @@
     </div>
 
     <!-- EDIT MODE (hidden by default) -->
-    <form id="editMode" method="post" action="/settings/company" class="hidden">
+    <form id="editMode" method="post" action="/settings/company/save" class="hidden">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="md:col-span-2">
           <label class="label">Tên công ty</label>
