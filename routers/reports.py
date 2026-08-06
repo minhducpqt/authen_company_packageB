@@ -84,6 +84,55 @@ def _clamp_nonneg(value: Any, default: int) -> int:
     return 0 if v < 0 else v
 
 
+def _summarize_deposit_stats(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Tổng kết nhanh từ danh sách lô — gom theo mức tiền đặt (deposit_amount_vnd)."""
+    total_amount = 0.0
+    total_customer_slots = 0
+    lots_with_deposit = 0
+    by_tier: Dict[str, Dict[str, Any]] = {}
+
+    for r in rows or []:
+        amt = float(r.get("total_deposit_amount_vnd") or 0)
+        cnt = int(r.get("deposit_customer_count") or 0)
+        tier_raw = r.get("deposit_amount_vnd")
+        try:
+            tier_val = float(tier_raw or 0)
+        except (TypeError, ValueError):
+            tier_val = 0.0
+        tier_key = str(int(tier_val)) if tier_val == int(tier_val) else str(tier_val)
+
+        total_amount += amt
+        total_customer_slots += cnt
+        if cnt > 0:
+            lots_with_deposit += 1
+
+        bucket = by_tier.setdefault(
+            tier_key,
+            {
+                "deposit_amount_vnd": tier_val,
+                "lot_count": 0,
+                "lots_with_deposit": 0,
+                "customer_count": 0,
+                "total_amount": 0.0,
+            },
+        )
+        bucket["lot_count"] += 1
+        bucket["customer_count"] += cnt
+        bucket["total_amount"] += amt
+        if cnt > 0:
+            bucket["lots_with_deposit"] += 1
+
+    tiers = sorted(by_tier.values(), key=lambda x: float(x.get("deposit_amount_vnd") or 0))
+    return {
+        "total_amount": total_amount,
+        "total_customer_slots": total_customer_slots,
+        "lots_with_deposit": lots_with_deposit,
+        "lot_count": len(rows or []),
+        "tier_count": len(tiers),
+        "tiers": tiers,
+    }
+
+
 # ---------- logging helper ----------
 def _log(msg: str):
     print(f"[REPORTS_B] {msg}")
@@ -443,6 +492,9 @@ async def lots_deposit_stats_page(
         else:
             error = {"status": st, "body": js}
 
+    rows = (data or {}).get("items") or (data or {}).get("rows") or []
+    deposit_summary = _summarize_deposit_stats(rows) if selected_project else None
+
     ctx = {
         "request": request,
         "title": "Thống kê tiền đặt trước từng lô",
@@ -454,6 +506,7 @@ async def lots_deposit_stats_page(
         "max_customers": (max_customers if max_customers is not None else None),
         "limit": limit2,
         "data": data or {"items": [], "count": 0},
+        "deposit_summary": deposit_summary,
         "error": error,
     }
     return templates.TemplateResponse("reports/lots_deposit_stats.html", ctx)
