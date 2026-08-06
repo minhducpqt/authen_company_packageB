@@ -1,0 +1,268 @@
+{# pages/bid_attendance/detail_group.html — đấu nhóm only #}
+{% extends "base.html" %}
+{% block content %}
+<div class="bg-white rounded-xl border border-slate-200 p-5">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-xl font-semibold text-slate-800">Chi tiết điểm danh <span class="text-teal-700 text-sm font-semibold">(đấu nhóm)</span></h2>
+      <p class="text-slate-500 text-sm">
+        Quản lý loại theo <b>giao dịch cọc (DEPOSIT)</b> hoặc <b>loại full khách</b>. Không ảnh hưởng dữ liệu thanh toán.
+      </p>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="/bid-attendance?project_code={{ project_code }}" class="topbtn border border-slate-300 bg-white text-slate-700">← Quay lại danh sách</a>
+      <a href="/projects" class="topbtn border border-slate-300 bg-white text-slate-700">Quản lý dự án</a>
+    </div>
+  </div>
+
+  {% if err %}
+    <div class="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm"><i class="ri-alert-line mr-1"></i>{{ err }}</div>
+  {% endif %}
+  {% if ok %}
+    <div class="mb-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm"><i class="ri-checkbox-circle-line mr-1"></i>{{ ok }}</div>
+  {% endif %}
+  {% if load_err %}
+    <div class="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-sm"><i class="ri-error-warning-line mr-1"></i>{{ load_err }}</div>
+  {% endif %}
+
+  {% if not load_err %}
+    {% set _auto_count = (deposits|length) %}
+    {% set _excluded_count = summary.excluded_count if summary and summary.excluded_count is not none else (excluded_order_ids|length) %}
+    {% set _remaining_count = summary.remaining_order_count if summary and summary.remaining_order_count is not none else (_auto_count - _excluded_count) %}
+    {% set _is_customer_excluded = summary.is_customer_excluded if summary else (_auto_count > 0 and _remaining_count <= 0) %}
+    {% set _is_full_excluded = summary.is_customer_fully_excluded if summary else false %}
+
+    {% set ns = namespace(ex_by_order_id={}) %}
+    {% if summary and summary.exclusions %}
+      {% for ex in summary.exclusions %}
+        {% if ex and ex.order_id is not none %}
+          {% set _ = ns.ex_by_order_id.update({ (ex.order_id|string): ex }) %}
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div class="lg:col-span-2 border border-slate-200 rounded-xl p-4">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <div class="text-xs text-slate-500">Khách hàng</div>
+            <div class="text-lg font-semibold text-slate-900">{{ customer.customer_full_name or "—" }}</div>
+            <div class="mt-1 text-sm text-slate-600 flex flex-wrap gap-x-4 gap-y-1">
+              <div><span class="text-slate-500">CCCD:</span> <span class="font-mono">{{ customer.cccd or "—" }}</span></div>
+              <div><span class="text-slate-500">SĐT:</span> <span class="font-mono">{{ customer.phone or "—" }}</span></div>
+            </div>
+            <div class="mt-2 text-sm text-slate-600"><span class="text-slate-500">Địa chỉ:</span> {{ customer.address or "—" }}</div>
+          </div>
+          <div class="shrink-0 text-right">
+            {% if _is_customer_excluded %}
+              <div class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
+                <i class="ri-forbid-2-line"></i> ĐÃ BỊ LOẠI
+              </div>
+            {% else %}
+              <div class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
+                <i class="ri-checkbox-circle-line"></i> CÒN GIAO DỊCH HỢP LỆ
+              </div>
+            {% endif %}
+            <div class="mt-1 text-[11px] text-slate-500">STT: <span class="font-mono">{{ customer.stt_padded or customer.stt or "—" }}</span></div>
+          </div>
+        </div>
+
+        <div class="mt-4 border-t border-slate-200 pt-3 text-sm text-slate-600 flex flex-wrap gap-x-6 gap-y-1">
+          <div><span class="text-slate-500">Dự án:</span> <span class="font-mono">{{ customer.project_code or project_code }}</span></div>
+          <div><span class="text-slate-500">Nhóm tham gia:</span> <span class="font-semibold">{{ customer.customer_group_count or "—" }}</span></div>
+          <div><span class="text-slate-500">Giao dịch cọc (auto):</span> <span class="font-semibold">{{ _auto_count }}</span></div>
+          <div><span class="text-slate-500">Đã loại:</span> <span class="font-semibold text-rose-700">{{ _excluded_count }}</span></div>
+          <div><span class="text-slate-500">Còn hợp lệ:</span> <span class="font-semibold text-emerald-700">{{ _remaining_count }}</span></div>
+        </div>
+
+        <div class="mt-3 p-3 rounded-lg bg-slate-50 border border-slate-200 text-[13px] text-slate-600 leading-6">
+          - Loại <b>giao dịch cọc</b>: chỉ đơn DEPOSIT đó bị loại khỏi điểm danh.<br/>
+          - Loại <b>full khách</b>: loại toàn bộ giao dịch cọc của khách trong dự án.<br/>
+          - Danh sách STT trên màn 5.1 sẽ tính lại sau khi loại/gỡ.
+        </div>
+      </div>
+
+      <div class="border border-slate-200 rounded-xl p-4">
+        <div class="text-sm font-semibold text-slate-800 mb-2">Thao tác nhanh</div>
+        {% if _auto_count == 0 %}
+          <div class="p-3 rounded-lg bg-slate-50 border text-slate-600 text-sm">Không có giao dịch cọc để thao tác.</div>
+        {% elif _is_customer_excluded %}
+          <button type="button" class="w-full px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-medium hover:bg-slate-800" onclick="openModalClearCustomer()">
+            <i class="ri-refresh-line"></i> Gỡ loại full khách
+          </button>
+        {% else %}
+          <button type="button" class="w-full px-4 py-2 rounded-lg bg-rose-600 text-white text-sm font-medium hover:bg-rose-700" onclick="openModalExcludeCustomer()">
+            <i class="ri-forbid-2-line"></i> Loại full khách
+          </button>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="mt-4 border border-slate-200 rounded-xl">
+      <div class="px-4 py-3 border-b border-slate-200">
+        <div class="text-sm font-semibold text-slate-800">Giao dịch đặt cọc (DEPOSIT)</div>
+        <div class="text-xs text-slate-500">Danh sách gốc — giao dịch đã loại vẫn hiển thị để đối soát.</div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-xs">
+          <thead class="bg-slate-50">
+            <tr class="text-left text-slate-600">
+              <th class="px-3 py-2 border-b">Mã đơn</th>
+              <th class="px-3 py-2 border-b">Thanh toán</th>
+              <th class="px-3 py-2 border-b">Nhóm cọc</th>
+              <th class="px-3 py-2 border-b text-right">Số lô</th>
+              <th class="px-3 py-2 border-b text-right">Tiền cọc (VNĐ)</th>
+              <th class="px-3 py-2 border-b">Trạng thái</th>
+              <th class="px-3 py-2 border-b text-right">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for d in deposits %}
+              {% set _oid = d.order_id %}
+              {% set _is_excluded = _is_full_excluded or (_oid in excluded_order_ids) or d.is_manually_excluded %}
+              {% set _ex = ns.ex_by_order_id.get(_oid|string) %}
+              <tr class="hover:bg-slate-50 {% if _is_excluded %}bg-rose-50/40{% endif %}">
+                <td class="px-3 py-2 border-b font-mono">{{ d.order_code or "—" }}</td>
+                <td class="px-3 py-2 border-b font-mono text-[10px]">{{ d.paid_at or "—" }}</td>
+                <td class="px-3 py-2 border-b">
+                  <div class="font-medium">{{ d.group_names or d.deposit_vnd_list or "—" }}</div>
+                  {% if d.deposit_group_count and d.deposit_group_count > 1 %}
+                    <div class="text-[10px] text-slate-500">{{ d.deposit_group_count }} nhóm trong đơn</div>
+                  {% endif %}
+                </td>
+                <td class="px-3 py-2 border-b text-right font-mono">{{ d.lot_count or 0 }}</td>
+                <td class="px-3 py-2 border-b text-right font-mono">{{ "{:,.0f}".format(d.total_deposit_vnd|default(0)|float) }}</td>
+                <td class="px-3 py-2 border-b">
+                  {% if _is_excluded %}
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-[10px] font-semibold">ĐÃ LOẠI</span>
+                    {% if _ex %}<div class="text-[10px] text-rose-800 mt-1">{{ _ex.reason or "" }}</div>{% endif %}
+                  {% else %}
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-semibold">HỢP LỆ</span>
+                  {% endif %}
+                </td>
+                <td class="px-3 py-2 border-b text-right">
+                  {% if _is_full_excluded %}
+                    <span class="text-[10px] text-slate-400">Full loại</span>
+                  {% elif _is_excluded %}
+                    <button type="button" class="px-3 py-1.5 rounded-lg bg-slate-900 text-white text-[11px]" onclick="openModalClearOrder('{{ _oid }}','{{ (d.order_code or '')|e }}')">Gỡ</button>
+                  {% else %}
+                    <button type="button" class="px-3 py-1.5 rounded-lg bg-rose-600 text-white text-[11px]" onclick="openModalExcludeOrder('{{ _oid }}','{{ (d.order_code or '')|e }}')">Loại</button>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+            {% if not deposits %}
+              <tr><td colspan="7" class="px-3 py-8 text-center text-slate-500">Không có giao dịch cọc.</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<div id="actionModal" class="fixed inset-0 z-[200] hidden">
+  <div class="absolute inset-0 bg-slate-900/50"></div>
+  <div class="absolute inset-0 flex items-center justify-center p-3">
+    <div class="w-full max-w-xl rounded-2xl bg-white shadow-xl border overflow-hidden">
+      <div class="px-5 py-4 border-b"><div id="mTitle" class="font-semibold">—</div><div id="mDesc" class="text-sm text-slate-500 mt-1">—</div></div>
+      <div class="px-5 py-4">
+        <div id="mReasonWrap" class="mb-4">
+          <label class="block text-xs font-medium text-slate-600 mb-1">Lý do (bắt buộc khi loại)</label>
+          <textarea id="mReason" rows="3" class="w-full rounded-lg border px-3 py-2 text-sm"></textarea>
+          <div id="mReasonErr" class="mt-1 text-xs text-rose-600 hidden">Vui lòng nhập lý do.</div>
+        </div>
+        <div class="mb-3 p-3 rounded-lg bg-amber-50 border border-amber-200 text-sm">
+          Nhập chính xác: <span class="font-mono font-semibold">tôi xác nhận</span>
+          <input id="mConfirmText" type="text" class="mt-2 w-full rounded-lg border px-3 py-2 text-sm" autocomplete="off">
+          <div id="mConfirmErr" class="mt-1 text-xs text-rose-600 hidden">Phải nhập đúng: tôi xác nhận</div>
+        </div>
+      </div>
+      <div class="px-5 py-4 border-t flex justify-between">
+        <button type="button" class="px-4 py-2 rounded-lg border" onclick="closeModal()">Huỷ</button>
+        <button id="mSubmitBtn" type="button" class="px-4 py-2 rounded-lg bg-rose-600 text-white text-sm" onclick="submitModal()">Xác nhận</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<form id="fExcludeOrder" method="post" action="/bid-attendance/detail/group/exclude-order" class="hidden">
+  <input type="hidden" name="project_id" value="{{ customer.project_id }}">
+  <input type="hidden" name="project_code" value="{{ project_code }}">
+  <input type="hidden" name="customer_id" value="{{ customer.customer_id }}">
+  <input type="hidden" name="order_id" id="fExcludeOrder_order_id">
+  <input type="hidden" name="reason" id="fExcludeOrder_reason">
+  <input type="hidden" name="confirm_text" id="fExcludeOrder_confirm_text">
+</form>
+<form id="fClearOrder" method="post" action="/bid-attendance/detail/group/clear-order" class="hidden">
+  <input type="hidden" name="project_id" value="{{ customer.project_id }}">
+  <input type="hidden" name="project_code" value="{{ project_code }}">
+  <input type="hidden" name="customer_id" value="{{ customer.customer_id }}">
+  <input type="hidden" name="order_id" id="fClearOrder_order_id">
+  <input type="hidden" name="confirm_text" id="fClearOrder_confirm_text">
+</form>
+<form id="fExcludeCustomer" method="post" action="/bid-attendance/detail/group/exclude-customer" class="hidden">
+  <input type="hidden" name="project_id" value="{{ customer.project_id }}">
+  <input type="hidden" name="project_code" value="{{ project_code }}">
+  <input type="hidden" name="customer_id" value="{{ customer.customer_id }}">
+  <input type="hidden" name="reason" id="fExcludeCustomer_reason">
+  <input type="hidden" name="confirm_text" id="fExcludeCustomer_confirm_text">
+</form>
+<form id="fClearCustomer" method="post" action="/bid-attendance/detail/group/clear-customer" class="hidden">
+  <input type="hidden" name="project_id" value="{{ customer.project_id }}">
+  <input type="hidden" name="project_code" value="{{ project_code }}">
+  <input type="hidden" name="customer_id" value="{{ customer.customer_id }}">
+  <input type="hidden" name="confirm_text" id="fClearCustomer_confirm_text">
+</form>
+
+<script>
+  const modal = document.getElementById("actionModal");
+  const mTitle = document.getElementById("mTitle");
+  const mDesc = document.getElementById("mDesc");
+  const mReasonWrap = document.getElementById("mReasonWrap");
+  const mReason = document.getElementById("mReason");
+  const mReasonErr = document.getElementById("mReasonErr");
+  const mConfirmText = document.getElementById("mConfirmText");
+  const mConfirmErr = document.getElementById("mConfirmErr");
+  let __action = null, __orderId = null;
+
+  function showModal(){ modal.classList.remove("hidden"); document.body.classList.add("overflow-hidden"); }
+  function closeModal(){ modal.classList.add("hidden"); document.body.classList.remove("overflow-hidden"); __action=null; __orderId=null; }
+  function resetModal(){ mReason.value=""; mConfirmText.value=""; mReasonErr.classList.add("hidden"); mConfirmErr.classList.add("hidden"); }
+  function requireReason(on){ mReasonWrap.classList.toggle("hidden", !on); }
+
+  function openModalExcludeCustomer(){ __action="exclude_customer"; resetModal(); requireReason(true); mTitle.textContent="Loại full khách"; mDesc.textContent="Loại toàn bộ giao dịch cọc của khách."; showModal(); }
+  function openModalClearCustomer(){ __action="clear_customer"; resetModal(); requireReason(false); mTitle.textContent="Gỡ loại full khách"; showModal(); }
+  function openModalExcludeOrder(oid, code){ __action="exclude_order"; __orderId=oid; resetModal(); requireReason(true); mTitle.textContent="Loại giao dịch cọc"; mDesc.textContent="Đơn: "+code; showModal(); }
+  function openModalClearOrder(oid, code){ __action="clear_order"; __orderId=oid; resetModal(); requireReason(false); mTitle.textContent="Gỡ loại giao dịch"; mDesc.textContent="Đơn: "+code; showModal(); }
+
+  function submitModal(){
+    if ((mConfirmText.value||"").trim().toLowerCase().replace(/\s+/g," ") !== "tôi xác nhận"){ mConfirmErr.classList.remove("hidden"); return; }
+    mConfirmErr.classList.add("hidden");
+    if (__action==="exclude_customer" || __action==="exclude_order"){
+      const v=(mReason.value||"").trim();
+      if(!v){ mReasonErr.classList.remove("hidden"); return; }
+      mReasonErr.classList.add("hidden");
+      if(__action==="exclude_customer"){
+        document.getElementById("fExcludeCustomer_reason").value=v;
+        document.getElementById("fExcludeCustomer_confirm_text").value="tôi xác nhận";
+        document.getElementById("fExcludeCustomer").submit(); return;
+      }
+      document.getElementById("fExcludeOrder_order_id").value=__orderId;
+      document.getElementById("fExcludeOrder_reason").value=v;
+      document.getElementById("fExcludeOrder_confirm_text").value="tôi xác nhận";
+      document.getElementById("fExcludeOrder").submit(); return;
+    }
+    if(__action==="clear_customer"){
+      document.getElementById("fClearCustomer_confirm_text").value="tôi xác nhận";
+      document.getElementById("fClearCustomer").submit(); return;
+    }
+    if(__action==="clear_order"){
+      document.getElementById("fClearOrder_order_id").value=__orderId;
+      document.getElementById("fClearOrder_confirm_text").value="tôi xác nhận";
+      document.getElementById("fClearOrder").submit();
+    }
+  }
+  modal.addEventListener("click", e=>{ if(!modal.querySelector(".max-w-xl").contains(e.target)) closeModal(); });
+</script>
+{% endblock %}

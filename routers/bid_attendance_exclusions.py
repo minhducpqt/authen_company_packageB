@@ -11,6 +11,10 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from utils.templates import templates
 from utils.auth import get_access_token, fetch_me
+from routers.bid_attendance_group_exclusions import (
+    fetch_registration_mode,
+    render_group_detail_page,
+)
 
 router = APIRouter(prefix="/bid-attendance", tags=["bid_attendance"])
 
@@ -115,6 +119,20 @@ async def bid_attendance_detail_page(
         return _redirect_login(project_code, customer_id)
 
     headers = {"Authorization": f"Bearer {token}"}
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
+            reg_mode = await fetch_registration_mode(client, headers, project_code)
+            if reg_mode == "GROUP_AUCTION":
+                return await render_group_detail_page(
+                    request,
+                    project_code=project_code,
+                    customer_id=customer_id,
+                    me=me,
+                    err=err,
+                    ok=ok,
+                )
+    except Exception:
+        pass
 
     load_err: Optional[str] = None
     customer: Dict[str, Any] = {}

@@ -132,6 +132,8 @@ app.include_router(billing_router)
 # Bid attendance (list/print) + exclusions (detail/exclude/clear)
 app.include_router(bid_attendance_router.router)
 app.include_router(bid_attendance_exclusions_router)
+from routers.bid_attendance_group_exclusions import router as bid_attendance_group_exclusions_router
+app.include_router(bid_attendance_group_exclusions_router)
 
 app.include_router(customer_documents_router)
 app.include_router(announcements_router)
