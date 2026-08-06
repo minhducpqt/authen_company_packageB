@@ -30,7 +30,8 @@ _DOCUMENTS_ROOT = "pages/documents"
 
 
 class DocKind:
-    REGISTRATION = "registration"
+    REGISTRATION_NORMAL = "registration_normal"
+    REGISTRATION_GROUP = "registration_group"
     BID_SHEET = "bid_sheet"
     WINNER_CONFIRM = "winner_confirm"
     WINNER_SLIP = "winner_slip"
@@ -41,7 +42,8 @@ class DocKind:
 
 
 TEMPLATE_FILES: Dict[str, str] = {
-    DocKind.REGISTRATION: "registration.html",
+    DocKind.REGISTRATION_NORMAL: "registration_normal.html",
+    DocKind.REGISTRATION_GROUP: "registration_group.html",
     DocKind.BID_SHEET: "bid_sheet.html",
     DocKind.WINNER_CONFIRM: "winner_confirm.html",
     DocKind.WINNER_SLIP: "winner_slip.html",
@@ -70,7 +72,7 @@ DEFAULT_TEMPLATES: Dict[str, str] = {
 # Override tường minh (tuỳ chọn — nếu tên file khác convention)
 COMPANY_TEMPLATES: Dict[str, Dict[str, str]] = {
     # "kinhdo": {
-    #     DocKind.REGISTRATION: company_template_path("kinhdo", DocKind.REGISTRATION),
+    #     DocKind.REGISTRATION_NORMAL: company_template_path("kinhdo", DocKind.REGISTRATION_NORMAL),
     # },
 }
 
@@ -128,3 +130,17 @@ def resolve_template(company_code: Optional[str], doc_kind: str) -> str:
             return company_rel
 
     return default_template_path(doc_kind)
+
+
+def resolve_registration_template(
+    company_code: Optional[str],
+    registration_mode: Optional[str] = None,
+) -> str:
+    """Chọn mẫu phiếu đăng ký theo công ty và hình thức đấu (NORMAL / GROUP_AUCTION)."""
+    mode = (registration_mode or "NORMAL").strip().upper()
+    doc_kind = (
+        DocKind.REGISTRATION_GROUP
+        if mode == "GROUP_AUCTION"
+        else DocKind.REGISTRATION_NORMAL
+    )
+    return resolve_template(company_code, doc_kind)

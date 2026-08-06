@@ -18,7 +18,7 @@ from utils.auth import get_access_token  # dùng giống các router khác của
 from utils.templates import templates
 from utils.bid_ticket_qr import qr_png_data_uri
 from utils.registration_form_issue_client import issue_registration_form_qr
-from utils.document_templates.registry import DocKind, extract_company_code, resolve_template
+from utils.document_templates.registry import extract_company_code, resolve_registration_template
 
 # Trùng convention cũ
 SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
@@ -148,9 +148,15 @@ async def view_auction_registration(
         registration_qr_data_uri = None
 
     company = data.get("company") or {}
-    reg_tpl = resolve_template(
+    project = data.get("project") or {}
+    registration_mode = (
+        project.get("registration_mode")
+        or data.get("registration_mode")
+        or "NORMAL"
+    )
+    reg_tpl = resolve_registration_template(
         extract_company_code(company=company),
-        DocKind.REGISTRATION,
+        registration_mode,
     )
 
     html = templates.get_template(reg_tpl).render(
