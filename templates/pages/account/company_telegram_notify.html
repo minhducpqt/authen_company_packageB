@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Telegram thông báo — {{ company_code|upper }}{% endblock %}
+{% block content %}
+<style>
+  .tn-wrap{max-width:920px;margin:0 auto;padding-bottom:32px}
+  .tn-back{font-size:13px;color:#4f46e5;font-weight:600}
+  .tn-h1{font-size:22px;font-weight:800;color:#0f172a;margin:10px 0 4px}
+  .tn-sub{font-size:14px;color:#64748b;line-height:1.5}
+  .tn-card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:18px 20px;box-shadow:0 8px 28px rgba(15,23,42,.05);margin-top:16px}
+  .tn-info{background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:12px 14px;font-size:13px;color:#1e40af;margin-bottom:16px;line-height:1.45}
+  .tn-row{display:grid;grid-template-columns:minmax(160px,1fr) 1.5fr auto auto;gap:12px;align-items:end;padding:14px 0;border-bottom:1px solid #f1f5f9}
+  .tn-row:last-child{border-bottom:none}
+  @media (max-width:768px){.tn-row{grid-template-columns:1fr;}}
+  .tn-label{font-size:12px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;display:block}
+  .tn-ttl{font-size:15px;font-weight:700;color:#0f172a}
+  .tn-desc{font-size:12px;color:#64748b;margin-top:2px}
+  .tn-input{width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:9px 11px;font-size:14px;font-family:ui-monospace,Menlo,monospace}
+  .tn-switch{display:flex;align-items:center;gap:8px;font-size:13px;color:#475569;white-space:nowrap;padding-bottom:4px}
+  .tn-badge{display:inline-block;margin-top:6px;font-size:11px;font-weight:700;border-radius:999px;padding:3px 8px}
+  .tn-badge.on{background:#ecfdf5;color:#047857;border:1px solid #a7f3d0}
+  .tn-badge.off{background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0}
+  .tn-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+  .tn-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:10px;font-size:13px;font-weight:700;border:1px solid transparent;cursor:pointer;text-decoration:none}
+  .tn-btn-primary{background:#0f172a;color:#fff}
+  .tn-btn-secondary{background:#fff;color:#0f172a;border-color:#e2e8f0}
+  .tn-btn-test{background:#fff;color:#2563eb;border-color:#bfdbfe}
+  .tn-btn:disabled{opacity:.45;cursor:not-allowed}
+  .tn-alert{border-radius:12px;padding:12px 14px;font-size:14px;margin-top:14px}
+  .tn-alert.ok{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46}
+  .tn-alert.err{background:#fef2f2;border:1px solid #fecaca;color:#991b1b}
+</style>
+
+<div class="tn-wrap">
+  <a href="/account/company/{{ company_code }}" class="tn-back">&larr; Quay lại công ty {{ company_code|upper }}</a>
+  <h1 class="tn-h1">Telegram thông báo nghiệp vụ</h1>
+  <p class="tn-sub">Cấu hình chat/group Telegram nhận thông báo theo từng loại sự kiện. Bot dùng chung toàn hệ thống.</p>
+
+  {% if msg == 'saved' %}
+    <div class="tn-alert ok">Đã lưu cấu hình kênh Telegram.</div>
+  {% elif msg == 'test_sent' %}
+    <div class="tn-alert ok">Đã gửi tin test{% if request.query_params.get('event') %} — {{ event_labels.get(request.query_params.get('event'), request.query_params.get('event')) }}{% endif %}.</div>
+  {% endif %}
+  {% if err == 'save_failed' %}
+    <div class="tn-alert err">Lưu thất bại. Vui lòng thử lại.</div>
+  {% elif err == 'test_failed' %}
+    <div class="tn-alert err">Gửi test thất bại. Kiểm tra chat ID và quyền bot trong group.</div>
+  {% endif %}
+  {% if load_err %}
+    <div class="tn-alert err">{{ load_err }}</div>
+  {% endif %}
+
+  <div class="tn-card">
+    <div class="tn-info">
+      <b>Bot token</b> dùng chung — cấu hình ở server (env). Super admin chỉ cấu hình <b>Chat ID</b> từng kênh.<br>
+      Chat ID thường dạng <code>-100xxxxxxxxxx</code>. Bot phải được thêm vào group trước khi gửi.
+    </div>
+
+    <form method="post" action="/account/company/{{ company_code }}/telegram-notify">
+      {% for ev, label in event_labels.items() %}
+        {% set it = items_by_event.get(ev) or {} %}
+        <div class="tn-row">
+          <div>
+            <div class="tn-ttl">{{ label }}</div>
+            <div class="tn-desc"><code>{{ ev }}</code></div>
+            {% if it.get('is_configured') and it.get('is_enabled') %}
+              <span class="tn-badge on">Đang bật</span>
+            {% elif it.get('is_configured') %}
+              <span class="tn-badge off">Đã cấu hình — tắt</span>
+            {% else %}
+              <span class="tn-badge off">Chưa cấu hình</span>
+            {% endif %}
+          </div>
+          <div>
+            <label class="tn-label" for="target_{{ ev }}">Chat ID</label>
+            <input id="target_{{ ev }}" name="target_{{ ev }}" class="tn-input"
+                   value="{{ it.get('target') or '' }}" placeholder="-100xxxxxxxxxx">
+          </div>
+          <div class="tn-switch">
+            <input type="checkbox" name="enabled_{{ ev }}" value="1" id="enabled_{{ ev }}"
+                   {% if it.get('is_enabled') %}checked{% endif %}>
+            <label for="enabled_{{ ev }}">Bật</label>
+          </div>
+          <div>
+            <button type="submit" class="tn-btn tn-btn-test"
+                    formaction="/account/company/{{ company_code }}/telegram-notify/{{ ev }}/test"
+                    {% if not it.get('target') %}disabled title="Lưu chat ID trước khi test"{% endif %}>
+              Test
+            </button>
+          </div>
+        </div>
+      {% endfor %}
+
+      <div class="tn-actions">
+        <a href="/account/company/{{ company_code }}" class="tn-btn tn-btn-secondary">Hủy</a>
+        <button type="submit" class="tn-btn tn-btn-primary">Lưu cấu hình</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
