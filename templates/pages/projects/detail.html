@@ -63,6 +63,211 @@
     }
     .pj-edit-btn i{ font-size: 14px; }
 
+    /* ===== Auction config panel ===== */
+    .pj-section-card{
+      padding: 1rem 1.125rem;
+      border-radius: 0.75rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+    }
+    .pj-section-head{
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .pj-section-title{
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .pj-section-desc{
+      font-size: 0.6875rem;
+      color: #64748b;
+      margin-top: 0.25rem;
+      line-height: 1.4;
+    }
+    .pj-section-icon{
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 0.625rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.125rem;
+      flex-shrink: 0;
+      background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+      color: #4f46e5;
+    }
+    .pj-config-grid{
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    @media (min-width: 768px){
+      .pj-config-grid{ grid-template-columns: 1fr 1fr; }
+    }
+    .pj-config-block{
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.625rem;
+      padding: 0.875rem;
+    }
+    .pj-config-label{
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+    }
+    .pj-pick-grid{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.625rem;
+    }
+    @media (max-width: 480px){
+      .pj-pick-grid{ grid-template-columns: 1fr; }
+    }
+    .pj-pick{
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.375rem;
+      padding: 0.875rem 1rem;
+      border-radius: 0.75rem;
+      border: 2px solid #e2e8f0;
+      background: #fff;
+      cursor: pointer;
+      transition: border-color .15s, box-shadow .15s, background .15s;
+      text-align: left;
+      width: 100%;
+      min-height: 5.5rem;
+    }
+    .pj-pick:hover:not(.is-active):not(.is-active-teal){
+      border-color: #94a3b8;
+      box-shadow: 0 4px 12px rgba(15,23,42,.06);
+    }
+    .pj-pick.is-active{
+      border-color: #6366f1;
+      background: linear-gradient(180deg, #fafaff 0%, #fff 100%);
+      box-shadow: 0 0 0 3px rgba(99,102,241,.15);
+      cursor: default;
+    }
+    .pj-pick.is-active-teal{
+      border-color: #14b8a6;
+      background: linear-gradient(180deg, #f0fdfa 0%, #fff 100%);
+      box-shadow: 0 0 0 3px rgba(20,184,166,.15);
+      cursor: default;
+    }
+    .pj-pick-top{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      gap: 0.5rem;
+    }
+    .pj-pick-ico{
+      width: 2rem;
+      height: 2rem;
+      border-radius: 0.5rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.125rem;
+      background: #f1f5f9;
+      color: #64748b;
+    }
+    .pj-pick.is-active .pj-pick-ico{ background: #eef2ff; color: #4f46e5; }
+    .pj-pick.is-active-teal .pj-pick-ico{ background: #ccfbf1; color: #0d9488; }
+    .pj-pick-badge{
+      font-size: 0.625rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 0.2rem 0.5rem;
+      border-radius: 9999px;
+      background: #f1f5f9;
+      color: #64748b;
+      white-space: nowrap;
+    }
+    .pj-pick.is-active .pj-pick-badge{ background: #eef2ff; color: #4338ca; }
+    .pj-pick.is-active-teal .pj-pick-badge{ background: #ccfbf1; color: #0f766e; }
+    .pj-pick-ttl{ font-size: 0.9375rem; font-weight: 700; color: #0f172a; line-height: 1.25; }
+    .pj-pick-sub{ font-size: 0.75rem; color: #64748b; line-height: 1.4; }
+    .pj-pick-hint{
+      margin-top: 0.625rem;
+      font-size: 0.6875rem;
+      color: #94a3b8;
+    }
+    .pj-pick-hint b{ color: #64748b; font-weight: 600; }
+    .pj-dgf-toolbar{
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .pj-dgf-actions{ display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .pj-dgf-table thead th{
+      font-size: 0.6875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: #64748b;
+      background: #f1f5f9;
+    }
+    .pj-dgf-table tbody tr.dgf-row-editing{
+      background: linear-gradient(90deg, #eef2ff 0%, #fff 100%);
+    }
+    .pj-dgf-table tbody td{ vertical-align: middle; }
+    .dgf-fee-display{
+      font-size: 0.9375rem;
+      font-weight: 700;
+      color: #0f172a;
+      font-variant-numeric: tabular-nums;
+    }
+    .dgf-badge{
+      display: inline-flex;
+      align-items: center;
+      margin-left: 0.5rem;
+      font-size: 0.625rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      padding: 0.15rem 0.45rem;
+      border-radius: 9999px;
+    }
+    .dgf-badge-default{ background: #f1f5f9; color: #64748b; }
+    .dgf-badge-custom{ background: #eef2ff; color: #4338ca; }
+    .dgf-row-actions{
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.375rem;
+    }
+    .dgf-row-actions .btn-xs{
+      font-size: 0.6875rem;
+      padding: 0.25rem 0.625rem;
+      border-radius: 0.375rem;
+      font-weight: 600;
+    }
+    .dgf-fee-input{
+      width: 9rem;
+      font-variant-numeric: tabular-nums;
+    }
+    .dgf-edit-btn{
+      display: inline-flex;
+    }
+
     /* ===== Lot edit buttons: hidden by default, only show when enabled ===== */
     .lot-edit-btn{ display:none; }
     .lot-edit-enabled .lot-edit-btn{ display:inline-flex; }
@@ -98,14 +303,52 @@
       max-width: 560px;
     }
 
-    /* Product type modal */
+    /* Product type modal — fixed viewport, scroll nội dung */
+    .pj-modal-overlay{
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      overflow-y: auto;
+      padding: 1rem;
+    }
+    .pj-modal-overlay:not(.hidden){ display: block; }
+    .pj-modal-backdrop{
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+    }
+    .pj-modal-wrap{
+      position: relative;
+      z-index: 1;
+      min-height: calc(100% - 2rem);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    .pj-modal-wrap > .pt-card,
+    .pj-modal-wrap > .pth-card{
+      pointer-events: auto;
+      width: 100%;
+      max-height: calc(100vh - 2rem);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
     #productTypeModal .pt-card{
-      width: 96vw;
-      max-width: 640px;
+      max-width: min(640px, 100%);
     }
     #productTypeHintModal .pth-card{
-      width: 96vw;
-      max-width: 860px;
+      max-width: min(860px, 100%);
+    }
+    .pj-modal-header{
+      flex-shrink: 0;
+    }
+    .pj-modal-body{
+      overflow-y: auto;
+      flex: 1 1 auto;
+      min-height: 0;
+      -webkit-overflow-scrolling: touch;
     }
   </style>
 
@@ -131,110 +374,136 @@
       <div class="text-lg font-semibold" id="pj_name_text">{{ project.name }}</div>
     </div>
 
-    <!-- Trạng thái + chế độ đấu giá -->
+    <!-- Trạng thái -->
     <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
       <div class="text-slate-500 text-sm mb-1">Trạng thái</div>
-      <div class="flex items-center justify-between gap-2">
-
-        <div>
-          {% set st = (project.status or '') %}
-          <span class="inline-flex items-center px-2 py-1 rounded text-xs
-            {% if st=='ACTIVE' %} bg-emerald-100 text-emerald-700 border border-emerald-200
-            {% elif st=='INACTIVE' %} bg-amber-100 text-amber-700 border border-amber-200
-            {% elif st=='CLOSED' %} bg-slate-200 text-slate-700 border border-slate-300
-            {% else %} bg-slate-100 text-slate-600 border border-slate-200 {% endif %}">
-            {{ st or 'UNKNOWN' }}
-          </span>
-        </div>
-
-        <form method="post" action="/projects/{{ project.id }}/auction-mode"
-              class="flex items-center gap-1 text-xs text-slate-600">
-          <label class="inline-flex items-center gap-1 cursor-pointer">
-            <input
-              id="auction_mode_checkbox"
-              type="checkbox"
-              name="auction_mode_per_sqm"
-              value="1"
-              class="h-3 w-3 rounded border-slate-300 text-emerald-600 focus:ring-0"
-              {% if is_per_sqm %}checked{% endif %}
-              onchange="confirmWithPhrase(this, {
-                title: 'Xác nhận thay đổi chế độ đấu giá',
-                descHtml: 'Bạn sắp chuyển chế độ tính tiền sang <b>' + (this.checked ? 'TÍNH THEO M²' : 'TÍNH THEO CẢ LÔ') + '</b>. Việc này ảnh hưởng tới cách nhập/hiển thị giá và báo cáo.',
-                confirmText: 'Xác nhận',
-                cancelText: 'Hủy',
-                phrase: 'tôi xác nhận',
-              })"
-            >
-            <span>Đấu theo <span class="font-semibold">m²</span></span>
-          </label>
-        </form>
-
-      </div>
-
-      <div class="mt-1 text-[11px] text-slate-500">
-        Đang: <span class="font-semibold">
-          {% if is_per_sqm %}TÍNH THEO M²{% else %}TÍNH THEO CẢ LÔ{% endif %}
+      <div>
+        {% set st = (project.status or '') %}
+        <span class="inline-flex items-center px-2 py-1 rounded text-xs
+          {% if st=='ACTIVE' %} bg-emerald-100 text-emerald-700 border border-emerald-200
+          {% elif st=='INACTIVE' %} bg-amber-100 text-amber-700 border border-amber-200
+          {% elif st=='CLOSED' %} bg-slate-200 text-slate-700 border border-slate-300
+          {% else %} bg-slate-100 text-slate-600 border border-slate-200 {% endif %}">
+          {{ st or 'UNKNOWN' }}
         </span>
       </div>
     </div>
 
-    <!-- Hình thức đấu: NORMAL / GROUP_AUCTION -->
-    <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
-      <div class="text-slate-500 text-sm mb-1">Hình thức đấu</div>
-      <form method="post" action="/projects/{{ project.id }}/registration-mode"
-            class="flex flex-col gap-2">
-        <select
-          name="registration_mode"
-          class="input text-sm max-w-xs"
-          onchange="confirmWithPhrase(this, {
-            title: 'Xác nhận đổi hình thức đấu',
-            descHtml: 'Bạn sắp chuyển sang <b>' + (this.value === 'GROUP_AUCTION' ? 'ĐẤU NHÓM' : 'ĐẤU LÔ (MẶC ĐỊNH)') + '</b>. Luồng mua hồ sơ / đặt cọc sẽ khác.',
-            confirmText: 'Xác nhận',
-            cancelText: 'Hủy',
-            phrase: 'tôi xác nhận',
-          })"
-        >
-          <option value="NORMAL" {% if not is_group_auction %}selected{% endif %}>Đấu lô (mặc định)</option>
-          <option value="GROUP_AUCTION" {% if is_group_auction %}selected{% endif %}>Đấu nhóm</option>
-        </select>
-        <div class="text-[11px] text-slate-500">
-          Đang: <span class="font-semibold {% if is_group_auction %}text-teal-700{% endif %}">
-            {% if is_group_auction %}Đấu nhóm{% else %}Đấu lô (mặc định){% endif %}
-          </span>
+    {# Cấu hình đấu giá — quan trọng, full width #}
+    <div class="md:col-span-3 pj-section-card border-indigo-100 bg-gradient-to-br from-indigo-50/50 via-slate-50 to-white">
+      <div class="pj-section-head">
+        <div class="flex items-start gap-3">
+          <span class="pj-section-icon"><i class="ri-auction-fill"></i></span>
+          <div>
+            <div class="pj-section-title">Cấu hình đấu giá</div>
+            <div class="pj-section-desc">
+              Quyết định luồng mua hồ sơ, đặt cọc và báo cáo. Thay đổi cần xác nhận.
+            </div>
+          </div>
         </div>
-      </form>
+        {% if (me.role or '')|upper == 'SUPER_ADMIN' and project.company_code %}
+        <a href="/account/company/{{ project.company_code }}/auction-defaults"
+           class="text-xs text-indigo-600 hover:text-indigo-800 font-medium whitespace-nowrap">
+          <i class="ri-settings-3-line"></i> Mặc định công ty
+        </a>
+        {% endif %}
+      </div>
+
+      <div class="pj-config-grid">
+        {# Hình thức đấu #}
+        <div class="pj-config-block border-indigo-100/80">
+          <div class="pj-config-label">
+            <i class="ri-shuffle-line text-indigo-500"></i> Hình thức đấu
+          </div>
+          <form method="post" action="/projects/{{ project.id }}/registration-mode" id="form-registration-mode">
+            <input type="hidden" name="registration_mode" id="pj-reg-mode-value" value="{{ registration_mode }}">
+            <div class="pj-pick-grid" id="pj-reg-mode-picks">
+              <button type="button" class="pj-pick {% if not is_group_auction %}is-active{% endif %}"
+                      data-pj-pick="reg" data-value="NORMAL" aria-pressed="{{ 'true' if not is_group_auction else 'false' }}">
+                <div class="pj-pick-top">
+                  <span class="pj-pick-ico"><i class="ri-grid-fill"></i></span>
+                  <span class="pj-pick-badge">{% if not is_group_auction %}Đang dùng{% else %}Chọn{% endif %}</span>
+                </div>
+                <span class="pj-pick-ttl">Đấu lô</span>
+                <span class="pj-pick-sub">Khách chọn lô cụ thể khi đặt cọc và mua hồ sơ</span>
+              </button>
+              <button type="button" class="pj-pick {% if is_group_auction %}is-active-teal{% endif %}"
+                      data-pj-pick="reg" data-value="GROUP_AUCTION" aria-pressed="{{ 'true' if is_group_auction else 'false' }}">
+                <div class="pj-pick-top">
+                  <span class="pj-pick-ico"><i class="ri-group-2-fill"></i></span>
+                  <span class="pj-pick-badge">{% if is_group_auction %}Đang dùng{% else %}Chọn{% endif %}</span>
+                </div>
+                <span class="pj-pick-ttl">Đấu nhóm</span>
+                <span class="pj-pick-sub">Cọc và hồ sơ theo nhóm mức tiền đặt trước</span>
+              </button>
+            </div>
+            <p class="pj-pick-hint">Bấm vào lựa chọn khác → nhập <b>tôi xác nhận</b> để lưu.</p>
+          </form>
+        </div>
+
+        {# Cách tính giá #}
+        <div class="pj-config-block">
+          <div class="pj-config-label">
+            <i class="ri-calculator-line text-slate-500"></i> Cách tính giá đấu
+          </div>
+          <form method="post" action="/projects/{{ project.id }}/auction-mode" id="form-auction-mode">
+            <input type="hidden" name="auction_mode" id="pj-auction-mode-value" value="{{ auction_mode }}">
+            <div class="pj-pick-grid" id="pj-auction-mode-picks">
+              <button type="button" class="pj-pick {% if not is_per_sqm %}is-active{% endif %}"
+                      data-pj-pick="auction" data-value="PER_LOT" aria-pressed="{{ 'true' if not is_per_sqm else 'false' }}">
+                <div class="pj-pick-top">
+                  <span class="pj-pick-ico"><i class="ri-layout-grid-fill"></i></span>
+                  <span class="pj-pick-badge">{% if not is_per_sqm %}Đang dùng{% else %}Chọn{% endif %}</span>
+                </div>
+                <span class="pj-pick-ttl">Theo cả lô</span>
+                <span class="pj-pick-sub">Giá khởi điểm và trả giá tính trên từng lô</span>
+              </button>
+              <button type="button" class="pj-pick {% if is_per_sqm %}is-active{% endif %}"
+                      data-pj-pick="auction" data-value="PER_SQM" aria-pressed="{{ 'true' if is_per_sqm else 'false' }}">
+                <div class="pj-pick-top">
+                  <span class="pj-pick-ico"><i class="ri-ruler-2-fill"></i></span>
+                  <span class="pj-pick-badge">{% if is_per_sqm %}Đang dùng{% else %}Chọn{% endif %}</span>
+                </div>
+                <span class="pj-pick-ttl">Theo m²</span>
+                <span class="pj-pick-sub">Giá khởi điểm và trả giá tính theo diện tích</span>
+              </button>
+            </div>
+            <p class="pj-pick-hint">Bấm vào lựa chọn khác → nhập <b>tôi xác nhận</b> để lưu.</p>
+          </form>
+        </div>
+      </div>
     </div>
 
     {% if is_group_auction %}
     <!-- Nhóm cọc & phí hồ sơ (đấu nhóm) -->
-    <div class="md:col-span-3 p-4 rounded-lg bg-teal-50 border border-teal-200">
-      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+    <div class="md:col-span-3 pj-section-card">
+      <div class="pj-dgf-toolbar">
         <div>
-          <div class="text-slate-700 text-sm font-semibold">Nhóm cọc &amp; phí mua hồ sơ</div>
-          <div class="text-[11px] text-slate-500 mt-0.5">
-            Tự tổng hợp từ lô (<code>deposit_vnd</code>). Phí mặc định theo bảng giá <code>*_GROUP</code>; admin có thể sửa từng dự án.
+          <div class="pj-section-title"><i class="ri-funds-box-fill text-sky-600"></i> Nhóm cọc &amp; phí mua hồ sơ</div>
+          <div class="pj-section-desc mt-1">
+            Tổng hợp từ tiền cọc lô. Bấm <b>Sửa</b> từng dòng để chỉnh phí mua hồ sơ cho nhóm cọc đó.
           </div>
         </div>
-        <div class="flex gap-2">
-          <button type="button" id="dgf-sync-btn" class="btn-secondary text-xs px-3 py-1.5">Đồng bộ lại từ lô</button>
-          <button type="button" id="dgf-save-btn" class="btn-primary text-xs px-3 py-1.5 bg-teal-700">Lưu phí hồ sơ</button>
+        <div class="pj-dgf-actions">
+          <button type="button" id="dgf-sync-btn" class="btn-secondary text-xs px-3 py-1.5">
+            <i class="ri-refresh-line"></i> Đồng bộ từ lô
+          </button>
         </div>
       </div>
       <div id="dgf-status" class="text-xs text-slate-500 mb-2">Đang tải…</div>
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm border border-slate-200 rounded-lg overflow-hidden bg-white">
-          <thead class="bg-slate-100 text-slate-600 text-left">
+      <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+        <table class="w-full text-sm pj-dgf-table">
+          <thead class="text-left">
             <tr>
               <th class="py-2 px-3">Mức cọc (VND)</th>
               <th class="py-2 px-3">Số lô</th>
-              <th class="py-2 px-3">Khoảng mã lô</th>
               <th class="py-2 px-3">Phí hồ sơ / bộ</th>
-              <th class="py-2 px-3">Mặc định</th>
-              <th class="py-2 px-3"></th>
+              <th class="py-2 px-3">Phí mặc định</th>
+              <th class="py-2 px-3 w-24 text-center">Thao tác</th>
             </tr>
           </thead>
           <tbody id="dgf-tbody">
-            <tr><td colspan="6" class="py-4 px-3 text-slate-400 text-center">—</td></tr>
+            <tr><td colspan="5" class="py-4 px-3 text-slate-400 text-center">—</td></tr>
           </tbody>
         </table>
       </div>
@@ -690,29 +959,30 @@
 {# =========================================================
    ✅ NEW: PRODUCT TYPE EDIT MODAL (fetch list -> select -> save -> confirm phrase -> call API update)
    ========================================================= #}
-<div id="productTypeModal" class="fixed inset-0 bg-black/40 hidden z-50">
-  <div class="absolute inset-0 flex items-center justify-center p-3">
-    <div class="pt-card bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-      <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200">
-        <div class="flex items-center gap-2">
-          <div class="h-8 w-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-700 border border-indigo-200">
+<div id="productTypeModal" class="pj-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="ptModalTitle">
+  <div class="pj-modal-backdrop" onclick="closeProductTypeEdit()"></div>
+  <div class="pj-modal-wrap">
+    <div class="pt-card bg-white rounded-2xl shadow-xl border border-slate-200">
+      <div class="pj-modal-header flex items-center justify-between px-4 py-3 border-b border-slate-200">
+        <div class="flex items-center gap-2 min-w-0">
+          <div class="h-8 w-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-700 border border-indigo-200 shrink-0">
             <i class="ri-shape-line"></i>
           </div>
-          <div>
-            <div class="text-sm font-semibold text-slate-800">Chỉnh sửa loại dự án (product type)</div>
+          <div class="min-w-0">
+            <div id="ptModalTitle" class="text-sm font-semibold text-slate-800">Chỉnh sửa loại dự án (product type)</div>
             <div class="text-xs text-slate-500">Chọn type trong danh sách, rồi bấm Lưu</div>
           </div>
         </div>
 
         <button type="button"
-                class="h-9 w-9 inline-flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                class="h-9 w-9 inline-flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 shrink-0"
                 onclick="closeProductTypeEdit()"
                 title="Đóng">
           <i class="ri-close-line text-xl"></i>
         </button>
       </div>
 
-      <div class="p-4">
+      <div class="pj-modal-body p-4">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-medium text-slate-600 mb-1">Loại dự án hiện tại</label>
@@ -730,7 +1000,7 @@
               <option value="">— Đang tải danh sách…</option>
             </select>
             <p class="mt-1 text-xs text-slate-500" id="pt_help">
-              Danh sách được lấy từ API product types.
+              Chỉ hiển thị loại cấu hình thủ công. Loại có chữ <b>GROUP</b> là bảng giá tự sinh khi đấu nhóm — không chọn ở đây.
             </p>
           </div>
         </div>
@@ -766,36 +1036,37 @@
 {# =========================================================
    ✅ NEW: PRODUCT TYPE HINT MODAL (bảng mô tả type)
    ========================================================= #}
-<div id="productTypeHintModal" class="fixed inset-0 bg-black/40 hidden z-50">
-  <div class="absolute inset-0 flex items-center justify-center p-3">
-    <div class="pth-card bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-      <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200">
-        <div class="flex items-center gap-2">
-          <div class="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600">
+<div id="productTypeHintModal" class="pj-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="pthModalTitle">
+  <div class="pj-modal-backdrop" onclick="closeProductTypeHint()"></div>
+  <div class="pj-modal-wrap">
+    <div class="pth-card bg-white rounded-2xl shadow-xl border border-slate-200">
+      <div class="pj-modal-header flex items-center justify-between px-4 py-3 border-b border-slate-200">
+        <div class="flex items-center gap-2 min-w-0">
+          <div class="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
             <i class="ri-file-list-3-line"></i>
           </div>
-          <div>
-            <div class="text-sm font-semibold text-slate-800">Bảng mô tả các loại dự án (product type)</div>
+          <div class="min-w-0">
+            <div id="pthModalTitle" class="text-sm font-semibold text-slate-800">Bảng mô tả các loại dự án (product type)</div>
             <div class="text-xs text-slate-500">Giúp người dùng chọn đúng type khi cấu hình</div>
           </div>
         </div>
 
         <button type="button"
-                class="h-9 w-9 inline-flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                class="h-9 w-9 inline-flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 shrink-0"
                 onclick="closeProductTypeHint()"
                 title="Đóng">
           <i class="ri-close-line text-xl"></i>
         </button>
       </div>
 
-      <div class="p-4">
+      <div class="pj-modal-body p-4">
         <div class="text-sm text-slate-600 mb-3">
-          Bảng dưới sẽ ưu tiên lấy từ API (nếu API trả về mô tả). Nếu API không có mô tả, vẫn hiển thị code + tên.
+          Bảng dưới lấy từ API (loại có chữ <b>GROUP</b> là bảng giá tự sinh — không liệt kê).
         </div>
 
         <div class="overflow-x-auto border border-slate-200 rounded-lg">
           <table class="min-w-full text-sm">
-            <thead class="bg-slate-50">
+            <thead class="bg-slate-50 sticky top-0 z-[1]">
               <tr class="text-left text-slate-600">
                 <th class="px-3 py-2 border-b w-[180px]">Code</th>
                 <th class="px-3 py-2 border-b w-[240px]">Tên/Label</th>
@@ -1363,6 +1634,21 @@
     return {code:String(code||""), label:String(label||""), description:String(desc||"")};
   }
 
+  /** Loại *_GROUP tự sinh cho bảng giá đấu nhóm — không cho chọn trên dự án */
+  function _isAutoGroupProductType(code){
+    return String(code || "").trim().toUpperCase().includes("GROUP");
+  }
+
+  function _selectableProductTypes(all){
+    return (all || []).filter(t => !_isAutoGroupProductType(t.code));
+  }
+
+  function _portalModalToBody(el){
+    if (el && el.parentElement !== document.body){
+      document.body.appendChild(el);
+    }
+  }
+
   /* =========================================================
      #A: Product type UI
      ========================================================= */
@@ -1386,6 +1672,8 @@
     _pt.saveBtn = _byId("ptSaveBtn");
     _pt.errBox = _byId("pt_err_box");
     _pt.errText = _byId("pt_err_text");
+    _portalModalToBody(_pt.modal);
+    _portalModalToBody(_pt.hintModal);
   }
 
   function ptSetError(msg){
@@ -1467,8 +1755,8 @@
     _pt.saveBtn.disabled = true;
     _pt.saveBtn.classList.add("opacity-50","cursor-not-allowed");
 
-    // show modal
     _pt.modal.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
 
     // set current
     _byId("pt_current_code").textContent = (_pt.currentCode || "—");
@@ -1477,15 +1765,19 @@
     _pt.select.innerHTML = `<option value="">— Đang tải danh sách…</option>`;
     (async ()=>{
       try{
-        const types = await fetchProductTypesIfNeeded();
+        const allTypes = await fetchProductTypesIfNeeded();
+        const types = _selectableProductTypes(allTypes);
 
-        // update current label in modal
-        const curHit = types.find(x => _norm(x.code) === _norm(_pt.currentCode));
+        // update current label in modal (tìm cả trong cache đầy đủ)
+        const curHit = allTypes.find(x => _norm(x.code) === _norm(_pt.currentCode));
         _byId("pt_current_label").textContent = (curHit && curHit.label) ? ("— " + curHit.label) : "";
 
-        // build options
+        // build options — chỉ loại cho phép chọn
         const opts = [];
         opts.push(`<option value="">— Chọn loại dự án —</option>`);
+        if (!types.length){
+          opts.push(`<option value="" disabled>— Không có loại khả dụng —</option>`);
+        }
         for (const t of types){
           const selected = (_norm(t.code) === _norm(_pt.currentCode)) ? "selected" : "";
           const suffix = t.label ? ` — ${escapeHtml(t.label)}` : "";
@@ -1504,6 +1796,9 @@
   function closeProductTypeEdit(){
     ptInit();
     _pt.modal.classList.add("hidden");
+    if (!_pt.hintModal || _pt.hintModal.classList.contains("hidden")){
+      document.body.style.overflow = "";
+    }
   }
 
   function onProductTypeChanged(){
@@ -1601,11 +1896,15 @@
   function openProductTypeHint(){
     ptInit();
     _pt.hintModal.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
     renderProductTypeHintTable();
   }
   function closeProductTypeHint(){
     ptInit();
     _pt.hintModal.classList.add("hidden");
+    if (!_pt.modal || _pt.modal.classList.contains("hidden")){
+      document.body.style.overflow = "";
+    }
   }
 
   async function renderProductTypeHintTable(){
@@ -1615,9 +1914,10 @@
     tbody.innerHTML = `<tr><td colspan="3" class="px-3 py-6 text-center text-slate-500">Đang tải danh sách…</td></tr>`;
 
     try{
-      const types = await fetchProductTypesIfNeeded();
+      const allTypes = await fetchProductTypesIfNeeded();
+      const types = _selectableProductTypes(allTypes);
       if (!types.length){
-        tbody.innerHTML = `<tr><td colspan="3" class="px-3 py-6 text-center text-slate-500">Không có dữ liệu type.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="3" class="px-3 py-6 text-center text-slate-500">Không có loại dự án khả dụng.</td></tr>`;
         return;
       }
 
@@ -2141,6 +2441,8 @@
         fillProductTypeLabelsIfPossible();
       }catch(e){}
     })();
+
+    pjBindModePickers();
   });
 
   function openPicker(fieldName) {
@@ -2181,9 +2483,55 @@
     closePicker();
   }
 
+  var _pjRegModeCur = {{ registration_mode|tojson }};
+  var _pjAuctionModeCur = {{ auction_mode|tojson }};
+
+  function pjBindModePickers() {
+    document.querySelectorAll("[data-pj-pick='reg']").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var next = btn.getAttribute("data-value") || "";
+        if (!next || next === _pjRegModeCur) return;
+        var form = document.getElementById("form-registration-mode");
+        var hidden = document.getElementById("pj-reg-mode-value");
+        if (!form || !hidden) return;
+        var label = next === "GROUP_AUCTION" ? "ĐẤU NHÓM" : "ĐẤU LÔ";
+        confirmWithPhrase(null, {
+          title: "Xác nhận đổi hình thức đấu",
+          descHtml: "Chuyển sang <b>" + label + "</b>. Luồng mua hồ sơ / đặt cọc sẽ thay đổi.",
+          phrase: "tôi xác nhận",
+          onConfirm: function () {
+            hidden.value = next;
+            form.submit();
+          }
+        });
+      });
+    });
+
+    document.querySelectorAll("[data-pj-pick='auction']").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var next = btn.getAttribute("data-value") || "";
+        if (!next || next === _pjAuctionModeCur) return;
+        var form = document.getElementById("form-auction-mode");
+        var hidden = document.getElementById("pj-auction-mode-value");
+        if (!form || !hidden) return;
+        var label = next === "PER_SQM" ? "THEO M²" : "THEO CẢ LÔ";
+        confirmWithPhrase(null, {
+          title: "Xác nhận đổi cách tính giá",
+          descHtml: "Chuyển sang <b>" + label + "</b>. Ảnh hưởng cách nhập/hiển thị giá và báo cáo.",
+          phrase: "tôi xác nhận",
+          onConfirm: function () {
+            hidden.value = next;
+            form.submit();
+          }
+        });
+      });
+    });
+  }
+
   {% if is_group_auction %}
   const DGF_PROJECT_ID = {{ project.id }};
   let _dgfRows = [];
+  let _dgfEditingIdx = null;
 
   function _fmtVnd(n) {
     const x = Number(n || 0);
@@ -2194,44 +2542,124 @@
     return Number(String(s || "").replace(/[^\d]/g, "")) || 0;
   }
 
+  function _dgfDep(r) {
+    return r.deposit_amount_vnd || r.deposit_vnd;
+  }
+
+  function renderDgfRow(r, idx) {
+    const dep = _dgfDep(r);
+    const lotCount = r.lot_count ?? 0;
+    const fee = r.dossier_fee_vnd;
+    const def = r.default_fee_vnd;
+    const isCustom = !!r.is_custom_fee;
+    const isEditing = _dgfEditingIdx === idx;
+
+    if (isEditing) {
+      return `
+        <tr data-idx="${idx}" class="dgf-row-editing">
+          <td class="py-2.5 px-3 font-mono font-semibold text-slate-800">${_fmtVnd(dep)}</td>
+          <td class="py-2.5 px-3 text-slate-600">${lotCount} lô</td>
+          <td class="py-2.5 px-3">
+            <input type="text" class="input text-sm dgf-fee-input" data-dep="${dep}"
+              value="${_fmtVnd(fee)}" aria-label="Phí hồ sơ" />
+          </td>
+          <td class="py-2.5 px-3 text-xs text-slate-500">${def != null ? _fmtVnd(def) : "—"}</td>
+          <td class="py-2.5 px-3">
+            <div class="dgf-row-actions justify-end">
+              <button type="button" class="btn-primary btn-xs dgf-save-row" data-idx="${idx}">Lưu</button>
+              <button type="button" class="btn-secondary btn-xs dgf-cancel-row" data-idx="${idx}">Hủy</button>
+              <button type="button" class="btn-secondary btn-xs dgf-reset" data-dep="${dep}">Mặc định</button>
+            </div>
+          </td>
+        </tr>`;
+    }
+
+    const badge = isCustom
+      ? '<span class="dgf-badge dgf-badge-custom">Đã chỉnh</span>'
+      : '<span class="dgf-badge dgf-badge-default">Mặc định</span>';
+
+    return `
+      <tr data-idx="${idx}">
+        <td class="py-2.5 px-3 font-mono font-semibold text-slate-800">${_fmtVnd(dep)}</td>
+        <td class="py-2.5 px-3 text-slate-600">${lotCount} lô</td>
+        <td class="py-2.5 px-3">
+          <span class="dgf-fee-display">${_fmtVnd(fee)}</span>${badge}
+        </td>
+        <td class="py-2.5 px-3 text-xs text-slate-500">${def != null ? _fmtVnd(def) : "—"}</td>
+        <td class="py-2.5 px-3 text-center">
+          <button type="button" class="dgf-edit-btn pj-edit-btn" data-idx="${idx}" title="Sửa phí hồ sơ">
+            <i class="ri-pencil-line"></i>
+          </button>
+        </td>
+      </tr>`;
+  }
+
   function renderDepositGroupFees(rows) {
     _dgfRows = rows || [];
     const tbody = document.getElementById("dgf-tbody");
     const st = document.getElementById("dgf-status");
     if (!tbody) return;
     if (!_dgfRows.length) {
-      tbody.innerHTML = '<tr><td colspan="6" class="py-4 px-3 text-slate-400 text-center">Chưa có lô / nhóm cọc</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="py-4 px-3 text-slate-400 text-center">Chưa có lô / nhóm cọc</td></tr>';
       if (st) st.textContent = "Chưa có dữ liệu.";
       return;
     }
-    tbody.innerHTML = _dgfRows.map((r, idx) => {
-      const dep = r.deposit_amount_vnd || r.deposit_vnd;
-      const lotRange = (r.first_lot_code && r.last_lot_code && r.first_lot_code !== r.last_lot_code)
-        ? `${r.first_lot_code} → ${r.last_lot_code}`
-        : (r.first_lot_code || "—");
-      const custom = r.is_custom_fee ? '<span class="text-teal-700 font-medium">Đã sửa</span>' : '<span class="text-slate-400">Mặc định</span>';
-      const def = r.default_fee_vnd != null ? _fmtVnd(r.default_fee_vnd) : "—";
-      return `
-        <tr data-idx="${idx}">
-          <td class="py-2 px-3 font-mono">${_fmtVnd(dep)}</td>
-          <td class="py-2 px-3">${r.lot_count ?? 0}</td>
-          <td class="py-2 px-3 text-xs text-slate-600">${lotRange}</td>
-          <td class="py-2 px-3">
-            <input type="text" class="input text-sm w-32 dgf-fee" data-dep="${dep}"
-              value="${_fmtVnd(r.dossier_fee_vnd)}" />
-          </td>
-          <td class="py-2 px-3 text-xs">${def}</td>
-          <td class="py-2 px-3">
-            <button type="button" class="text-xs text-indigo-600 hover:underline dgf-reset" data-dep="${dep}">Mặc định</button>
-          </td>
-        </tr>`;
-    }).join("");
-    if (st) st.textContent = `${_dgfRows.length} nhóm cọc`;
+    tbody.innerHTML = _dgfRows.map((r, idx) => renderDgfRow(r, idx)).join("");
+    if (st) st.textContent = `${_dgfRows.length} nhóm cọc · bấm Sửa để chỉnh phí từng dòng`;
+
+    if (_dgfEditingIdx !== null) {
+      const inp = tbody.querySelector(".dgf-fee-input");
+      if (inp) {
+        setTimeout(() => { try { inp.focus(); inp.select(); } catch (e) {} }, 0);
+      }
+    }
+  }
+
+  function enterDgfEdit(idx) {
+    if (idx < 0 || idx >= _dgfRows.length) return;
+    _dgfEditingIdx = idx;
+    renderDepositGroupFees(_dgfRows);
+  }
+
+  function cancelDgfEdit() {
+    _dgfEditingIdx = null;
+    renderDepositGroupFees(_dgfRows);
+  }
+
+  async function saveDgfRow(idx) {
+    const tbody = document.getElementById("dgf-tbody");
+    const row = tbody ? tbody.querySelector(`tr[data-idx="${idx}"]`) : null;
+    const inp = row ? row.querySelector(".dgf-fee-input") : null;
+    const r = _dgfRows[idx];
+    if (!inp || !r) return;
+
+    const dep = _dgfDep(r);
+    const fee = _parseVnd(inp.value);
+    const st = document.getElementById("dgf-status");
+    if (st) st.textContent = "Đang lưu…";
+
+    const resp = await fetch(`/projects/api/${DGF_PROJECT_ID}/deposit-group-fees`, {
+      method: "PUT",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: [{ deposit_vnd: dep, dossier_fee_vnd: fee }] }),
+    });
+    const d = await resp.json();
+    if (!resp.ok || !d.ok) {
+      const msg = d.detail || d.error || "Lưu thất bại.";
+      if (st) st.textContent = msg;
+      alert(msg);
+      return;
+    }
+    _dgfEditingIdx = null;
+    renderDepositGroupFees(d.items || []);
+    if (st) st.textContent = "Đã lưu phí hồ sơ.";
   }
 
   async function loadDepositGroupFees() {
     const st = document.getElementById("dgf-status");
     if (st) st.textContent = "Đang tải…";
+    _dgfEditingIdx = null;
     const r = await fetch(`/projects/api/${DGF_PROJECT_ID}/deposit-group-fees`, { credentials: "same-origin" });
     const d = await r.json();
     if (!r.ok || !d.ok) {
@@ -2241,34 +2669,10 @@
     renderDepositGroupFees(d.items || []);
   }
 
-  async function saveDepositGroupFees() {
-    const items = [];
-    document.querySelectorAll(".dgf-fee").forEach((inp) => {
-      const dep = Number(inp.getAttribute("data-dep"));
-      const fee = _parseVnd(inp.value);
-      if (dep > 0) items.push({ deposit_vnd: dep, dossier_fee_vnd: fee });
-    });
-    const st = document.getElementById("dgf-status");
-    if (st) st.textContent = "Đang lưu…";
-    const r = await fetch(`/projects/api/${DGF_PROJECT_ID}/deposit-group-fees`, {
-      method: "PUT",
-      credentials: "same-origin",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items }),
-    });
-    const d = await r.json();
-    if (!r.ok || !d.ok) {
-      if (st) st.textContent = d.detail || d.error || "Lưu thất bại.";
-      alert(st.textContent);
-      return;
-    }
-    renderDepositGroupFees(d.items || []);
-    if (st) st.textContent = "Đã lưu phí hồ sơ.";
-  }
-
   async function syncDepositGroupFees() {
     const st = document.getElementById("dgf-status");
     if (st) st.textContent = "Đang đồng bộ…";
+    _dgfEditingIdx = null;
     const r = await fetch(`/projects/api/${DGF_PROJECT_ID}/deposit-group-fees/sync`, {
       method: "POST",
       credentials: "same-origin",
@@ -2282,27 +2686,50 @@
     if (st) st.textContent = "Đã đồng bộ từ lô.";
   }
 
+  async function resetDgfFee(dep) {
+    const st = document.getElementById("dgf-status");
+    if (st) st.textContent = "Đang khôi phục mặc định…";
+    const r = await fetch(`/projects/api/${DGF_PROJECT_ID}/deposit-group-fees`, {
+      method: "PUT",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: [{ deposit_vnd: dep, reset_to_default: true }] }),
+    });
+    const d = await r.json();
+    if (!d.ok) {
+      if (st) st.textContent = d.detail || d.error || "Khôi phục thất bại.";
+      return;
+    }
+    _dgfEditingIdx = null;
+    renderDepositGroupFees(d.items || []);
+    if (st) st.textContent = "Đã về phí mặc định.";
+  }
+
   document.addEventListener("click", (ev) => {
-    const btn = ev.target.closest(".dgf-reset");
-    if (!btn) return;
-    const dep = Number(btn.getAttribute("data-dep"));
-    (async () => {
-      const r = await fetch(`/projects/api/${DGF_PROJECT_ID}/deposit-group-fees`, {
-        method: "PUT",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: [{ deposit_vnd: dep, reset_to_default: true }] }),
-      });
-      const d = await r.json();
-      if (d.ok) renderDepositGroupFees(d.items || []);
-    })();
+    const editBtn = ev.target.closest(".dgf-edit-btn");
+    if (editBtn) {
+      enterDgfEdit(Number(editBtn.getAttribute("data-idx")));
+      return;
+    }
+    const cancelBtn = ev.target.closest(".dgf-cancel-row");
+    if (cancelBtn) {
+      cancelDgfEdit();
+      return;
+    }
+    const saveBtn = ev.target.closest(".dgf-save-row");
+    if (saveBtn) {
+      saveDgfRow(Number(saveBtn.getAttribute("data-idx")));
+      return;
+    }
+    const resetBtn = ev.target.closest(".dgf-reset");
+    if (resetBtn) {
+      resetDgfFee(Number(resetBtn.getAttribute("data-dep")));
+    }
   });
 
   document.addEventListener("DOMContentLoaded", () => {
     loadDepositGroupFees();
-    const saveBtn = document.getElementById("dgf-save-btn");
     const syncBtn = document.getElementById("dgf-sync-btn");
-    if (saveBtn) saveBtn.addEventListener("click", saveDepositGroupFees);
     if (syncBtn) syncBtn.addEventListener("click", syncDepositGroupFees);
   });
   {% endif %}

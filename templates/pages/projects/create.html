@@ -26,9 +26,11 @@
           {% endfor %}
         </select>
         <p class="text-xs text-slate-500 mt-1">
-          Mặc định theo cấu hình super admin cho công ty (hiện tại:
-          <span class="font-semibold">{{ registration_mode_labels.get(default_registration_mode, default_registration_mode) }}</span>).
-          Có thể đổi sau khi tạo dự án.
+          Mặc định công ty:
+          <span class="font-semibold">{{ registration_mode_labels.get(default_registration_mode, default_registration_mode) }}</span>
+          · Cách tính giá:
+          <span class="font-semibold">{{ auction_mode_labels.get(default_auction_mode, default_auction_mode) }}</span>
+          (cấu hình bởi super admin). Có thể đổi sau khi tạo dự án.
         </p>
       </div>
 

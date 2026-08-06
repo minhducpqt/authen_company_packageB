@@ -477,6 +477,7 @@ async def create_form(request: Request):
         return RedirectResponse(url="/login?next=/projects/create", status_code=303)
 
     default_reg_mode = "NORMAL"
+    default_auction_mode = "PER_LOT"
     try:
         async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=10.0) as client:
             r = await client.get(
@@ -486,6 +487,7 @@ async def create_form(request: Request):
             if r.status_code == 200:
                 js = r.json() or {}
                 default_reg_mode = js.get("registration_mode") or "NORMAL"
+                default_auction_mode = js.get("auction_mode") or "PER_LOT"
     except Exception:
         pass
 
@@ -496,7 +498,12 @@ async def create_form(request: Request):
             "title": "Thêm dự án",
             "me": me,
             "default_registration_mode": default_reg_mode,
+            "default_auction_mode": default_auction_mode,
             "registration_mode_labels": REGISTRATION_MODE_LABELS,
+            "auction_mode_labels": {
+                "PER_LOT": "Theo cả lô",
+                "PER_SQM": "Theo m²",
+            },
         },
     )
 
@@ -837,6 +844,7 @@ async def update_project_deadlines(
 async def update_project_auction_mode(
     request: Request,
     project_id: int = Path(...),
+    auction_mode: str = Form(""),
     auction_mode_per_sqm: bool = Form(False),
 ):
     """
@@ -852,7 +860,11 @@ async def update_project_auction_mode(
             status_code=303,
         )
 
-    mode = "PER_SQM" if auction_mode_per_sqm else "PER_LOT"
+    raw = (auction_mode or "").strip().upper()
+    if raw in ("PER_LOT", "PER_SQM"):
+        mode = raw
+    else:
+        mode = "PER_SQM" if auction_mode_per_sqm else "PER_LOT"
     payload = {"auction_mode": mode}
 
     print("====== [DEBUG] SERVICE B → A AUCTION MODE PAYLOAD ======")

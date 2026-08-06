@@ -5,9 +5,9 @@
 <a href="/account/company/{{ company_code }}" class="text-sm text-indigo-600 hover:text-indigo-700">&larr; Quay lại công ty {{ company_code }}</a>
 
 <div class="mt-4 mb-6">
-  <h2 class="text-xl font-semibold text-slate-800">Mặc định hình thức đấu — {{ company_code|upper }}</h2>
+  <h2 class="text-xl font-semibold text-slate-800">Mặc định cấu hình đấu giá — {{ company_code|upper }}</h2>
   <p class="text-slate-500 text-sm mt-1">
-    Cấu hình hình thức đấu mặc định khi tạo dự án mới cho công ty này.
+    Áp dụng khi <b>tạo mới</b> hoặc <b>import</b> dự án nếu file không chỉ định.
     Admin công ty vẫn có thể đổi trên từng dự án.
   </p>
 </div>
@@ -22,31 +22,49 @@
   <div class="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">{{ load_err }}</div>
 {% endif %}
 
-<div class="max-w-xl card">
-  <form method="post" action="/account/company/{{ company_code }}/auction-defaults" class="space-y-4">
-    <div>
-      <label class="label">Hình thức đấu mặc định</label>
-      <select name="registration_mode" class="input" required>
+<div class="max-w-2xl card">
+  <form method="post" action="/account/company/{{ company_code }}/auction-defaults" class="space-y-5">
+    <div class="p-4 rounded-xl border border-indigo-100 bg-indigo-50/40">
+      <label class="label text-indigo-900">Hình thức đấu mặc định</label>
+      <select name="registration_mode" class="input mt-1" required>
         {% for code, label in registration_mode_labels.items() %}
         <option value="{{ code }}" {% if (cfg.registration_mode or 'NORMAL') == code %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
       </select>
-      <p class="text-xs text-slate-500 mt-2">
-        Hiện tại:
-        <span class="font-semibold text-slate-700">{{ cfg.registration_mode_label or cfg.registration_mode }}</span>
+      <p class="text-xs text-slate-600 mt-2">
         {% if cfg.is_configured %}
-          <span class="text-emerald-700">(đã cấu hình riêng)</span>
+          <span class="text-emerald-700 font-medium">Đã cấu hình:</span>
         {% else %}
-          <span class="text-slate-400">(chưa cấu hình — dùng mặc định hệ thống: Đấu lô)</span>
+          <span class="text-slate-500">Chưa cấu hình — mặc định hệ thống:</span>
         {% endif %}
+        <span class="font-semibold">{{ cfg.registration_mode_label or cfg.registration_mode }}</span>
       </p>
     </div>
 
-    <div class="text-xs text-slate-500 border border-slate-200 rounded-lg p-3 bg-slate-50">
+    <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/80">
+      <label class="label">Cách tính giá đấu mặc định</label>
+      <select name="auction_mode" class="input mt-1" required>
+        {% for code, label in auction_mode_labels.items() %}
+        <option value="{{ code }}" {% if (cfg.auction_mode or 'PER_LOT') == code %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <p class="text-xs text-slate-600 mt-2">
+        {% if cfg.is_auction_mode_configured %}
+          <span class="text-emerald-700 font-medium">Đã cấu hình:</span>
+        {% else %}
+          <span class="text-slate-500">Chưa cấu hình — mặc định hệ thống:</span>
+        {% endif %}
+        <span class="font-semibold">{{ cfg.auction_mode_label or cfg.auction_mode or 'Theo cả lô' }}</span>
+      </p>
+    </div>
+
+    <div class="text-xs text-slate-500 border border-slate-200 rounded-lg p-3 bg-white">
       <div class="font-semibold text-slate-700 mb-1">Ghi chú</div>
       <ul class="list-disc pl-4 space-y-1">
-        <li><b>Đấu lô</b> — khách chọn lô cụ thể khi đặt cọc (luồng hiện tại).</li>
-        <li><b>Đấu nhóm</b> — khách mua hồ sơ / cọc theo nhóm mức cọc (luồng đấu nhóm).</li>
+        <li><b>Đấu lô</b> — khách chọn lô cụ thể khi đặt cọc.</li>
+        <li><b>Đấu nhóm</b> — khách mua hồ sơ / cọc theo nhóm mức cọc.</li>
+        <li><b>Theo cả lô</b> — giá khởi điểm và trả giá theo từng lô.</li>
+        <li><b>Theo m²</b> — giá tính theo diện tích (m²).</li>
       </ul>
     </div>
 

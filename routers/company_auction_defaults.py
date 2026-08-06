@@ -20,6 +20,11 @@ REGISTRATION_MODE_LABELS = {
     "GROUP_AUCTION": "Đấu nhóm",
 }
 
+AUCTION_MODE_LABELS = {
+    "PER_LOT": "Theo cả lô",
+    "PER_SQM": "Theo m²",
+}
+
 
 async def _me(request: Request) -> dict | None:
     acc = request.cookies.get(ACCESS_COOKIE) or request.cookies.get(ACCESS_COOKIE_NAME)
@@ -54,13 +59,16 @@ async def company_auction_defaults_page(request: Request, company_code: str):
         "registration_mode": "NORMAL",
         "registration_mode_label": REGISTRATION_MODE_LABELS["NORMAL"],
         "is_configured": False,
+        "auction_mode": "PER_LOT",
+        "auction_mode_label": AUCTION_MODE_LABELS["PER_LOT"],
+        "is_auction_mode_configured": False,
     }
     load_err = None
 
     try:
         async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
             r = await client.get(
-                f"/api/v1/admin/companies/{company_code}/project-defaults/registration-mode",
+                f"/api/v1/admin/companies/{company_code}/project-defaults",
                 headers=_headers(request),
             )
             if r.status_code == 200:
@@ -79,6 +87,7 @@ async def company_auction_defaults_page(request: Request, company_code: str):
             "company_code": company_code,
             "cfg": cfg,
             "registration_mode_labels": REGISTRATION_MODE_LABELS,
+            "auction_mode_labels": AUCTION_MODE_LABELS,
             "load_err": load_err,
             "msg": request.query_params.get("msg"),
             "err": request.query_params.get("err"),
@@ -91,6 +100,7 @@ async def company_auction_defaults_save(
     request: Request,
     company_code: str,
     registration_mode: str = Form(...),
+    auction_mode: str = Form(...),
 ):
     me = await _me(request)
     if not me:
@@ -102,7 +112,8 @@ async def company_auction_defaults_save(
         return RedirectResponse(url="/account?err=forbidden", status_code=303)
 
     mode = (registration_mode or "").strip().upper()
-    if mode not in REGISTRATION_MODE_LABELS:
+    auc = (auction_mode or "").strip().upper()
+    if mode not in REGISTRATION_MODE_LABELS or auc not in AUCTION_MODE_LABELS:
         return RedirectResponse(
             url=f"/account/company/{quote(company_code)}/auction-defaults?err=save_failed",
             status_code=303,
@@ -111,8 +122,8 @@ async def company_auction_defaults_save(
     try:
         async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
             r = await client.put(
-                f"/api/v1/admin/companies/{company_code}/project-defaults/registration-mode",
-                json={"registration_mode": mode},
+                f"/api/v1/admin/companies/{company_code}/project-defaults",
+                json={"registration_mode": mode, "auction_mode": auc},
                 headers=_headers(request),
             )
         if r.status_code != 200:
