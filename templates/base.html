@@ -539,18 +539,12 @@
            ========================================================= #}
         {% elif is_admin %}
 
-          {# ✅ Dashboard/Tổng quan: CHỈ ADMIN #}
+          {# ✅ Báo cáo dự án (hub NORMAL + GROUP): CHỈ ADMIN #}
           <li class="side-title mt-0">Dashboard</li>
           <li>
-            <a class="side-link {% if request.url.path in ['/', '/reports'] %}active{% endif %}"
+            <a class="side-link {% if request.url.path in ['/', '/reports'] or request.url.path.startswith('/reports/group-auction') or ('/groups/' in request.url.path and request.url.path.startswith('/reports/')) %}active{% endif %}"
                href="/reports">
-              <i class="ri-pie-chart-2-fill"></i> Tổng quan
-            </a>
-          </li>
-          <li>
-            <a class="side-link {% if request.url.path.startswith('/reports/group-auction') or ('/groups/' in request.url.path) %}active{% endif %}"
-               href="/reports/group-auction">
-              <i class="ri-group-line"></i> Báo cáo đấu nhóm
+              <i class="ri-pie-chart-2-fill"></i> Báo cáo dự án
             </a>
           </li>
 

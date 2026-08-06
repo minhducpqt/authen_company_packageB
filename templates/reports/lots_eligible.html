@@ -2,121 +2,9 @@
 {% block title %}Lô đủ điều kiện{% endblock %}
 
 {% block content %}
+{% include "reports/_detail_styles.html" %}
 <style>
-  :root{
-    --bd: rgba(15,23,42,.10);
-    --bd2: rgba(15,23,42,.07);
-    --card: #fff;
-    --muted: rgba(71,85,105,.88);
-    --txt: #0f172a;
-
-    --ok: #16a34a;
-    --ok2:#22c55e;
-    --warn:#f59e0b;
-    --bad:#ef4444;
-    --pri:#4f46e5;
-
-    --r: 16px;
-    --shadow: 0 14px 36px rgba(2,6,23,.10);
-  }
-
-  .rp-wrap{max-width:1280px;margin:0 auto}
-  .rp-head{
-    background: linear-gradient(135deg, rgba(79,70,229,.10), rgba(34,197,94,.08));
-    border:1px solid var(--bd);
-    border-radius: 22px;
-    padding: 16px 16px 14px;
-    box-shadow: 0 10px 28px rgba(2,6,23,.06);
-  }
-  .rp-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-  .rp-title h1{font-size:20px;font-weight:800;color:var(--txt);display:flex;align-items:center;gap:10px;margin:0}
-  .rp-title p{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.35}
-  .pill{
-    display:inline-flex;align-items:center;gap:8px;
-    padding:8px 10px;border-radius:999px;
-    background: rgba(255,255,255,.72);
-    border:1px solid var(--bd2);
-    color: rgba(15,23,42,.70);
-    font-size:12px;font-weight:800;
-    backdrop-filter: blur(8px);
-    white-space:nowrap;
-  }
-  .dot{width:8px;height:8px;border-radius:999px;background: var(--ok2);box-shadow:0 0 0 3px rgba(34,197,94,.14)}
-  .rp-controls{
-    margin-top: 12px;
-    display:flex;flex-wrap:wrap;align-items:center;gap:10px;
-  }
-  .sel{
-    display:flex;align-items:center;gap:10px;
-    padding:10px 12px;border-radius: 14px;
-    border:1px solid var(--bd);
-    background: rgba(255,255,255,.80);
-    min-width: 280px;
-  }
-  .sel label{font-size:12px;color:rgba(15,23,42,.65);font-weight:800}
-  .sel select{
-    border:0;outline:0;background:transparent;
-    font-weight:900;color:var(--txt);
-    width:100%;
-  }
-
-  .btn{
-    display:inline-flex;align-items:center;gap:8px;
-    padding:10px 12px;border-radius: 14px;
-    border:1px solid var(--bd);
-    background: rgba(255,255,255,.85);
-    font-size:12px;font-weight:900;color: rgba(15,23,42,.75);
-    transition: .15s ease;
-    text-decoration:none;
-  }
-  .btn:hover{transform: translateY(-1px); box-shadow: 0 10px 20px rgba(2,6,23,.10)}
-  .btn.primary{
-    border-color: rgba(34,197,94,.35);
-    background: linear-gradient(180deg, rgba(34,197,94,.18), rgba(34,197,94,.10));
-    color: rgba(20,83,45,.95);
-  }
-
-  .kpis{
-    margin-top: 14px;
-    display:grid;
-    grid-template-columns: repeat(12, 1fr);
-    gap:10px;
-  }
-  .kpi{
-    grid-column: span 3;
-    background: rgba(255,255,255,.88);
-    border:1px solid var(--bd);
-    border-radius: 18px;
-    padding: 12px 12px 10px;
-    box-shadow: 0 10px 22px rgba(2,6,23,.06);
-  }
-  @media (max-width: 1024px){ .kpi{grid-column: span 6} }
-  @media (max-width: 640px){
-    .sel{min-width: 100%}
-    .kpi{grid-column: span 12}
-  }
-  .kpi .t{font-size:12px;color:rgba(15,23,42,.62);font-weight:900}
-  .kpi .v{margin-top:6px;font-size:18px;font-weight:950;color:var(--txt);letter-spacing:.2px}
-  .kpi .s{margin-top:6px;font-size:11px;color:rgba(71,85,105,.90)}
-  .kpi.ok .v{color: rgba(20,83,45,.98)}
-  .kpi.money .v{color: rgba(30,64,175,.95)}
-  .kpi.deadline .v{color: rgba(124,45,18,.95)}
-
-  .rp-card{
-    margin-top: 14px;
-    background: var(--card);
-    border:1px solid var(--bd);
-    border-radius: 22px;
-    box-shadow: var(--shadow);
-    overflow:hidden;
-  }
-  .rp-card .hd{
-    padding: 12px 14px;
-    border-bottom:1px solid var(--bd2);
-    background: linear-gradient(90deg, rgba(15,23,42,.03), rgba(15,23,42,.00));
-    display:flex;align-items:center;justify-content:space-between;gap:12px;
-  }
-  .rp-card .hd .left{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  /* page-specific: lots eligible */
   .badge{
     display:inline-flex;align-items:center;gap:7px;
     padding:6px 10px;border-radius:999px;
@@ -525,11 +413,11 @@
 {% endfor %}
 
 <div class="rp-wrap">
-  <div class="rp-head">
+  <div class="rp-head rd-theme-indigo">
     <div class="rp-title">
       <div>
         <h1>
-          <i class="ri-checkbox-circle-line" style="color: var(--pri);font-size:24px"></i>
+          <span class="rd-h1-icon rd-icon-indigo"><i class="ri-checkbox-circle-fill"></i></span>
           Lô đủ điều kiện
         </h1>
         <p>
@@ -585,7 +473,7 @@
       {% endif %}
 
       <a class="btn" href="/reports">
-        <i class="ri-arrow-left-line"></i> Tổng quan
+        <i class="ri-arrow-left-line"></i> Báo cáo dự án
       </a>
     </div>
 

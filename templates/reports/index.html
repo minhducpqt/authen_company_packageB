@@ -1,303 +1,356 @@
 {% extends "base.html" %}
-{% block title %}Báo cáo thống kê{% endblock %}
+{% block title %}Báo cáo dự án{% endblock %}
 
 {% block content %}
-{# ===== chuẩn hoá list projects + default project id ===== #}
 {% set projects_list = projects or [] %}
-{% set default_pid = (projects_list[0].id or projects_list[0].project_id) if projects_list|length >= 1 else None %}
 
-<div class="mb-6">
-  <div class="flex items-start justify-between gap-4">
-    <div>
-      <h1 class="text-2xl font-semibold text-slate-900 flex items-center gap-2">
-        <i class="ri-bar-chart-2-line text-indigo-600 text-3xl"></i>
-        Bảng điều khiển báo cáo
-      </h1>
-      <p class="text-slate-500 text-sm mt-1">
-        Tổng hợp nhanh các báo cáo về lô, khách hàng và mua hồ sơ trong từng dự án.
-      </p>
+<style>
+  .rph-root { max-width: 72rem; margin: 0 auto; }
+  .rph-head { margin-bottom: 0.75rem; }
+  .rph-select-bar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem;
+    padding: 0.75rem 1rem; background: #fff;
+    border: 1px solid #e2e8f0; border-radius: 0.75rem;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+  }
+  .rph-select-inner {
+    flex: 1; min-width: 14rem; max-width: 28rem;
+    display: flex; align-items: center; gap: 0.5rem;
+    border: 1px solid #e2e8f0; border-radius: 0.625rem;
+    padding: 0 0.625rem; height: 2.5rem; background: #f8fafc;
+  }
+  .rph-select-inner:focus-within { border-color: #818cf8; background: #fff; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+  .rph-select {
+    flex: 1; min-width: 0; border: 0; background: transparent;
+    font-size: 0.875rem; font-weight: 500; color: #1e293b;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 0 center;
+    padding-right: 1.5rem;
+  }
+  .rph-select:focus { outline: none; }
+  .rph-badge { font-size: 0.6875rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 9999px; }
+  .rph-badge-normal { background: #eef2ff; color: #4338ca; }
+  .rph-badge-group { background: #f0fdfa; color: #0f766e; }
+  .rph-panel-box {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 0.75rem;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.04); overflow: hidden; margin-bottom: 1rem;
+  }
+  .rph-panel-head {
+    padding: 0.625rem 1rem; border-bottom: 1px solid #f1f5f9;
+    background: linear-gradient(90deg, #f8fafc, #fff);
+    display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+  }
+  .rph-cards { padding: 0.75rem; display: grid; gap: 0.625rem; grid-template-columns: repeat(2, 1fr); }
+  @media (min-width: 768px) { .rph-cards { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 1024px) { .rph-cards { grid-template-columns: repeat(4, 1fr); } }
+  .rph-card {
+    position: relative; display: block; padding: 0.875rem 0.875rem 0.75rem;
+    border: 1px solid #e8edf3; border-radius: 0.875rem; background: #fff;
+    text-decoration: none; color: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+    overflow: hidden;
+  }
+  .rph-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 8px 24px -12px rgba(15,23,42,0.18);
+    transform: translateY(-1px);
+  }
+  .rph-card.is-disabled { opacity: 0.35; pointer-events: none; transform: none !important; }
+  .rph-card-bar { position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .rph-card-top {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 0.625rem;
+    margin-bottom: 0.375rem;
+  }
+  .rph-card-ico {
+    width: 2.625rem; height: 2.625rem; border-radius: 0.75rem; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.375rem;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.65), 0 1px 2px rgba(15,23,42,0.06);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .rph-card:hover .rph-card-ico { transform: scale(1.05); box-shadow: inset 0 1px 0 rgba(255,255,255,0.75), 0 4px 10px -4px rgba(15,23,42,0.15); }
+  .rph-card-ico-sky { background: linear-gradient(135deg, #e0f2fe, #bae6fd); color: #0284c7; }
+  .rph-card-ico-violet { background: linear-gradient(135deg, #ede9fe, #ddd6fe); color: #7c3aed; }
+  .rph-card-ico-amber { background: linear-gradient(135deg, #fef3c7, #fde68a); color: #d97706; }
+  .rph-card-ico-indigo { background: linear-gradient(135deg, #e0e7ff, #c7d2fe); color: #4f46e5; }
+  .rph-card-ico-rose { background: linear-gradient(135deg, #ffe4e6, #fecdd3); color: #e11d48; }
+  .rph-card-ico-emerald { background: linear-gradient(135deg, #d1fae5, #a7f3d0); color: #059669; }
+  .rph-card-ico-orange { background: linear-gradient(135deg, #ffedd5, #fed7aa); color: #ea580c; }
+  .rph-card-ico-teal { background: linear-gradient(135deg, #ccfbf1, #99f6e4); color: #0d9488; }
+  .rph-card-title { font-size: 0.8125rem; font-weight: 650; color: #0f172a; line-height: 1.3; }
+  .rph-card-desc { font-size: 0.6875rem; color: #64748b; margin-top: 0.125rem; line-height: 1.35; }
+  .rph-head-ico {
+    width: 2.25rem; height: 2.25rem; border-radius: 0.75rem;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #eef2ff, #e0e7ff); color: #4f46e5;
+    font-size: 1.25rem; box-shadow: 0 1px 2px rgba(79,70,229,0.12);
+  }
+  .rph-section-ico {
+    width: 1.625rem; height: 1.625rem; border-radius: 0.5rem;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.9375rem;
+  }
+  .rph-empty { padding: 2rem 1rem; text-align: center; color: #94a3b8; font-size: 0.875rem; }
+  .rph-proj-row.is-selected { border-color: #a5b4fc !important; background: #fafaff !important; box-shadow: 0 0 0 1px #c7d2fe; }
+  .rph-proj-row.is-selected.is-group-type { border-color: #5eead4 !important; background: #f0fdfa !important; box-shadow: 0 0 0 1px #99f6e4; }
+</style>
+
+<div
+  id="reportsProjectHub"
+  class="rph-root"
+  data-projects='{{ projects_list | tojson }}'
+  data-url-project="{{ selected_project or '' }}"
+  data-init-project="{{ selected_project or '' }}"
+>
+  {# ── 1. Trên cùng: chọn dự án ── #}
+  <div class="rph-head">
+    <div class="flex flex-wrap items-end justify-between gap-3 mb-3">
+      <div>
+        <h1 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+          <span class="rph-head-ico"><i class="ri-presentation-fill"></i></span>
+          Báo cáo dự án
+        </h1>
+        <p class="text-slate-500 text-sm mt-0.5">Chọn dự án — hiển thị báo cáo đấu lô hoặc đấu nhóm tương ứng.</p>
+      </div>
     </div>
 
-    <div class="hidden md:flex items-center gap-2">
-      <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-slate-200 text-slate-600 text-xs shadow-sm">
-        <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-        Báo cáo hệ thống
-      </span>
+    <div class="rph-select-bar">
+      <label class="text-xs font-semibold text-slate-500 shrink-0">Dự án</label>
+      <div class="rph-select-inner">
+        <i class="ri-building-2-fill text-indigo-500 text-lg"></i>
+        <select data-hub-project-select class="rph-select">
+          <option value="">— Chọn dự án —</option>
+          {% for p in projects_list %}
+            {% set code = p.project_code or p.code %}
+            {% set mode = (p.registration_mode or 'NORMAL')|upper %}
+            <option value="{{ code }}">
+              {{ code }} — {{ p.name or code }}{% if mode == 'GROUP_AUCTION' %} (đấu nhóm){% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div data-hub-meta class="hidden flex flex-wrap items-center gap-2 min-w-0">
+        <span data-hub-mode-badge class="rph-badge rph-badge-normal">Đấu lô</span>
+        <span data-hub-project-name class="text-sm font-semibold text-slate-800 truncate max-w-[16rem]"></span>
+      </div>
+      <span class="text-[11px] text-slate-400 shrink-0 hidden sm:inline"><i class="ri-bookmark-3-fill text-indigo-400"></i> Ghi nhớ lựa chọn</span>
     </div>
   </div>
 
-  {% if projects_list|length >= 2 %}
-  <div class="mt-3">
-    <div class="inline-flex items-center gap-2 text-xs text-slate-500">
-      <i class="ri-information-line"></i>
-      <span>
-        Các nút “Tổng quan” sẽ mở theo dự án mặc định:
-        <span class="font-semibold text-slate-700">
-          {{ (projects_list[0].project_code or projects_list[0].code) }}
-        </span>.
-        Muốn xem dự án khác, chọn ở “Dự án đang hoạt động” bên dưới.
-      </span>
-    </div>
-  </div>
-  {% endif %}
-</div>
-
-{# ===== TỔNG QUAN (ENTRY) ===== #}
-<div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mb-8">
-  <div class="px-4 py-3 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white">
-    <div class="flex items-center justify-between gap-3">
-      <div class="flex items-center gap-2">
-        <div class="h-9 w-9 rounded-xl bg-indigo-50 flex items-center justify-center">
-          <i class="ri-layout-grid-line text-indigo-600 text-lg"></i>
-        </div>
-        <div>
-          <div class="text-sm font-semibold text-slate-900">Tổng quan</div>
-          <div class="text-xs text-slate-500">Truy cập nhanh các báo cáo theo nhóm nghiệp vụ</div>
-        </div>
-      </div>
-
-      <div class="hidden md:flex items-center gap-2 text-xs text-slate-500">
-        <i class="ri-cursor-line"></i>
-        <span>Chọn mục để mở báo cáo</span>
-      </div>
-    </div>
+  {# ── 2. Giữa: báo cáo theo dự án đã chọn ── #}
+  <div data-hub-empty class="rph-panel-box rph-empty mb-4">
+    Chọn dự án ở trên để xem các báo cáo
   </div>
 
-  <div class="p-4">
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-      <!-- Lô đủ điều kiện (V2) -->
-      <a href="{% if default_pid %}/reports/v2/projects/{{ default_pid }}/lots/eligible{% else %}/reports{% endif %}"
-         class="group relative bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-indigo-200 transition overflow-hidden">
-        <div class="absolute inset-x-0 top-0 h-1 bg-indigo-500/80"></div>
-        <div class="flex items-start justify-between gap-3 mb-2">
-          <div class="min-w-0">
-            <div class="text-base font-semibold text-slate-900 mt-0.5">Lô đủ điều kiện</div>
+  <div data-hub-panel class="hidden">
+    <div class="rph-panel-box">
+      <div class="rph-panel-head">
+        <span class="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
+          <span class="rph-section-ico rph-card-ico-sky"><i class="ri-bank-card-fill"></i></span> Thu phí &amp; cọc
+        </span>
+        <span data-hub-project-code class="text-xs font-bold text-slate-400"></span>
+      </div>
+      <div class="rph-cards">
+        <a href="#" data-hub-href="/reports/lots/deposit-stats?project=__CODE__" data-hub-mode="both" class="rph-card">
+          <div class="rph-card-bar bg-sky-500"></div>
+          <div class="rph-card-top">
+            <div>
+              <div class="rph-card-title">Thống kê tiền đặt trước</div>
+              <div class="rph-card-desc">Cọc theo lô — số khách, tổng tiền</div>
+            </div>
+            <div class="rph-card-ico rph-card-ico-sky"><i class="ri-wallet-3-fill"></i></div>
           </div>
-          <div class="h-10 w-10 rounded-2xl bg-indigo-50 flex items-center justify-center group-hover:bg-indigo-100 transition">
-            <i class="ri-checkbox-circle-line text-indigo-600 text-xl"></i>
+        </a>
+        <a href="#" data-hub-href="/reports/dossiers/paid/summary?project=__CODE__" data-hub-mode="both" class="rph-card">
+          <div class="rph-card-bar bg-violet-500"></div>
+          <div class="rph-card-top">
+            <div>
+              <div class="rph-card-title">Hồ sơ — tổng hợp</div>
+              <div class="rph-card-desc">Theo khách và loại hồ sơ</div>
+            </div>
+            <div class="rph-card-ico rph-card-ico-violet"><i class="ri-donut-chart-fill"></i></div>
           </div>
-        </div>
-        <p class="text-xs text-slate-500 leading-relaxed">
-          Danh sách lô đủ điều kiện mở đấu giá (V2) theo dự án.
-        </p>
-        <div class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-indigo-700">
-          Mở báo cáo <i class="ri-arrow-right-line"></i>
-        </div>
-      </a>
+        </a>
+        <a href="#" data-hub-href="/reports/dossiers/paid/detail?project=__CODE__" data-hub-mode="both" class="rph-card">
+          <div class="rph-card-bar bg-amber-500"></div>
+          <div class="rph-card-top">
+            <div>
+              <div class="rph-card-title">Hồ sơ — chi tiết</div>
+              <div class="rph-card-desc">Đối soát từng đơn</div>
+            </div>
+            <div class="rph-card-ico rph-card-ico-amber"><i class="ri-file-text-fill"></i></div>
+          </div>
+        </a>
+      </div>
+    </div>
 
-      <!-- Lô không đủ điều kiện (V2) -->
-      <a href="{% if default_pid %}/reports/v2/projects/{{ default_pid }}/lots/ineligible{% else %}/reports{% endif %}"
-         class="group relative bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-rose-200 transition overflow-hidden">
-        <div class="absolute inset-x-0 top-0 h-1 bg-rose-500/80"></div>
-        <div class="flex items-start justify-between gap-3 mb-2">
-          <div class="min-w-0">
-            <div class="text-base font-semibold text-slate-900 mt-0.5">Lô không đủ điều kiện</div>
+    <div data-hub-section-normal class="rph-panel-box">
+      <div class="rph-panel-head">
+        <span class="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
+          <span class="rph-section-ico rph-card-ico-indigo"><i class="ri-grid-fill"></i></span> Đấu lô — lô &amp; khách
+        </span>
+      </div>
+      <div class="rph-cards">
+        <a href="#" data-hub-href="/reports/v2/projects/__PID__/lots/eligible" data-hub-mode="normal" class="rph-card">
+          <div class="rph-card-bar bg-indigo-500"></div>
+          <div class="rph-card-top">
+            <div class="rph-card-title">Lô đủ điều kiện</div>
+            <div class="rph-card-ico rph-card-ico-indigo"><i class="ri-checkbox-circle-fill"></i></div>
           </div>
-          <div class="h-10 w-10 rounded-2xl bg-rose-50 flex items-center justify-center group-hover:bg-rose-100 transition">
-            <i class="ri-alert-line text-rose-600 text-xl"></i>
+        </a>
+        <a href="#" data-hub-href="/reports/v2/projects/__PID__/lots/ineligible" data-hub-mode="normal" class="rph-card">
+          <div class="rph-card-bar bg-rose-500"></div>
+          <div class="rph-card-top">
+            <div class="rph-card-title">Lô không đủ ĐK</div>
+            <div class="rph-card-ico rph-card-ico-rose"><i class="ri-close-circle-fill"></i></div>
           </div>
-        </div>
-        <p class="text-xs text-slate-500 leading-relaxed">
-          Danh sách lô chưa đủ điều kiện (V2) theo dự án.
-        </p>
-        <div class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-rose-700">
-          Mở báo cáo <i class="ri-arrow-right-line"></i>
-        </div>
-      </a>
+        </a>
+        <a href="#" data-hub-href="/reports/v2/projects/__PID__/customers/eligible" data-hub-mode="normal" class="rph-card">
+          <div class="rph-card-bar bg-emerald-500"></div>
+          <div class="rph-card-top">
+            <div class="rph-card-title">KH đủ điều kiện</div>
+            <div class="rph-card-ico rph-card-ico-emerald"><i class="ri-user-star-fill"></i></div>
+          </div>
+        </a>
+        <a href="#" data-hub-href="/reports/v2/projects/__PID__/customers/ineligible" data-hub-mode="normal" class="rph-card">
+          <div class="rph-card-bar bg-orange-500"></div>
+          <div class="rph-card-top">
+            <div class="rph-card-title">KH không đủ ĐK</div>
+            <div class="rph-card-ico rph-card-ico-orange"><i class="ri-shield-cross-fill"></i></div>
+          </div>
+        </a>
+      </div>
+    </div>
 
-      <!-- Thống kê tiền đặt trước (GIỮ NGUYÊN CŨ) -->
-      <a href="/reports/lots/deposit-stats"
-         class="group relative bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-sky-200 transition overflow-hidden">
-        <div class="absolute inset-x-0 top-0 h-1 bg-sky-500/80"></div>
-        <div class="flex items-start justify-between gap-3 mb-2">
-          <div class="min-w-0">
-            <div class="text-base font-semibold text-slate-900 mt-0.5">Thống kê tiền đặt trước</div>
+    <div data-hub-section-group class="hidden rph-panel-box">
+      <div class="rph-panel-head">
+        <span class="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
+          <span class="rph-section-ico rph-card-ico-teal"><i class="ri-group-2-fill"></i></span> Đấu nhóm
+        </span>
+      </div>
+      <div class="rph-cards">
+        <a href="#" data-hub-href="/reports/v2/projects/__PID__/groups/eligible" data-hub-mode="group" class="rph-card">
+          <div class="rph-card-bar bg-teal-500"></div>
+          <div class="rph-card-top">
+            <div class="rph-card-title">Nhóm cọc đủ ĐK</div>
+            <div class="rph-card-ico rph-card-ico-teal"><i class="ri-team-fill"></i></div>
           </div>
-          <div class="h-10 w-10 rounded-2xl bg-sky-50 flex items-center justify-center group-hover:bg-sky-100 transition">
-            <i class="ri-funds-line text-sky-600 text-xl"></i>
+        </a>
+        <a href="#" data-hub-href="/reports/v2/projects/__PID__/groups/ineligible" data-hub-mode="group" class="rph-card">
+          <div class="rph-card-bar bg-rose-500"></div>
+          <div class="rph-card-top">
+            <div class="rph-card-title">Nhóm không đủ</div>
+            <div class="rph-card-ico rph-card-ico-rose"><i class="ri-error-warning-fill"></i></div>
           </div>
-        </div>
-        <p class="text-xs text-slate-500 leading-relaxed">
-          Tổng hợp theo lô: số khách, tổng tiền, thời điểm đặt đầu/cuối và trạng thái.
-        </p>
-        <div class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-sky-700">
-          Mở báo cáo <i class="ri-arrow-right-line"></i>
-        </div>
-      </a>
-
-      <!-- KH đủ điều kiện (V2) -->
-      <a href="{% if default_pid %}/reports/v2/projects/{{ default_pid }}/customers/eligible{% else %}/reports{% endif %}"
-         class="group relative bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-emerald-200 transition overflow-hidden">
-        <div class="absolute inset-x-0 top-0 h-1 bg-emerald-500/80"></div>
-        <div class="flex items-start justify-between gap-3 mb-2">
-          <div class="min-w-0">
-            <div class="text-base font-semibold text-slate-900 mt-0.5">KH đủ điều kiện</div>
+        </a>
+        <a href="#" data-hub-href="/reports/v2/projects/__PID__/groups/customers/eligible" data-hub-mode="group" class="rph-card">
+          <div class="rph-card-bar bg-emerald-500"></div>
+          <div class="rph-card-top">
+            <div class="rph-card-title">KH đủ ĐK</div>
+            <div class="rph-card-ico rph-card-ico-emerald"><i class="ri-user-follow-fill"></i></div>
           </div>
-          <div class="h-10 w-10 rounded-2xl bg-emerald-50 flex items-center justify-center group-hover:bg-emerald-100 transition">
-            <i class="ri-user-star-line text-emerald-600 text-xl"></i>
+        </a>
+        <a href="#" data-hub-href="/reports/v2/projects/__PID__/groups/customers/ineligible" data-hub-mode="group" class="rph-card">
+          <div class="rph-card-bar bg-orange-500"></div>
+          <div class="rph-card-top">
+            <div class="rph-card-title">KH không đủ</div>
+            <div class="rph-card-ico rph-card-ico-orange"><i class="ri-user-unfollow-fill"></i></div>
           </div>
-        </div>
-        <p class="text-xs text-slate-500 leading-relaxed">
-          Danh sách khách đủ điều kiện tham gia (V2) theo dự án.
-        </p>
-        <div class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
-          Mở báo cáo <i class="ri-arrow-right-line"></i>
-        </div>
-      </a>
+        </a>
+        <a href="#" data-hub-href="/bid-attendance?project_code=__CODE__" data-hub-mode="group" class="rph-card">
+          <div class="rph-card-bar bg-indigo-500"></div>
+          <div class="rph-card-top">
+            <div class="rph-card-title">STT trước phiên</div>
+            <div class="rph-card-ico rph-card-ico-indigo"><i class="ri-sort-number-asc"></i></div>
+          </div>
+        </a>
+        <a href="#" data-hub-href="/bid-tickets?project_code=__CODE__" data-hub-mode="group" class="rph-card">
+          <div class="rph-card-bar bg-violet-500"></div>
+          <div class="rph-card-top">
+            <div class="rph-card-title">Phiếu trả giá</div>
+            <div class="rph-card-ico rph-card-ico-violet"><i class="ri-coupon-3-fill"></i></div>
+          </div>
+        </a>
+      </div>
     </div>
   </div>
-</div>
 
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-  <!-- KH không đủ điều kiện (V2) -->
-  <a href="{% if default_pid %}/reports/v2/projects/{{ default_pid }}/customers/ineligible{% else %}/reports{% endif %}"
-     class="group relative bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-rose-200 transition overflow-hidden">
-    <div class="absolute inset-x-0 top-0 h-1 bg-rose-500/80"></div>
-    <div class="flex items-start justify-between gap-3 mb-2">
-      <div class="min-w-0">
-        <div class="text-base font-semibold text-slate-900 mt-0.5">KH không đủ điều kiện</div>
-      </div>
-      <div class="h-10 w-10 rounded-2xl bg-rose-50 flex items-center justify-center group-hover:bg-rose-100 transition">
-        <i class="ri-user-forbid-line text-rose-600 text-xl"></i>
-      </div>
-    </div>
-    <p class="text-xs text-slate-500 leading-relaxed">
-      Danh sách khách không đủ điều kiện tham gia (V2) theo dự án.
-    </p>
-    <div class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-rose-700">
-      Mở báo cáo <i class="ri-arrow-right-line"></i>
-    </div>
-  </a>
-
-  <!-- Mua hồ sơ — chi tiết (GIỮ NGUYÊN CŨ) -->
-  <a href="/reports/dossiers/paid/detail"
-     class="group relative bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-amber-200 transition overflow-hidden">
-    <div class="absolute inset-x-0 top-0 h-1 bg-amber-500/80"></div>
-    <div class="flex items-start justify-between gap-3 mb-2">
-      <div class="min-w-0">
-        <div class="text-base font-semibold text-slate-900 mt-0.5">Mua hồ sơ — chi tiết</div>
-      </div>
-      <div class="h-10 w-10 rounded-2xl bg-amber-50 flex items-center justify-center group-hover:bg-amber-100 transition">
-        <i class="ri-file-list-3-line text-amber-600 text-xl"></i>
-      </div>
-    </div>
-    <p class="text-xs text-slate-500 leading-relaxed">
-      Chi tiết mua hồ sơ theo khách, đơn và loại hồ sơ, phù hợp đối soát.
-    </p>
-    <div class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-amber-700">
-      Mở báo cáo <i class="ri-arrow-right-line"></i>
-    </div>
-  </a>
-
-  <!-- Mua hồ sơ — tổng hợp (GIỮ NGUYÊN CŨ) -->
-  <a href="/reports/dossiers/paid/summary"
-     class="group relative bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-violet-200 transition overflow-hidden">
-    <div class="absolute inset-x-0 top-0 h-1 bg-violet-500/80"></div>
-    <div class="flex items-start justify-between gap-3 mb-2">
-      <div class="min-w-0">
-        <div class="text-base font-semibold text-slate-900 mt-0.5">Mua hồ sơ — tổng hợp</div>
-      </div>
-      <div class="h-10 w-10 rounded-2xl bg-violet-50 flex items-center justify-center group-hover:bg-violet-100 transition">
-        <i class="ri-pie-chart-2-line text-violet-600 text-xl"></i>
-      </div>
-    </div>
-    <p class="text-xs text-slate-500 leading-relaxed">
-      Tổng hợp theo khách và theo loại hồ sơ, phục vụ chốt số liệu nhanh.
-    </p>
-    <div class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-violet-700">
-      Mở báo cáo <i class="ri-arrow-right-line"></i>
-    </div>
-  </a>
-</div>
-
-{# ===== DỰ ÁN ĐANG HOẠT ĐỘNG (CARD VIEW) ===== #}
-<div id="projects-active" class="bg-white border rounded-2xl shadow-sm p-4 scroll-mt-24">
-  <div class="flex items-center justify-between mb-4">
-    <div>
+  {# ── 3. Dưới cùng: danh sách dự án + link nhanh (như cũ) ── #}
+  <div id="projects-active" class="bg-white border rounded-xl shadow-sm p-4 scroll-mt-20">
+    <div class="mb-3">
       <div class="text-sm font-semibold text-slate-900 flex items-center gap-2">
-        <i class="ri-community-line text-sky-500"></i>
+        <i class="ri-building-4-fill text-sky-500"></i>
         Dự án đang hoạt động
       </div>
-      <p class="text-xs text-slate-500 mt-1">
-        Danh sách dự án ACTIVE. Chọn nhanh để mở các báo cáo theo dự án.
-      </p>
+      <p class="text-xs text-slate-500 mt-0.5">Link nhanh theo từng dự án — bấm mã dự án để chọn làm mặc định.</p>
     </div>
-  </div>
 
-  {% if projects_list|length == 0 %}
-    <div class="py-6 text-center text-slate-400 text-sm">
-      Chưa có dự án ACTIVE nào hoặc không tải được danh sách dự án.
-    </div>
-  {% else %}
-    <div class="space-y-3">
-      {% for p in projects_list %}
-        {% set code = p.project_code or p.code %}
-        {% set pid = p.id or p.project_id %}
-        <div class="border border-slate-100 rounded-2xl px-4 py-3 bg-slate-50/60 hover:bg-slate-50 transition">
-          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700">
-                  {{ code }}
-                </span>
-                <span class="text-[11px] uppercase tracking-wide text-slate-400">
-                  {{ p.product_type or 'LAND' }}
-                </span>
+    {% if projects_list|length == 0 %}
+      <div class="py-6 text-center text-slate-400 text-sm">Chưa có dự án ACTIVE.</div>
+    {% else %}
+      <div class="space-y-2">
+        {% for p in projects_list %}
+          {% set code = p.project_code or p.code %}
+          {% set pid = p.id or p.project_id %}
+          {% set mode = (p.registration_mode or 'NORMAL')|upper %}
+          {% set is_group = mode == 'GROUP_AUCTION' %}
+          <div
+            data-hub-project-row
+            data-project-code="{{ code }}"
+            class="rph-proj-row border border-slate-100 rounded-xl px-3 py-2.5 bg-slate-50/60 hover:bg-slate-50 transition {% if is_group %}is-group-type{% endif %}"
+          >
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-0.5 flex-wrap">
+                  <button type="button" data-hub-pick-project="{{ code }}"
+                          class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100">
+                    {{ code }}
+                  </button>
+                  {% if is_group %}
+                    <span class="rph-badge rph-badge-group">Đấu nhóm</span>
+                  {% else %}
+                    <span class="text-[10px] uppercase tracking-wide text-slate-400">Đấu lô</span>
+                  {% endif %}
+                  <span class="text-[10px] uppercase tracking-wide text-slate-400">{{ p.product_type or 'LAND' }}</span>
+                </div>
+                <div class="text-sm font-semibold text-slate-900 leading-snug">{{ p.name }}</div>
+                {% if p.location %}
+                  <div class="text-xs text-slate-500 mt-0.5 truncate"><i class="ri-map-pin-line"></i> {{ p.location }}</div>
+                {% endif %}
               </div>
-              <div class="text-sm font-semibold text-slate-900 leading-snug break-words">
-                {{ p.name }}
+
+              <div class="flex flex-wrap items-center gap-1.5 text-xs lg:justify-end">
+                {% if is_group %}
+                  <a href="/reports/v2/projects/{{ pid }}/groups/eligible" class="px-2 py-1 rounded-full bg-teal-50 text-teal-700 hover:bg-teal-100">Nhóm đủ</a>
+                  <a href="/reports/v2/projects/{{ pid }}/groups/ineligible" class="px-2 py-1 rounded-full bg-rose-50 text-rose-700 hover:bg-rose-100">Nhóm không đủ</a>
+                  <a href="/reports/v2/projects/{{ pid }}/groups/customers/eligible" class="px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100">KH đủ</a>
+                  <a href="/bid-attendance?project_code={{ code }}" class="px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100">STT</a>
+                  <a href="/bid-tickets?project_code={{ code }}" class="px-2 py-1 rounded-full bg-violet-50 text-violet-700 hover:bg-violet-100">Phiếu TG</a>
+                  <a href="/reports/v2/projects/{{ pid }}/groups/customers/ineligible" class="px-2 py-1 rounded-full bg-rose-50 text-rose-700 hover:bg-rose-100">KH không đủ</a>
+                {% else %}
+                  <a href="/reports/v2/projects/{{ pid }}/lots/eligible" class="px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100">Lô đủ</a>
+                  <a href="/reports/v2/projects/{{ pid }}/lots/ineligible" class="px-2 py-1 rounded-full bg-rose-50 text-rose-700 hover:bg-rose-100">Lô không đủ</a>
+                  <a href="/reports/v2/projects/{{ pid }}/customers/eligible" class="px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100">KH đủ</a>
+                  <a href="/reports/v2/projects/{{ pid }}/customers/ineligible" class="px-2 py-1 rounded-full bg-rose-50 text-rose-700 hover:bg-rose-100">KH không đủ</a>
+                {% endif %}
+                <a href="/reports/lots/deposit-stats?project={{ code }}" class="px-2 py-1 rounded-full bg-sky-50 text-sky-700 hover:bg-sky-100">TK cọc</a>
+                <a href="/reports/dossiers/paid/summary?project={{ code }}" class="px-2 py-1 rounded-full bg-violet-50 text-violet-700 hover:bg-violet-100">TK hồ sơ</a>
+                <a href="/reports/dossiers/paid/detail?project={{ code }}" class="px-2 py-1 rounded-full bg-amber-50 text-amber-700 hover:bg-amber-100">Hồ sơ CT</a>
               </div>
-              <div class="mt-1 text-xs text-slate-500 flex items-center gap-1">
-                <i class="ri-map-pin-line"></i>
-                <span class="truncate md:whitespace-normal">
-                  {{ p.location or '-' }}
-                </span>
-              </div>
-            </div>
-
-            <div class="flex flex-wrap items-center gap-2 text-xs md:justify-end">
-              {# 4 báo cáo đổi sang V2: dùng pid #}
-              <a href="/reports/v2/projects/{{ pid }}/lots/eligible"
-                 class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100">
-                <i class="ri-checkbox-circle-line"></i>
-                <span>Lô đủ</span>
-              </a>
-              <a href="/reports/v2/projects/{{ pid }}/lots/ineligible"
-                 class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-rose-50 text-rose-700 hover:bg-rose-100">
-                <i class="ri-alert-line"></i>
-                <span>Lô không đủ</span>
-              </a>
-
-              {# giữ nguyên cũ #}
-              <a href="/reports/lots/deposit-stats?project={{ code }}"
-                 class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-sky-50 text-sky-700 hover:bg-sky-100">
-                <i class="ri-funds-line"></i>
-                <span>Tiền đặt</span>
-              </a>
-
-              {# KH đủ/không đủ -> V2 #}
-              <a href="/reports/v2/projects/{{ pid }}/customers/eligible"
-                 class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100">
-                <i class="ri-user-star-line"></i>
-                <span>KH đủ</span>
-              </a>
-              <a href="/reports/v2/projects/{{ pid }}/customers/ineligible"
-                 class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-rose-50 text-rose-700 hover:bg-rose-100">
-                <i class="ri-user-forbid-line"></i>
-                <span>KH không đủ</span>
-              </a>
-
-              {# giữ nguyên cũ #}
-              <a href="/reports/dossiers/paid/detail?project={{ code }}"
-                 class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-50 text-amber-700 hover:bg-amber-100">
-                <i class="ri-file-list-3-line"></i>
-                <span>Hồ sơ</span>
-              </a>
             </div>
           </div>
-        </div>
-      {% endfor %}
-    </div>
-  {% endif %}
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
 </div>
+
+<script src="/static/js/reports_project_hub.js"></script>
+<script>
+(function () {
+  var root = document.getElementById('reportsProjectHub');
+  if (root && window.ReportsProjectHub) ReportsProjectHub.init(root);
+})();
+</script>
 {% endblock %}

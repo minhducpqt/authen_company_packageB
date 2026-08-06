@@ -3,112 +3,9 @@
 {% block title %}Khách hàng đủ điều kiện{% endblock %}
 
 {% block content %}
+{% include "reports/_detail_styles.html" %}
 <style>
-  :root{
-    --bg0:#f6f8fc;
-    --card:#ffffff;
-    --txt:#0f172a;
-    --muted: rgba(71,85,105,.88);
-    --bd: rgba(15,23,42,.10);
-    --bd2: rgba(15,23,42,.07);
-
-    --pri:#4f46e5;
-    --pri2:#6366f1;
-    --ok:#10b981;
-    --ok2:#22c55e;
-    --info:#0ea5e9;
-
-    --shadow: 0 18px 48px rgba(2,6,23,.10);
-    --shadow2: 0 10px 24px rgba(2,6,23,.08);
-    --r: 18px;
-  }
-
-  /* ===== Page container ===== */
-  .rp2-wrap{max-width:1240px;margin:0 auto;padding: 10px 12px 22px}
-
-  /* ===== Header ===== */
-  .rp2-head{
-    background:
-      radial-gradient(1200px 400px at 10% 0%, rgba(16,185,129,.14), rgba(16,185,129,0) 55%),
-      radial-gradient(900px 380px at 90% 0%, rgba(79,70,229,.12), rgba(79,70,229,0) 52%),
-      linear-gradient(180deg, rgba(255,255,255,.86), rgba(255,255,255,.76));
-    border:1px solid var(--bd);
-    border-radius: 22px;
-    padding: 16px 16px 14px;
-    box-shadow: 0 14px 40px rgba(2,6,23,.08);
-    backdrop-filter: blur(10px);
-  }
-  .rp2-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
-  .rp2-title h1{
-    font-size:20px;font-weight:950;color:var(--txt);
-    display:flex;align-items:center;gap:10px;margin:0
-  }
-  .rp2-title p{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.35;max-width:760px}
-  .rp2-pill{
-    display:inline-flex;align-items:center;gap:8px;
-    padding:8px 10px;border-radius:999px;
-    background: rgba(255,255,255,.75);
-    border:1px solid var(--bd2);
-    color: rgba(15,23,42,.72);
-    font-size:12px;font-weight:900;
-    white-space:nowrap;
-  }
-  .rp2-dot{width:8px;height:8px;border-radius:999px;background: var(--ok);box-shadow:0 0 0 3px rgba(16,185,129,.14)}
-
-  .rp2-controls{margin-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:10px}
-  .rp2-sel{
-    display:flex;align-items:center;gap:10px;
-    padding:10px 12px;border-radius: 14px;
-    border:1px solid var(--bd);
-    background: rgba(255,255,255,.88);
-    min-width: 320px;
-    flex: 1 1 420px;
-  }
-  .rp2-sel label{font-size:12px;color:rgba(15,23,42,.65);font-weight:950}
-  .rp2-sel select{border:0;outline:0;background:transparent;font-weight:950;color:var(--txt);width:100%}
-
-  .rp2-btn{
-    display:inline-flex;align-items:center;gap:8px;
-    padding:10px 12px;border-radius: 14px;
-    border:1px solid var(--bd);
-    background: rgba(255,255,255,.90);
-    font-size:12px;font-weight:950;color: rgba(15,23,42,.78);
-    transition: .15s ease;
-    text-decoration:none;
-    cursor:pointer;
-    user-select:none;
-    white-space:nowrap;
-  }
-  .rp2-btn:hover{transform: translateY(-1px); box-shadow: 0 10px 20px rgba(2,6,23,.10)}
-  .rp2-btn.primary{border-color: rgba(16,185,129,.24);background: linear-gradient(180deg, rgba(16,185,129,.14), rgba(16,185,129,.08));color: rgba(6,95,70,.95)}
-  .rp2-btn.soft{border-color: rgba(15,23,42,.10);background: rgba(255,255,255,.90);color: rgba(15,23,42,.78)}
-  .rp2-btn.tiny{padding:8px 10px;border-radius: 12px;font-size:12px;font-weight:950}
-
-  /* ===== KPI cards ===== */
-  .rp2-kpis{margin-top: 14px;display:grid;grid-template-columns: repeat(12, 1fr);gap:10px}
-  .rp2-kpi{
-    grid-column: span 4;
-    background: rgba(255,255,255,.92);
-    border:1px solid var(--bd);
-    border-radius: 18px;
-    padding: 12px 12px 10px;
-    box-shadow: 0 10px 22px rgba(2,6,23,.06);
-    min-width:0;
-  }
-  @media (max-width: 1024px){ .rp2-kpi{grid-column: span 6} }
-  @media (max-width: 640px){ .rp2-sel{min-width:100%} .rp2-kpi{grid-column: span 12} }
-  .rp2-kpi .t{font-size:12px;color:rgba(15,23,42,.62);font-weight:950}
-  .rp2-kpi .v{
-    margin-top:6px;font-size:22px;font-weight:1000;color:var(--txt);
-    letter-spacing:.2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap
-  }
-  .rp2-kpi .s{margin-top:6px;font-size:11px;color:rgba(71,85,105,.90);line-height:1.35}
-  .rp2-kpi.ok .v{color: rgba(6,95,70,.95)}
-  .rp2-kpi.lots .v{color: rgba(49,46,129,.95)}
-  .rp2-kpi.money .v{color: rgba(30,64,175,.95)}
-  .rp2-mono{font-variant-numeric: tabular-nums; font-feature-settings: "tnum";}
-
-  /* ===== List card ===== */
+  /* page-specific: customers eligible */
   .rp2-card{
     margin-top: 14px;
     background: var(--card);
@@ -313,11 +210,11 @@
 {% endfor %}
 
 <div class="rp2-wrap">
-  <div class="rp2-head">
+  <div class="rp2-head rd-theme-emerald">
     <div class="rp2-title">
       <div>
         <h1>
-          <i class="ri-user-star-line" style="color: var(--ok);font-size:24px"></i>
+          <span class="rd-h1-icon rd-icon-emerald"><i class="ri-user-star-fill"></i></span>
           Khách hàng đủ điều kiện
         </h1>
         <p>
@@ -366,7 +263,7 @@
       {% endif %}
 
       <a class="rp2-btn soft" href="/reports">
-        <i class="ri-arrow-left-line"></i> Tổng quan
+        <i class="ri-arrow-left-line"></i> Báo cáo dự án
       </a>
     </div>
 

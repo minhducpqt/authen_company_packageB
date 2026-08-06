@@ -3,34 +3,23 @@
 {% block title %}{{ page_title }}{% endblock %}
 
 {% block content %}
-<style>
-  .grp-wrap{max-width:1240px;margin:0 auto;padding:10px 12px 22px}
-  .grp-head{background:#fff;border:1px solid rgba(15,23,42,.1);border-radius:18px;padding:16px;box-shadow:0 10px 24px rgba(2,6,23,.06)}
-  .grp-head h1{font-size:20px;font-weight:800;margin:0;display:flex;align-items:center;gap:8px}
-  .grp-head p{margin:6px 0 0;color:#64748b;font-size:13px}
-  .grp-controls{margin-top:12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-  .grp-sel{display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid rgba(15,23,42,.1);border-radius:12px;background:#f8fafc;min-width:280px;flex:1}
-  .grp-sel select{border:0;background:transparent;font-weight:700;width:100%}
-  .grp-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 12px;border-radius:12px;border:1px solid rgba(15,23,42,.12);background:#fff;font-size:12px;font-weight:700;text-decoration:none;color:#334155}
-  .grp-btn.primary{background:#ecfdf5;border-color:#a7f3d0;color:#065f46}
-  .grp-card{margin-top:14px;background:#fff;border:1px solid rgba(15,23,42,.1);border-radius:18px;overflow:hidden}
-  .grp-table{width:100%;border-collapse:collapse;font-size:13px}
-  .grp-table th,.grp-table td{padding:10px 12px;border-bottom:1px solid rgba(15,23,42,.06);text-align:left;vertical-align:top}
-  .grp-table th{background:#f8fafc;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#64748b}
-  .grp-table tr:hover td{background:#fafafa}
-  .grp-mono{font-variant-numeric:tabular-nums}
-  .grp-badge{display:inline-flex;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;background:#fef3c7;color:#92400e}
-  .grp-empty{padding:32px;text-align:center;color:#94a3b8}
-  .grp-err{margin-top:12px;padding:10px 12px;border-radius:12px;background:#fef2f2;color:#b91c1c;font-size:13px}
-</style>
+{% include "reports/_detail_styles.html" %}
 
 {% set items = (data.get('items') if data and data.get('items') is not none else []) %}
 {% set project_id_val = project_id if project_id is defined else None %}
 
 <div class="grp-wrap">
-  <div class="grp-head">
-    <h1><i class="{{ page_icon }}"></i> {{ page_title }}</h1>
-    <p>{{ page_desc }}</p>
+  <div class="grp-head rd-theme-teal">
+    <div class="rd-title">
+      <div>
+        <h1>
+          <span class="rd-h1-icon rd-icon-teal"><i class="{{ page_icon }}"></i></span>
+          {{ page_title }}
+        </h1>
+        <p>{{ page_desc }}</p>
+      </div>
+      <div class="rd-pill"><span class="rd-dot"></span> Đấu nhóm</div>
+    </div>
 
     <div class="grp-controls">
       <div class="grp-sel">
@@ -52,11 +41,10 @@
 
       {% if project_id_val %}
         <a class="grp-btn primary" href="{{ export_path }}">
-          <i class="ri-download-2-line"></i> Export Excel
+          <i class="ri-file-excel-2-line"></i> Export Excel
         </a>
       {% endif %}
-      <a class="grp-btn" href="/reports/group-auction"><i class="ri-group-line"></i> Báo cáo đấu nhóm</a>
-      <a class="grp-btn" href="/reports"><i class="ri-arrow-left-line"></i> Báo cáo đấu lô</a>
+      <a class="grp-btn" href="/reports"><i class="ri-arrow-left-line"></i> Báo cáo dự án</a>
     </div>
 
     {% if error %}
@@ -78,7 +66,7 @@
     {% if items|length == 0 %}
       <div class="grp-empty">Không có dữ liệu hoặc dự án chưa chọn.</div>
     {% else %}
-      <div style="overflow-x:auto">
+      <div class="rd-table-wrap">
         <table class="grp-table">
           <thead>
             <tr>
@@ -107,7 +95,7 @@
           </tbody>
         </table>
       </div>
-      <div style="padding:10px 12px;font-size:12px;color:#64748b">Tổng: <b>{{ items|length }}</b> dòng</div>
+      <div class="rd-table-foot">Tổng: <b>{{ items|length }}</b> dòng</div>
     {% endif %}
   </div>
 </div>

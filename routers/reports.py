@@ -264,10 +264,13 @@ async def _load_projects(token: str, project_param: Optional[str]) -> tuple[list
 
 
 # ============================================================
-# 5.0 Tổng quan
+# 5.0 Hub báo cáo dự án (NORMAL + GROUP)
 # ============================================================
 @router.get("/reports", response_class=HTMLResponse)
-async def reports_home(request: Request):
+async def reports_home(
+    request: Request,
+    project: Optional[str] = Query(None, description="project_code — deep link / ghi nhớ từ URL"),
+):
     _log(f"REQ /reports url={request.url}")
 
     token = get_access_token(request)
@@ -278,24 +281,15 @@ async def reports_home(request: Request):
             status_code=303,
         )
 
-    projects: list[dict] = []
-    try:
-        status, data = await _get_json(
-            "/api/v1/projects",
-            token,
-            {"size": 1000},
-        )
-        if status == 200 and isinstance(data, dict):
-            projects = data.get("data") or data.get("items") or []
-    except Exception as e:
-        _log(f"reports_home: load projects error={e!r}")
+    projects, selected = await _load_projects(token, project)
 
     return templates.TemplateResponse(
         "reports/index.html",
         {
             "request": request,
-            "title": "Báo cáo thống kê",
+            "title": "Báo cáo dự án",
             "projects": projects,
+            "selected_project": selected,
         },
     )
 
@@ -1507,25 +1501,19 @@ async def v2_customer_lot_txns_json(
 # ============================================================
 
 @router.get("/reports/group-auction", response_class=HTMLResponse)
-async def reports_group_auction_home(request: Request):
-    """Hub báo cáo riêng cho dự án đấu nhóm — không thay đổi menu báo cáo đấu lô."""
+async def reports_group_auction_home(
+    request: Request,
+    project: Optional[str] = Query(None, description="project_code GROUP (optional)"),
+):
+    """Redirect hub đấu nhóm cũ → báo cáo dự án thống nhất (Phase 1 UI)."""
     token = get_access_token(request)
     if not token:
         return RedirectResponse(url="/login?next=%2Freports%2Fgroup-auction", status_code=303)
 
-    projects, _ = await _load_projects(token, None)
-    group_projects = [
-        p for p in (projects or [])
-        if str(p.get("registration_mode") or "NORMAL").upper() == "GROUP_AUCTION"
-    ]
-
-    return templates.TemplateResponse(
-        "reports/group_auction_index.html",
-        {
-            "request": request,
-            "group_projects": group_projects,
-        },
-    )
+    target = "/reports"
+    if (project or "").strip():
+        target = f"/reports?project={(project or '').strip().upper()}"
+    return RedirectResponse(url=target, status_code=303)
 
 
 async def _group_report_ctx(

@@ -3,105 +3,9 @@
 {% block title %}Khách hàng không đủ điều kiện{% endblock %}
 
 {% block content %}
+{% include "reports/_detail_styles.html" %}
 <style>
-  :root{
-    --bg0:#f6f8fc;
-    --card:#ffffff;
-    --txt:#0f172a;
-    --muted: rgba(71,85,105,.88);
-    --bd: rgba(15,23,42,.10);
-    --bd2: rgba(15,23,42,.07);
-
-    --pri:#4f46e5;
-    --pri2:#6366f1;
-
-    --bad:#ef4444;
-    --warn:#f59e0b;
-    --ok:#10b981;
-    --info:#0ea5e9;
-    --vio:#a855f7;
-
-    --shadow: 0 18px 48px rgba(2,6,23,.10);
-    --shadow2: 0 10px 24px rgba(2,6,23,.08);
-    --r: 18px;
-  }
-
-  .rp-wrap{max-width:1240px;margin:0 auto;padding: 10px 12px 22px}
-  .rp-head{
-    background:
-      radial-gradient(1200px 400px at 10% 0%, rgba(79,70,229,.14), rgba(79,70,229,0) 55%),
-      radial-gradient(900px 380px at 90% 0%, rgba(239,68,68,.10), rgba(239,68,68,0) 52%),
-      linear-gradient(180deg, rgba(255,255,255,.86), rgba(255,255,255,.76));
-    border:1px solid var(--bd);
-    border-radius: 22px;
-    padding: 16px 16px 14px;
-    box-shadow: 0 14px 40px rgba(2,6,23,.08);
-    backdrop-filter: blur(10px);
-  }
-  .rp-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
-  .rp-title h1{font-size:20px;font-weight:950;color:var(--txt);display:flex;align-items:center;gap:10px;margin:0}
-  .rp-title p{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.35;max-width:760px}
-
-  .pill{
-    display:inline-flex;align-items:center;gap:8px;
-    padding:8px 10px;border-radius:999px;
-    background: rgba(255,255,255,.75);
-    border:1px solid var(--bd2);
-    color: rgba(15,23,42,.72);
-    font-size:12px;font-weight:900;
-    white-space:nowrap;
-  }
-  .dot{width:8px;height:8px;border-radius:999px;background: var(--bad);box-shadow:0 0 0 3px rgba(239,68,68,.14)}
-
-  .rp-controls{margin-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:10px}
-  .sel{
-    display:flex;align-items:center;gap:10px;
-    padding:10px 12px;border-radius: 14px;
-    border:1px solid var(--bd);
-    background: rgba(255,255,255,.88);
-    min-width: 320px;
-    flex: 1 1 420px;
-  }
-  .sel label{font-size:12px;color:rgba(15,23,42,.65);font-weight:950}
-  .sel select{border:0;outline:0;background:transparent;font-weight:950;color:var(--txt);width:100%}
-
-  .btn{
-    display:inline-flex;align-items:center;gap:8px;
-    padding:10px 12px;border-radius: 14px;
-    border:1px solid var(--bd);
-    background: rgba(255,255,255,.90);
-    font-size:12px;font-weight:950;color: rgba(15,23,42,.78);
-    transition: .15s ease;
-    text-decoration:none;
-    cursor:pointer;
-    user-select:none;
-    white-space:nowrap;
-  }
-  .btn:hover{transform: translateY(-1px); box-shadow: 0 10px 20px rgba(2,6,23,.10)}
-  .btn.primary{border-color: rgba(79,70,229,.22);background: linear-gradient(180deg, rgba(79,70,229,.14), rgba(79,70,229,.08));color: rgba(49,46,129,.95)}
-  .btn.soft{border-color: rgba(15,23,42,.10);background: rgba(255,255,255,.90);color: rgba(15,23,42,.78)}
-  .btn.tiny{padding:8px 10px;border-radius: 12px;font-size:12px;font-weight:950}
-  .btn.red{border-color: rgba(239,68,68,.26);background: linear-gradient(180deg, rgba(239,68,68,.12), rgba(239,68,68,.06));color: rgba(153,27,27,.95)}
-
-  .kpis{margin-top: 14px;display:grid;grid-template-columns: repeat(12, 1fr);gap:10px}
-  .kpi{
-    grid-column: span 3;
-    background: rgba(255,255,255,.92);
-    border:1px solid var(--bd);
-    border-radius: 18px;
-    padding: 12px 12px 10px;
-    box-shadow: 0 10px 22px rgba(2,6,23,.06);
-    min-width:0;
-  }
-  @media (max-width: 1024px){ .kpi{grid-column: span 6} }
-  @media (max-width: 640px){ .sel{min-width:100%} .kpi{grid-column: span 12} }
-  .kpi .t{font-size:12px;color:rgba(15,23,42,.62);font-weight:950}
-  .kpi .v{margin-top:6px;font-size:18px;font-weight:950;color:var(--txt);letter-spacing:.2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .kpi .s{margin-top:6px;font-size:11px;color:rgba(71,85,105,.90);line-height:1.35}
-  .kpi.bad .v{color: rgba(153,27,27,.95)}
-  .kpi.info .v{color: rgba(30,64,175,.95)}
-  .mono{font-variant-numeric: tabular-nums; font-feature-settings: "tnum";}
-
+  /* page-specific: customers ineligible */
   .reason-strip{margin-top: 12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
   .chip{
     display:inline-flex;align-items:center;gap:8px;
@@ -317,11 +221,11 @@
 {% set pair_count = (data.get('pair_count') if data and data.get('pair_count') is not none else 0) %}
 
 <div class="rp-wrap">
-  <div class="rp-head">
+  <div class="rp-head rd-theme-rose">
     <div class="rp-title">
       <div>
         <h1>
-          <i class="ri-shield-cross-line" style="color: var(--bad);font-size:24px"></i>
+          <span class="rd-h1-icon rd-icon-rose"><i class="ri-shield-cross-fill"></i></span>
           Khách hàng không đủ điều kiện
         </h1>
         <p>
@@ -359,7 +263,7 @@
       {% endif %}
 
       <a class="btn soft" href="/reports">
-        <i class="ri-arrow-left-line"></i> Quay lại
+        <i class="ri-arrow-left-line"></i> Báo cáo dự án
       </a>
     </div>
 

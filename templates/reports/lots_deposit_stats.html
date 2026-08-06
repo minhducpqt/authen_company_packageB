@@ -2,182 +2,178 @@
 {% block title %}Thống kê tiền đặt trước từng lô{% endblock %}
 
 {% block content %}
+{% include "reports/_detail_styles.html" %}
 {% set projects_list = projects or [] %}
 {% set MAX_LIMIT = 10000 %}
 {% set MIN_CUSTOMERS = 0 %}
-
-<div class="mb-6">
-  <h1 class="text-2xl font-semibold text-slate-900 flex items-center gap-2">
-    <i class="ri-funds-line text-sky-600 text-3xl"></i>
-    Thống kê tiền đặt trước từng lô
-  </h1>
-  <p class="text-slate-500 text-sm mt-1">
-    Tổng hợp theo từng lô: diện tích, khởi điểm, tiền đặt, số khách, tổng tiền và thời điểm nộp.
-  </p>
-</div>
-
-<form id="filtersForm" method="get" class="bg-white border rounded-2xl shadow-sm p-4 mb-4">
-  <div class="flex flex-col md:flex-row md:items-end gap-3">
-    <div class="flex-1 min-w-[260px]">
-      <label class="block text-xs font-semibold text-slate-500 mb-1">Dự án</label>
-      <select id="projectSelectLocal" name="project" class="w-full h-10 rounded-xl border px-3 text-sm">
-        <option value="">— Chọn dự án —</option>
-        {% for p in projects_list %}
-          {% set code = p.project_code or p.code %}
-          {% set st = (p.status or p.project_status or '')|upper %}
-          <option value="{{ code }}" {% if code == project %}selected{% endif %}>
-            {{ code }} — {{ p.name }}{% if st and st != 'ACTIVE' %} (INACTIVE){% endif %}
-          </option>
-        {% endfor %}
-      </select>
-    </div>
-
-    {# defaults: max result #}
-    <input type="hidden" name="limit" value="{{ MAX_LIMIT }}">
-    <input type="hidden" name="min_customers" value="{{ MIN_CUSTOMERS }}">
-    {# max_customers: deliberately omit for "no cap" #}
-
-    <div class="flex items-center gap-2 md:justify-end">
-      {% if project %}
-        <a
-          href="/reports/lots/deposit-stats/export?project={{ project }}&min_customers={{ MIN_CUSTOMERS }}&limit={{ MAX_LIMIT }}"
-          class="h-10 px-4 rounded-xl border border-slate-300 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 inline-flex items-center gap-2"
-        >
-          <i class="ri-file-excel-2-line"></i>
-          Export XLSX
-        </a>
-      {% endif %}
-    </div>
-  </div>
-</form>
 
 {% set rows = (data or {}).get('items') or (data or {}).get('rows') or [] %}
 {% set total = (data or {}).get('count') or rows|length %}
 {% set summary = deposit_summary or {} %}
 {% set tier_rows = summary.get('tiers') or [] %}
 
-{% if project %}
-<div class="bg-gradient-to-br from-sky-50 via-white to-indigo-50/40 border border-sky-100 rounded-2xl shadow-sm p-4 md:p-5 mb-4">
-  <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
-    <div>
-      <div class="text-sm font-semibold text-slate-900 flex items-center gap-2">
-        <i class="ri-dashboard-3-line text-sky-600 text-lg"></i>
-        Tổng kết tiền đặt trước
+<div class="rd-wrap">
+  <div class="rd-head rd-theme-sky">
+    <div class="rd-title">
+      <div>
+        <h1>
+          <span class="rd-h1-icon rd-icon-sky"><i class="ri-wallet-3-fill"></i></span>
+          Thống kê tiền đặt trước từng lô
+        </h1>
+        <p>Tổng hợp theo từng lô: diện tích, khởi điểm, tiền đặt, số khách, tổng tiền và thời điểm nộp.</p>
       </div>
-      <p class="text-xs text-slate-500 mt-1">
-        Dự án <span class="font-semibold text-slate-700">{{ project }}</span> — chỉ tính giao dịch cọc đã thanh toán (PAID).
-      </p>
+      <div class="rd-pill"><span class="rd-dot"></span> Thu phí &amp; cọc</div>
     </div>
+
+    <div class="rd-controls">
+      <form id="filtersForm" method="get" class="flex-1 min-w-0">
+        <div class="rd-sel">
+          <label>Dự án</label>
+          <select id="projectSelectLocal" name="project">
+            <option value="">— Chọn dự án —</option>
+            {% for p in projects_list %}
+              {% set code = p.project_code or p.code %}
+              {% set st = (p.status or p.project_status or '')|upper %}
+              <option value="{{ code }}" {% if code == project %}selected{% endif %}>
+                {{ code }} — {{ p.name }}{% if st and st != 'ACTIVE' %} (INACTIVE){% endif %}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <input type="hidden" name="limit" value="{{ MAX_LIMIT }}">
+        <input type="hidden" name="min_customers" value="{{ MIN_CUSTOMERS }}">
+      </form>
+
+      {% if project %}
+        <a href="/reports/lots/deposit-stats/export?project={{ project }}&min_customers={{ MIN_CUSTOMERS }}&limit={{ MAX_LIMIT }}"
+           class="rd-btn rd-btn-primary">
+          <i class="ri-file-excel-2-line"></i> Export XLSX
+        </a>
+      {% endif %}
+      <a class="rd-btn" href="/reports"><i class="ri-arrow-left-line"></i> Báo cáo dự án</a>
+    </div>
+  </div>
+
+  {% if project %}
+  <div class="rd-summary rd-theme-sky">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <div class="rd-summary-title"><i class="ri-dashboard-3-fill text-sky-600"></i> Tổng kết tiền đặt trước</div>
+        <p class="rd-summary-desc">
+          Dự án <strong>{{ project }}</strong> — chỉ tính giao dịch cọc đã thanh toán (PAID).
+        </p>
+      </div>
+      {% if tier_rows|length > 0 %}
+      <div class="text-right">
+        <div class="rd-stat-lbl">Tổng tiền cọc thu được</div>
+        <div class="text-2xl font-bold text-sky-700 tabular-nums" data-amount="{{ summary.get('total_amount') or 0 }}"></div>
+        <div class="text-xs text-slate-500 mt-0.5">
+          <span data-qty="{{ summary.get('total_customer_slots') or 0 }}"></span> lượt cọc ·
+          {{ summary.get('lots_with_deposit') or 0 }}/{{ summary.get('lot_count') or 0 }} lô có khách ·
+          {{ summary.get('tier_count') or 0 }} mức cọc
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
     {% if tier_rows|length > 0 %}
-    <div class="text-right">
-      <div class="text-[11px] uppercase tracking-wide text-slate-500">Tổng tiền cọc thu được</div>
-      <div class="text-2xl md:text-3xl font-bold text-sky-700 tabular-nums" data-amount="{{ summary.get('total_amount') or 0 }}"></div>
-      <div class="text-xs text-slate-500 mt-0.5">
-        <span data-qty="{{ summary.get('total_customer_slots') or 0 }}"></span> lượt cọc ·
-        {{ summary.get('lots_with_deposit') or 0 }}/{{ summary.get('lot_count') or 0 }} lô có khách ·
-        {{ summary.get('tier_count') or 0 }} mức cọc
+    <div class="rd-stat-grid">
+      <div class="rd-stat">
+        <div class="rd-stat-lbl">Tổng tiền cọc</div>
+        <div class="rd-stat-val" data-amount="{{ summary.get('total_amount') or 0 }}"></div>
+      </div>
+      <div class="rd-stat">
+        <div class="rd-stat-lbl">Lượt cọc (theo lô)</div>
+        <div class="rd-stat-val" data-qty="{{ summary.get('total_customer_slots') or 0 }}"></div>
+      </div>
+      <div class="rd-stat">
+        <div class="rd-stat-lbl">Lô có khách cọc</div>
+        <div class="rd-stat-val">{{ summary.get('lots_with_deposit') or 0 }}<span class="text-sm font-medium text-slate-500">/{{ summary.get('lot_count') or 0 }}</span></div>
+      </div>
+      <div class="rd-stat">
+        <div class="rd-stat-lbl">Mức cọc</div>
+        <div class="rd-stat-val">{{ summary.get('tier_count') or 0 }}</div>
       </div>
     </div>
+
+    <div class="text-xs font-semibold text-slate-600 mt-4 mb-2 flex items-center gap-1.5">
+      <i class="ri-funds-box-fill text-sky-500"></i> Theo từng mức tiền đặt trước
+    </div>
+    <div class="rd-tier-grid">
+      {% for t in tier_rows %}
+      <div class="rd-tier">
+        <div class="text-sm font-semibold text-slate-900 tabular-nums" data-amount="{{ t.deposit_amount_vnd or 0 }}"></div>
+        <div class="text-[11px] text-slate-500 mt-0.5">mức cọc / lô</div>
+        <div class="mt-2 flex items-end justify-between gap-2 text-xs">
+          <div class="text-slate-500">
+            {{ t.lots_with_deposit or 0 }}/{{ t.lot_count or 0 }} lô ·
+            <span class="font-semibold text-slate-700">{{ t.customer_count or 0 }}</span> lượt
+          </div>
+          <div class="text-sm font-bold text-sky-700 tabular-nums" data-amount="{{ t.total_amount or 0 }}"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="rd-empty mt-3">Chưa có dữ liệu cọc PAID cho dự án này.</div>
     {% endif %}
   </div>
+  {% endif %}
 
-  {% if tier_rows|length > 0 %}
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-    <div class="rounded-xl border border-white/80 bg-white/90 px-3 py-2.5 shadow-sm">
-      <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Tổng tiền cọc</div>
-      <div class="text-lg font-bold text-slate-900 tabular-nums mt-1" data-amount="{{ summary.get('total_amount') or 0 }}"></div>
-    </div>
-    <div class="rounded-xl border border-white/80 bg-white/90 px-3 py-2.5 shadow-sm">
-      <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Lượt cọc (theo lô)</div>
-      <div class="text-lg font-bold text-slate-900 tabular-nums mt-1" data-qty="{{ summary.get('total_customer_slots') or 0 }}"></div>
-    </div>
-    <div class="rounded-xl border border-white/80 bg-white/90 px-3 py-2.5 shadow-sm">
-      <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Lô có khách cọc</div>
-      <div class="text-lg font-bold text-slate-900 tabular-nums mt-1">{{ summary.get('lots_with_deposit') or 0 }}<span class="text-sm font-medium text-slate-500">/{{ summary.get('lot_count') or 0 }}</span></div>
-    </div>
-    <div class="rounded-xl border border-white/80 bg-white/90 px-3 py-2.5 shadow-sm">
-      <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Mức cọc</div>
-      <div class="text-lg font-bold text-slate-900 tabular-nums mt-1">{{ summary.get('tier_count') or 0 }}</div>
-    </div>
-  </div>
+  <div class="rd-count-bar"><span class="font-semibold">{{ total }}</span> dòng thống kê lô.</div>
 
-  <div class="text-xs font-semibold text-slate-600 mb-2 flex items-center gap-1.5">
-    <i class="ri-funds-box-line text-sky-500"></i>
-    Theo từng mức tiền đặt trước
-  </div>
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-    {% for t in tier_rows %}
-    <div class="rounded-xl border border-slate-200/80 bg-white px-3 py-2.5 hover:border-sky-200 transition">
-      <div class="text-sm font-semibold text-slate-900 tabular-nums" data-amount="{{ t.deposit_amount_vnd or 0 }}"></div>
-      <div class="text-[11px] text-slate-500 mt-0.5">mức cọc / lô</div>
-      <div class="mt-2 flex items-end justify-between gap-2 text-xs">
-        <div class="text-slate-500">
-          {{ t.lots_with_deposit or 0 }}/{{ t.lot_count or 0 }} lô ·
-          <span class="font-semibold text-slate-700">{{ t.customer_count or 0 }}</span> lượt
-        </div>
-        <div class="text-sm font-bold text-sky-700 tabular-nums" data-amount="{{ t.total_amount or 0 }}"></div>
+  <div class="rd-card">
+    <div class="rd-card-hd">
+      <div class="left">
+        <span class="badge ok"><i class="ri-list-check-2"></i> Danh sách lô</span>
       </div>
     </div>
-    {% endfor %}
-  </div>
-  {% else %}
-  <div class="rounded-xl border border-dashed border-slate-200 bg-white/70 px-4 py-8 text-center text-sm text-slate-400">
-    Chưa có dữ liệu cọc PAID cho dự án này.
-  </div>
-  {% endif %}
-</div>
-{% endif %}
-
-<div class="mb-3 text-sm text-slate-600">
-  <span class="font-semibold text-slate-900">{{ total }}</span> dòng thống kê lô.
-</div>
-
-<div class="bg-white border rounded-2xl shadow-sm overflow-hidden">
-  <div class="overflow-x-auto">
-    <table class="min-w-full text-sm text-slate-700">
-      <thead class="bg-slate-50 text-slate-500 border-b">
-        <tr>
-          <th class="px-4 py-2 text-left font-semibold">Mã lô</th>
-          <th class="px-4 py-2 text-left font-semibold">Mô tả</th>
-          <th class="px-4 py-2 text-right font-semibold">Diện tích (m²)</th>
-          <th class="px-4 py-2 text-right font-semibold">Giá khởi điểm</th>
-          <th class="px-4 py-2 text-right font-semibold">Tiền đặt trước</th>
-          <th class="px-4 py-2 text-left font-semibold">Trạng thái</th>
-          <th class="px-4 py-2 text-right font-semibold">Số KH đặt</th>
-          <th class="px-4 py-2 text-right font-semibold">Tổng tiền đặt</th>
-          <th class="px-4 py-2 text-left font-semibold">Lần đầu đặt</th>
-          <th class="px-4 py-2 text-left font-semibold">Lần cuối đặt</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-100">
-      {% for r in rows %}
-        <tr class="hover:bg-slate-50 transition">
-          <td class="px-4 py-3 font-semibold text-slate-900 whitespace-nowrap">{{ r.lot_code }}</td>
-          <td class="px-4 py-3 text-xs cell-wrap">{{ r.lot_description or '-' }}</td>
-          <td class="px-4 py-3 text-right whitespace-nowrap">{{ r.area_m2 or '' }}</td>
-          <td class="px-4 py-3 text-right whitespace-nowrap" data-amount="{{ r.starting_price_vnd or 0 }}"></td>
-          <td class="px-4 py-3 text-right whitespace-nowrap" data-amount="{{ r.deposit_amount_vnd or 0 }}"></td>
-          <td class="px-4 py-3 text-xs text-slate-600 whitespace-nowrap">{{ r.lot_status or '-' }}</td>
-          <td class="px-4 py-3 text-right whitespace-nowrap">{{ r.deposit_customer_count or 0 }}</td>
-          <td class="px-4 py-3 text-right whitespace-nowrap" data-amount="{{ r.total_deposit_amount_vnd or 0 }}"></td>
-          <td class="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{{ r.first_paid_at or '' }}</td>
-          <td class="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{{ r.last_paid_at or '' }}</td>
-        </tr>
-      {% endfor %}
-      {% if rows|length == 0 %}
-        <tr>
-          <td colspan="10" class="px-4 py-10 text-center text-slate-400">
-            {% if project %}Chưa có dữ liệu.{% else %}Vui lòng chọn dự án.{% endif %}
-          </td>
-        </tr>
-      {% endif %}
-      </tbody>
-    </table>
+    <div class="rd-table-wrap">
+      <table class="min-w-full text-sm text-slate-700 rd-table">
+        <thead>
+          <tr>
+            <th>Mã lô</th>
+            <th>Mô tả</th>
+            <th class="text-right">Diện tích (m²)</th>
+            <th class="text-right">Giá khởi điểm</th>
+            <th class="text-right">Tiền đặt trước</th>
+            <th>Trạng thái</th>
+            <th class="text-right">Số KH đặt</th>
+            <th class="text-right">Tổng tiền đặt</th>
+            <th>Lần đầu đặt</th>
+            <th>Lần cuối đặt</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for r in rows %}
+          <tr>
+            <td class="font-semibold text-slate-900 whitespace-nowrap">{{ r.lot_code }}</td>
+            <td class="text-xs cell-wrap">{{ r.lot_description or '-' }}</td>
+            <td class="text-right whitespace-nowrap">{{ r.area_m2 or '' }}</td>
+            <td class="text-right whitespace-nowrap" data-amount="{{ r.starting_price_vnd or 0 }}"></td>
+            <td class="text-right whitespace-nowrap" data-amount="{{ r.deposit_amount_vnd or 0 }}"></td>
+            <td class="text-xs text-slate-600 whitespace-nowrap">{{ r.lot_status or '-' }}</td>
+            <td class="text-right whitespace-nowrap">{{ r.deposit_customer_count or 0 }}</td>
+            <td class="text-right whitespace-nowrap" data-amount="{{ r.total_deposit_amount_vnd or 0 }}"></td>
+            <td class="text-xs text-slate-500 whitespace-nowrap">{{ r.first_paid_at or '' }}</td>
+            <td class="text-xs text-slate-500 whitespace-nowrap">{{ r.last_paid_at or '' }}</td>
+          </tr>
+        {% endfor %}
+        {% if rows|length == 0 %}
+          <tr>
+            <td colspan="10" class="rd-empty">
+              {% if project %}Chưa có dữ liệu.{% else %}Vui lòng chọn dự án.{% endif %}
+            </td>
+          </tr>
+        {% endif %}
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
 <style>
-  table th, table td { white-space: nowrap; }
+  .rd-table th, .rd-table td { white-space: nowrap; }
   .cell-wrap { white-space: normal; }
 </style>
 

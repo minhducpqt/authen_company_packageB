@@ -2,134 +2,10 @@
 {% block title %}Khách hàng — Lô không đủ điều kiện (Chi tiết){% endblock %}
 
 {% block content %}
+{% include "reports/_detail_styles.html" %}
 <style>
-  :root{
-    --bd: rgba(15,23,42,.10);
-    --bd2: rgba(15,23,42,.07);
-    --card: #fff;
-    --muted: rgba(71,85,105,.88);
-    --txt: #0f172a;
-
-    --bad:#ef4444;
-    --warn:#f59e0b;
-    --ok:#16a34a;
-    --blue:#3b82f6;
-    --pri:#4f46e5;
-
-    --shadow: 0 14px 36px rgba(2,6,23,.10);
-  }
-
-  .rp-wrap{max-width:1400px;margin:0 auto}
-  .rp-head{
-    background: linear-gradient(135deg, rgba(79,70,229,.10), rgba(239,68,68,.08));
-    border:1px solid var(--bd);
-    border-radius: 22px;
-    padding: 16px 16px 14px;
-    box-shadow: 0 10px 28px rgba(2,6,23,.06);
-  }
-  .rp-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-  .rp-title h1{font-size:20px;font-weight:900;color:var(--txt);display:flex;align-items:center;gap:10px;margin:0}
-  .rp-title p{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.35}
-
-  .pill{
-    display:inline-flex;align-items:center;gap:8px;
-    padding:8px 10px;border-radius:999px;
-    background: rgba(255,255,255,.72);
-    border:1px solid var(--bd2);
-    color: rgba(15,23,42,.70);
-    font-size:12px;font-weight:800;
-    backdrop-filter: blur(8px);
-    white-space:nowrap;
-  }
-  .dot{width:8px;height:8px;border-radius:999px;background: var(--bad);box-shadow:0 0 0 3px rgba(239,68,68,.14)}
-
-  .rp-controls{
-    margin-top: 12px;
-    display:flex;flex-wrap:wrap;align-items:center;gap:10px;
-  }
-  .sel{
-    display:flex;align-items:center;gap:10px;
-    padding:10px 12px;border-radius: 14px;
-    border:1px solid var(--bd);
-    background: rgba(255,255,255,.80);
-    min-width: 320px;
-    flex: 1 1 520px;
-  }
-  .sel label{font-size:12px;color:rgba(15,23,42,.65);font-weight:900}
-  .sel select{
-    border:0;outline:0;background:transparent;
-    font-weight:950;color:var(--txt);
-    width:100%;
-  }
-
-  .btn{
-    display:inline-flex;align-items:center;gap:8px;
-    padding:10px 12px;border-radius: 14px;
-    border:1px solid var(--bd);
-    background: rgba(255,255,255,.88);
-    font-size:12px;font-weight:950;color: rgba(15,23,42,.78);
-    transition: .15s ease;
-    text-decoration:none;
-    cursor:pointer;
-    user-select:none;
-    white-space:nowrap;
-  }
-  .btn:hover{transform: translateY(-1px); box-shadow: 0 10px 20px rgba(2,6,23,.10)}
-  .btn.primary{
-    border-color: rgba(239,68,68,.30);
-    background: linear-gradient(180deg, rgba(239,68,68,.14), rgba(239,68,68,.08));
-    color: rgba(153,27,27,.95);
-  }
-
-  .kpis{
-    margin-top: 14px;
-    display:grid;
-    grid-template-columns: repeat(12, 1fr);
-    gap:10px;
-  }
-  .kpi{
-    grid-column: span 3;
-    background: rgba(255,255,255,.90);
-    border:1px solid var(--bd);
-    border-radius: 18px;
-    padding: 12px 12px 10px;
-    box-shadow: 0 10px 22px rgba(2,6,23,.06);
-    min-width:0;
-  }
-  @media (max-width: 1024px){ .kpi{grid-column: span 6} }
-  @media (max-width: 640px){
-    .sel{min-width:100%}
-    .kpi{grid-column: span 12}
-  }
-  .kpi .t{font-size:12px;color:rgba(15,23,42,.62);font-weight:900}
-  .kpi .v{margin-top:6px;font-size:18px;font-weight:950;color:var(--txt);letter-spacing:.2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .kpi .s{margin-top:6px;font-size:11px;color:rgba(71,85,105,.90);line-height:1.35}
-  .mono{font-variant-numeric: tabular-nums; font-feature-settings: "tnum";}
-
-  .rp-card{
-    margin-top: 14px;
-    background: var(--card);
-    border:1px solid var(--bd);
-    border-radius: 22px;
-    box-shadow: var(--shadow);
-    overflow:hidden;
-  }
-  .rp-card .hd{
-    padding: 12px 14px;
-    border-bottom:1px solid var(--bd2);
-    background: linear-gradient(90deg, rgba(15,23,42,.03), rgba(15,23,42,.00));
-    display:flex;align-items:center;justify-content:space-between;gap:12px;
-  }
-  .badge{
-    display:inline-flex;align-items:center;gap:7px;
-    padding:6px 10px;border-radius:999px;
-    border:1px solid var(--bd2);
-    background: rgba(255,255,255,.88);
-    font-size:12px;font-weight:950;color:rgba(15,23,42,.74);
-  }
-  .badge.bad{border-color: rgba(239,68,68,.26); background: rgba(239,68,68,.08); color: rgba(153,27,27,.92)}
-  .muted{color: var(--muted);font-size:12px}
-
+  /* page-specific: customers ineligible detail */
+  .rp-wrap { max-width: 1400px; }
   .list-controls{
     padding: 10px 14px;
     border-bottom:1px solid rgba(15,23,42,.06);
@@ -282,11 +158,11 @@
 {% set items = (data.get('items') if data and data.get('items') is not none else []) %}
 
 <div class="rp-wrap">
-  <div class="rp-head">
+  <div class="rp-head rd-theme-rose">
     <div class="rp-title">
       <div>
         <h1>
-          <i class="ri-shield-cross-line" style="color: var(--bad);font-size:24px"></i>
+          <span class="rd-h1-icon rd-icon-rose"><i class="ri-shield-cross-fill"></i></span>
           Khách hàng — Lô KHÔNG đủ điều kiện (chi tiết)
         </h1>
         <p>
@@ -323,7 +199,7 @@
       {% endif %}
 
       <a class="btn" href="/reports">
-        <i class="ri-arrow-left-line"></i> Quay lại
+        <i class="ri-arrow-left-line"></i> Báo cáo dự án
       </a>
     </div>
 
