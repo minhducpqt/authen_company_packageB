@@ -1,0 +1,603 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .la-page { display:flex; flex-direction:column; min-height:calc(100vh - 7rem); }
+  .la-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:8px; }
+  .la-stat-card { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:10px 12px; }
+  .la-stat-card .lbl { font-size:10px; color:#64748b; }
+  .la-stat-card .val { font-size:20px; font-weight:700; color:#0f172a; }
+  .la-board {
+    display:grid;
+    grid-template-columns:minmax(200px,240px) minmax(220px,280px) 1fr;
+    gap:0;
+    flex:1;
+    min-height:520px;
+    border:1px solid #e2e8f0;
+    border-radius:12px;
+    overflow:hidden;
+    background:#fff;
+  }
+  .la-col { display:flex; flex-direction:column; min-height:0; border-right:1px solid #e2e8f0; background:#f8fafc; }
+  .la-col:last-child { border-right:none; }
+  .la-col-hd { padding:10px 12px; border-bottom:1px solid #e2e8f0; background:#fff; }
+  .la-col-hd .title { font-size:12px; font-weight:700; color:#334155; }
+  .la-col-hd .sub { font-size:10px; color:#64748b; margin-top:2px; }
+  .la-col-tools { padding:8px 10px; border-bottom:1px solid #e2e8f0; display:flex; flex-direction:column; gap:6px; }
+  .la-col-tools input { width:100%; border:1px solid #cbd5e1; border-radius:8px; padding:7px 9px; font-size:12px; }
+  .la-filter-tabs { display:flex; flex-wrap:wrap; gap:4px; }
+  .la-filter-tab { font-size:10px; padding:3px 7px; border-radius:999px; border:1px solid #cbd5e1; background:#fff; color:#475569; cursor:pointer; }
+  .la-filter-tab.is-active { background:#0d9488; border-color:#0d9488; color:#fff; }
+  .la-scroll { overflow-y:auto; flex:1; padding:8px; }
+  .la-cust-item { width:100%; text-align:left; padding:8px 10px; border-radius:8px; border:1px solid transparent; background:#fff; margin-bottom:5px; cursor:pointer; }
+  .la-cust-item:hover { border-color:#99f6e4; background:#f0fdfa; }
+  .la-cust-item.is-active { border-color:#0d9488; background:#ccfbf1; }
+  .la-group-item { width:100%; text-align:left; padding:10px 12px; border-radius:10px; border:1px solid #e2e8f0; background:#fff; margin-bottom:8px; cursor:pointer; }
+  .la-group-item:hover { border-color:#5eead4; }
+  .la-group-item.is-active { border-color:#0d9488; background:#f0fdfa; box-shadow:0 0 0 1px #99f6e4; }
+  .la-badge { font-size:10px; padding:2px 8px; border-radius:999px; font-weight:600; }
+  .la-badge.ok { background:#d1fae5; color:#047857; }
+  .la-badge.warn { background:#fef3c7; color:#b45309; }
+  .la-badge.over { background:#ffe4e6; color:#be123c; }
+  .la-dual-wrap { display:flex; flex-direction:column; min-height:0; background:#fff; }
+  .la-dual { display:grid; grid-template-columns:1fr 1fr; flex:1; min-height:0; gap:0; }
+  .la-lot-col { display:flex; flex-direction:column; min-height:0; border-right:1px solid #e2e8f0; }
+  .la-lot-col:last-child { border-right:none; }
+  .la-lot-col.state-ok { background:#ecfdf5; }
+  .la-lot-col.state-warn { background:#fffbeb; }
+  .la-lot-col.state-over { background:#fff1f2; }
+  .la-lot-col-hd { padding:10px 12px; border-bottom:1px solid rgba(0,0,0,.06); }
+  .la-lot-col-hd b { font-size:12px; color:#0f172a; }
+  .la-lot-col-hd .cnt { font-size:11px; color:#64748b; margin-top:2px; }
+  .la-lot-list { overflow-y:auto; flex:1; padding:8px; }
+  .la-lot-row { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 10px; border-radius:8px; border:1px solid #e2e8f0; background:#fff; margin-bottom:6px; }
+  .la-lot-row.from-pool { flex-direction:row; }
+  .la-lot-row.from-pool .la-lot-body { flex:1; min-width:0; }
+  .la-lot-row.is-staged { border-style:dashed; border-color:#f59e0b; }
+  .la-lot-row.is-taken { opacity:.45; }
+  .la-lot-code { font-family:ui-monospace,monospace; font-size:13px; font-weight:700; color:#0f172a; }
+  .la-lot-meta { font-size:10px; color:#64748b; }
+  .la-iconbtn { width:32px; height:32px; flex-shrink:0; border-radius:8px; border:1px solid #cbd5e1; background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#334155; }
+  .la-iconbtn:hover:not(:disabled) { border-color:#0d9488; color:#0d9488; background:#f0fdfa; }
+  .la-iconbtn.primary { background:#0d9488; border-color:#0d9488; color:#fff; }
+  .la-iconbtn:disabled { opacity:.35; cursor:not-allowed; }
+  .la-empty { display:flex; align-items:center; justify-content:center; min-height:120px; color:#94a3b8; font-size:12px; text-align:center; padding:16px; }
+  .la-toast { position:fixed; bottom:20px; right:20px; z-index:60; max-width:360px; padding:12px 16px; border-radius:10px; font-size:13px; box-shadow:0 8px 24px rgba(15,23,42,.15); display:none; }
+  .la-toast.ok { display:block; background:#ecfdf5; border:1px solid #6ee7b7; color:#065f46; }
+  .la-toast.err { display:block; background:#fff1f2; border:1px solid #fecdd3; color:#be123c; }
+  @media (max-width:1100px) {
+    .la-board { grid-template-columns:1fr; grid-template-rows:auto auto 1fr; }
+    .la-col { max-height:220px; border-right:none; border-bottom:1px solid #e2e8f0; }
+    .la-dual { grid-template-columns:1fr; grid-template-rows:1fr 1fr; }
+  }
+</style>
+
+<div class="la-page">
+  <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
+    <div>
+      <h2 class="text-xl font-semibold text-slate-800">Gán mã lô — đơn đăng ký giấy</h2>
+      <p class="text-slate-500 text-sm mt-1">Nhập lô khách muốn tham gia đấu giá — nhiều khách có thể cùng chọn một lô.</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <a href="/bid-tickets{% if filters.project_code %}?project_code={{ filters.project_code|urlencode }}{% endif %}"
+         class="topbtn border border-slate-300 bg-white text-slate-700">← Phiếu trả giá</a>
+      <button type="button" id="laRefreshBtn" class="topbtn border border-teal-300 bg-teal-50 text-teal-800">
+        <i class="ri-refresh-line"></i> Tải lại
+      </button>
+    </div>
+  </div>
+
+  {% if load_err %}
+  <div class="mb-3 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-sm">{{ load_err }}</div>
+  {% endif %}
+
+  <div class="mb-3 grid grid-cols-1 md:grid-cols-[minmax(200px,280px)_1fr] gap-3 items-end">
+    <div>
+      <label class="block text-xs font-medium text-slate-600 mb-1">Dự án</label>
+      <select id="laProjectSelect" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+        <option value="">Chọn dự án…</option>
+      </select>
+    </div>
+    <div id="laStatusLine" class="text-xs text-slate-500 pb-2">Đang tải…</div>
+  </div>
+
+  <div class="la-stats mb-3" id="laStats">
+    <div class="la-stat-card"><div class="lbl">Tổng khách</div><div class="val" data-k="customer_count">—</div></div>
+    <div class="la-stat-card"><div class="lbl">Gán đủ lô</div><div class="val" data-k="customers_fully_assigned">—</div></div>
+    <div class="la-stat-card"><div class="lbl">Còn cần gán</div><div class="val" data-k="customers_with_pending">—</div></div>
+    <div class="la-stat-card"><div class="lbl">Chưa gán lô nào</div><div class="val" data-k="customers_none_assigned">—</div></div>
+    <div class="la-stat-card"><div class="lbl">Gán thiếu</div><div class="val" data-k="customers_partial">—</div></div>
+    <div class="la-stat-card"><div class="lbl">Quyền đã gán/tổng</div><div class="val" data-k="slots_ratio">—</div></div>
+  </div>
+
+  <div class="la-board">
+    <!-- Cột 1: Khách -->
+    <aside class="la-col">
+      <div class="la-col-hd">
+        <div class="title">1. Khách hàng</div>
+        <div class="sub">Tìm tên (k dấu) hoặc STT</div>
+      </div>
+      <div class="la-col-tools">
+        <input type="search" id="laCustomerSearch" placeholder="Tên, STT…" autocomplete="off">
+        <div class="la-filter-tabs" id="laFilterTabs">
+          <button type="button" class="la-filter-tab is-active" data-filter="all">Tất cả</button>
+          <button type="button" class="la-filter-tab" data-filter="pending">Cần gán</button>
+          <button type="button" class="la-filter-tab" data-filter="partial">Gán thiếu</button>
+          <button type="button" class="la-filter-tab" data-filter="done">Đủ lô</button>
+        </div>
+      </div>
+      <div class="la-scroll" id="laColCustomers"></div>
+    </aside>
+
+    <!-- Cột 2: Nhóm cọc -->
+    <aside class="la-col">
+      <div class="la-col-hd">
+        <div class="title">2. Nhóm cọc</div>
+        <div class="sub" id="laCol2Sub">Chọn khách bên trái</div>
+      </div>
+      <div class="la-scroll" id="laColGroups"></div>
+    </aside>
+
+    <!-- Cột 3 + 4 -->
+    <section class="la-dual-wrap">
+      <div class="la-col-hd">
+        <div class="title">3–4. Gán lô trong nhóm</div>
+        <div class="sub" id="laCol34Sub">Chọn nhóm cọc · bấm mũi tên trên từng lô để di chuyển</div>
+      </div>
+      <div class="la-dual">
+        <div class="la-lot-col state-warn" id="laColAssigned">
+          <div class="la-lot-col-hd">
+            <b>3. Đã gán cho khách</b>
+            <div class="cnt" id="laAssignedCnt">—</div>
+            <input type="search" id="laFilterAssigned" placeholder="Lọc mã lô…" class="mt-2 w-full border border-slate-300 rounded-lg px-2 py-1 text-xs">
+          </div>
+          <div class="la-lot-list" id="laListAssigned"></div>
+        </div>
+        <div class="la-lot-col" id="laColPool">
+          <div class="la-lot-col-hd">
+            <b>4. Lô còn lại nhóm</b>
+            <div class="cnt" id="laPoolCnt">—</div>
+            <input type="search" id="laFilterPool" placeholder="Lọc mã lô…" class="mt-2 w-full border border-slate-300 rounded-lg px-2 py-1 text-xs">
+          </div>
+          <div class="la-lot-list" id="laListPool"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div id="laToast" class="la-toast"></div>
+
+<script>
+(function () {
+  const PROJECT_CODE = {{ filters.project_code|tojson }};
+
+  let board = { customers: [], meta: {} };
+  let selectedCustomerId = null;
+  let selectedDepositVnd = null;
+  let customerFilter = "all";
+  let filterAssigned = "";
+  let filterPool = "";
+  let localExtra = [];
+  let selectedAssignedKey = null;
+  let selectedPoolKey = null;
+  let busy = false;
+
+  const el = (id) => document.getElementById(id);
+
+  function norm(s) {
+    return String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function escHtml(s) {
+    return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  function fmtVnd(n) { return Number(n || 0).toLocaleString("vi-VN"); }
+
+  function showToast(msg, ok) {
+    const t = el("laToast");
+    if (!t) return;
+    t.textContent = msg;
+    t.className = "la-toast " + (ok ? "ok" : "err");
+    clearTimeout(showToast._tm);
+    showToast._tm = setTimeout(() => { t.className = "la-toast"; }, ok ? 2200 : 4500);
+  }
+
+  function findCustomer(cid) {
+    return (board.customers || []).find(c => c.customer_id === cid) || null;
+  }
+
+  function findGroup(c, dep) {
+    if (!c) return null;
+    return (c.groups || []).find(g => Number(g.deposit_vnd) === Number(dep)) || null;
+  }
+
+  function getGroup() {
+    return findGroup(findCustomer(selectedCustomerId), selectedDepositVnd);
+  }
+
+  function groupBadge(status) {
+    if (status === "ok") return '<span class="la-badge ok">Đủ lô</span>';
+    if (status === "over") return '<span class="la-badge over">Gán thừa</span>';
+    return '<span class="la-badge warn">Còn thiếu</span>';
+  }
+
+  function matchCustomerSearch(c, q) {
+    if (!q) return true;
+    const stt = String(c.stt_padded || c.stt || "");
+    if (stt && (stt === q || stt.replace(/^0+/, "") === q.replace(/^0+/, ""))) return true;
+    if (/^\d+$/.test(q) && String(c.stt || "") === q) return true;
+    const hay = norm([c.customer_full_name, c.cccd, c.phone].join(" "));
+    return hay.indexOf(norm(q)) >= 0;
+  }
+
+  function matchCustomerFilter(c) {
+    const pending = Number(c.pending_count || 0);
+    const assigned = Number(c.assigned_count || 0);
+    const total = Number(c.total_slots || 0);
+    if (customerFilter === "pending") return pending > 0;
+    if (customerFilter === "partial") return assigned > 0 && pending > 0;
+    if (customerFilter === "done") return total > 0 && pending === 0;
+    return true;
+  }
+
+  function assignedItems(g) {
+    if (!g) return [];
+    const items = (g.assigned_lots || []).map(a => ({
+      key: "o-" + a.order_id,
+      lot_code: a.lot_code,
+      lot_id: a.lot_id,
+      order_id: a.order_id,
+      order_code: a.order_code,
+      staged: false,
+    }));
+    if (Number(g.deposit_vnd) === Number(selectedDepositVnd)) {
+      localExtra.forEach((x, i) => {
+        items.push({
+          key: "s-" + i + "-" + x.lot_code,
+          lot_code: x.lot_code,
+          lot_id: x.lot_id,
+          order_id: null,
+          staged: true,
+        });
+      });
+    }
+    return items;
+  }
+
+  function poolItems(g) {
+    const assignedCodes = new Set(assignedItems(g).map(x => norm(x.lot_code)));
+    return (g.available_lots || g.pool_lots || [])
+      .filter(x => !x.is_assigned_here && !assignedCodes.has(norm(x.lot_code)))
+      .map(x => ({
+        key: "p-" + x.lot_id,
+        lot_code: x.lot_code,
+        lot_id: x.lot_id,
+        is_available: !!x.is_available,
+        is_held_by_self_other_order: !!x.is_held_by_self_other_order,
+      }));
+  }
+
+  function col3State(g) {
+    const cnt = assignedItems(g).length;
+    const total = Number(g.total_slots || 0);
+    if (cnt > total) return "over";
+    if (cnt >= total && Number(g.pending_count || 0) === 0 && localExtra.length === 0) return "ok";
+    return "warn";
+  }
+
+  function renderStats(meta) {
+    (meta = meta || {});
+    document.querySelectorAll("#laStats [data-k]").forEach(node => {
+      const k = node.getAttribute("data-k");
+      node.textContent = k === "slots_ratio"
+        ? `${meta.assigned_slots || 0}/${meta.total_slots || 0}`
+        : (meta[k] != null ? meta[k] : "—");
+    });
+    el("laStatusLine").textContent =
+      `${meta.customer_count || 0} khách · ${meta.pending_slots || 0} quyền chờ gán · ${meta.customers_fully_assigned || 0} khách đủ lô`;
+  }
+
+  function renderCustomers() {
+    const q = (el("laCustomerSearch").value || "").trim();
+    const list = (board.customers || []).filter(c => matchCustomerFilter(c) && matchCustomerSearch(c, q));
+    const host = el("laColCustomers");
+    if (!list.length) {
+      host.innerHTML = '<div class="la-empty">Không có khách.</div>';
+      return;
+    }
+    host.innerHTML = list.map(c => {
+      const active = selectedCustomerId === c.customer_id ? " is-active" : "";
+      const pending = Number(c.pending_count || 0);
+      const badge = pending > 0
+        ? `<span class="la-badge warn">${pending} chờ</span>`
+        : `<span class="la-badge ok">Đủ</span>`;
+      return `<button type="button" class="la-cust-item${active}" data-cid="${c.customer_id}">
+        <div class="flex justify-between gap-1"><span class="text-[10px] font-mono bg-slate-100 px-1 rounded">${escHtml(c.stt_padded || c.stt || "—")}</span>${badge}</div>
+        <div class="text-sm font-medium text-slate-800 mt-1 truncate">${escHtml(c.customer_full_name)}</div>
+        <div class="text-[10px] text-slate-400">${c.assigned_count || 0}/${c.total_slots || 0} lô</div>
+      </button>`;
+    }).join("");
+  }
+
+  function renderGroups() {
+    const c = findCustomer(selectedCustomerId);
+    const sub = el("laCol2Sub");
+    const host = el("laColGroups");
+    if (!c) {
+      sub.textContent = "Chọn khách bên trái";
+      host.innerHTML = '<div class="la-empty">← Chọn khách</div>';
+      return;
+    }
+    sub.textContent = `${c.customer_full_name} · ${c.total_slots || 0} quyền cọc`;
+    const groups = c.groups || [];
+    if (!groups.length) {
+      host.innerHTML = '<div class="la-empty">Khách chưa có nhóm cọc.</div>';
+      return;
+    }
+    host.innerHTML = groups.map(g => {
+      const active = Number(selectedDepositVnd) === Number(g.deposit_vnd) ? " is-active" : "";
+      const st = col3State(g);
+      return `<button type="button" class="la-group-item${active}" data-dep="${g.deposit_vnd}">
+        <div class="flex justify-between gap-2 items-start">
+          <div class="font-semibold text-sm text-slate-800">${escHtml(g.group_name)}</div>
+          ${groupBadge(st)}
+        </div>
+        <div class="text-[11px] text-slate-500 mt-1">${fmtVnd(g.deposit_vnd)} VND</div>
+        <div class="text-[10px] text-slate-500 mt-2">Cọc <b>${g.total_slots}</b> · Gán <b>${g.assigned_count}</b> · Chờ <b>${g.pending_count}</b></div>
+      </button>`;
+    }).join("");
+  }
+
+  function renderDual() {
+    const g = getGroup();
+    const colAssigned = el("laColAssigned");
+    const sub34 = el("laCol34Sub");
+    if (!g) {
+      sub34.textContent = "Chọn nhóm cọc";
+      el("laAssignedCnt").textContent = "—";
+      el("laPoolCnt").textContent = "—";
+      el("laListAssigned").innerHTML = '<div class="la-empty">← Chọn nhóm</div>';
+      el("laListPool").innerHTML = '<div class="la-empty">← Chọn nhóm</div>';
+      colAssigned.className = "la-lot-col state-warn";
+      return;
+    }
+
+    const st = col3State(g);
+    colAssigned.className = "la-lot-col state-" + (st === "ok" ? "ok" : st === "over" ? "over" : "warn");
+    const aItems = assignedItems(g).filter(x => !filterAssigned || norm(x.lot_code).includes(norm(filterAssigned)));
+    const pItems = poolItems(g).filter(x => !filterPool || norm(x.lot_code).includes(norm(filterPool)));
+
+    sub34.textContent = `${g.group_name} · ${fmtVnd(g.deposit_vnd)} VND`;
+    el("laAssignedCnt").textContent = `${assignedItems(g).length} / ${g.total_slots} lô đã cọc` +
+      (st === "over" ? " · ĐANG GÁN THỪA" : st === "ok" ? " · ĐỦ" : " · CÒN THIẾU");
+    el("laPoolCnt").textContent = `${pItems.length} lô khả chọn`;
+
+    el("laListAssigned").innerHTML = aItems.length ? aItems.map(x => {
+      const sel = selectedAssignedKey === x.key ? " ring-2 ring-teal-500" : "";
+      const staged = x.staged ? " is-staged" : "";
+      return `<div class="la-lot-row${staged}${sel}" data-side="assigned" data-key="${escHtml(x.key)}" data-oid="${x.order_id || ""}" data-lc="${escHtml(x.lot_code)}">
+        <div class="la-lot-body"><div class="la-lot-code">${escHtml(x.lot_code)}</div>
+        <div class="la-lot-meta">${x.staged ? "Chưa lưu (thừa)" : escHtml(x.order_code || "")}</div></div>
+        <button type="button" class="la-iconbtn js-move-pool" title="Chuyển sang cột còn lại"><i class="ri-arrow-right-line"></i></button>
+      </div>`;
+    }).join("") : '<div class="la-empty">Chưa gán lô nào</div>';
+
+    el("laListPool").innerHTML = pItems.length ? pItems.map(x => {
+      const sel = selectedPoolKey === x.key ? " ring-2 ring-teal-500" : "";
+      const taken = !x.is_available ? " is-taken" : "";
+      const meta = x.is_held_by_self_other_order
+        ? "Khách này đã chọn ở đơn cọc khác"
+        : "Có thể chọn";
+      return `<div class="la-lot-row from-pool${taken}${sel}" data-side="pool" data-key="${escHtml(x.key)}" data-lid="${x.lot_id}" data-lc="${escHtml(x.lot_code)}" data-avail="${x.is_available ? "1" : "0"}">
+        <button type="button" class="la-iconbtn primary js-move-assigned" title="Gán cho khách" ${x.is_available ? "" : "disabled"}><i class="ri-arrow-left-line"></i></button>
+        <div class="la-lot-body"><div class="la-lot-code">${escHtml(x.lot_code)}</div><div class="la-lot-meta">${meta}</div></div>
+      </div>`;
+    }).join("") : '<div class="la-empty">Không còn lô trong nhóm</div>';
+  }
+
+  function renderAll() {
+    renderCustomers();
+    renderGroups();
+    renderDual();
+  }
+
+  function selectCustomer(cid) {
+    selectedCustomerId = cid;
+    selectedDepositVnd = null;
+    localExtra = [];
+    selectedAssignedKey = null;
+    selectedPoolKey = null;
+    const c = findCustomer(cid);
+    if (c && (c.groups || []).length) {
+      const first = (c.groups || []).find(g => g.status !== "ok") || c.groups[0];
+      selectedDepositVnd = first.deposit_vnd;
+    }
+    renderAll();
+  }
+
+  function selectGroup(dep) {
+    selectedDepositVnd = Number(dep);
+    localExtra = [];
+    selectedAssignedKey = null;
+    selectedPoolKey = null;
+    renderGroups();
+    renderDual();
+  }
+
+  async function loadBoard(keep) {
+    if (!PROJECT_CODE) { el("laStatusLine").textContent = "Chưa chọn dự án"; return; }
+    el("laStatusLine").textContent = "Đang tải…";
+    try {
+      const r = await fetch(`/bid-tickets/api/group-deposit-assignments?project_code=${encodeURIComponent(PROJECT_CODE)}`, { credentials: "same-origin" });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.error || d.detail || "Không tải được");
+      board = { customers: d.customers || [], meta: d.meta || {} };
+      renderStats(board.meta);
+      if (keep && selectedCustomerId && findCustomer(selectedCustomerId)) {
+        localExtra = [];
+        renderAll();
+        return;
+      }
+      selectedCustomerId = null;
+      selectedDepositVnd = null;
+      localExtra = [];
+      renderAll();
+      const first = (board.customers || []).find(c => Number(c.pending_count) > 0);
+      if (first) selectCustomer(first.customer_id);
+    } catch (e) {
+      showToast(e.message || String(e), false);
+      el("laStatusLine").textContent = "Lỗi tải dữ liệu";
+    }
+  }
+
+  async function apiAssign(orderId, lotCode) {
+    const r = await fetch(
+      `/bid-tickets/api/group-deposits/${orderId}/assign-lot?project_code=${encodeURIComponent(PROJECT_CODE)}`,
+      { method: "PUT", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lot_code: lotCode }) }
+    );
+    const d = await r.json();
+    if (!r.ok || !d.ok) throw new Error(d.error || d.detail || "Gán lô thất bại");
+    return d;
+  }
+
+  async function apiUnassign(orderId) {
+    const r = await fetch(
+      `/bid-tickets/api/group-deposits/${orderId}/unassign-lot?project_code=${encodeURIComponent(PROJECT_CODE)}`,
+      { method: "PUT", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) }
+    );
+    const d = await r.json();
+    if (!r.ok || !d.ok) throw new Error(d.error || d.detail || "Huỷ gán thất bại");
+    return d;
+  }
+
+  async function moveToAssigned(lotCode, lotId) {
+    if (busy || !lotCode) return;
+    const g = getGroup();
+    if (!g) return;
+    busy = true;
+    try {
+      const pending = g.pending_slots || [];
+      if (pending.length) {
+        await apiAssign(pending[0].order_id, lotCode);
+        showToast(`Đã gán ${lotCode}`, true);
+        await loadBoard(true);
+      } else {
+        localExtra.push({ lot_code: lotCode, lot_id: lotId });
+        showToast(`Thêm ${lotCode} (chưa lưu — gán thừa)`, false);
+        renderDual();
+        renderGroups();
+      }
+    } catch (e) {
+      showToast(e.message || String(e), false);
+    } finally {
+      busy = false;
+      selectedPoolKey = null;
+    }
+  }
+
+  async function moveToPool(item) {
+    if (busy || !item) return;
+    busy = true;
+    try {
+      if (item.staged) {
+        localExtra = localExtra.filter(x => x.lot_code !== item.lot_code);
+        showToast(`Đã bỏ ${item.lot_code} (chưa lưu)`, true);
+        renderDual();
+        renderGroups();
+      } else if (item.order_id) {
+        await apiUnassign(item.order_id);
+        showToast(`Đã bỏ gán ${item.lot_code}`, true);
+        await loadBoard(true);
+      }
+    } catch (e) {
+      showToast(e.message || String(e), false);
+    } finally {
+      busy = false;
+      selectedAssignedKey = null;
+    }
+  }
+
+  el("laColCustomers").addEventListener("click", ev => {
+    const btn = ev.target.closest(".la-cust-item");
+    if (btn) selectCustomer(Number(btn.getAttribute("data-cid")));
+  });
+
+  el("laColGroups").addEventListener("click", ev => {
+    const btn = ev.target.closest(".la-group-item");
+    if (btn) selectGroup(btn.getAttribute("data-dep"));
+  });
+
+  el("laCustomerSearch").addEventListener("input", renderCustomers);
+  el("laFilterAssigned").addEventListener("input", function () { filterAssigned = this.value; renderDual(); });
+  el("laFilterPool").addEventListener("input", function () { filterPool = this.value; renderDual(); });
+
+  el("laFilterTabs").addEventListener("click", ev => {
+    const tab = ev.target.closest(".la-filter-tab");
+    if (!tab) return;
+    customerFilter = tab.getAttribute("data-filter") || "all";
+    el("laFilterTabs").querySelectorAll(".la-filter-tab").forEach(b => b.classList.toggle("is-active", b === tab));
+    renderCustomers();
+  });
+
+  el("laListAssigned").addEventListener("click", async ev => {
+    const btn = ev.target.closest(".js-move-pool");
+    if (btn) {
+      const r = btn.closest(".la-lot-row");
+      const g = getGroup();
+      const item = assignedItems(g).find(x => x.key === r.getAttribute("data-key"));
+      await moveToPool(item);
+      return;
+    }
+    const row = ev.target.closest(".la-lot-row");
+    if (row) {
+      selectedAssignedKey = row.getAttribute("data-key");
+      selectedPoolKey = null;
+      renderDual();
+    }
+  });
+
+  el("laListPool").addEventListener("click", async ev => {
+    const btn = ev.target.closest(".js-move-assigned");
+    if (btn && !btn.disabled) {
+      const r = btn.closest(".la-lot-row");
+      await moveToAssigned(r.getAttribute("data-lc"), Number(r.getAttribute("data-lid")));
+      return;
+    }
+    const row = ev.target.closest(".la-lot-row");
+    if (row) {
+      selectedPoolKey = row.getAttribute("data-key");
+      selectedAssignedKey = null;
+      renderDual();
+    }
+  });
+
+  el("laRefreshBtn").addEventListener("click", () => loadBoard(true));
+
+  const projectSelect = el("laProjectSelect");
+  if (projectSelect) {
+    fetch("/projects/options/active", { headers: { "X-Requested-With": "fetch" } })
+      .then(r => r.json())
+      .then(js => {
+        const list = js.data || js.items || [];
+        projectSelect.innerHTML = '<option value="">Chọn dự án…</option>';
+        list.forEach(p => {
+          const code = p.project_code || p.code || "";
+          if (!code) return;
+          const opt = document.createElement("option");
+          opt.value = code;
+          opt.textContent = `${code} — ${p.name || code}`;
+          projectSelect.appendChild(opt);
+        });
+        if (PROJECT_CODE) projectSelect.value = PROJECT_CODE;
+      }).catch(() => {});
+    projectSelect.addEventListener("change", function () {
+      const code = (projectSelect.value || "").trim();
+      if (code) window.location.href = `/bid-tickets/lot-assign?project_code=${encodeURIComponent(code)}`;
+    });
+  }
+
+  if (PROJECT_CODE) loadBoard(false);
+})();
+</script>
+{% endblock %}

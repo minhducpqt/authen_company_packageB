@@ -6,7 +6,7 @@ from urllib.parse import quote
 import os
 import httpx
 from fastapi import APIRouter, Request, Query
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 
 from utils.templates import templates
 from utils.auth import get_access_token, fetch_me
@@ -52,6 +52,27 @@ async def _get_json(
         return r.status_code, None
 
 
+def _api_error_message(body: Any, fallback: str = "Lỗi không xác định") -> str:
+    if not isinstance(body, dict):
+        return fallback
+    detail = body.get("detail")
+    if isinstance(detail, list):
+        parts = []
+        for item in detail:
+            if isinstance(item, dict):
+                msg = item.get("msg") or item.get("message")
+                if msg:
+                    parts.append(str(msg))
+        if parts:
+            return "; ".join(parts)
+    if isinstance(detail, str) and detail.strip():
+        return detail.strip()
+    err = body.get("error")
+    if isinstance(err, str) and err.strip():
+        return err.strip()
+    return fallback
+
+
 def _parse_item(s: str) -> Optional[Tuple[str, int, int]]:
     """
     item format: "<project_code>|<customer_id>|<lot_id>"
@@ -68,6 +89,50 @@ def _parse_item(s: str) -> Optional[Tuple[str, int, int]]:
         return pj, cid, lid
     except Exception:
         return None
+
+
+async def _fetch_project_by_code(
+    token: str,
+    project_code: str,
+) -> Optional[Dict[str, Any]]:
+    headers = {"Authorization": f"Bearer {token}"}
+    code = (project_code or "").strip()
+    if not code:
+        return None
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=15.0) as client:
+            st, js = await _get_json(
+                client,
+                f"/api/v1/projects/by_code/{quote(code)}",
+                headers,
+                {},
+            )
+        if st != 200 or not isinstance(js, dict):
+            return None
+        return js.get("data") or js
+    except Exception:
+        return None
+
+
+def _project_lot_assign_context(project: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    if not isinstance(project, dict):
+        return {
+            "show_lot_assign": False,
+            "project_id": None,
+            "registration_mode": "NORMAL",
+            "lot_policy": None,
+        }
+    reg_mode = (project.get("registration_mode") or "NORMAL").strip().upper()
+    ga = project.get("group_auction") if isinstance(project.get("group_auction"), dict) else {}
+    lot_policy = (ga.get("lot_policy") or "IN_SESSION_R1").strip().upper()
+    is_group = reg_mode == "GROUP_AUCTION"
+    return {
+        "show_lot_assign": bool(is_group and lot_policy == "PRE_SESSION"),
+        "project_id": project.get("id"),
+        "registration_mode": reg_mode,
+        "lot_policy": lot_policy if is_group else None,
+        "lot_policy_label": ga.get("lot_policy_label"),
+    }
 
 
 async def _auto_pick_project_code_if_missing(
@@ -272,8 +337,12 @@ async def bid_tickets_page(
                 "pairs_total": 0,
                 "customers_total": 0,
                 "load_err": "Vui lòng chọn dự án trước khi thao tác / in phiếu.",
+                **_project_lot_assign_context(None),
             },
         )
+
+    project_meta = await _fetch_project_by_code(token, pj)
+    lot_assign_ctx = _project_lot_assign_context(project_meta)
 
     params: Dict[str, Any] = {
         "page": page,
@@ -329,8 +398,178 @@ async def bid_tickets_page(
             "pairs_total": pairs_total,
             "customers_total": customers_total,
             "load_err": load_err,
+            **lot_assign_ctx,
         },
     )
+
+
+@router.get("/lot-assign", response_class=HTMLResponse)
+async def lot_assign_page(
+    request: Request,
+    project_code: Optional[str] = Query(None),
+):
+    """Màn hình gán lô PRE_SESSION — full page (mục 5.2)."""
+    token = get_access_token(request)
+    me = await fetch_me(token)
+    if not me:
+        return RedirectResponse(
+            url=f"/login?next={quote('/bid-tickets/lot-assign')}",
+            status_code=303,
+        )
+
+    pj = (project_code or "").strip()
+    if not pj:
+        picked = await _auto_pick_project_code_if_missing(
+            token=token,
+            me=me,
+            incoming_filters={},
+        )
+        if picked:
+            return RedirectResponse(
+                url=f"/bid-tickets/lot-assign?project_code={quote(picked)}",
+                status_code=303,
+            )
+
+    project_meta = await _fetch_project_by_code(token, pj) if pj else None
+    lot_assign_ctx = _project_lot_assign_context(project_meta)
+
+    if pj and not lot_assign_ctx.get("show_lot_assign"):
+        return templates.TemplateResponse(
+            "pages/bid_tickets/lot_assign.html",
+            {
+                "request": request,
+                "title": "Gán mã lô",
+                "me": me,
+                "filters": {"project_code": pj},
+                "load_err": "Dự án này không dùng chính sách gán lô trước phiên (PRE_SESSION).",
+                **lot_assign_ctx,
+            },
+        )
+
+    return templates.TemplateResponse(
+        "pages/bid_tickets/lot_assign.html",
+        {
+            "request": request,
+            "title": "Gán mã lô",
+            "me": me,
+            "filters": {"project_code": pj},
+            "load_err": None if pj else "Vui lòng chọn dự án để gán lô.",
+            **lot_assign_ctx,
+        },
+    )
+
+
+@router.get("/api/group-deposit-assignments", response_class=JSONResponse)
+async def api_group_deposit_assignments(
+    request: Request,
+    project_code: str = Query(...),
+):
+    """Proxy: bảng gán lô PRE_SESSION cho mục 5.2."""
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
+
+    project = await _fetch_project_by_code(token, project_code)
+    ctx = _project_lot_assign_context(project)
+    if not ctx.get("show_lot_assign") or not ctx.get("project_id"):
+        return JSONResponse(
+            {"ok": False, "error": "Dự án không áp dụng gán lô trước phiên (PRE_SESSION)."},
+            status_code=400,
+        )
+
+    pid = int(ctx["project_id"])
+    headers = {"Authorization": f"Bearer {token}"}
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=20.0) as client:
+            r = await client.get(
+                f"/api/v1/projects/{pid}/group-deposit-assignments",
+                headers=headers,
+            )
+        body = r.json() if r.content else {"ok": False}
+        if r.status_code >= 400 and isinstance(body, dict) and not body.get("error"):
+            body = {**body, "error": _api_error_message(body, f"HTTP {r.status_code}")}
+        return JSONResponse(body, status_code=r.status_code)
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+
+
+@router.put("/api/group-deposits/{order_id}/assign-lot", response_class=JSONResponse)
+async def api_assign_group_deposit_lot_bid_tickets(
+    request: Request,
+    order_id: int,
+    project_code: str = Query(...),
+):
+    """Proxy: gán lô cho đơn cọc nhóm từ mục 5.2."""
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
+
+    project = await _fetch_project_by_code(token, project_code)
+    ctx = _project_lot_assign_context(project)
+    if not ctx.get("show_lot_assign") or not ctx.get("project_id"):
+        return JSONResponse(
+            {"ok": False, "error": "Dự án không áp dụng gán lô trước phiên."},
+            status_code=400,
+        )
+
+    try:
+        payload = await request.json()
+    except Exception:
+        payload = {}
+
+    pid = int(ctx["project_id"])
+    headers = {"Authorization": f"Bearer {token}"}
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=20.0) as client:
+            r = await client.put(
+                f"/api/v1/projects/{pid}/group-deposits/{order_id}/assign-lot",
+                headers=headers,
+                json=payload,
+            )
+        body = r.json() if r.content else {"ok": False}
+        if r.status_code >= 400:
+            msg = _api_error_message(body, "Gán lô thất bại")
+            return JSONResponse({"ok": False, "error": msg, "detail": body.get("detail")}, status_code=r.status_code)
+        return JSONResponse(body, status_code=r.status_code)
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+
+
+@router.put("/api/group-deposits/{order_id}/unassign-lot", response_class=JSONResponse)
+async def api_unassign_group_deposit_lot_bid_tickets(
+    request: Request,
+    order_id: int,
+    project_code: str = Query(...),
+):
+    """Proxy: huỷ gán lô đơn cọc nhóm."""
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
+
+    project = await _fetch_project_by_code(token, project_code)
+    ctx = _project_lot_assign_context(project)
+    if not ctx.get("show_lot_assign") or not ctx.get("project_id"):
+        return JSONResponse(
+            {"ok": False, "error": "Dự án không áp dụng gán lô trước phiên."},
+            status_code=400,
+        )
+
+    pid = int(ctx["project_id"])
+    headers = {"Authorization": f"Bearer {token}"}
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=20.0) as client:
+            r = await client.put(
+                f"/api/v1/projects/{pid}/group-deposits/{order_id}/unassign-lot",
+                headers=headers,
+                json={},
+            )
+        body = r.json() if r.content else {"ok": False}
+        if r.status_code >= 400:
+            msg = _api_error_message(body, "Huỷ gán lô thất bại")
+            return JSONResponse({"ok": False, "error": msg, "detail": body.get("detail")}, status_code=r.status_code)
+        return JSONResponse(body, status_code=r.status_code)
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
 
 
 # ======================================================================

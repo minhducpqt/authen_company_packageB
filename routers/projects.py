@@ -56,6 +56,9 @@ EP_COMPANY_PROFILE   = "/api/v1/company/profile"
 EP_AUCTION_MODE      = "/api/v1/projects/{project_id}/auction_mode"
 EP_REGISTRATION_MODE = "/api/v1/projects/{project_id}/registration_mode"
 EP_DEPOSIT_GROUP_FEES = "/api/v1/projects/{project_id}/deposit-group-fees"
+EP_GROUP_LOT_POLICY = "/api/v1/projects/{project_id}/group-auction/lot-policy"
+EP_GROUP_DEPOSITS = "/api/v1/projects/{project_id}/group-deposits"
+EP_GROUP_DEPOSIT_ASSIGN = "/api/v1/projects/{project_id}/group-deposits/{order_id}/assign-lot"
 EP_AUCTION_CONFIG    = "/api/v1/projects/{project_id}/auction_config"
 EP_BID_TICKET_CONFIG = "/api/v1/projects/{project_id}/bid_ticket_config"  # <-- NEW
 EP_BID_STEP_POLICY  = "/api/v1/projects/{project_id}/bid_step_policy"  # <-- NEW
@@ -1002,6 +1005,71 @@ async def api_sync_deposit_group_fees(request: Request, project_id: int = Path(.
     async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=15.0) as client:
         r = await client.post(
             f"/api/v1/projects/{project_id}/deposit-group-fees/sync",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    try:
+        body = r.json()
+    except Exception:
+        body = {"ok": False, "error": r.text}
+    return JSONResponse(body, status_code=r.status_code)
+
+
+@router.put("/api/{project_id}/group-auction/lot-policy", response_class=JSONResponse)
+async def api_update_group_lot_policy(request: Request, project_id: int = Path(...)):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
+    try:
+        payload = await request.json()
+    except Exception:
+        payload = {}
+    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=15.0) as client:
+        r = await client.put(
+            EP_GROUP_LOT_POLICY.format(project_id=project_id),
+            json=payload,
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    try:
+        body = r.json()
+    except Exception:
+        body = {"ok": False, "error": r.text}
+    return JSONResponse(body, status_code=r.status_code)
+
+
+@router.get("/api/{project_id}/group-deposits", response_class=JSONResponse)
+async def api_list_group_deposits(request: Request, project_id: int = Path(...)):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
+    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=15.0) as client:
+        r = await client.get(
+            EP_GROUP_DEPOSITS.format(project_id=project_id),
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    try:
+        body = r.json()
+    except Exception:
+        body = {"ok": False, "error": r.text}
+    return JSONResponse(body, status_code=r.status_code)
+
+
+@router.put("/api/{project_id}/group-deposits/{order_id}/assign-lot", response_class=JSONResponse)
+async def api_assign_group_deposit_lot(
+    request: Request,
+    project_id: int = Path(...),
+    order_id: int = Path(...),
+):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
+    try:
+        payload = await request.json()
+    except Exception:
+        payload = {}
+    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=15.0) as client:
+        r = await client.put(
+            EP_GROUP_DEPOSIT_ASSIGN.format(project_id=project_id, order_id=order_id),
+            json=payload,
             headers={"Authorization": f"Bearer {token}"},
         )
     try:
