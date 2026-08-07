@@ -183,6 +183,9 @@
     opt.dataset.auctionTypeLabel = project.auction_type_label || style.label;
     var code = (project.project_code || project.code || "").trim();
     if (code) opt.dataset.projectCode = code;
+    if (project.id != null) opt.dataset.pid = String(project.id);
+    else if (project.project_id != null) opt.dataset.pid = String(project.project_id);
+    else delete opt.dataset.pid;
   }
 
   function inferValueMode(selectEl) {
