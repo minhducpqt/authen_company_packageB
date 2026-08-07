@@ -242,6 +242,20 @@
     return true;
   }
 
+  function lotSort(a, b) {
+    const ca = String(a.lot_code || "");
+    const cb = String(b.lot_code || "");
+    const cmp = ca.localeCompare(cb, "vi", { numeric: true, sensitivity: "base" });
+    if (cmp !== 0) return cmp;
+    return Number(a.lot_id || 0) - Number(b.lot_id || 0);
+  }
+
+  /** Toàn bộ lô thuộc nhóm cọc (cột 3 + 4 luôn partition đủ tập này). */
+  function tierLots(g) {
+    if (!g) return [];
+    return (g.pool_lots || []).slice().sort(lotSort);
+  }
+
   function assignedItems(g) {
     if (!g) return [];
     const items = (g.assigned_lots || []).map(a => ({
@@ -263,19 +277,32 @@
         });
       });
     }
-    return items;
+    return items.sort(lotSort);
+  }
+
+  /** Lô đầu tiên ở cột 3 chưa gán Pxxx (theo thứ tự hiển thị). */
+  function firstOrphanInCol3(g) {
+    const hit = assignedItems(g).find(x => !x.order_id);
+    if (!hit) return null;
+    return { lot_code: hit.lot_code, lot_id: hit.lot_id };
+  }
+
+  function isOverAssigned(g) {
+    if (!g) return false;
+    return localExtra.length > 0 || assignedItems(g).length > Number(g.total_slots || 0);
   }
 
   function poolItems(g) {
-    const assignedCodes = new Set(assignedItems(g).map(x => norm(x.lot_code)));
-    return (g.available_lots || g.pool_lots || [])
-      .filter(x => !x.is_assigned_here && !assignedCodes.has(norm(x.lot_code)))
+    if (!g) return [];
+    const assigned = assignedItems(g);
+    const assignedIds = new Set(assigned.map(x => Number(x.lot_id)).filter(Boolean));
+    const assignedCodes = new Set(assigned.map(x => norm(x.lot_code)).filter(Boolean));
+    return tierLots(g)
+      .filter(x => !assignedIds.has(Number(x.lot_id)) && !assignedCodes.has(norm(x.lot_code)))
       .map(x => ({
         key: "p-" + x.lot_id,
         lot_code: x.lot_code,
         lot_id: x.lot_id,
-        is_available: !!x.is_available,
-        is_held_by_self_other_order: !!x.is_held_by_self_other_order,
       }));
   }
 
@@ -366,13 +393,17 @@
 
     const st = col3State(g);
     colAssigned.className = "la-lot-col state-" + (st === "ok" ? "ok" : st === "over" ? "over" : "warn");
-    const aItems = assignedItems(g).filter(x => !filterAssigned || norm(x.lot_code).includes(norm(filterAssigned)));
-    const pItems = poolItems(g).filter(x => !filterPool || norm(x.lot_code).includes(norm(filterPool)));
+    const allAssigned = assignedItems(g);
+    const allPool = poolItems(g);
+    const tierTotal = tierLots(g).length;
+    const aItems = allAssigned.filter(x => !filterAssigned || norm(x.lot_code).includes(norm(filterAssigned)));
+    const pItems = allPool.filter(x => !filterPool || norm(x.lot_code).includes(norm(filterPool)));
 
-    sub34.textContent = `${g.group_name} · ${fmtVnd(g.deposit_vnd)} VND`;
-    el("laAssignedCnt").textContent = `${assignedItems(g).length} / ${g.total_slots} lô đã cọc` +
+    sub34.textContent = `${g.group_name} · ${fmtVnd(g.deposit_vnd)} VND · ${tierTotal} lô nhóm`;
+    el("laAssignedCnt").textContent = `${allAssigned.length} / ${tierTotal} lô gán khách` +
       (st === "over" ? " · ĐANG GÁN THỪA" : st === "ok" ? " · ĐỦ" : " · CÒN THIẾU");
-    el("laPoolCnt").textContent = `${pItems.length} lô khả chọn`;
+    el("laPoolCnt").textContent = `${allPool.length} / ${tierTotal} lô còn lại` +
+      (pItems.length !== allPool.length ? ` · hiển thị ${pItems.length}` : "");
 
     el("laListAssigned").innerHTML = aItems.length ? aItems.map(x => {
       const sel = selectedAssignedKey === x.key ? " ring-2 ring-teal-500" : "";
@@ -386,13 +417,9 @@
 
     el("laListPool").innerHTML = pItems.length ? pItems.map(x => {
       const sel = selectedPoolKey === x.key ? " ring-2 ring-teal-500" : "";
-      const taken = !x.is_available ? " is-taken" : "";
-      const meta = x.is_held_by_self_other_order
-        ? "Khách này đã chọn ở đơn cọc khác"
-        : "Có thể chọn";
-      return `<div class="la-lot-row from-pool${taken}${sel}" data-side="pool" data-key="${escHtml(x.key)}" data-lid="${x.lot_id}" data-lc="${escHtml(x.lot_code)}" data-avail="${x.is_available ? "1" : "0"}">
-        <button type="button" class="la-iconbtn primary js-move-assigned" title="Gán cho khách" ${x.is_available ? "" : "disabled"}><i class="ri-arrow-left-line"></i></button>
-        <div class="la-lot-body"><div class="la-lot-code">${escHtml(x.lot_code)}</div><div class="la-lot-meta">${meta}</div></div>
+      return `<div class="la-lot-row from-pool${sel}" data-side="pool" data-key="${escHtml(x.key)}" data-lid="${x.lot_id}" data-lc="${escHtml(x.lot_code)}">
+        <button type="button" class="la-iconbtn primary js-move-assigned" title="Gán cho khách"><i class="ri-arrow-left-line"></i></button>
+        <div class="la-lot-body"><div class="la-lot-code">${escHtml(x.lot_code)}</div><div class="la-lot-meta">Có thể chọn</div></div>
       </div>`;
     }).join("") : '<div class="la-empty">Không còn lô trong nhóm</div>';
   }
@@ -426,17 +453,25 @@
     renderDual();
   }
 
+  async function fetchBoardData() {
+    const r = await fetch(
+      `/bid-tickets/api/group-deposit-assignments?project_code=${encodeURIComponent(PROJECT_CODE)}`,
+      { credentials: "same-origin" }
+    );
+    const d = await r.json();
+    if (!r.ok || !d.ok) throw new Error(d.error || d.detail || "Không tải được");
+    board = { customers: d.customers || [], meta: d.meta || {} };
+    renderStats(board.meta);
+  }
+
   async function loadBoard(keep) {
     if (!PROJECT_CODE) { el("laStatusLine").textContent = "Chưa chọn dự án"; return; }
     el("laStatusLine").textContent = "Đang tải…";
     try {
-      const r = await fetch(`/bid-tickets/api/group-deposit-assignments?project_code=${encodeURIComponent(PROJECT_CODE)}`, { credentials: "same-origin" });
-      const d = await r.json();
-      if (!r.ok || !d.ok) throw new Error(d.error || d.detail || "Không tải được");
-      board = { customers: d.customers || [], meta: d.meta || {} };
-      renderStats(board.meta);
+      const savedExtra = keep ? localExtra.slice() : [];
+      await fetchBoardData();
       if (keep && selectedCustomerId && findCustomer(selectedCustomerId)) {
-        localExtra = [];
+        localExtra = savedExtra;
         renderAll();
         return;
       }
@@ -499,18 +534,38 @@
 
   async function moveToPool(item) {
     if (busy || !item) return;
+    const g = getGroup();
+    if (!g) return;
     busy = true;
     try {
+      // #2: lô chưa gán Pxxx — chỉ bỏ khỏi cột 3, sang cột 4
       if (item.staged) {
-        localExtra = localExtra.filter(x => x.lot_code !== item.lot_code);
-        showToast(`Đã bỏ ${item.lot_code} (chưa lưu)`, true);
+        localExtra = localExtra.filter(x => norm(x.lot_code) !== norm(item.lot_code));
+        showToast(`Đã chuyển ${item.lot_code} sang cột 4`, true);
         renderDual();
         renderGroups();
-      } else if (item.order_id) {
-        await apiUnassign(item.order_id);
-        showToast(`Đã bỏ gán ${item.lot_code}`, true);
-        await loadBoard(true);
+        return;
       }
+
+      if (!item.order_id) return;
+
+      const orphan = firstOrphanInCol3(g);
+
+      // #1: lô đang gán Pxxx + danh sách thừa — chuyển lô sang 4, Pxxx gắn lô đầu tiên chưa có Pxxx ở cột 3
+      if (isOverAssigned(g) && orphan) {
+        await apiAssign(item.order_id, orphan.lot_code);
+        localExtra = localExtra.filter(x => norm(x.lot_code) !== norm(orphan.lot_code));
+        await loadBoard(true);
+        showToast(
+          `Đã chuyển ${item.lot_code} sang cột 4 · ${item.order_code || "Đơn"} → ${orphan.lot_code}`,
+          true
+        );
+        return;
+      }
+
+      await apiUnassign(item.order_id);
+      await loadBoard(true);
+      showToast(`Đã chuyển ${item.lot_code} sang cột 4`, true);
     } catch (e) {
       showToast(e.message || String(e), false);
     } finally {
@@ -560,7 +615,7 @@
 
   el("laListPool").addEventListener("click", async ev => {
     const btn = ev.target.closest(".js-move-assigned");
-    if (btn && !btn.disabled) {
+    if (btn) {
       const r = btn.closest(".la-lot-row");
       await moveToAssigned(r.getAttribute("data-lc"), Number(r.getAttribute("data-lid")));
       return;
