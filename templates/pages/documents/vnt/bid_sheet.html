@@ -197,6 +197,45 @@
       box-sizing:border-box;
     }
 
+    .lot-flag .flag-lot--group{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:0.6mm;
+      padding:3px 8px 4px;
+      white-space:normal;
+      line-height:1;
+    }
+    .lot-flag .flag-group-label{
+      display:block;
+      font-size:9.5pt;
+      font-weight:700;
+      letter-spacing:0.2mm;
+      text-transform:none;
+      color:rgba(0,0,0,0.72);
+      line-height:1.1;
+    }
+    .lot-flag .flag-group-amount{
+      display:flex;
+      align-items:baseline;
+      justify-content:center;
+      gap:1.2px;
+      line-height:1;
+    }
+    .lot-flag .flag-group-num{
+      font-size:22pt;
+      font-weight:900;
+      letter-spacing:0.05mm;
+      line-height:0.95;
+    }
+    .lot-flag .flag-group-unit{
+      font-size:11pt;
+      font-weight:700;
+      color:rgba(0,0,0,0.78);
+      line-height:1;
+    }
+
     .lot-flag .flag-code{
       font-size:8.8pt;
       font-weight:700;
@@ -663,6 +702,12 @@
 
   {% set lot_code_display = t.lot_code or '' %}
   {% set is_blank_ticket = (t.ticket_mode or '') == 'BLANK_TICKET' %}
+  {% set deposit_tr = none %}
+  {% if is_blank_ticket and t.deposit_vnd is not none and t.deposit_vnd != '' %}
+    {% set deposit_tr = ((t.deposit_vnd|float) / 1000000)|int %}
+    {% if deposit_tr < 0 %}{% set deposit_tr = 0 %}{% endif %}
+  {% endif %}
+  {% set show_group_flag = is_blank_ticket and deposit_tr is not none and deposit_tr > 0 %}
   {% set lot_len = lot_code_display|length %}
   {% if lot_len <= 4 %}
     {% set lot_flag_fs = '30pt' %}
@@ -696,8 +741,15 @@
 
     <!-- HEADER -->
     <header class="sheet-header">
-      <aside class="lot-flag" aria-label="{% if is_blank_ticket %}Phiếu trả giá{% else %}Mã lô{% endif %}">
-        {% if is_blank_ticket %}
+      <aside class="lot-flag" aria-label="{% if show_group_flag %}Nhóm đặt trước{% elif is_blank_ticket %}Phiếu trả giá{% else %}Mã lô{% endif %}">
+        {% if show_group_flag %}
+        <span class="flag-lot flag-lot--group">
+          <span class="flag-group-label">Nhóm</span>
+          <span class="flag-group-amount">
+            <span class="flag-group-num">{{ deposit_tr }}</span><span class="flag-group-unit">tr</span>
+          </span>
+        </span>
+        {% elif is_blank_ticket %}
         <span class="flag-lot" style="font-size:16pt; padding:4px 10px 5px; letter-spacing:0.1mm;">
           Phiếu {{ t.ticket_seq or '?' }}/{{ t.ticket_total or qty_lots }}
         </span>
