@@ -29,8 +29,8 @@
       --page-w: 210mm;
       --page-h: 297mm;
       --qr-size: 22mm;
-      --qr-left: 14mm;
-      --qr-bottom: 9mm;
+      --qr-top: 10mm;
+      --qr-right: 14mm;
       --box-cols: 10;
       --box-h: 7mm;
     }
@@ -52,7 +52,6 @@
       box-shadow: 0 0 6px rgba(0,0,0,.18);
       box-sizing: border-box;
       padding: var(--pad-y) var(--pad-x);
-      padding-bottom: calc(var(--pad-y) + var(--qr-size) + 4mm);
       position: relative;
       page-break-after: always;
       break-after: page;
@@ -81,8 +80,9 @@
 
     .reg-qr-overlay{
       position: absolute;
-      top: calc(var(--page-h) - var(--qr-bottom) - var(--qr-size));
-      left: var(--qr-left);
+      top: var(--qr-top);
+      right: var(--qr-right);
+      left: auto;
       width: var(--qr-size);
       height: var(--qr-size);
       z-index: 10000;

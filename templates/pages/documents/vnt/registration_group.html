@@ -80,12 +80,12 @@
       /* 2 cột */
       --col-gap: 6mm;
 
-      /* QR đơn đăng ký — cố định góc trái dưới trang 1 (không ảnh hưởng layout nội dung) */
+      /* QR đơn đăng ký — cố định góc phải trên trang 1 (không ảnh hưởng layout nội dung) */
       --page-w: 210mm;
       --page-h: 297mm;
       --qr-size: 25mm;
-      --qr-left: 15mm;
-      --qr-bottom: 10mm;
+      --qr-top: 10mm;
+      --qr-right: 15mm;
     }
 
     html, body{
@@ -147,15 +147,16 @@
     }
 
     /*
-      QR overlay — tọa độ cố định từ đỉnh tờ A4 trang 1.
+      QR overlay — góc phải trên trang 1.
       - Không chiếm chỗ trong flow → không đẩy / không co nội dung đơn
       - z-index cao → luôn nằm trên, không bị chữ đè
       - Chỉ render khi có registration_qr_data_uri (fail-safe)
     */
     .reg-qr-overlay{
       position: absolute;
-      top: calc(var(--page-h) - var(--qr-bottom) - var(--qr-size));
-      left: var(--qr-left);
+      top: var(--qr-top);
+      right: var(--qr-right);
+      left: auto;
       width: var(--qr-size);
       height: var(--qr-size);
       z-index: 10000;
@@ -175,8 +176,9 @@
     @media print{
       .reg-qr-overlay{
         position: absolute;
-        top: calc(var(--page-h) - var(--qr-bottom) - var(--qr-size));
-        left: var(--qr-left);
+        top: var(--qr-top);
+        right: var(--qr-right);
+        left: auto;
         print-color-adjust: exact;
         -webkit-print-color-adjust: exact;
       }
