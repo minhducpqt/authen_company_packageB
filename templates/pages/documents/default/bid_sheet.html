@@ -780,7 +780,7 @@
               <td class="info-value bold">{{ "{:,.0f}".format(t.deposit_vnd|float) }} VND</td>
             </tr>
             {% endif %}
-            {% if t.dossier_fee_vnd is not none and t.dossier_fee_vnd != '' %}
+            {% if t.dossier_fee_vnd is defined and t.dossier_fee_vnd is not none and t.dossier_fee_vnd != '' %}
             <tr>
               <td class="info-label">Tiền hồ sơ</td><td class="info-sep">:</td>
               <td class="info-value bold">{{ "{:,.0f}".format(t.dossier_fee_vnd|float) }} VND</td>
