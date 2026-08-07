@@ -92,6 +92,54 @@
   .la-toast { position:fixed; bottom:20px; right:20px; z-index:60; max-width:360px; padding:12px 16px; border-radius:10px; font-size:13px; box-shadow:0 8px 24px rgba(15,23,42,.15); display:none; }
   .la-toast.ok { display:block; background:#ecfdf5; border:1px solid #6ee7b7; color:#065f46; }
   .la-toast.err { display:block; background:#fff1f2; border:1px solid #fecdd3; color:#be123c; }
+  .la-mode-tabs { display:inline-flex; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden; background:#fff; }
+  .la-mode-tab {
+    border:none; background:transparent; padding:6px 12px; font-size:12px; color:#475569; cursor:pointer;
+  }
+  .la-mode-tab.is-active { background:#0d9488; color:#fff; font-weight:600; }
+  .la-view-host { flex:1; min-height:520px; display:flex; flex-direction:column; }
+  .la-summary {
+    flex:1; min-height:0; display:flex; flex-direction:column;
+    border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; background:#fff;
+  }
+  .la-summary-scroll { overflow:auto; flex:1; }
+  .la-summary-table { border-collapse:separate; border-spacing:0; width:max-content; min-width:100%; }
+  .la-summary-table th, .la-summary-table td {
+    border-bottom:1px solid #e2e8f0; border-right:1px solid #e2e8f0;
+    padding:6px 8px; vertical-align:top; font-size:11px;
+  }
+  .la-summary-table th { background:#f8fafc; font-weight:600; color:#334155; text-align:left; }
+  .la-sum-sticky {
+    position:sticky; left:0; z-index:2; background:#fff; min-width:210px; max-width:240px;
+    box-shadow:2px 0 4px rgba(15,23,42,.05);
+  }
+  .la-summary-table thead th { position:sticky; top:0; z-index:3; background:#f8fafc; }
+  .la-summary-table thead th.la-sum-sticky { z-index:4; }
+  .la-sum-group-hd { min-width:128px; max-width:168px; }
+  .la-sum-group-name { font-size:11px; font-weight:700; color:#0f172a; line-height:1.25; }
+  .la-sum-group-sub { font-size:9px; color:#64748b; margin-top:2px; }
+  .la-sum-row-cust { padding:5px 8px !important; }
+  .la-sum-cell { min-height:42px; }
+  .la-sum-cell.is-none { color:#cbd5e1; }
+  .la-sum-status { margin-bottom:4px; }
+  .la-sum-lots { display:flex; flex-wrap:wrap; gap:3px; align-items:center; }
+  .la-sum-lot {
+    font-family:ui-monospace,monospace; font-size:10px; font-weight:600;
+    background:#ecfdf5; color:#047857; padding:1px 5px; border-radius:4px; line-height:1.35;
+  }
+  .la-lot-more-wrap { position:relative; display:inline-flex; }
+  .la-lot-more-btn {
+    font-size:10px; padding:1px 6px; border-radius:4px; border:1px solid #cbd5e1;
+    background:#fff; color:#475569; cursor:default; line-height:1.35;
+  }
+  .la-lot-popover {
+    display:none; position:absolute; left:0; top:calc(100% + 4px); z-index:30;
+    min-width:150px; max-width:240px; padding:8px; background:#fff; border:1px solid #e2e8f0;
+    border-radius:8px; box-shadow:0 8px 24px rgba(15,23,42,.14);
+  }
+  .la-lot-more-wrap:hover .la-lot-popover { display:block; }
+  .la-lot-popover .la-sum-lots { gap:4px; }
+  .la-hidden { display:none !important; }
   @media (max-width:1100px) {
     .la-board { grid-template-columns:1fr; grid-template-rows:auto auto 1fr; }
     .la-col { max-height:220px; border-right:none; border-bottom:1px solid #e2e8f0; }
@@ -106,6 +154,10 @@
       <p class="text-slate-500 text-sm mt-1">Nhập lô khách muốn tham gia đấu giá — nhiều khách có thể cùng chọn một lô.</p>
     </div>
     <div class="flex flex-wrap items-center gap-2">
+      <div class="la-mode-tabs" id="laModeTabs">
+        <button type="button" class="la-mode-tab is-active" data-mode="assign">Gán lô</button>
+        <button type="button" class="la-mode-tab" data-mode="summary">Tổng hợp</button>
+      </div>
       <a href="/bid-tickets{% if filters.project_code %}?project_code={{ filters.project_code|urlencode }}{% endif %}"
          class="topbtn border border-slate-300 bg-white text-slate-700">← Phiếu trả giá</a>
       <button type="button" id="laRefreshBtn" class="topbtn border border-teal-300 bg-teal-50 text-teal-800">
@@ -137,21 +189,23 @@
     <div class="la-stat-card"><div class="lbl">Quyền đã gán/tổng</div><div class="val" data-k="slots_ratio">—</div></div>
   </div>
 
-  <div class="la-board">
+  <div class="la-col-tools mb-3 rounded-xl border border-slate-200 bg-white px-3 py-2" id="laCustBar">
+    <input type="search" id="laCustomerSearch" placeholder="STT, tên, CCCD…" autocomplete="off">
+    <div class="la-filter-tabs" id="laFilterTabs">
+      <button type="button" class="la-filter-tab is-active" data-filter="all">Tất cả</button>
+      <button type="button" class="la-filter-tab" data-filter="pending">Cần gán</button>
+      <button type="button" class="la-filter-tab" data-filter="partial">Gán thiếu</button>
+      <button type="button" class="la-filter-tab" data-filter="done">Đủ lô</button>
+    </div>
+  </div>
+
+  <div class="la-view-host" id="laViewHost">
+  <div class="la-board" id="laAssignView">
     <!-- Cột 1: Khách -->
     <aside class="la-col la-col-cust">
       <div class="la-col-hd">
         <div class="title">1. Khách hàng</div>
-        <div class="sub">Tìm STT, tên, CCCD</div>
-      </div>
-      <div class="la-col-tools">
-        <input type="search" id="laCustomerSearch" placeholder="STT, tên, CCCD…" autocomplete="off">
-        <div class="la-filter-tabs" id="laFilterTabs">
-          <button type="button" class="la-filter-tab is-active" data-filter="all">Tất cả</button>
-          <button type="button" class="la-filter-tab" data-filter="pending">Cần gán</button>
-          <button type="button" class="la-filter-tab" data-filter="partial">Gán thiếu</button>
-          <button type="button" class="la-filter-tab" data-filter="done">Đủ lô</button>
-        </div>
+        <div class="sub">Chọn để gán lô</div>
       </div>
       <div class="la-scroll" id="laColCustomers"></div>
     </aside>
@@ -191,6 +245,16 @@
       </div>
     </section>
   </div>
+
+  <div class="la-summary la-hidden" id="laSummaryView">
+    <div class="la-summary-scroll" id="laSummaryScroll">
+      <table class="la-summary-table" id="laSummaryTable">
+        <thead id="laSummaryHead"></thead>
+        <tbody id="laSummaryBody"></tbody>
+      </table>
+    </div>
+  </div>
+  </div>
 </div>
 
 <div id="laToast" class="la-toast"></div>
@@ -209,6 +273,8 @@
   let selectedAssignedKey = null;
   let selectedPoolKey = null;
   let busy = false;
+  let viewMode = "assign";
+  const SUMMARY_LOTS_VISIBLE = 3;
 
   const el = (id) => document.getElementById(id);
 
@@ -361,10 +427,184 @@
       `${meta.customer_count || 0} khách · ${meta.pending_slots || 0} quyền chờ gán · ${meta.customers_fully_assigned || 0} khách đủ lô`;
   }
 
-  function renderCustomers() {
+  function filteredCustomers() {
     const q = (el("laCustomerSearch").value || "").trim();
-    const list = (board.customers || []).filter(c => matchCustomerFilter(c) && matchCustomerSearch(c, q));
+    return (board.customers || []).filter(c => matchCustomerFilter(c) && matchCustomerSearch(c, q));
+  }
+
+  function collectDepositGroups() {
+    const fromMeta = (board.meta || {}).deposit_groups;
+    if (Array.isArray(fromMeta) && fromMeta.length) {
+      return fromMeta.slice().sort((a, b) => Number(a.deposit_vnd) - Number(b.deposit_vnd));
+    }
+    const map = new Map();
+    (board.customers || []).forEach(c => {
+      (c.groups || []).forEach(g => {
+        const dep = Number(g.deposit_vnd);
+        if (!map.has(dep)) {
+          map.set(dep, {
+            deposit_vnd: dep,
+            group_name: g.group_name || `Nhóm ${fmtVnd(dep)}`,
+            deposit_vnd_label: g.deposit_vnd_label,
+          });
+        }
+      });
+    });
+    return [...map.values()].sort((a, b) => Number(a.deposit_vnd) - Number(b.deposit_vnd));
+  }
+
+  function findCustomerGroup(c, dep) {
+    return (c.groups || []).find(g => Number(g.deposit_vnd) === Number(dep)) || null;
+  }
+
+  function groupCellStatus(g) {
+    if (!g) return { kind: "none", label: "—", badge: "" };
+    const pending = Number(g.pending_count || 0);
+    const assigned = Number(g.assigned_count || 0);
+    const total = Number(g.total_slots || 0);
+    if (total <= 0) return { kind: "none", label: "—", badge: "" };
+    if (assigned > total) {
+      return { kind: "over", label: "Gán thừa", badge: '<span class="la-badge over la-cust-badge">Thừa</span>' };
+    }
+    if (pending <= 0 && assigned >= total) {
+      return { kind: "ok", label: "Đủ lô", badge: '<span class="la-badge ok la-cust-badge">Đủ</span>' };
+    }
+    if (assigned <= 0 && pending > 0) {
+      return { kind: "empty", label: "Chưa gán", badge: '<span class="la-badge warn la-cust-badge">Chưa</span>' };
+    }
+    return { kind: "partial", label: `Thiếu ${pending}`, badge: `<span class="la-badge warn la-cust-badge">${pending}</span>` };
+  }
+
+  function disclosedAssignments(g) {
+    if (!g) return [];
+    return (g.assigned_lots || [])
+      .filter(x => x.order_id && x.order_code && x.lot_code)
+      .slice()
+      .sort(lotSort);
+  }
+
+  function renderLotChips(items, maxShow) {
+    maxShow = maxShow == null ? SUMMARY_LOTS_VISIBLE : maxShow;
+    if (!items.length) return "";
+    const visible = items.slice(0, maxShow);
+    const hidden = items.slice(maxShow);
+    let html = '<div class="la-sum-lots">';
+    html += visible.map(x => {
+      const lc = escHtml(x.lot_code);
+      const oc = escHtml(x.order_code);
+      return `<span class="la-sum-lot" title="${lc} · ${oc}">${lc}</span>`;
+    }).join("");
+    if (hidden.length) {
+      html += `<span class="la-lot-more-wrap"><button type="button" class="la-lot-more-btn" tabindex="-1" title="Xem thêm ${hidden.length} lô">+${hidden.length}</button>`;
+      html += `<div class="la-lot-popover"><div class="la-sum-lots">${hidden.map(x => {
+        const lc = escHtml(x.lot_code);
+        const oc = escHtml(x.order_code);
+        return `<span class="la-sum-lot" title="${lc} · ${oc}">${lc}</span>`;
+      }).join("")}</div></div></span>`;
+    }
+    html += "</div>";
+    return html;
+  }
+
+  function renderSummaryCustomerCell(c) {
+    const stt = c.stt_padded || c.stt || "—";
+    const cccd = formatCccd(c.cccd);
+    const pending = Number(c.pending_count || 0);
+    const badge = pending > 0
+      ? `<span class="la-badge warn la-cust-badge" title="${pending} quyền chờ gán">${pending}</span>`
+      : `<span class="la-badge ok la-cust-badge" title="Đủ lô">✓</span>`;
+    const cccdLine = cccd
+      ? `<span class="la-cust-cccd" title="CCCD ${escHtml(cccd)}">${escHtml(cccd)}</span>`
+      : `<span class="la-cust-cccd text-slate-300">—</span>`;
+    return `<div class="la-cust-top">
+      <span class="la-cust-stt">${escHtml(stt)}</span>
+      <span class="la-cust-name">${escHtml(c.customer_full_name)}</span>
+      ${badge}
+    </div>
+    <div class="la-cust-sub">${cccdLine}<span class="la-cust-slots">${c.assigned_count || 0}/${c.total_slots || 0} lô</span></div>`;
+  }
+
+  function renderSummaryGroupCell(g) {
+    const st = groupCellStatus(g);
+    if (st.kind === "none") {
+      return `<td class="la-sum-cell is-none"><span class="la-sum-status">—</span></td>`;
+    }
+    const assigned = disclosedAssignments(g);
+    const lotsHtml = renderLotChips(assigned);
+    return `<td class="la-sum-cell">
+      <div class="la-sum-status">${st.badge} <span class="text-[10px] text-slate-500">${escHtml(st.label)}</span></div>
+      ${lotsHtml || '<span class="text-[10px] text-slate-400">Chưa gán Pxxx</span>'}
+    </td>`;
+  }
+
+  function renderSummary() {
+    const groups = collectDepositGroups();
+    const list = filteredCustomers();
+    const head = el("laSummaryHead");
+    const body = el("laSummaryBody");
+    if (!head || !body) return;
+
+    if (!groups.length) {
+      head.innerHTML = "";
+      body.innerHTML = '<tr><td class="la-empty" colspan="1">Chưa có nhóm cọc.</td></tr>';
+      return;
+    }
+
+    head.innerHTML = `<tr>
+      <th class="la-sum-sticky la-sum-group-hd">
+        <div class="la-sum-group-name">Khách hàng</div>
+        <div class="la-sum-group-sub">${list.length} / ${(board.customers || []).length} khách</div>
+      </th>
+      ${groups.map(g => `<th class="la-sum-group-hd">
+        <div class="la-sum-group-name">${escHtml(g.group_name)}</div>
+        <div class="la-sum-group-sub">${fmtVnd(g.deposit_vnd)} VND</div>
+      </th>`).join("")}
+    </tr>`;
+
+    if (!list.length) {
+      body.innerHTML = `<tr><td class="la-empty la-sum-sticky" colspan="${groups.length + 1}">Không có khách phù hợp bộ lọc.</td></tr>`;
+      return;
+    }
+
+    body.innerHTML = list.map(c => `<tr>
+      <td class="la-sum-sticky la-sum-row-cust">${renderSummaryCustomerCell(c)}</td>
+      ${groups.map(g => renderCustomerGroupCell(c, g.deposit_vnd)).join("")}
+    </tr>`).join("");
+  }
+
+  function renderCustomerGroupCell(c, dep) {
+    const g = findCustomerGroup(c, dep);
+    return renderSummaryGroupCell(g);
+  }
+
+  function setViewMode(mode) {
+    viewMode = mode === "summary" ? "summary" : "assign";
+    const assignView = el("laAssignView");
+    const summaryView = el("laSummaryView");
+    if (assignView) assignView.classList.toggle("la-hidden", viewMode !== "assign");
+    if (summaryView) summaryView.classList.toggle("la-hidden", viewMode !== "summary");
+    el("laModeTabs").querySelectorAll(".la-mode-tab").forEach(btn => {
+      btn.classList.toggle("is-active", btn.getAttribute("data-mode") === viewMode);
+    });
+    if (viewMode === "summary") renderSummary();
+    else renderAllAssign();
+  }
+
+  function renderAllAssign() {
+    renderCustomers();
+    renderGroups();
+    renderDual();
+  }
+
+  function renderAll() {
+    if (viewMode === "summary") renderSummary();
+    else renderAllAssign();
+  }
+
+  function renderCustomers() {
+    const list = filteredCustomers();
     const host = el("laColCustomers");
+    if (!host) return;
     if (!list.length) {
       host.innerHTML = '<div class="la-empty">Không có khách.</div>';
       return;
@@ -467,12 +707,6 @@
     }).join("") : '<div class="la-empty">Không còn lô trong nhóm</div>';
   }
 
-  function renderAll() {
-    renderCustomers();
-    renderGroups();
-    renderDual();
-  }
-
   function selectCustomer(cid) {
     selectedCustomerId = cid;
     selectedDepositVnd = null;
@@ -484,7 +718,7 @@
       const first = (c.groups || []).find(g => g.status !== "ok") || c.groups[0];
       selectedDepositVnd = first.deposit_vnd;
     }
-    renderAll();
+    renderAllAssign();
   }
 
   function selectGroup(dep) {
@@ -627,7 +861,7 @@
     if (btn) selectGroup(btn.getAttribute("data-dep"));
   });
 
-  el("laCustomerSearch").addEventListener("input", renderCustomers);
+  el("laCustomerSearch").addEventListener("input", renderAll);
   el("laFilterAssigned").addEventListener("input", function () { filterAssigned = this.value; renderDual(); });
   el("laFilterPool").addEventListener("input", function () { filterPool = this.value; renderDual(); });
 
@@ -636,7 +870,13 @@
     if (!tab) return;
     customerFilter = tab.getAttribute("data-filter") || "all";
     el("laFilterTabs").querySelectorAll(".la-filter-tab").forEach(b => b.classList.toggle("is-active", b === tab));
-    renderCustomers();
+    renderAll();
+  });
+
+  el("laModeTabs").addEventListener("click", ev => {
+    const tab = ev.target.closest(".la-mode-tab");
+    if (!tab) return;
+    setViewMode(tab.getAttribute("data-mode"));
   });
 
   el("laListAssigned").addEventListener("click", async ev => {
