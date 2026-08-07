@@ -698,9 +698,9 @@
         Quyền sử dụng đất thuộc dự án
         "<span class="bold">{{ t.project_name }}</span>"
         {%- if t.group_name -%}
-        , nhóm cọc <span class="bold">{{ t.group_name }}</span>
+        , nhóm đặt trước <span class="bold">{{ t.group_name }}</span>
         {%- elif t.deposit_vnd -%}
-        , nhóm cọc <span class="bold">{{ "{:,.0f}".format(t.deposit_vnd|float) }} VND</span>
+        , nhóm đặt trước <span class="bold">{{ "{:,.0f}".format(t.deposit_vnd|float) }} VND</span>
         {%- endif -%}
         . Khách hàng tự ghi <span class="bold">mã lô</span> và <span class="bold">giá trả</span> vào phiếu.
         {% else %}
@@ -789,7 +789,7 @@
             </tr>
             {% if is_blank_ticket and (t.group_name or t.deposit_vnd) %}
             <tr>
-              <td class="info-label">Nhóm cọc</td><td class="info-sep">:</td>
+              <td class="info-label">Nhóm đặt trước</td><td class="info-sep">:</td>
               <td class="info-value bold">
                 {{ t.group_name or ('Nhóm ' ~ "{:,.0f}".format(t.deposit_vnd|float) ~ ' VND') }}
               </td>

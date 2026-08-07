@@ -290,17 +290,17 @@
       <thead>
         <tr>
           <th class="w-stt">STT</th>
-          <th class="w-name">Nhóm lô đất (mức cọc)</th>
+          <th class="w-name">Nhóm lô đất (mức đặt trước)</th>
           <th class="w-area">Tổng số lô đất của nhóm</th>
           <th class="w-area">Tổng số lô tham gia</th>
-          <th class="w-price">Tổng tiền cọc đã nộp (VNĐ)</th>
+          <th class="w-price">Tổng tiền đặt trước đã nộp (VNĐ)</th>
         </tr>
       </thead>
       <tbody>
         {% for g in groups_list %}
         <tr>
           <td class="center">{{ start_index + loop.index }}</td>
-          <td class="lot-code">{{ g.group_label or g.group_name or ('Nhóm lô đất — tiền cọc ' ~ (g.deposit_vnd_label or g.deposit_vnd)) }}</td>
+          <td class="lot-code">{{ g.group_label or g.group_name or ('Nhóm lô đất — tiền đặt trước ' ~ (g.deposit_vnd_label or g.deposit_vnd)) }}</td>
           <td class="w-area center">{{ g.group_total_lots|default(0) }}</td>
           <td class="w-area center">{{ g.participating_qty|default(g.qty|default(0)) }}</td>
           <td class="w-price">

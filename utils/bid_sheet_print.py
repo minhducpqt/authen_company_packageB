@@ -22,6 +22,22 @@ def _is_session_ticket(t: Dict[str, Any]) -> bool:
     return t.get("session_id") is not None or t.get("round_id") is not None
 
 
+def _display_deposit_terms(text: Any) -> str:
+    """Chuẩn hoá thuật ngữ trên phiếu in: tiền cọc → tiền đặt trước."""
+    if text is None or text == "":
+        return ""
+    s = str(text)
+    for old, new in (
+        ("Tổng tiền cọc", "Tổng tiền đặt trước"),
+        ("tiền cọc", "tiền đặt trước"),
+        ("mức cọc", "mức đặt trước"),
+        ("Nhóm cọc", "Nhóm đặt trước"),
+        ("nhóm cọc", "nhóm đặt trước"),
+    ):
+        s = s.replace(old, new)
+    return s
+
+
 def normalize_ticket_for_print(t: Dict[str, Any]) -> Dict[str, Any]:
     """
     PER_SQM trước phiên (5.2): starting_price_vnd trong DB = giá cả lô → quy đổi /m².
@@ -29,6 +45,8 @@ def normalize_ticket_for_print(t: Dict[str, Any]) -> Dict[str, Any]:
     PER_LOT: giữ nguyên giá cả lô.
     """
     out = dict(t)
+    if out.get("group_name"):
+        out["group_name"] = _display_deposit_terms(out["group_name"])
     if not _is_per_sqm_mode(out):
         return out
 
