@@ -502,39 +502,10 @@
             <span class="pj-pick-badge">{% if is_pre_session %}Đang dùng{% else %}Chọn{% endif %}</span>
           </div>
           <span class="pj-pick-ttl">Chốt lô trước phiên</span>
-          <span class="pj-pick-sub">Admin gán mã lô từ đơn giấy khách nộp</span>
+          <span class="pj-pick-sub">Mã lô in sẵn trên phiếu trả giá trước phiên đấu</span>
         </button>
       </div>
-      <p class="pj-pick-hint mt-2">Bấm lựa chọn khác → nhập <b>tôi xác nhận</b> để lưu.</p>
-
-      {% if is_pre_session %}
-      <div class="mt-5 pt-4 border-t border-slate-200">
-        <div class="flex items-center justify-between gap-2 mb-2">
-          <div class="text-sm font-semibold text-slate-700">Gán mã lô đơn cọc (PRE_SESSION)</div>
-          <button type="button" id="gda-refresh-btn" class="btn-secondary text-xs px-3 py-1.5">
-            <i class="ri-refresh-line"></i> Tải lại
-          </button>
-        </div>
-        <div id="gda-status" class="text-xs text-slate-500 mb-2">Đang tải…</div>
-        <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-          <table class="w-full text-sm">
-            <thead class="text-left bg-slate-50">
-              <tr>
-                <th class="py-2 px-3">Đơn</th>
-                <th class="py-2 px-3">Khách</th>
-                <th class="py-2 px-3">Nhóm cọc</th>
-                <th class="py-2 px-3">Lô hiện tại</th>
-                <th class="py-2 px-3">Trạng thái</th>
-                <th class="py-2 px-3 w-40">Gán lô</th>
-              </tr>
-            </thead>
-            <tbody id="gda-tbody">
-              <tr><td colspan="6" class="py-4 px-3 text-slate-400 text-center">—</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      {% endif %}
+      <p class="pj-pick-hint mt-2">Bấm lựa chọn khác → nhập <b>tôi xác nhận</b> để lưu. Gán lô cho từng đơn thực hiện tại mục <b>Phiếu trả giá</b>.</p>
     </div>
     {% endif %}
 
@@ -2607,7 +2578,7 @@
         var label = next === "PRE_SESSION" ? "CHỐT LÔ TRƯỚC PHIÊN" : "CHỐT LÔ TRONG PHIÊN (V1)";
         confirmWithPhrase(null, {
           title: "Xác nhận chính sách gán lô",
-          descHtml: "Chuyển sang <b>" + label + "</b>. Ảnh hưởng phiếu trả giá và quy trình gán mã lô.",
+          descHtml: "Chuyển sang <b>" + label + "</b>. Ảnh hưởng mẫu phiếu trả giá và quy trình chốt lô.",
           phrase: "tôi xác nhận",
           onConfirm: async function () {
             const pid = {{ project.id }};
@@ -2833,79 +2804,8 @@
     loadDepositGroupFees();
     const syncBtn = document.getElementById("dgf-sync-btn");
     if (syncBtn) syncBtn.addEventListener("click", syncDepositGroupFees);
-    {% if is_pre_session %}
-    loadGroupDepositAssignments();
-    const gdaRefresh = document.getElementById("gda-refresh-btn");
-    if (gdaRefresh) gdaRefresh.addEventListener("click", loadGroupDepositAssignments);
-    {% endif %}
   });
 
-  {% if is_pre_session %}
-  async function loadGroupDepositAssignments() {
-    const st = document.getElementById("gda-status");
-    const tbody = document.getElementById("gda-tbody");
-    if (!tbody) return;
-    if (st) st.textContent = "Đang tải…";
-    const r = await fetch(`/projects/api/${DGF_PROJECT_ID}/group-deposits`, { credentials: "same-origin" });
-    const d = await r.json();
-    if (!r.ok || !d.ok) {
-      if (st) st.textContent = d.detail || d.error || "Không tải được.";
-      return;
-    }
-    const rows = d.data || [];
-    if (!rows.length) {
-      tbody.innerHTML = '<tr><td colspan="6" class="py-4 px-3 text-slate-400 text-center">Chưa có đơn cọc nhóm.</td></tr>';
-      if (st) st.textContent = "0 đơn.";
-      return;
-    }
-    tbody.innerHTML = rows.map(function (row) {
-      const needs = row.needs_lot_assignment;
-      const status = needs
-        ? '<span class="text-amber-700">Chờ gán lô</span>'
-        : '<span class="text-emerald-700">Đã gán</span>';
-      const assignCell = needs
-        ? '<div class="flex gap-1"><input type="text" class="input text-xs gda-lot-input" placeholder="Mã lô" data-oid="' + row.order_id + '"><button type="button" class="btn-primary text-xs px-2 py-1 gda-assign-btn" data-oid="' + row.order_id + '">Gán</button></div>'
-        : '<span class="font-mono text-slate-600">' + (row.lot_code || "—") + '</span>';
-      return '<tr>'
-        + '<td class="py-2 px-3 font-mono text-xs">' + (row.order_code || "") + '</td>'
-        + '<td class="py-2 px-3">' + (row.customer_full_name || "") + '<div class="text-xs text-slate-500">' + (row.cccd || "") + '</div></td>'
-        + '<td class="py-2 px-3">' + _fmtVnd(row.deposit_vnd) + '</td>'
-        + '<td class="py-2 px-3 font-mono">' + (row.lot_code || "—") + '</td>'
-        + '<td class="py-2 px-3">' + status + '</td>'
-        + '<td class="py-2 px-3">' + assignCell + '</td>'
-        + '</tr>';
-    }).join("");
-    if (st) st.textContent = rows.length + " đơn.";
-  }
-
-  document.addEventListener("click", async function (ev) {
-    const btn = ev.target.closest(".gda-assign-btn");
-    if (!btn) return;
-    const oid = btn.getAttribute("data-oid");
-    const row = btn.closest("tr");
-    const inp = row ? row.querySelector(".gda-lot-input") : null;
-    const lc = inp ? (inp.value || "").trim() : "";
-    if (!lc) {
-      alert("Nhập mã lô.");
-      return;
-    }
-    const st = document.getElementById("gda-status");
-    if (st) st.textContent = "Đang gán lô…";
-    const r = await fetch(`/projects/api/${DGF_PROJECT_ID}/group-deposits/${oid}/assign-lot`, {
-      method: "PUT",
-      credentials: "same-origin",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ lot_code: lc }),
-    });
-    const d = await r.json();
-    if (!r.ok || !d.ok) {
-      alert(d.detail || d.error || "Gán lô thất bại.");
-      if (st) st.textContent = "Gán lô thất bại.";
-      return;
-    }
-    loadGroupDepositAssignments();
-  });
-  {% endif %}
   {% endif %}
 </script>
 
