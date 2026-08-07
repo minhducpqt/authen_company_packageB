@@ -94,6 +94,7 @@
   .rph-empty { padding: 2rem 1rem; text-align: center; color: #94a3b8; font-size: 0.875rem; }
   .rph-proj-row.is-selected { border-color: #a5b4fc !important; background: #fafaff !important; box-shadow: 0 0 0 1px #c7d2fe; }
   .rph-proj-row.is-selected.is-group-type { border-color: #5eead4 !important; background: #f0fdfa !important; box-shadow: 0 0 0 1px #99f6e4; }
+  .rph-head .project-type-badge-wrap--full { margin-top: 0.5rem; margin-bottom: 0.125rem; }
 </style>
 
 <div
@@ -124,14 +125,19 @@
           {% for p in projects_list %}
             {% set code = p.project_code or p.code %}
             {% set mode = (p.registration_mode or 'NORMAL')|upper %}
-            <option value="{{ code }}">
-              {{ code }} — {{ p.name or code }}{% if mode == 'GROUP_AUCTION' %} (đấu nhóm){% endif %}
+            {% set ga = p.group_auction if p.group_auction is mapping else {} %}
+            {% set policy = (ga.get('lot_policy') or 'IN_SESSION_R1')|upper if mode == 'GROUP_AUCTION' else '' %}
+            {% set kind = 'GROUP_PRE_SESSION' if mode == 'GROUP_AUCTION' and policy == 'PRE_SESSION' else ('GROUP_BLIND' if mode == 'GROUP_AUCTION' else 'NORMAL') %}
+            <option value="{{ code }}"
+              data-registration-mode="{{ mode }}"
+              {% if policy %}data-lot-policy="{{ policy }}"{% endif %}
+              data-auction-type-kind="{{ kind }}">
+              {{ code }} — {{ p.name or code }}
             </option>
           {% endfor %}
         </select>
       </div>
       <div data-hub-meta class="hidden flex flex-wrap items-center gap-2 min-w-0">
-        <span data-hub-mode-badge class="rph-badge rph-badge-normal">Đấu lô</span>
         <span data-hub-project-name class="text-sm font-semibold text-slate-800 truncate max-w-[16rem]"></span>
       </div>
       <span class="text-[11px] text-slate-400 shrink-0 hidden sm:inline"><i class="ri-bookmark-3-fill text-indigo-400"></i> Ghi nhớ lựa chọn</span>

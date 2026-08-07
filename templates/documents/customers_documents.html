@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ title }}{% endblock %}
+{% from 'macros/project_auction_type.html' import project_option_attrs %}
 
 {% block content %}
 <div class="bg-white border border-slate-200 rounded-2xl p-5">
@@ -20,13 +21,13 @@
   <!-- FILTERS -->
   <div class="mt-5 grid grid-cols-1 md:grid-cols-12 gap-3">
 
-    <div class="md:col-span-3">
+    <div class="md:col-span-3 min-w-0" data-project-type-field>
       <label class="text-xs font-semibold text-slate-600">Dự án</label>
-      <select id="projectSelect"
+      <select id="projectSelect" data-project-type-value-mode="id"
               class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 bg-white">
         <option value="">— Chọn dự án —</option>
         {% for p in projects %}
-          <option value="{{ p.id }}" {% if project_id == p.id %}selected{% endif %}>
+          <option value="{{ p.id }}" {{ project_option_attrs(p) }} {% if project_id == p.id %}selected{% endif %}>
             {{ p.project_code }} — {{ p.name }}
           </option>
         {% endfor %}

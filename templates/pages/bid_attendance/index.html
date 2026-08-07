@@ -33,9 +33,9 @@
     id="filtersForm"
     method="get"
     action="/bid-attendance"
-    class="mb-4 grid grid-cols-1 md:grid-cols-4 gap-3 items-end"
+    class="mb-4 grid grid-cols-1 md:grid-cols-4 gap-3 items-start"
   >
-    <div>
+    <div class="min-w-0" data-project-type-field>
       <label class="block text-xs font-medium text-slate-600 mb-1">Dự án</label>
       <select id="projectSelect" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
         <option value="">Chọn dự án</option>
@@ -690,6 +690,20 @@
       .then(r => r.json())
       .then(js => {
         const list = js.data || js.items || [];
+        if (window.ProjectTypeBadge) {
+          ProjectTypeBadge.fillSelect(projectSelect, list, {
+            placeholder: "Chọn dự án",
+            selectedValue: currentProjectCode,
+          });
+          if (!currentProjectCode && list.length === 1) {
+            const onlyCode = list[0].project_code || list[0].code || "";
+            if (onlyCode) {
+              projectCodeInput.value = onlyCode;
+              submitWithCurrentFilters();
+            }
+          }
+          return;
+        }
         projectSelect.innerHTML = '<option value="">Chọn dự án</option>';
 
         list.forEach(p => {

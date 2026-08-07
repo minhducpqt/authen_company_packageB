@@ -1,6 +1,7 @@
 {# templates/auction_session/index.html #}
 {% extends "base.html" %}
 {% block title %}{{ title or "Vận hành phiên đấu" }}{% endblock %}
+{% from 'macros/project_auction_type.html' import project_option_attrs %}
 
   {% block content %}
     <style>
@@ -578,13 +579,13 @@
                             </select>
                           </div>
 
-                          <div class="field">
+                          <div class="field min-w-0" data-project-type-field>
                             <label for="projectSel">Dự án</label>
                             <select id="projectSel" name="project">
                               <option value="">— Chọn dự án —</option>
                               {% for p in projects %}
                                 {% set code = (p.get('project_code') or p.get('code') or '') %}
-                                <option value="{{ code }}" data-project-id="{{ p.get('id') or p.get('project_id') }}"
+                                <option value="{{ code }}" {{ project_option_attrs(p) }} data-project-id="{{ p.get('id') or p.get('project_id') }}"
                                 {% if (project or '')|upper == code|upper %}selected{% endif %}>
                                   {{ code }} — {{ p.get('name') or p.get('project_name') or 'Dự án' }}
                                 </option>
@@ -891,14 +892,14 @@
                 </div>
               </div>
 
-              <div class="full">
+              <div class="full min-w-0" data-project-type-field>
                 <label>Dự án <span class="req">*</span></label>
-                <select id="csProject">
+                <select id="csProject" data-project-type-value-mode="id">
                   <option value="">— Chọn dự án —</option>
                   {% for p in projects %}
                     {% set pid = p.get('id') or p.get('project_id') %}
                     {% set code = p.get('project_code') or p.get('code') %}
-                    <option value="{{ pid }}" data-project-code="{{ code }}"
+                    <option value="{{ pid }}" {{ project_option_attrs(p) }} data-project-code="{{ code }}"
                     {% if project_obj and (project_obj.get('id')==pid or project_obj.get('project_id')==pid) %}selected{% endif %}>
                       {{ code }} — {{ p.get('name') or p.get('project_name') or 'Dự án' }}
                     </option>

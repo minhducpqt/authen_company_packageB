@@ -22,7 +22,7 @@
       </div>
 
       <!-- Project -->
-      <div class="col-span-12 md:col-span-9">
+      <div class="col-span-12 md:col-span-9 min-w-0" data-project-type-field>
         <label class="block text-sm text-slate-500 mb-1">Dự án</label>
         <select id="projectSelect" class="w-full border rounded-lg px-3 py-2" title="">
           <option value="">Tất cả dự án</option>
@@ -356,22 +356,29 @@
     const list = js.data ?? js.items ?? [];
 
     const prev = elProject.value;
-    elProject.innerHTML = `<option value="">Tất cả dự án</option>`;
+    const initCode = (elProject.dataset.init || "").trim();
 
-    for (const p of list){
-      const code = (p.project_code ?? p.code ?? "").trim();
-      const name = (p.name ?? "").trim();
-      if (!code) continue;
+    if (window.ProjectTypeBadge) {
+      ProjectTypeBadge.fillSelect(elProject, list, {
+        placeholder: "Tất cả dự án",
+        valueMode: "code",
+      });
+    } else {
+      elProject.innerHTML = `<option value="">Tất cả dự án</option>`;
+      for (const p of list){
+        const code = (p.project_code ?? p.code ?? "").trim();
+        const name = (p.name ?? "").trim();
+        if (!code) continue;
 
-      const label = name ? `${code} — ${name}` : `${code}`;
-      const opt = document.createElement('option');
-      opt.value = code;
-      opt.textContent = label;
-      opt.title = label;
-      elProject.appendChild(opt);
+        const label = name ? `${code} — ${name}` : `${code}`;
+        const opt = document.createElement('option');
+        opt.value = code;
+        opt.textContent = label;
+        opt.title = label;
+        elProject.appendChild(opt);
+      }
     }
 
-    const initCode = (elProject.dataset.init || "").trim();
     const picked = TxProjectMemory.pickProjectCode(elProject, prev, initCode);
     if (picked) {
       elProject.value = picked;
@@ -382,6 +389,7 @@
     }
 
     syncSelectTitle();
+    if (window.ProjectTypeBadge) ProjectTypeBadge.syncSelect(elProject);
   }
 
   async function loadData(){

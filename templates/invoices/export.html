@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Xuất hoá đơn{% endblock %}
+{% from 'macros/project_auction_type.html' import project_option_attrs %}
 
 {% block content %}
 <style>
@@ -119,7 +120,7 @@
           </select>
         </div>
 
-        <div class="col-span-12 md:col-span-9">
+        <div class="col-span-12 md:col-span-9 min-w-0" data-project-type-field>
           <label class="block text-sm text-slate-600 mb-1">Dự án</label>
           <select id="projectSelect"
                   class="w-full border border-slate-200 rounded-lg px-3 py-2 bg-white
@@ -438,22 +439,29 @@
     const js = await r.json().catch(()=> ({}));
     const list = js.data ?? js.items ?? [];
 
-    elProject.innerHTML = `<option value="">Chọn dự án</option>`;
-    for (const p of list){
-      const code = (p.project_code ?? p.code ?? "").trim();
-      const name = (p.name ?? "").trim();
-      if (!code) continue;
+    if (window.ProjectTypeBadge) {
+      ProjectTypeBadge.fillSelect(elProject, list, {
+        placeholder: "Chọn dự án",
+        valueMode: "code",
+      });
+    } else {
+      elProject.innerHTML = `<option value="">Chọn dự án</option>`;
+      for (const p of list){
+        const code = (p.project_code ?? p.code ?? "").trim();
+        const name = (p.name ?? "").trim();
+        if (!code) continue;
 
-      const label = name ? `${code} — ${name}` : `${code}`;
-      const opt = document.createElement("option");
-      opt.value = code;
-      opt.textContent = label;
-      opt.title = label;
+        const label = name ? `${code} — ${name}` : `${code}`;
+        const opt = document.createElement("option");
+        opt.value = code;
+        opt.textContent = label;
+        opt.title = label;
 
-      if (p.id) opt.dataset.pid = String(p.id);
-      else if (p.project_id) opt.dataset.pid = String(p.project_id);
+        if (p.id) opt.dataset.pid = String(p.id);
+        else if (p.project_id) opt.dataset.pid = String(p.project_id);
 
-      elProject.appendChild(opt);
+        elProject.appendChild(opt);
+      }
     }
 
     const qs = new URLSearchParams(location.search);
@@ -461,6 +469,7 @@
     if (initCode) elProject.value = initCode;
 
     syncSelectTitle();
+    if (window.ProjectTypeBadge) ProjectTypeBadge.syncSelect(elProject);
   }
 
   function getSelectedProjectId(){

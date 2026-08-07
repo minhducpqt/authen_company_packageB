@@ -32,6 +32,7 @@ _DOCUMENTS_ROOT = "pages/documents"
 class DocKind:
     REGISTRATION_NORMAL = "registration_normal"
     REGISTRATION_GROUP = "registration_group"
+    REGISTRATION_GROUP_PRE_SESSION = "registration_group_pre_session"
     BID_SHEET = "bid_sheet"
     WINNER_CONFIRM = "winner_confirm"
     WINNER_SLIP = "winner_slip"
@@ -44,6 +45,7 @@ class DocKind:
 TEMPLATE_FILES: Dict[str, str] = {
     DocKind.REGISTRATION_NORMAL: "registration_normal.html",
     DocKind.REGISTRATION_GROUP: "registration_group.html",
+    DocKind.REGISTRATION_GROUP_PRE_SESSION: "registration_group_pre_session.html",
     DocKind.BID_SHEET: "bid_sheet.html",
     DocKind.WINNER_CONFIRM: "winner_confirm.html",
     DocKind.WINNER_SLIP: "winner_slip.html",
@@ -135,12 +137,17 @@ def resolve_template(company_code: Optional[str], doc_kind: str) -> str:
 def resolve_registration_template(
     company_code: Optional[str],
     registration_mode: Optional[str] = None,
+    lot_policy: Optional[str] = None,
 ) -> str:
-    """Chọn mẫu phiếu đăng ký theo công ty và hình thức đấu (NORMAL / GROUP_AUCTION)."""
+    """Chọn mẫu phiếu đăng ký theo công ty, hình thức đấu và lot_policy đấu nhóm."""
     mode = (registration_mode or "NORMAL").strip().upper()
-    doc_kind = (
-        DocKind.REGISTRATION_GROUP
-        if mode == "GROUP_AUCTION"
-        else DocKind.REGISTRATION_NORMAL
-    )
+    if mode == "GROUP_AUCTION":
+        policy = (lot_policy or "IN_SESSION_R1").strip().upper()
+        doc_kind = (
+            DocKind.REGISTRATION_GROUP_PRE_SESSION
+            if policy == "PRE_SESSION"
+            else DocKind.REGISTRATION_GROUP
+        )
+    else:
+        doc_kind = DocKind.REGISTRATION_NORMAL
     return resolve_template(company_code, doc_kind)

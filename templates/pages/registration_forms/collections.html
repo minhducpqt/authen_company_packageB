@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from 'macros/project_auction_type.html' import project_option_attrs %}
 {% block content %}
 
 <div class="mb-4">
@@ -93,7 +94,7 @@
 
 <div class="bg-white rounded-xl border border-slate-200" id="pageRoot" data-company="{{ company_code or '' }}">
   <div class="p-4">
-    <div class="grid grid-cols-12 gap-4 items-end">
+    <div class="grid grid-cols-12 gap-4 items-start">
       <div class="col-span-12 md:col-span-3">
         <label class="block text-sm text-slate-500 mb-1">Trạng thái dự án</label>
         <select id="projectStatusSelect" class="w-full border rounded-lg px-3 py-2">
@@ -103,9 +104,9 @@
         </select>
       </div>
 
-      <div class="col-span-12 md:col-span-5">
+      <div class="col-span-12 md:col-span-5 min-w-0" data-project-type-field>
         <label class="block text-sm text-slate-500 mb-1">Dự án <span class="text-red-500">*</span></label>
-        <select id="projectSelect" class="w-full border rounded-lg px-3 py-2">
+        <select id="projectSelect" data-project-type-value-mode="id" class="w-full border rounded-lg px-3 py-2">
           <option value="">— Chọn dự án —</option>
         </select>
       </div>
@@ -509,20 +510,31 @@
     const js = await r.json();
     const items = js.data || js.items || [];
     const prev = elProject.value;
-    elProject.innerHTML = '<option value="">— Chọn dự án —</option>';
-    for (const p of items) {
-      const pid = p.id ?? p.project_id;
-      if (!pid) continue;
-      const code = p.project_code || p.code || "";
-      const name = p.name || "";
-      const opt = document.createElement("option");
-      opt.value = String(pid);
-      opt.textContent = code ? `${code} — ${name}` : name;
-      opt.dataset.projectCode = code;
-      elProject.appendChild(opt);
+    if (window.ProjectTypeBadge) {
+      ProjectTypeBadge.fillSelect(elProject, items, {
+        placeholder: "— Chọn dự án —",
+        valueMode: "id",
+        labelFormat: function (code, name) {
+          return code ? code + " — " + name : name;
+        },
+      });
+    } else {
+      elProject.innerHTML = '<option value="">— Chọn dự án —</option>';
+      for (const p of items) {
+        const pid = p.id ?? p.project_id;
+        if (!pid) continue;
+        const code = p.project_code || p.code || "";
+        const name = p.name || "";
+        const opt = document.createElement("option");
+        opt.value = String(pid);
+        opt.textContent = code ? `${code} — ${name}` : name;
+        opt.dataset.projectCode = code;
+        elProject.appendChild(opt);
+      }
     }
     const picked = TxProjectMemory.pickProjectId(elProject, prev, INIT_PROJECT_ID);
     if (picked) elProject.value = picked;
+    if (window.ProjectTypeBadge) ProjectTypeBadge.syncSelect(elProject);
     if (elProject.value) {
       syncProjectCode();
       applyFilters();

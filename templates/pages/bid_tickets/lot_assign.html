@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from 'macros/project_auction_type.html' import project_option_attrs %}
 {% block content %}
 <style>
   .la-page { display:flex; flex-direction:column; min-height:calc(100vh - 7rem); }
@@ -91,7 +92,7 @@
   {% endif %}
 
   <div class="mb-3 grid grid-cols-1 md:grid-cols-[minmax(200px,280px)_1fr] gap-3 items-end">
-    <div>
+    <div class="min-w-0" data-project-type-field>
       <label class="block text-xs font-medium text-slate-600 mb-1">Dự án</label>
       <select id="laProjectSelect" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
         <option value="">Chọn dự án…</option>
@@ -580,6 +581,13 @@
       .then(r => r.json())
       .then(js => {
         const list = js.data || js.items || [];
+        if (window.ProjectTypeBadge) {
+          ProjectTypeBadge.fillSelect(projectSelect, list, {
+            placeholder: "Chọn dự án…",
+            selectedValue: PROJECT_CODE,
+          });
+          return;
+        }
         projectSelect.innerHTML = '<option value="">Chọn dự án…</option>';
         list.forEach(p => {
           const code = p.project_code || p.code || "";

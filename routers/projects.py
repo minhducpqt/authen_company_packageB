@@ -29,6 +29,7 @@ from utils.templates import templates
 from utils.auth import get_access_token, fetch_me
 from utils.excel_templates import build_projects_lots_template
 from utils.excel_import import handle_import_preview  # chỉ dùng preview
+from utils.project_auction_type import enrich_project_option_row, project_auction_type_meta
 
 import json as pyjson  # cho decode JWT payload
 
@@ -693,7 +694,6 @@ async def project_options_active(
         return JSONResponse({"error": "no_company_code"}, status_code=400)
 
     params = {
-        "company_code": company_code,
         "status": "ACTIVE",
         "page": 1,
         "size": size,
@@ -704,7 +704,7 @@ async def project_options_active(
     try:
         async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
             r = await client.get(
-                EP_PUBLIC_PROJECTS,
+                EP_LIST,
                 params=params,
                 headers={"Authorization": f"Bearer {token}"},
             )
@@ -725,12 +725,57 @@ async def project_options_active(
 
     data = []
     for p in items:
-        code = (p or {}).get("project_code") or (p or {}).get("code")
-        name = (p or {}).get("name") or code
-        if code:
-            data.append({"project_code": code, "name": name})
+        row = enrich_project_option_row(p or {})
+        if row.get("project_code"):
+            data.append(row)
 
     return JSONResponse({"data": data}, status_code=200)
+
+
+@router.get("/api/auction-type", response_class=JSONResponse)
+async def api_project_auction_type(
+    request: Request,
+    project_code: Optional[str] = Query(None),
+    project_id: Optional[int] = Query(None),
+):
+    """Meta loại đấu (NORMAL / đấu nhóm mù / đấu nhóm chọn lô) cho badge UI."""
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    code = (project_code or "").strip()
+    pid = int(project_id) if project_id is not None else None
+    if not code and pid is None:
+        return JSONResponse({"error": "project_code_or_id_required"}, status_code=400)
+
+    headers = {"Authorization": f"Bearer {token}"}
+    project: Optional[dict] = None
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=12.0) as client:
+            if code:
+                r = await client.get(
+                    EP_BYCODE_PROJ.format(code=quote(code)),
+                    headers=headers,
+                )
+                if r.status_code == 200:
+                    js = r.json() or {}
+                    project = js.get("data") or js
+            elif pid is not None:
+                r = await client.get(
+                    EP_DETAIL.format(project_id=pid),
+                    headers=headers,
+                )
+                if r.status_code == 200:
+                    js = r.json() or {}
+                    project = js.get("data") or js
+    except Exception as e:
+        return JSONResponse({"error": "upstream_error", "msg": str(e)}, status_code=502)
+
+    if not isinstance(project, dict):
+        return JSONResponse({"error": "not_found"}, status_code=404)
+
+    return JSONResponse(project_auction_type_meta(project), status_code=200)
 
 
 @router.get("/api/projects/options")
@@ -1422,18 +1467,13 @@ async def listing_projects(
             pid = None
 
         code = (pp.get("project_code") or pp.get("code") or "").strip()
-        name = (pp.get("name") or "").strip()
         if not code:
             continue
 
-        data.append(
-            {
-                "id": pid,  # ✅ thêm field này
-                "project_code": code,
-                "name": name,
-                "status": (pp.get("status") or "").strip(),
-            }
-        )
+        row = enrich_project_option_row(pp)
+        if pid is not None:
+            row["id"] = pid
+        data.append(row)
 
     return JSONResponse({"data": data}, status_code=200)
 

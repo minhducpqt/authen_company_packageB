@@ -65,7 +65,6 @@
     var emptyEl = root.querySelector("[data-hub-empty]");
     var panelEl = root.querySelector("[data-hub-panel]");
     var metaEl = root.querySelector("[data-hub-meta]");
-    var badgeEl = root.querySelector("[data-hub-mode-badge]");
     var nameEl = root.querySelector("[data-hub-project-name]");
     var codeEl = root.querySelector("[data-hub-project-code]");
     var normalSec = root.querySelector("[data-hub-section-normal]");
@@ -78,6 +77,10 @@
       root.querySelectorAll("[data-hub-project-row]").forEach(function (row) {
         row.classList.remove("is-selected");
       });
+      if (global.ProjectTypeBadge) {
+        var hubSelectEmpty = root.querySelector("[data-hub-project-select]");
+        ProjectTypeBadge.updateFromProject(hubSelectEmpty, null);
+      }
       return;
     }
 
@@ -87,13 +90,13 @@
 
     var isGroup = isGroupMode(project);
 
-    if (badgeEl) {
-      badgeEl.textContent = isGroup ? "Đấu nhóm" : "Đấu lô";
-      badgeEl.className =
-        "rph-badge " + (isGroup ? "rph-badge-group" : "rph-badge-normal");
-    }
     if (nameEl) nameEl.textContent = project.name || "";
     if (codeEl) codeEl.textContent = project.project_code || project.code || "";
+
+    if (global.ProjectTypeBadge) {
+      var hubSelect = root.querySelector("[data-hub-project-select]");
+      ProjectTypeBadge.updateFromProject(hubSelect, project);
+    }
 
     if (normalSec) normalSec.classList.toggle("hidden", isGroup);
     if (groupSec) groupSec.classList.toggle("hidden", !isGroup);
@@ -164,6 +167,10 @@
     });
 
     onSelect(selectEl ? selectEl.value : initialCode);
+
+    if (global.ProjectTypeBadge && selectEl) {
+      ProjectTypeBadge.bindSelect(selectEl);
+    }
   }
 
   global.ReportsProjectHub = { init: init, LS_KEY: LS_KEY };

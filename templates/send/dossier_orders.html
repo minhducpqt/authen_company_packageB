@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from 'macros/project_auction_type.html' import project_option_attrs %}
 {% block content %}
 <div class="bg-white rounded-xl border border-slate-200 p-5">
   <div class="flex items-center justify-between mb-4">
@@ -9,13 +10,13 @@
   </div>
 
   <!-- Bộ lọc (SSR + JS) -->
-  <form id="filtersForm" class="grid grid-cols-12 gap-3 items-end" onsubmit="return false;">
-    <div class="col-span-12 md:col-span-4">
+  <form id="filtersForm" class="grid grid-cols-12 gap-3 items-start" onsubmit="return false;">
+    <div class="col-span-12 md:col-span-4 min-w-0" data-project-type-field>
       <label class="block text-xs text-slate-500 mb-1">Dự án</label>
-      <select name="project_id" class="h-10 w-full rounded-lg border border-slate-300 px-3">
+      <select name="project_id" data-project-type-value-mode="id" class="h-10 w-full rounded-lg border border-slate-300 px-3">
         <option value="">— Tất cả dự án —</option>
         {% for p in projects %}
-          <option value="{{ p.id }}" {% if (filters.project_id|string)==(p.id|string) %}selected{% endif %}>
+          <option value="{{ p.id }}" {{ project_option_attrs(p) }} {% if (filters.project_id|string)==(p.id|string) %}selected{% endif %}>
             {{ p.project_code or ('#'+(p.id|string)) }} — {{ p.project_name or p.name or '' }}
           </option>
         {% endfor %}

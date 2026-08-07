@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ title }}{% endblock %}
+{% from 'macros/project_auction_type.html' import project_option_attrs %}
 
 {% block content %}
 <style>
@@ -90,10 +91,10 @@
       <div class="muted text-sm mt-1">Xem nhanh trạng thái + mở/preview + copy link.</div>
     </div>
 
-    <div class="flex gap-2 items-center">
-      <select id="projectSelect" class="rounded-xl border border-slate-200 px-3 py-2 bg-white text-sm">
+    <div class="flex gap-2 items-start min-w-0" data-project-type-field>
+      <select id="projectSelect" data-project-type-value-mode="id" class="rounded-xl border border-slate-200 px-3 py-2 bg-white text-sm">
         {% for p in projects %}
-          <option value="{{ p.id }}" {% if project_id == p.id %}selected{% endif %}>
+          <option value="{{ p.id }}" {{ project_option_attrs(p) }} {% if project_id == p.id %}selected{% endif %}>
             {{ p.project_code }} — {{ p.name }}
           </option>
         {% endfor %}

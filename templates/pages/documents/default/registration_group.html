@@ -412,10 +412,11 @@
       <span class="bold">{{ project.description or project.name or "" }}</span>
     </div>
 
-    <!-- ===== BẢNG NHÓM CỌC (ĐẤU NHÓM) ===== -->
+    <!-- ===== BẢNG NHÓM CỌC (ĐẤU NHÓM — CHỐT LÔ TRONG PHIÊN) ===== -->
     <div class="mb-1 small">
-      <span class="bold">Danh sách nhóm lô đăng ký tham gia đấu giá (hình thức đấu nhóm):</span>
+      <span class="bold">Danh sách nhóm lô đăng ký tham gia đấu giá (hình thức đấu nhóm — chốt lô trong phiên):</span>
     </div>
+    <div class="note mb-2">Khách hàng tự ghi mã lô và giá trả khi tham gia phiên đấu giá; không cần khai báo mã lô trước phiên.</div>
     {{ render_deposit_groups_table(deposit_groups, 0) }}
 
     <!-- Cam kết -->

@@ -1,6 +1,7 @@
 {# templates/auction/auction_counting.html #}
 {% extends "base.html" %}
 {% block title %}Kiểm phiếu trúng đấu giá{% endblock %}
+{% from 'macros/project_auction_type.html' import project_option_attrs %}
 
 {% block content %}
 {% set projects = projects or [] %}
@@ -182,7 +183,7 @@
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
     <div class="lg:col-span-2">
       <label class="text-sm font-bold text-slate-900">Chọn dự án</label>
-      <div class="mt-2 flex gap-2">
+      <div class="mt-2 flex gap-2 min-w-0" data-project-type-field>
         <select id="projectSelect" class="ac-input">
           <option value="">— Chọn dự án —</option>
           {% for p in projects %}
@@ -191,7 +192,7 @@
             {% set name = (p.get("name") or "") %}
             {% set st = (p.get("status") or "") %}
             {% set key = (code if code else pid|string) %}
-            <option value="{{ key }}" {% if project_key and (project_key|string) == (key|string) %}selected{% endif %}>
+            <option value="{{ key }}" {{ project_option_attrs(p) }} {% if project_key and (project_key|string) == (key|string) %}selected{% endif %}>
               {{ code or ("#" ~ pid) }} — {{ name }}{% if st %} ({{ st }}){% endif %}
             </option>
           {% endfor %}

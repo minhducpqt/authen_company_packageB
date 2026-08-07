@@ -40,10 +40,10 @@
     id="filtersForm"
     method="get"
     action="/bid-tickets"
-    class="mb-4 grid grid-cols-1 md:grid-cols-4 gap-3 items-end"
+    class="mb-4 grid grid-cols-1 md:grid-cols-4 gap-3 items-start"
   >
     <!-- Dự án: dropdown active projects -->
-    <div>
+    <div class="min-w-0" data-project-type-field>
       <label class="block text-xs font-medium text-slate-600 mb-1">Dự án</label>
       <select
         id="projectSelect"
@@ -54,7 +54,7 @@
       <!-- giữ giá trị để submit GET -->
       <input type="hidden" name="project_code" id="projectCodeInput" value="{{ filters.project_code }}">
       <input type="hidden" name="tab" id="tabInput" value="{{ active_tab or 'customers' }}">
-      <div class="mt-1 text-[11px] text-slate-500">
+      <div class="mt-1 text-[11px] text-slate-500 leading-snug">
         * Bắt buộc chọn dự án để tải dữ liệu / in phiếu.
       </div>
     </div>
@@ -608,8 +608,14 @@
       .then(r => r.json())
       .then(js => {
         const list = js.data || js.items || [];
+        if (window.ProjectTypeBadge) {
+          ProjectTypeBadge.fillSelect(projectSelect, list, {
+            placeholder: "Chọn dự án…",
+            selectedValue: currentProjectCode,
+          });
+          return;
+        }
         projectSelect.innerHTML = '<option value="">Chọn dự án…</option>';
-
         (list || []).forEach(p => {
           const code = p.project_code || p.code || "";
           const name = p.name || code;
@@ -619,10 +625,7 @@
           opt.textContent = `${code} — ${name}`;
           projectSelect.appendChild(opt);
         });
-
-        if (currentProjectCode) {
-          projectSelect.value = currentProjectCode;
-        }
+        if (currentProjectCode) projectSelect.value = currentProjectCode;
       })
       .catch(() => {
         // ignore silently

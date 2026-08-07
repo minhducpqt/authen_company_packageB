@@ -1,0 +1,9 @@
+{# Meta loại đấu trên <option> (SSR) — dùng chung ProjectTypeBadge JS #}
+{% macro project_option_attrs(p) -%}
+{%- set mode = (p.registration_mode or 'NORMAL')|upper -%}
+{%- set ga = p.group_auction if (p.group_auction is defined and p.group_auction is mapping) else {} -%}
+{%- set policy = (ga.lot_policy or 'IN_SESSION_R1')|upper if mode == 'GROUP_AUCTION' else '' -%}
+{%- set kind = 'GROUP_PRE_SESSION' if mode == 'GROUP_AUCTION' and policy == 'PRE_SESSION' else ('GROUP_BLIND' if mode == 'GROUP_AUCTION' else 'NORMAL') -%}
+{%- set code = p.project_code or p.code or '' -%}
+data-project-code="{{ code }}" data-registration-mode="{{ mode }}"{% if policy %} data-lot-policy="{{ policy }}"{% endif %} data-auction-type-kind="{{ kind }}"
+{%- endmacro %}

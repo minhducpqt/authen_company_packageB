@@ -1,6 +1,7 @@
 {# templates/reports/lots_ineligible.html #}
 {% extends "base.html" %}
 {% block title %}Lô chưa đủ điều kiện{% endblock %}
+{% from 'macros/project_auction_type.html' import project_option_attrs %}
 
 {% block content %}
 {% include "reports/_detail_styles.html" %}
@@ -141,9 +142,9 @@
 
     <div class="rp-controls">
       <form id="projForm" method="get" action="{{ request.url.path }}">
-        <div class="sel">
+        <div class="sel min-w-0" data-project-type-field>
           <label>Dự án</label>
-          <select id="projectSelect">
+          <select id="projectSelect" data-project-type-value-mode="id">
             <option value="">— Chọn dự án —</option>
 
             {% for p in (projects or []) %}
@@ -163,7 +164,7 @@
                   or ''
               %}
 
-              <option value="{{ pid }}"
+              <option value="{{ pid }}" {{ project_option_attrs(p) }}
                 {% if pid and project_id_val and (pid|string) == (project_id_val|string) %}selected{% endif %}>
                 {{ code|upper }} — {{ pname }}
               </option>

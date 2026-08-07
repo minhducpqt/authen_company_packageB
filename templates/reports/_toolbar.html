@@ -111,9 +111,12 @@
         op.value = code;
         op.textContent = `${code} — ${o.name || ''}${isActive ? '' : ' (INACTIVE)'}`;
         op.dataset.status = status;
+        if (window.ProjectTypeBadge) ProjectTypeBadge.applyOptionMeta(op, o);
 
         selectEl.appendChild(op);
       }
+
+      if (window.ProjectTypeBadge) ProjectTypeBadge.syncSelect(selectEl);
 
       const u = getUrl();
       const urlProject = (u.searchParams.get('project') || '').trim();
@@ -180,7 +183,7 @@
 {# UI toolbar #}
 <div class="mb-4 bg-white border rounded-2xl p-4 shadow-sm">
   <form id="filtersForm" class="flex flex-col md:flex-row gap-3 items-start md:items-end" action="" method="get">
-    <div class="flex-1 min-w-[240px]">
+    <div class="flex-1 min-w-[240px] min-w-0" data-project-type-field>
       <label class="block text-xs text-slate-500 mb-1 font-semibold">Dự án</label>
       <select id="projectSelect" name="project"
               class="w-full h-10 rounded-xl border-slate-300 focus:ring-2 focus:ring-indigo-500"

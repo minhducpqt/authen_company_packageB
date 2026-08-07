@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Khách hàng — Lô không đủ điều kiện (Chi tiết){% endblock %}
+{% from 'macros/project_auction_type.html' import project_option_attrs %}
 
 {% block content %}
 {% include "reports/_detail_styles.html" %}
@@ -177,14 +178,14 @@
 
     <div class="rp-controls">
       <form method="get" action="{{ request.url.path }}" style="flex:1 1 auto">
-        <div class="sel">
+        <div class="sel min-w-0" data-project-type-field>
           <label>Dự án</label>
-          <select id="projectSelectV2">
+          <select id="projectSelectV2" data-project-type-value-mode="id">
             <option value="">— Chọn dự án —</option>
             {% for p in (projects or []) %}
               {% set pid = p.get("id") or p.get("project_id") %}
               {% set code = (p.get("project_code") or p.get("code") or "")|upper %}
-              <option value="{{ pid }}" {% if pid == project_id_val %}selected{% endif %}>
+              <option value="{{ pid }}" {{ project_option_attrs(p) }} {% if pid == project_id_val %}selected{% endif %}>
                 {{ code }} — {{ (p.get("name") or "") }}
               </option>
             {% endfor %}

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Mua hồ sơ{% endblock %}
+{% from 'macros/project_auction_type.html' import project_option_attrs %}
 
 {% block content %}
 {% include "reports/_detail_styles.html" %}
@@ -22,14 +23,14 @@
 
     <div class="rd-controls">
       <form id="filtersForm" method="get" class="flex-1 min-w-0">
-        <div class="rd-sel">
+        <div class="rd-sel min-w-0" data-project-type-field>
           <label>Dự án</label>
           <select id="projectSelectLocal" name="project">
             <option value="">— Chọn dự án —</option>
             {% for p in projects_list %}
               {% set code = p.project_code or p.code %}
               {% set st = (p.status or p.project_status or '')|upper %}
-              <option value="{{ code }}" {% if code == project %}selected{% endif %}>
+              <option value="{{ code }}" {{ project_option_attrs(p) }} {% if code == project %}selected{% endif %}>
                 {{ code }} — {{ p.name }}{% if st and st != 'ACTIVE' %} (INACTIVE){% endif %}
               </option>
             {% endfor %}
@@ -125,14 +126,14 @@
 
     <div class="rd-controls">
       <form id="filtersForm" method="get" class="flex-1 min-w-0">
-        <div class="rd-sel">
+        <div class="rd-sel min-w-0" data-project-type-field>
           <label>Dự án</label>
           <select id="projectSelectLocal" name="project">
             <option value="">— Chọn dự án —</option>
             {% for p in projects_list %}
               {% set code = p.project_code or p.code %}
               {% set st = (p.status or p.project_status or '')|upper %}
-              <option value="{{ code }}" {% if code == project %}selected{% endif %}>
+              <option value="{{ code }}" {{ project_option_attrs(p) }} {% if code == project %}selected{% endif %}>
                 {{ code }} — {{ p.name }}{% if st and st != 'ACTIVE' %} (INACTIVE){% endif %}
               </option>
             {% endfor %}

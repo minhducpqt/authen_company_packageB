@@ -154,9 +154,15 @@ async def view_auction_registration(
         or data.get("registration_mode")
         or "NORMAL"
     )
+    lot_policy = (
+        project.get("lot_policy")
+        or (data.get("meta") or {}).get("lot_policy")
+        or "IN_SESSION_R1"
+    )
     reg_tpl = resolve_registration_template(
         extract_company_code(company=company),
         registration_mode,
+        lot_policy=lot_policy,
     )
 
     html = templates.get_template(reg_tpl).render(
