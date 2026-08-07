@@ -1,19 +1,19 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="bg-white rounded-xl border border-slate-200 p-5">
-  <div class="flex items-center justify-between mb-4">
-    <div>
-      <h2 class="text-xl font-semibold text-slate-800">
+<div class="bg-white rounded-xl border border-slate-200 p-4">
+  <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+    <div class="min-w-0">
+      <h2 class="text-lg font-semibold text-slate-800 leading-tight">
         Chi tiết dự án
         {% if project %}
-          <span class="font-mono text-slate-500">— {{ project.project_code }}</span>
+          <span class="font-mono text-slate-500 text-base">— {{ project.project_code }}</span>
         {% endif %}
       </h2>
-      <p class="text-slate-500 text-sm">Thông tin tổng quan và danh sách lô thuộc dự án.</p>
+      <p class="text-slate-500 text-xs mt-0.5">Tổng quan &amp; cấu hình · danh sách lô bên dưới</p>
     </div>
-    <div class="flex gap-2">
-      <a href="/projects" class="topbtn border border-slate-300 bg-white text-slate-700">
-        ← Danh sách dự án
+    <div class="flex gap-2 shrink-0">
+      <a href="/projects" class="topbtn border border-slate-300 bg-white text-slate-700 text-xs py-1.5 px-2.5">
+        ← Danh sách
       </a>
     </div>
   </div>
@@ -66,43 +66,75 @@
     }
     .pj-edit-btn i{ font-size: 14px; }
 
-    /* ===== Auction config panel ===== */
+    /* ===== Auction config panel (compact from top → before Nhóm cọc) ===== */
+    .pj-top-stack{ display:flex; flex-direction:column; gap:0.5rem; margin-bottom:0.75rem; }
+    .pj-meta-row{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:0.5rem;
+    }
+    @media (min-width:640px){
+      .pj-meta-row{ grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) auto; }
+    }
+    .pj-meta-chip{
+      display:flex; flex-direction:column; justify-content:center;
+      min-height:0; padding:0.45rem 0.65rem;
+      border-radius:0.5rem; background:#f8fafc; border:1px solid #e2e8f0;
+    }
+    .pj-meta-chip .lbl{ font-size:0.625rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:.03em; line-height:1.1; }
+    .pj-meta-chip .val{ font-size:0.8125rem; font-weight:600; color:#0f172a; line-height:1.25; margin-top:0.15rem; }
+    .pj-meta-chip .val.mono{ font-family:ui-monospace,monospace; font-weight:700; }
+    .pj-meta-chip .row{ display:flex; align-items:center; justify-content:space-between; gap:0.35rem; }
     .pj-section-card{
-      padding: 1rem 1.125rem;
-      border-radius: 0.75rem;
+      padding: 0.55rem 0.75rem;
+      border-radius: 0.625rem;
       background: #f8fafc;
       border: 1px solid #e2e8f0;
+    }
+    /* Nhóm cọc & sections below keep roomier spacing */
+    .pj-section-card.pj-section-roomy{
+      padding: 1rem 1.125rem;
+      border-radius: 0.75rem;
+    }
+    .pj-section-card.pj-section-roomy .pj-section-title{
+      font-size: 0.875rem;
+      gap: 0.5rem;
+    }
+    .pj-section-card.pj-section-roomy .pj-section-desc{
+      font-size: 0.6875rem;
+      margin-top: 0.25rem;
+      line-height: 1.4;
     }
     .pj-section-head{
       display: flex;
       flex-wrap: wrap;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
-      gap: 0.75rem;
-      margin-bottom: 1rem;
+      gap: 0.4rem;
+      margin-bottom: 0.45rem;
     }
     .pj-section-title{
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
       font-weight: 700;
       color: #0f172a;
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.35rem;
     }
     .pj-section-desc{
-      font-size: 0.6875rem;
+      font-size: 0.625rem;
       color: #64748b;
-      margin-top: 0.25rem;
-      line-height: 1.4;
+      margin-top: 0.1rem;
+      line-height: 1.3;
     }
     .pj-section-icon{
-      width: 2.25rem;
-      height: 2.25rem;
-      border-radius: 0.625rem;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 0.4rem;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.125rem;
+      font-size: 0.875rem;
       flex-shrink: 0;
       background: linear-gradient(135deg, #eef2ff, #e0e7ff);
       color: #4f46e5;
@@ -110,7 +142,7 @@
     .pj-config-grid{
       display: grid;
       grid-template-columns: 1fr;
-      gap: 1rem;
+      gap: 0.5rem;
     }
     @media (min-width: 768px){
       .pj-config-grid{ grid-template-columns: 1fr 1fr; }
@@ -118,22 +150,22 @@
     .pj-config-block{
       background: #fff;
       border: 1px solid #e2e8f0;
-      border-radius: 0.625rem;
-      padding: 0.875rem;
+      border-radius: 0.5rem;
+      padding: 0.5rem 0.55rem;
     }
     .pj-config-label{
-      font-size: 0.75rem;
+      font-size: 0.6875rem;
       font-weight: 700;
       color: #334155;
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.35rem;
       display: flex;
       align-items: center;
-      gap: 0.375rem;
+      gap: 0.3rem;
     }
     .pj-pick-grid{
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 0.625rem;
+      gap: 0.35rem;
     }
     @media (max-width: 480px){
       .pj-pick-grid{ grid-template-columns: 1fr; }
@@ -141,74 +173,80 @@
     .pj-pick{
       position: relative;
       display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.375rem;
-      padding: 0.875rem 1rem;
-      border-radius: 0.75rem;
-      border: 2px solid #e2e8f0;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.2rem 0.45rem;
+      padding: 0.4rem 0.55rem;
+      border-radius: 0.5rem;
+      border: 1.5px solid #e2e8f0;
       background: #fff;
       cursor: pointer;
       transition: border-color .15s, box-shadow .15s, background .15s;
       text-align: left;
       width: 100%;
-      min-height: 5.5rem;
+      min-height: 0;
     }
     .pj-pick:hover:not(.is-active):not(.is-active-teal){
       border-color: #94a3b8;
-      box-shadow: 0 4px 12px rgba(15,23,42,.06);
+      box-shadow: 0 1px 4px rgba(15,23,42,.05);
     }
     .pj-pick.is-active{
       border-color: #6366f1;
-      background: linear-gradient(180deg, #fafaff 0%, #fff 100%);
-      box-shadow: 0 0 0 3px rgba(99,102,241,.15);
+      background: #f5f3ff;
+      box-shadow: 0 0 0 2px rgba(99,102,241,.12);
       cursor: default;
     }
     .pj-pick.is-active-teal{
       border-color: #14b8a6;
-      background: linear-gradient(180deg, #f0fdfa 0%, #fff 100%);
-      box-shadow: 0 0 0 3px rgba(20,184,166,.15);
+      background: #f0fdfa;
+      box-shadow: 0 0 0 2px rgba(20,184,166,.12);
       cursor: default;
     }
     .pj-pick-top{
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      width: 100%;
-      gap: 0.5rem;
+      gap: 0.35rem;
+      flex-shrink: 0;
     }
     .pj-pick-ico{
-      width: 2rem;
-      height: 2rem;
-      border-radius: 0.5rem;
+      width: 1.35rem;
+      height: 1.35rem;
+      border-radius: 0.3rem;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.125rem;
+      font-size: 0.8rem;
       background: #f1f5f9;
       color: #64748b;
     }
     .pj-pick.is-active .pj-pick-ico{ background: #eef2ff; color: #4f46e5; }
     .pj-pick.is-active-teal .pj-pick-ico{ background: #ccfbf1; color: #0d9488; }
     .pj-pick-badge{
-      font-size: 0.625rem;
+      font-size: 0.5625rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.04em;
-      padding: 0.2rem 0.5rem;
+      letter-spacing: 0.03em;
+      padding: 0.1rem 0.35rem;
       border-radius: 9999px;
       background: #f1f5f9;
       color: #64748b;
       white-space: nowrap;
+      margin-left: auto;
     }
     .pj-pick.is-active .pj-pick-badge{ background: #eef2ff; color: #4338ca; }
     .pj-pick.is-active-teal .pj-pick-badge{ background: #ccfbf1; color: #0f766e; }
-    .pj-pick-ttl{ font-size: 0.9375rem; font-weight: 700; color: #0f172a; line-height: 1.25; }
-    .pj-pick-sub{ font-size: 0.75rem; color: #64748b; line-height: 1.4; }
+    .pj-pick-ttl{ font-size: 0.75rem; font-weight: 700; color: #0f172a; line-height: 1.2; flex:1 1 auto; min-width: 4rem; }
+    .pj-pick-sub{
+      font-size: 0.625rem; color: #64748b; line-height: 1.25;
+      flex: 1 1 100%; width: 100%;
+      display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
+    }
     .pj-pick-hint{
-      margin-top: 0.625rem;
-      font-size: 0.6875rem;
+      margin-top: 0.3rem;
+      font-size: 0.625rem;
       color: #94a3b8;
+      line-height: 1.3;
     }
     .pj-pick-hint b{ color: #64748b; font-weight: 600; }
     .pj-dgf-toolbar{
@@ -355,65 +393,58 @@
     }
   </style>
 
-  <!-- Thông tin dự án -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-    <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
-      <div class="text-slate-500 text-sm">Mã dự án</div>
-      <div class="text-lg font-mono">{{ project.project_code }}</div>
-    </div>
-
-    <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
-      <div class="flex items-center justify-between gap-2">
-        <div class="text-slate-500 text-sm">Tên dự án</div>
-        <button
-          type="button"
-          class="pj-edit-btn"
-          title="Sửa tên dự án"
-          onclick="openProjectEdit('name')"
-        >
-          <i class="ri-edit-2-line"></i>
-        </button>
+  <!-- Thông tin dự án + cấu hình (compact) -->
+  <div class="pj-top-stack">
+    <div class="pj-meta-row">
+      <div class="pj-meta-chip">
+        <div class="lbl">Mã dự án</div>
+        <div class="val mono">{{ project.project_code }}</div>
       </div>
-      <div class="text-lg font-semibold" id="pj_name_text">{{ project.name }}</div>
-    </div>
 
-    <!-- Trạng thái -->
-    <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
-      <div class="text-slate-500 text-sm mb-1">Trạng thái</div>
-      <div>
-        {% set st = (project.status or '') %}
-        <span class="inline-flex items-center px-2 py-1 rounded text-xs
-          {% if st=='ACTIVE' %} bg-emerald-100 text-emerald-700 border border-emerald-200
-          {% elif st=='INACTIVE' %} bg-amber-100 text-amber-700 border border-amber-200
-          {% elif st=='CLOSED' %} bg-slate-200 text-slate-700 border border-slate-300
-          {% else %} bg-slate-100 text-slate-600 border border-slate-200 {% endif %}">
-          {{ st or 'UNKNOWN' }}
-        </span>
+      <div class="pj-meta-chip">
+        <div class="row">
+          <div class="lbl">Tên dự án</div>
+          <button type="button" class="pj-edit-btn" title="Sửa tên dự án" onclick="openProjectEdit('name')" style="height:22px;width:22px;border-radius:6px">
+            <i class="ri-edit-2-line" style="font-size:12px"></i>
+          </button>
+        </div>
+        <div class="val" id="pj_name_text">{{ project.name }}</div>
+      </div>
+
+      <div class="pj-meta-chip">
+        <div class="lbl">Trạng thái</div>
+        <div class="val" style="margin-top:0.25rem">
+          {% set st = (project.status or '') %}
+          <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold
+            {% if st=='ACTIVE' %} bg-emerald-100 text-emerald-700 border border-emerald-200
+            {% elif st=='INACTIVE' %} bg-amber-100 text-amber-700 border border-amber-200
+            {% elif st=='CLOSED' %} bg-slate-200 text-slate-700 border border-slate-300
+            {% else %} bg-slate-100 text-slate-600 border border-slate-200 {% endif %}">
+            {{ st or 'UNKNOWN' }}
+          </span>
+        </div>
       </div>
     </div>
 
-    {# Cấu hình đấu giá — quan trọng, full width #}
-    <div class="md:col-span-3 pj-section-card border-indigo-100 bg-gradient-to-br from-indigo-50/50 via-slate-50 to-white">
+    {# Cấu hình đấu giá — compact #}
+    <div class="pj-section-card border-indigo-100 bg-gradient-to-br from-indigo-50/40 via-slate-50 to-white">
       <div class="pj-section-head">
-        <div class="flex items-start gap-3">
+        <div class="flex items-center gap-2 min-w-0">
           <span class="pj-section-icon"><i class="ri-auction-fill"></i></span>
-          <div>
+          <div class="min-w-0">
             <div class="pj-section-title">Cấu hình đấu giá</div>
-            <div class="pj-section-desc">
-              Quyết định luồng mua hồ sơ, đặt cọc và báo cáo. Thay đổi cần xác nhận.
-            </div>
+            <div class="pj-section-desc">Ảnh hưởng luồng hồ sơ / cọc / báo cáo · đổi cần xác nhận</div>
           </div>
         </div>
         {% if (me.role or '')|upper == 'SUPER_ADMIN' and project.company_code %}
         <a href="/account/company/{{ project.company_code }}/auction-defaults"
-           class="text-xs text-indigo-600 hover:text-indigo-800 font-medium whitespace-nowrap">
-          <i class="ri-settings-3-line"></i> Mặc định công ty
+           class="text-[11px] text-indigo-600 hover:text-indigo-800 font-medium whitespace-nowrap">
+          <i class="ri-settings-3-line"></i> Mặc định CT
         </a>
         {% endif %}
       </div>
 
       <div class="pj-config-grid">
-        {# Hình thức đấu #}
         <div class="pj-config-block border-indigo-100/80">
           <div class="pj-config-label">
             <i class="ri-shuffle-line text-indigo-500"></i> Hình thức đấu
@@ -425,29 +456,28 @@
                       data-pj-pick="reg" data-value="NORMAL" aria-pressed="{{ 'true' if not is_group_auction else 'false' }}">
                 <div class="pj-pick-top">
                   <span class="pj-pick-ico"><i class="ri-grid-fill"></i></span>
-                  <span class="pj-pick-badge">{% if not is_group_auction %}Đang dùng{% else %}Chọn{% endif %}</span>
                 </div>
                 <span class="pj-pick-ttl">Đấu lô</span>
-                <span class="pj-pick-sub">Khách chọn lô cụ thể khi đặt cọc và mua hồ sơ</span>
+                <span class="pj-pick-badge">{% if not is_group_auction %}Đang dùng{% else %}Chọn{% endif %}</span>
+                <span class="pj-pick-sub">Chọn lô cụ thể khi cọc &amp; mua hồ sơ</span>
               </button>
               <button type="button" class="pj-pick {% if is_group_auction %}is-active-teal{% endif %}"
                       data-pj-pick="reg" data-value="GROUP_AUCTION" aria-pressed="{{ 'true' if is_group_auction else 'false' }}">
                 <div class="pj-pick-top">
                   <span class="pj-pick-ico"><i class="ri-group-2-fill"></i></span>
-                  <span class="pj-pick-badge">{% if is_group_auction %}Đang dùng{% else %}Chọn{% endif %}</span>
                 </div>
                 <span class="pj-pick-ttl">Đấu nhóm</span>
-                <span class="pj-pick-sub">Cọc và hồ sơ theo nhóm mức tiền đặt trước</span>
+                <span class="pj-pick-badge">{% if is_group_auction %}Đang dùng{% else %}Chọn{% endif %}</span>
+                <span class="pj-pick-sub">Cọc &amp; hồ sơ theo mức đặt trước</span>
               </button>
             </div>
-            <p class="pj-pick-hint">Bấm vào lựa chọn khác → nhập <b>tôi xác nhận</b> để lưu.</p>
+            <p class="pj-pick-hint">Chọn khác → nhập <b>tôi xác nhận</b> để lưu.</p>
           </form>
         </div>
 
-        {# Cách tính giá #}
         <div class="pj-config-block">
           <div class="pj-config-label">
-            <i class="ri-calculator-line text-slate-500"></i> Cách tính giá đấu
+            <i class="ri-calculator-line text-slate-500"></i> Cách tính giá
           </div>
           <form method="post" action="/projects/{{ project.id }}/auction-mode" id="form-auction-mode">
             <input type="hidden" name="auction_mode" id="pj-auction-mode-value" value="{{ auction_mode }}">
@@ -456,62 +486,65 @@
                       data-pj-pick="auction" data-value="PER_LOT" aria-pressed="{{ 'true' if not is_per_sqm else 'false' }}">
                 <div class="pj-pick-top">
                   <span class="pj-pick-ico"><i class="ri-layout-grid-fill"></i></span>
-                  <span class="pj-pick-badge">{% if not is_per_sqm %}Đang dùng{% else %}Chọn{% endif %}</span>
                 </div>
                 <span class="pj-pick-ttl">Theo cả lô</span>
-                <span class="pj-pick-sub">Giá khởi điểm và trả giá tính trên từng lô</span>
+                <span class="pj-pick-badge">{% if not is_per_sqm %}Đang dùng{% else %}Chọn{% endif %}</span>
+                <span class="pj-pick-sub">GKĐ &amp; trả giá trên từng lô</span>
               </button>
               <button type="button" class="pj-pick {% if is_per_sqm %}is-active{% endif %}"
                       data-pj-pick="auction" data-value="PER_SQM" aria-pressed="{{ 'true' if is_per_sqm else 'false' }}">
                 <div class="pj-pick-top">
                   <span class="pj-pick-ico"><i class="ri-ruler-2-fill"></i></span>
-                  <span class="pj-pick-badge">{% if is_per_sqm %}Đang dùng{% else %}Chọn{% endif %}</span>
                 </div>
                 <span class="pj-pick-ttl">Theo m²</span>
-                <span class="pj-pick-sub">Giá khởi điểm và trả giá tính theo diện tích</span>
+                <span class="pj-pick-badge">{% if is_per_sqm %}Đang dùng{% else %}Chọn{% endif %}</span>
+                <span class="pj-pick-sub">GKĐ &amp; trả giá theo diện tích</span>
               </button>
             </div>
-            <p class="pj-pick-hint">Bấm vào lựa chọn khác → nhập <b>tôi xác nhận</b> để lưu.</p>
+            <p class="pj-pick-hint">Chọn khác → nhập <b>tôi xác nhận</b> để lưu.</p>
           </form>
         </div>
       </div>
     </div>
 
     {% if is_group_auction %}
-    <!-- Chính sách gán mã lô (đấu nhóm) -->
-    <div class="md:col-span-3 pj-section-card border-teal-100/80">
-      <div class="pj-section-title"><i class="ri-map-pin-2-fill text-teal-600"></i> Chính sách gán mã lô</div>
-      <div class="pj-section-desc mt-1 mb-3">
-        Chỉ áp dụng dự án <b>đấu nhóm</b>. Mặc định: chốt lô trong phiên v1 (phiếu BLANK).
+    <div class="pj-section-card border-teal-100/80">
+      <div class="pj-section-head mb-0">
+        <div>
+          <div class="pj-section-title"><i class="ri-map-pin-2-fill text-teal-600"></i> Chính sách gán mã lô</div>
+          <div class="pj-section-desc">Chỉ áp dụng đấu nhóm · mặc định chốt lô trong phiên (BLANK)</div>
+        </div>
       </div>
       <input type="hidden" id="pj-lot-policy-value" value="{{ lot_policy }}">
-      <div class="pj-pick-grid" id="pj-lot-policy-picks">
+      <div class="pj-pick-grid mt-1.5" id="pj-lot-policy-picks">
         <button type="button" class="pj-pick {% if not is_pre_session %}is-active-teal{% endif %}"
                 data-pj-lot-policy="IN_SESSION_R1" aria-pressed="{{ 'true' if not is_pre_session else 'false' }}">
           <div class="pj-pick-top">
             <span class="pj-pick-ico"><i class="ri-edit-box-line"></i></span>
-            <span class="pj-pick-badge">{% if not is_pre_session %}Đang dùng{% else %}Chọn{% endif %}</span>
           </div>
-          <span class="pj-pick-ttl">Chốt lô trong phiên (v1)</span>
-          <span class="pj-pick-sub">Khách tự ghi mã lô trên phiếu trả giá BLANK</span>
+          <span class="pj-pick-ttl">Trong phiên (v1)</span>
+          <span class="pj-pick-badge">{% if not is_pre_session %}Đang dùng{% else %}Chọn{% endif %}</span>
+          <span class="pj-pick-sub">Khách tự ghi mã lô trên phiếu BLANK</span>
         </button>
         <button type="button" class="pj-pick {% if is_pre_session %}is-active-teal{% endif %}"
                 data-pj-lot-policy="PRE_SESSION" aria-pressed="{{ 'true' if is_pre_session else 'false' }}">
           <div class="pj-pick-top">
             <span class="pj-pick-ico"><i class="ri-user-settings-line"></i></span>
-            <span class="pj-pick-badge">{% if is_pre_session %}Đang dùng{% else %}Chọn{% endif %}</span>
           </div>
-          <span class="pj-pick-ttl">Chốt lô trước phiên</span>
-          <span class="pj-pick-sub">Mã lô in sẵn trên phiếu trả giá trước phiên đấu</span>
+          <span class="pj-pick-ttl">Trước phiên</span>
+          <span class="pj-pick-badge">{% if is_pre_session %}Đang dùng{% else %}Chọn{% endif %}</span>
+          <span class="pj-pick-sub">Mã lô in sẵn trên phiếu · gán tại Phiếu TG</span>
         </button>
       </div>
-      <p class="pj-pick-hint mt-2">Bấm lựa chọn khác → nhập <b>tôi xác nhận</b> để lưu. Gán lô cho từng đơn thực hiện tại mục <b>Phiếu trả giá</b>.</p>
+      <p class="pj-pick-hint">Chọn khác → <b>tôi xác nhận</b>. Gán lô từng đơn: mục <b>Phiếu trả giá</b>.</p>
     </div>
     {% endif %}
+  </div>
 
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
     {% if is_group_auction %}
-    <!-- Nhóm cọc & phí hồ sơ (đấu nhóm) -->
-    <div class="md:col-span-3 pj-section-card">
+    <!-- Nhóm cọc & phí hồ sơ (đấu nhóm) — giữ layout cũ -->
+    <div class="md:col-span-3 pj-section-card pj-section-roomy">
       <div class="pj-dgf-toolbar">
         <div>
           <div class="pj-section-title"><i class="ri-funds-box-fill text-sky-600"></i> Nhóm cọc &amp; phí mua hồ sơ</div>

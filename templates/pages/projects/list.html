@@ -1,23 +1,23 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="bg-white rounded-xl border border-slate-200 p-5">
-  <div class="flex items-center justify-between mb-4">
-    <div>
-      <h2 class="text-xl font-semibold text-slate-800">Quản lý dự án</h2>
-      <p class="text-slate-500 text-sm">Tìm kiếm và lọc theo trạng thái.</p>
+<div class="bg-white rounded-xl border border-slate-200 p-4">
+  <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+    <div class="min-w-0">
+      <h2 class="text-lg font-semibold text-slate-800 leading-tight">Quản lý dự án</h2>
+      <p class="text-slate-500 text-xs mt-0.5">Tìm kiếm · lọc trạng thái · chi tiết</p>
     </div>
-    <div class="flex gap-2">
-      <a href="/projects/template" class="topbtn border border-slate-300 bg-white text-slate-700">
+    <div class="flex gap-2 shrink-0">
+      <a href="/projects/template" class="topbtn border border-slate-300 bg-white text-slate-700 text-xs py-1.5 px-2.5">
         <i class="ri-download-2-line mr-1"></i> Template
       </a>
-      <a href="/projects/import" class="topbtn bg-indigo-600 text-white hover:bg-indigo-700">
+      <a href="/projects/import" class="topbtn bg-indigo-600 text-white hover:bg-indigo-700 text-xs py-1.5 px-2.5">
         <i class="ri-upload-2-line mr-1"></i> Import
       </a>
     </div>
   </div>
 
   {% if load_err %}
-    <div class="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700">
+    <div class="mb-3 p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-sm">
       <i class="ri-error-warning-line mr-1"></i> {{ load_err }}
     </div>
   {% endif %}
@@ -29,7 +29,7 @@
     {% set err_fields = request.query_params.get('err_fields','') %}
     {% set err_code = request.query_params.get('err_code','') %}
 
-    <div class="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700">
+    <div class="mb-3 p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-sm">
       <div class="flex items-start gap-2">
         <i class="ri-error-warning-line mt-0.5"></i>
         <div class="space-y-1">
@@ -39,26 +39,26 @@
           </div>
 
           {% if err_fields %}
-            <pre class="whitespace-pre-wrap text-sm text-rose-700 bg-white/60 border border-rose-100 rounded p-2">{{ err_fields }}</pre>
+            <pre class="whitespace-pre-wrap text-xs text-rose-700 bg-white/60 border border-rose-100 rounded p-2">{{ err_fields }}</pre>
           {% endif %}
 
           {% if err_hint %}
-            <div class="text-sm text-rose-700">{{ err_hint }}</div>
+            <div class="text-xs text-rose-700">{{ err_hint }}</div>
           {% endif %}
         </div>
       </div>
     </div>
   {% endif %}
 
-  <form id="filterForm" action="/projects" method="get" class="flex flex-wrap gap-3 items-end mb-4">
+  <form id="filterForm" action="/projects" method="get" class="flex flex-wrap gap-2 items-end mb-3">
     <div>
-      <label class="block text-sm text-slate-600 mb-1">Tìm kiếm</label>
-      <input id="qInput" name="q" value="{{ filters.q }}" placeholder="Tên hoặc mã dự án..."
-             class="rounded-lg border border-slate-300 px-3 py-2 w-64" autofocus />
+      <label class="block text-[11px] text-slate-500 mb-0.5 font-medium">Tìm kiếm</label>
+      <input id="qInput" name="q" value="{{ filters.q }}" placeholder="Tên hoặc mã…"
+             class="rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm w-56" autofocus />
     </div>
     <div>
-      <label class="block text-sm text-slate-600 mb-1">Trạng thái</label>
-      <select id="statusSelect" name="status" class="rounded-lg border border-slate-300 px-3 py-2">
+      <label class="block text-[11px] text-slate-500 mb-0.5 font-medium">Trạng thái</label>
+      <select id="statusSelect" name="status" class="rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm">
         <option value="ALL"      {% if filters.status=='ALL' %}selected{% endif %}>ALL</option>
         <option value="ACTIVE"   {% if filters.status=='ACTIVE' %}selected{% endif %}>ACTIVE</option>
         <option value="INACTIVE" {% if filters.status=='INACTIVE' %}selected{% endif %}>INACTIVE</option>
@@ -69,39 +69,39 @@
   <div class="overflow-x-auto border border-slate-200 rounded-lg">
     <table class="min-w-full text-sm">
       <thead class="bg-slate-50">
-        <tr class="text-left text-slate-600">
-          <th class="px-3 py-2 border-b">#</th>
-          <th class="px-3 py-2 border-b">Mã</th>
-          <th class="px-3 py-2 border-b">Tên dự án</th>
-          <th class="px-3 py-2 border-b">Trạng thái</th>
-          <th class="px-3 py-2 border-b">Vị trí</th>
-          <th class="px-3 py-2 border-b text-center whitespace-nowrap w-[120px]">Thao tác</th>
+        <tr class="text-left text-slate-600 text-xs">
+          <th class="px-2.5 py-1.5 border-b font-semibold">#</th>
+          <th class="px-2.5 py-1.5 border-b font-semibold">Mã</th>
+          <th class="px-2.5 py-1.5 border-b font-semibold">Tên dự án</th>
+          <th class="px-2.5 py-1.5 border-b font-semibold">Trạng thái</th>
+          <th class="px-2.5 py-1.5 border-b font-semibold">Vị trí</th>
+          <th class="px-2.5 py-1.5 border-b text-center whitespace-nowrap w-[120px] font-semibold">Thao tác</th>
         </tr>
       </thead>
       <tbody>
       {% for p in page.data %}
-        <tr>
-          <td class="px-3 py-2 border-b">{{ loop.index + (page.page-1)*page.size }}</td>
-          <td class="px-3 py-2 border-b font-mono">{{ p.project_code }}</td>
-          <td class="px-3 py-2 border-b">{{ p.name }}</td>
-          <td class="px-3 py-2 border-b">
-            <span class="px-2 py-1 rounded text-xs font-medium
+        <tr class="hover:bg-slate-50/80">
+          <td class="px-2.5 py-1.5 border-b text-slate-500">{{ loop.index + (page.page-1)*page.size }}</td>
+          <td class="px-2.5 py-1.5 border-b font-mono text-xs">{{ p.project_code }}</td>
+          <td class="px-2.5 py-1.5 border-b">{{ p.name }}</td>
+          <td class="px-2.5 py-1.5 border-b">
+            <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold
               {% if p.status=='ACTIVE' %} bg-emerald-100 text-emerald-700
               {% else %} bg-slate-100 text-slate-600 {% endif %}">
               {{ p.status }}
             </span>
           </td>
-          <td class="px-3 py-2 border-b">{{ p.location }}</td>
-          <td class="px-3 py-2 border-b whitespace-nowrap">
-            <div class="flex items-center justify-center gap-2 min-w-[110px]">
+          <td class="px-2.5 py-1.5 border-b text-slate-600 truncate max-w-[12rem]">{{ p.location }}</td>
+          <td class="px-2.5 py-1.5 border-b whitespace-nowrap">
+            <div class="flex items-center justify-center gap-1.5 min-w-[110px]">
               <a href="/projects/{{ p.id }}"
-                 class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 whitespace-nowrap leading-none">
+                 class="inline-flex items-center justify-center px-2 py-1 rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 whitespace-nowrap leading-none text-xs">
                 Chi tiết
               </a>
 
               {% if me.role in ['SUPER_ADMIN','COMPANY_ADMIN'] %}
                 <button type="button"
-                        class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 whitespace-nowrap leading-none"
+                        class="inline-flex items-center justify-center px-2 py-1 rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 whitespace-nowrap leading-none text-xs"
                         onclick="confirmToggle('{{ p.id }}','{{ 'disable' if p.status=='ACTIVE' else 'enable' }}','{{ filters.q }}','{{ filters.status }}')">
                   {{ 'Disable' if p.status=='ACTIVE' else 'Enable' }}
                 </button>
