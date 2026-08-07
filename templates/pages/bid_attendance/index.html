@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="bg-white rounded-xl border border-slate-200 p-5">
-  <div class="flex items-center justify-between mb-4">
+  <div class="mb-4">
     <div>
       <h2 class="text-xl font-semibold text-slate-800">Danh sách điểm danh</h2>
       <p class="text-slate-500 text-sm">
@@ -18,9 +18,6 @@
         <b>màn hình phiên đấu</b> sau khi bấm <b>Start phiên</b> — giống đấu lô thông thường.
       </p>
     </div>
-    <a href="/projects" class="topbtn border border-slate-300 bg-white text-slate-700">
-      ← Quản lý dự án
-    </a>
   </div>
 
   {% if load_err %}
@@ -84,15 +81,6 @@
           Đặt lại
         </a>
       </div>
-
-      <button
-        type="button"
-        id="btnPrintAttendance"
-        onclick="printAttendanceList()"
-        class="mt-1 px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700"
-      >
-        <i class="ri-printer-line mr-1"></i>In danh sách điểm danh
-      </button>
     </div>
   </form>
 
@@ -143,9 +131,6 @@
                   <i class="ri-forbid-2-line mr-1"></i>Bị cấm đấu giá
                 </span>
               {% endif %}
-            </div>
-            <div class="text-[10px] {% if is_banned %}text-rose-600{% else %}text-slate-500{% endif %}">
-              Dự án: <span class="font-mono">{{ c.project_code }}</span> — {{ c.project_name }}
             </div>
           </td>
 
@@ -599,24 +584,6 @@
     const bannedCount = rows.filter(row => row.dataset.isBanned === "1").length;
     const el = document.getElementById("localBanCount");
     if (el) el.textContent = bannedCount > 0 ? `Có ${bannedCount} khách bị cấm trong danh sách đã tải.` : "";
-  }
-
-  function printAttendanceList() {
-    const projectCodeInput = document.getElementById("projectCodeInput");
-    const modeInput = document.getElementById("modeInput");
-    const projectCode = (projectCodeInput && projectCodeInput.value || "").trim();
-    const mode = (modeInput && modeInput.value || "final").trim();
-
-    if (!projectCode) {
-      window.confirmModal({
-        title: "Thông báo",
-        message: "Vui lòng chọn một dự án trước khi in danh sách điểm danh."
-      });
-      return;
-    }
-
-    const url = `/bid-attendance/print?project_code=${encodeURIComponent(projectCode)}&mode=${encodeURIComponent(mode)}`;
-    window.open(url, "_blank");
   }
 
   document.addEventListener("DOMContentLoaded", function () {

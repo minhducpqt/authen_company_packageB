@@ -2,23 +2,32 @@
   "use strict";
 
   var KIND = {
+    NONE: "NONE",
     NORMAL: "NORMAL",
     GROUP_BLIND: "GROUP_BLIND",
     GROUP_PRE_SESSION: "GROUP_PRE_SESSION",
   };
 
   var STYLES = {
+    NONE: {
+      label: "Chưa chọn dự án",
+      iconCls: "project-type-icon--none",
+      icon: "ri-checkbox-blank-circle-line",
+    },
     NORMAL: {
       label: "Đấu thường",
-      lineCls: "project-type-line--normal",
+      iconCls: "project-type-icon--normal",
+      icon: "ri-home-4-line",
     },
     GROUP_BLIND: {
       label: "Đấu nhóm (khách chọn lô trong phiên)",
-      lineCls: "project-type-line--group-in-session",
+      iconCls: "project-type-icon--group-in-session",
+      icon: "ri-eye-off-line",
     },
     GROUP_PRE_SESSION: {
       label: "Đấu nhóm (khách chọn lô trước phiên)",
-      lineCls: "project-type-line--group-pre-session",
+      iconCls: "project-type-icon--group-pre-session",
+      icon: "ri-map-pin-2-line",
     },
   };
 
@@ -56,6 +65,7 @@
 
   function normalizeKind(raw) {
     var k = String(raw || "").trim().toUpperCase();
+    if (k === KIND.NONE) return KIND.NONE;
     if (k === KIND.GROUP_PRE_SESSION || k === KIND.GROUP_BLIND || k === KIND.NORMAL) {
       return k;
     }
@@ -70,7 +80,16 @@
   }
 
   function styleForKind(kind) {
-    return STYLES[normalizeKind(kind)] || STYLES.NORMAL;
+    var k = normalizeKind(kind);
+    if (k === KIND.NONE) return STYLES.NONE;
+    return STYLES[k] || STYLES.NORMAL;
+  }
+
+  function noneMeta() {
+    return {
+      auction_type_kind: KIND.NONE,
+      auction_type_label: STYLES.NONE.label,
+    };
   }
 
   function isProjectSelect(el) {
@@ -243,6 +262,15 @@
     }
   }
 
+  function ensureSelectRow(selectEl) {
+    if (!selectEl || selectEl.closest(".project-type-select-row")) return;
+    if (selectEl.closest(".rph-select-inner")) return;
+    var row = document.createElement("div");
+    row.className = "project-type-select-row";
+    selectEl.parentNode.insertBefore(row, selectEl);
+    row.appendChild(selectEl);
+  }
+
   function ensureHost(selectEl) {
     if (!selectEl) return null;
     if (selectEl._ptbHost && selectEl._ptbHost.isConnected) {
@@ -252,44 +280,28 @@
     ensureFieldWrapper(selectEl);
 
     var host = null;
-    var hubBar = selectEl.closest(".rph-select-bar");
-    if (hubBar && hubBar.parentElement) {
-      var head = hubBar.parentElement;
-      host = head.querySelector(":scope > [data-project-type-badge-host]");
+    var inner = selectEl.closest(".rph-select-inner");
+
+    if (inner) {
+      host = inner.querySelector("[data-project-type-badge-host]");
       if (!host) {
-        host = document.createElement("div");
-        host.className = "project-type-badge-wrap project-type-badge-wrap--full";
+        var deco = inner.querySelector(":scope > i");
+        if (deco && deco !== selectEl) deco.remove();
+        host = document.createElement("span");
+        host.className = "project-type-icon-host";
         host.setAttribute("data-project-type-badge-host", "");
-        hubBar.insertAdjacentElement("afterend", host);
-      }
-    } else if (selectEl.closest(".rph-select-inner")) {
-      var bar = selectEl.closest(".rph-select-bar");
-      if (bar && bar.parentElement) {
-        var wrap = bar.parentElement;
-        host = wrap.querySelector(":scope > [data-project-type-badge-host]");
-        if (!host) {
-          host = document.createElement("div");
-          host.className = "project-type-badge-wrap project-type-badge-wrap--full";
-          host.setAttribute("data-project-type-badge-host", "");
-          bar.insertAdjacentElement("afterend", host);
-        }
+        inner.insertBefore(host, selectEl);
       }
     } else {
-      var field = selectEl.closest("[data-project-type-field]");
-      var container = field || selectEl.parentElement;
-      if (container) {
-        host = container.querySelector("[data-project-type-badge-host]");
+      ensureSelectRow(selectEl);
+      var row = selectEl.closest(".project-type-select-row") || selectEl.parentElement;
+      if (row) {
+        host = row.querySelector("[data-project-type-badge-host]");
         if (!host) {
-          host = document.createElement("div");
-          host.className = "project-type-badge-wrap";
+          host = document.createElement("span");
+          host.className = "project-type-icon-host";
           host.setAttribute("data-project-type-badge-host", "");
-          var after = selectEl;
-          var next = selectEl.nextElementSibling;
-          while (next && next.tagName === "INPUT" && next.type === "hidden") {
-            after = next;
-            next = next.nextElementSibling;
-          }
-          after.insertAdjacentElement("afterend", host);
+          row.insertBefore(host, selectEl);
         }
       }
     }
@@ -300,29 +312,40 @@
 
   function renderHost(host, meta) {
     if (!host) return;
-    if (!meta || !meta.auction_type_kind) {
-      host.innerHTML = "";
-      host.classList.add("is-empty");
-      host.hidden = true;
-      return;
+
+    var kind = KIND.NONE;
+    var label = STYLES.NONE.label;
+    var loading = false;
+
+    if (meta && meta.auction_type_kind) {
+      if (meta._loading || meta.auction_type_label === "…") {
+        loading = true;
+        label = "Đang xác định loại dự án…";
+      } else if (meta.auction_type_kind === KIND.NONE) {
+        kind = KIND.NONE;
+        label = meta.auction_type_label || STYLES.NONE.label;
+      } else {
+        kind = normalizeKind(meta.auction_type_kind);
+        var style = styleForKind(kind);
+        label = meta.auction_type_label || style.label;
+      }
     }
 
-    host.hidden = false;
-    host.classList.remove("is-empty");
-    var kind = normalizeKind(meta.auction_type_kind);
-    var style = styleForKind(kind);
-    var label = meta.auction_type_label || style.label;
-    var loading = !label || label === "…";
+    var style = loading || kind === KIND.NONE ? STYLES.NONE : styleForKind(kind);
+    var iconCls = style.iconCls + (loading ? " is-loading" : "");
 
     host.innerHTML =
-      '<div class="project-type-line ' +
-      style.lineCls +
-      (loading ? " is-loading" : "") +
-      '" role="status" aria-live="polite">' +
-      '<span class="project-type-line-dot" aria-hidden="true"></span>' +
-      '<span class="project-type-line-label">' +
-      escapeHtml(loading ? "Đang xác định loại dự án…" : label) +
-      "</span></div>";
+      '<span class="project-type-icon ' +
+      iconCls +
+      '" tabindex="0" role="img" aria-label="' +
+      escapeHtml(label) +
+      '">' +
+      '<i class="' +
+      style.icon +
+      '" aria-hidden="true"></i>' +
+      '<span class="project-type-icon-tip" role="tooltip">' +
+      escapeHtml(label) +
+      "</span></span>";
   }
 
   function syncSelect(selectEl) {
@@ -330,7 +353,7 @@
     var host = ensureHost(selectEl);
     var opt = selectEl.selectedOptions && selectEl.selectedOptions[0];
     if (!opt || !opt.value) {
-      renderHost(host, null);
+      renderHost(host, noneMeta());
       return Promise.resolve();
     }
 
@@ -340,9 +363,9 @@
       return Promise.resolve();
     }
 
-    renderHost(host, { auction_type_kind: "NORMAL", auction_type_label: "…" });
+    renderHost(host, { auction_type_kind: KIND.NONE, auction_type_label: "…", _loading: true });
     return fetchMeta(selectEl).then(function (remote) {
-      renderHost(host, remote || null);
+      renderHost(host, remote || noneMeta());
     });
   }
 
@@ -376,14 +399,15 @@
   }
 
   function updateFromProject(selectEl, project) {
+    var host = selectEl ? ensureHost(selectEl) : null;
     if (!project) {
-      renderHost(selectEl ? ensureHost(selectEl) : null, null);
+      renderHost(host, noneMeta());
       return;
     }
     var meta = resolveFromProject(project);
     var opt = selectEl && selectEl.selectedOptions && selectEl.selectedOptions[0];
     if (opt && meta) applyOptionMeta(opt, meta);
-    renderHost(selectEl ? ensureHost(selectEl) : null, meta);
+    renderHost(host, meta);
   }
 
   function createProjectOption(project, config) {
