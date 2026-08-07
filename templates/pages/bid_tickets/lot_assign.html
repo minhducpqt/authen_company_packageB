@@ -25,13 +25,40 @@
   .la-col-hd .sub { font-size:10px; color:#64748b; margin-top:2px; }
   .la-col-tools { padding:8px 10px; border-bottom:1px solid #e2e8f0; display:flex; flex-direction:column; gap:6px; }
   .la-col-tools input { width:100%; border:1px solid #cbd5e1; border-radius:8px; padding:7px 9px; font-size:12px; }
+  .la-col-cust .la-col-hd { padding:8px 10px; }
+  .la-col-cust .la-col-tools { padding:6px 8px; gap:4px; }
+  .la-col-cust .la-col-tools input { padding:5px 8px; font-size:11px; border-radius:6px; }
+  .la-col-cust .la-scroll { padding:4px 6px; }
   .la-filter-tabs { display:flex; flex-wrap:wrap; gap:4px; }
   .la-filter-tab { font-size:10px; padding:3px 7px; border-radius:999px; border:1px solid #cbd5e1; background:#fff; color:#475569; cursor:pointer; }
   .la-filter-tab.is-active { background:#0d9488; border-color:#0d9488; color:#fff; }
+  .la-col-cust .la-filter-tab { font-size:9px; padding:2px 6px; }
   .la-scroll { overflow-y:auto; flex:1; padding:8px; }
-  .la-cust-item { width:100%; text-align:left; padding:8px 10px; border-radius:8px; border:1px solid transparent; background:#fff; margin-bottom:5px; cursor:pointer; }
+  .la-cust-item {
+    width:100%; text-align:left; padding:5px 8px; border-radius:6px;
+    border:1px solid transparent; background:#fff; margin-bottom:3px; cursor:pointer;
+  }
   .la-cust-item:hover { border-color:#99f6e4; background:#f0fdfa; }
   .la-cust-item.is-active { border-color:#0d9488; background:#ccfbf1; }
+  .la-cust-top { display:flex; align-items:center; gap:6px; min-width:0; }
+  .la-cust-stt {
+    flex-shrink:0; font-size:10px; font-family:ui-monospace,monospace; font-weight:700;
+    color:#475569; background:#f1f5f9; border-radius:4px; padding:1px 4px; line-height:1.3;
+  }
+  .la-cust-name {
+    flex:1; min-width:0; font-size:12px; font-weight:600; color:#0f172a;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.25;
+  }
+  .la-cust-badge { flex-shrink:0; font-size:9px; padding:1px 5px; }
+  .la-cust-sub {
+    display:flex; align-items:center; justify-content:space-between; gap:6px;
+    margin-top:2px; padding-left:2px; min-width:0;
+  }
+  .la-cust-cccd {
+    font-size:10px; font-family:ui-monospace,monospace; color:#64748b;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .la-cust-slots { flex-shrink:0; font-size:9px; color:#94a3b8; }
   .la-group-item { width:100%; text-align:left; padding:10px 12px; border-radius:10px; border:1px solid #e2e8f0; background:#fff; margin-bottom:8px; cursor:pointer; }
   .la-group-item:hover { border-color:#5eead4; }
   .la-group-item.is-active { border-color:#0d9488; background:#f0fdfa; box-shadow:0 0 0 1px #99f6e4; }
@@ -112,13 +139,13 @@
 
   <div class="la-board">
     <!-- Cột 1: Khách -->
-    <aside class="la-col">
+    <aside class="la-col la-col-cust">
       <div class="la-col-hd">
         <div class="title">1. Khách hàng</div>
-        <div class="sub">Tìm tên (k dấu) hoặc STT</div>
+        <div class="sub">Tìm STT, tên, CCCD</div>
       </div>
       <div class="la-col-tools">
-        <input type="search" id="laCustomerSearch" placeholder="Tên, STT…" autocomplete="off">
+        <input type="search" id="laCustomerSearch" placeholder="STT, tên, CCCD…" autocomplete="off">
         <div class="la-filter-tabs" id="laFilterTabs">
           <button type="button" class="la-filter-tab is-active" data-filter="all">Tất cả</button>
           <button type="button" class="la-filter-tab" data-filter="pending">Cần gán</button>
@@ -228,8 +255,16 @@
     const stt = String(c.stt_padded || c.stt || "");
     if (stt && (stt === q || stt.replace(/^0+/, "") === q.replace(/^0+/, ""))) return true;
     if (/^\d+$/.test(q) && String(c.stt || "") === q) return true;
+    const cccd = String(c.cccd || "").replace(/\s/g, "");
+    const qDigits = q.replace(/\s/g, "");
+    if (cccd && qDigits && (cccd === qDigits || cccd.includes(qDigits))) return true;
     const hay = norm([c.customer_full_name, c.cccd, c.phone].join(" "));
     return hay.indexOf(norm(q)) >= 0;
+  }
+
+  function formatCccd(cccd) {
+    const s = String(cccd || "").replace(/\s/g, "");
+    return s || "";
   }
 
   function matchCustomerFilter(c) {
@@ -337,13 +372,21 @@
     host.innerHTML = list.map(c => {
       const active = selectedCustomerId === c.customer_id ? " is-active" : "";
       const pending = Number(c.pending_count || 0);
+      const stt = c.stt_padded || c.stt || "—";
+      const cccd = formatCccd(c.cccd);
       const badge = pending > 0
-        ? `<span class="la-badge warn">${pending} chờ</span>`
-        : `<span class="la-badge ok">Đủ</span>`;
-      return `<button type="button" class="la-cust-item${active}" data-cid="${c.customer_id}">
-        <div class="flex justify-between gap-1"><span class="text-[10px] font-mono bg-slate-100 px-1 rounded">${escHtml(c.stt_padded || c.stt || "—")}</span>${badge}</div>
-        <div class="text-sm font-medium text-slate-800 mt-1 truncate">${escHtml(c.customer_full_name)}</div>
-        <div class="text-[10px] text-slate-400">${c.assigned_count || 0}/${c.total_slots || 0} lô</div>
+        ? `<span class="la-badge warn la-cust-badge" title="${pending} quyền chờ gán">${pending}</span>`
+        : `<span class="la-badge ok la-cust-badge" title="Đủ lô">✓</span>`;
+      const cccdLine = cccd
+        ? `<span class="la-cust-cccd" title="CCCD ${escHtml(cccd)}">${escHtml(cccd)}</span>`
+        : `<span class="la-cust-cccd text-slate-300">—</span>`;
+      return `<button type="button" class="la-cust-item${active}" data-cid="${c.customer_id}" title="${escHtml(c.customer_full_name)}${cccd ? " · " + escHtml(cccd) : ""}">
+        <div class="la-cust-top">
+          <span class="la-cust-stt">${escHtml(stt)}</span>
+          <span class="la-cust-name">${escHtml(c.customer_full_name)}</span>
+          ${badge}
+        </div>
+        <div class="la-cust-sub">${cccdLine}<span class="la-cust-slots">${c.assigned_count || 0}/${c.total_slots || 0} lô</span></div>
       </button>`;
     }).join("");
   }
