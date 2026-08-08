@@ -1,10 +1,15 @@
 {% extends "base.html" %}
 {% block content %}
+{% set v = preview.verification or {} %}
+{% set sum = preview.summary or {} %}
+{% set lot_rows = preview.lot_preview or preview.lots or [] %}
+{% set can_go = preview.can_continue if preview.can_continue is defined else preview.ok %}
+
 <div class="bg-white rounded-xl border border-slate-200 p-5">
   <div class="flex items-center justify-between mb-4">
     <div>
       <h2 class="text-xl font-semibold text-slate-800">Xem trước dữ liệu import</h2>
-      <p class="text-slate-500 text-sm">Kiểm tra kỹ trước khi áp dụng vào hệ thống.</p>
+      <p class="text-slate-500 text-sm">Kiểm tra lỗi / cảnh báo trước khi áp dụng vào hệ thống.</p>
     </div>
     <div class="flex gap-2">
       <a href="/projects/import" class="px-3 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50">
@@ -36,27 +41,55 @@
     </div>
   {% endif %}
 
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+  {# ---- Summary cards ---- #}
+  <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3 mb-4">
     <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
       <div class="text-slate-500 text-sm">Số dự án</div>
       <div class="text-2xl font-semibold">{{ preview.projects|length }}</div>
     </div>
     <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
-      <div class="text-slate-500 text-sm">Số lô</div>
-      <div class="text-2xl font-semibold">{{ preview.lots|length }}</div>
+      <div class="text-slate-500 text-sm">Tổng số lô</div>
+      <div class="text-2xl font-semibold">{{ sum.totalLots if sum.totalLots is not none else lot_rows|length }}</div>
+    </div>
+    <div class="p-4 rounded-lg bg-rose-50 border border-rose-200">
+      <div class="text-rose-700 text-sm">Số lỗi (ERROR)</div>
+      <div class="text-2xl font-semibold text-rose-700">{{ sum.errorCount or 0 }}</div>
+    </div>
+    <div class="p-4 rounded-lg bg-amber-50 border border-amber-200">
+      <div class="text-amber-800 text-sm">Số cảnh báo (WARNING)</div>
+      <div class="text-2xl font-semibold text-amber-700">{{ sum.warningCount or 0 }}</div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+    <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
+      <div class="text-slate-500 text-sm">Tổng giá khởi điểm</div>
+      <div class="text-lg font-semibold tabular-nums">
+        {% if sum.totalStartingPrice is not none %}{{ "{:,.0f}".format(sum.totalStartingPrice) }}{% else %}—{% endif %}
+      </div>
     </div>
     <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
-      <div class="text-slate-500 text-sm">Mã trùng (INACTIVE)</div>
-      <div class="text-2xl font-semibold text-amber-600">{{ preview.conflicts_inactive|length }}</div>
+      <div class="text-slate-500 text-sm">Tổng tiền cọc</div>
+      <div class="text-lg font-semibold tabular-nums">
+        {% if sum.totalDeposit is not none %}{{ "{:,.0f}".format(sum.totalDeposit) }}{% else %}—{% endif %}
+      </div>
     </div>
     <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
-      <div class="text-slate-500 text-sm">Mã bị chặn (ACTIVE)</div>
-      <div class="text-2xl font-semibold text-rose-600">{{ preview.conflicts_active|length }}</div>
+      <div class="text-slate-500 text-sm">Tỷ lệ cọc tổng dự án</div>
+      <div class="text-lg font-semibold tabular-nums">
+        {% if sum.projectDepositPercent is not none %}{{ "%.4f"|format(sum.projectDepositPercent) }}%{% else %}—{% endif %}
+      </div>
+    </div>
+    <div class="p-4 rounded-lg bg-slate-50 border border-slate-200">
+      <div class="text-slate-500 text-sm">Tỷ lệ cọc phổ biến</div>
+      <div class="text-lg font-semibold tabular-nums">
+        {% if sum.representativeDepositPercent is not none %}{{ sum.representativeDepositPercent }}%{% else %}—{% endif %}
+      </div>
     </div>
   </div>
 
   {% if preview.conflicts_active and preview.conflicts_active|length > 0 %}
-    <div class="mb-6 p-4 rounded-lg border border-rose-200 bg-rose-50">
+    <div class="mb-4 p-4 rounded-lg border border-rose-200 bg-rose-50">
       <div class="font-medium text-rose-800 mb-2">
         <i class="ri-close-circle-line mr-1"></i> Không thể import các dự án đang ACTIVE:
       </div>
@@ -68,18 +101,36 @@
     </div>
   {% endif %}
 
-  {% if preview.errors and preview.errors|length > 0 %}
-    <div class="mb-6 p-4 rounded-lg border border-amber-200 bg-amber-50">
-      <div class="font-medium text-amber-800 mb-2">
-        <i class="ri-alert-line mr-1"></i> Lỗi dữ liệu cần sửa trong file:
+  {% if sum.projectWarnings and sum.projectWarnings|length > 0 %}
+    <div class="mb-4 p-4 rounded-lg border border-amber-200 bg-amber-50">
+      <div class="font-medium text-amber-900 mb-2">
+        <i class="ri-alert-line mr-1"></i> Cảnh báo cấp dự án
       </div>
-      <ul class="list-disc pl-5 text-amber-900">
-        {% for e in preview.errors %}
+      <ul class="list-disc pl-5 text-amber-900 text-sm">
+        {% for w in sum.projectWarnings %}
           <li>
+            <span class="font-mono text-xs text-amber-700">{{ w.code }}</span>
+            — {{ w.message or w.msg }}
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  {% if preview.errors and preview.errors|length > 0 %}
+    <div class="mb-6 p-4 rounded-lg border border-rose-200 bg-rose-50">
+      <div class="font-medium text-rose-800 mb-2">
+        <i class="ri-error-warning-line mr-1"></i> Chi tiết lỗi ({{ preview.errors|length }})
+      </div>
+      <ul class="list-disc pl-5 text-rose-900 text-sm max-h-48 overflow-y-auto">
+        {% for e in preview.errors[:100] %}
+          <li>
+            {% if e.code %}<span class="font-mono text-xs">{{ e.code }}</span> {% endif %}
             {% if e.sheet %}<span class="font-mono">{{ e.sheet }}</span> {% endif %}
             {% if e.row %}row {{ e.row }} {% endif %}
+            {% if e.lot_code %}<span class="font-mono">{{ e.lot_code }}</span> {% endif %}
             {% if e.field %}(<span class="font-mono">{{ e.field }}</span>) {% endif %}
-            - {{ e.msg }}
+            — {{ e.msg or e.message }}
           </li>
         {% endfor %}
       </ul>
@@ -94,25 +145,23 @@
           type="text"
           name="company_code"
           value="{{ company_code }}"
-          placeholder="VD: KDO"
           class="w-full rounded-lg border border-slate-300 px-3 py-2 bg-slate-100 text-slate-600 cursor-not-allowed focus:outline-none"
           readonly
           required
         />
-        <p class="text-xs text-slate-400 mt-1">Giá trị cố định theo tài khoản, không thể chỉnh sửa.</p>
       </div>
 
-      <div class="text-right md:col-span-1">
-        <input type="hidden" name="payload" value='{{ payload_json|safe }}'/>
+      <div class="text-right md:col-span-1 md:col-start-4">
+        <input type="hidden" name="payload" value='{{ payload_json|e }}'/>
         <button type="submit"
-                class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
-                {% if (preview.errors and preview.errors|length>0) or (preview.conflicts_active and preview.conflicts_active|length>0) %}
-                  disabled
-                {% endif %}>
+                class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                {% if not can_go %}disabled{% endif %}>
           <i class="ri-upload-2-line mr-1"></i> Áp dụng import
         </button>
-        {% if (preview.errors and preview.errors|length>0) or (preview.conflicts_active and preview.conflicts_active|length>0) %}
-          <div class="text-xs text-rose-600 mt-2">Sửa lỗi/loại bỏ dự án ACTIVE rồi xem trước lại.</div>
+        {% if not can_go %}
+          <div class="text-xs text-rose-600 mt-2">Còn ERROR hoặc dự án ACTIVE — sửa file rồi xem trước lại. WARNING vẫn cho phép tiếp tục.</div>
+        {% elif sum.warningCount and sum.warningCount > 0 %}
+          <div class="text-xs text-amber-700 mt-2">Có WARNING — bạn vẫn có thể import nếu đã kiểm tra.</div>
         {% endif %}
       </div>
     </div>
@@ -153,46 +202,72 @@
 
   <div>
     <div class="flex items-center justify-between mb-2">
-      <h3 class="font-semibold text-slate-800">Lots</h3>
-      <div class="text-sm text-slate-500">Hiển thị tối đa 200 dòng</div>
+      <h3 class="font-semibold text-slate-800">Lots — verify kết quả</h3>
+      <div class="text-sm text-slate-500">Hiển thị tối đa 200 dòng · click status để xem chi tiết</div>
     </div>
     <div class="overflow-x-auto border border-slate-200 rounded-lg">
       <table class="min-w-full text-sm">
         <thead class="bg-slate-50">
           <tr class="text-left text-slate-600">
-            <th class="px-3 py-2 border-b">#</th>
+            <th class="px-3 py-2 border-b">Row</th>
+            <th class="px-3 py-2 border-b">Status</th>
             <th class="px-3 py-2 border-b">project_code</th>
             <th class="px-3 py-2 border-b">lot_code</th>
             <th class="px-3 py-2 border-b">name</th>
-            <th class="px-3 py-2 border-b">description</th>
             <th class="px-3 py-2 border-b text-right">starting_price</th>
             <th class="px-3 py-2 border-b text-right">deposit_amount</th>
-            <th class="px-3 py-2 border-b text-right">bid_step_vnd</th>
-            <th class="px-3 py-2 border-b text-right">area</th>
+            <th class="px-3 py-2 border-b text-right">% cọc lô</th>
+            <th class="px-3 py-2 border-b">Chi tiết</th>
           </tr>
         </thead>
         <tbody>
-        {% for l in preview.lots[:200] %}
-          <tr>
-            <td class="px-3 py-2 border-b">{{ loop.index }}</td>
+        {% for l in lot_rows[:200] %}
+          {% set st = l.status or 'VALID' %}
+          <tr class="{% if st == 'ERROR' %}bg-rose-50{% elif st == 'WARNING' %}bg-amber-50{% endif %}">
+            <td class="px-3 py-2 border-b tabular-nums">{{ l.row or loop.index }}</td>
+            <td class="px-3 py-2 border-b">
+              {% if st == 'ERROR' %}
+                <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800">Error</span>
+              {% elif st == 'WARNING' %}
+                <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900">Warning</span>
+              {% else %}
+                <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">Valid</span>
+              {% endif %}
+            </td>
             <td class="px-3 py-2 border-b font-mono">{{ l.project_code }}</td>
             <td class="px-3 py-2 border-b font-mono">{{ l.lot_code }}</td>
             <td class="px-3 py-2 border-b">{{ l.name }}</td>
-            <td class="px-3 py-2 border-b text-slate-600">{{ l.description }}</td>
-            <td class="px-3 py-2 border-b text-right">
-              {{ "{:,.0f}".format(l.starting_price) if l.starting_price is number else "" }}
+            <td class="px-3 py-2 border-b text-right tabular-nums">
+              {% if l.starting_price is number %}{{ "{:,.0f}".format(l.starting_price) }}{% else %}{{ l.starting_price or '' }}{% endif %}
             </td>
-            <td class="px-3 py-2 border-b text-right">
-              {{ "{:,.0f}".format(l.deposit_amount) if l.deposit_amount is number else "" }}
+            <td class="px-3 py-2 border-b text-right tabular-nums">
+              {% if l.deposit_amount is number %}{{ "{:,.0f}".format(l.deposit_amount) }}{% else %}{{ l.deposit_amount or '' }}{% endif %}
             </td>
-            <td class="px-3 py-2 border-b text-right">
-              {{ "{:,.0f}".format(l.bid_step_vnd) if l.bid_step_vnd is number else "" }}
+            <td class="px-3 py-2 border-b text-right tabular-nums text-slate-600">
+              {% if l.lot_deposit_percent %}{{ l.lot_deposit_percent }}%{% else %}—{% endif %}
             </td>
-            <td class="px-3 py-2 border-b text-right">
-              {{ "{:,.2f}".format(l.area) if l.area is number else "" }}
+            <td class="px-3 py-2 border-b text-xs text-slate-700 max-w-md">
+              {% if l.errors %}
+                <div class="text-rose-700 mb-1">
+                  {% for e in l.errors %}
+                    <div><span class="font-mono">{{ e.code }}</span>: {{ e.message or e.msg }}</div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+              {% if l.warnings %}
+                <div class="text-amber-800">
+                  {% for w in l.warnings %}
+                    <div><span class="font-mono">{{ w.code }}</span>: {{ w.message or w.msg }}</div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+              {% if not l.errors and not l.warnings %}<span class="text-slate-400">—</span>{% endif %}
             </td>
           </tr>
         {% endfor %}
+        {% if lot_rows|length == 0 %}
+          <tr><td colspan="9" class="px-3 py-4 text-center text-slate-500">Không có lô.</td></tr>
+        {% endif %}
         </tbody>
       </table>
     </div>

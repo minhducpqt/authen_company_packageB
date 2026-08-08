@@ -28,7 +28,7 @@ from fastapi.responses import (
 from utils.templates import templates
 from utils.auth import get_access_token, fetch_me
 from utils.excel_templates import build_projects_lots_template
-from utils.excel_import import handle_import_preview  # chỉ dùng preview
+from utils.excel_import import handle_import_preview, dumps_preview_payload  # chỉ dùng preview
 from utils.project_auction_type import enrich_project_option_row, project_auction_type_meta
 
 import json as pyjson  # cho decode JWT payload
@@ -228,8 +228,8 @@ async def import_preview(request: Request, file: UploadFile = File(...)):
     file_bytes = await file.read()
     preview = await handle_import_preview(file_bytes, token)
 
-    if not preview.get("ok"):
-        # Lỗi template / dữ liệu → quay về form và báo lỗi
+    # Chỉ lỗi template mới quay form; lỗi/cảnh báo lô → vẫn mở Preview đầy đủ
+    if preview.get("template_error"):
         return templates.TemplateResponse(
             "pages/projects/import.html",
             {"request": request, "title": "Nhập dự án từ Excel", "me": me, "err": preview.get("errors")},
@@ -244,7 +244,7 @@ async def import_preview(request: Request, file: UploadFile = File(...)):
             "title": "Xem trước import dự án",
             "me": me,
             "company_code": company_code,
-            "payload_json": json.dumps(preview, ensure_ascii=False),
+            "payload_json": dumps_preview_payload(preview),
             "preview": preview,
         },
     )
@@ -288,6 +288,42 @@ async def import_apply(
             {"request": request, "title": "Nhập dự án từ Excel", "me": me, "err": "Payload không hợp lệ."},
             status_code=400,
         )
+
+    # Chặn apply khi payload còn lỗi cấu trúc / verify (không tin disabled button)
+    if data.get("errors") or data.get("conflicts_active"):
+        return templates.TemplateResponse(
+            "pages/projects/import_preview.html",
+            {
+                "request": request,
+                "title": "Xem trước import dự án",
+                "me": me,
+                "company_code": company_code,
+                "payload_json": payload,
+                "preview": data,
+                "err": "Không thể import khi còn lỗi dữ liệu hoặc dự án ACTIVE. Hãy sửa file và xem trước lại.",
+            },
+            status_code=400,
+        )
+    try:
+        from utils.project_import_verifier import ProjectImportVerifier
+
+        recheck = ProjectImportVerifier(data.get("lots") or []).run()
+        if recheck.get("has_errors") or not recheck.get("can_continue"):
+            return templates.TemplateResponse(
+                "pages/projects/import_preview.html",
+                {
+                    "request": request,
+                    "title": "Xem trước import dự án",
+                    "me": me,
+                    "company_code": company_code,
+                    "payload_json": payload,
+                    "preview": data,
+                    "err": "Dữ liệu lô còn ERROR — không cho phép import.",
+                },
+                status_code=400,
+            )
+    except Exception:
+        pass
 
     projects = data.get("projects") or []
     lots = data.get("lots") or []
