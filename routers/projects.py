@@ -29,6 +29,10 @@ from utils.templates import templates
 from utils.auth import get_access_token, fetch_me
 from utils.excel_templates import build_projects_lots_template
 from utils.excel_import import handle_import_preview, dumps_preview_payload  # chỉ dùng preview
+from utils.project_existing_validate import (
+    build_existing_project_preview,
+    fetch_all_lots_for_project,
+)
 from utils.project_auction_type import enrich_project_option_row, project_auction_type_meta
 
 import json as pyjson  # cho decode JWT payload
@@ -1861,6 +1865,104 @@ async def delete_project_bid_step_round_rule_b(
 
     except Exception as e:
         return JSONResponse({"ok": False, "error": "exception", "message": str(e)}, status_code=500)
+
+
+# =========================
+# 3b) VALIDATE dự án đã tạo → cùng màn Preview import
+# =========================
+@router.get("/{project_id}/validate", response_class=HTMLResponse)
+async def project_validate_preview(request: Request, project_id: int = Path(...)):
+    """
+    Nút Validate trên chi tiết dự án: load lô hiện có (Service A list lots),
+    chạy ProjectImportVerifier, hiển thị import_preview.html (mode validate, không apply).
+    """
+    token = get_access_token(request)
+    me = await fetch_me(token)
+    if not me:
+        return RedirectResponse(
+            url=f"/login?next={quote(f'/projects/{project_id}/validate')}",
+            status_code=303,
+        )
+
+    company_code = (me or {}).get("company_code") or ""
+    load_err = None
+    project = None
+    sa_lots: list = []
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=30.0) as client:
+            st, data = await _get_json(
+                client,
+                EP_DETAIL.format(project_id=project_id),
+                {"Authorization": f"Bearer {token}"},
+            )
+            if st == 200 and isinstance(data, dict):
+                project = data
+            else:
+                load_err = f"Không tải được dự án (HTTP {st})."
+
+            if project and project.get("project_code"):
+                lst_st, sa_lots, lot_err = await fetch_all_lots_for_project(
+                    sa_list_lots_by_project_code,
+                    client,
+                    token=token,
+                    project_code=project["project_code"],
+                )
+                if lot_err:
+                    load_err = lot_err
+                elif lst_st != 200:
+                    load_err = f"Không tải được danh sách lô (HTTP {lst_st})."
+    except Exception as e:
+        load_err = str(e)
+
+    if not project:
+        return templates.TemplateResponse(
+            "pages/projects/import_preview.html",
+            {
+                "request": request,
+                "title": "Validate dự án",
+                "me": me,
+                "company_code": company_code,
+                "payload_json": "{}",
+                "preview": {
+                    "ok": False,
+                    "mode": "validate_existing",
+                    "errors": [],
+                    "projects": [],
+                    "lots": [],
+                    "lot_preview": [],
+                    "conflicts_active": [],
+                    "conflicts_inactive": [],
+                    "can_continue": False,
+                    "summary": {"totalLots": 0, "errorCount": 0, "warningCount": 0},
+                    "project_id": project_id,
+                },
+                "err": load_err or "Không tìm thấy dự án.",
+                "preview_mode": "validate",
+                "back_url": f"/projects/{project_id}",
+            },
+            status_code=404 if not load_err else 400,
+        )
+
+    preview = build_existing_project_preview(project, sa_lots)
+    if load_err:
+        # vẫn show preview nếu đã partial lots; đính kèm lỗi load
+        pass
+
+    return templates.TemplateResponse(
+        "pages/projects/import_preview.html",
+        {
+            "request": request,
+            "title": f"Validate — {project.get('project_code') or project_id}",
+            "me": me,
+            "company_code": company_code,
+            "payload_json": "{}",
+            "preview": preview,
+            "err": load_err,
+            "preview_mode": "validate",
+            "back_url": f"/projects/{project_id}",
+        },
+    )
 
 
 # =========================
