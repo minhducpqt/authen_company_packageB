@@ -194,7 +194,7 @@
               <tbody>
               {% for r in c.lots %}
                 <tr>
-                  <td class="px-2 py-1 border-b font-mono">{{ r.lot_code }}</td>
+                  <td class="px-2 py-1 border-b font-mono">{{ r.lot_display or r.lot_code }}</td>
                   <td class="px-2 py-1 border-b">
                     {% if r.area_m2 is number %}{{ "{:,.2f}".format(r.area_m2) }}{% endif %}
                   </td>
@@ -274,7 +274,7 @@
                 <span class="inline-flex items-center justify-center mr-2 px-2 py-0.5 rounded-full bg-slate-100 text-[11px] font-mono text-slate-700">
                   {{ l.lot_id }}
                 </span>
-                <span class="font-mono">{{ l.lot_code }}</span>
+                <span class="font-mono">{{ l.lot_display or l.lot_code }}</span>
                 <span class="text-[11px] text-slate-500 ml-2">
                   (Dự án: <span class="font-mono">{{ l.project_code }}</span>{% if l.project_name %} — {{ l.project_name }}{% endif %})
                 </span>

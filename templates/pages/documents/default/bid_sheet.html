@@ -668,7 +668,7 @@
     and t.round_no != ''
   ) %}
 
-  {% set lot_code_display = t.lot_code or '' %}
+  {% set lot_code_display = t.lot_display or t.lot_code or '' %}
   {% set is_blank_ticket = (t.ticket_mode or '') == 'BLANK_TICKET' %}
   {% set deposit_tr = none %}
   {% if is_blank_ticket and t.deposit_vnd is not none and t.deposit_vnd != '' %}
@@ -758,7 +758,7 @@
         {% else %}
         Quyền sử dụng đất thuộc dự án
         "<span class="bold">{{ t.project_name }}</span>",
-        lô đất số <span class="bold">{{ t.lot_code }}</span>
+        lô đất số <span class="bold">{{ t.lot_display or t.lot_code }}</span>
         {%- if t.area_m2 is not none and t.area_m2 != '' and (t.area_m2|float) > 0 -%}
         , diện tích <span class="bold">{{ "{:,.2f}".format(t.area_m2|float) }}</span> m².
         {%- else -%}
@@ -932,7 +932,7 @@
                   {% if is_blank_ticket %}
                     <span class="dotline">&nbsp;</span>
                   {% else %}
-                    {{ t.lot_code }}
+                    {{ t.lot_display or t.lot_code }}
                   {% endif %}
                 </div>
               </div>

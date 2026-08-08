@@ -148,7 +148,7 @@
         <tbody>
         {% for r in rows %}
           <tr>
-            <td class="font-semibold text-slate-900 whitespace-nowrap">{{ r.lot_code }}</td>
+            <td class="font-semibold text-slate-900 whitespace-nowrap">{{ r.lot_display or r.lot_code }}</td>
             <td class="text-xs cell-wrap">{{ r.lot_description or '-' }}</td>
             <td class="text-right whitespace-nowrap">{{ r.area_m2 or '' }}</td>
             <td class="text-right whitespace-nowrap" data-amount="{{ r.starting_price_vnd or 0 }}"></td>

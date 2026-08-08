@@ -242,7 +242,7 @@
           </td>
 
           <td class="px-4 py-3 text-slate-600 whitespace-nowrap">{{ cccd }}</td>
-          <td class="px-4 py-3 text-slate-600 whitespace-nowrap">{{ r.lot_code or '' }}</td>
+          <td class="px-4 py-3 text-slate-600 whitespace-nowrap">{{ r.lot_display or r.lot_code or '' }}</td>
 
           <td class="px-4 py-3 text-right whitespace-nowrap">
             <span class="money" data-value="{{ r.refund_amount_vnd if r.refund_amount_vnd is not none else (r.paid_vnd if r.paid_vnd is not none else 0) }}">—</span>
@@ -897,7 +897,7 @@
 
       const cname = cand.customer_name || '';
       const cccd = cand.customer_cccd || '';
-      const lot = cand.lot_code || '';
+      const lot = cand.lot_display || cand.lot_code || '';
       subtitle.textContent = `${cname}${cname && cccd ? ' • ' : ''}${cccd}${(cname||cccd) && lot ? ' • ' : ''}${lot}`.trim() || `candidate_id=${candidateId}`;
 
       const tbody = document.getElementById('dmOtherTbody');
@@ -1177,7 +1177,7 @@
 
         const name = item.customer_name || '-';
         const cccd = item.customer_cccd || '';
-        const lot = item.lot_code || '';
+        const lot = item.lot_display || item.lot_code || '';
         const amt = (item.refund_amount_vnd ?? item.paid_vnd ?? 0);
 
         const bankCode = item.bank_code || '';
