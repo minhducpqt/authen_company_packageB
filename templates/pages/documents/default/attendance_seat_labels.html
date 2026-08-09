@@ -10,7 +10,8 @@
   <style>
     @page {
       size: A4 portrait;
-      margin: 5mm;
+      /* 0: chia A4 đúng 6 phần bằng nhau; lề trắng do padding từng ô */
+      margin: 0;
     }
 
     * { box-sizing: border-box; }
@@ -77,17 +78,19 @@
         background: #fff;
         box-shadow: 0 10px 28px rgba(0,0,0,.14);
         border: 1px solid rgba(0,0,0,.1);
-        padding: 5mm;
+        /* không padding sheet — lề trắng nằm trong từng cell */
+        padding: 0;
       }
     }
 
     @media print {
       .sheet {
         width: 100%;
-        height: 287mm;
+        height: 297mm;
         page-break-after: always;
         break-after: page;
         padding: 0;
+        margin: 0;
       }
       .sheet:last-child {
         page-break-after: auto;
@@ -95,14 +98,22 @@
       }
     }
 
-    /* Wrapper for guides + cards */
+    /*
+      Board = full A4. Grid 2×3, gap 0 → 6 mảnh cắt bằng nhau.
+      Đường cut đúng biên từng mảnh (50% / 1/3 / 2/3).
+      Trong mỗi mảnh: padding đều 4 phía → khung nhãn căn giữa phần giấy.
+    */
     .board {
       position: relative;
       width: 100%;
       height: 100%;
     }
 
-    /* ── Cut lines (faint dashed) — 1 dọc + 2 ngang = 6 ô ── */
+    /* Lề trắng đều quanh khung sau khi cắt (cùng mọi ô) */
+    :root {
+      --cell-pad: 4.5mm;
+    }
+
     .cut-guides {
       position: absolute;
       inset: 0;
@@ -111,7 +122,6 @@
     }
     .cut {
       position: absolute;
-      /* light gray dashed — enough to cut after print, not compete with card borders */
       border: 0 none;
     }
     .cut.v {
@@ -119,33 +129,33 @@
       bottom: 0;
       left: 50%;
       width: 0;
-      border-left: 0.7pt dashed #9ca3af;
+      border-left: 0.65pt dashed #a3a3a3;
       transform: translateX(-50%);
     }
     .cut.h {
       left: 0;
       right: 0;
       height: 0;
-      border-top: 0.7pt dashed #9ca3af;
+      border-top: 0.65pt dashed #a3a3a3;
     }
-    .cut.h1 { top: 33.333%; transform: translateY(-50%); }
-    .cut.h2 { top: 66.666%; transform: translateY(-50%); }
+    /* biên chính xác 1/3 — 2/3 (không lệch vì gap=0) */
+    .cut.h1 { top: calc(100% / 3); }
+    .cut.h2 { top: calc(200% / 3); }
 
-    /* tiny scissors marks at line ends */
     .cut-mark {
       position: absolute;
       font-size: 7pt;
       line-height: 1;
-      color: #9ca3af;
+      color: #a3a3a3;
       font-family: "Segoe UI", system-ui, sans-serif;
       z-index: 6;
     }
-    .cut-mark.v-t { top: 0; left: 50%; transform: translate(-50%, -10%); }
-    .cut-mark.v-b { bottom: 0; left: 50%; transform: translate(-50%, 10%); }
-    .cut-mark.h1-l { top: 33.333%; left: 0; transform: translate(-5%, -50%); }
-    .cut-mark.h1-r { top: 33.333%; right: 0; transform: translate(5%, -50%); }
-    .cut-mark.h2-l { top: 66.666%; left: 0; transform: translate(-5%, -50%); }
-    .cut-mark.h2-r { top: 66.666%; right: 0; transform: translate(5%, -50%); }
+    .cut-mark.v-t { top: 1mm; left: 50%; transform: translateX(-50%); }
+    .cut-mark.v-b { bottom: 1mm; left: 50%; transform: translateX(-50%); }
+    .cut-mark.h1-l { top: calc(100% / 3); left: 1mm; transform: translateY(-50%); }
+    .cut-mark.h1-r { top: calc(100% / 3); right: 1mm; transform: translateY(-50%); }
+    .cut-mark.h2-l { top: calc(200% / 3); left: 1mm; transform: translateY(-50%); }
+    .cut-mark.h2-r { top: calc(200% / 3); right: 1mm; transform: translateY(-50%); }
 
     .grid {
       position: relative;
@@ -155,14 +165,27 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       grid-template-rows: 1fr 1fr 1fr;
-      /* gap tạo khe cắt; đường cut guides nằm giữa khe */
-      gap: 3.2mm;
+      gap: 0;
+    }
+
+    /* Mỗi 1/6 giấy: padding đều → khung luôn ở giữa mảnh cắt */
+    .cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+      min-height: 0;
+      padding: var(--cell-pad);
+      /* nền trắng = “giấy thừa” quanh khung */
+      background: #fff;
     }
 
     .label {
       position: relative;
       display: flex;
       flex-direction: column;
+      width: 100%;
+      height: 100%;
       min-height: 0;
       background: #fff;
       overflow: hidden;
@@ -313,23 +336,25 @@
         {% for cell in page %}
           {% set has = cell and cell.stt_display %}
           {% set dig = (cell.stt_display|string|length) if has else 0 %}
-          <div class="label {% if not has %}empty{% endif %}">
-            <span class="c tl"></span>
-            <span class="c tr"></span>
-            <span class="c bl"></span>
-            <span class="c br"></span>
-            <div class="inner">
-              <div class="stt-wrap">
-                <div class="stt {% if dig <= 2 %}digits-2{% else %}digits-3{% endif %}"
-                     data-digits="{{ dig if dig else 0 }}">
-                  {% if has %}{{ cell.stt_display }}{% else %}&nbsp;{% endif %}
+          <div class="cell">
+            <div class="label {% if not has %}empty{% endif %}">
+              <span class="c tl"></span>
+              <span class="c tr"></span>
+              <span class="c bl"></span>
+              <span class="c br"></span>
+              <div class="inner">
+                <div class="stt-wrap">
+                  <div class="stt {% if dig <= 2 %}digits-2{% else %}digits-3{% endif %}"
+                       data-digits="{{ dig if dig else 0 }}">
+                    {% if has %}{{ cell.stt_display }}{% else %}&nbsp;{% endif %}
+                  </div>
                 </div>
+                {% if has %}
+                  <div class="name">{{ (cell.display_name or cell.customer_full_name or "")|upper }}</div>
+                {% else %}
+                  <div class="name">&nbsp;</div>
+                {% endif %}
               </div>
-              {% if has %}
-                <div class="name">{{ (cell.display_name or cell.customer_full_name or "")|upper }}</div>
-              {% else %}
-                <div class="name">&nbsp;</div>
-              {% endif %}
             </div>
           </div>
         {% endfor %}
@@ -348,12 +373,14 @@
       </div>
       <div class="grid">
         {% for _ in range(6) %}
-        <div class="label empty">
-          <span class="c tl"></span><span class="c tr"></span>
-          <span class="c bl"></span><span class="c br"></span>
-          <div class="inner">
-            <div class="stt-wrap"><div class="stt digits-2">&nbsp;</div></div>
-            <div class="name">&nbsp;</div>
+        <div class="cell">
+          <div class="label empty">
+            <span class="c tl"></span><span class="c tr"></span>
+            <span class="c bl"></span><span class="c br"></span>
+            <div class="inner">
+              <div class="stt-wrap"><div class="stt digits-2">&nbsp;</div></div>
+              <div class="name">&nbsp;</div>
+            </div>
           </div>
         </div>
         {% endfor %}
