@@ -7,6 +7,7 @@ from urllib.parse import quote
 from fastapi_account_manager.middlewares.auth_guard import ACCESS_COOKIE_NAME
 from utils.templates import templates
 from utils.device_cookie import clear_device_cookies_for_user
+from utils.auth import clear_ui_profile_cookies
 
 router = APIRouter(prefix="/account", tags=["account"])
 
@@ -289,6 +290,7 @@ def _clear_auth_cookies(resp: RedirectResponse):
     resp.delete_cookie("refresh_token", path="/")  # hoặc lấy REFRESH_COOKIE từ env nếu có
     if ACCESS_COOKIE_NAME != ACCESS_COOKIE:
         resp.delete_cookie(ACCESS_COOKIE_NAME, path="/")
+    clear_ui_profile_cookies(resp, path="/")
     return resp
 
 @router.get("/change-password-form", response_class=HTMLResponse)

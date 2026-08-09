@@ -10,6 +10,7 @@ from utils.device_cookie import (
     forward_device_cookies,
     set_device_cookie_for_user,
 )
+from utils.auth import set_ui_profile_cookies, clear_ui_profile_cookies
 
 router = APIRouter(tags=["auth"])
 
@@ -132,6 +133,15 @@ async def _finalize_login(request: Request, data: dict, safe_next: str, username
     resp = RedirectResponse(url=safe_next, status_code=303)
     _set_auth_cookies(resp, access, refresh, role_u)
     _set_device_cookie(resp, username, data.get("device_id"))
+    # Cookie hiển thị menu (không liên quan RBAC / auth)
+    set_ui_profile_cookies(
+        resp,
+        username=username,
+        company_code=data.get("company_code"),
+        secure=COOKIE_SECURE,
+        samesite=COOKIE_SAMESITE,
+        path="/",
+    )
     return resp
 
 
@@ -314,6 +324,7 @@ async def logout(request: Request):
     resp.delete_cookie(ACCESS_COOKIE_NAME, path="/")
     resp.delete_cookie(REFRESH_COOKIE_NAME, path="/")
     resp.delete_cookie(ROLE_COOKIE_NAME, path="/")
+    clear_ui_profile_cookies(resp, path="/")
 
     try:
         acc = request.cookies.get(ACCESS_COOKIE_NAME)
@@ -336,6 +347,7 @@ async def account_logout(request: Request):
     resp.delete_cookie(ACCESS_COOKIE_NAME, path="/")
     resp.delete_cookie(REFRESH_COOKIE_NAME, path="/")
     resp.delete_cookie(ROLE_COOKIE_NAME, path="/")
+    clear_ui_profile_cookies(resp, path="/")
 
     try:
         acc = request.cookies.get(ACCESS_COOKIE_NAME)
@@ -359,6 +371,7 @@ async def account_logout_all(request: Request):
     resp.delete_cookie(ACCESS_COOKIE_NAME, path="/")
     resp.delete_cookie(REFRESH_COOKIE_NAME, path="/")
     resp.delete_cookie(ROLE_COOKIE_NAME, path="/")
+    clear_ui_profile_cookies(resp, path="/")
     clear_device_cookies_for_user(resp, username)
 
     try:

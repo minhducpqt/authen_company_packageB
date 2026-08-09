@@ -41,8 +41,13 @@ async def auth_guard_middleware(request, call_next):
     # 1) Nếu có access -> check /auth/me
     acc = request.cookies.get(ACCESS_COOKIE_NAME)
     if acc:
-        ok = await _check_me(acc)
-        if ok:
+        me = await _fetch_me(acc)
+        if me is not None:
+            # Dùng cho menu tài khoản (username/company) — không thêm HTTP
+            try:
+                request.state.auth_me = me
+            except Exception:
+                pass
             return await call_next(request)
 
         # access fail (thường hết hạn) -> thử refresh
@@ -64,14 +69,26 @@ async def auth_guard_middleware(request, call_next):
     return resp
 
 
-async def _check_me(access_token: str) -> bool:
+async def _fetch_me(access_token: str) -> dict | None:
+    """GET /auth/me. Trả dict khi 200, None khi không hợp lệ."""
     try:
         async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=AUTH_TIMEOUT) as client:
             r = await client.get(AUTH_ME_PATH, headers={"Authorization": f"Bearer {access_token}"})
-        return r.status_code == 200
+        if r.status_code != 200:
+            return None
+        try:
+            data = r.json()
+        except Exception:
+            return {}
+        return data if isinstance(data, dict) else {}
     except Exception as e:
         print("[AUTH] /auth/me exception:", e)
-        return False
+        return None
+
+
+# Giữ alias để import cũ (nếu có) không vỡ
+async def _check_me(access_token: str) -> bool:
+    return (await _fetch_me(access_token)) is not None
 
 
 async def _try_refresh(request):

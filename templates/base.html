@@ -419,12 +419,30 @@
             <i class="ri-user-3-fill text-indigo-700 text-xl"></i>
           </button>
 
+          {% set ami = account_menu_info(request) if account_menu_info is defined else none %}
           <div id="userMenu"
-               class="app-user-menu hidden absolute right-0 mt-3 w-64 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden">
+               class="app-user-menu hidden absolute right-0 mt-3 w-72 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden">
             <div class="px-4 py-3 bg-slate-50 border-b border-slate-100">
-              <div class="text-sm font-bold text-slate-800">Tài khoản hệ thống</div>
-              <div class="text-xs text-slate-500 mt-0.5">Vai trò: {{ user_role }}</div>
+              <div class="text-sm font-bold text-slate-800 truncate" title="{{ (ami.username if ami and ami.username else 'Tài khoản')|e }}">
+                {{ (ami.username if ami and ami.username else 'Tài khoản') }}
+              </div>
+              {% if ami and ami.company_code %}
+              <div class="text-xs text-slate-500 mt-0.5 truncate">
+                Công ty: <span class="font-mono text-slate-700">{{ ami.company_code }}</span>
+              </div>
+              {% elif user_role == 'SUPER_ADMIN' %}
+              <div class="text-xs text-slate-500 mt-0.5">Phạm vi: Toàn hệ thống</div>
+              {% endif %}
+              <div class="text-xs text-slate-500 mt-0.5">
+                Vai trò:
+                <span class="font-medium text-slate-700">{{ (ami.role_label if ami and ami.role_label else user_role) }}</span>
+              </div>
             </div>
+
+            <a href="/account"
+               class="block px-4 py-3 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 border-b border-slate-100">
+              <i class="ri-user-settings-line mr-2"></i> Hồ sơ / Tài khoản
+            </a>
 
             <a href="/account/change-password-form"
                class="block px-4 py-3 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700">

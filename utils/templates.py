@@ -1,17 +1,19 @@
 # utils/templates.py
 from starlette.templating import Jinja2Templates
-from .auth import get_access_token, fetch_me  # re-use
+from .auth import get_access_token, fetch_me, account_menu_info  # re-use
 import os
 
 templates = Jinja2Templates(directory="templates")
 
 ACCESS_COOKIE_NAME = os.getenv("ACCESS_COOKIE_NAME", "access_token")
 
+
 def is_logged_in(request) -> bool:
     return bool(get_access_token(request))
 
 templates.env.globals["ACCESS_COOKIE_NAME"] = ACCESS_COOKIE_NAME
 templates.env.globals["is_logged_in"] = is_logged_in
+templates.env.globals["account_menu_info"] = account_menu_info
 
 from datetime import datetime
 
