@@ -53,6 +53,45 @@ def _to_str(v: Any) -> str:
         return ""
 
 
+def _yob_from_cccd(cccd: Any) -> str:
+    """
+    CCCD 12 số: char index 3 = thế kỷ+giới tính; index 4-5 = YY.
+    Same rule as attendance_public_notice template.
+    """
+    t = _to_str(cccd).strip()
+    if len(t) < 6 or not t.isdigit():
+        return ""
+    g = t[3]
+    try:
+        yy = int(t[4:6])
+    except Exception:
+        return ""
+    if g in ("0", "1"):
+        base = 1900
+    elif g in ("2", "3"):
+        base = 2000
+    elif g in ("4", "5"):
+        base = 2100
+    elif g in ("6", "7"):
+        base = 2200
+    elif g in ("8", "9"):
+        base = 2300
+    else:
+        base = 1900
+    y = base + yy
+    if 1900 <= y <= 2100:
+        return str(y)
+    return ""
+
+
+def _format_name_with_yob(full_name: str, yob: str) -> str:
+    name = (full_name or "").strip()
+    y = (yob or "").strip()
+    if name and y:
+        return f"{name} - {y}"
+    return name
+
+
 async def _a_get_json(
     path: str,
     token: str,
@@ -117,6 +156,8 @@ def _build_print_items(attendance_rows: List[Dict[str, Any]]) -> List[Dict[str, 
         address = _to_str(cust.get("address") or cust.get("address_short") or "").strip()
         cccd = _to_str(cust.get("cccd") or "").strip()
         phone = _to_str(cust.get("phone") or "").strip()
+        # Năm sinh: chỉ suy từ CCCD (đã có sẵn trên snapshot / điểm danh)
+        yob = _yob_from_cccd(cccd)
 
         bank_short = _to_str(
             refund.get("bank_shortname")
@@ -132,6 +173,8 @@ def _build_print_items(attendance_rows: List[Dict[str, Any]]) -> List[Dict[str, 
             {
                 "stt": r.get("stt"),
                 "customer_full_name": full_name,
+                "display_name": _format_name_with_yob(full_name, yob),
+                "yob": yob,
                 "address_short": address,
                 "cccd": cccd,
                 "phone": phone,
@@ -246,6 +289,158 @@ def _aggregate_attendance_from_round_ui(
 
     data.sort(key=_sort_key)
     return data, lot_count, len(data)
+
+
+def _stt_width(items: List[Dict[str, Any]]) -> int:
+    """Pad width: 2 if max STT < 100, else 3 (4+ left as-is via zfill)."""
+    mx = 0
+    for it in items or []:
+        try:
+            mx = max(mx, int(it.get("stt") or 0))
+        except Exception:
+            continue
+    return 2 if mx < 100 else 3
+
+
+def _format_stt_display(stt: Any, width: int) -> str:
+    if stt is None or stt == "":
+        return ""
+    try:
+        n = int(stt)
+        if n < 0:
+            return str(stt)
+        return str(n).zfill(width)
+    except Exception:
+        return _to_str(stt).strip()
+
+
+def _build_seat_label_pages(
+    items: List[Dict[str, Any]],
+    *,
+    per_page: int = 6,
+) -> Tuple[List[List[Dict[str, Any]]], int]:
+    """
+    Chunk attendance print items into A4 pages (each page has exactly `per_page` slots).
+    Empty trailing slots keep board cut layout; empty dicts mark blanks.
+    Returns: (pages, stt_width)
+    """
+    n = max(1, int(per_page or 6))
+    cleaned: List[Dict[str, Any]] = []
+    for it in items or []:
+        stt = it.get("stt")
+        if stt is None or stt == "":
+            continue
+        cleaned.append(it)
+
+    width = _stt_width(cleaned)
+    labels: List[Dict[str, Any]] = []
+    for it in cleaned:
+        name = _to_str(it.get("customer_full_name") or "").strip()
+        yob = _to_str(it.get("yob") or "").strip()
+        display = _to_str(it.get("display_name") or "").strip() or _format_name_with_yob(name, yob)
+        labels.append(
+            {
+                "stt": it.get("stt"),
+                "stt_display": _format_stt_display(it.get("stt"), width),
+                "customer_full_name": name,
+                "yob": yob,
+                "display_name": display,
+            }
+        )
+
+    if not labels:
+        # one empty page of blanks for stable template
+        return [[{} for _ in range(n)]], width
+
+    pages: List[List[Dict[str, Any]]] = []
+    for i in range(0, len(labels), n):
+        chunk = labels[i : i + n]
+        while len(chunk) < n:
+            chunk.append({})
+        pages.append(chunk)
+    return pages, width
+
+
+async def _load_session_attendance_context(
+    token: str,
+    session_id: int,
+) -> Tuple[Dict[str, Any], List[Dict[str, Any]], Dict[str, Any], Dict[str, Any], Optional[Dict[str, Any]]]:
+    """
+    Shared load path for attendance prints.
+    Returns: (session_out, items, project, stats, error)
+    """
+    error: Optional[Dict[str, Any]] = None
+
+    st_s, sess = await _a_get_json(
+        f"/api/v1/auction-sessions/sessions/{session_id}", token, None, timeout=60.0
+    )
+    if st_s != 200 or not isinstance(sess, dict):
+        error = {"message": f"Không tải được phiên đấu (status={st_s})", "body": sess}
+        sess_data: Dict[str, Any] = {"id": session_id}
+    else:
+        sess_data = (sess.get("data") or sess) if isinstance(sess, dict) else {"id": session_id}
+
+    project_name = sess_data.get("project_name") or sess_data.get("p_project_name") or ""
+    project_code = sess_data.get("project_code") or sess_data.get("p_project_code") or ""
+    registration_mode = "NORMAL"
+
+    round_no = 1
+    st_c, cur = await _a_get_json(
+        f"/api/v1/auction-sessions/sessions/{session_id}/current", token, None, timeout=60.0
+    )
+    if st_c == 200 and isinstance(cur, dict):
+        try:
+            rn = int(cur.get("current_round_no") or 0)
+            round_no = rn if rn > 0 else 1
+        except Exception:
+            round_no = 1
+    else:
+        if not error:
+            error = {"message": f"Không tải được vòng hiện tại (status={st_c})", "body": cur}
+
+    attendance_rows: List[Dict[str, Any]] = []
+    lot_count = 0
+    customer_count = 0
+
+    st_ui, ui = await _a_get_json(
+        f"/api/v1/auction-sessions/sessions/{session_id}/rounds/{round_no}/ui",
+        token,
+        None,
+        timeout=60.0,
+    )
+    if st_ui == 200 and isinstance(ui, dict):
+        reg_mode = _detect_registration_mode(ui)
+        registration_mode = reg_mode
+        attendance_rows, lot_count, customer_count = _aggregate_attendance_from_round_ui(
+            ui, registration_mode=reg_mode
+        )
+    else:
+        if not error:
+            error = {"message": f"Không tải được dữ liệu vòng (status={st_ui})", "body": ui}
+
+    session_out = {
+        "id": sess_data.get("id") or session_id,
+        "name": sess_data.get("name"),
+        "status": sess_data.get("status"),
+        "auction_date": sess_data.get("auction_date"),
+        "location": sess_data.get("location"),
+        "province": sess_data.get("province"),
+        "district": sess_data.get("district"),
+        "venue": sess_data.get("venue"),
+        "note": sess_data.get("note"),
+        "project_id": sess_data.get("project_id"),
+        "project_code": project_code,
+        "project_name": project_name,
+        "lot_count": lot_count,
+        "customer_count": customer_count,
+        "round_no": int(round_no),
+        "registration_mode": registration_mode,
+        "company_code": sess_data.get("company_code"),
+    }
+    project = {"name": project_name or project_code or "", "project_code": project_code or ""}
+    stats = {"total_lots": lot_count or 0, "total_customers": customer_count or 0}
+    items = _build_print_items(attendance_rows)
+    return session_out, items, project, stats, error
 
 
 # =========================================================
@@ -537,6 +732,65 @@ async def print_attendance_public_notice(
             "autoprint": int(autoprint),
 
             # error payload
+            "error": error,
+        },
+    )
+
+
+# =========================================================
+# PRINT: Seat STT labels (A4 — 2×3) — dán sau ghế
+#   - Cùng nguồn danh sách điểm danh phiên (aggregate round UI)
+#   - 6 nhãn / trang; trang lẻ pad ô trống
+# =========================================================
+@router.get(
+    "/auction/sessions/{session_id}/documents/attendance/seat-labels",
+    response_class=HTMLResponse,
+)
+async def print_attendance_seat_labels(
+    request: Request,
+    session_id: int = Path(..., ge=1),
+    title: Optional[str] = Query(None),
+    autoprint: int = Query(0, ge=0, le=1),
+):
+    """In nhãn STT dán ghế (A4, 6 ô). Data = danh sách điểm danh hiện tại."""
+    token = get_access_token(request)
+    if not token:
+        return templates.TemplateResponse(
+            "pages/error.html",
+            {
+                "request": request,
+                "title": "Chưa đăng nhập",
+                "message": "Vui lòng đăng nhập lại.",
+            },
+            status_code=401,
+        )
+
+    session_out, items, project, stats, error = await _load_session_attendance_context(
+        token, session_id
+    )
+    pages, stt_width = _build_seat_label_pages(items, per_page=6)
+
+    token_cc = get_access_token(request)
+    me = await fetch_me(token_cc) if token_cc else None
+    cc = company_code_from_me(me) or str(session_out.get("company_code") or "").strip().lower()
+    seat_tpl = resolve_template(cc, DocKind.ATTENDANCE_SEAT_LABELS)
+
+    return templates.TemplateResponse(
+        seat_tpl,
+        {
+            "request": request,
+            "title": title or "Nhãn STT dán ghế",
+            "session_id": session_id,
+            "session": session_out,
+            "project": project,
+            "stats": stats,
+            "items": items,
+            "pages": pages,
+            "per_page": 6,
+            "stt_width": stt_width,
+            "org_name": ORG_NAME,
+            "org_note": ORG_NOTE,
+            "autoprint": int(autoprint),
             "error": error,
         },
     )

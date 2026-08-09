@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>{{ title or "Nhãn STT dán ghế" }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700&family=IBM+Plex+Mono:wght@600;700&display=swap" rel="stylesheet"/>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 5mm;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      color: #000;
+      background: #fff;
+      font-family: "Be Vietnam Pro", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: #f6f7f9;
+      border-bottom: 1px solid #e5e7eb;
+      font-family: "Segoe UI", system-ui, sans-serif;
+    }
+    .toolbar .meta {
+      font-size: 12px;
+      color: #334155;
+      line-height: 1.35;
+    }
+    .toolbar .meta b { color: #0f172a; }
+    .toolbar .actions { display: flex; gap: 8px; align-items: center; }
+    .btn {
+      appearance: none;
+      border: 1px solid #111;
+      background: #fff;
+      padding: 6px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+    .btn:hover { background: #f1f5f9; }
+    .btn.primary {
+      background: #0f172a;
+      color: #fff;
+      border-color: #0f172a;
+    }
+    @media print {
+      .toolbar { display: none !important; }
+      .err-banner { display: none !important; }
+    }
+
+    @media screen {
+      body { background: #e9edf3; }
+      .toolbar {
+        width: 210mm;
+        margin: 10px auto 0;
+        border-radius: 10px 10px 0 0;
+      }
+      .sheet {
+        width: 210mm;
+        height: 297mm;
+        margin: 0 auto 22px;
+        background: #fff;
+        box-shadow: 0 10px 28px rgba(0,0,0,.14);
+        border: 1px solid rgba(0,0,0,.1);
+        padding: 5mm;
+      }
+    }
+
+    @media print {
+      .sheet {
+        width: 100%;
+        height: 287mm;
+        page-break-after: always;
+        break-after: page;
+        padding: 0;
+      }
+      .sheet:last-child {
+        page-break-after: auto;
+        break-after: auto;
+      }
+    }
+
+    /* Wrapper for guides + cards */
+    .board {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ── Cut lines (faint dashed) — 1 dọc + 2 ngang = 6 ô ── */
+    .cut-guides {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+    }
+    .cut {
+      position: absolute;
+      /* light gray dashed — enough to cut after print, not compete with card borders */
+      border: 0 none;
+    }
+    .cut.v {
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 0;
+      border-left: 0.7pt dashed #9ca3af;
+      transform: translateX(-50%);
+    }
+    .cut.h {
+      left: 0;
+      right: 0;
+      height: 0;
+      border-top: 0.7pt dashed #9ca3af;
+    }
+    .cut.h1 { top: 33.333%; transform: translateY(-50%); }
+    .cut.h2 { top: 66.666%; transform: translateY(-50%); }
+
+    /* tiny scissors marks at line ends */
+    .cut-mark {
+      position: absolute;
+      font-size: 7pt;
+      line-height: 1;
+      color: #9ca3af;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      z-index: 6;
+    }
+    .cut-mark.v-t { top: 0; left: 50%; transform: translate(-50%, -10%); }
+    .cut-mark.v-b { bottom: 0; left: 50%; transform: translate(-50%, 10%); }
+    .cut-mark.h1-l { top: 33.333%; left: 0; transform: translate(-5%, -50%); }
+    .cut-mark.h1-r { top: 33.333%; right: 0; transform: translate(5%, -50%); }
+    .cut-mark.h2-l { top: 66.666%; left: 0; transform: translate(-5%, -50%); }
+    .cut-mark.h2-r { top: 66.666%; right: 0; transform: translate(5%, -50%); }
+
+    .grid {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr 1fr;
+      /* gap tạo khe cắt; đường cut guides nằm giữa khe */
+      gap: 3.2mm;
+    }
+
+    .label {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      background: #fff;
+      overflow: hidden;
+      border: 1.35pt solid #000;
+    }
+    .label::before {
+      content: "";
+      position: absolute;
+      inset: 1.5mm;
+      border: 0.55pt solid #000;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .label .c {
+      position: absolute;
+      width: 4.5mm;
+      height: 4.5mm;
+      z-index: 2;
+      pointer-events: none;
+    }
+    .label .c.tl { top: .45mm; left: .45mm; border-top: 1.3pt solid #000; border-left: 1.3pt solid #000; }
+    .label .c.tr { top: .45mm; right: .45mm; border-top: 1.3pt solid #000; border-right: 1.3pt solid #000; }
+    .label .c.bl { bottom: .45mm; left: .45mm; border-bottom: 1.3pt solid #000; border-left: 1.3pt solid #000; }
+    .label .c.br { bottom: .45mm; right: .45mm; border-bottom: 1.3pt solid #000; border-right: 1.3pt solid #000; }
+
+    .label.empty {
+      border-style: dashed;
+      opacity: .34;
+    }
+    .label.empty::before { border-style: dashed; }
+
+    .inner {
+      position: relative;
+      z-index: 3;
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      /* padding gọn để số chiếm tối đa */
+      padding: 2.6mm 2.4mm 2.2mm;
+    }
+
+    .stt-wrap {
+      flex: 1 1 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 0;
+      /* ít lề ngang = font to hơn */
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .stt {
+      font-family: "IBM Plex Mono", "Consolas", "Courier New", monospace;
+      font-weight: 700;
+      font-size: 80pt;
+      line-height: .86;
+      letter-spacing: 0;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      margin: 0;
+      padding: 0;
+    }
+    /* 2 chữ số: cho phép to hơn mặc định trước khi fit */
+    .stt.digits-2 {
+      font-size: 110pt;
+      letter-spacing: 0.02em;
+    }
+    /* 3+ chữ số: fit gọn hơn trong cùng khung */
+    .stt.digits-3 {
+      font-size: 72pt;
+      letter-spacing: -0.02em;
+    }
+
+    .name {
+      flex: 0 0 auto;
+      text-align: center;
+      font-family: "Be Vietnam Pro", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      font-size: 11.5pt;
+      font-weight: 700;
+      line-height: 1.12;
+      text-transform: uppercase;
+      letter-spacing: .025em;
+      word-break: break-word;
+      max-height: 2.45em;
+      overflow: hidden;
+      margin: 0;
+      padding: 1.6mm 1mm 0;
+      border-top: 0.85pt solid #000;
+    }
+
+    .err {
+      margin: 0 0 10px;
+      padding: 10px 12px;
+      border: 1px solid #991b1b;
+      color: #991b1b;
+      font-size: 12px;
+      background: #fff;
+      font-family: "Segoe UI", sans-serif;
+    }
+  </style>
+</head>
+<body>
+  {% set s = session or {} %}
+  {% set p = project or {} %}
+  {% set st = stats or {} %}
+
+  <div class="toolbar">
+    <div class="meta">
+      <div><b>Nhãn STT dán ghế</b> · 6 / trang A4 · có đường cắt mờ</div>
+      <div>
+        {{ s.name or ("Phiên #" ~ (s.id or session_id or "")) }}
+        {% if s.project_name or p.name or s.project_code %}
+          · {{ s.project_name or p.name or s.project_code }}
+        {% endif %}
+        · {{ st.total_customers or (items|length if items else 0) }} khách
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn" type="button" onclick="window.close()">Đóng</button>
+      <button class="btn primary" type="button" onclick="window.print()">In</button>
+    </div>
+  </div>
+
+  {% if error %}
+    <div class="err-banner" style="width:210mm;margin:10px auto 0;">
+      <div class="err"><strong>Lỗi tải dữ liệu:</strong> {{ error.message or error.detail or error }}</div>
+    </div>
+  {% endif %}
+
+  {% for page in pages %}
+  <div class="sheet">
+    <div class="board">
+      <div class="cut-guides" aria-hidden="true">
+        <div class="cut v"></div>
+        <div class="cut h h1"></div>
+        <div class="cut h h2"></div>
+        <span class="cut-mark v-t">✂</span>
+        <span class="cut-mark v-b">✂</span>
+        <span class="cut-mark h1-l">✂</span>
+        <span class="cut-mark h1-r">✂</span>
+        <span class="cut-mark h2-l">✂</span>
+        <span class="cut-mark h2-r">✂</span>
+      </div>
+      <div class="grid">
+        {% for cell in page %}
+          {% set has = cell and cell.stt_display %}
+          {% set dig = (cell.stt_display|string|length) if has else 0 %}
+          <div class="label {% if not has %}empty{% endif %}">
+            <span class="c tl"></span>
+            <span class="c tr"></span>
+            <span class="c bl"></span>
+            <span class="c br"></span>
+            <div class="inner">
+              <div class="stt-wrap">
+                <div class="stt {% if dig <= 2 %}digits-2{% else %}digits-3{% endif %}"
+                     data-digits="{{ dig if dig else 0 }}">
+                  {% if has %}{{ cell.stt_display }}{% else %}&nbsp;{% endif %}
+                </div>
+              </div>
+              {% if has %}
+                <div class="name">{{ (cell.display_name or cell.customer_full_name or "")|upper }}</div>
+              {% else %}
+                <div class="name">&nbsp;</div>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+  {% if not pages %}
+  <div class="sheet">
+    <div class="board">
+      <div class="cut-guides" aria-hidden="true">
+        <div class="cut v"></div>
+        <div class="cut h h1"></div>
+        <div class="cut h h2"></div>
+      </div>
+      <div class="grid">
+        {% for _ in range(6) %}
+        <div class="label empty">
+          <span class="c tl"></span><span class="c tr"></span>
+          <span class="c bl"></span><span class="c br"></span>
+          <div class="inner">
+            <div class="stt-wrap"><div class="stt digits-2">&nbsp;</div></div>
+            <div class="name">&nbsp;</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <script>
+  (function(){
+    /**
+     * Fit STT to max size inside wrap.
+     * 2 chữ số: ceiling cao hơn → in to hơn.
+     * 3+ chữ số: ceiling thấp hơn nhưng vẫn binary-search max trong khung.
+     */
+    function fitStt(el){
+      if(!el) return;
+      const wrap = el.parentElement;
+      if(!wrap) return;
+
+      const text = (el.textContent || "").replace(/\s/g, "");
+      const digits = text.length || parseInt(el.getAttribute("data-digits") || "0", 10) || 2;
+
+      const maxW = wrap.clientWidth;
+      const maxH = wrap.clientHeight;
+      if(maxW < 8 || maxH < 8) return;
+
+      // ceiling / floor theo số chữ số
+      let hi = digits <= 2 ? 170 : 100;  // pt
+      let lo = 18;
+      el.style.letterSpacing = digits <= 2 ? "0.02em" : "-0.025em";
+
+      function fits(size){
+        el.style.fontSize = size + "pt";
+        // small safety margin so edges don’t clip
+        return el.scrollWidth <= maxW - 1 && el.scrollHeight <= maxH - 1;
+      }
+
+      // binary search max size that fits
+      let best = lo;
+      for(let i = 0; i < 28; i++){
+        const mid = (lo + hi) / 2;
+        if(fits(mid)){
+          best = mid;
+          lo = mid;
+        } else {
+          hi = mid;
+        }
+      }
+      el.style.fontSize = best + "pt";
+    }
+
+    function fitAll(){
+      document.querySelectorAll(".label:not(.empty) .stt").forEach(fitStt);
+    }
+
+    function whenFontsReady(cb){
+      if(document.fonts && document.fonts.ready){
+        document.fonts.ready.then(function(){ cb(); }).catch(function(){ cb(); });
+      } else {
+        cb();
+      }
+    }
+
+    window.addEventListener("load", function(){
+      whenFontsReady(function(){
+        fitAll();
+        setTimeout(fitAll, 50);
+      });
+    });
+    window.addEventListener("beforeprint", fitAll);
+    window.addEventListener("resize", function(){
+      clearTimeout(window.__seatFitT);
+      window.__seatFitT = setTimeout(fitAll, 80);
+    });
+
+    function shouldAutoPrint(){
+      try{
+        return new URLSearchParams(location.search).get("autoprint") === "1";
+      }catch(e){
+        return false;
+      }
+    }
+    if(!shouldAutoPrint()) return;
+    const key = "seat_labels_autoprint_done:" + location.pathname + location.search;
+    if(sessionStorage.getItem(key) === "1") return;
+    sessionStorage.setItem(key, "1");
+    window.addEventListener("load", function(){
+      whenFontsReady(function(){
+        setTimeout(function(){
+          fitAll();
+          try{ window.focus(); }catch(e){}
+          try{ window.print(); }catch(e){}
+        }, 240);
+      });
+    });
+  })();
+  </script>
+</body>
+</html>

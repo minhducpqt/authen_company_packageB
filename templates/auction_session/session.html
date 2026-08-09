@@ -772,6 +772,9 @@
           <button type="button" onclick="openAttendancePublicPrint(); this.closest('.printMenu').style.display='none';">
             <i class="ri-attachment-2"></i> In danh sách dán công khai
           </button>
+          <button type="button" onclick="openAttendanceSeatLabels(); this.closest('.printMenu').style.display='none';">
+            <i class="ri-hashtag"></i> In STT dán ghế
+          </button>
         </div>
       </div>
 
@@ -3068,6 +3071,12 @@ Modal: Print One Bid Sheet (choose one customer)
   try{ w.focus(); }catch(e){}
   }
 
+  }
+
+  function openAttendanceSeatLabels(){
+  const url = `/auction/sessions/${SESSION_ID}/documents/attendance/seat-labels?autoprint=1`;
+  const w = window.open(url, "_blank", "noopener,noreferrer");
+  if(w){ try{ w.focus(); }catch(e){} }
   }
 
 
