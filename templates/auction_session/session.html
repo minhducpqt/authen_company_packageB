@@ -257,7 +257,9 @@
       .ballot-cell .k{
         font-size:10px; font-weight:900; letter-spacing:.04em;
         text-transform:uppercase; opacity:.9; line-height:1.2;
+        display:inline-flex; align-items:center; justify-content:center; gap:4px;
       }
+      .ballot-cell .k i{ font-size:13px; opacity:.95; flex:0 0 auto; }
       .ballot-cell .val-row{
         display:inline-flex; align-items:center; justify-content:center; gap:6px;
       }
@@ -457,6 +459,18 @@
       .priceInput:disabled{
       opacity:.7;cursor:not-allowed;
       background:rgba(248,250,252,1) !important;
+      }
+      /* Bốc thăm: giá = khởi điểm, cùng tone ink (không tím) */
+      .priceInput.tone-start{
+        color:var(--ink) !important;
+        border-color:var(--bd) !important;
+      }
+      .priceInput.tone-start:focus{
+        border-color:rgba(100,116,139,.45) !important;
+        box-shadow:0 0 0 4px rgba(148,163,184,.2) !important;
+      }
+      .pStat .v.tone-start{
+        color:var(--ink);
       }
 
       .autoBtn{
@@ -1014,13 +1028,13 @@ Modal: Decide Lot
           <div class="box-b">
             <div class="ballot-strip" role="group" aria-label="Số phiếu kiểm">
               <div class="ballot-cell issued">
-                <div class="k">Phát ra</div>
+                <div class="k"><i class="ri-send-plane-2-line" aria-hidden="true"></i> Phát ra</div>
                 <div class="val-row">
                   <span class="n" id="ballotIssued">0</span>
                 </div>
               </div>
               <div class="ballot-cell collected">
-                <div class="k">Thu về</div>
+                <div class="k"><i class="ri-inbox-archive-line" aria-hidden="true"></i> Thu về</div>
                 <div class="val-row">
                   <button type="button" id="btnColMinus" onclick="nudgeBallot('collected', -1)" title="Giảm thu về">−</button>
                   <span class="n" id="ballotCollected">0</span>
@@ -1028,13 +1042,13 @@ Modal: Decide Lot
                 </div>
               </div>
               <div class="ballot-cell valid">
-                <div class="k">Hợp lệ</div>
+                <div class="k"><i class="ri-checkbox-circle-line" aria-hidden="true"></i> Hợp lệ</div>
                 <div class="val-row">
                   <span class="n" id="ballotValid">0</span>
                 </div>
               </div>
               <div class="ballot-cell invalid">
-                <div class="k">Không hợp lệ</div>
+                <div class="k"><i class="ri-close-circle-line" aria-hidden="true"></i> Không hợp lệ</div>
                 <div class="val-row">
                   <button type="button" id="btnInvMinus" onclick="nudgeBallot('invalid', -1)" title="Giảm không hợp lệ">−</button>
                   <span class="n" id="ballotInvalid">0</span>
@@ -1066,8 +1080,8 @@ Modal: Decide Lot
                 <label><i class="ri-award-line"></i> Hình thức thắng (quan trọng)</label>
                 <select id="winMethod" onchange="onWinMethodChange()">
                   <option value="HIGHEST">Trả giá cao nhất (HIGHEST)</option>
-                  <option value="MANUAL">Nhập tay / quyết định (MANUAL)</option>
                   <option value="LOTTERY">Bốc thăm (LOTTERY)</option>
+                  <option value="MANUAL">Nhập tay / quyết định (MANUAL)</option>
                 </select>
               </div>
 
@@ -1291,11 +1305,8 @@ onclick="nudgePrice('highestPrice', +5)">+5
 </div>
 
 <div class="foot">
-  <div class="hint" id="mHint">
-    API: <code class="mono">/auction/sessions/api/round-lots/{id}/decide</code>. Nếu bị khoá, API trả <b>409
-      LOCKED_BY_...</b>.
-  </div>
-  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+  <div class="hint" id="mHint" style="display:none;"></div>
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-left:auto;">
     <button class="btn danger" type="button" onclick="resetPending()"><i class="ri-restart-line"></i> Reset
       PENDING
     </button>
@@ -1495,7 +1506,8 @@ Modal: Print One Bid Sheet (choose one customer)
   if(id === 'winningPrice'){
   const pp = document.getElementById('winningPricePretty');
   pp.textContent = pretty || '—';
-  pp.className = 'v price-accent';
+  const isLottery = (document.getElementById('winMethod')||{}).value === 'LOTTERY';
+  pp.className = isLottery ? 'v tone-start' : 'v price-accent';
   }
   if(id === 'highestPrice'){
   const pp = document.getElementById('highestPricePretty');
@@ -2342,9 +2354,6 @@ Modal: Print One Bid Sheet (choose one customer)
   else if(rt === 'NO_VALID') switchMode('NO_VALID');
   else switchMode('WINNER');
 
-  document.getElementById('winMethod').value = safeText(currentLot.win_method || 'HIGHEST');
-  onWinMethodChange();
-
   const sp = getStartPriceVnd(currentLot);
   document.getElementById('mStartPriceText').textContent = fmtMoney(sp);
   document.getElementById('mStartPriceText2').textContent = fmtMoney(sp);
@@ -2353,10 +2362,16 @@ Modal: Print One Bid Sheet (choose one customer)
   document.getElementById('winningPrice').value = hp ? fmtMoney(hp) : '';
   document.getElementById('highestPrice').value = hp ? fmtMoney(hp) : '';
 
-  onMoneyInput('winningPrice');
+  document.getElementById('winMethod').value = safeText(currentLot.win_method || 'HIGHEST');
+  // LOTTERY ép giá trúng = khởi điểm + tone ink; HIGHEST/MANUAL giữ input
+  onWinMethodChange();
+
   onMoneyInput('highestPrice');
-  updatePriceMeta('winningPrice');
   updatePriceMeta('highestPrice');
+  if(safeText(document.getElementById('winMethod').value) !== 'LOTTERY'){
+    onMoneyInput('winningPrice');
+    updatePriceMeta('winningPrice');
+  }
 
   const curWinner = Number(currentLot.winner_customer_id || 0);
   if(curWinner){
@@ -2731,20 +2746,35 @@ Modal: Print One Bid Sheet (choose one customer)
   const pad = document.getElementById('stepPadWinner');
   const btnAuto = document.getElementById('btnAutoCorrectWinner');
   const help = document.getElementById('winnerHelp');
+  const pp = document.getElementById('winningPricePretty');
 
   if(m === 'LOTTERY'){
-  help.innerHTML = 'Nếu <b>LOTTERY</b> thì hệ thống lấy <b>giá khởi điểm</b> của vòng. Không cần nhập.';
-  input.value = '';
+  const sp = currentLot ? getStartPriceVnd(currentLot) : 0;
+  const spText = fmtMoney(sp);
+  help.innerHTML = 'Bốc thăm: giá trúng = <b>giá khởi điểm vòng</b> (không nhập).';
+  input.value = spText;
   input.disabled = true;
+  input.classList.add('tone-start');
   if(pad) pad.style.display = 'none';
   if(btnAuto) btnAuto.style.display = 'none';
-  onMoneyInput('winningPrice');
+  if(pp){
+    pp.textContent = spText;
+    pp.className = 'v tone-start';
+  }
   updatePriceMeta('winningPrice');
   } else {
   input.disabled = false;
+  input.classList.remove('tone-start');
   if(pad) pad.style.display = 'flex';
   if(btnAuto) btnAuto.style.display = 'inline-flex';
   help.innerHTML = 'Auto-correct sẽ đưa giá về <b>giá thấp nhất hợp lệ</b> theo bước giá. Nút +/- giúp nhập nhanh theo tick.';
+  if(pp) pp.className = 'v price-accent';
+  // restore highest if known & empty
+  if(currentLot && !(input.value||'').trim()){
+    const hp = (currentLot.highest_price_vnd != null) ? Number(currentLot.highest_price_vnd) : null;
+    if(hp) input.value = fmtMoney(hp);
+  }
+  onMoneyInput('winningPrice');
   updatePriceMeta('winningPrice');
   }
   }
