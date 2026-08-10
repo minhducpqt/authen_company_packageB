@@ -234,13 +234,18 @@
 
       /* Ballot kiểm phiếu — 1 dòng 4 ô */
       .ballot-box .box-b{ padding:10px 12px; }
+      .ballot-box{
+        /* Giữ chỗ, hạn chế layout thrash khi update số / status */
+        contain: layout style;
+      }
       .ballot-strip{
         display:grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
         gap:8px;
+        min-height:88px;
       }
       @media (max-width: 720px){
-        .ballot-strip{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .ballot-strip{ grid-template-columns: repeat(2, minmax(0, 1fr)); min-height:180px; }
       }
       .ballot-cell{
         border-radius:12px;
@@ -289,9 +294,11 @@
         background:#fef2f2; border-color:#fca5a5; color:#991b1b;
       }
       .ballot-status{
-        font-size:11px; font-weight:800; margin-top:8px;
+        font-size:11px; font-weight:800; margin-top:6px;
         display:flex; gap:8px; flex-wrap:wrap; align-items:center;
-        min-height:16px;
+        /* Chiều cao cố định — tránh scroll nháy khi đổi text trạng thái */
+        height:16px;
+        overflow:hidden;
       }
       .ballot-status .ok{ color:#047857; }
       .ballot-status .err{ color:#b91c1c; }
@@ -320,7 +327,11 @@
       .mh .mmeta{margin-top:6px;color:var(--muted);font-size:12px;display:flex;gap:10px;flex-wrap:wrap;}
       .xbtn{ width:34px;height:34px;border-radius:10px;border:1px solid var(--bd); background:#fff;cursor:pointer;font-weight:900; }
 
-      .mb{padding:14px 16px;background:#fff; overflow:auto; flex:1 1 auto;}
+      .mb{
+        padding:14px 16px;background:#fff; overflow:auto; flex:1 1 auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+      }
 
       .vstack{display:flex;flex-direction:column;gap:12px;}
 
@@ -1397,6 +1408,8 @@ Modal: Print One Bid Sheet (choose one customer)
   let ballotSaving = false;
   let ballotSeq = 0;
   let ballotSupported = true;
+  let ballotLoadGen = 0; // chặn race khi mở lô liên tiếp
+  let ballotLastPaintKey = '';
 
   function isSessionHardLocked(){
     try{
@@ -2324,7 +2337,8 @@ Modal: Print One Bid Sheet (choose one customer)
   return;
   }
 
-  await tryLock(roundLotId);
+  // Không await lock — hiện modal ngay, lock chạy nền (tránh đứng màn)
+  void tryLock(roundLotId);
 
   currentParticipants = (currentLot.participants || []).map(p => {
   const snap = participantSnapshot(p);
@@ -2391,15 +2405,35 @@ Modal: Print One Bid Sheet (choose one customer)
   renderModalLotInfo();
   renderWinnerPicker();
   renderDualLists();
-  loadBallotCounts(roundLotId);
 
+  // Kiểm phiếu: paint ngay từ participants (tránh ẩn/hiện + layout jump)
+  paintBallotImmediateLocal();
   document.getElementById('backdrop').style.display = 'flex';
+  // Sync server nền (GET + seed im lặng)
+  void loadBallotCounts(roundLotId);
   }
 
   // =========================
-  // Ballot counts (kiểm phiếu) — autosave, no lock
+  // Ballot counts (kiểm phiếu) — autosave, no lock · smooth paint
   // =========================
-  function applyBallotPayload(js){
+  function paintBallotImmediateLocal(){
+    ballotSupported = true;
+    ballotSaving = false;
+    ballotLastPaintKey = '';
+    const issued = (currentLot && currentLot.participants) ? currentLot.participants.length : 0;
+    ballotState = {
+      issued,
+      collected: issued,
+      invalid: 0,
+      valid: issued,
+      is_recorded: false,
+      updated_at: null,
+      updated_by: null,
+    };
+    renderBallotUI('', null, true);
+  }
+
+  function applyBallotPayload(js, force){
     // Phát ra luôn theo live participants (nếu API có)
     const issued = Math.max(
       0,
@@ -2419,7 +2453,7 @@ Modal: Print One Bid Sheet (choose one customer)
       collected = Math.max(0, Math.min(issued, collected));
       invalid = Math.max(0, Math.min(collected, invalid));
     }
-    ballotState = {
+    const next = {
       issued,
       collected,
       invalid,
@@ -2428,10 +2462,31 @@ Modal: Print One Bid Sheet (choose one customer)
       updated_at: js.updated_at || null,
       updated_by: js.updated_by || null,
     };
-    renderBallotUI('');
+    // Số không đổi → chỉ cập nhật meta, hạn chế reflow
+    const sameNums = ballotState
+      && ballotState.issued === next.issued
+      && ballotState.collected === next.collected
+      && ballotState.invalid === next.invalid
+      && ballotState.valid === next.valid;
+    ballotState = next;
+    if(sameNums && !force){
+      // chỉ pill / is_recorded
+      const pill = document.getElementById('ballotPill');
+      if(pill){
+        if(isSessionHardLocked()){
+          pill.textContent = 'Phiên khoá';
+          pill.className = 'pill warn';
+        } else {
+          pill.textContent = next.is_recorded ? 'Đã ghi' : 'Chưa ghi';
+          pill.className = 'pill' + (next.is_recorded ? ' ok' : '');
+        }
+      }
+      return;
+    }
+    renderBallotUI('', null, force);
   }
 
-  function renderBallotUI(statusMsg, statusKind){
+  function renderBallotUI(statusMsg, statusKind, force){
     const box = document.getElementById('ballotBox');
     if(!box) return;
     if(!ballotSupported || !currentLot){
@@ -2440,22 +2495,38 @@ Modal: Print One Bid Sheet (choose one customer)
     }
     box.style.display = '';
 
-    // Tiêu đề rõ Vòng + Lô
+    const s = ballotState || {issued:0, collected:0, invalid:0, valid:0, is_recorded:false};
+    const locked = isSessionHardLocked();
+    const dis = ballotSaving || locked;
+    const paintKey = [
+      s.issued, s.collected, s.invalid, s.valid, s.is_recorded,
+      dis, locked, statusMsg||'', statusKind||'', ballotSaving
+    ].join('|');
+    if(!force && paintKey === ballotLastPaintKey) return;
+    ballotLastPaintKey = paintKey;
+
+    // Tiêu đề rõ Vòng + Lô (ít đổi — chỉ khi force/open)
     const snap = getLotSnapshot(currentLot);
     const lotCode = safeText(currentLot.lot_code || snap.lot_code || ('#'+currentLot.id));
     const titleEl = document.getElementById('ballotTitle');
     if(titleEl){
-      titleEl.innerHTML =
-        `<i class="ri-file-list-3-line"></i> Kiểm phiếu · Vòng ${escapeHtml(ROUND_NO)} · Lô ${escapeHtml(lotCode)}`;
+      const want = `Kiểm phiếu · Vòng ${ROUND_NO} · Lô ${lotCode}`;
+      if(titleEl.getAttribute('data-t') !== want){
+        titleEl.setAttribute('data-t', want);
+        titleEl.innerHTML =
+          `<i class="ri-file-list-3-line"></i> ${escapeHtml(want)}`;
+      }
     }
 
-    const s = ballotState || {issued:0, collected:0, invalid:0, valid:0, is_recorded:false};
-    document.getElementById('ballotIssued').textContent = String(s.issued);
-    document.getElementById('ballotCollected').textContent = String(s.collected);
-    document.getElementById('ballotInvalid').textContent = String(s.invalid);
-    document.getElementById('ballotValid').textContent = String(s.valid);
+    const setTxt = (id, v)=>{
+      const el = document.getElementById(id);
+      if(el && el.textContent !== String(v)) el.textContent = String(v);
+    };
+    setTxt('ballotIssued', s.issued);
+    setTxt('ballotCollected', s.collected);
+    setTxt('ballotInvalid', s.invalid);
+    setTxt('ballotValid', s.valid);
 
-    const dis = ballotSaving || isSessionHardLocked();
     const btnCM = document.getElementById('btnColMinus');
     const btnCP = document.getElementById('btnColPlus');
     const btnIM = document.getElementById('btnInvMinus');
@@ -2467,25 +2538,22 @@ Modal: Print One Bid Sheet (choose one customer)
 
     const st = document.getElementById('ballotStatus');
     if(st){
-      if(isSessionHardLocked()){
-        st.innerHTML = `<span class="muted">Phiên đã khoá — không chỉnh kiểm phiếu</span>`;
+      let html = '';
+      if(locked){
+        html = `<span class="muted">Phiên đã khoá</span>`;
+      } else if(statusKind === 'err' && statusMsg){
+        html = `<span class="err">${escapeHtml(statusMsg)}</span>`;
       } else if(ballotSaving){
-        st.innerHTML = `<span class="saving">Đang lưu…</span>`;
-      } else if(statusMsg){
-        const cls = statusKind === 'err' ? 'err' : 'ok';
-        st.innerHTML = `<span class="${cls}">${escapeHtml(statusMsg)}</span>`;
-      } else if(s.is_recorded && s.updated_by){
-        st.innerHTML = `<span class="ok">Đã lưu · ${escapeHtml(s.updated_by||'')}</span>`;
-      } else if(!s.is_recorded){
-        st.innerHTML = `<span class="muted">Mặc định: thu về = phát ra · hợp lệ 100%</span>`;
-      } else {
-        st.innerHTML = ``;
+        // tránh đổi text "Đang lưu" liên tục gây nháy — chỉ khi user nudge
+        html = `<span class="saving">…</span>`;
       }
+      // seed/im lặng: không hiện status dài
+      if(st.innerHTML !== html) st.innerHTML = html;
     }
 
     const pill = document.getElementById('ballotPill');
     if(pill){
-      if(isSessionHardLocked()){
+      if(locked){
         pill.textContent = 'Phiên khoá';
         pill.className = 'pill warn';
       } else {
@@ -2495,13 +2563,11 @@ Modal: Print One Bid Sheet (choose one customer)
     }
   }
 
-  /** Lần đầu mở (chưa có row DB): ghi mặc định thu về=phát ra, KH=0, hợp lệ=toàn bộ. */
-  async function seedBallotDefaultsIfNeeded(roundLotId, js){
+  /** Seed mặc định nền: không ballotSaving UI, không toast, không layout thrash. */
+  async function seedBallotDefaultsSilent(roundLotId, js, gen){
     if(!js || js.is_recorded) return;
     if(isSessionHardLocked()) return;
     const issued = Math.max(0, Number(js.issued_live != null ? js.issued_live : (js.issued_count || 0)) || 0);
-    ballotSaving = true;
-    renderBallotUI();
     try{
       const r = await fetch(`/auction/sessions/api/round-lots/${roundLotId}/ballot-counts`, {
         method: 'PUT',
@@ -2512,54 +2578,43 @@ Modal: Print One Bid Sheet (choose one customer)
           invalid_count: 0,
         }),
       });
+      if(gen !== ballotLoadGen) return;
       const out = await r.json().catch(()=>({}));
-      ballotSaving = false;
       if(r.ok){
-        applyBallotPayload(out);
-        renderBallotUI('Đã ghi mặc định (thu về = phát ra, hợp lệ 100%)', 'ok');
-      } else {
-        // vẫn giữ hiển thị ảo; staff STAFF fail (403) → only display
-        applyBallotPayload(js);
-        if(r.status !== 403 && r.status !== 401){
-          const detail = (typeof out.detail === 'string') ? out.detail : '';
-          if(detail) toast(detail);
-        }
+        applyBallotPayload(out, false);
       }
-    }catch(_e){
-      ballotSaving = false;
-      applyBallotPayload(js);
-    }
+      // 403/401: chỉ giữ display ảo — không toast
+    }catch(_e){ /* ignore silent seed */ }
   }
 
   async function loadBallotCounts(roundLotId){
-    ballotSupported = true;
-    ballotState = null;
-    const box = document.getElementById('ballotBox');
-    if(box) box.style.display = 'none';
+    const gen = ++ballotLoadGen;
+    // Không ẩn box — tránh jump scroll
     try{
       const r = await fetch(`/auction/sessions/api/round-lots/${roundLotId}/ballot-counts`, {
         credentials: 'same-origin'
       });
+      if(gen !== ballotLoadGen) return;
       const js = await r.json().catch(()=>({}));
       if(!r.ok){
         const detail = (typeof js.detail === 'string') ? js.detail : JSON.stringify(js.detail || js);
-        // GROUP or missing table → ẩn block, không phá modal
         if(r.status === 400 && String(detail).includes('BALLOT_COUNTS_NORMAL_ONLY')){
           ballotSupported = false;
+          const box = document.getElementById('ballotBox');
+          if(box) box.style.display = 'none';
           return;
         }
-        if(r.status === 404 || r.status >= 500){
-          ballotSupported = false;
-          return;
-        }
-        ballotSupported = false;
+        // lỗi mạng/500: giữ paint local
         return;
       }
-      // Luôn hiện số mặc định đúng trước, rồi persist nếu chưa ghi
-      applyBallotPayload(js);
-      await seedBallotDefaultsIfNeeded(roundLotId, js);
+      ballotSupported = true;
+      applyBallotPayload(js, false);
+      // Seed chỉ khi chưa ghi — im lặng nền
+      if(!js.is_recorded){
+        void seedBallotDefaultsSilent(roundLotId, js, gen);
+      }
     }catch(_e){
-      ballotSupported = false;
+      // giữ local
     }
   }
 
@@ -2588,7 +2643,7 @@ Modal: Print One Bid Sheet (choose one customer)
     // no-op
     if(collected === s.collected && invalid === s.invalid) return;
 
-    // optimistic
+    // optimistic — chỉ cập nhật số, không innerHTML lớn
     ballotState = {
       ...s,
       collected,
@@ -2596,12 +2651,13 @@ Modal: Print One Bid Sheet (choose one customer)
       valid: collected - invalid,
     };
     ballotSaving = true;
-    renderBallotUI();
+    ballotLastPaintKey = '';
+    renderBallotUI('', null, true);
 
     const mySeq = ++ballotSeq;
-    const roundLotId = Number(currentLot.id);
+    const rid = Number(currentLot.id);
     try{
-      const r = await fetch(`/auction/sessions/api/round-lots/${roundLotId}/ballot-counts`, {
+      const r = await fetch(`/auction/sessions/api/round-lots/${rid}/ballot-counts`, {
         method: 'PUT',
         credentials: 'same-origin',
         headers: {'Content-Type': 'application/json'},
@@ -2615,19 +2671,16 @@ Modal: Print One Bid Sheet (choose one customer)
       ballotSaving = false;
       if(!r.ok){
         const detail = (typeof js.detail === 'string') ? js.detail : JSON.stringify(js.detail || js);
-        // reload authoritative
-        await loadBallotCounts(roundLotId);
-        renderBallotUI(detail || 'Lưu thất bại', 'err');
         toast(detail || 'Lưu kiểm phiếu thất bại');
+        // reload soft
+        void loadBallotCounts(rid);
         return;
       }
-      applyBallotPayload(js);
-      renderBallotUI('Đã lưu', 'ok');
+      applyBallotPayload(js, true);
     }catch(e){
       if(mySeq !== ballotSeq) return;
       ballotSaving = false;
-      await loadBallotCounts(roundLotId);
-      renderBallotUI(String(e), 'err');
+      void loadBallotCounts(rid);
       toast(String(e));
     }
   }
