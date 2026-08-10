@@ -232,6 +232,70 @@
 
       .empty{padding:16px;color:var(--muted);font-size:13px;}
 
+      /* Ballot kiểm phiếu — 1 dòng 4 ô */
+      .ballot-box .box-b{ padding:10px 12px; }
+      .ballot-strip{
+        display:grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap:8px;
+      }
+      @media (max-width: 720px){
+        .ballot-strip{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      }
+      .ballot-cell{
+        border-radius:12px;
+        padding:10px 8px;
+        text-align:center;
+        border:1px solid transparent;
+        min-width:0;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        justify-content:center;
+        gap:6px;
+      }
+      .ballot-cell .k{
+        font-size:10px; font-weight:900; letter-spacing:.04em;
+        text-transform:uppercase; opacity:.9; line-height:1.2;
+      }
+      .ballot-cell .val-row{
+        display:inline-flex; align-items:center; justify-content:center; gap:6px;
+      }
+      .ballot-cell .n{
+        font-size:28px; font-weight:900; line-height:1;
+        font-variant-numeric: tabular-nums;
+        min-width:2.2ch; text-align:center;
+      }
+      .ballot-cell .val-row button{
+        width:28px; height:28px; border-radius:8px; border:1px solid rgba(0,0,0,.12);
+        background:rgba(255,255,255,.9); font-weight:900; font-size:16px;
+        cursor:pointer; line-height:1; color:inherit; padding:0;
+        flex:0 0 auto;
+      }
+      .ballot-cell .val-row button:hover{ background:#fff; }
+      .ballot-cell .val-row button:disabled{ opacity:.35; cursor:not-allowed; }
+      .ballot-cell.issued{
+        background:#eff6ff; border-color:#93c5fd; color:#1e3a8a;
+      }
+      .ballot-cell.collected{
+        background:#ecfdf5; border-color:#6ee7b7; color:#065f46;
+      }
+      .ballot-cell.valid{
+        background:#f5f3ff; border-color:#c4b5fd; color:#5b21b6;
+      }
+      .ballot-cell.invalid{
+        background:#fef2f2; border-color:#fca5a5; color:#991b1b;
+      }
+      .ballot-status{
+        font-size:11px; font-weight:800; margin-top:8px;
+        display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+        min-height:16px;
+      }
+      .ballot-status .ok{ color:#047857; }
+      .ballot-status .err{ color:#b91c1c; }
+      .ballot-status .saving{ color:#b45309; }
+      .ballot-status .muted{ color:var(--muted); font-weight:700; }
+
       /* Modal */
       .backdrop{
       position:fixed;inset:0;background:rgba(2,6,23,.58);
@@ -916,6 +980,47 @@ Modal: Decide Lot
           <div class="box-b" id="mLotInfo"></div>
         </div>
 
+        <!-- Kiểm phiếu — riêng API, autosave +/−, không đụng chốt KQ/lock -->
+        <div class="box ballot-box" id="ballotBox" style="display:none;">
+          <div class="box-h">
+            <b id="ballotTitle"><i class="ri-file-list-3-line"></i> Kiểm phiếu</b>
+            <span class="pill" id="ballotPill">—</span>
+          </div>
+          <div class="box-b">
+            <div class="ballot-strip" role="group" aria-label="Số phiếu kiểm">
+              <div class="ballot-cell issued">
+                <div class="k">Phát ra</div>
+                <div class="val-row">
+                  <span class="n" id="ballotIssued">0</span>
+                </div>
+              </div>
+              <div class="ballot-cell collected">
+                <div class="k">Thu về</div>
+                <div class="val-row">
+                  <button type="button" id="btnColMinus" onclick="nudgeBallot('collected', -1)" title="Giảm thu về">−</button>
+                  <span class="n" id="ballotCollected">0</span>
+                  <button type="button" id="btnColPlus" onclick="nudgeBallot('collected', +1)" title="Tăng thu về">+</button>
+                </div>
+              </div>
+              <div class="ballot-cell valid">
+                <div class="k">Hợp lệ</div>
+                <div class="val-row">
+                  <span class="n" id="ballotValid">0</span>
+                </div>
+              </div>
+              <div class="ballot-cell invalid">
+                <div class="k">Không HĐ</div>
+                <div class="val-row">
+                  <button type="button" id="btnInvMinus" onclick="nudgeBallot('invalid', -1)" title="Giảm không hợp lệ">−</button>
+                  <span class="n" id="ballotInvalid">0</span>
+                  <button type="button" id="btnInvPlus" onclick="nudgeBallot('invalid', +1)" title="Tăng không hợp lệ">+</button>
+                </div>
+              </div>
+            </div>
+            <div class="ballot-status" id="ballotStatus"></div>
+          </div>
+        </div>
+
         <div class="box">
           <div class="box-h">
             <b><i class="ri-gavel-line"></i> Chốt kết quả vòng này</b>
@@ -1250,6 +1355,22 @@ Modal: Print One Bid Sheet (choose one customer)
   let dualIn = [];
   let dualNext = [];
   let selectedWinnerId = null;
+
+  // Kiểm phiếu (độc lập decide/lock lot; tắt chỉnh khi phiên hard-lock)
+  let ballotState = null; // {issued, collected, invalid, valid, is_recorded}
+  let ballotSaving = false;
+  let ballotSeq = 0;
+  let ballotSupported = true;
+
+  function isSessionHardLocked(){
+    try{
+      const s = (typeof SESSION !== 'undefined' && SESSION) ? SESSION : {};
+      const data = (s && s.data) ? s.data : s;
+      return !!(data && (data.is_locked === true || data.is_locked === 1 || data.is_locked === 'true'));
+    }catch(_e){
+      return false;
+    }
+  }
 
   // =========================
   // Toast
@@ -2230,8 +2351,245 @@ Modal: Print One Bid Sheet (choose one customer)
   renderModalLotInfo();
   renderWinnerPicker();
   renderDualLists();
+  loadBallotCounts(roundLotId);
 
   document.getElementById('backdrop').style.display = 'flex';
+  }
+
+  // =========================
+  // Ballot counts (kiểm phiếu) — autosave, no lock
+  // =========================
+  function applyBallotPayload(js){
+    // Phát ra luôn theo live participants (nếu API có)
+    const issued = Math.max(
+      0,
+      Number(js.issued_live != null ? js.issued_live : (js.issued_count || 0)) || 0
+    );
+    const isRecorded = !!js.is_recorded;
+    // Chưa từng ghi nhận → luôn ép init: thu về = phát ra, toàn bộ hợp lệ
+    let collected, invalid;
+    if(!isRecorded){
+      collected = issued;
+      invalid = 0;
+    } else {
+      collected = Number(js.collected_count);
+      invalid = Number(js.invalid_count);
+      if(!isFinite(collected)) collected = issued;
+      if(!isFinite(invalid)) invalid = 0;
+      collected = Math.max(0, Math.min(issued, collected));
+      invalid = Math.max(0, Math.min(collected, invalid));
+    }
+    ballotState = {
+      issued,
+      collected,
+      invalid,
+      valid: collected - invalid,
+      is_recorded: isRecorded,
+      updated_at: js.updated_at || null,
+      updated_by: js.updated_by || null,
+    };
+    renderBallotUI('');
+  }
+
+  function renderBallotUI(statusMsg, statusKind){
+    const box = document.getElementById('ballotBox');
+    if(!box) return;
+    if(!ballotSupported || !currentLot){
+      box.style.display = 'none';
+      return;
+    }
+    box.style.display = '';
+
+    // Tiêu đề rõ Vòng + Lô
+    const snap = getLotSnapshot(currentLot);
+    const lotCode = safeText(currentLot.lot_code || snap.lot_code || ('#'+currentLot.id));
+    const titleEl = document.getElementById('ballotTitle');
+    if(titleEl){
+      titleEl.innerHTML =
+        `<i class="ri-file-list-3-line"></i> Kiểm phiếu · Vòng ${escapeHtml(ROUND_NO)} · Lô ${escapeHtml(lotCode)}`;
+    }
+
+    const s = ballotState || {issued:0, collected:0, invalid:0, valid:0, is_recorded:false};
+    document.getElementById('ballotIssued').textContent = String(s.issued);
+    document.getElementById('ballotCollected').textContent = String(s.collected);
+    document.getElementById('ballotInvalid').textContent = String(s.invalid);
+    document.getElementById('ballotValid').textContent = String(s.valid);
+
+    const dis = ballotSaving || isSessionHardLocked();
+    const btnCM = document.getElementById('btnColMinus');
+    const btnCP = document.getElementById('btnColPlus');
+    const btnIM = document.getElementById('btnInvMinus');
+    const btnIP = document.getElementById('btnInvPlus');
+    if(btnCM) btnCM.disabled = dis || s.collected <= 0;
+    if(btnCP) btnCP.disabled = dis || s.collected >= s.issued;
+    if(btnIM) btnIM.disabled = dis || s.invalid <= 0;
+    if(btnIP) btnIP.disabled = dis || s.invalid >= s.collected;
+
+    const st = document.getElementById('ballotStatus');
+    if(st){
+      if(isSessionHardLocked()){
+        st.innerHTML = `<span class="muted">Phiên đã khoá — không chỉnh kiểm phiếu</span>`;
+      } else if(ballotSaving){
+        st.innerHTML = `<span class="saving">Đang lưu…</span>`;
+      } else if(statusMsg){
+        const cls = statusKind === 'err' ? 'err' : 'ok';
+        st.innerHTML = `<span class="${cls}">${escapeHtml(statusMsg)}</span>`;
+      } else if(s.is_recorded && s.updated_by){
+        st.innerHTML = `<span class="ok">Đã lưu · ${escapeHtml(s.updated_by||'')}</span>`;
+      } else if(!s.is_recorded){
+        st.innerHTML = `<span class="muted">Mặc định: thu về = phát ra · hợp lệ 100%</span>`;
+      } else {
+        st.innerHTML = ``;
+      }
+    }
+
+    const pill = document.getElementById('ballotPill');
+    if(pill){
+      if(isSessionHardLocked()){
+        pill.textContent = 'Phiên khoá';
+        pill.className = 'pill warn';
+      } else {
+        pill.textContent = s.is_recorded ? 'Đã ghi' : 'Chưa ghi';
+        pill.className = 'pill' + (s.is_recorded ? ' ok' : '');
+      }
+    }
+  }
+
+  /** Lần đầu mở (chưa có row DB): ghi mặc định thu về=phát ra, KH=0, hợp lệ=toàn bộ. */
+  async function seedBallotDefaultsIfNeeded(roundLotId, js){
+    if(!js || js.is_recorded) return;
+    if(isSessionHardLocked()) return;
+    const issued = Math.max(0, Number(js.issued_live != null ? js.issued_live : (js.issued_count || 0)) || 0);
+    ballotSaving = true;
+    renderBallotUI();
+    try{
+      const r = await fetch(`/auction/sessions/api/round-lots/${roundLotId}/ballot-counts`, {
+        method: 'PUT',
+        credentials: 'same-origin',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          collected_count: issued,
+          invalid_count: 0,
+        }),
+      });
+      const out = await r.json().catch(()=>({}));
+      ballotSaving = false;
+      if(r.ok){
+        applyBallotPayload(out);
+        renderBallotUI('Đã ghi mặc định (thu về = phát ra, hợp lệ 100%)', 'ok');
+      } else {
+        // vẫn giữ hiển thị ảo; staff STAFF fail (403) → only display
+        applyBallotPayload(js);
+        if(r.status !== 403 && r.status !== 401){
+          const detail = (typeof out.detail === 'string') ? out.detail : '';
+          if(detail) toast(detail);
+        }
+      }
+    }catch(_e){
+      ballotSaving = false;
+      applyBallotPayload(js);
+    }
+  }
+
+  async function loadBallotCounts(roundLotId){
+    ballotSupported = true;
+    ballotState = null;
+    const box = document.getElementById('ballotBox');
+    if(box) box.style.display = 'none';
+    try{
+      const r = await fetch(`/auction/sessions/api/round-lots/${roundLotId}/ballot-counts`, {
+        credentials: 'same-origin'
+      });
+      const js = await r.json().catch(()=>({}));
+      if(!r.ok){
+        const detail = (typeof js.detail === 'string') ? js.detail : JSON.stringify(js.detail || js);
+        // GROUP or missing table → ẩn block, không phá modal
+        if(r.status === 400 && String(detail).includes('BALLOT_COUNTS_NORMAL_ONLY')){
+          ballotSupported = false;
+          return;
+        }
+        if(r.status === 404 || r.status >= 500){
+          ballotSupported = false;
+          return;
+        }
+        ballotSupported = false;
+        return;
+      }
+      // Luôn hiện số mặc định đúng trước, rồi persist nếu chưa ghi
+      applyBallotPayload(js);
+      await seedBallotDefaultsIfNeeded(roundLotId, js);
+    }catch(_e){
+      ballotSupported = false;
+    }
+  }
+
+  async function nudgeBallot(field, delta){
+    if(!currentLot || !ballotSupported || ballotSaving) return;
+    if(isSessionHardLocked()){
+      toast('Phiên đã khoá — không chỉnh kiểm phiếu');
+      renderBallotUI();
+      return;
+    }
+    if(!ballotState) return;
+    const s = ballotState;
+    let collected = s.collected;
+    let invalid = s.invalid;
+    const issued = s.issued;
+
+    if(field === 'collected'){
+      collected = Math.max(0, Math.min(issued, collected + delta));
+      if(invalid > collected) invalid = collected;
+    } else if(field === 'invalid'){
+      invalid = Math.max(0, Math.min(collected, invalid + delta));
+    } else {
+      return;
+    }
+
+    // no-op
+    if(collected === s.collected && invalid === s.invalid) return;
+
+    // optimistic
+    ballotState = {
+      ...s,
+      collected,
+      invalid,
+      valid: collected - invalid,
+    };
+    ballotSaving = true;
+    renderBallotUI();
+
+    const mySeq = ++ballotSeq;
+    const roundLotId = Number(currentLot.id);
+    try{
+      const r = await fetch(`/auction/sessions/api/round-lots/${roundLotId}/ballot-counts`, {
+        method: 'PUT',
+        credentials: 'same-origin',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          collected_count: collected,
+          invalid_count: invalid,
+        }),
+      });
+      const js = await r.json().catch(()=>({}));
+      if(mySeq !== ballotSeq) return; // stale
+      ballotSaving = false;
+      if(!r.ok){
+        const detail = (typeof js.detail === 'string') ? js.detail : JSON.stringify(js.detail || js);
+        // reload authoritative
+        await loadBallotCounts(roundLotId);
+        renderBallotUI(detail || 'Lưu thất bại', 'err');
+        toast(detail || 'Lưu kiểm phiếu thất bại');
+        return;
+      }
+      applyBallotPayload(js);
+      renderBallotUI('Đã lưu', 'ok');
+    }catch(e){
+      if(mySeq !== ballotSeq) return;
+      ballotSaving = false;
+      await loadBallotCounts(roundLotId);
+      renderBallotUI(String(e), 'err');
+      toast(String(e));
+    }
   }
 
   function renderModalHeader(){

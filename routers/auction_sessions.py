@@ -545,6 +545,41 @@ async def api_decide_round_lot(
     return JSONResponse(js, status_code=_proxy_status(st))
 
 
+@router.get("/auction/sessions/api/round-lots/{round_lot_id}/ballot-counts")
+async def api_get_ballot_counts(
+    request: Request,
+    round_lot_id: int = Path(..., ge=1),
+):
+    """Proxy kiểm phiếu (GET) — không đụng decide/lock."""
+    token = get_access_token(request)
+    if not token:
+        return _unauth_json()
+    st, js = await _get_json(
+        f"/api/v1/auction-sessions/round-lots/{round_lot_id}/ballot-counts",
+        token,
+        None,
+    )
+    return JSONResponse(js, status_code=_proxy_status(st))
+
+
+@router.put("/auction/sessions/api/round-lots/{round_lot_id}/ballot-counts")
+async def api_put_ballot_counts(
+    request: Request,
+    round_lot_id: int = Path(..., ge=1),
+    payload: Dict[str, Any] = Body(...),
+):
+    """Proxy kiểm phiếu (PUT autosave) — body: collected_count, invalid_count."""
+    token = get_access_token(request)
+    if not token:
+        return _unauth_json()
+    st, js = await _put_json(
+        f"/api/v1/auction-sessions/round-lots/{round_lot_id}/ballot-counts",
+        token,
+        payload,
+    )
+    return JSONResponse(js, status_code=_proxy_status(st))
+
+
 @router.post("/auction/sessions/api/sessions/{session_id}/rounds/next")
 async def api_create_next_round(
     request: Request,
