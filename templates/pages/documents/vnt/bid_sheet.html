@@ -702,6 +702,7 @@
 
   {% set lot_code_display = t.lot_display or t.lot_code or '' %}
   {% set is_blank_ticket = (t.ticket_mode or '') == 'BLANK_TICKET' %}
+  {% set hide_lot = t.hide_lot_on_bid_sheet or t.is_session_v2 or false %}
   {% set deposit_tr = none %}
   {% if is_blank_ticket and t.deposit_vnd is not none and t.deposit_vnd != '' %}
     {% set deposit_tr = ((t.deposit_vnd|float) / 1000000)|int %}
@@ -786,7 +787,11 @@
         {%- elif t.deposit_vnd -%}
         , nhóm đặt trước <span class="bold">{{ "{:,.0f}".format(t.deposit_vnd|float) }} VND</span>
         {%- endif -%}
+        {%- if hide_lot -%}
+        . Khách hàng ghi <span class="bold">giá trả</span> vào phiếu (không ghi mã lô).
+        {%- else -%}
         . Khách hàng tự ghi <span class="bold">mã lô</span> và <span class="bold">giá trả</span> vào phiếu.
+        {%- endif -%}
         {% else %}
         Quyền sử dụng đất thuộc dự án
         "<span class="bold">{{ t.project_name }}</span>",
@@ -958,6 +963,7 @@
                 <div class="price-number-write">&nbsp;</div>
                 <div class="price-unit">{{ unit_label }}</div>
               </div>
+              {% if not hide_lot %}
               <div class="lot-badge">
                 <div class="lot-label">Mã lô</div>
                 <div class="lot-value">
@@ -968,6 +974,7 @@
                   {% endif %}
                 </div>
               </div>
+              {% endif %}
             </div>
           </div>
 

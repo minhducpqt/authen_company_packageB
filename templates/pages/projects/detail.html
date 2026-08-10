@@ -39,9 +39,11 @@
   {% set is_per_sqm = (auction_mode == 'PER_SQM') %}
   {% set registration_mode = (project.registration_mode or 'NORMAL') %}
   {% set is_group_auction = (registration_mode == 'GROUP_AUCTION') %}
-  {% set ga = project.group_auction or {} %}
+  {% set ga = project.group_auction if project.group_auction is mapping else {} %}
   {% set lot_policy = (ga.lot_policy or 'IN_SESSION_R1') %}
+  {% set session_mode = (ga.session_mode or 'IN_SESSION_V1') %}
   {% set is_pre_session = (lot_policy == 'PRE_SESSION') %}
+  {% set is_session_v2 = (session_mode == 'IN_SESSION_V2') %}
 
   {# NEW: bid ticket config default = true nếu không có key #}
   {% set btc = bid_ticket_cfg or {} %}
@@ -542,6 +544,37 @@
         </button>
       </div>
       <p class="pj-pick-hint">Chọn khác → <b>tôi xác nhận</b>. Gán lô từng đơn: mục <b>Phiếu trả giá</b>.</p>
+    </div>
+
+    <div class="pj-section-card border-indigo-100/80">
+      <div class="pj-section-head mb-0">
+        <div>
+          <div class="pj-section-title"><i class="ri-auction-line text-indigo-600"></i> Hình thức vận hành phiên</div>
+          <div class="pj-section-desc">Chỉ áp dụng đấu nhóm · v2 = trả giá nhóm + chọn lô khi trúng</div>
+        </div>
+      </div>
+      <input type="hidden" id="pj-session-mode-value" value="{{ session_mode }}">
+      <div class="pj-pick-grid mt-1.5" id="pj-session-mode-picks">
+        <button type="button" class="pj-pick {% if not is_session_v2 %}is-active-teal{% endif %}"
+                data-pj-session-mode="IN_SESSION_V1" aria-pressed="{{ 'true' if not is_session_v2 else 'false' }}">
+          <div class="pj-pick-top">
+            <span class="pj-pick-ico"><i class="ri-file-list-3-line"></i></span>
+          </div>
+          <span class="pj-pick-ttl">Trong phiên v1</span>
+          <span class="pj-pick-badge">{% if not is_session_v2 %}Đang dùng{% else %}Chọn{% endif %}</span>
+          <span class="pj-pick-sub">Chốt từng lô · phiếu có/blank mã lô</span>
+        </button>
+        <button type="button" class="pj-pick {% if is_session_v2 %}is-active-teal{% endif %}"
+                data-pj-session-mode="IN_SESSION_V2" aria-pressed="{{ 'true' if is_session_v2 else 'false' }}">
+          <div class="pj-pick-top">
+            <span class="pj-pick-ico"><i class="ri-trophy-line"></i></span>
+          </div>
+          <span class="pj-pick-ttl">Trong phiên v2</span>
+          <span class="pj-pick-badge">{% if is_session_v2 %}Đang dùng{% else %}Chọn{% endif %}</span>
+          <span class="pj-pick-sub">Trả giá nhóm · chọn lô khi trúng</span>
+        </button>
+      </div>
+      <p class="pj-pick-hint">v2: phiếu không in mã lô · kết quả qua màn <b>Kết quả đấu nhóm v2</b>.</p>
     </div>
     {% endif %}
   </div>
@@ -2523,6 +2556,7 @@
     pjBindModePickers();
     {% if is_group_auction %}
     pjBindLotPolicy();
+    pjBindSessionMode();
     {% endif %}
   });
 
@@ -2611,6 +2645,7 @@
 
   {% if is_group_auction %}
   var _pjLotPolicyCur = {{ lot_policy|tojson }};
+  var _pjSessionModeCur = {{ session_mode|tojson }};
 
   function pjBindLotPolicy() {
     document.querySelectorAll("[data-pj-lot-policy]").forEach(function (btn) {
@@ -2629,6 +2664,38 @@
               credentials: "same-origin",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ lot_policy: next }),
+            });
+            const d = await r.json();
+            if (!r.ok || !d.ok) {
+              alert(d.detail || d.error || "Lưu thất bại.");
+              return;
+            }
+            window.location.reload();
+          }
+        });
+      });
+    });
+  }
+
+  function pjBindSessionMode() {
+    document.querySelectorAll("[data-pj-session-mode]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var next = btn.getAttribute("data-pj-session-mode") || "";
+        if (!next || next === _pjSessionModeCur) return;
+        var label = next === "IN_SESSION_V2"
+          ? "TRONG PHIÊN V2 (trả giá nhóm + chọn lô khi trúng)"
+          : "TRONG PHIÊN V1 (chốt từng lô)";
+        confirmWithPhrase(null, {
+          title: "Xác nhận hình thức vận hành phiên",
+          descHtml: "Chuyển sang <b>" + label + "</b>.",
+          phrase: "tôi xác nhận",
+          onConfirm: async function () {
+            const pid = {{ project.id }};
+            const r = await fetch("/projects/api/" + pid + "/group-auction/session-mode", {
+              method: "PUT",
+              credentials: "same-origin",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ session_mode: next }),
             });
             const d = await r.json();
             if (!r.ok || !d.ok) {

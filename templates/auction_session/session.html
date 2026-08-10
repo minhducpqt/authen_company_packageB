@@ -784,6 +784,12 @@
       <i class="ri-slideshow-3-line"></i> Trình chiếu
     </a>
 
+    {% if is_session_v2|default(false) %}
+      <a class="btn primary" href="/auction/sessions/{{ session_id }}/group-v2">
+        <i class="ri-trophy-line"></i> Kết quả đấu nhóm v2
+      </a>
+    {% endif %}
+
 
     {% if not is_open %}
       <button class="btn" type="button" onclick="startSessionIfNeeded()">
@@ -1234,6 +1240,7 @@ Modal: Print One Bid Sheet (choose one customer)
   // Boot data from server (SSR)
   // =========================
   const SESSION_ID = Number({{ session_id|int }});
+  const IS_SESSION_V2 = {{ 'true' if is_session_v2|default(false) else 'false' }};
   let ROUND_NO = Number({{ round_no|int }});
 
   let UI = {{ ui|tojson }};
@@ -1708,9 +1715,11 @@ Modal: Print One Bid Sheet (choose one customer)
   <td>${statusHtml}</td>
 
   <td class="right">
-    <button class="miniBtn primary" type="button" onclick="openLotModal(${Number(lot.id)})">
+    ${IS_SESSION_V2
+      ? `<span class="pill" title="Chốt qua màn Kết quả đấu nhóm v2">v2</span>`
+      : `<button class="miniBtn primary" type="button" onclick="openLotModal(${Number(lot.id)})">
       <i class="ri-settings-3-line"></i> Xử lý
-    </button>
+    </button>`}
   </td>
   `;
   tbody.appendChild(tr);
@@ -2159,6 +2168,10 @@ Modal: Print One Bid Sheet (choose one customer)
   }
 
   async function openLotModal(roundLotId){
+  if(IS_SESSION_V2){
+    toast("Dự án v2: chốt kết quả tại màn Kết quả đấu nhóm v2");
+    return;
+  }
   const lots = (UI && UI.lots) ? UI.lots : [];
   currentLot = lots.find(x => Number(x.id) === Number(roundLotId));
   if(!currentLot){

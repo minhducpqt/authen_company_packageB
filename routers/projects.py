@@ -62,6 +62,7 @@ EP_AUCTION_MODE      = "/api/v1/projects/{project_id}/auction_mode"
 EP_REGISTRATION_MODE = "/api/v1/projects/{project_id}/registration_mode"
 EP_DEPOSIT_GROUP_FEES = "/api/v1/projects/{project_id}/deposit-group-fees"
 EP_GROUP_LOT_POLICY = "/api/v1/projects/{project_id}/group-auction/lot-policy"
+EP_GROUP_SESSION_MODE = "/api/v1/projects/{project_id}/group-auction/session-mode"
 EP_GROUP_DEPOSITS = "/api/v1/projects/{project_id}/group-deposits"
 EP_GROUP_DEPOSIT_ASSIGN = "/api/v1/projects/{project_id}/group-deposits/{order_id}/assign-lot"
 EP_AUCTION_CONFIG    = "/api/v1/projects/{project_id}/auction_config"
@@ -1111,6 +1112,28 @@ async def api_update_group_lot_policy(request: Request, project_id: int = Path(.
     async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=15.0) as client:
         r = await client.put(
             EP_GROUP_LOT_POLICY.format(project_id=project_id),
+            json=payload,
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    try:
+        body = r.json()
+    except Exception:
+        body = {"ok": False, "error": r.text}
+    return JSONResponse(body, status_code=r.status_code)
+
+
+@router.put("/api/{project_id}/group-auction/session-mode", response_class=JSONResponse)
+async def api_update_group_session_mode(request: Request, project_id: int = Path(...)):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
+    try:
+        payload = await request.json()
+    except Exception:
+        payload = {}
+    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=15.0) as client:
+        r = await client.put(
+            EP_GROUP_SESSION_MODE.format(project_id=project_id),
             json=payload,
             headers={"Authorization": f"Bearer {token}"},
         )

@@ -366,6 +366,22 @@ async def auction_session_detail_page(
     st_r, rounds = await _get_json(f"/api/v1/auction-sessions/sessions/{session_id}/rounds", token, None)
     rounds_data = rounds.get("data") if (st_r == 200 and isinstance(rounds, dict)) else []
 
+    # 7) Detect group session v2 (for link + hide decide)
+    is_session_v2 = False
+    try:
+        pid = sess_data.get("project_id")
+        if pid:
+            st_p, proj = await _get_json(f"/api/v1/projects/{int(pid)}", token, None)
+            if st_p == 200 and isinstance(proj, dict):
+                pdata = proj.get("data") or proj
+                ga = pdata.get("group_auction") if isinstance(pdata.get("group_auction"), dict) else {}
+                is_session_v2 = (
+                    (pdata.get("registration_mode") or "").upper() == "GROUP_AUCTION"
+                    and (ga.get("session_mode") or "IN_SESSION_V1").upper() == "IN_SESSION_V2"
+                )
+    except Exception:
+        is_session_v2 = False
+
     ctx = {
         "request": request,
         "title": f"Phiên đấu #{session_id}",
@@ -375,6 +391,7 @@ async def auction_session_detail_page(
         "rounds": rounds_data,
         "ui": ui,
         "error": error,
+        "is_session_v2": is_session_v2,
     }
     return templates.TemplateResponse("auction_session/session.html", ctx)
 

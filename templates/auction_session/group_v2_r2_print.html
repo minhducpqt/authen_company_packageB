@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <title>Phiếu trả giá vòng 2 — nhóm {{ deposit_vnd }}</title>
+  <style>
+    @page { size: A4; margin: 12mm; }
+    body { font-family: "Times New Roman", Times, serif; color: #111; margin: 0; }
+    .toolbar { display:flex; justify-content:flex-end; gap:8px; padding:10px; background:#f6f7f9; }
+    .btn { border:1px solid #111; background:#fff; padding:6px 12px; cursor:pointer; border-radius:6px; font-size:12px; }
+    @media print { .toolbar { display:none !important; } }
+    .sheet { page-break-after: always; padding: 8mm; border: 1pt solid #000; margin: 10mm auto; max-width: 180mm; min-height: 100mm; }
+    .sheet:last-child { page-break-after: auto; }
+    h1 { text-align:center; font-size:16pt; margin: 0 0 8px; }
+    .meta { font-size: 12pt; line-height: 1.5; }
+    .box { margin-top: 14px; border-top: 1pt solid #000; padding-top: 10px; }
+    .write { border-bottom: 1px dotted #333; min-height: 28px; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button class="btn" type="button" onclick="window.print()">In</button>
+  </div>
+  {% if error %}
+  <div style="color:#b91c1c;padding:12px;">{{ error.detail or error }}</div>
+  {% endif %}
+  {% set tickets = (data.tickets if data else []) or [] %}
+  {% if not tickets %}
+  <p style="padding:20px;">Không có phiếu ROUND2 để in.</p>
+  {% endif %}
+  {% for t in tickets %}
+  <div class="sheet">
+    <h1>PHIẾU TRẢ GIÁ — VÒNG 2</h1>
+    <div class="meta">
+      <div><b>Dự án:</b> {{ data.project_name or '' }}</div>
+      <div><b>Nhóm đặt trước:</b> {{ "{:,.0f}".format(deposit_vnd) }} VND</div>
+      <div><b>STT:</b> {{ t.stt or '—' }} · <b>Khách:</b> {{ t.customer_full_name or ('#' ~ t.customer_id) }}</div>
+      <div><b>Giá vòng 1 (tham chiếu):</b> {{ "{:,.0f}".format(t.bid_price_vnd|float) if t.bid_price_vnd is not none else '—' }} VND</div>
+    </div>
+    <div class="box">
+      <div><b>Giá trả vòng 2 (số):</b></div>
+      <div class="write">&nbsp;</div>
+      <div style="margin-top:10px;"><b>Giá trả vòng 2 (chữ):</b></div>
+      <div class="write">&nbsp;</div>
+      <div class="write">&nbsp;</div>
+    </div>
+    <p style="font-size:10pt; margin-top:12px; font-style:italic;">Chỉ ghi giá — không ghi mã lô. Chọn lô sau khi trúng.</p>
+  </div>
+  {% endfor %}
+  <script>
+  (function(){
+    try {
+      if(new URLSearchParams(location.search).get('autoprint')==='1'){
+        window.addEventListener('load', function(){ setTimeout(function(){ window.print(); }, 150); });
+      }
+    } catch(e){}
+  })();
+  </script>
+</body>
+</html>
