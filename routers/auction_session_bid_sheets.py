@@ -224,6 +224,8 @@ async def print_bid_sheets_for_session(
     request: Request,
     session_id: int = Path(..., ge=1),
     sort_mode: str = Query("STT_LOT", description="STT_LOT (default) | LOT_STT"),
+    deposit_vnd: Optional[int] = Query(None, ge=1, description="Lọc phiếu đấu nhóm theo mức cọc"),
+    round_no: Optional[int] = Query(None, ge=1, description="Lọc theo vòng (nếu có)"),
 ):
     next_path = f"/auction-sessions/bid-sheets/print/sessions/{int(session_id)}"
     me, token_or_redirect = await _ensure_me_or_redirect(request, next_path)
@@ -245,6 +247,19 @@ async def print_bid_sheets_for_session(
             return _err_html(f"Không lấy được dữ liệu phiếu (HTTP {st}).", 500)
         tickets = js.get("data") or []
         meta = js.get("meta") or {}
+        if deposit_vnd is not None:
+            dep = int(deposit_vnd)
+            tickets = [
+                t
+                for t in tickets
+                if int(t.get("deposit_vnd") or 0) == dep
+                or int((t.get("extras") or {}).get("deposit_vnd") or 0) == dep
+                or int(((t.get("group_auction") or {}) if isinstance(t.get("group_auction"), dict) else {}).get("deposit_vnd") or 0)
+                == dep
+            ]
+        if round_no is not None:
+            rn = int(round_no)
+            tickets = [t for t in tickets if int(t.get("round_no") or 1) == rn]
     except Exception as e:
         return _err_html(str(e), 500)
 
@@ -255,6 +270,8 @@ async def print_bid_sheets_for_session(
         "mode": "AUCTION_SESSION_SESSION",
         "session_id": int(session_id),
         "sort_mode": (sort_mode or "").upper(),
+        "deposit_vnd": int(deposit_vnd) if deposit_vnd is not None else None,
+        "round_no": int(round_no) if round_no is not None else None,
         **(meta or {}),
     }
     tickets = await _attach_session_qr(token, tickets, print_ctx)

@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="utf-8"/>
-  <title>Phiếu trả giá vòng 2 — nhóm {{ deposit_vnd }}</title>
+  <title>Phiếu trả giá vòng {{ round_no or (data.round_no if data else none) or '2+' }} — nhóm {{ deposit_vnd }}</title>
   <style>
     @page { size: A4; margin: 12mm; }
     body { font-family: "Times New Roman", Times, serif; color: #111; margin: 0; }
@@ -30,7 +30,7 @@
   {% endif %}
   {% for t in tickets %}
   <div class="sheet">
-    <h1>PHIẾU TRẢ GIÁ — VÒNG 2</h1>
+    <h1>PHIẾU TRẢ GIÁ — VÒNG {{ round_no or data.round_no or 2 }}</h1>
     <div class="meta">
       <div><b>Dự án:</b> {{ data.project_name or '' }}</div>
       <div><b>Nhóm đặt trước:</b> {{ "{:,.0f}".format(deposit_vnd) }} VND</div>

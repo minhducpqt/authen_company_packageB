@@ -5,7 +5,7 @@ import os
 from typing import Any, Dict, Optional
 
 import httpx
-from fastapi import APIRouter, Body, Path, Request
+from fastapi import APIRouter, Body, Path, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from utils.auth import get_access_token
@@ -152,6 +152,7 @@ async def print_round2(
     request: Request,
     session_id: int = Path(..., ge=1),
     deposit_vnd: int = Path(..., ge=1),
+    round_no: Optional[int] = Query(None, ge=2, le=99),
 ):
     token = get_access_token(request)
     if not token:
@@ -160,17 +161,17 @@ async def print_round2(
             {"request": request, "title": "Chưa đăng nhập", "message": "Vui lòng đăng nhập."},
             status_code=401,
         )
-    st, js = await _a(
-        "GET",
-        f"/api/v1/auction-sessions/group-v2/sessions/{session_id}/groups/{deposit_vnd}/round2-print",
-        token,
-    )
+    path = f"/api/v1/auction-sessions/group-v2/sessions/{session_id}/groups/{deposit_vnd}/round2-print"
+    if round_no is not None:
+        path = f"{path}?round_no={int(round_no)}"
+    st, js = await _a("GET", path, token)
     return templates.TemplateResponse(
         "auction_session/group_v2_r2_print.html",
         {
             "request": request,
             "session_id": session_id,
             "deposit_vnd": deposit_vnd,
+            "round_no": round_no,
             "data": js if st == 200 else {},
             "error": None if st == 200 else js,
         },

@@ -235,6 +235,16 @@
       color:rgba(0,0,0,0.78);
       line-height:1;
     }
+    .lot-flag .flag-group-ticket{
+      display:block;
+      margin-top:1.2mm;
+      font-size:11pt;
+      font-weight:800;
+      letter-spacing:0.08mm;
+      color:rgba(0,0,0,0.82);
+      line-height:1.05;
+      white-space:nowrap;
+    }
 
     .lot-flag .flag-code{
       font-size:8.8pt;
@@ -749,6 +759,7 @@
           <span class="flag-group-amount">
             <span class="flag-group-num">{{ deposit_tr }}</span><span class="flag-group-unit">tr</span>
           </span>
+          <span class="flag-group-ticket">Phiếu {{ t.ticket_seq or '?' }}/{{ t.ticket_total or qty_lots }}</span>
         </span>
         {% elif is_blank_ticket %}
         <span class="flag-lot" style="font-size:16pt; padding:4px 10px 5px; letter-spacing:0.1mm;">

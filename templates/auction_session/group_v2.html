@@ -1,44 +1,63 @@
 {% extends "base.html" %}
 {% block content %}
 <style>
-  .gv2-wrap { max-width: 1480px; margin: 0 auto; padding: 12px 14px 28px; }
+  .gv2-wrap { max-width: 100%; margin: 0 auto; padding: 12px 14px 28px; }
   .gv2-head { display:flex; flex-wrap:wrap; gap:10px; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
   .gv2-title { font-size:1.25rem; font-weight:700; color:#0f172a; }
-  .gv2-sub { font-size:12px; color:#64748b; margin-top:4px; line-height:1.4; max-width:720px; }
-  .gv2-btn { appearance:none; border:1px solid #cbd5e1; background:#fff; border-radius:8px; padding:6px 12px; font-size:12px; font-weight:600; cursor:pointer; }
+  .gv2-sub { font-size:12px; color:#64748b; margin-top:4px; line-height:1.45; max-width:1000px; }
+  .gv2-btn { appearance:none; border:1px solid #cbd5e1; background:#fff; border-radius:8px; padding:6px 12px; font-size:12px; font-weight:600; cursor:pointer; text-decoration:none; color:inherit; display:inline-flex; align-items:center; gap:4px; }
   .gv2-btn:hover { background:#f8fafc; }
   .gv2-btn.primary { background:#0f172a; color:#fff; border-color:#0f172a; }
-  .gv2-btn.primary:hover { background:#1e293b; }
+  .gv2-btn.warn { background:#fefce8; border-color:#fde047; color:#854d0e; }
+  .gv2-btn.lottery { background:#ecfeff; border-color:#67e8f9; color:#0e7490; }
   .gv2-btn.sm { padding:4px 8px; font-size:11px; }
   .gv2-btn:disabled { opacity:.45; cursor:not-allowed; }
-  .gv2-grid { display:grid; grid-template-columns: 220px minmax(0,1fr) minmax(0,1.05fr); gap:10px; min-height: calc(100vh - 180px); }
-  @media (max-width: 1100px) {
-    .gv2-grid { grid-template-columns: 1fr; min-height: auto; }
+  .gv2-scroll {
+    display:flex; gap:12px; align-items:stretch;
+    overflow-x:auto; padding-bottom:14px; min-height: calc(100vh - 200px);
   }
   .gv2-col {
     border:1px solid #e2e8f0; border-radius:14px; background:#fff;
-    display:flex; flex-direction:column; min-height:420px; overflow:hidden;
+    display:flex; flex-direction:column; min-height:440px; overflow:hidden;
+    flex: 0 0 auto; width: 280px;
   }
+  .gv2-col.col-groups { width: 160px; }
+  .gv2-col.col-pool { width: 270px; }
+  .gv2-col.col-settle { width: 340px; border-color:#86efac; }
+  .round-pair {
+    display:flex; gap:8px; flex:0 0 auto;
+    padding:8px; border-radius:16px; border:1px dashed #cbd5e1;
+    background: linear-gradient(180deg,#f8fafc 0%, #fff 40%);
+  }
+  .round-pair.r-later { border-color:#fde68a; background:linear-gradient(180deg,#fffbeb 0%,#fff 50%); }
+  .round-pair-label {
+    writing-mode: vertical-rl; transform: rotate(180deg);
+    font-size:11px; font-weight:800; color:#64748b; letter-spacing:.04em;
+    padding: 4px 2px; align-self:center;
+  }
+  .round-pair.r-later .round-pair-label { color:#a16207; }
   .gv2-col-h {
     padding:10px 12px; border-bottom:1px solid #e2e8f0; background:linear-gradient(180deg,#f8fafc,#fff);
   }
-  .gv2-col-h .ttl { font-weight:800; font-size:13px; color:#0f172a; display:flex; justify-content:space-between; gap:8px; align-items:center; }
-  .gv2-col-h .meta { font-size:11px; color:#64748b; margin-top:4px; }
-  .gv2-stats { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .gv2-col.col-settle .gv2-col-h { background:linear-gradient(180deg,#ecfdf5,#fff); }
+  .round-pair.r-later .gv2-col.col-pool .gv2-col-h { background:linear-gradient(180deg,#fefce8,#fff); }
+  .gv2-col-h .ttl { font-weight:800; font-size:12px; color:#0f172a; display:flex; justify-content:space-between; gap:6px; align-items:center; flex-wrap:wrap; }
+  .gv2-col-h .meta { font-size:10px; color:#64748b; margin-top:4px; line-height:1.35; }
+  .gv2-stats { display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
   .gv2-stat {
-    font-size:10px; font-weight:700; padding:3px 8px; border-radius:999px;
+    font-size:10px; font-weight:700; padding:2px 7px; border-radius:999px;
     background:#f1f5f9; color:#334155; border:1px solid #e2e8f0;
   }
   .gv2-stat.em { background:#ecfdf5; color:#047857; border-color:#a7f3d0; }
   .gv2-stat.warn { background:#fefce8; color:#a16207; border-color:#fde68a; }
-  .gv2-stat.purple { background:#f5f3ff; color:#6d28d9; border-color:#ddd6fe; }
+  .gv2-stat.lots { background:#fff7ed; color:#c2410c; border-color:#fdba74; }
+  .gv2-stat.lottery { background:#ecfeff; color:#0e7490; border-color:#a5f3fc; }
   .gv2-search {
-    width:100%; margin-top:8px; border:1px solid #cbd5e1; border-radius:8px;
-    padding:6px 8px; font-size:12px; outline:none;
+    width:100%; margin-top:6px; border:1px solid #cbd5e1; border-radius:8px;
+    padding:5px 8px; font-size:12px; outline:none;
   }
-  .gv2-search:focus { border-color:#64748b; box-shadow:0 0 0 3px rgba(100,116,139,.15); }
   .gv2-col-b { flex:1 1 auto; overflow:auto; padding:8px; }
-  .gv2-empty { color:#94a3b8; font-size:12px; text-align:center; padding:24px 8px; }
+  .gv2-empty { color:#94a3b8; font-size:12px; text-align:center; padding:20px 8px; }
 
   .g-item {
     width:100%; text-align:left; border:1px solid transparent; border-radius:10px;
@@ -69,35 +88,48 @@
   .cust.open .cust-b { display:block; }
 
   .tk {
-    display:flex; align-items:center; gap:8px; padding:7px 8px; border:1px solid #e2e8f0;
+    display:flex; align-items:flex-start; gap:8px; padding:7px 8px; border:1px solid #e2e8f0;
     border-radius:8px; background:#fff; margin-bottom:6px;
   }
-  .tk:last-child { margin-bottom:0; }
   .tk .info { flex:1 1 auto; min-width:0; font-size:11px; }
   .tk .info b { font-size:12px; color:#0f172a; }
   .tk .muted { color:#64748b; font-size:10px; }
+  .tk .acts { display:flex; flex-direction:column; gap:4px; min-width:76px; }
 
   .tk.tone-green { background:#ecfdf5; border-color:#6ee7b7; }
   .tk.tone-purple { background:#f5f3ff; border-color:#c4b5fd; }
   .tk.tone-yellow { background:#fefce8; border-color:#fde047; }
-  .tk.tone-gray { background:#f8fafc; border-color:#e2e8f0; opacity:.85; }
+  .tk.tone-gray { background:#f8fafc; border-color:#e2e8f0; opacity:.88; }
+  .tk.tone-lottery { background:#ecfeff; border-color:#22d3ee; }
 
   .legend { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; font-size:10px; color:#475569; }
   .legend i { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:4px; vertical-align:middle; border:1px solid rgba(0,0,0,.08); }
-  .lg { background:#6ee7b7; } .lp { background:#c4b5fd; } .ly { background:#fde047; } .lgy { background:#e2e8f0; }
+  .lg { background:#6ee7b7; } .lp { background:#c4b5fd; } .ly { background:#fde047; } .lgy { background:#e2e8f0; } .ll { background:#22d3ee; }
 
   .price-in {
-    width:118px; border:1px solid #cbd5e1; border-radius:6px; padding:4px 6px; font-size:12px;
+    width:112px; border:1px solid #cbd5e1; border-radius:6px; padding:5px 7px; font-size:12px;
     font-weight:700; text-align:right; font-variant-numeric:tabular-nums;
   }
-  .price-in:focus { outline:none; border-color:#0f172a; }
-
-  .assign-box { margin-top:10px; border-top:1px dashed #e2e8f0; padding-top:10px; }
-  .assign-row {
-    display:flex; flex-wrap:wrap; gap:8px; justify-content:space-between; align-items:center;
-    border:1px solid #e2e8f0; border-radius:8px; padding:8px; margin-bottom:6px; font-size:12px;
+  .ticket-tag {
+    display:inline-block; font-size:10px; font-weight:800; padding:1px 6px; border-radius:999px;
+    background:#e0e7ff; color:#3730a3; margin-left:3px;
   }
+  .ticket-tag.lottery { background:#cffafe; color:#0e7490; }
+  .ttl-actions { display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+  .save-hint {
+    font-size:10px; font-weight:700; padding:2px 8px; border-radius:999px;
+    border:1px solid #e2e8f0; background:#f8fafc; color:#64748b;
+  }
+  .save-hint.dirty { background:#fff7ed; color:#c2410c; border-color:#fdba74; }
+  .save-hint.clean { background:#ecfdf5; color:#047857; border-color:#a7f3d0; }
+  .gv2-btn.primary:disabled { opacity:.4; cursor:not-allowed; background:#64748b; border-color:#64748b; color:#fff; }
   .errbox { background:#fff1f2; border:1px solid #fecdd3; color:#9f1239; padding:10px 12px; border-radius:10px; font-size:12px; margin-bottom:10px; }
+  .hint-banner {
+    margin: 0 0 8px; padding:8px 10px; border-radius:8px; font-size:11px; line-height:1.4;
+    background:#fffbeb; border:1px solid #fde68a; color:#92400e;
+  }
+  .hint-banner.ok { background:#ecfdf5; border-color:#a7f3d0; color:#065f46; }
+  .col-actions { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
 </style>
 
 <div class="gv2-wrap">
@@ -106,21 +138,23 @@
       <div class="gv2-title">Kết quả đấu nhóm v2 — chốt phiếu trúng</div>
       <div class="gv2-sub">
         Phiên #{{ session_id }}{% if session.name %} · {{ session.name }}{% endif %}{% if overview.project_name %} · {{ overview.project_name }}{% endif %}.
-        Cột 2: tất cả phiếu theo khách (group, bấm để mở). Cột 3: phiếu đang chốt trúng — nhập giá, sort cao→thấp, màu theo vùng rank so với N.
+        <b>Mỗi vòng = 2 cột giống V1</b>: người/phiếu tham gia + chốt trúng (nhập giá).
+        Phiếu vàng vòng n <b>giữ nguyên</b> ở chốt vòng đó — chỉ mở vòng n+1 để những người đó (1+ phiếu) đấu tiếp.
+        In phiếu mỗi vòng ở cột pool tương ứng. Ưu tiên chọn lô sau: V1 giá cao → V2… .
       </div>
       <div class="legend">
-        <span><i class="lg"></i>Xanh = giá phân biệt chắc trúng</span>
-        <span><i class="lp"></i>Tím = hòa giá nhưng cả nhóm vẫn nằm trong quota N</span>
-        <span><i class="ly"></i>Vàng = hòa ở rìa (có thể bị loại / vào vòng 2)</span>
-        <span><i class="lgy"></i>Xám = ngoài top N theo giá hiện tại</span>
+        <span><i class="lg"></i>Xanh chắc</span>
+        <span><i class="lp"></i>Tím hòa trong quota</span>
+        <span><i class="ly"></i>Vàng hòa rìa (giữ tại chỗ)</span>
+        <span><i class="ll"></i>Bốc thăm</span>
+        <span><i class="lgy"></i>Xám ngoài</span>
       </div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <a class="gv2-btn" href="/auction/sessions/{{ session_id }}">← Về phiên</a>
       <button type="button" class="gv2-btn" onclick="loadOverview()">Tải nhóm</button>
-      <button type="button" class="gv2-btn primary" id="btnSave" onclick="saveBoard()" disabled>Lưu cột 3 → server</button>
+      <button type="button" class="gv2-btn primary" id="btnSave" onclick="saveBoard()" disabled>Lưu</button>
       <button type="button" class="gv2-btn" id="btnConfirm" onclick="confirmWinners()" disabled>Chốt rank N</button>
-      <a class="gv2-btn" id="btnPrintR2" href="#" target="_blank" rel="noopener">In phiếu V2 (vàng)</a>
     </div>
   </div>
 
@@ -128,53 +162,17 @@
   <div class="errbox">{{ error.body.detail if error.body and error.body.detail else error }}</div>
   {% endif %}
 
-  <div class="gv2-grid">
-    <!-- COL 1 -->
-    <div class="gv2-col">
+  <div class="gv2-scroll" id="boardScroll">
+    <div class="gv2-col col-groups">
       <div class="gv2-col-h">
-        <div class="ttl">1 · Nhóm cọc</div>
-        <div class="meta" id="col1Meta">Chọn nhóm để nạp danh sách phiếu</div>
-        <input class="gv2-search" id="q1" placeholder="Lọc nhóm / mức cọc…" oninput="renderGroups()">
+        <div class="ttl">Nhóm cọc</div>
+        <div class="meta">Chọn nhóm</div>
+        <input class="gv2-search" id="q1" placeholder="Lọc…" oninput="renderGroups()">
         <div class="gv2-stats" id="col1Stats"></div>
       </div>
       <div class="gv2-col-b" id="groupList"></div>
     </div>
-
-    <!-- COL 2 -->
-    <div class="gv2-col">
-      <div class="gv2-col-h">
-        <div class="ttl">
-          <span>2 · Phiếu theo khách</span>
-          <span id="col2Count" class="gv2-stat">0 phiếu</span>
-        </div>
-        <div class="meta" id="col2Meta">Bấm khách để expand · move phiếu → cột 3</div>
-        <input class="gv2-search" id="q2" placeholder="Tìm STT / tên / CCCD…" oninput="renderCol2()">
-        <div class="gv2-stats" id="col2Stats"></div>
-      </div>
-      <div class="gv2-col-b" id="col2Body">
-        <div class="gv2-empty">Chọn nhóm cọc ở cột 1.</div>
-      </div>
-    </div>
-
-    <!-- COL 3 -->
-    <div class="gv2-col">
-      <div class="gv2-col-h">
-        <div class="ttl">
-          <span>3 · Phiếu chốt trúng</span>
-          <span id="col3Count" class="gv2-stat em">0 / N</span>
-        </div>
-        <div class="meta" id="col3Meta">Giá cao nhất trên cùng · nhập giá · sort tự động</div>
-        <input class="gv2-search" id="q3" placeholder="Tìm trong cột 3…" oninput="renderCol3()">
-        <div class="gv2-stats" id="col3Stats"></div>
-      </div>
-      <div class="gv2-col-b">
-        <div id="col3Body"><div class="gv2-empty">Chưa có phiếu trúng.</div></div>
-        <div class="assign-box">
-          <div style="font-weight:800;font-size:12px;margin-bottom:6px;">Gán lô live (sau khi đã lưu + chốt rank)</div>
-          <div id="assignList" class="gv2-empty" style="padding:8px;">—</div>
-        </div>
-      </div>
-    </div>
+    <div id="roundsHost" class="gv2-round-host" style="display:flex;gap:12px;flex:0 0 auto;"></div>
   </div>
 </div>
 
@@ -185,472 +183,695 @@ let DETAIL = null;
 let currentDep = null;
 let N = 0;
 
-/** poolTickets: not in col3 yet — { key, customer_id, stt, seq, n_tickets, name, cccd } */
-let poolTickets = [];
-/** selectedTickets: col3 — + bid_price_vnd, db_id?, lot_id? */
-let selectedTickets = [];
-/** expand state customer_id -> bool */
-let expanded = {};
+/**
+ * rounds[r] = { pool:[], settle:[] }
+ * Vàng ở settle Vn KHÔNG bị xóa khi mở Vn+1 — chỉ copy identity sang pool vòng sau để in/đấu.
+ */
+let rounds = {};
+let expanded = {}; // `${r}_pool_${cid}` | `${r}_settle` filter qs
+let savedFingerprint = null;
+let savingBoard = false;
+let boardLocked = false;
+let globalSaveHint = true;
 
 function fmtMoney(n){
   const x = Number(n||0);
   if(!isFinite(x)) return '0';
-  return Math.round(x).toLocaleString('vi-VN');
+  return Math.round(x).toLocaleString('en-US');
 }
-function parseMoney(s){
-  return Number(String(s||'').replace(/[^\d]/g,'')) || 0;
+function formatPriceInput(el){
+  if(!el) return 0;
+  const digits = String(el.value||'').replace(/[^\d]/g,'');
+  const n = digits ? Math.trunc(Number(digits)) : 0;
+  const caretFromEnd = String(el.value||'').length - (el.selectionStart||0);
+  el.value = digits ? n.toLocaleString('en-US') : '';
+  try{
+    const pos = Math.max(0, el.value.length - Math.max(0, caretFromEnd));
+    el.setSelectionRange(pos, pos);
+  }catch(_){}
+  return n;
+}
+function ticketLabel(t){
+  return `${t.seq!=null&&t.seq!==''?t.seq:'?'}/${t.n_tickets!=null&&t.n_tickets!==''?t.n_tickets:'?'}`;
 }
 function escapeHtml(s){
   return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 function norm(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+function tid(t){ return `${Number(t.customer_id)}_${Number(t.seq)}`; }
 
-function loadOverview(){
-  fetch(`/auction/sessions/api/group-v2/${SESSION_ID}/overview`, {credentials:'same-origin'})
-    .then(r=>r.json())
-    .then(js=>{ OVERVIEW = js; renderGroups(); })
-    .catch(e=>alert(String(e)));
+function ensureRound(r){
+  const n = Math.max(1, Number(r)||1);
+  if(!rounds[n]) rounds[n] = { pool: [], settle: [] };
+  return rounds[n];
+}
+function maxOpenRound(){
+  const keys = Object.keys(rounds).map(Number).filter(x=>x>=1);
+  return keys.length ? Math.max(...keys) : 1;
+}
+function seatsTakenBefore(rno){
+  // ghế chắc từ các vòng < rno (ưu tiên vòng sớm)
+  let seats = 0;
+  for(let r=1; r<rno; r++){
+    const rem = Math.max(0, N - seats);
+    const toned = applyTonesLocal(ensureRound(r).settle || [], rem);
+    seats += toned.filter(t=>t.tone==='green'||t.tone==='purple'||t.tone==='lottery').length;
+  }
+  return seats;
+}
+function remainingForRound(rno){
+  return Math.max(0, N - seatsTakenBefore(rno));
 }
 
+/** Rank trong 1 vòng với quota seatsLeft của vòng đó. */
+function applyTonesLocal(list, seatsLeft){
+  const n = Math.max(0, Number(seatsLeft)||0);
+  const out = (list||[]).map(t=>({...t, tone:'gray', band:null, pick_rank:null}));
+  let seatsFilled = 0;
+  const forced = out.filter(t=>t.lottery_win||t.force_win)
+    .sort((a,b)=>(Number(b.bid_price_vnd)||0)-(Number(a.bid_price_vnd)||0));
+  for(const t of forced){
+    if(seatsFilled < n){
+      t.tone = t.lottery_win ? 'lottery' : 'green';
+      t.band = t.lottery_win ? 'LOTTERY' : 'FORCE';
+      seatsFilled++;
+    } else { t.tone='gray'; t.band='OUT'; }
+  }
+  const rest = out.filter(t=>!(t.lottery_win||t.force_win))
+    .sort((a,b)=>(Number(b.bid_price_vnd)||0)-(Number(a.bid_price_vnd)||0)
+      || (Number(a.stt)||0)-(Number(b.stt)||0)
+      || (Number(a.seq)||0)-(Number(b.seq)||0));
+  let i=0;
+  while(i<rest.length){
+    const price = Number(rest[i].bid_price_vnd)||0;
+    let j=i+1;
+    while(j<rest.length && (Number(rest[j].bid_price_vnd)||0)===price) j++;
+    const k=j-i;
+    const rem = n - seatsFilled;
+    if(rem<=0){ for(let x=i;x<j;x++){ rest[x].tone='gray'; rest[x].band='OUT'; } }
+    else if(k===1){ rest[i].tone='green'; rest[i].band='SOLID'; seatsFilled++; }
+    else if(k<=rem){ for(let x=i;x<j;x++){ rest[x].tone='purple'; rest[x].band='TIED_IN'; } seatsFilled+=k; }
+    else { for(let x=i;x<j;x++){ rest[x].tone='yellow'; rest[x].band='BORDER'; } }
+    i=j;
+  }
+  out.sort((a,b)=>{
+    const rank = t => (t.tone==='lottery'||t.tone==='green'||t.tone==='purple')?0:(t.tone==='yellow'?1:2);
+    if(rank(a)!==rank(b)) return rank(a)-rank(b);
+    return (Number(b.bid_price_vnd)||0)-(Number(a.bid_price_vnd)||0) || (Number(a.seq)||0)-(Number(b.seq)||0);
+  });
+  // pick_rank chỉ solid của vòng — global gán sau
+  let pr=0;
+  out.filter(t=>t.tone==='green'||t.tone==='purple'||t.tone==='lottery').forEach(t=>{ t.local_rank=++pr; });
+  return out;
+}
+
+function globalPickRank(){
+  // V1 solid rồi V2… giá cao
+  let rank = 0;
+  for(let r=1; r<=maxOpenRound(); r++){
+    const rem = remainingForRound(r);
+    const toned = applyTonesLocal(ensureRound(r).settle||[], rem)
+      .filter(t=>t.tone==='green'||t.tone==='purple'||t.tone==='lottery')
+      .sort((a,b)=>(Number(b.bid_price_vnd)||0)-(Number(a.bid_price_vnd)||0));
+    toned.forEach(t=>{
+      rank++;
+      const live = ensureRound(r).settle.find(x=>x.key===t.key);
+      if(live) live.pick_rank = rank;
+    });
+  }
+}
+
+function rankRound(rno){
+  const rem = remainingForRound(rno);
+  const settle = ensureRound(rno).settle || [];
+  const toned = applyTonesLocal(settle, rem);
+  const toneMap = {};
+  toned.forEach(t=>{ toneMap[t.key]=t; });
+  settle.forEach(t=>{
+    const x = toneMap[t.key];
+    if(x){ t.tone=x.tone; t.band=x.band; t.local_rank=x.local_rank; }
+  });
+  const solid = toned.filter(t=>t.tone==='green'||t.tone==='purple'||t.tone==='lottery');
+  const yellow = toned.filter(t=>t.tone==='yellow');
+  const yellowCids = [...new Set(yellow.map(t=>Number(t.customer_id)))];
+  return {
+    rem, toned, solid, yellow,
+    lottery: toned.filter(t=>t.tone==='lottery'||t.lottery_win),
+    remainingLots: Math.max(0, rem - solid.length),
+    sameCustomerYellow: yellow.length>0 && yellowCids.length===1,
+  };
+}
+
+function showLotteryButton(t, sum){
+  if(!t || boardLocked) return false;
+  if(t.lottery_win) return true;
+  if(t.tone!=='yellow') return false;
+  const price = Number(t.bid_price_vnd)||0;
+  const band = (sum.toned||[]).filter(x=>{
+    if((Number(x.bid_price_vnd)||0)!==price) return false;
+    return x.tone==='yellow'||x.tone==='green'||x.tone==='purple'||x.tone==='lottery';
+  });
+  return band.some(x=>Number(x.customer_id)!==Number(t.customer_id));
+}
+
+function identityInRound(rno, t){
+  const R = ensureRound(rno);
+  const id = tid(t);
+  return R.pool.some(x=>tid(x)===id) || R.settle.some(x=>tid(x)===id);
+}
+
+/** Mở vòng kế: copy identity phiếu vàng vào pool vòng sau — KHÔNG xóa vàng vòng hiện tại. */
+function openNextRoundFromYellow(rno){
+  if(boardLocked) return;
+  const sum = rankRound(rno);
+  if(!sum.yellow.length){ alert('Không có phiếu vàng ở vòng này.'); return; }
+  const next = rno + 1;
+  ensureRound(next);
+  let added = 0;
+  sum.yellow.forEach(t=>{
+    if(identityInRound(next, t)) return;
+    ensureRound(next).pool.push({
+      key: `p${next}_${t.customer_id}_${t.seq}`,
+      customer_id: Number(t.customer_id),
+      stt: t.stt,
+      seq: t.seq,
+      n_tickets: t.n_tickets,
+      name: t.name,
+      cccd: t.cccd,
+      round_no: next,
+      ref_price: Number(t.bid_price_vnd)||0,
+      source_round: rno,
+    });
+    added++;
+  });
+  renderAll();
+  setTimeout(()=>{
+    const el = document.getElementById('roundPair_'+next);
+    if(el) el.scrollIntoView({behavior:'smooth', inline:'nearest', block:'nearest'});
+  }, 40);
+  if(!added) alert(`Vòng ${next} đã có đủ identity phiếu vàng (giữ nguyên chốt V${rno}).`);
+}
+
+function movePoolToSettle(rno, key){
+  if(boardLocked) return;
+  const R = ensureRound(rno);
+  const idx = R.pool.findIndex(t=>t.key===key);
+  if(idx<0) return;
+  const t = R.pool.splice(idx,1)[0];
+  R.settle.push({
+    ...t,
+    key: `s${rno}_${t.customer_id}_${t.seq}`,
+    bid_price_vnd: 0,
+    lottery_win: false,
+    force_win: false,
+    round_no: rno,
+    ticket_role: 'WINNER',
+  });
+  renderAll();
+}
+function moveSettleToPool(rno, key){
+  if(boardLocked) return;
+  const R = ensureRound(rno);
+  const idx = R.settle.findIndex(t=>t.key===key);
+  if(idx<0) return;
+  const t = R.settle[idx];
+  if(t.lot_id){ alert('Đã gán lô — không move.'); return; }
+  R.settle.splice(idx,1);
+  if(!R.pool.some(x=>tid(x)===tid(t))){
+    R.pool.push({
+      key: `p${rno}_${t.customer_id}_${t.seq}`,
+      customer_id: t.customer_id, stt:t.stt, seq:t.seq, n_tickets:t.n_tickets,
+      name:t.name, cccd:t.cccd, round_no:rno, ref_price:t.bid_price_vnd,
+    });
+  }
+  renderAll();
+}
+
+function markLotteryWin(rno, key){
+  if(boardLocked) return;
+  const R = ensureRound(rno);
+  const t = R.settle.find(x=>x.key===key);
+  if(!t) return;
+  const sum = rankRound(rno);
+  if(!showLotteryButton(t, sum) && !t.lottery_win){
+    alert('Chỉ bốc khi hòa giá với khách khác (vàng).');
+    return;
+  }
+  if(t.lottery_win){
+    if(!confirm(`Bỏ bốc thăm phiếu ${ticketLabel(t)}?`)) return;
+    t.lottery_win = false;
+  } else {
+    if(sum.remainingLots<=0){ alert('Hết ghế cho vòng này.'); return; }
+    if(!confirm(`Chốt phiếu ${ticketLabel(t)} / ${t.name||'#'+t.customer_id} TRÚNG BẰNG BỐC THĂM (V${rno})?`)) return;
+    t.lottery_win = true;
+  }
+  renderAll();
+}
+
+function resolveSameCustomerYellow(rno){
+  if(boardLocked) return;
+  const sum = rankRound(rno);
+  if(!sum.sameCustomerYellow){ alert('Chỉ khi toàn bộ vàng cùng 1 khách.'); return; }
+  const sorted = sum.yellow.slice().sort((a,b)=>(Number(a.seq)||0)-(Number(b.seq)||0));
+  const drop = new Set(sorted.slice(Math.max(0, sum.remainingLots)).map(t=>t.key));
+  if(!drop.size && sum.remainingLots>0){ alert('Đúng số ghế — không cần đẩy bớt.'); return; }
+  const R = ensureRound(rno);
+  const excess = R.settle.filter(t=>drop.has(t.key));
+  R.settle = R.settle.filter(t=>!drop.has(t.key));
+  excess.forEach(t=>{
+    if(!R.pool.some(x=>tid(x)===tid(t))){
+      R.pool.push({
+        key:`p${rno}_${t.customer_id}_${t.seq}`,
+        customer_id:t.customer_id, stt:t.stt, seq:t.seq, n_tickets:t.n_tickets,
+        name:t.name, cccd:t.cccd, round_no:rno,
+      });
+    }
+  });
+  renderAll();
+}
+
+function buildSavePayload(){
+  const rows = [];
+  for(let r=1; r<=maxOpenRound(); r++){
+    const R = ensureRound(r);
+    const sum = rankRound(r);
+    const toneMap = {};
+    sum.toned.forEach(t=>{ toneMap[t.key]=t; });
+    // settle
+    R.settle.forEach(t=>{
+      const tone = (toneMap[t.key]||{}).tone || t.tone;
+      let role = 'WINNER';
+      if(tone==='yellow' && !t.lottery_win) role = 'ROUND2';
+      if(t.lottery_win) role = 'WINNER';
+      rows.push({
+        customer_id: Number(t.customer_id),
+        stt: t.stt!=null&&t.stt!==''?Number(t.stt):null,
+        bid_price_vnd: Math.trunc(Number(t.bid_price_vnd)||0),
+        ticket_role: role,
+        round_no: r,
+        ticket_seq: t.seq!=null?Number(t.seq):null,
+        ticket_total: t.n_tickets!=null?Number(t.n_tickets):null,
+        win_method: t.lottery_win ? 'LOTTERY' : 'AUCTION',
+        zone: 'settle',
+      });
+    });
+    // pool only (chưa chốt) — lưu để mở lại UI; role ROUND2 zone pool
+    R.pool.forEach(t=>{
+      rows.push({
+        customer_id: Number(t.customer_id),
+        stt: t.stt!=null&&t.stt!==''?Number(t.stt):null,
+        bid_price_vnd: Math.trunc(Number(t.ref_price||t.bid_price_vnd)||0),
+        ticket_role: 'ROUND2',
+        round_no: r,
+        ticket_seq: t.seq!=null?Number(t.seq):null,
+        ticket_total: t.n_tickets!=null?Number(t.n_tickets):null,
+        win_method: 'AUCTION',
+        zone: 'pool',
+      });
+    });
+  }
+  return rows.sort((a,b)=>a.round_no-b.round_no || (a.zone||'').localeCompare(b.zone||'') || a.customer_id-b.customer_id || (a.ticket_seq||0)-(b.ticket_seq||0));
+}
+function buildApiTickets(){
+  return buildSavePayload().map(({customer_id,stt,bid_price_vnd,ticket_role,round_no,ticket_seq,ticket_total,win_method,zone})=>({
+    customer_id,stt,bid_price_vnd,ticket_role,round_no,ticket_seq,ticket_total,win_method,zone
+  }));
+}
+function boardFingerprint(){ return JSON.stringify(buildSavePayload()); }
+function markBoardClean(){ savedFingerprint = boardFingerprint(); updateSaveBtn(); }
+function isBoardDirty(){
+  if(currentDep==null || savedFingerprint==null) return false;
+  return boardFingerprint() !== savedFingerprint;
+}
+function updateSaveBtn(){
+  const dirty = isBoardDirty();
+  const can = currentDep!=null && dirty && !savingBoard && !boardLocked;
+  const el = document.getElementById('btnSave');
+  if(el){
+    el.disabled = !can;
+    el.textContent = savingBoard ? 'Đang lưu…' : (dirty ? 'Lưu *' : 'Lưu');
+  }
+  document.querySelectorAll('[data-save-hint]').forEach(h=>{
+    if(currentDep==null){ h.className='save-hint'; h.textContent='—'; }
+    else if(boardLocked){ h.className='save-hint'; h.textContent='Khóa'; }
+    else if(dirty){ h.className='save-hint dirty'; h.textContent='Chưa lưu'; }
+    else { h.className='save-hint clean'; h.textContent='Đã lưu'; }
+  });
+}
+
+function loadOverview(){
+  fetch(`/auction/sessions/api/group-v2/${SESSION_ID}/overview`,{credentials:'same-origin'})
+    .then(r=>r.json()).then(js=>{ OVERVIEW=js; renderGroups(); }).catch(e=>alert(String(e)));
+}
 function renderGroups(){
   const host = document.getElementById('groupList');
   const q = norm(document.getElementById('q1').value);
-  const groups = (OVERVIEW && OVERVIEW.groups) || [];
-  const filtered = groups.filter(g=>{
-    if(!q) return true;
-    const blob = norm(`${g.group_name||''} ${g.deposit_vnd||''} ${g.status||''}`);
-    return blob.includes(q);
-  });
-  document.getElementById('col1Stats').innerHTML =
-    `<span class="gv2-stat">${groups.length} nhóm</span>` +
-    (q ? `<span class="gv2-stat">Lọc: ${filtered.length}</span>` : '');
-  if(!filtered.length){
-    host.innerHTML = `<div class="gv2-empty">Không có nhóm.</div>`;
-    return;
-  }
+  const groups = (OVERVIEW&&OVERVIEW.groups)||[];
+  const filtered = groups.filter(g=>!q||norm(`${g.group_name||''} ${g.deposit_vnd||''}`).includes(q));
+  document.getElementById('col1Stats').innerHTML = `<span class="gv2-stat">${groups.length} nhóm</span>`;
+  if(!filtered.length){ host.innerHTML=`<div class="gv2-empty">Không có nhóm.</div>`; return; }
   host.innerHTML = filtered.map(g=>{
-    const act = Number(currentDep)===Number(g.deposit_vnd) ? 'active' : '';
+    const act = Number(currentDep)===Number(g.deposit_vnd)?'active':'';
     return `<button type="button" class="g-item ${act}" onclick="openGroup(${g.deposit_vnd})">
       <div class="n">${escapeHtml(g.group_name||('Nhóm '+g.deposit_vnd))}</div>
-      <div class="s">N=${g.N||g.n_lots||0} · ${g.status||'DRAFT'} · chốt ${g.n_winner||0} · gán ${g.n_assigned||0}</div>
+      <div class="s">N=${g.N||g.n_lots||0} · ${g.status||'DRAFT'}</div>
     </button>`;
   }).join('');
 }
 
+function parseExtras(t){
+  let ex=t.extras;
+  if(typeof ex==='string'){ try{ex=JSON.parse(ex);}catch(_){ex={};} }
+  return ex&&typeof ex==='object'?ex:{};
+}
+
 function openGroup(dep){
-  currentDep = dep;
-  document.getElementById('btnPrintR2').href = `/auction/sessions/${SESSION_ID}/group-v2/print-r2/${dep}`;
-  document.getElementById('btnSave').disabled = false;
-  document.getElementById('btnConfirm').disabled = false;
+  currentDep=dep;
+  savedFingerprint=null;
+  savingBoard=false;
+  boardLocked=false;
+  document.getElementById('btnConfirm').disabled=false;
+  updateSaveBtn();
   renderGroups();
-  fetch(`/auction/sessions/api/group-v2/${SESSION_ID}/groups/${dep}`, {credentials:'same-origin'})
+  fetch(`/auction/sessions/api/group-v2/${SESSION_ID}/groups/${dep}`,{credentials:'same-origin'})
     .then(r=>r.json())
     .then(js=>{
-      if(js.detail && !js.ok){ alert(typeof js.detail==='string'?js.detail:JSON.stringify(js.detail)); return; }
-      DETAIL = js;
-      N = Number(js.N || (js.result&&js.result.n_lots) || 0);
+      if(js.detail&&!js.ok){ alert(typeof js.detail==='string'?js.detail:JSON.stringify(js.detail)); return; }
+      DETAIL=js;
+      N=Number(js.N||(js.result&&js.result.n_lots)||0);
       buildBoardFromDetail(js);
-      document.getElementById('col2Meta').textContent =
-        (js.result&&js.result.group_name ? js.result.group_name+' · ' : '') + `N = ${N} lô · cọc ${fmtMoney(dep)} VND`;
-      document.getElementById('col3Meta').textContent =
-        `Nhập giá · auto sort cao→thấp · màu so với N=${N}`;
-      renderCol2();
-      renderCol3();
-      renderAssign();
-    })
-    .catch(e=>alert(String(e)));
+      const status=String((js.result&&js.result.status)||'').toUpperCase();
+      boardLocked = status==='LOTS_DONE' || (js.tickets||[]).some(t=>t.lot_id);
+      renderAll();
+      markBoardClean();
+    }).catch(e=>alert(String(e)));
 }
 
 function buildBoardFromDetail(js){
-  const cands = js.candidates || [];
-  const saved = js.tickets || [];
-  // Map selected by customer+slot: prefer saved tickets as col3
-  selectedTickets = saved.map((t,i)=>({
-    key: t.id ? `db_${t.id}` : `sel_${t.customer_id}_${i}`,
-    db_id: t.id || null,
-    customer_id: Number(t.customer_id),
-    stt: t.stt,
-    seq: null,
-    n_tickets: null,
-    name: t.customer_full_name || '',
-    cccd: t.customer_cccd || '',
-    bid_price_vnd: Number(t.bid_price_vnd)||0,
-    lot_id: t.lot_id || null,
-    lot_code: t.lot_code || null,
-    rank_order: t.rank_order || null,
-    ticket_role: t.ticket_role || 'WINNER',
-  }));
+  rounds = {};
+  ensureRound(1);
+  const cands = js.candidates||[];
+  const saved = js.tickets||[];
 
-  // Count how many tickets already selected per customer
-  const used = {};
-  selectedTickets.forEach(t=>{
-    used[t.customer_id] = (used[t.customer_id]||0)+1;
-    // fill name from candidates if missing
-    const c = cands.find(x=>Number(x.customer_id)===Number(t.customer_id));
-    if(c){
-      if(!t.name) t.name = c.customer_full_name||'';
-      if(!t.cccd) t.cccd = c.cccd||'';
-      if(t.stt==null) t.stt = c.stt;
-    }
-  });
-
-  poolTickets = [];
+  // seed V1 pool from candidates first
   cands.forEach(c=>{
-    const cid = Number(c.customer_id);
-    const n = Math.max(1, Number(c.n_tickets)||1);
-    const already = used[cid]||0;
-    for(let seq=1; seq<=n; seq++){
-      if(seq <= already) continue; // assumed selected take first slots
-      poolTickets.push({
-        key: `pool_${cid}_${seq}`,
-        customer_id: cid,
-        stt: c.stt,
-        seq,
-        n_tickets: n,
-        name: c.customer_full_name||'',
-        cccd: c.cccd||'',
+    const cid=Number(c.customer_id);
+    const n=Math.max(1, Number(c.n_tickets)||1);
+    for(let seq=1;seq<=n;seq++){
+      ensureRound(1).pool.push({
+        key:`p1_${cid}_${seq}`,
+        customer_id:cid, stt:c.stt, seq, n_tickets:n,
+        name:c.customer_full_name||'', cccd:c.cccd||'', round_no:1,
       });
     }
-    // if more selected than n_tickets, ignore extra n
   });
 
-  // If selected more than candidated, still show in col3 only
+  const usedSettle = {}; // r -> set of tid
+  saved.forEach((t,i)=>{
+    const cid=Number(t.customer_id);
+    const c=cands.find(x=>Number(x.customer_id)===cid);
+    const n=Math.max(1, Number((t.ticket_total!=null?t.ticket_total:(c&&c.n_tickets))||1));
+    let seq = t.ticket_seq!=null&&t.ticket_seq!=='' ? Number(t.ticket_seq) : null;
+    const role=String(t.ticket_role||'WINNER').toUpperCase();
+    const ex=parseExtras(t);
+    let zone=String(ex.zone||'settle').toLowerCase();
+    if(zone==='round_pool') zone='pool';
+    const rno=Math.max(1, Number(t.round_no)||1);
+    const win_method=String(ex.win_method||'AUCTION').toUpperCase();
+    ensureRound(rno);
+    if(seq==null){
+      // assign free
+      const taken = new Set([
+        ...ensureRound(rno).pool.map(x=>Number(x.seq)),
+        ...ensureRound(rno).settle.map(x=>Number(x.seq)),
+      ]);
+      for(let s=1;s<=n+10;s++){ if(!taken.has(s)){ seq=s; break; } }
+    }
+    const row = {
+      customer_id:cid, stt:t.stt!=null?t.stt:(c&&c.stt), seq, n_tickets:n,
+      name:t.customer_full_name||(c&&c.customer_full_name)||'',
+      cccd:t.customer_cccd||(c&&c.cccd)||'',
+      bid_price_vnd:Number(t.bid_price_vnd)||0,
+      round_no:rno, lottery_win: win_method==='LOTTERY', force_win:false,
+      db_id:t.id||null, lot_id:t.lot_id||null, lot_code:t.lot_code||null,
+      ticket_role:role,
+    };
+    if(zone==='pool'){
+      row.key = `p${rno}_${cid}_${seq}`;
+      // remove from seeded pool if v1
+      ensureRound(rno).pool = ensureRound(rno).pool.filter(x=>tid(x)!==`${cid}_${seq}`);
+      ensureRound(rno).pool.push(row);
+    } else {
+      row.key = `s${rno}_${cid}_${seq}`;
+      ensureRound(rno).settle.push(row);
+      // remove from pool same round (đang chốt)
+      ensureRound(rno).pool = ensureRound(rno).pool.filter(x=>tid(x)!==`${cid}_${seq}`);
+      if(!usedSettle[rno]) usedSettle[rno]=new Set();
+      usedSettle[rno].add(`${cid}_${seq}`);
+    }
+  });
+
+  // V1: pool còn lại = candidates - settled v1 and any still only in pool
+  // already seeded then removed when settle; for unseeded higher rounds pool may only come from saved
+
   expanded = {};
 }
 
-function moveToSelected(key){
-  const idx = poolTickets.findIndex(t=>t.key===key);
-  if(idx<0) return;
-  const t = poolTickets.splice(idx,1)[0];
-  selectedTickets.push({
-    ...t,
-    key: t.key.startsWith('pool_') ? t.key.replace('pool_','sel_') : t.key,
-    bid_price_vnd: 0,
-    db_id: null,
-    lot_id: null,
-    lot_code: null,
-    rank_order: null,
-    ticket_role: 'WINNER',
-  });
-  sortSelected();
-  renderCol2();
-  renderCol3();
-  renderAssign();
-}
-
-function moveToPool(key){
-  const idx = selectedTickets.findIndex(t=>t.key===key);
-  if(idx<0) return;
-  const t = selectedTickets[idx];
-  if(t.lot_id){
-    alert('Phiếu đã gán lô — không move về cột 2.');
-    return;
+function printHrefForRound(rno){
+  if(currentDep==null) return '#';
+  if(rno<=1){
+    return `/auction-sessions/bid-sheets/print/sessions/${SESSION_ID}?sort_mode=STT_LOT&deposit_vnd=${currentDep}&round_no=1`;
   }
-  selectedTickets.splice(idx,1);
-  // restore pool slot
-  const cid = Number(t.customer_id);
-  const inPool = poolTickets.filter(x=>Number(x.customer_id)===cid).length;
-  const c = ((DETAIL&&DETAIL.candidates)||[]).find(x=>Number(x.customer_id)===cid);
-  const n = Math.max(1, Number((c&&c.n_tickets)||t.n_tickets)||1);
-  if(inPool < n){
-    const seq = inPool + 1;
-    poolTickets.push({
-      key: `pool_${cid}_${seq}`,
-      customer_id: cid,
-      stt: t.stt != null ? t.stt : (c&&c.stt),
-      seq,
-      n_tickets: n,
-      name: t.name || (c&&c.customer_full_name) || '',
-      cccd: t.cccd || (c&&c.cccd) || '',
-    });
-  }
-  renderCol2();
-  renderCol3();
-  renderAssign();
+  return `/auction/sessions/${SESSION_ID}/group-v2/print-r2/${currentDep}?round_no=${rno}`;
 }
 
-function sortSelected(){
-  selectedTickets.sort((a,b)=>{
-    const pa = Number(a.bid_price_vnd)||0;
-    const pb = Number(b.bid_price_vnd)||0;
-    if(pb!==pa) return pb-pa;
-    const sa = Number(a.stt); const sb = Number(b.stt);
-    if(isFinite(sa)&&isFinite(sb)&&sa!==sb) return sa-sb;
-    return Number(a.customer_id)-Number(b.customer_id);
-  });
+function renderAll(){
+  globalPickRank();
+  renderRounds();
+  updateSaveBtn();
 }
 
-/**
- * Color ranks for col3 list (already sorted price DESC).
- * green: unique price, within N
- * purple: tied group fully fits inside remaining N seats
- * yellow: tied group partially overlaps remaining seats (border/R2)
- * gray: strictly beyond N
- */
-function applyTones(list, n){
-  const out = list.map(t=>({...t, tone:'gray', band:null}));
-  let seatsFilled = 0;
-  let i = 0;
-  while(i < out.length){
-    const price = Number(out[i].bid_price_vnd)||0;
-    let j = i+1;
-    while(j < out.length && (Number(out[j].bid_price_vnd)||0) === price) j++;
-    const k = j - i;
-    const remaining = n - seatsFilled;
-    if(remaining <= 0){
-      for(let x=i;x<j;x++){ out[x].tone='gray'; out[x].band='OUT'; }
-    } else if(k === 1){
-      out[i].tone = 'green';
-      out[i].band = 'SOLID';
-      seatsFilled += 1;
-    } else if(k <= remaining){
-      for(let x=i;x<j;x++){ out[x].tone='purple'; out[x].band='TIED_IN'; }
-      seatsFilled += k;
-    } else {
-      // partial: yellow border
-      for(let x=i;x<j;x++){ out[x].tone='yellow'; out[x].band='BORDER'; }
-      seatsFilled = n; // remaining taken into borderline
-    }
-    i = j;
-  }
-  return out;
-}
-
-function renderCol2(){
-  const host = document.getElementById('col2Body');
-  const q = norm(document.getElementById('q2').value);
+function renderRounds(){
+  const host = document.getElementById('roundsHost');
+  if(!host) return;
   if(currentDep==null){
-    host.innerHTML = `<div class="gv2-empty">Chọn nhóm cọc ở cột 1.</div>`;
+    host.innerHTML = `<div class="gv2-empty" style="padding:40px;min-width:240px;">Chọn nhóm cọc.</div>`;
     return;
   }
-  // group pool by customer
-  const by = {};
-  poolTickets.forEach(t=>{
-    const cid = Number(t.customer_id);
-    if(!by[cid]) by[cid] = { customer_id:cid, stt:t.stt, name:t.name, cccd:t.cccd, tickets:[] };
-    by[cid].tickets.push(t);
-    if(t.stt!=null) by[cid].stt = t.stt;
-    if(t.name) by[cid].name = t.name;
-  });
-  // also show customers with 0 remaining tickets? optional skip
+  // luôn có V1; các vòng sau nếu đã mở (pool/settle không rỗng) hoặc maxOpen
+  let maxR = Math.max(1, maxOpenRound());
+  // nếu vòng max có vàng → vẫn không auto mở; user bấm “Mở vòng n+1”
+  const parts = [];
+  for(let r=1; r<=maxR; r++){
+    parts.push(renderRoundPair(r));
+  }
+  host.innerHTML = parts.join('');
+}
 
+function renderRoundPair(rno){
+  const R = ensureRound(rno);
+  const sum = rankRound(rno);
+  const isLater = rno > 1;
+  const qPoolId = `q_pool_${rno}`;
+  const qSettleId = `q_settle_${rno}`;
+
+  // write tones for render
+  const toneMap = {};
+  sum.toned.forEach(t=>{ toneMap[t.key]=t; });
+  R.settle.forEach(t=>{
+    const x=toneMap[t.key];
+    if(x){ t.tone=x.tone; t.band=x.band; }
+  });
+
+  // pool HTML
+  const by = {};
+  R.pool.forEach(t=>{
+    const cid=Number(t.customer_id);
+    if(!by[cid]) by[cid]={customer_id:cid,stt:t.stt,name:t.name,cccd:t.cccd,tickets:[]};
+    by[cid].tickets.push(t);
+  });
   let groups = Object.values(by).sort((a,b)=>{
     const sa=Number(a.stt), sb=Number(b.stt);
     if(isFinite(sa)&&isFinite(sb)&&sa!==sb) return sa-sb;
     return String(a.name).localeCompare(String(b.name),'vi');
   });
-  if(q){
-    groups = groups.filter(g=>{
-      const blob = norm(`${g.stt} ${g.name} ${g.cccd} ${g.customer_id}`);
-      return blob.includes(q);
-    });
-  }
 
-  const nPool = poolTickets.length;
-  const nCust = groups.length;
-  document.getElementById('col2Count').textContent = `${nPool} phiếu`;
-  document.getElementById('col2Stats').innerHTML =
-    `<span class="gv2-stat">${nCust} khách</span>` +
-    `<span class="gv2-stat">${nPool} phiếu còn lại</span>` +
-    (q?`<span class="gv2-stat">Lọc: ${groups.length}</span>`:'');
+  const poolBody = !groups.length
+    ? `<div class="gv2-empty">${rno===1?'Hết pool / đã qua chốt.':'Chưa có người — bấm “Mở vòng” từ vàng vòng trước.'}</div>`
+    : groups.map(g=>{
+        const ek=`${rno}_p_${g.customer_id}`;
+        const open=!!expanded[ek];
+        const ticketsHtml = g.tickets.map(t=>`
+          <div class="tk">
+            <div class="info">
+              <b>Phiếu ${ticketLabel(t)}</b>
+              <div class="muted">${t.ref_price!=null?('ref '+fmtMoney(t.ref_price)):'STT '+(g.stt||'—')}</div>
+            </div>
+            <button type="button" class="gv2-btn sm primary" ${boardLocked?'disabled':''}
+              onclick="movePoolToSettle(${rno},'${t.key}')">→ Chốt</button>
+          </div>`).join('');
+        return `<div class="cust ${open?'open':''}">
+          <div class="cust-h" onclick="toggleExp('${ek}')">
+            <span class="chev">▶</span>
+            <div class="main">
+              <div class="name">STT ${g.stt||'—'} · ${escapeHtml(g.name||('#'+g.customer_id))}</div>
+              <div class="sub">${g.tickets.length} phiếu</div>
+            </div>
+            <span class="badge">${g.tickets.length}</span>
+          </div>
+          <div class="cust-b">${ticketsHtml}</div>
+        </div>`;
+      }).join('');
 
-  if(!groups.length){
-    host.innerHTML = `<div class="gv2-empty">${nPool? 'Không khớp bộ lọc.':'Hết phiếu ở cột 2 (đã move sang cột 3).'}</div>`;
-    return;
-  }
-
-  host.innerHTML = groups.map(g=>{
-    const open = !!expanded[g.customer_id];
-    const ticketsHtml = g.tickets.map(t=>`
-      <div class="tk">
-        <div class="info">
-          <b>Phiếu ${t.seq||'?'}/${t.n_tickets||g.tickets.length}</b>
-          <div class="muted">STT ${g.stt||'—'} · #${g.customer_id}</div>
-        </div>
-        <button type="button" class="gv2-btn sm primary" onclick="moveToSelected('${t.key}')">→ Trúng</button>
-      </div>
-    `).join('');
-    return `<div class="cust ${open?'open':''}">
-      <div class="cust-h" onclick="toggleCust(${g.customer_id})">
-        <span class="chev">▶</span>
-        <div class="main">
-          <div class="name">STT ${g.stt||'—'} · ${escapeHtml(g.name||('KH #'+g.customer_id))}</div>
-          <div class="sub">${escapeHtml(g.cccd||'')} · ${g.tickets.length} phiếu còn trong pool</div>
-        </div>
-        <span class="badge">${g.tickets.length}</span>
-      </div>
-      <div class="cust-b">${ticketsHtml}</div>
+  // settle HTML
+  let ban='';
+  if(sum.yellow.length){
+    ban = `<div class="hint-banner">
+      <strong>${sum.yellow.length} vàng</strong> · ghế còn vòng này <b>${sum.remainingLots}</b> (quota vòng ${remainingForRound(rno)} / N=${N}).
+      Phiếu vàng <b>giữ tại chốt V${rno}</b>. Người đó (mọi phiếu vàng) có thể <b>mở V${rno+1}</b> để đấu tiếp — không xóa phiếu vàng.
+      ${sum.sameCustomerYellow?' Cùng 1 KH → chốt auto giữ ghế.':''}
+      ${showLotteryButton(sum.yellow[0], sum) || sum.yellow.some(y=>showLotteryButton(y,sum)) ? ' Hòa khác KH → bốc thăm.' : ''}
     </div>`;
-  }).join('');
-}
-
-function toggleCust(cid){
-  expanded[cid] = !expanded[cid];
-  renderCol2();
-}
-
-function renderCol3(){
-  const host = document.getElementById('col3Body');
-  sortSelected();
-  let list = applyTones(selectedTickets, N);
-  // write tones back
-  const toneMap = {};
-  list.forEach(t=>{ toneMap[t.key]=t; });
-  selectedTickets.forEach(t=>{
-    const x = toneMap[t.key];
-    if(x){ t.tone=x.tone; t.band=x.band; }
-  });
-
-  const q = norm(document.getElementById('q3').value);
-  let view = list;
-  if(q){
-    view = list.filter(t=>norm(`${t.stt} ${t.name} ${t.cccd} ${t.bid_price_vnd}`).includes(q));
+  } else if(R.settle.length && sum.solid.length >= remainingForRound(rno) && remainingForRound(rno)>0){
+    ban = `<div class="hint-banner ok">V${rno}: đủ ghế chắc của vòng.</div>`;
   }
 
-  const nSel = selectedTickets.length;
-  const nGreen = selectedTickets.filter(t=>t.tone==='green').length;
-  const nPurple = selectedTickets.filter(t=>t.tone==='purple').length;
-  const nYellow = selectedTickets.filter(t=>t.tone==='yellow').length;
-  const nGray = selectedTickets.filter(t=>t.tone==='gray').length;
-  document.getElementById('col3Count').textContent = `${nSel} / N=${N}`;
-  document.getElementById('col3Stats').innerHTML =
-    `<span class="gv2-stat em">Xanh ${nGreen}</span>`+
-    `<span class="gv2-stat purple">Tím ${nPurple}</span>`+
-    `<span class="gv2-stat warn">Vàng ${nYellow}</span>`+
-    `<span class="gv2-stat">Xám ${nGray}</span>`;
-
-  if(!view.length){
-    host.innerHTML = `<div class="gv2-empty">${nSel? 'Không khớp bộ lọc.':'Kéo phiếu từ cột 2 bằng nút → Trúng.'}</div>`;
-    return;
+  let acts='';
+  if(sum.yellow.length && !boardLocked){
+    acts += `<button type="button" class="gv2-btn sm warn" onclick="openNextRoundFromYellow(${rno})">Mở vòng ${rno+1} (giữ vàng V${rno})</button>`;
+    if(sum.sameCustomerYellow){
+      acts += `<button type="button" class="gv2-btn sm primary" onclick="resolveSameCustomerYellow(${rno})">Chốt vàng cùng KH</button>`;
+    }
   }
 
-  host.innerHTML = view.map((t, idx)=>{
-    const rankLabel = (idx+1);
-    const assigned = t.lot_id ? `<div class="muted" style="color:#047857;font-weight:700;">Đã gán lô ${escapeHtml(t.lot_code||t.lot_id)}</div>` : '';
-    return `<div class="tk tone-${t.tone||'gray'}">
-      <div class="info">
-        <b>#${rankLabel} · STT ${t.stt||'—'} · ${escapeHtml(t.name||('#'+t.customer_id))}</b>
-        <div class="muted">${escapeHtml(t.cccd||'')} · band ${t.band||'—'}${t.tone==='yellow'?' (ứng viên V2)':''}</div>
-        ${assigned}
+  const settleBody = !R.settle.length
+    ? `<div class="gv2-empty">Chưa có phiếu chốt V${rno}.</div>`
+    : sum.toned.map(t=>{
+        const toneClass = t.tone==='lottery'?'lottery':(t.tone||'gray');
+        const priceDisp = t.bid_price_vnd?fmtMoney(t.bid_price_vnd):'';
+        const showLot = showLotteryButton(t, sum);
+        const lottoBtn = showLot
+          ? `<button type="button" class="gv2-btn sm lottery" onclick="markLotteryWin(${rno},'${t.key}')">${t.lottery_win?'Bỏ bốc':'Bốc thăm'}</button>` : '';
+        const pick = t.pick_rank!=null ? `#${t.pick_rank}` : (t.tone==='yellow'?'vàng':'—');
+        return `<div class="tk tone-${toneClass}">
+          <div class="info">
+            <b>${pick} · STT ${t.stt||'—'} · ${escapeHtml(t.name||('#'+t.customer_id))}
+              <span class="ticket-tag">Phiếu ${ticketLabel(t)}</span>
+              ${t.lottery_win?'<span class="ticket-tag lottery">bốc</span>':''}
+            </b>
+            <div class="muted">${escapeHtml(t.cccd||'')} · ${t.band||'—'} · V${rno}
+              ${t.pick_rank!=null?' · ưu tiên lô #'+t.pick_rank:''}</div>
+          </div>
+          <input class="price-in" inputmode="numeric" value="${priceDisp}"
+            oninput="onPriceInput(${rno},'${t.key}',this)" onblur="onPriceBlur(${rno},'${t.key}',this)"
+            placeholder="0" ${boardLocked||t.lottery_win?'disabled':''}>
+          <div class="acts">
+            ${lottoBtn}
+            <button type="button" class="gv2-btn sm" ${boardLocked?'disabled':''}
+              onclick="moveSettleToPool(${rno},'${t.key}')">← Người</button>
+          </div>
+        </div>`;
+      }).join('');
+
+  return `<div class="round-pair ${isLater?'r-later':''}" id="roundPair_${rno}">
+    <div class="round-pair-label">VÒNG ${rno}</div>
+    <div class="gv2-col col-pool">
+      <div class="gv2-col-h">
+        <div class="ttl">
+          <span>Người / phiếu V${rno}</span>
+          <span class="ttl-actions">
+            <span class="gv2-stat">${R.pool.length}</span>
+            <a class="gv2-btn sm primary" href="${printHrefForRound(rno)}" target="_blank" rel="noopener">In V${rno}</a>
+          </span>
+        </div>
+        <div class="meta">${rno===1?'Pool ban đầu + → Chốt':'Người vào vòng (từ vàng vòng trước) · In phiếu vòng này'}</div>
+        <div class="gv2-stats">
+          <span class="gv2-stat lots">Ghế vòng ${remainingForRound(rno)}</span>
+        </div>
       </div>
-      <input class="price-in" value="${fmtMoney(t.bid_price_vnd)}"
-        onchange="onPriceChange('${t.key}', this)"
-        onblur="onPriceChange('${t.key}', this)"
-        title="Giá trả">
-      <button type="button" class="gv2-btn sm" ${t.lot_id?'disabled':''} onclick="moveToPool('${t.key}')">← Pool</button>
-    </div>`;
-  }).join('');
+      <div class="gv2-col-b">${poolBody}</div>
+    </div>
+    <div class="gv2-col col-settle">
+      <div class="gv2-col-h">
+        <div class="ttl">
+          <span>Chốt trúng V${rno}</span>
+          <span class="ttl-actions">
+            <span class="gv2-stat em">${sum.solid.length}/${remainingForRound(rno)}</span>
+            <span class="save-hint" data-save-hint>…</span>
+            <button type="button" class="gv2-btn sm primary" onclick="saveBoard()" ${(!isBoardDirty()||boardLocked)?'disabled':''}>Lưu</button>
+          </span>
+        </div>
+        <div class="meta">Giá · bốc (hòa khác KH) · vàng giữ nguyên tại cột này</div>
+        <div class="gv2-stats">
+          <span class="gv2-stat em">Chắc ${sum.solid.length}</span>
+          <span class="gv2-stat warn">Vàng ${sum.yellow.length}</span>
+          <span class="gv2-stat lottery">Bốc ${sum.lottery.length}</span>
+        </div>
+        <div class="col-actions">${acts}</div>
+      </div>
+      <div class="gv2-col-b">
+        <div>${ban}</div>
+        <div>${settleBody}</div>
+      </div>
+    </div>
+  </div>`;
 }
 
-function onPriceChange(key, el){
-  const t = selectedTickets.find(x=>x.key===key);
-  if(!t) return;
-  t.bid_price_vnd = parseMoney(el.value);
-  sortSelected();
-  renderCol3();
-  renderAssign();
+function toggleExp(ek){
+  expanded[ek]=!expanded[ek];
+  renderRounds();
+  updateSaveBtn();
+}
+
+function onPriceInput(rno, key, el){
+  const t = ensureRound(rno).settle.find(x=>x.key===key);
+  if(!t||boardLocked||t.lottery_win) return;
+  t.bid_price_vnd = formatPriceInput(el);
+  updateSaveBtn();
+}
+function onPriceBlur(rno, key, el){
+  const t = ensureRound(rno).settle.find(x=>x.key===key);
+  if(!t||boardLocked||t.lottery_win) return;
+  t.bid_price_vnd = formatPriceInput(el);
+  renderAll();
 }
 
 async function saveBoard(){
-  if(currentDep==null) return;
-  // WINNER for green/purple; ROUND2 for yellow; still WINNER for gray or skip gray?
-  // Store all selected: yellow as ROUND2, others WINNER (incl gray so staff can fix prices)
-  const tickets = selectedTickets.map(t=>{
-    const role = (t.tone==='yellow') ? 'ROUND2' : 'WINNER';
-    return {
-      customer_id: Number(t.customer_id),
-      stt: t.stt!=null && t.stt!=='' ? Number(t.stt) : null,
-      bid_price_vnd: Number(t.bid_price_vnd)||0,
-      ticket_role: role,
-      round_no: role==='ROUND2' ? 2 : 1,
-    };
-  });
-  const r = await fetch(`/auction/sessions/api/group-v2/${SESSION_ID}/groups/${currentDep}/tickets`, {
-    method:'PUT', credentials:'same-origin',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({tickets})
-  });
-  const js = await r.json();
-  if(!r.ok){ alert(typeof js.detail==='string'?js.detail:JSON.stringify(js.detail||js)); return; }
-  alert(`Đã lưu ${tickets.length} phiếu (vàng → role ROUND2 để in V2).`);
-  openGroup(currentDep);
-  loadOverview();
+  if(currentDep==null||boardLocked||savingBoard) return;
+  if(!isBoardDirty()){ updateSaveBtn(); return; }
+  savingBoard=true; updateSaveBtn();
+  try{
+    const r=await fetch(`/auction/sessions/api/group-v2/${SESSION_ID}/groups/${currentDep}/tickets`,{
+      method:'PUT', credentials:'same-origin',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({tickets: buildApiTickets()})
+    });
+    const js=await r.json().catch(()=>({}));
+    if(!r.ok){
+      alert(typeof js.detail==='string'?js.detail:JSON.stringify(js.detail||js));
+      savingBoard=false; updateSaveBtn(); return;
+    }
+    savingBoard=false;
+    openGroup(currentDep);
+    loadOverview();
+  }catch(e){ savingBoard=false; updateSaveBtn(); alert(String(e)); }
 }
 
 async function confirmWinners(){
   if(currentDep==null) return;
-  if(!confirm('Chốt rank N chỉ trên phiếu WINNER (không gồm ROUND2 vàng). Nên lưu cột 3 trước. Tiếp tục?')) return;
-  // optionally auto-save with yellow as still included - user should convert R2 to WINNER after
-  const r = await fetch(`/auction/sessions/api/group-v2/${SESSION_ID}/groups/${currentDep}/confirm-winners`, {
+  if(isBoardDirty()){
+    if(!confirm('Còn thay đổi chưa lưu. Chốt rank trên server?')) return;
+  } else if(!confirm('Chốt rank N trên phiếu WINNER (mọi vòng). Tiếp tục?')) return;
+  const r=await fetch(`/auction/sessions/api/group-v2/${SESSION_ID}/groups/${currentDep}/confirm-winners`,{
     method:'POST', credentials:'same-origin'
   });
-  const js = await r.json();
-  if(!r.ok){ alert(typeof js.detail==='string'?js.detail:JSON.stringify(js.detail||js)); return; }
-  alert('Đã chốt rank N trúng.');
-  openGroup(currentDep);
-  loadOverview();
-}
-
-function lotOptions(selected){
-  const lots = (DETAIL && DETAIL.lots) || [];
-  return lots.map(l=>{
-    const taken = l.is_assigned && Number(l.lot_id)!==Number(selected);
-    const sel = Number(l.lot_id)===Number(selected)?'selected':'';
-    return `<option value="${l.lot_id}" ${sel} ${taken?'disabled':''}>${escapeHtml(l.lot_code||l.lot_id)}${taken?' (đã gán)':''}</option>`;
-  }).join('');
-}
-
-function renderAssign(){
-  const host = document.getElementById('assignList');
-  const winners = applyTones([...selectedTickets], N)
-    .filter(t=>t.tone==='green'||t.tone==='purple'||(t.lot_id));
-  // Prefer server tickets with id after save
-  const withId = (DETAIL && DETAIL.tickets) || [];
-  if(!withId.length){
-    host.innerHTML = `<div class="gv2-empty" style="padding:8px;">Lưu cột 3 rồi Chốt rank N để gán lô (cần ticket id server).</div>`;
-    return;
-  }
-  const list = withId
-    .filter(t=> (t.ticket_role==='WINNER'||t.ticket_role==='WINNER_FINAL'))
-    .slice()
-    .sort((a,b)=>{
-      if(a.rank_order&&b.rank_order) return a.rank_order-b.rank_order;
-      return (Number(b.bid_price_vnd)||0)-(Number(a.bid_price_vnd)||0);
-    });
-  if(!list.length){
-    host.innerHTML = `<div class="gv2-empty" style="padding:8px;">Chưa có WINNER đã lưu.</div>`;
-    return;
-  }
-  host.innerHTML = list.map(t=>{
-    const name = t.customer_full_name || ('#'+t.customer_id);
-    if(t.lot_id){
-      return `<div class="assign-row"><div><b>#${t.rank_order||'—'} ${escapeHtml(name)}</b><div class="muted" style="font-size:11px;color:#64748b;">${fmtMoney(t.bid_price_vnd)} VND</div></div><div style="color:#047857;font-weight:700;">Lô ${escapeHtml(t.lot_code||t.lot_id)}</div></div>`;
-    }
-    return `<div class="assign-row">
-      <div><b>#${t.rank_order||'—'} ${escapeHtml(name)}</b><div style="font-size:11px;color:#64748b;">${fmtMoney(t.bid_price_vnd)} VND · ticket #${t.id}</div></div>
-      <div style="display:flex;gap:6px;align-items:center;">
-        <select id="lot_for_${t.id}" class="gv2-search" style="margin:0;width:140px;">${lotOptions()}</select>
-        <button type="button" class="gv2-btn sm primary" onclick="assignLot(${t.id})">Gán + WINNER</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-async function assignLot(ticketId){
-  const sel = document.getElementById('lot_for_'+ticketId);
-  if(!sel||!sel.value){ alert('Chọn lô'); return; }
-  if(!confirm('Gán lô và ghi WINNER vào bảng kết quả cũ?')) return;
-  const r = await fetch(`/auction/sessions/api/group-v2/${SESSION_ID}/groups/${currentDep}/assign-lot`, {
-    method:'POST', credentials:'same-origin',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ticket_id: ticketId, lot_id: Number(sel.value)})
-  });
-  const js = await r.json();
+  const js=await r.json();
   if(!r.ok){ alert(typeof js.detail==='string'?js.detail:JSON.stringify(js.detail||js)); return; }
   openGroup(currentDep);
   loadOverview();
 }
 
 renderGroups();
+updateSaveBtn();
 </script>
 {% endblock %}
