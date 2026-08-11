@@ -925,6 +925,14 @@ def _build_winner_sign_rows(ui: Dict[str, Any], *, auction_mode: str) -> List[Di
     return rows
 
 
+def _chunk_pages(items: List[Dict[str, Any]], per_page: int = 10) -> List[List[Dict[str, Any]]]:
+    n = max(1, int(per_page or 10))
+    data = list(items or [])
+    if not data:
+        return [[]]
+    return [data[i : i + n] for i in range(0, len(data), n)]
+
+
 @router.get(
     "/auction/sessions/{session_id}/documents/attendance/winner-sign-list",
     response_class=HTMLResponse,
@@ -1094,6 +1102,9 @@ async def print_winner_sign_list(
     cc = company_code_from_me(me) or company_code.strip().lower()
     tpl = resolve_template(cc, DocKind.WINNER_SIGN_LIST)
 
+    per_page = 10
+    pages = _chunk_pages(rows, per_page=per_page)
+
     return templates.TemplateResponse(
         tpl,
         {
@@ -1106,6 +1117,8 @@ async def print_winner_sign_list(
             "org_name": company_name or ORG_NAME,
             "org_note": ORG_NOTE,
             "rows": rows,
+            "pages": pages,
+            "per_page": per_page,
             "auction_mode": auction_mode,
             "price_unit": unit,
             "date_line": date_line,

@@ -37,7 +37,25 @@
       cursor: pointer;
       border-radius: 6px;
     }
-    @media print{ .toolbar{ display:none !important; } }
+    @media print{
+      .toolbar{ display:none !important; }
+      .sheet{
+        width: auto;
+        min-height: auto;
+        margin: 0;
+        box-shadow: none;
+        border: none;
+      }
+      .page{
+        padding: 0;
+        page-break-after: always;
+        break-after: page;
+      }
+      .page:last-child{
+        page-break-after: auto;
+        break-after: auto;
+      }
+    }
 
     @media screen{
       body{ background:#e9edf3; }
@@ -204,7 +222,9 @@
   {% set unit = price_unit or (s.price_unit if s.price_unit is defined else 'lô') %}
   {% set unit_slash = '/' ~ unit %}
   {% set co = (company_name or org_name or s.company_name or '')|string %}
+  {% set page_list = pages if pages is defined and pages else [rows or []] %}
 
+  {% for page_rows in page_list %}
   <div class="sheet">
     <div class="page">
       <div class="header">
@@ -236,7 +256,7 @@
         </div>
       {% endif %}
 
-      {% if error %}
+      {% if error and loop.first %}
         <div class="err">
           <strong>Lỗi tải dữ liệu:</strong> {{ error.message or error.detail or error }}
         </div>
@@ -257,8 +277,8 @@
           </tr>
         </thead>
         <tbody>
-          {% if rows and rows|length > 0 %}
-            {% for r in rows %}
+          {% if page_rows and page_rows|length > 0 %}
+            {% for r in page_rows %}
               <tr>
                 <td class="center">{{ r.stt }}</td>
                 <td></td>
@@ -280,6 +300,7 @@
       </table>
     </div>
   </div>
+  {% endfor %}
 
   {% if autoprint %}
   <script>
