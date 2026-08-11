@@ -951,8 +951,14 @@
           </a>
         </li>
 
-        {# ===== Hướng dẫn (mọi role — trang tĩnh) ===== #}
+        {# ===== Trợ giúp (mọi role — trang tĩnh) ===== #}
         <li class="side-title mt-4">Trợ giúp</li>
+        <li>
+          <a class="side-link {% if request.url.path.startswith('/bieu-mau') %}active{% endif %}"
+             href="/bieu-mau">
+            <i class="ri-file-paper-2-line"></i> Biểu mẫu
+          </a>
+        </li>
         <li>
           <a class="side-link {% if request.url.path.startswith('/huong-dan') %}active{% endif %}"
              href="/huong-dan">

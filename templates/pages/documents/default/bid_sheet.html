@@ -991,9 +991,11 @@
 {% endfor %}
 
 <script>
+  {% if auto_print is not defined or auto_print %}
   window.addEventListener("load", function () {
     window.print();
   });
+  {% endif %}
 </script>
 
 </body>

@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+{% block title %}{{ title or "Mẫu phiếu trả giá" }}{% endblock %}
+{% block content %}
+<style>
+  .bs-studio{
+    display:grid;
+    grid-template-columns: minmax(300px, 400px) minmax(0, 1fr);
+    gap:14px;
+    align-items:start;
+  }
+  @media (max-width: 1100px){
+    .bs-studio{ grid-template-columns: 1fr; }
+  }
+  .bs-panel{
+    background:#fff; border:1px solid #e2e8f0; border-radius:16px;
+    box-shadow:0 8px 24px rgba(15,23,42,.05); overflow:hidden;
+  }
+  .bs-left{ position:sticky; top:10px; max-height:calc(100vh - 96px); overflow:auto; }
+  .bs-ph{
+    padding:12px 14px; border-bottom:1px solid #e2e8f0;
+    background:linear-gradient(180deg,#f8fafc,#fff);
+  }
+  .bs-ph .t{ font-size:13px; font-weight:800; color:#0f172a; }
+  .bs-ph .s{ font-size:11.5px; color:#64748b; margin-top:3px; line-height:1.4; }
+  .bs-pb{ padding:12px 14px 16px; }
+  .bs-sec{ margin-bottom:14px; padding-bottom:12px; border-bottom:1px dashed #e2e8f0; }
+  .bs-sec:last-of-type{ border-bottom:0; }
+  .bs-sec h3{
+    margin:0 0 8px; font-size:11px; font-weight:800; letter-spacing:.04em;
+    text-transform:uppercase; color:#334155;
+  }
+  .bs-field{ margin-bottom:8px; }
+  .bs-field label{ display:block; font-size:11.5px; font-weight:700; margin-bottom:4px; color:#0f172a; }
+  .bs-field input, .bs-field select, .bs-field textarea{
+    width:100%; border:1px solid #cbd5e1; border-radius:10px; padding:8px 10px;
+    font-size:13px; outline:none; background:#fff; color:#0f172a;
+  }
+  .bs-field input:focus, .bs-field select:focus, .bs-field textarea:focus{
+    border-color:#93c5fd; box-shadow:0 0 0 3px rgba(59,130,246,.12);
+  }
+  .bs-field textarea{ min-height:64px; resize:vertical; }
+  .bs-g2{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .bs-hint{
+    font-size:11px; color:#92400e; background:#fffbeb; border:1px solid #fde68a;
+    border-radius:10px; padding:8px 10px; line-height:1.4; margin-bottom:12px;
+  }
+  .bs-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .bs-btn{
+    appearance:none; border:1px solid #cbd5e1; background:#fff; border-radius:10px;
+    padding:8px 12px; font-size:12.5px; font-weight:700; cursor:pointer; color:#0f172a;
+  }
+  .bs-btn.primary{ background:#0f172a; color:#fff; border-color:#0f172a; }
+  .bs-btn:disabled{ opacity:.5; cursor:wait; }
+  .bs-right-body{ background:#e2e8f0; min-height:70vh; padding:10px; }
+  .bs-iframe-wrap{
+    background:#fff; border-radius:8px; overflow:hidden;
+    box-shadow:0 2px 12px rgba(0,0,0,.12);
+    min-height: calc(100vh - 160px);
+  }
+  .bs-iframe-wrap iframe{
+    width:100%; height: calc(100vh - 160px); min-height:720px; border:0; display:block;
+    background:#e5e7eb;
+  }
+</style>
+
+<div class="mb-2">
+  <a href="/bieu-mau/phieu-tra-gia" class="text-xs font-bold text-slate-500 hover:text-indigo-600">
+    ← Danh sách mẫu phiếu trả giá
+  </a>
+</div>
+<div class="mb-4">
+  <h1 class="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+    <i class="ri-auction-line text-emerald-600"></i> Phiếu trả giá — Đấu thường
+  </h1>
+  <p class="mt-1 text-sm text-slate-500">
+    Preview dùng <b>đúng template in phiếu production</b> (theo company của bạn nếu có override).
+    QR là demo, không định danh thật.
+  </p>
+</div>
+
+<div class="bs-studio">
+  <!-- LEFT config -->
+  <div class="bs-panel bs-left">
+    <div class="bs-ph">
+      <div class="t">Thông tin phiếu</div>
+      <div class="s">Các trường map 1–1 với mẫu <code>bid_sheet</code> đấu thường (không blank / group).</div>
+    </div>
+    <form id="bsForm" class="bs-pb" onsubmit="return false;">
+      <div class="bs-hint">
+        Bật “Hiện VÒNG” = set session + multi-round (đúng rule template:
+        <code>session_id + is_multi_round + round_no</code>).
+      </div>
+
+      <div class="bs-sec">
+        <h3>Đơn vị & dự án</h3>
+        <div class="bs-field">
+          <label for="company_name">Kính gửi / company_name</label>
+          <input name="company_name" id="company_name" value="{{ defaults.company_name }}"/>
+        </div>
+        <div class="bs-field">
+          <label for="project_name">Tên dự án · project_name</label>
+          <input name="project_name" id="project_name" value="{{ defaults.project_name }}"/>
+        </div>
+      </div>
+
+      <div class="bs-sec">
+        <h3>Lô · giá (đấu thường)</h3>
+        <div class="bs-g2">
+          <div class="bs-field">
+            <label for="lot_code">lot_code</label>
+            <input name="lot_code" id="lot_code" value="{{ defaults.lot_code }}"/>
+          </div>
+          <div class="bs-field">
+            <label for="lot_display">lot_display (hiển thị)</label>
+            <input name="lot_display" id="lot_display" value="{{ defaults.lot_display }}"/>
+          </div>
+        </div>
+        <div class="bs-field">
+          <label for="area_m2">area_m2</label>
+          <input name="area_m2" id="area_m2" value="{{ defaults.area_m2 }}"/>
+        </div>
+        <div class="bs-field">
+          <label for="auction_mode">auction_mode / đơn vị giá</label>
+          <select name="auction_mode" id="auction_mode">
+            <option value="PER_LOT" {% if defaults.auction_mode=='PER_LOT' %}selected{% endif %}>PER_LOT (VND/lô)</option>
+            <option value="PER_SQM" {% if defaults.auction_mode=='PER_SQM' %}selected{% endif %}>PER_SQM (VND/m²)</option>
+          </select>
+        </div>
+        <div class="bs-g2">
+          <div class="bs-field">
+            <label for="starting_price_vnd">starting_price_vnd</label>
+            <input name="starting_price_vnd" id="starting_price_vnd" value="{{ defaults.starting_price_vnd }}"/>
+          </div>
+          <div class="bs-field">
+            <label for="bid_step_vnd">bid_step_vnd</label>
+            <input name="bid_step_vnd" id="bid_step_vnd" value="{{ defaults.bid_step_vnd }}"/>
+          </div>
+        </div>
+        <div class="bs-field">
+          <label for="show_price_step">show_price_step</label>
+          <select name="show_price_step" id="show_price_step">
+            <option value="1" selected>Hiện bước giá</option>
+            <option value="0">Ẩn bước giá</option>
+          </select>
+        </div>
+        <div class="bs-field">
+          <label for="bid_step_rule">bid_step_rule</label>
+          <select name="bid_step_rule" id="bid_step_rule">
+            <option value="LOT_DEFAULT" selected>LOT_DEFAULT (theo bước lô)</option>
+            <option value="ANY_ABOVE_START">ANY_ABOVE_START (không áp dụng)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="bs-sec">
+        <h3>Vòng (in từ phiên)</h3>
+        <div class="bs-field">
+          <label for="show_round">Hiện tiêu đề “PHIẾU TRẢ GIÁ (VÒNG n)”</label>
+          <select name="show_round" id="show_round">
+            <option value="0" selected>Không</option>
+            <option value="1">Có</option>
+          </select>
+        </div>
+        <div class="bs-g2">
+          <div class="bs-field">
+            <label for="session_id">session_id</label>
+            <input name="session_id" id="session_id" value="{{ defaults.session_id }}" placeholder="bắt buộc nếu hiện vòng"/>
+          </div>
+          <div class="bs-field">
+            <label for="round_no">round_no</label>
+            <input name="round_no" id="round_no" value="{{ defaults.round_no }}"/>
+          </div>
+        </div>
+        <div class="bs-field">
+          <label for="is_multi_round">is_multi_round</label>
+          <select name="is_multi_round" id="is_multi_round">
+            <option value="0" selected>false</option>
+            <option value="1">true</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="bs-sec">
+        <h3>Khách hàng</h3>
+        <div class="bs-field">
+          <label for="customer_full_name">customer_full_name</label>
+          <input name="customer_full_name" id="customer_full_name" value="{{ defaults.customer_full_name }}"/>
+        </div>
+        <div class="bs-g2">
+          <div class="bs-field">
+            <label for="customer_id">customer_id</label>
+            <input name="customer_id" id="customer_id" value="{{ defaults.customer_id }}"/>
+          </div>
+          <div class="bs-field">
+            <label for="stt">stt (pad STT-xxx)</label>
+            <input name="stt" id="stt" value="{{ defaults.stt }}"/>
+          </div>
+        </div>
+        <div class="bs-field">
+          <label for="cccd">cccd</label>
+          <input name="cccd" id="cccd" value="{{ defaults.cccd }}"/>
+        </div>
+        <div class="bs-field">
+          <label for="phone">phone</label>
+          <input name="phone" id="phone" value="{{ defaults.phone }}"/>
+        </div>
+        <div class="bs-field">
+          <label for="address">address</label>
+          <textarea name="address" id="address">{{ defaults.address }}</textarea>
+        </div>
+        <div class="bs-field">
+          <label for="customer_lot_count">customer_lot_count (S trong mã góc)</label>
+          <input name="customer_lot_count" id="customer_lot_count" value="{{ defaults.customer_lot_count }}"/>
+        </div>
+      </div>
+
+      <div class="bs-actions">
+        <button type="button" class="bs-btn primary" id="btnApply" onclick="applyPreview()">
+          <i class="ri-eye-line"></i> Cập nhật preview
+        </button>
+        <button type="button" class="bs-btn" onclick="printPreview()">
+          <i class="ri-printer-line"></i> In
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- RIGHT apply = real template iframe -->
+  <div class="bs-panel">
+    <div class="bs-ph">
+      <div class="t">Biểu mẫu apply</div>
+      <div class="s">Iframe render <code>pages/documents/…/bid_sheet.html</code> — cùng file in vận hành.</div>
+    </div>
+    <div class="bs-right-body">
+      <div class="bs-iframe-wrap">
+        <iframe id="previewFrame" name="previewFrame" title="Preview phiếu trả giá"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PREVIEW_URL = {{ preview_url|tojson }};
+let debounceTimer = null;
+let applying = false;
+
+function formBody(){
+  const fd = new FormData(document.getElementById('bsForm'));
+  return fd;
+}
+
+async function applyPreview(){
+  if(applying) return;
+  applying = true;
+  const btn = document.getElementById('btnApply');
+  if(btn) btn.disabled = true;
+  try{
+    const r = await fetch(PREVIEW_URL, {
+      method: 'POST',
+      body: formBody(),
+      credentials: 'same-origin',
+    });
+    const html = await r.text();
+    const frame = document.getElementById('previewFrame');
+    if(frame){
+      const doc = frame.contentDocument || frame.contentWindow.document;
+      doc.open();
+      doc.write(html);
+      doc.close();
+    }
+  }catch(e){
+    alert(String(e));
+  }finally{
+    applying = false;
+    if(btn) btn.disabled = false;
+  }
+}
+
+function scheduleApply(){
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(applyPreview, 350);
+}
+
+function printPreview(){
+  const frame = document.getElementById('previewFrame');
+  if(frame && frame.contentWindow){
+    frame.contentWindow.focus();
+    frame.contentWindow.print();
+  }
+}
+
+document.querySelectorAll('#bsForm input, #bsForm select, #bsForm textarea').forEach(el=>{
+  el.addEventListener('input', scheduleApply);
+  el.addEventListener('change', scheduleApply);
+});
+
+// Sync: bật hiện vòng → gợi ý multi-round
+document.getElementById('show_round').addEventListener('change', ()=>{
+  const on = document.getElementById('show_round').value === '1';
+  if(on){
+    document.getElementById('is_multi_round').value = '1';
+    if(!document.getElementById('session_id').value.trim()){
+      document.getElementById('session_id').value = '1';
+    }
+  }
+});
+
+applyPreview();
+</script>
+{% endblock %}
