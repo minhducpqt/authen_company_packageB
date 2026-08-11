@@ -50,6 +50,8 @@
         padding: 0;
         page-break-after: always;
         break-after: page;
+        page-break-inside: avoid;
+        break-inside: avoid;
       }
       .page:last-child{
         page-break-after: auto;
@@ -151,19 +153,22 @@
       text-align: right;
       font-size: 12px;
     }
-    /* trang sau: vẫn có đơn vị tiền gọn, không lặp header */
-    .unit-line.cont{
-      margin: 0 0 4px;
-    }
 
     table{
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
       margin-top: 2px;
+      /* Không cho bảng tràn sang trang in kế → tránh browser lặp thead */
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
-    thead{ display: table-header-group; }
-    tr{ page-break-inside: avoid; }
+    /*
+      Mặc định table-header-group khiến browser lặp lại dòng header
+      mỗi lần bảng cắt trang. Mỗi .page đã là 1 tờ riêng → tắt lặp.
+    */
+    thead{ display: table-row-group; }
+    tr{ page-break-inside: avoid; break-inside: avoid; }
     th, td{
       border: 1px solid #111;
       padding: 6px 6px;
@@ -270,8 +275,6 @@
       {% endif %}
 
       <div class="unit-line">Đơn vị tiền: VNĐ</div>
-      {% else %}
-      <div class="unit-line cont">Đơn vị tiền: VNĐ</div>
       {% endif %}
 
       <table>
