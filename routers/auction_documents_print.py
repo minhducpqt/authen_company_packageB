@@ -925,12 +925,26 @@ def _build_winner_sign_rows(ui: Dict[str, Any], *, auction_mode: str) -> List[Di
     return rows
 
 
-def _chunk_pages(items: List[Dict[str, Any]], per_page: int = 10) -> List[List[Dict[str, Any]]]:
+def _chunk_pages(
+    items: List[Dict[str, Any]],
+    *,
+    per_page: int = 10,
+    first_page: Optional[int] = None,
+) -> List[List[Dict[str, Any]]]:
+    """
+    Chia trang: trang đầu có thể khác (để chừa chỗ header/title),
+    các trang sau lấy `per_page` dòng.
+    """
     n = max(1, int(per_page or 10))
+    first_n = max(1, int(first_page if first_page is not None else n))
     data = list(items or [])
     if not data:
         return [[]]
-    return [data[i : i + n] for i in range(0, len(data), n)]
+    pages: List[List[Dict[str, Any]]] = [data[:first_n]]
+    rest = data[first_n:]
+    for i in range(0, len(rest), n):
+        pages.append(rest[i : i + n])
+    return pages
 
 
 @router.get(
@@ -1103,7 +1117,10 @@ async def print_winner_sign_list(
     tpl = resolve_template(cc, DocKind.WINNER_SIGN_LIST)
 
     per_page = 10
-    pages = _chunk_pages(rows, per_page=per_page)
+    # Trang 1 có header/title/địa điểm + hàng cao → 8 dòng;
+    # trang sau không header → 10 dòng.
+    first_page = 8
+    pages = _chunk_pages(rows, per_page=per_page, first_page=first_page)
 
     return templates.TemplateResponse(
         tpl,
@@ -1119,6 +1136,7 @@ async def print_winner_sign_list(
             "rows": rows,
             "pages": pages,
             "per_page": per_page,
+            "first_page": first_page,
             "auction_mode": auction_mode,
             "price_unit": unit,
             "date_line": date_line,

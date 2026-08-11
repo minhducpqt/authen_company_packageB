@@ -7,7 +7,7 @@
   <style>
     @page{
       size: A4 landscape;
-      margin: 10mm 12mm 10mm 12mm;
+      margin: 9mm 11mm 9mm 11mm;
     }
     *{ box-sizing: border-box; }
     html, body{
@@ -72,15 +72,16 @@
         box-shadow: 0 10px 30px rgba(0,0,0,.18);
         border: 1px solid rgba(0,0,0,.12);
       }
-      .page{ padding: 10mm 12mm; }
+      .page{ padding: 9mm 11mm; }
     }
 
     .page{ width:100%; }
 
+    /* ===== Header (trang 1 only) ===== */
     .header{
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 8px 16px;
+      gap: 6px 14px;
       align-items: start;
     }
     .company{
@@ -90,12 +91,12 @@
     }
     .company .name{
       font-weight: 800;
-      font-size: 13.5px;
+      font-size: 13px;
       text-transform: uppercase;
-      letter-spacing: .2px;
+      letter-spacing: .15px;
     }
     .company .u{
-      margin: 5px auto 0;
+      margin: 4px auto 0;
       width: 58%;
       height: 1px;
       background: #111;
@@ -107,48 +108,52 @@
     }
     .nation .line1{
       font-weight: 800;
-      font-size: 13.5px;
+      font-size: 13px;
       text-transform: uppercase;
     }
     .nation .line2{
-      font-size: 12.5px;
+      font-size: 12px;
       margin-top: 2px;
       font-weight: 600;
     }
     .nation .u{
-      margin: 5px auto 0;
+      margin: 4px auto 0;
       width: 52%;
       height: 1px;
       background: #111;
     }
     .date-line{
-      margin-top: 8px;
+      margin-top: 6px;
       text-align: center;
-      font-size: 13px;
+      font-size: 12.5px;
       font-style: italic;
     }
 
     .doc-title{
-      margin: 14px 28px 4px;
+      margin: 10px 20px 2px;
       text-align: center;
       font-weight: 800;
-      font-size: 14.5px;
-      line-height: 1.35;
+      font-size: 13.5px;
+      line-height: 1.3;
       text-transform: uppercase;
     }
 
     .venue-line{
-      margin: 4px 24px 0;
+      margin: 3px 18px 0;
       text-align: center;
-      font-size: 12.5px;
-      line-height: 1.3;
+      font-size: 12px;
+      line-height: 1.25;
     }
     .venue-line .k{ font-weight: 700; }
 
     .unit-line{
-      margin: 8px 0 4px;
+      margin: 6px 0 3px;
       text-align: right;
-      font-size: 12.5px;
+      font-size: 12px;
+    }
+    /* trang sau: vẫn có đơn vị tiền gọn, không lặp header */
+    .unit-line.cont{
+      margin: 0 0 4px;
     }
 
     table{
@@ -158,36 +163,37 @@
       margin-top: 2px;
     }
     thead{ display: table-header-group; }
-    tfoot{ display: table-footer-group; }
     tr{ page-break-inside: avoid; }
     th, td{
       border: 1px solid #111;
-      padding: 8px 6px;
+      padding: 6px 6px;
       font-size: 12px;
-      line-height: 1.25;
+      line-height: 1.2;
       vertical-align: middle;
     }
     th{
       text-align: center;
       font-weight: 800;
-      font-size: 12px;
-      padding: 7px 5px;
+      font-size: 11.5px;
+      padding: 6px 4px;
     }
-    tbody tr{
-      height: 42px;
-    }
+
+    /* Row cao hơn để ký + ghi rõ họ tên (~15.5mm) */
+    tbody tr{ height: 15.5mm; }
     tbody td{
-      height: 42px;
-      min-height: 42px;
+      height: 15.5mm;
+      min-height: 15.5mm;
+      padding-top: 4px;
+      padding-bottom: 4px;
     }
 
     .c-stt{ width: 4.5%; }
     .c-name{ width: 17%; }
     .c-id{ width: 13%; }
     .c-lot{ width: 9%; }
-    .c-start{ width: 14%; }
-    .c-win{ width: 14%; }
-    .c-sign{ width: 28.5%; }
+    .c-start{ width: 13.5%; }
+    .c-win{ width: 13.5%; }
+    .c-sign{ width: 29.5%; }
 
     td.center{ text-align: center; }
     td.num{
@@ -200,12 +206,12 @@
     }
     td.lot{ text-align: center; font-weight: 700; font-size: 12.5px; }
     td.sign{
-      min-height: 42px;
-      height: 42px;
+      height: 15.5mm;
+      min-height: 15.5mm;
     }
 
     .err{
-      margin-top: 10px;
+      margin-top: 8px;
       border: 1px solid #111;
       padding: 8px 10px;
       font-size: 12px;
@@ -227,6 +233,7 @@
   {% for page_rows in page_list %}
   <div class="sheet">
     <div class="page">
+      {% if loop.first %}
       <div class="header">
         <div class="company">
           <div class="name">{{ co|upper if co else 'CÔNG TY ĐẤU GIÁ' }}</div>
@@ -256,13 +263,16 @@
         </div>
       {% endif %}
 
-      {% if error and loop.first %}
+      {% if error %}
         <div class="err">
           <strong>Lỗi tải dữ liệu:</strong> {{ error.message or error.detail or error }}
         </div>
       {% endif %}
 
       <div class="unit-line">Đơn vị tiền: VNĐ</div>
+      {% else %}
+      <div class="unit-line cont">Đơn vị tiền: VNĐ</div>
+      {% endif %}
 
       <table>
         <thead>
