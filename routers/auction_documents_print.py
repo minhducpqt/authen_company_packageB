@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import re
 from typing import Any, Dict, Optional, List, Tuple
 
 import httpx
@@ -790,6 +791,325 @@ async def print_attendance_seat_labels(
             "stt_width": stt_width,
             "org_name": ORG_NAME,
             "org_note": ORG_NOTE,
+            "autoprint": int(autoprint),
+            "error": error,
+        },
+    )
+
+
+# =========================================================
+# PRINT: Danh sách ký xác nhận trúng đấu giá (A4 landscape)
+#   - 1 row / lô (các lô trong phiên, vòng 1)
+#   - Giá khởi điểm = start_price vòng 1
+#   - Họ tên / CCCD / Giá trúng / Chữ ký: để trống (điền tay)
+# =========================================================
+
+
+def _fmt_vnd_dot(v: Any) -> str:
+    if v is None or v == "":
+        return ""
+    try:
+        n = int(round(float(v)))
+    except Exception:
+        return _to_str(v)
+    if n < 0:
+        return "-" + f"{abs(n):,}".replace(",", ".")
+    return f"{n:,}".replace(",", ".")
+
+
+def _normalize_auction_mode(raw: Any) -> str:
+    m = _to_str(raw).strip().upper()
+    if m in ("PER_SQM", "PER_M2", "PER_M", "M2", "SQM"):
+        return "PER_SQM"
+    if m in ("PER_LOT", "LOT", "PER_LO"):
+        return "PER_LOT"
+    return "PER_LOT"
+
+
+def _auction_mode_unit_label(mode: str) -> str:
+    return "m2" if _normalize_auction_mode(mode) == "PER_SQM" else "lô"
+
+
+def _lot_natural_sort_key(code: str) -> Tuple:
+    s = (code or "").strip()
+    parts = re.split(r"(\d+)", s)
+    out: List[Any] = []
+    for p in parts:
+        if not p:
+            continue
+        if p.isdigit():
+            try:
+                out.append((0, int(p)))
+            except Exception:
+                out.append((1, p.lower()))
+        else:
+            out.append((1, p.lower()))
+    return tuple(out) if out else ((1, s.lower()),)
+
+
+def _fmt_vn_date_long(auction_date: Any) -> Dict[str, str]:
+    """
+    Parse YYYY-MM-DD (or ISO datetime) → day/month/year strings.
+    """
+    s = _to_str(auction_date).strip()
+    y = m = d = ""
+    if s:
+        # "2026-08-12" or "2026-08-12T00:00:00..."
+        m0 = re.match(r"^(\d{4})-(\d{2})-(\d{2})", s)
+        if m0:
+            y, m, d = m0.group(1), m0.group(2), m0.group(3)
+        else:
+            m1 = re.match(r"^(\d{2})/(\d{2})/(\d{4})", s)
+            if m1:
+                d, m, y = m1.group(1), m1.group(2), m1.group(3)
+    return {
+        "day": str(int(d)) if d.isdigit() else d,
+        "month": str(int(m)) if m.isdigit() else m,
+        "year": y,
+    }
+
+
+def _extract_lot_snapshot(lot: Dict[str, Any]) -> Dict[str, Any]:
+    snap = lot.get("lot_snapshot")
+    if isinstance(snap, dict):
+        return snap
+    extras = lot.get("extras") if isinstance(lot.get("extras"), dict) else {}
+    if isinstance(extras.get("snapshot"), dict):
+        return extras["snapshot"]
+    return {}
+
+
+def _build_winner_sign_rows(ui: Dict[str, Any], *, auction_mode: str) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    for lot in (ui or {}).get("lots") or []:
+        if not isinstance(lot, dict):
+            continue
+        snap = _extract_lot_snapshot(lot)
+        lot_code = _to_str(
+            lot.get("lot_code") or snap.get("lot_code") or lot.get("lot_name") or ""
+        ).strip()
+        if not lot_code and lot.get("lot_id") is not None:
+            lot_code = f"#{lot.get('lot_id')}"
+
+        sp = lot.get("start_price_vnd")
+        if sp is None:
+            sp = snap.get("start_price_vnd")
+        if sp is None:
+            sp = snap.get("starting_price_vnd")
+
+        mode = _normalize_auction_mode(
+            lot.get("auction_mode")
+            or snap.get("auction_mode")
+            or snap.get("bid_price_unit")
+            or auction_mode
+        )
+
+        rows.append(
+            {
+                "lot_id": lot.get("lot_id") or lot.get("id"),
+                "lot_code": lot_code,
+                "start_price_vnd": sp,
+                "start_price_display": _fmt_vnd_dot(sp),
+                "auction_mode": mode,
+            }
+        )
+
+    rows.sort(
+        key=lambda r: (
+            _lot_natural_sort_key(_to_str(r.get("lot_code"))),
+            int(r.get("lot_id") or 0) if str(r.get("lot_id") or "").isdigit() else 0,
+        )
+    )
+    for i, r in enumerate(rows, start=1):
+        r["stt"] = i
+    return rows
+
+
+@router.get(
+    "/auction/sessions/{session_id}/documents/attendance/winner-sign-list",
+    response_class=HTMLResponse,
+)
+async def print_winner_sign_list(
+    request: Request,
+    session_id: int = Path(..., ge=1),
+    title: Optional[str] = Query(None),
+    autoprint: int = Query(0, ge=0, le=1),
+):
+    """
+    In danh sách ký xác nhận trúng đấu giá (A4 ngang).
+    Dòng = các lô trong phiên (nguồn vòng 1); giá khởi điểm = vòng 1.
+    """
+    token = get_access_token(request)
+    if not token:
+        return templates.TemplateResponse(
+            "pages/error.html",
+            {
+                "request": request,
+                "title": "Chưa đăng nhập",
+                "message": "Vui lòng đăng nhập lại.",
+            },
+            status_code=401,
+        )
+
+    error: Optional[Dict[str, Any]] = None
+
+    st_s, sess = await _a_get_json(
+        f"/api/v1/auction-sessions/sessions/{session_id}", token, None, timeout=60.0
+    )
+    if st_s != 200 or not isinstance(sess, dict):
+        error = {"message": f"Không tải được phiên đấu (status={st_s})", "body": sess}
+        sess_data: Dict[str, Any] = {"id": session_id}
+    else:
+        sess_data = (sess.get("data") or sess) if isinstance(sess, dict) else {"id": session_id}
+
+    project_id = sess_data.get("project_id")
+    project_name = sess_data.get("project_name") or sess_data.get("p_project_name") or ""
+    project_code = sess_data.get("project_code") or sess_data.get("p_project_code") or ""
+    company_code = _to_str(sess_data.get("company_code") or "").strip()
+    company_name = ""
+    auction_mode = "PER_LOT"
+    auction_mode_from_project = False
+
+    # Project: title + auction_mode
+    if project_id:
+        st_p, prj = await _a_get_json(
+            f"/api/v1/projects/{project_id}", token, None, timeout=30.0
+        )
+        if st_p == 200 and isinstance(prj, dict):
+            pdata = (prj.get("data") if isinstance(prj.get("data"), dict) else prj) or {}
+            if pdata.get("name"):
+                project_name = pdata.get("name") or project_name
+            if pdata.get("project_code"):
+                project_code = pdata.get("project_code") or project_code
+            if pdata.get("company_code") and not company_code:
+                company_code = _to_str(pdata.get("company_code")).strip()
+            if pdata.get("auction_mode") is not None and str(pdata.get("auction_mode")).strip():
+                auction_mode = _normalize_auction_mode(pdata.get("auction_mode"))
+                auction_mode_from_project = True
+        elif not error:
+            error = {"message": f"Không tải được dự án (status={st_p})", "body": prj}
+
+    # Company name (best-effort via display context)
+    st_d, disp = await _a_get_json(
+        f"/api/v1/auction-sessions/display/sessions/{session_id}",
+        token,
+        {"round_no": 1},
+        timeout=30.0,
+    )
+    if st_d == 200 and isinstance(disp, dict):
+        ctx = disp.get("context") if isinstance(disp.get("context"), dict) else {}
+        company_name = _to_str(
+            disp.get("company_name") or ctx.get("company_name") or ""
+        ).strip()
+        if not project_name:
+            project_name = _to_str(
+                disp.get("project_name") or ctx.get("project_name") or ""
+            ).strip()
+        if not company_code:
+            company_code = _to_str(
+                disp.get("company_code") or ctx.get("company_code") or ""
+            ).strip()
+
+    if not company_name:
+        company_name = ORG_NAME or ""
+
+    # Round 1 UI → lots + starting prices (full list of lots in session)
+    rows: List[Dict[str, Any]] = []
+    st_ui, ui = await _a_get_json(
+        f"/api/v1/auction-sessions/sessions/{session_id}/rounds/1/ui",
+        token,
+        None,
+        timeout=60.0,
+    )
+    if st_ui == 200 and isinstance(ui, dict):
+        rows = _build_winner_sign_rows(ui, auction_mode=auction_mode)
+        if not auction_mode_from_project:
+            modes = [r.get("auction_mode") for r in rows if r.get("auction_mode")]
+            if modes:
+                sqm_n = sum(1 for m in modes if m == "PER_SQM")
+                auction_mode = "PER_SQM" if sqm_n > len(modes) / 2 else _normalize_auction_mode(modes[0])
+    else:
+        if not error:
+            error = {
+                "message": f"Không tải được dữ liệu vòng 1 (status={st_ui})",
+                "body": ui,
+            }
+
+    unit = _auction_mode_unit_label(auction_mode)
+    date_parts = _fmt_vn_date_long(sess_data.get("auction_date"))
+    place = (
+        _to_str(sess_data.get("province") or "").strip()
+        or _to_str(sess_data.get("district") or "").strip()
+        or _to_str(sess_data.get("location") or "").strip()
+        or ""
+    )
+    venue = (
+        _to_str(sess_data.get("venue") or "").strip()
+        or _to_str(sess_data.get("location") or "").strip()
+        or ""
+    )
+
+    # "Ninh Bình, ngày 12 tháng 8 năm 2026"
+    date_line_bits = []
+    if place:
+        date_line_bits.append(place)
+    if date_parts.get("day") and date_parts.get("month") and date_parts.get("year"):
+        date_clause = (
+            f"ngày {date_parts['day']} tháng {date_parts['month']} năm {date_parts['year']}"
+        )
+        if date_line_bits:
+            date_line_bits.append(date_clause)
+        else:
+            date_line_bits.append(date_clause)
+    date_line = ", ".join(date_line_bits) if date_line_bits else ""
+
+    session_out = {
+        "id": sess_data.get("id") or session_id,
+        "name": sess_data.get("name"),
+        "status": sess_data.get("status"),
+        "auction_date": sess_data.get("auction_date"),
+        "location": sess_data.get("location"),
+        "province": sess_data.get("province"),
+        "district": sess_data.get("district"),
+        "venue": sess_data.get("venue"),
+        "note": sess_data.get("note"),
+        "project_id": project_id,
+        "project_code": project_code,
+        "project_name": project_name,
+        "company_code": company_code,
+        "company_name": company_name,
+        "place": place,
+        "venue_display": venue,
+        "date_line": date_line,
+        "auction_mode": auction_mode,
+        "price_unit": unit,
+    }
+    project = {
+        "name": project_name or project_code or "",
+        "project_code": project_code or "",
+        "auction_mode": auction_mode,
+    }
+
+    me = await fetch_me(token)
+    cc = company_code_from_me(me) or company_code.strip().lower()
+    tpl = resolve_template(cc, DocKind.WINNER_SIGN_LIST)
+
+    return templates.TemplateResponse(
+        tpl,
+        {
+            "request": request,
+            "title": title or "Danh sách ký xác nhận trúng đấu giá",
+            "session_id": session_id,
+            "session": session_out,
+            "project": project,
+            "company_name": company_name,
+            "org_name": company_name or ORG_NAME,
+            "org_note": ORG_NOTE,
+            "rows": rows,
+            "auction_mode": auction_mode,
+            "price_unit": unit,
+            "date_line": date_line,
+            "venue": venue,
             "autoprint": int(autoprint),
             "error": error,
         },

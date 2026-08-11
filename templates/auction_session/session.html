@@ -889,6 +889,9 @@
           <button type="button" onclick="openAttendanceSeatLabels(); this.closest('.printMenu').style.display='none';">
             <i class="ri-hashtag"></i> In STT dán ghế
           </button>
+          <button type="button" onclick="openWinnerSignList(); this.closest('.printMenu').style.display='none';">
+            <i class="ri-quill-pen-line"></i> DS ký trúng
+          </button>
         </div>
       </div>
 
@@ -3541,6 +3544,12 @@ Modal: Print One Bid Sheet (choose one customer)
 
   function openAttendanceSeatLabels(){
   const url = `/auction/sessions/${SESSION_ID}/documents/attendance/seat-labels?autoprint=1`;
+  const w = window.open(url, "_blank", "noopener,noreferrer");
+  if(w){ try{ w.focus(); }catch(e){} }
+  }
+
+  function openWinnerSignList(){
+  const url = `/auction/sessions/${SESSION_ID}/documents/attendance/winner-sign-list?autoprint=1`;
   const w = window.open(url, "_blank", "noopener,noreferrer");
   if(w){ try{ w.focus(); }catch(e){} }
   }
