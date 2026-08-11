@@ -47,7 +47,9 @@
         border: none;
       }
       .page{
-        padding: 0;
+        position: relative;
+        min-height: calc(210mm - 18mm);
+        padding: 0 0 7mm 0;
         page-break-after: always;
         break-after: page;
         page-break-inside: avoid;
@@ -56,6 +58,11 @@
       .page:last-child{
         page-break-after: auto;
         break-after: auto;
+      }
+      .page-no{
+        position: absolute;
+        right: 0;
+        bottom: 0;
       }
     }
 
@@ -74,10 +81,27 @@
         box-shadow: 0 10px 30px rgba(0,0,0,.18);
         border: 1px solid rgba(0,0,0,.12);
       }
-      .page{ padding: 9mm 11mm; }
+      .page{
+        position: relative;
+        min-height: calc(210mm - 18mm);
+        padding: 9mm 11mm 10mm;
+      }
+      .page-no{
+        position: absolute;
+        right: 11mm;
+        bottom: 5mm;
+      }
     }
 
     .page{ width:100%; }
+    .page-no{
+      font-size: 11.5px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+      color: #111;
+      letter-spacing: .2px;
+    }
 
     /* ===== Header (trang 1 only) ===== */
     .header{
@@ -311,6 +335,8 @@
           {% endif %}
         </tbody>
       </table>
+
+      <div class="page-no">{{ loop.index }}/{{ page_list|length }}</div>
     </div>
   </div>
   {% endfor %}
