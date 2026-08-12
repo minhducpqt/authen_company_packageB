@@ -8,6 +8,58 @@
 
 {% set items = (data.get('items') if data and data.get('items') is not none else []) %}
 {% set project_id_val = project_id if project_id is defined else None %}
+{% set REASON_VI = {
+  'NOT_ENOUGH_DEPOSIT': 'Chưa nộp đủ tiền cọc',
+  'LATE': 'Nộp cọc quá hạn',
+  'MANUAL_EXCLUDED': 'Bị loại thủ công',
+  'BANNED': 'Có trong danh sách cấm đấu giá',
+  'GROUP_TOO_FEW_DEPOSITORS': 'Nhóm cọc chưa đủ 2 khách đủ điều kiện',
+  'NO_CUSTOMER': 'Chưa có khách nộp cọc',
+  'NO_ELIGIBLE_CUSTOMER': 'Không có khách đủ điều kiện',
+  'TOO_FEW_DEPOSITORS': 'Chưa đủ 2 khách đủ điều kiện',
+  'OTHER': 'Không đủ điều kiện',
+} %}
+
+<style>
+  .grp-reason{
+    display:inline-flex; align-items:center; gap:8px; flex-wrap:wrap;
+  }
+  .grp-reason-label{
+    display:inline-flex; align-items:center;
+    padding:4px 10px; border-radius:999px;
+    border:1px solid rgba(244,63,94,.22);
+    background: rgba(244,63,94,.08);
+    color:#9f1239; font-size:12px; font-weight:800;
+  }
+  .grp-info-btn{
+    width:28px; height:28px; border-radius:9px;
+    display:inline-flex; align-items:center; justify-content:center;
+    border:1px solid rgba(15,23,42,.12); background:#fff; color:#334155;
+    cursor:pointer;
+  }
+  .grp-info-btn:hover{ box-shadow:0 8px 16px rgba(2,6,23,.08); color:#0f172a; }
+  .grp-modal{
+    position:fixed; inset:0; z-index:80;
+    background:rgba(2,6,23,.45);
+    display:none; align-items:center; justify-content:center;
+    padding:18px;
+  }
+  .grp-modal.is-on{ display:flex; }
+  .grp-modal-card{
+    width:min(520px, 100%);
+    background:#fff; border-radius:18px; overflow:hidden;
+    box-shadow:0 24px 70px rgba(2,6,23,.28);
+  }
+  .grp-modal-hd{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:14px 16px; border-bottom:1px solid #e2e8f0;
+    background:linear-gradient(135deg, rgba(244,63,94,.08), #fff);
+  }
+  .grp-modal-hd b{ color:#9f1239; font-size:15px; }
+  .grp-modal-bd{ padding:14px 16px 16px; }
+  .grp-modal-bd ul{ margin:0; padding-left:1.1rem; display:grid; gap:8px; color:#334155; font-size:14px; line-height:1.45; }
+  .grp-modal-code{ margin-top:12px; font-size:11px; color:#94a3b8; font-family:ui-monospace, Menlo, Consolas, monospace; }
+</style>
 
 <div class="grp-wrap">
   <div class="grp-head rd-theme-teal">
@@ -79,9 +131,25 @@
             {% for r in items %}
             <tr>
               {% for col in table_columns %}
+                {% set val = r.get(col.key) %}
                 <td class="{% if col.mono %}grp-mono{% endif %}">
-                  {% set val = r.get(col.key) %}
-                  {% if col.money and val is not none %}
+                  {% if col.get('reason') %}
+                    {% set code = (r.get('ineligible_reason_code') or val or '')|string|upper %}
+                    {% set label = r.get('ineligible_reason_label') or REASON_VI.get(code, code) %}
+                    {% set detail = r.get('reason_detail') or {} %}
+                    <div class="grp-reason">
+                      <span class="grp-reason-label">{{ label }}</span>
+                      <button type="button" class="grp-info-btn" title="Chi tiết lý do"
+                              data-title="{{ label|e }}"
+                              data-code="{{ code|e }}"
+                              data-detail="{{ detail|tojson|forceescape }}">
+                        <i class="ri-information-line"></i>
+                      </button>
+                    </div>
+                  {% elif col.key == 'ineligible_reason' %}
+                    {% set code = (val or '')|string|upper %}
+                    {{ r.get('ineligible_reason_label') or REASON_VI.get(code, code) }}
+                  {% elif col.money and val is not none %}
                     {{ "{:,}".format(val|int).replace(",", ".") }}
                   {% elif col.key == 'deposit_vnd' and val is not none %}
                     {{ "{:,}".format(val|int).replace(",", ".") }}
@@ -100,15 +168,75 @@
   </div>
 </div>
 
+<div class="grp-modal" id="grpReasonModal">
+  <div class="grp-modal-card" role="dialog" aria-modal="true" aria-labelledby="grpReasonTitle">
+    <div class="grp-modal-hd">
+      <b id="grpReasonTitle">Chi tiết lý do</b>
+      <button type="button" class="grp-info-btn" id="grpReasonClose" aria-label="Đóng"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="grp-modal-bd">
+      <ul id="grpReasonList"></ul>
+      <div class="grp-modal-code" id="grpReasonCode"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   const sel = document.getElementById('projectSelect');
-  if (!sel) return;
-  sel.addEventListener('change', function(){
-    const pid = sel.value;
-    if (!pid) return;
-    const base = {{ base_path|tojson }};
-    window.location.href = base.replace('__PID__', pid);
+  if (sel) {
+    sel.addEventListener('change', function(){
+      const pid = sel.value;
+      if (!pid) return;
+      const base = {{ base_path|tojson }};
+      window.location.href = base.replace('__PID__', pid);
+    });
+  }
+
+  const modal = document.getElementById('grpReasonModal');
+  const titleEl = document.getElementById('grpReasonTitle');
+  const listEl = document.getElementById('grpReasonList');
+  const codeEl = document.getElementById('grpReasonCode');
+  const closeBtn = document.getElementById('grpReasonClose');
+  const FALLBACK = {
+    NOT_ENOUGH_DEPOSIT: ['Số tiền nộp chưa đạt mức tiền cọc yêu cầu của nhóm.'],
+    LATE: ['Nộp tiền đặt trước sau thời hạn quy định của dự án.'],
+    MANUAL_EXCLUDED: ['Khách bị loại thủ công khỏi danh sách đủ điều kiện / điểm danh.'],
+    BANNED: ['Khách nằm trong danh sách cấm đấu giá đang hiệu lực.'],
+    GROUP_TOO_FEW_DEPOSITORS: ['Nhóm cọc chưa đủ 2 khách đủ điều kiện để mở đấu.']
+  };
+
+  function openReason(btn){
+    if (!modal) return;
+    const title = btn.getAttribute('data-title') || 'Chi tiết lý do';
+    const code = (btn.getAttribute('data-code') || '').toUpperCase();
+    let detail = {};
+    try { detail = JSON.parse(btn.getAttribute('data-detail') || '{}'); } catch (e) { detail = {}; }
+    const bullets = (detail && detail.bullets && detail.bullets.length)
+      ? detail.bullets
+      : (FALLBACK[code] || [title]);
+    titleEl.textContent = (detail && detail.title) || title;
+    listEl.innerHTML = bullets.map(function(t){
+      return '<li>' + String(t).replace(/[<>&]/g, function(c){
+        return ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]);
+      }) + '</li>';
+    }).join('');
+    codeEl.textContent = code ? ('Mã: ' + code) : '';
+    modal.classList.add('is-on');
+  }
+  function closeReason(){
+    if (!modal) return;
+    modal.classList.remove('is-on');
+  }
+  document.querySelectorAll('.grp-info-btn[data-detail]').forEach(function(btn){
+    btn.addEventListener('click', function(){ openReason(btn); });
+  });
+  if (closeBtn) closeBtn.addEventListener('click', closeReason);
+  if (modal) modal.addEventListener('click', function(e){
+    if (e.target === modal) closeReason();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape') closeReason();
   });
 })();
 </script>

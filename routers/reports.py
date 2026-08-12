@@ -1669,25 +1669,25 @@ async def v2_group_customers_ineligible_page(
     token = get_access_token(request)
     if not token:
         return RedirectResponse(url="/login?next=%2Freports", status_code=303)
-    expose = int(expose_phone or 0) == 1
+    expose = True
     ctx = await _group_report_ctx(
         request, token, project_id, limit, "groups/customers/ineligible", expose_phone=expose,
     )
-    export_qs = "?expose_phone=1" if expose else ""
     ctx.update({
         "page_title": "Khách không đủ điều kiện (đấu nhóm)",
         "page_icon": "ri-user-forbid-line text-rose-600",
         "page_desc": "Khách cọc nhưng bị loại, cấm đấu giá, hoặc nhóm cọc chưa đủ 2 người.",
         "base_path": "/reports/v2/projects/__PID__/groups/customers/ineligible",
-        "export_path": f"/reports/v2/projects/{project_id}/groups/customers/ineligible/export{export_qs}",
+        "export_path": f"/reports/v2/projects/{project_id}/groups/customers/ineligible/export?expose_phone=1",
         "table_columns": [
             {"key": "customer_full_name", "label": "Họ tên"},
             {"key": "cccd", "label": "CCCD"},
+            {"key": "phone", "label": "Số điện thoại", "mono": True},
             {"key": "deposit_vnd", "label": "Nhóm cọc (VNĐ)", "mono": True},
             {"key": "group_name", "label": "Tên nhóm"},
             {"key": "participating_lot_count", "label": "Số lô", "mono": True},
             {"key": "group_eligible_customer_count", "label": "KH ĐK trong nhóm", "mono": True},
-            {"key": "ineligible_reason", "label": "Lý do"},
+            {"key": "ineligible_reason", "label": "Lý do", "reason": True},
         ],
     })
     return templates.TemplateResponse("reports/group_eligibility.html", ctx)
@@ -1704,9 +1704,7 @@ async def v2_group_customers_ineligible_export(
     if not token:
         return _unauth()
     limit2 = _clamp_int(limit, default=DEFAULT_LIMIT_REPORTS_V2, min_value=1, max_value=MAX_LIMIT_REPORTS_V2)
-    params: Dict[str, Any] = {"limit": limit2, "format": "xlsx"}
-    if int(expose_phone or 0) == 1:
-        params["expose_phone"] = "1"
+    params: Dict[str, Any] = {"limit": limit2, "format": "xlsx", "expose_phone": "1"}
     return await _proxy_xlsx(
         f"/api/v2/reports/projects/{project_id}/groups/customers/ineligible",
         token,
