@@ -62,18 +62,18 @@ def _pair_lots(lots: List[Dict[str, Any]]) -> List[Tuple[Optional[Dict[str, Any]
     return pages
 
 
-def _quad_lots(lots: List[Dict[str, Any]]) -> List[List[Optional[Dict[str, Any]]]]:
-    """GROUP: 4 nhãn / trang A4 (2×2)."""
+def _hex_lots(lots: List[Dict[str, Any]]) -> List[List[Optional[Dict[str, Any]]]]:
+    """GROUP: 6 nhãn / trang A4 (2×3)."""
     pages: List[List[Optional[Dict[str, Any]]]] = []
     n = max(len(lots), 1)
-    for i in range(0, n, 4):
+    for i in range(0, n, 6):
         chunk: List[Optional[Dict[str, Any]]] = []
-        for j in range(4):
+        for j in range(6):
             idx = i + j
             chunk.append(lots[idx] if idx < len(lots) else None)
         pages.append(chunk)
     if not pages:
-        pages.append([None, None, None, None])
+        pages.append([None, None, None, None, None, None])
     return pages
 
 
@@ -126,7 +126,7 @@ async def print_lot_clearbag_labels_for_round(
         show_issued_count = not is_group
 
     if is_group:
-        pages = _quad_lots(lots)
+        pages = _hex_lots(lots)
         template = PRINT_TEMPLATE_GROUP
     else:
         pages = _pair_lots(lots)

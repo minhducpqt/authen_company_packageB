@@ -1,5 +1,5 @@
 {# templates/pages/auction_session_documents/lot_clearbag_label_print_group.html #}
-{# Đấu nhóm: A4 chia 4 nhãn (2×2). Mỗi nhãn = 1 lô. #}
+{# Đấu nhóm: A4 chia 6 (2×3), đường cắt, lề trắng đều, khung data giữa mỗi ô. #}
 <!doctype html>
 <html lang="vi">
 <head>
@@ -7,9 +7,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Nhãn túi — Vòng {{ round_no or "?" }} (đấu nhóm)</title>
   <style>
-    @page { size: A4 portrait; margin: 6mm; }
+    /*
+      Board = full A4. Grid 2×3, gap 0 → 6 mảnh cắt bằng nhau.
+      Đường cut đúng biên 50% / 1/3 / 2/3.
+      Trong mỗi mảnh: padding đều 4 phía → khung nhãn căn giữa phần giấy.
+    */
+    @page { size: A4 portrait; margin: 0; }
 
     * { box-sizing: border-box; }
+
+    :root {
+      --cell-pad: 4mm; /* lề trắng đều quanh khung sau khi cắt */
+    }
 
     html, body {
       margin: 0; padding: 0;
@@ -35,140 +44,233 @@
       .a4-page {
         width: 210mm; height: 297mm; margin: 0 auto 16px;
         background: #fff; box-shadow: 0 10px 28px rgba(0,0,0,.14);
-        border: 1px solid rgba(0,0,0,.1); padding: 6mm;
+        border: 1px solid rgba(0,0,0,.1);
+        padding: 0;
       }
     }
 
     @media print {
       .a4-page {
-        width: 100%; height: 285mm;
+        width: 210mm; height: 297mm;
         page-break-after: always; break-after: page;
-        padding: 0;
+        margin: 0; padding: 0;
       }
       .a4-page:last-child { page-break-after: auto; break-after: auto; }
     }
 
-    .grid-4 {
-      width: 100%; height: 100%;
+    .board {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    .cut-guides {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+    }
+    .cut {
+      position: absolute;
+      border: 0 none;
+    }
+    .cut.v {
+      top: 0; bottom: 0;
+      left: 50%;
+      width: 0;
+      border-left: 0.7pt dashed #9a9a9a;
+      transform: translateX(-50%);
+    }
+    .cut.h {
+      left: 0; right: 0;
+      height: 0;
+      border-top: 0.7pt dashed #9a9a9a;
+    }
+    .cut.h1 { top: calc(100% / 3); }
+    .cut.h2 { top: calc(200% / 3); }
+
+    .cut-mark {
+      position: absolute;
+      font-size: 6.5pt;
+      line-height: 1;
+      color: #9a9a9a;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      z-index: 6;
+    }
+    .cut-mark.v-t { top: 1.2mm; left: 50%; transform: translateX(-50%); }
+    .cut-mark.v-b { bottom: 1.2mm; left: 50%; transform: translateX(-50%); }
+    .cut-mark.h1-l { top: calc(100% / 3); left: 1.2mm; transform: translateY(-50%); }
+    .cut-mark.h1-r { top: calc(100% / 3); right: 1.2mm; transform: translateY(-50%); }
+    .cut-mark.h2-l { top: calc(200% / 3); left: 1.2mm; transform: translateY(-50%); }
+    .cut-mark.h2-r { top: calc(200% / 3); right: 1.2mm; transform: translateY(-50%); }
+
+    .grid {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
       display: grid;
       grid-template-columns: 1fr 1fr;
-      grid-template-rows: 1fr 1fr;
-      gap: 3mm;
+      grid-template-rows: 1fr 1fr 1fr;
+      gap: 0;
+    }
+
+    /* Mỗi 1/6 giấy: padding đều → khung data luôn giữa mảnh cắt */
+    .cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+      min-height: 0;
+      padding: var(--cell-pad);
+      background: #fff;
     }
 
     .label-slot {
+      width: 100%;
+      height: 100%;
       min-height: 0;
-      display: flex; flex-direction: column;
-      border: 1.2pt solid #1a1a1a;
-      border-radius: 1.5mm;
-      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      border: 1.2pt solid #111;
       background: #fff;
-      padding: 2.5mm 3mm 2.8mm;
+      overflow: hidden;
+      padding: 1.6mm 2mm 1.8mm;
     }
 
     .label-empty {
+      width: 100%;
+      height: 100%;
       min-height: 0;
-      border: 1pt dashed #ccc;
-      border-radius: 1.5mm;
+      border: 0.9pt dashed #ccc;
       color: #ccc;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 9pt;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8pt;
+      background: #fff;
     }
 
     .hdr {
       display: flex; align-items: baseline; justify-content: space-between;
-      gap: 2mm;
-      padding-bottom: 1.2mm;
-      border-bottom: 0.8pt solid #222;
-      margin-bottom: 2mm;
+      gap: 1.5mm;
+      padding-bottom: 0.7mm;
+      border-bottom: 0.65pt solid #222;
+      margin-bottom: 1mm;
+      flex: 0 0 auto;
     }
     .hdr .title {
-      font-size: 7pt; font-weight: 800;
+      font-size: 5.8pt; font-weight: 800;
       letter-spacing: 0.08em; text-transform: uppercase;
     }
     .hdr .round {
-      font-size: 7.5pt; font-weight: 800;
-      border: 0.7pt solid #333; border-radius: 1mm;
-      padding: 0.4mm 1.8mm; white-space: nowrap;
+      font-size: 6.2pt; font-weight: 800;
+      border: 0.6pt solid #333;
+      padding: 0.15mm 1.2mm; white-space: nowrap;
     }
 
-    .lot-name {
-      font-size: 13pt; font-weight: 900; line-height: 1.15;
-      margin: 0 0 1mm;
+    .lot-line {
+      font-size: 9pt; font-weight: 900; line-height: 1.18;
+      margin: 0 0 0.5mm;
       word-break: break-word;
+      flex: 0 0 auto;
     }
+    .lot-line .code { letter-spacing: 0.01em; }
+    .lot-line .sep { font-weight: 700; color: #444; margin: 0 0.5mm; }
+    .lot-line .name { font-weight: 700; }
+
     .proj-code {
-      font-size: 8pt; font-weight: 700;
-      margin-bottom: 2mm;
+      font-size: 6.6pt; font-weight: 700;
+      margin-bottom: 1.2mm;
+      flex: 0 0 auto;
     }
     .proj-code span { font-weight: 400; color: #444; }
 
-    .ops {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2mm;
+    .metrics {
       flex: 1 1 auto;
       min-height: 0;
-    }
-    .pane {
-      border: 0.6pt solid #bbb;
-      border-radius: 1.2mm;
-      padding: 1.5mm 1.8mm 1.8mm;
-      min-height: 0;
-    }
-    .pane-h {
-      font-size: 6pt; font-weight: 800;
-      text-transform: uppercase; letter-spacing: 0.08em;
-      color: #555; margin-bottom: 1.2mm;
-      padding-bottom: 0.5mm;
-      border-bottom: 0.5pt solid #ddd;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 1.2mm;
     }
 
-    .ticket-rows { display: flex; flex-direction: column; gap: 1.2mm; }
-    .trow {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 2mm;
-      border: 0.55pt solid #aaa;
-      border-radius: 1mm;
-      padding: 1mm 1.5mm;
-      min-height: 7.5mm;
+    .block {
+      border: 0.7pt solid #222;
+      overflow: hidden;
       background: #fff;
     }
-    .trow .tk {
-      font-size: 6.5pt; color: #333; font-weight: 700;
-      white-space: nowrap;
+    .block-h {
+      font-size: 5.5pt; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      background: #f0f0f0;
+      border-bottom: 0.55pt solid #222;
+      padding: 0.5mm 1.2mm;
     }
-    .trow .tv {
+
+    .ticket-grid {
+      display: grid;
+      gap: 0;
+    }
+    .ticket-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .ticket-grid.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+    .tcell {
+      padding: 0.8mm 1mm 1mm;
+      min-height: 9.5mm;
+      display: flex; flex-direction: column;
+      border-right: 0.5pt solid #888;
+    }
+    .ticket-grid.cols-3 .tcell:nth-child(3n),
+    .ticket-grid.cols-4 .tcell:nth-child(4n) {
+      border-right: none;
+    }
+    .tcell .tk {
+      font-size: 5.2pt; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.04em;
+      color: #444; margin-bottom: 0.6mm;
+    }
+    .tcell .tv {
       flex: 1;
-      border-bottom: 0.7pt solid #333;
-      min-height: 4.5mm;
-      text-align: right;
-      font-size: 10pt; font-weight: 800;
+      border: 0.6pt solid #222;
+      background: #fff;
+      min-height: 4.8mm;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9pt; font-weight: 800;
     }
-    .trow .tv.empty {
+    .tcell .tv.write {
       font-weight: 400; color: transparent;
     }
 
-    .res-field { margin-bottom: 2mm; }
-    .res-field:last-child { margin-bottom: 0; }
-    .res-field .rk {
-      font-size: 6.3pt; color: #333; margin-bottom: 0.6mm; font-weight: 700;
+    .res-body { padding: 1mm 1.2mm 1.2mm; }
+    .res-row {
+      display: grid;
+      grid-template-columns: 26mm 1fr;
+      gap: 1.2mm;
+      align-items: center;
+      margin-bottom: 1mm;
     }
-    .res-field .rfill {
-      border-bottom: 0.7pt solid #333;
-      min-height: 5mm;
+    .res-row:last-child { margin-bottom: 0; }
+    .res-row .rk {
+      font-size: 5.8pt; font-weight: 700; color: #222; line-height: 1.12;
+    }
+    .res-row .rbox {
+      border: 0.6pt solid #222;
+      min-height: 4.6mm;
+      background: #fff;
     }
     .res-checks {
-      display: flex; gap: 3.5mm; align-items: center;
-      font-size: 7pt; margin-top: 0.4mm;
+      display: flex; gap: 2.8mm; align-items: center;
+      font-size: 6.2pt; font-weight: 700;
     }
     .res-chk {
-      display: inline-flex; align-items: center; gap: 1mm;
+      display: inline-flex; align-items: center; gap: 0.9mm;
     }
     .res-chk i {
       display: inline-block;
-      width: 3.2mm; height: 3.2mm;
-      border: 0.7pt solid #222;
+      width: 2.8mm; height: 2.8mm;
+      border: 0.65pt solid #222;
+      background: #fff;
     }
   </style>
 </head>
@@ -177,6 +279,7 @@
 <div class="toolbar">
   <span style="font-size:12px;color:#555;margin-right:auto;">
     Đấu nhóm · Vòng {{ round_no or "?" }} — {{ total_lots or 0 }} lô — {{ project_code or "" }}
+    · A4 ÷ 6 (cắt theo đường đứt)
     {% if not show_issued_count %} · (không in số phiếu phát ra){% endif %}
   </span>
   <button class="btn" type="button" onclick="window.print()">In</button>
@@ -186,58 +289,68 @@
   {% if not lot %}
   <div class="label-empty">—</div>
   {% else %}
+  {% set code = (lot.lot_code or "")|trim %}
+  {% set name = (lot.lot_name or "")|trim %}
   <div class="label-slot">
     <div class="hdr">
       <span class="title">Nhãn túi clearbag</span>
       <span class="round">Vòng {{ round_no or "?" }}</span>
     </div>
 
-    <div class="lot-name">{{ lot.lot_name or lot.lot_code or "—" }}</div>
+    <div class="lot-line">
+      {% if code and name and code != name %}
+        <span class="code">{{ code }}</span><span class="sep">:</span><span class="name">{{ name }}</span>
+      {% else %}
+        <span class="code">{{ code or name or "—" }}</span>
+      {% endif %}
+    </div>
     <div class="proj-code">
       Mã dự án: <span>{{ project_code or "—" }}</span>
     </div>
 
-    <div class="ops">
-      <div class="pane">
-        <div class="pane-h">Phiếu trả giá</div>
-        <div class="ticket-rows">
+    <div class="metrics">
+      <div class="block">
+        <div class="block-h">Phiếu trả giá</div>
+        <div class="ticket-grid {% if show_issued_count %}cols-4{% else %}cols-3{% endif %}">
           {% if show_issued_count %}
-          <div class="trow">
-            <span class="tk">Phát ra</span>
-            <span class="tv">{{ lot.issued_count if lot.issued_count is not none else 0 }}</span>
+          <div class="tcell">
+            <div class="tk">Phát ra</div>
+            <div class="tv">{{ lot.issued_count if lot.issued_count is not none else 0 }}</div>
           </div>
           {% endif %}
-          <div class="trow">
-            <span class="tk">Thu về</span>
-            <span class="tv empty">&nbsp;</span>
+          <div class="tcell">
+            <div class="tk">Thu về</div>
+            <div class="tv write">&nbsp;</div>
           </div>
-          <div class="trow">
-            <span class="tk">Hợp lệ</span>
-            <span class="tv empty">&nbsp;</span>
+          <div class="tcell">
+            <div class="tk">Hợp lệ</div>
+            <div class="tv write">&nbsp;</div>
           </div>
-          <div class="trow">
-            <span class="tk">Không HL</span>
-            <span class="tv empty">&nbsp;</span>
+          <div class="tcell">
+            <div class="tk">Không HL</div>
+            <div class="tv write">&nbsp;</div>
           </div>
         </div>
       </div>
 
-      <div class="pane">
-        <div class="pane-h">Kết quả đấu</div>
-        <div class="res-field">
-          <div class="rk">Giá trả cao nhất</div>
-          <div class="rfill"></div>
-        </div>
-        <div class="res-field">
-          <div class="rk">Đã tìm người trúng</div>
-          <div class="res-checks">
-            <span class="res-chk"><i></i> Có</span>
-            <span class="res-chk"><i></i> Chưa</span>
+      <div class="block">
+        <div class="block-h">Kết quả đấu</div>
+        <div class="res-body">
+          <div class="res-row">
+            <div class="rk">Giá trả cao nhất</div>
+            <div class="rbox"></div>
           </div>
-        </div>
-        <div class="res-field">
-          <div class="rk">Số KH vào vòng {{ next_round_no or "?" }}</div>
-          <div class="rfill"></div>
+          <div class="res-row">
+            <div class="rk">Đã tìm người trúng</div>
+            <div class="res-checks">
+              <span class="res-chk"><i></i> Có</span>
+              <span class="res-chk"><i></i> Chưa</span>
+            </div>
+          </div>
+          <div class="res-row">
+            <div class="rk">Số KH vòng {{ next_round_no or "?" }}</div>
+            <div class="rbox"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -245,13 +358,34 @@
   {% endif %}
 {%- endmacro %}
 
+{% macro render_cell(lot) -%}
+  <div class="cell">
+    {{ render_label(lot) }}
+  </div>
+{%- endmacro %}
+
 {% for page_lots in pages %}
 <div class="a4-page">
-  <div class="grid-4">
-    {{ render_label(page_lots[0] if page_lots|length > 0 else none) }}
-    {{ render_label(page_lots[1] if page_lots|length > 1 else none) }}
-    {{ render_label(page_lots[2] if page_lots|length > 2 else none) }}
-    {{ render_label(page_lots[3] if page_lots|length > 3 else none) }}
+  <div class="board">
+    <div class="cut-guides" aria-hidden="true">
+      <div class="cut v"></div>
+      <div class="cut h h1"></div>
+      <div class="cut h h2"></div>
+      <span class="cut-mark v-t">✂</span>
+      <span class="cut-mark v-b">✂</span>
+      <span class="cut-mark h1-l">✂</span>
+      <span class="cut-mark h1-r">✂</span>
+      <span class="cut-mark h2-l">✂</span>
+      <span class="cut-mark h2-r">✂</span>
+    </div>
+    <div class="grid">
+      {{ render_cell(page_lots[0] if page_lots|length > 0 else none) }}
+      {{ render_cell(page_lots[1] if page_lots|length > 1 else none) }}
+      {{ render_cell(page_lots[2] if page_lots|length > 2 else none) }}
+      {{ render_cell(page_lots[3] if page_lots|length > 3 else none) }}
+      {{ render_cell(page_lots[4] if page_lots|length > 4 else none) }}
+      {{ render_cell(page_lots[5] if page_lots|length > 5 else none) }}
+    </div>
   </div>
 </div>
 {% endfor %}
