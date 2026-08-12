@@ -16,3 +16,12 @@ async def handbook_page(request: Request):
         "pages/guide/handbook.html",
         {"request": request, "title": "Hướng dẫn sử dụng"},
     )
+
+
+@router.get("/huong-dan/trinh-chieu", response_class=HTMLResponse)
+async def present_page(request: Request):
+    """Trang trình chiếu giới thiệu chức năng — tĩnh, không gọi Service A."""
+    return templates.TemplateResponse(
+        "pages/guide/present.html",
+        {"request": request, "title": "Giới thiệu chức năng"},
+    )

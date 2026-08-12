@@ -172,6 +172,32 @@
     padding: 1.35rem 1.75rem;
     border-bottom: 1px solid #e2e8f0;
     background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.85rem;
+  }
+
+  .guide-present-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 0.95rem;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 800;
+    color: #fff;
+    text-decoration: none;
+    background: linear-gradient(135deg, #4f46e5 0%, #2563eb 100%);
+    box-shadow: 0 8px 20px rgba(79, 70, 229, 0.28);
+    white-space: nowrap;
+    transition: 0.15s ease;
+  }
+  .guide-present-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 24px rgba(79, 70, 229, 0.35);
+    color: #fff;
   }
 
   .guide-content {
@@ -348,6 +374,7 @@
         <div class="guide-toc-group">
           <div class="guide-toc-group-label">Bắt đầu</div>
           <a href="#gioi-thieu">Giới thiệu</a>
+          <a href="/huong-dan/trinh-chieu">Show present</a>
           <a href="#vai-tro">Vai trò người dùng</a>
           <a href="#checklist">Checklist mở dự án</a>
         </div>
@@ -407,13 +434,18 @@
 
   <article class="guide-body">
     <header class="guide-hero">
-      <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
-        <i class="ri-book-open-line text-indigo-600 text-3xl"></i>
-        Sổ tay hướng dẫn sử dụng
-      </h1>
-      <p class="text-slate-500 text-sm mt-1">
-        Tra cứu chi tiết từng mục menu portal. Bấm <strong>←</strong> trên mục lục để thu gọn, mở rộng vùng đọc nội dung.
-      </p>
+      <div class="min-w-0">
+        <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <i class="ri-book-open-line text-indigo-600 text-3xl"></i>
+          Sổ tay hướng dẫn sử dụng
+        </h1>
+        <p class="text-slate-500 text-sm mt-1">
+          Tra cứu chi tiết từng mục menu portal. Bấm <strong>←</strong> trên mục lục để thu gọn, mở rộng vùng đọc nội dung.
+        </p>
+      </div>
+      <a href="/huong-dan/trinh-chieu" class="guide-present-btn" title="Trình chiếu giới thiệu chức năng">
+        <i class="ri-slideshow-3-line text-base"></i> Show present
+      </a>
     </header>
     <div class="guide-content">
       {% include "pages/guide/sections/_intro.html" %}
