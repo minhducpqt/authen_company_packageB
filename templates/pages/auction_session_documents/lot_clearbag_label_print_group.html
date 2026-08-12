@@ -179,12 +179,27 @@
     .lot-line .sep { font-weight: 700; color: #444; margin: 0 0.5mm; }
     .lot-line .name { font-weight: 700; }
 
-    .proj-code {
+    .proj-name {
       font-size: 6.6pt; font-weight: 700;
       margin-bottom: 1.2mm;
       flex: 0 0 auto;
+      line-height: 1.25;
+      /* tối đa 4 dòng, dư thì … */
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 4;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      word-break: break-word;
+      max-height: calc(6.6pt * 1.25 * 4);
     }
-    .proj-code span { font-weight: 400; color: #444; }
+    .proj-name .code {
+      font-weight: 800;
+    }
+    .proj-name .pname {
+      font-weight: 400;
+      color: #333;
+    }
 
     .metrics {
       flex: 1 1 auto;
@@ -304,8 +319,10 @@
         <span class="code">{{ code or name or "—" }}</span>
       {% endif %}
     </div>
-    <div class="proj-code">
-      Mã dự án: <span>{{ project_code or "—" }}</span>
+    <div class="proj-name">
+      Tên dự án:
+      {% if project_code %}[{{ project_code }}]{% else %}[—]{% endif %}
+      <span class="pname">{{ project_name or "" }}</span>
     </div>
 
     <div class="metrics">
