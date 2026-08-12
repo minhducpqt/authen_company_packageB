@@ -1407,12 +1407,43 @@ Modal: Print One Bid Sheet (choose one customer)
   let selectedWinnerId = null;
 
   // Kiểm phiếu (độc lập decide/lock lot; tắt chỉnh khi phiên hard-lock)
+  // Chỉ áp dụng đấu thường — GROUP_AUCTION không hỗ trợ (tránh hiện rồi ẩn).
   let ballotState = null; // {issued, collected, invalid, valid, is_recorded}
   let ballotSaving = false;
   let ballotSeq = 0;
   let ballotSupported = true;
   let ballotLoadGen = 0; // chặn race khi mở lô liên tiếp
   let ballotLastPaintKey = '';
+
+  function isGroupAuctionSession(){
+    try{
+      const s = (typeof SESSION !== 'undefined' && SESSION)
+        ? ((SESSION.data && typeof SESSION.data === 'object') ? SESSION.data : SESSION)
+        : {};
+      if(String(s.registration_mode || '').toUpperCase() === 'GROUP_AUCTION') return true;
+      const uiSess = (typeof UI !== 'undefined' && UI && UI.session) ? UI.session : {};
+      if(String(uiSess.registration_mode || '').toUpperCase() === 'GROUP_AUCTION') return true;
+      // Fallback: participant extras.group_auction (phiên cũ chưa có registration_mode trên session)
+      const lots = (typeof UI !== 'undefined' && UI && Array.isArray(UI.lots)) ? UI.lots : [];
+      for(const lot of lots){
+        for(const p of (lot.participants || [])){
+          const ex = p && p.extras;
+          if(ex && typeof ex === 'object' && ex.group_auction) return true;
+        }
+      }
+    }catch(_e){ /* ignore */ }
+    return false;
+  }
+
+  function isBallotFeatureEnabled(){
+    return !isGroupAuctionSession();
+  }
+
+  function hideBallotBox(){
+    ballotSupported = false;
+    const box = document.getElementById('ballotBox');
+    if(box) box.style.display = 'none';
+  }
 
   function isSessionHardLocked(){
     try{
@@ -2409,17 +2440,24 @@ Modal: Print One Bid Sheet (choose one customer)
   renderWinnerPicker();
   renderDualLists();
 
-  // Kiểm phiếu: paint ngay từ participants (tránh ẩn/hiện + layout jump)
-  paintBallotImmediateLocal();
+  // Kiểm phiếu: chỉ đấu thường. Đấu nhóm không paint/API (tránh nháy hiện→ẩn).
+  if(isBallotFeatureEnabled()){
+    paintBallotImmediateLocal();
+    void loadBallotCounts(roundLotId);
+  } else {
+    hideBallotBox();
+  }
   document.getElementById('backdrop').style.display = 'flex';
-  // Sync server nền (GET + seed im lặng)
-  void loadBallotCounts(roundLotId);
   }
 
   // =========================
   // Ballot counts (kiểm phiếu) — autosave, no lock · smooth paint
   // =========================
   function paintBallotImmediateLocal(){
+    if(!isBallotFeatureEnabled()){
+      hideBallotBox();
+      return;
+    }
     ballotSupported = true;
     ballotSaving = false;
     ballotLastPaintKey = '';
@@ -2492,7 +2530,7 @@ Modal: Print One Bid Sheet (choose one customer)
   function renderBallotUI(statusMsg, statusKind, force){
     const box = document.getElementById('ballotBox');
     if(!box) return;
-    if(!ballotSupported || !currentLot){
+    if(!isBallotFeatureEnabled() || !ballotSupported || !currentLot){
       box.style.display = 'none';
       return;
     }
@@ -2568,6 +2606,7 @@ Modal: Print One Bid Sheet (choose one customer)
 
   /** Seed mặc định nền: không ballotSaving UI, không toast, không layout thrash. */
   async function seedBallotDefaultsSilent(roundLotId, js, gen){
+    if(!isBallotFeatureEnabled()) return;
     if(!js || js.is_recorded) return;
     if(isSessionHardLocked()) return;
     const issued = Math.max(0, Number(js.issued_live != null ? js.issued_live : (js.issued_count || 0)) || 0);
@@ -2591,6 +2630,10 @@ Modal: Print One Bid Sheet (choose one customer)
   }
 
   async function loadBallotCounts(roundLotId){
+    if(!isBallotFeatureEnabled()){
+      hideBallotBox();
+      return;
+    }
     const gen = ++ballotLoadGen;
     // Không ẩn box — tránh jump scroll
     try{
@@ -2602,9 +2645,7 @@ Modal: Print One Bid Sheet (choose one customer)
       if(!r.ok){
         const detail = (typeof js.detail === 'string') ? js.detail : JSON.stringify(js.detail || js);
         if(r.status === 400 && String(detail).includes('BALLOT_COUNTS_NORMAL_ONLY')){
-          ballotSupported = false;
-          const box = document.getElementById('ballotBox');
-          if(box) box.style.display = 'none';
+          hideBallotBox();
           return;
         }
         // lỗi mạng/500: giữ paint local
