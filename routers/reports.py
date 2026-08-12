@@ -1124,46 +1124,19 @@ async def v2_customers_ineligible_page(
     limit: Optional[int] = Query(10000),
     expose_phone: int = Query(1, ge=0, le=1),
 ):
+    """
+    Hub/bookmark cũ trỏ URL này, nhưng template customers_ineligible.html
+    cần payload /customers-lots/ineligible. Redirect để lần vào đầu không lệch data.
+    """
     token = get_access_token(request)
     if not token:
         return RedirectResponse(url="/login?next=%2Freports", status_code=303)
 
-    limit2 = _clamp_int(limit, default=10000, min_value=1, max_value=10000)
-
-    projects, _ = await _load_projects(token, None)
-    selected_code = ""
-    try:
-        for p in (projects or []):
-            pid = p.get("id") or p.get("project_id")
-            if pid == project_id:
-                selected_code = (p.get("project_code") or p.get("code") or "").strip().upper()
-                break
-    except Exception:
-        pass
-
-    params = {"limit": limit2}
-    if expose_phone == 1:
-        params["expose_phone"] = "true"
-
-    st, js = await _get_json(f"/api/v2/reports/projects/{project_id}/customers/ineligible", token, params)
-    data = js if st == 200 and isinstance(js, dict) else {"items": [], "count": 0}
-    error = None if st == 200 else {"status": st, "body": js}
-
-    ctx = {
-        "request": request,
-        "title": "Khách hàng KHÔNG đủ điều kiện",
-        "projects": projects,
-        "project": selected_code,
-        "customer_cccd": "",
-        "lot_code": "",
-        "limit": limit2,
-        "data": data,
-        "error": error,
-        "is_v2": True,
-        "project_id": project_id,
-        "expose_phone": expose_phone,
-    }
-    return templates.TemplateResponse("reports/customers_ineligible.html", ctx)
+    dest = f"/reports/v2/projects/{project_id}/customers-lots/ineligible"
+    qs = request.url.query
+    if qs:
+        dest = f"{dest}?{qs}"
+    return RedirectResponse(url=dest, status_code=303)
 
 
 @router.get("/reports/v2/projects/{project_id}/customers/ineligible/export")
