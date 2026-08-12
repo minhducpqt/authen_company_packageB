@@ -18,7 +18,8 @@ router = APIRouter(
 )
 
 SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824").rstrip("/")
-PRINT_TEMPLATE = "pages/auction_session_documents/lot_clearbag_label_print.html"
+PRINT_TEMPLATE_NORMAL = "pages/auction_session_documents/lot_clearbag_label_print.html"
+PRINT_TEMPLATE_GROUP = "pages/auction_session_documents/lot_clearbag_label_print_group.html"
 
 
 async def _get_json(
@@ -50,6 +51,7 @@ def _err_html(msg: str, code: int = 500) -> HTMLResponse:
 
 
 def _pair_lots(lots: List[Dict[str, Any]]) -> List[Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]]:
+    """NORMAL: 2 nhãn / trang A4 (trên–dưới)."""
     pages: List[Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]] = []
     for i in range(0, max(len(lots), 1), 2):
         left = lots[i] if i < len(lots) else None
@@ -57,6 +59,21 @@ def _pair_lots(lots: List[Dict[str, Any]]) -> List[Tuple[Optional[Dict[str, Any]
         pages.append((left, right))
     if not pages:
         pages.append((None, None))
+    return pages
+
+
+def _quad_lots(lots: List[Dict[str, Any]]) -> List[List[Optional[Dict[str, Any]]]]:
+    """GROUP: 4 nhãn / trang A4 (2×2)."""
+    pages: List[List[Optional[Dict[str, Any]]]] = []
+    n = max(len(lots), 1)
+    for i in range(0, n, 4):
+        chunk: List[Optional[Dict[str, Any]]] = []
+        for j in range(4):
+            idx = i + j
+            chunk.append(lots[idx] if idx < len(lots) else None)
+        pages.append(chunk)
+    if not pages:
+        pages.append([None, None, None, None])
     return pages
 
 
@@ -98,14 +115,25 @@ async def print_lot_clearbag_labels_for_round(
 
     if not lots:
         return _err_html(
-            "Vòng này chưa có dữ liệu phiếu trả giá. Vui lòng Start phiên hoặc kiểm tra lại vòng.",
+            "Vòng này chưa có dữ liệu lô để in nhãn. Vui lòng Start phiên hoặc kiểm tra lại vòng.",
             404,
         )
 
-    pages = _pair_lots(lots)
+    registration_mode = str(payload.get("registration_mode") or "NORMAL").strip().upper()
+    is_group = registration_mode == "GROUP_AUCTION"
+    show_issued_count = payload.get("show_issued_count")
+    if show_issued_count is None:
+        show_issued_count = not is_group
+
+    if is_group:
+        pages = _quad_lots(lots)
+        template = PRINT_TEMPLATE_GROUP
+    else:
+        pages = _pair_lots(lots)
+        template = PRINT_TEMPLATE_NORMAL
 
     return templates.TemplateResponse(
-        PRINT_TEMPLATE,
+        template,
         {
             "request": request,
             "me": me,
@@ -116,6 +144,9 @@ async def print_lot_clearbag_labels_for_round(
             "next_round_no": payload.get("next_round_no"),
             "project_code": payload.get("project_code") or "",
             "project_name": payload.get("project_name") or "",
+            "registration_mode": registration_mode,
+            "lot_policy": payload.get("lot_policy"),
+            "show_issued_count": bool(show_issued_count),
             "total_lots": len(lots),
             "autoprint": int(autoprint),
         },
