@@ -838,30 +838,20 @@
               <td class="info-value bold">{{ "{:,.0f}".format(t.dossier_fee_vnd|float) }} VND</td>
             </tr>
             {% endif %}
+            {% if t.group_uniform_starting_price and t.group_starting_price_vnd is not none %}
             <tr>
               <td class="info-label">Giá KĐ ({{ price_unit }})</td><td class="info-sep">:</td>
-              <td class="info-value bold">
-                {% if t.group_uniform_starting_price and t.group_starting_price_vnd is not none %}
-                  {{ "{:,.0f}".format(t.group_starting_price_vnd|float) }}
-                {% else %}
-                  <span class="note">Theo lô khách chọn</span>
-                {% endif %}
-              </td>
+              <td class="info-value bold">{{ "{:,.0f}".format(t.group_starting_price_vnd|float) }}</td>
             </tr>
+            {% endif %}
             {% if show_price_step %}
             {% set bid_step_rule = (t.bid_step_rule or 'LOT_DEFAULT') %}
+            {% if bid_step_rule != 'ANY_ABOVE_START' and t.group_uniform_bid_step and t.group_bid_step_vnd is number %}
             <tr>
               <td class="info-label">Bước giá ({{ bid_unit }})</td><td class="info-sep">:</td>
-              <td class="info-value bold">
-                {% if bid_step_rule == 'ANY_ABOVE_START' %}
-                  Không áp dụng
-                {% elif t.group_uniform_bid_step and t.group_bid_step_vnd is number %}
-                  {{ "{:,.0f}".format(t.group_bid_step_vnd|float) }}
-                {% else %}
-                  <span class="note">Theo lô khách chọn</span>
-                {% endif %}
-              </td>
+              <td class="info-value bold">{{ "{:,.0f}".format(t.group_bid_step_vnd|float) }}</td>
             </tr>
+            {% endif %}
             {% endif %}
             {% else %}
             <tr>
@@ -890,16 +880,12 @@
             </tr>
             {% if show_price_step %}
             {% set bid_step_rule = (t.bid_step_rule or 'LOT_DEFAULT') %}
+            {% if bid_step_rule != 'ANY_ABOVE_START' and t.bid_step_vnd is number %}
             <tr>
               <td class="info-label">Bước giá ({{ bid_unit }})</td><td class="info-sep">:</td>
-              <td class="info-value bold">
-                {% if bid_step_rule == 'ANY_ABOVE_START' %}
-                  Không áp dụng
-                {% elif t.bid_step_vnd is number %}
-                  {{ "{:,.0f}".format(t.bid_step_vnd|float) }}
-                {% endif %}
-              </td>
+              <td class="info-value bold">{{ "{:,.0f}".format(t.bid_step_vnd|float) }}</td>
             </tr>
+            {% endif %}
             {% endif %}
             {% endif %}
           </table>
