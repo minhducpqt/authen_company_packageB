@@ -238,6 +238,71 @@ async def refund_candidates_page(
 
 
 # =========================================================
+# 1b) PAGE: Tax transfer export (người trúng đấu)
+# =========================================================
+@router.get("/auction/refunds/tax-transfer", response_class=HTMLResponse)
+async def tax_transfer_page(
+    request: Request,
+    project: str = Query("", alias="project"),
+):
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(url="/public/login", status_code=302)
+
+    error = None
+    projects: List[Dict[str, Any]] = []
+    project_id = None
+
+    try:
+        candidates = [
+            ("/api/v1/projects", {"page": 1, "size": 2000}),
+            ("/api/v1/projects/public", {"page": 1, "size": 2000}),
+            ("/api/v1/projects/public", {}),
+        ]
+        js = None
+        last_err = None
+        for path, params in candidates:
+            try:
+                js = await _get_json(path, token, params=params)
+                if js is not None:
+                    break
+            except ServiceAError as e:
+                last_err = e
+                js = None
+        if js is None and last_err:
+            raise last_err
+        projects = _parse_projects(js)
+    except ServiceAError as e:
+        error = f"status={e.status} | {(e.body or {}).get('detail') if isinstance(e.body, dict) else e.body}"
+        projects = []
+
+    project_id = _find_project_id_by_code(projects, project)
+
+    project_meta = None
+    if project_id:
+        try:
+            project_meta = await _get_json(
+                "/api/v1/auction/refunds/tax-export-meta",
+                token,
+                params={"project_id": int(project_id)},
+            )
+        except ServiceAError:
+            project_meta = None
+
+    return templates.TemplateResponse(
+        "auction/tax_transfer.html",
+        {
+            "request": request,
+            "projects": projects,
+            "project": project,
+            "project_id": project_id,
+            "project_meta": project_meta,
+            "error": error,
+        },
+    )
+
+
+# =========================================================
 # 2) AJAX: Detail popup
 #    A: GET /api/v1/auction/refunds/{id}/detail
 # =========================================================
@@ -389,6 +454,117 @@ async def export_refunds_woori_xlsx_proxy(
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             headers=resp_headers,
         )
+    except ServiceAError as e:
+        return JSONResponse({"ok": False, "status": e.status, "body": e.body}, status_code=500)
+
+
+# =========================================================
+# 4c) Export tax transfer Woori XLSX proxy
+#    A: GET /api/v1/auction/refunds/tax-export-woori.xlsx
+# =========================================================
+@router.get("/auction/refunds/tax-export-woori.xlsx")
+async def export_tax_transfer_woori_xlsx_proxy(
+    request: Request,
+    project_id: int = Query(..., ge=1),
+    treasury_account: str = Query("7111"),
+    beneficiary_name: str = Query(""),
+    treasury_bank: str = Query("Agribank"),
+    project_desc: str = Query(""),
+    tax_office_code: str = Query(""),
+    chapter_code: str = Query(""),
+    dbhc_code: str = Query(""),
+    sub_item_code: str = Query(""),
+    company_short_name: str = Query(""),
+    legal_header_line1: str = Query("SỞ TƯ PHÁP TP HÀ NỘI"),
+):
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(url="/public/login", status_code=302)
+
+    params: Dict[str, Any] = {
+        "project_id": int(project_id),
+        "treasury_account": treasury_account,
+        "beneficiary_name": beneficiary_name,
+        "treasury_bank": treasury_bank,
+        "project_desc": project_desc,
+        "tax_office_code": tax_office_code,
+        "chapter_code": chapter_code,
+        "dbhc_code": dbhc_code,
+        "sub_item_code": sub_item_code,
+        "company_short_name": company_short_name,
+        "legal_header_line1": legal_header_line1,
+    }
+
+    try:
+        status, content, headers = await _get_bytes(
+            "/api/v1/auction/refunds/tax-export-woori.xlsx",
+            token,
+            params=params,
+        )
+        if status >= 400:
+            try:
+                import json
+
+                js = json.loads(content.decode("utf-8", errors="ignore"))
+            except Exception:
+                js = {"raw": content[:400].decode("utf-8", errors="ignore")}
+            raise ServiceAError(status, js)
+
+        cd = headers.get("content-disposition") or headers.get("Content-Disposition")
+        resp_headers = {
+            "Content-Disposition": cd
+            or f'attachment; filename="chuyen_thue_woori_project_{project_id}.xlsx"'
+        }
+
+        return Response(
+            content=content,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers=resp_headers,
+        )
+    except ServiceAError as e:
+        return JSONResponse({"ok": False, "status": e.status, "body": e.body}, status_code=500)
+
+
+# =========================================================
+# 4d) Tax transfer preview JSON proxy
+#    A: GET /api/v1/auction/refunds/tax-export-preview
+# =========================================================
+@router.get("/auction/refunds/tax-export-preview.json")
+async def tax_export_preview_json_proxy(
+    request: Request,
+    project_id: int = Query(..., ge=1),
+    treasury_account: str = Query("7111"),
+    beneficiary_name: str = Query(""),
+    treasury_bank: str = Query("Agribank"),
+    project_desc: str = Query(""),
+    tax_office_code: str = Query(""),
+    chapter_code: str = Query(""),
+    dbhc_code: str = Query(""),
+    sub_item_code: str = Query(""),
+    company_short_name: str = Query(""),
+    legal_header_line1: str = Query("SỞ TƯ PHÁP TP HÀ NỘI"),
+):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"ok": False, "detail": "Not authenticated"}, status_code=401)
+
+    params: Dict[str, Any] = {
+        "project_id": int(project_id),
+        "treasury_account": treasury_account,
+        "beneficiary_name": beneficiary_name,
+        "treasury_bank": treasury_bank,
+        "project_desc": project_desc,
+        "tax_office_code": tax_office_code,
+        "chapter_code": chapter_code,
+        "dbhc_code": dbhc_code,
+        "sub_item_code": sub_item_code,
+        "company_short_name": company_short_name,
+        "legal_header_line1": legal_header_line1,
+    }
+
+    try:
+        js = await _get_json("/api/v1/auction/refunds/tax-export-preview", token, params=params)
+        return JSONResponse(js)
     except ServiceAError as e:
         return JSONResponse({"ok": False, "status": e.status, "body": e.body}, status_code=500)
 

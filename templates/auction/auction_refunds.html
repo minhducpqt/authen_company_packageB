@@ -74,7 +74,7 @@
                 class="h-10 px-4 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 inline-flex items-center gap-2"
                 {% if not project_id %}disabled{% endif %}>
           <i class="ri-bank-line"></i>
-          Download theo NH
+          Hoàn theo NH
           <i class="ri-arrow-down-s-line text-base"></i>
         </button>
         <div id="bankExportMenu"
@@ -93,6 +93,13 @@
           </div>
         </div>
       </div>
+
+      <a id="btnGoTaxTransfer"
+         href="{% if project_id %}/auction/refunds/tax-transfer?project={{ project|urlencode }}{% else %}#{% endif %}"
+         class="h-10 px-4 rounded-xl bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 inline-flex items-center gap-2 {% if not project_id %}opacity-40 pointer-events-none{% endif %}">
+        <i class="ri-government-line"></i>
+        Chuyển Thuế
+      </a>
     </div>
   </div>
 </div>

@@ -1,0 +1,658 @@
+{% extends "base.html" %}
+{% block title %}Chuyển thuế — trúng đấu{% endblock %}
+{% from 'macros/project_auction_type.html' import project_option_attrs %}
+
+{% block content %}
+<style>
+  .tax-input-attention {
+    background-color: #fffbeb !important;
+    border-color: #f59e0b !important;
+    box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.25);
+  }
+  .tax-input-attention:focus {
+    background-color: #fffbeb !important;
+    border-color: #d97706 !important;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25);
+  }
+  .tax-label-required::after {
+    content: " *";
+    color: #d97706;
+    font-weight: 700;
+  }
+</style>
+<div class="mb-6">
+  <div class="flex flex-wrap items-start gap-3">
+    <a href="{% if project %}/auction/refunds?project={{ project|urlencode }}{% else %}/auction/refunds{% endif %}"
+       class="h-10 px-3 rounded-xl border border-slate-300 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50 inline-flex items-center gap-2">
+      <i class="ri-arrow-left-line"></i>
+      Quay lại 5.5
+    </a>
+    <div class="min-w-0">
+      <h1 class="text-2xl font-semibold text-slate-900 flex items-center gap-2">
+        <i class="ri-government-line text-violet-600 text-3xl"></i>
+        Chuyển thuế — người trúng đấu
+      </h1>
+      <p class="text-slate-500 text-sm mt-1">
+        Export file gửi ngân hàng chuyển tiền đặt trước của người trúng đấu sang Kho bạc.
+      </p>
+    </div>
+  </div>
+</div>
+
+{% if error %}
+  <div class="mb-4 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl p-3 text-sm">
+    <div class="font-semibold">Lỗi</div>
+    <div class="mt-1">{{ error }}</div>
+  </div>
+{% endif %}
+
+<div class="bg-white border rounded-2xl shadow-sm p-4 mb-4">
+  <div class="flex flex-wrap gap-4 items-end">
+    <div class="flex flex-col min-w-[320px] min-w-0" data-project-type-field>
+      <label class="text-xs font-semibold text-slate-500 mb-1">Dự án</label>
+      <select id="fProject" class="h-10 rounded-xl border px-3 text-sm">
+        <option value="">— Chọn dự án —</option>
+        {% for p in projects or [] %}
+          {% set code = (p.project_code or p.code) %}
+          <option value="{{ code }}" {{ project_option_attrs(p) }} {% if code == project %}selected{% endif %}>
+            {{ code }} — {{ p.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    {% if project_id %}
+      <div class="text-xs text-slate-500 pb-1">
+        <span class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border bg-slate-50">
+          <i class="ri-folder-2-line"></i>
+          <span>Mã dự án: <b class="text-slate-900">{{ project }}</b></span>
+          <span class="text-slate-300">•</span>
+          <span>ID: <b class="text-slate-900">{{ project_id }}</b></span>
+        </span>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<div id="taxConfigPanel" class="bg-white border rounded-2xl shadow-sm p-4 mb-4 {% if not project_id %}opacity-50 pointer-events-none{% endif %}">
+  <div class="flex flex-wrap items-start gap-3 mb-3">
+    <div class="flex items-center gap-2 min-w-0">
+      <i class="ri-government-line text-violet-600 text-lg"></i>
+      <div>
+        <div class="text-sm font-semibold text-slate-900">Thông tin chuyển thuế</div>
+        <div class="text-xs text-slate-500">Dùng khi export file gửi ngân hàng chuyển tiền trúng đấu sang Kho bạc.</div>
+      </div>
+    </div>
+
+    <div class="ml-auto flex flex-wrap items-end gap-2 w-full xl:w-auto">
+      <div class="flex flex-col min-w-[240px] flex-1 xl:flex-none">
+        <label class="text-xs font-semibold text-slate-500 mb-1">Cấu hình đã lưu</label>
+        <select id="taxHistorySelect" class="h-10 rounded-xl border px-3 text-sm bg-white">
+          <option value="">— Chọn từ lịch sử —</option>
+        </select>
+      </div>
+      <button type="button" id="btnSaveTaxHistory"
+              class="h-10 px-4 rounded-xl border border-violet-300 bg-violet-50 text-violet-800 text-sm font-medium hover:bg-violet-100 inline-flex items-center gap-2">
+        <i class="ri-save-3-line"></i>
+        Lưu mẫu
+      </button>
+      <button type="button" id="btnDeleteTaxHistory"
+              class="h-10 px-3 rounded-xl border border-slate-300 bg-white text-slate-600 text-sm hover:bg-slate-50 inline-flex items-center gap-2"
+              title="Xóa mẫu đang chọn">
+        <i class="ri-delete-bin-line"></i>
+      </button>
+    </div>
+  </div>
+
+  <div id="taxDraftHint" class="hidden mb-3 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
+    <i class="ri-check-line"></i> Đã khôi phục bản nháp (trừ các ô bắt buộc — hãy chọn từ lịch sử hoặc điền tay).
+  </div>
+
+  <div class="mb-3 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+    Các ô đánh dấu <span class="font-semibold">*</span> không tự điền khi mở trang — chọn <b>Cấu hình đã lưu</b> hoặc nhập thủ công. Ô vàng = chưa có dữ liệu.
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+    <div class="flex flex-col">
+      <label class="text-xs font-semibold text-slate-500 mb-1">Số tài khoản (Kho bạc)</label>
+      <input id="taxTreasuryAccount" type="text" value="7111" list="histTaxTreasuryAccount" class="h-10 rounded-xl border px-3 text-sm">
+      <datalist id="histTaxTreasuryAccount"></datalist>
+    </div>
+    <div class="flex flex-col">
+      <label class="text-xs font-semibold text-slate-500 mb-1">Ngân hàng thụ hưởng</label>
+      <input id="taxTreasuryBank" type="text" value="Agribank" list="histTaxTreasuryBank" class="h-10 rounded-xl border px-3 text-sm">
+      <datalist id="histTaxTreasuryBank"></datalist>
+    </div>
+    <div class="flex flex-col md:col-span-2 xl:col-span-1">
+      <label class="text-xs font-semibold text-slate-500 mb-1 tax-label-required">Người thụ hưởng</label>
+      <input id="taxBeneficiaryName" type="text" value="" list="histTaxBeneficiaryName" placeholder="Chọn từ lịch sử hoặc nhập" class="h-10 rounded-xl border px-3 text-sm tax-input-attention">
+      <datalist id="histTaxBeneficiaryName"></datalist>
+    </div>
+
+    <div class="flex flex-col md:col-span-2">
+      <label class="text-xs font-semibold text-slate-500 mb-1 tax-label-required">Mô tả dự án (QSDD khu dân cư…)</label>
+      <input id="taxProjectDesc" type="text" value="" list="histTaxProjectDesc" placeholder="Chọn từ lịch sử hoặc nhập" class="h-10 rounded-xl border px-3 text-sm tax-input-attention">
+      <datalist id="histTaxProjectDesc"></datalist>
+    </div>
+    <div class="flex flex-col">
+      <label class="text-xs font-semibold text-slate-500 mb-1">Tên công ty đấu giá (viết tắt)</label>
+      <input id="taxCompanyShort" type="text" value="" list="histTaxCompanyShort" placeholder="Để trống = tự lấy từ hệ thống" class="h-10 rounded-xl border px-3 text-sm">
+      <datalist id="histTaxCompanyShort"></datalist>
+    </div>
+
+    <div class="flex flex-col">
+      <label class="text-xs font-semibold text-slate-500 mb-1 tax-label-required">Mã CQT</label>
+      <input id="taxOfficeCode" type="text" value="" list="histTaxOfficeCode" placeholder="Chọn từ lịch sử hoặc nhập" class="h-10 rounded-xl border px-3 text-sm tax-input-attention">
+      <datalist id="histTaxOfficeCode"></datalist>
+    </div>
+    <div class="flex flex-col">
+      <label class="text-xs font-semibold text-slate-500 mb-1 tax-label-required">Mã chương</label>
+      <input id="taxChapterCode" type="text" value="" list="histTaxChapterCode" placeholder="Chọn từ lịch sử hoặc nhập" class="h-10 rounded-xl border px-3 text-sm tax-input-attention">
+      <datalist id="histTaxChapterCode"></datalist>
+    </div>
+    <div class="flex flex-col">
+      <label class="text-xs font-semibold text-slate-500 mb-1 tax-label-required">Mã ĐBHC</label>
+      <input id="taxDbhcCode" type="text" value="" list="histTaxDbhcCode" placeholder="Chọn từ lịch sử hoặc nhập" class="h-10 rounded-xl border px-3 text-sm tax-input-attention">
+      <datalist id="histTaxDbhcCode"></datalist>
+    </div>
+    <div class="flex flex-col">
+      <label class="text-xs font-semibold text-slate-500 mb-1 tax-label-required">Tiểu mục</label>
+      <input id="taxSubItemCode" type="text" value="" list="histTaxSubItemCode" placeholder="Chọn từ lịch sử hoặc nhập" class="h-10 rounded-xl border px-3 text-sm tax-input-attention">
+      <datalist id="histTaxSubItemCode"></datalist>
+    </div>
+    <div class="flex flex-col md:col-span-2">
+      <label class="text-xs font-semibold text-slate-500 mb-1">Dòng header pháp lý</label>
+      <input id="taxLegalHeader" type="text" value="SỞ TƯ PHÁP TP HÀ NỘI" list="histTaxLegalHeader" class="h-10 rounded-xl border px-3 text-sm">
+      <datalist id="histTaxLegalHeader"></datalist>
+    </div>
+  </div>
+</div>
+
+<div id="taxBankExportPanel" class="bg-white border rounded-2xl shadow-sm p-4 mb-4 {% if not project_id %}opacity-50{% endif %}">
+  <div class="flex flex-wrap items-center gap-3">
+    <div class="min-w-0">
+      <div class="text-sm font-semibold text-slate-900">Chuyển thuế theo ngân hàng</div>
+      <div class="text-xs text-slate-500 mt-0.5">Chọn ngân hàng để tải file mẫu tương ứng.</div>
+    </div>
+
+    <div id="taxBankExportWrap" class="relative inline-block ml-auto">
+      <button type="button" id="btnTaxBankToggle"
+              class="h-10 px-4 rounded-xl bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 inline-flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-violet-600"
+              disabled>
+        <i class="ri-bank-line"></i>
+        Chuyển theo NH
+        <i class="ri-arrow-down-s-line text-base"></i>
+      </button>
+      <div id="taxBankMenu"
+           class="hidden absolute right-0 mt-2 w-56 rounded-xl border border-slate-200 bg-white shadow-lg z-30 overflow-hidden">
+        <a id="btnExportTaxWoori"
+           href="#"
+           class="flex items-center gap-2 px-4 py-3 text-sm text-slate-800 hover:bg-violet-50 border-b border-slate-100 pointer-events-none opacity-40">
+          <i class="ri-building-2-line text-violet-600"></i>
+          <span class="font-medium">Wooribank</span>
+        </a>
+        <div class="px-4 py-2.5 text-xs text-slate-400 cursor-not-allowed flex items-center gap-2 bg-slate-50">
+          <i class="ri-bank-line"></i> Vietcombank — Sắp có
+        </div>
+        <div class="px-4 py-2.5 text-xs text-slate-400 cursor-not-allowed flex items-center gap-2 bg-slate-50">
+          <i class="ri-bank-line"></i> Techcombank — Sắp có
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="taxExportHint" class="mt-3 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+    {% if not project_id %}
+      Vui lòng chọn dự án trước khi export.
+    {% else %}
+      Điền đủ các ô bắt buộc (*) phía trên để bật nút <b>Chuyển theo NH</b>.
+    {% endif %}
+  </div>
+</div>
+
+<div id="taxPreviewPanel" class="bg-white border rounded-2xl shadow-sm p-4 mb-4 overflow-hidden">
+  <div class="flex items-center gap-2 mb-3">
+    <i class="ri-eye-line text-sky-600 text-lg"></i>
+    <div>
+      <div class="text-sm font-semibold text-slate-900">Xem trước mẫu file (Wooribank)</div>
+      <div class="text-xs text-slate-500">Tiêu đề + 1 dòng mẫu — nội dung CK không dấu, giữ dấu phẩy/hai chấm phân tách (giống file export).</div>
+    </div>
+  </div>
+
+  <div id="pvLoading" class="hidden text-xs text-slate-500 mb-2">Đang cập nhật preview…</div>
+
+  <div class="rounded-xl border border-slate-200 overflow-x-auto bg-slate-50/60">
+    <div class="min-w-[980px] p-4 space-y-3">
+      <div id="pvMainTitle" class="text-center text-xs font-semibold text-white bg-slate-800 rounded-lg px-3 py-3 leading-relaxed">—</div>
+
+      <table class="w-full text-xs border-collapse bg-white">
+        <tbody>
+          <tr class="bg-slate-50">
+            <td class="border border-slate-200 px-2 py-2 text-center w-10 font-semibold text-slate-500">STT</td>
+            <td class="border border-slate-200 px-2 py-2 font-medium" id="pvSampleName">—</td>
+            <td class="border border-slate-200 px-2 py-2 font-mono w-28" id="pvSampleCccd">—</td>
+            <td class="border border-slate-200 px-2 py-2 text-center w-20" id="pvSampleLot">—</td>
+            <td class="border border-slate-200 px-2 py-2 text-right font-mono w-32" id="pvSampleAmount">—</td>
+            <td class="border border-slate-200 px-2 py-2 text-center w-16" id="pvSampleAccount">—</td>
+            <td class="border border-slate-200 px-2 py-2 w-24" id="pvSampleBank">—</td>
+            <td class="border border-slate-200 px-2 py-2 text-xs w-40" id="pvSampleBeneficiary">—</td>
+            <td class="border border-slate-200 px-2 py-2 text-xs leading-relaxed min-w-[320px] font-mono" id="pvSampleContent">—</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="text-xs text-slate-500 italic">
+        Dòng mẫu cố định (NGUYỄN VĂN NAM · CL6-24). File thật liệt kê toàn bộ người trúng đấu.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const PROJECT_ID = {{ project_id or 'null' }};
+  const PROJECT_CODE = {{ (project or '')|tojson }};
+
+  const FIELD_IDS = [
+    'taxTreasuryAccount','taxTreasuryBank','taxBeneficiaryName','taxProjectDesc',
+    'taxCompanyShort','taxOfficeCode','taxChapterCode','taxDbhcCode','taxSubItemCode','taxLegalHeader'
+  ];
+
+  /** Không auto-fill khi mở trang — chỉ từ lịch sử hoặc nhập tay. */
+  const HISTORY_ONLY_FIELDS = [
+    'taxBeneficiaryName','taxProjectDesc','taxOfficeCode',
+    'taxChapterCode','taxDbhcCode','taxSubItemCode',
+  ];
+
+  const REQUIRED_EXPORT_FIELDS = [
+    'taxTreasuryAccount','taxTreasuryBank',
+    ...HISTORY_ONLY_FIELDS,
+  ];
+
+  const PREVIEW_PARAM_MAP = {
+    treasury_account: 'taxTreasuryAccount',
+    beneficiary_name: 'taxBeneficiaryName',
+    treasury_bank: 'taxTreasuryBank',
+    project_desc: 'taxProjectDesc',
+    tax_office_code: 'taxOfficeCode',
+    chapter_code: 'taxChapterCode',
+    dbhc_code: 'taxDbhcCode',
+    sub_item_code: 'taxSubItemCode',
+    company_short_name: 'taxCompanyShort',
+    legal_header_line1: 'taxLegalHeader',
+  };
+
+  function storageScopeKey(){
+    return PROJECT_CODE || PROJECT_ID || '__global__';
+  }
+
+  function draftKey(){ return `tax_transfer_draft_${storageScopeKey()}`; }
+  function historyKey(){ return `tax_transfer_history_${storageScopeKey()}`; }
+
+  function readFields(){
+    const out = {};
+    FIELD_IDS.forEach(id=>{
+      const el = document.getElementById(id);
+      out[id] = el ? el.value : '';
+    });
+    return out;
+  }
+
+  function writeFields(cfg){
+    if(!cfg) return;
+    FIELD_IDS.forEach(id=>{
+      const el = document.getElementById(id);
+      if(el && cfg[id] !== undefined) el.value = cfg[id];
+    });
+    updateAttentionFields();
+  }
+
+  function updateAttentionFields(){
+    HISTORY_ONLY_FIELDS.forEach(id=>{
+      const el = document.getElementById(id);
+      if(!el) return;
+      const empty = !(el.value || '').trim();
+      el.classList.toggle('tax-input-attention', empty);
+    });
+  }
+
+  function fieldsFingerprint(cfg){
+    return FIELD_IDS.map(id => `${id}=${(cfg[id] || '').trim()}`).join('|');
+  }
+
+  function fmtHistoryLabel(cfg, savedAt){
+    const parts = [];
+    const desc = (cfg.taxProjectDesc || '').trim();
+    const cqt = (cfg.taxOfficeCode || '').trim();
+    if(desc) parts.push(desc.length > 42 ? desc.slice(0, 42) + '…' : desc);
+    if(cqt) parts.push('CQT ' + cqt);
+    const base = parts.length ? parts.join(' · ') : 'Mẫu chưa đặt tên';
+    let when = '';
+    if(savedAt){
+      try{
+        when = new Date(savedAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+      }catch(e){}
+    }
+    return when ? `${base} (${when})` : base;
+  }
+
+  function loadHistoryList(){
+    try{
+      const raw = localStorage.getItem(historyKey());
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    }catch(e){
+      return [];
+    }
+  }
+
+  function saveHistoryList(arr){
+    try{ localStorage.setItem(historyKey(), JSON.stringify(arr)); }catch(e){}
+  }
+
+  function upsertHistoryEntry(cfg, label){
+    const fp = fieldsFingerprint(cfg);
+    let arr = loadHistoryList();
+    arr = arr.filter(x => x.fp !== fp);
+    arr.unshift({
+      id: String(Date.now()),
+      fp,
+      label: label || fmtHistoryLabel(cfg, new Date().toISOString()),
+      savedAt: new Date().toISOString(),
+      fields: cfg,
+    });
+    if(arr.length > 20) arr = arr.slice(0, 20);
+    saveHistoryList(arr);
+    renderHistorySelect(arr);
+    refreshFieldDatalists(arr);
+    return arr;
+  }
+
+  function renderHistorySelect(arr){
+    const sel = document.getElementById('taxHistorySelect');
+    if(!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">— Chọn từ lịch sử —</option>';
+    (arr || loadHistoryList()).forEach(item=>{
+      const opt = document.createElement('option');
+      opt.value = item.id;
+      opt.textContent = item.label || fmtHistoryLabel(item.fields || {}, item.savedAt);
+      sel.appendChild(opt);
+    });
+    if(cur && [...sel.options].some(o => o.value === cur)) sel.value = cur;
+  }
+
+  function refreshFieldDatalists(arr){
+    const lists = {};
+    FIELD_IDS.forEach(id=>{
+      lists[id] = new Set();
+    });
+    (arr || loadHistoryList()).forEach(item=>{
+      FIELD_IDS.forEach(id=>{
+        const v = ((item.fields || {})[id] || '').trim();
+        if(v) lists[id].add(v);
+      });
+    });
+    FIELD_IDS.forEach(id=>{
+      const dl = document.getElementById('hist' + id.charAt(0).toUpperCase() + id.slice(1));
+      if(!dl) return;
+      dl.innerHTML = '';
+      [...lists[id]].slice(0, 12).forEach(v=>{
+        const opt = document.createElement('option');
+        opt.value = v;
+        dl.appendChild(opt);
+      });
+    });
+  }
+
+  function saveDraft(){
+    try{
+      localStorage.setItem(draftKey(), JSON.stringify({
+        savedAt: new Date().toISOString(),
+        fields: readFields(),
+      }));
+    }catch(e){}
+  }
+
+  function loadDraft(){
+    try{
+      const raw = localStorage.getItem(draftKey());
+      if(!raw) return false;
+      const data = JSON.parse(raw);
+      if(!data || !data.fields) return false;
+      FIELD_IDS.forEach(id=>{
+        if(HISTORY_ONLY_FIELDS.includes(id)) return;
+        const el = document.getElementById(id);
+        if(el && data.fields[id] !== undefined) el.value = data.fields[id];
+      });
+      updateAttentionFields();
+      return true;
+    }catch(e){
+      return false;
+    }
+  }
+
+  function formatVND(value){
+    if (value === null || value === undefined || value === '') return '—';
+    const n = Number(value);
+    if (!Number.isFinite(n)) return '—';
+    return Math.round(n).toLocaleString('vi-VN');
+  }
+
+  function buildPreviewQueryParams(){
+    const params = new URLSearchParams();
+    if(!PROJECT_ID) return params;
+    params.set('project_id', String(PROJECT_ID));
+    Object.entries(PREVIEW_PARAM_MAP).forEach(([param, id])=>{
+      const el = document.getElementById(id);
+      const v = (el?.value || '').trim();
+      if(v) params.set(param, v);
+    });
+    return params;
+  }
+
+  function buildTaxExportUrl(){
+    const u = new URL('/auction/refunds/tax-export-woori.xlsx', window.location.origin);
+    if(!PROJECT_ID) return '#';
+    u.search = buildPreviewQueryParams().toString();
+    return u.toString();
+  }
+
+  function isExportReady(){
+    if(!PROJECT_ID) return false;
+    return REQUIRED_EXPORT_FIELDS.every(id=>{
+      const el = document.getElementById(id);
+      return !!(el?.value || '').trim();
+    });
+  }
+
+  function updateExportButtonState(){
+    const ready = isExportReady();
+    const toggle = document.getElementById('btnTaxBankToggle');
+    const wrap = document.getElementById('taxBankExportWrap');
+    const exportLink = document.getElementById('btnExportTaxWoori');
+    const hint = document.getElementById('taxExportHint');
+    const menu = document.getElementById('taxBankMenu');
+
+    if(toggle) toggle.disabled = !ready;
+    if(wrap) wrap.classList.toggle('pointer-events-none', !ready);
+    if(menu && !ready) menu.classList.add('hidden');
+
+    if(exportLink){
+      if(ready){
+        exportLink.href = buildTaxExportUrl();
+        exportLink.classList.remove('pointer-events-none', 'opacity-40');
+      }else{
+        exportLink.href = '#';
+        exportLink.classList.add('pointer-events-none', 'opacity-40');
+      }
+    }
+
+    if(hint){
+      if(ready){
+        hint.classList.add('hidden');
+      }else{
+        hint.classList.remove('hidden');
+        hint.innerHTML = !PROJECT_ID
+          ? 'Vui lòng chọn dự án trước khi export.'
+          : 'Điền đủ các ô bắt buộc (*) phía trên để bật nút <b>Chuyển theo NH</b>.';
+      }
+    }
+  }
+
+  function refreshTaxLink(){
+    updateExportButtonState();
+  }
+
+  let previewTimer = null;
+  let previewSeq = 0;
+
+  async function refreshPreview(){
+    refreshTaxLink();
+    if(!PROJECT_ID){
+      document.getElementById('pvMainTitle').textContent = 'Chọn dự án để xem preview';
+      return;
+    }
+
+    const seq = ++previewSeq;
+    const loading = document.getElementById('pvLoading');
+    loading?.classList.remove('hidden');
+
+    try{
+      const qs = buildPreviewQueryParams().toString();
+      const res = await fetch(`/auction/refunds/tax-export-preview.json?${qs}`, {
+        headers: { 'Accept': 'application/json' },
+      });
+      const js = await res.json().catch(()=> ({}));
+      if(seq !== previewSeq) return;
+      if(!res.ok){
+        throw new Error((js && (js.detail || js.message)) || `HTTP ${res.status}`);
+      }
+
+      const row = js.sample_row || {};
+      document.getElementById('pvMainTitle').textContent = js.title || '—';
+      document.getElementById('pvSampleName').textContent = row.winner_name || '—';
+      document.getElementById('pvSampleCccd').textContent = row.cccd || '—';
+      document.getElementById('pvSampleLot').textContent = row.lot_code || '—';
+      document.getElementById('pvSampleAmount').textContent = formatVND(row.amount_vnd);
+      document.getElementById('pvSampleAccount').textContent = row.treasury_account || '—';
+      document.getElementById('pvSampleBank').textContent = row.treasury_bank || '—';
+      document.getElementById('pvSampleBeneficiary').textContent = row.beneficiary_name || '—';
+      document.getElementById('pvSampleContent').textContent = row.content || '—';
+    }catch(e){
+      if(seq !== previewSeq) return;
+      document.getElementById('pvSampleContent').textContent = `Không tải preview: ${e?.message || e}`;
+    }finally{
+      if(seq === previewSeq) loading?.classList.add('hidden');
+    }
+  }
+
+  function schedulePreviewRefresh(){
+    clearTimeout(previewTimer);
+    previewTimer = setTimeout(refreshPreview, 280);
+  }
+
+  function onFieldsChanged(){
+    updateAttentionFields();
+    updateExportButtonState();
+    schedulePreviewRefresh();
+    scheduleDraftSave();
+  }
+
+  let draftTimer = null;
+  function scheduleDraftSave(){
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(saveDraft, 350);
+  }
+
+  document.getElementById('fProject')?.addEventListener('change', ()=>{
+    saveDraft();
+    const code = (document.getElementById('fProject')?.value || '').trim();
+    const u = new URL('/auction/refunds/tax-transfer', window.location.origin);
+    if(code) u.searchParams.set('project', code);
+    window.location.assign(u.toString());
+  });
+
+  (function initTaxBankMenu(){
+    const toggle = document.getElementById('btnTaxBankToggle');
+    const menu = document.getElementById('taxBankMenu');
+    if(!toggle || !menu) return;
+    toggle.addEventListener('click', (e)=>{
+      if(toggle.disabled) return;
+      e.stopPropagation();
+      menu.classList.toggle('hidden');
+    });
+    document.addEventListener('click', ()=> menu.classList.add('hidden'));
+    menu.addEventListener('click', (e)=> e.stopPropagation());
+  })();
+
+  document.getElementById('taxHistorySelect')?.addEventListener('change', ()=>{
+    const id = (document.getElementById('taxHistorySelect')?.value || '').trim();
+    if(!id) return;
+    const item = loadHistoryList().find(x => x.id === id);
+    if(!item) return;
+    writeFields(item.fields || {});
+    onFieldsChanged();
+    saveDraft();
+  });
+
+  document.getElementById('btnSaveTaxHistory')?.addEventListener('click', ()=>{
+    const cfg = readFields();
+    const custom = window.prompt('Tên gợi nhớ cho mẫu này (Enter = tự đặt tên):', '');
+    if(custom === null) return;
+    const label = (custom || '').trim() || fmtHistoryLabel(cfg, new Date().toISOString());
+    upsertHistoryEntry(cfg, label);
+    saveDraft();
+    const sel = document.getElementById('taxHistorySelect');
+    const arr = loadHistoryList();
+    if(sel && arr[0]) sel.value = arr[0].id;
+  });
+
+  document.getElementById('btnDeleteTaxHistory')?.addEventListener('click', ()=>{
+    const sel = document.getElementById('taxHistorySelect');
+    const id = (sel?.value || '').trim();
+    if(!id){
+      window.alert('Chọn một mẫu trong danh sách lịch sử trước khi xóa.');
+      return;
+    }
+    if(!window.confirm('Xóa mẫu đã chọn khỏi lịch sử?')) return;
+    const arr = loadHistoryList().filter(x => x.id !== id);
+    saveHistoryList(arr);
+    renderHistorySelect(arr);
+    refreshFieldDatalists(arr);
+    if(sel) sel.value = '';
+  });
+
+  document.getElementById('btnExportTaxWoori')?.addEventListener('click', (e)=>{
+    if(!isExportReady()){
+      e.preventDefault();
+      return;
+    }
+    saveDraft();
+    upsertHistoryEntry(readFields());
+  });
+
+  window.addEventListener('pagehide', saveDraft);
+  window.addEventListener('beforeunload', saveDraft);
+
+  (function init(){
+    const restored = loadDraft();
+    if(restored){
+      const hint = document.getElementById('taxDraftHint');
+      if(hint) hint.classList.remove('hidden');
+    }
+    renderHistorySelect(loadHistoryList());
+    refreshFieldDatalists(loadHistoryList());
+    updateAttentionFields();
+    updateExportButtonState();
+    refreshPreview();
+
+    FIELD_IDS.forEach(id=>{
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.addEventListener('input', onFieldsChanged);
+      el.addEventListener('change', onFieldsChanged);
+    });
+  })();
+</script>
+{% endblock %}
