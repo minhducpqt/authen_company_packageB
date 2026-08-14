@@ -1479,6 +1479,20 @@ Modal: Print One Bid Sheet (choose one customer)
   return (s === null || s === undefined) ? '' : String(s);
   }
 
+  function formatApiDetail(detail){
+  if(!detail) return '';
+  if(typeof detail === 'string') return detail;
+  if(typeof detail === 'object'){
+  if(detail.message) return String(detail.message);
+  if(detail.code === 'GROUP_DEPOSIT_QUOTA_EXCEEDED'){
+  return 'Khách đã hết suất cọc khả dụng trong nhóm này.';
+  }
+  if(detail.code) return String(detail.code);
+  try { return JSON.stringify(detail); } catch(e){ return 'Lỗi không xác định'; }
+  }
+  return String(detail);
+  }
+
   function escapeHtml(str){
   return (str||'').toString()
   .replaceAll('&','&amp;')
@@ -3317,7 +3331,7 @@ Modal: Print One Bid Sheet (choose one customer)
   const js = await r.json().catch(()=> ({}));
 
   if(!r.ok){
-  const msg = safeText(js.detail || js.error || ("HTTP " + r.status));
+  const msg = formatApiDetail(js.detail) || safeText(js.error || ("HTTP " + r.status));
   if(r.status === 409 && msg.startsWith("LOCKED_BY_")){
   showError("Không thể reset", "Lô đang bị khoá bởi người khác.", msg);
   } else {
@@ -3445,9 +3459,11 @@ Modal: Print One Bid Sheet (choose one customer)
   const js = await r.json().catch(()=> ({}));
 
   if(!r.ok){
-  const msg = safeText(js.detail || js.error || ("HTTP " + r.status));
+  const msg = formatApiDetail(js.detail) || safeText(js.error || ("HTTP " + r.status));
   if(r.status === 409 && msg.startsWith("LOCKED_BY_")){
   showError("Không thể chốt", "Lô đang bị khoá bởi người khác.", msg);
+  } else if(r.status === 400 && js.detail && js.detail.code === 'GROUP_DEPOSIT_QUOTA_EXCEEDED'){
+  showError("Không thể chốt", msg, "Khách này đã dùng hết suất cọc trong nhóm. Vui lòng chọn khách khác hoặc reset lô đã chốt trước đó.");
   } else {
   showError("Chốt thất bại", msg);
   }
