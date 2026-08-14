@@ -337,6 +337,62 @@ async def export_refunds_xlsx_proxy(
     except ServiceAError as e:
         return JSONResponse({"ok": False, "status": e.status, "body": e.body}, status_code=500)
 
+
+# =========================================================
+# 4b) Export Woori XLSX proxy
+#    A: GET /api/v1/auction/refunds/export-woori.xlsx
+# =========================================================
+@router.get("/auction/refunds/export-woori.xlsx")
+async def export_refunds_woori_xlsx_proxy(
+    request: Request,
+    project_id: int = Query(..., ge=1),
+    eligible: str = Query("ELIGIBLE"),
+    score_level: str = Query("ALL"),
+):
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(url="/public/login", status_code=302)
+
+    eligible = _norm_eligible(eligible)
+    score_level = _norm_score_level(score_level)
+
+    params: Dict[str, Any] = {
+        "project_id": int(project_id),
+        "eligible": eligible,
+    }
+    if score_level and score_level != "ALL":
+        params["score_level"] = score_level
+
+    try:
+        status, content, headers = await _get_bytes(
+            "/api/v1/auction/refunds/export-woori.xlsx",
+            token,
+            params=params,
+        )
+        if status >= 400:
+            try:
+                import json
+
+                js = json.loads(content.decode("utf-8", errors="ignore"))
+            except Exception:
+                js = {"raw": content[:400].decode("utf-8", errors="ignore")}
+            raise ServiceAError(status, js)
+
+        cd = headers.get("content-disposition") or headers.get("Content-Disposition")
+        resp_headers = {
+            "Content-Disposition": cd
+            or f'attachment; filename="hoan_tien_woori_project_{project_id}.xlsx"'
+        }
+
+        return Response(
+            content=content,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers=resp_headers,
+        )
+    except ServiceAError as e:
+        return JSONResponse({"ok": False, "status": e.status, "body": e.body}, status_code=500)
+
+
 # =========================================================
 # 1.x) API: Refund candidates CHECK/AUDIT (JSON)
 #    A: GET /api/v1/auction/refunds/check

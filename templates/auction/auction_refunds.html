@@ -17,7 +17,7 @@
 <div class="mb-6">
   <h1 class="text-2xl font-semibold text-slate-900 flex items-center gap-2">
     <i class="ri-refund-2-line text-indigo-600 text-3xl"></i>
-    5.4 Hoàn tiền đặt trước
+    5.5 Hoàn tiền đặt trước
   </h1>
   <p class="text-slate-500 text-sm mt-1">
     Danh sách hoàn theo dự án — có thể kéo ngang để xem đủ thông tin.
@@ -63,16 +63,36 @@
     {% endif %}
 
     <div class="ml-auto flex items-center gap-2 flex-wrap justify-end">
-      {# XLSX download for LIST (keeps existing endpoint)
-         NOTE: keep current query eligible/score/q if you want,
-         but per your statement "ds hoàn chỉ phụ thuộc project"
-         we only pass project_id (and keep it stable).
-      #}
       <a id="btnExportXlsxTop"
          href="{% if project_id %}/auction/refunds/export.xlsx?project_id={{ project_id }}{% else %}#{% endif %}"
          class="h-10 px-4 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 inline-flex items-center gap-2 {% if not project_id %}opacity-40 pointer-events-none{% endif %}">
         <i class="ri-file-excel-2-line"></i> Download XLSX
       </a>
+
+      <div id="bankExportWrap" class="relative inline-block {% if not project_id %}opacity-40 pointer-events-none{% endif %}">
+        <button type="button" id="btnBankExportToggle"
+                class="h-10 px-4 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 inline-flex items-center gap-2"
+                {% if not project_id %}disabled{% endif %}>
+          <i class="ri-bank-line"></i>
+          Download theo NH
+          <i class="ri-arrow-down-s-line text-base"></i>
+        </button>
+        <div id="bankExportMenu"
+             class="hidden absolute right-0 mt-2 w-56 rounded-xl border border-slate-200 bg-white shadow-lg z-30 overflow-hidden">
+          <a id="btnExportWoori"
+             href="{% if project_id %}/auction/refunds/export-woori.xlsx?project_id={{ project_id }}{% else %}#{% endif %}"
+             class="flex items-center gap-2 px-4 py-3 text-sm text-slate-800 hover:bg-indigo-50 border-b border-slate-100">
+            <i class="ri-building-2-line text-indigo-600"></i>
+            <span class="font-medium">Wooribank</span>
+          </a>
+          <div class="px-4 py-2.5 text-xs text-slate-400 cursor-not-allowed flex items-center gap-2 bg-slate-50">
+            <i class="ri-bank-line"></i> Vietcombank — Sắp có
+          </div>
+          <div class="px-4 py-2.5 text-xs text-slate-400 cursor-not-allowed flex items-center gap-2 bg-slate-50">
+            <i class="ri-bank-line"></i> Techcombank — Sắp có
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -586,6 +606,21 @@
 
     window.location.assign(u.toString());
   });
+
+  // Dropdown export theo ngân hàng
+  (function initBankExportMenu(){
+    const wrap = document.getElementById('bankExportWrap');
+    const toggle = document.getElementById('btnBankExportToggle');
+    const menu = document.getElementById('bankExportMenu');
+    if(!wrap || !toggle || !menu) return;
+
+    toggle.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      menu.classList.toggle('hidden');
+    });
+    document.addEventListener('click', ()=> menu.classList.add('hidden'));
+    menu.addEventListener('click', (e)=> e.stopPropagation());
+  })();
 </script>
 
 {# =========================================================
