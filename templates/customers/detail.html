@@ -1,126 +1,235 @@
 {% extends "base.html" %}
 {% block content %}
 
+{% set ns = namespace(bank=none) %}
+{% for b in (customer.bank_accounts or []) %}
+  {% if b.is_preferred %}{% set ns.bank = b %}{% endif %}
+{% endfor %}
+{% if not ns.bank and customer.bank_accounts and customer.bank_accounts|length > 0 %}
+  {% set ns.bank = customer.bank_accounts[0] %}
+{% endif %}
+
+<style>
+  .cd-page { font-size: 14px; color: #1e293b; }
+  .cd-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  }
+  .cd-section { padding: 14px 16px; }
+  .cd-section + .cd-section { border-top: 1px solid #f1f5f9; }
+  .cd-h { font-size: 15px; font-weight: 600; color: #0f172a; letter-spacing: -0.01em; }
+  .cd-sub { font-size: 12px; color: #64748b; margin-top: 1px; }
+  .cd-label { font-size: 12px; font-weight: 500; color: #475569; margin-bottom: 4px; }
+  .cd-input {
+    height: 38px; width: 100%; border: 1px solid #cbd5e1; border-radius: 10px;
+    padding: 0 12px; font-size: 14px; background: #fff; color: #0f172a;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .cd-input:focus {
+    outline: none; border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+  }
+  .cd-kv { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; }
+  .cd-kv-item {
+    min-width: 0; padding: 10px 12px; border-radius: 10px;
+    background: linear-gradient(180deg, #fafbfc, #f8fafc);
+    border: 1px solid #eef2f7;
+  }
+  .cd-kv-val { font-size: 14px; font-weight: 600; color: #0f172a; word-break: break-word; }
+  .cd-kv-val.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+  .cd-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 12px; font-weight: 500; color: #475569;
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 999px; padding: 3px 10px;
+  }
+  .cd-stat {
+    border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px;
+    background: linear-gradient(180deg, #fff, #f8fafc);
+  }
+  .cd-stat .n { font-size: 17px; font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; }
+  .cd-stat .l { font-size: 11px; font-weight: 500; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
+  .cd-tx-row {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px; align-items: start; padding: 10px 0; border-bottom: 1px solid #f1f5f9;
+  }
+  .cd-tx-row:last-child { border-bottom: none; }
+  .cd-btn-primary {
+    height: 36px; padding: 0 14px; border-radius: 10px;
+    background: #4f46e5; color: #fff; font-size: 13px; font-weight: 600;
+  }
+  .cd-btn-primary:hover { background: #4338ca; }
+  .cd-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .cd-select {
+    height: 36px; min-width: 150px; max-width: 220px; border-radius: 10px;
+    border: 1px solid #cbd5e1; background: #fff; padding: 0 10px; font-size: 13px; color: #334155;
+  }
+  @media (min-width: 1280px) {
+    .cd-right-col {
+      position: sticky; top: 12px; align-self: start;
+      max-height: calc(100vh - 24px); display: flex; flex-direction: column;
+    }
+    .cd-tx-scroll { overflow: auto; flex: 1; min-height: 0; }
+  }
+</style>
+
 <!-- Toast -->
 <div id="toast" class="fixed top-4 right-4 z-50 hidden">
-  <div id="toastBox" class="rounded-lg shadow-lg px-4 py-3 text-sm bg-slate-800 text-white"></div>
+  <div id="toastBox" class="rounded-lg shadow-lg px-3 py-2 text-xs bg-slate-800 text-white"></div>
 </div>
 
 <!-- Confirm Modal -->
 <div id="confirmMask" class="hidden fixed inset-0 z-40 bg-black/40"></div>
-<div id="confirmModal"
-     class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
-  <div class="w-full max-w-md rounded-2xl bg-white shadow-xl border border-slate-200">
-    <div class="px-5 pt-5">
-      <h3 class="text-lg font-semibold text-slate-800">Xác nhận lưu thay đổi?</h3>
-      <p class="mt-1 text-slate-500 text-sm">
-        Thông tin mới sẽ ghi đè dữ liệu hiện có và được lưu vào lịch sử <em>audit</em>.
-      </p>
+<div id="confirmModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-sm rounded-xl bg-white shadow-xl border border-slate-200">
+    <div class="px-4 pt-4">
+      <h3 class="text-sm font-semibold text-slate-800">Xác nhận lưu thay đổi?</h3>
+      <p class="mt-1 text-slate-500 text-xs">Thông tin mới sẽ ghi đè dữ liệu hiện có.</p>
     </div>
-    <div class="px-5 pb-5 mt-4 flex justify-end gap-2">
-      <button id="btnCancelConfirm"
-              class="h-10 px-4 rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50">
-        Hủy
-      </button>
-      <button id="btnDoConfirm"
-              class="h-10 px-4 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50">
-        Xác nhận
-      </button>
+    <div class="px-4 pb-4 mt-3 flex justify-end gap-2">
+      <button id="btnCancelConfirm" class="h-8 px-3 rounded-lg border border-slate-300 bg-white text-slate-700 text-xs hover:bg-slate-50">Hủy</button>
+      <button id="btnDoConfirm" class="h-8 px-3 rounded-lg bg-indigo-600 text-white text-xs hover:bg-indigo-700 disabled:opacity-50">Xác nhận</button>
     </div>
   </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-  <!-- Left: Profile summary -->
-  <div class="bg-white rounded-xl border border-slate-200 p-5">
-    <h2 class="text-lg font-semibold text-slate-800 mb-4">Thông tin cơ bản</h2>
-    <div class="space-y-3 text-sm">
-      <div class="flex justify-between">
-        <span class="text-slate-500">ID</span>
-        <span class="font-medium">{{ customer.id }}</span>
-      </div>
-      <div class="flex justify-between">
-        <span class="text-slate-500">Công ty</span>
-        <span class="font-medium">{{ customer.company_code }}</span>
-      </div>
-      <div class="flex justify-between">
-        <span class="text-slate-500">Tạo lúc</span>
-        <span class="font-medium">{{ customer.created_at or '—' }}</span>
-      </div>
-      <p class="pt-2 text-slate-500">
-        Sau này sẽ hiển thị thêm lịch sử giao dịch, đơn hàng, thanh toán…
-      </p>
-      <div class="pt-3">
-        <a href="/customers"
-           class="inline-flex items-center gap-2 text-slate-700 hover:text-slate-900">
-          <span class="ri-arrow-left-line"></span> Quay lại danh sách
-        </a>
-      </div>
+<div class="cd-page">
+  <!-- Compact header -->
+  <div class="mb-3 flex flex-col gap-2">
+    <a href="/customers" class="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 w-fit">
+      <i class="ri-arrow-left-line"></i> Danh sách khách
+    </a>
+    <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+      <h1 class="text-xl font-bold text-slate-900 leading-tight">{{ customer.full_name or ('Khách #' ~ customer.id) }}</h1>
+      <span class="cd-chip font-mono">CCCD {{ customer.cccd or '—' }}</span>
+      <span class="cd-chip">#{{ customer.id }}</span>
+      <span class="cd-chip uppercase">{{ customer.company_code }}</span>
+      <span class="cd-chip" id="createdAtDisplay">{{ customer.created_at or '—' }}</span>
     </div>
   </div>
 
-  <!-- Right: Edit form -->
-  <div class="bg-white rounded-xl border border-slate-200 p-5">
-    <div class="flex items-center justify-between">
-      <h2 class="text-lg font-semibold text-slate-800">
-        🧑‍💼 Chỉnh sửa thông tin khách hàng
-      </h2>
+  <div class="grid grid-cols-1 xl:grid-cols-12 gap-3">
+    <!-- LEFT -->
+    <div class="xl:col-span-7 cd-card">
+      <!-- Edit -->
+      <div class="cd-section">
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <div class="cd-h">Chỉnh sửa thông tin</div>
+          <button id="btnSave" type="button" class="cd-btn-primary disabled:opacity-50" disabled>Lưu thay đổi</button>
+        </div>
+
+        <form id="frm" class="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-2" onsubmit="return false;">
+          <div class="md:col-span-2">
+            <div class="cd-label">Họ tên *</div>
+            <input id="full_name" name="full_name" type="text" class="cd-input"
+                   value="{{ customer.full_name or '' }}" placeholder="Nguyễn Văn A">
+            <p id="err_full_name" class="mt-0.5 text-xs text-rose-600 hidden"></p>
+          </div>
+          <div>
+            <div class="cd-label">CCCD *</div>
+            <input id="cccd" name="cccd" type="text" class="cd-input font-mono"
+                   value="{{ customer.cccd or '' }}" placeholder="12 chữ số">
+            <p id="err_cccd" class="mt-0.5 text-xs text-rose-600 hidden"></p>
+          </div>
+          <div>
+            <div class="cd-label">SĐT</div>
+            <input id="phone" name="phone" type="text" class="cd-input font-mono"
+                   value="{{ customer.phone or '' }}" placeholder="0xxxxxxxxx">
+            <p id="err_phone" class="mt-0.5 text-xs text-rose-600 hidden"></p>
+          </div>
+          <div class="md:col-span-2">
+            <div class="cd-label">Email</div>
+            <input id="email" name="email" type="email" class="cd-input"
+                   value="{{ customer.email or '' }}" placeholder="name@example.com">
+            <p id="err_email" class="mt-0.5 text-xs text-rose-600 hidden"></p>
+          </div>
+          <div class="md:col-span-2">
+            <div class="cd-label">Địa chỉ</div>
+            <input id="address" name="address" type="text" class="cd-input"
+                   value="{{ customer.address or '' }}" placeholder="Số nhà, đường, phường/xã…">
+            <p id="err_address" class="mt-0.5 text-xs text-rose-600 hidden"></p>
+          </div>
+        </form>
+      </div>
+
+      <!-- Bank -->
+      <div class="cd-section">
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <div>
+            <div class="cd-h">Tài khoản hoàn tiền</div>
+            <div class="cd-sub">Chỉ xem, không chỉnh sửa</div>
+          </div>
+        </div>
+
+        {% if ns.bank %}
+        <div class="cd-kv">
+          <div class="cd-kv-item">
+            <div class="cd-label">Ngân hàng</div>
+            <div class="cd-kv-val">{{ ns.bank.bank_name or ns.bank.bank_code or '—' }}</div>
+          </div>
+          <div class="cd-kv-item">
+            <div class="cd-label">Mã NH</div>
+            <div class="cd-kv-val mono">{{ ns.bank.bank_code or '—' }}</div>
+          </div>
+          <div class="cd-kv-item">
+            <div class="cd-label">Số tài khoản</div>
+            <div class="cd-kv-val mono">{{ ns.bank.account_number or '—' }}</div>
+          </div>
+          <div class="cd-kv-item">
+            <div class="cd-label">Tên chủ TK</div>
+            <div class="cd-kv-val">{{ ns.bank.account_name or '—' }}</div>
+          </div>
+          {% if ns.bank.branch_name %}
+          <div class="cd-kv-item md:col-span-2">
+            <div class="cd-label">Chi nhánh</div>
+            <div class="cd-kv-val">{{ ns.bank.branch_name }}</div>
+          </div>
+          {% endif %}
+        </div>
+        {% else %}
+        <div class="text-sm text-slate-500 py-3 px-3 rounded-lg border border-dashed border-slate-300 bg-slate-50">
+          Chưa có thông tin tài khoản hoàn tiền.
+        </div>
+        {% endif %}
+      </div>
     </div>
 
-    <form id="frm" class="mt-4 space-y-4" onsubmit="return false;">
-      <!-- Họ tên -->
-      <div>
-        <label class="block text-sm font-medium text-slate-700">Họ tên *</label>
-        <input id="full_name" name="full_name" type="text"
-               class="mt-1 h-11 w-full rounded-lg border border-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-               value="{{ customer.full_name or '' }}" placeholder="Nguyễn Văn A">
-        <p id="err_full_name" class="mt-1 text-sm text-rose-600 hidden"></p>
-      </div>
+    <!-- RIGHT: Transactions -->
+    <div class="xl:col-span-5 cd-right-col">
+      <div class="cd-card cd-section flex flex-col min-h-0 flex-1">
+        <div class="flex items-start justify-between gap-2 mb-2 shrink-0">
+          <div>
+            <div class="cd-h">Giao dịch đã thanh toán</div>
+            <div class="cd-sub">Chỉ hiển thị đơn PAID</div>
+          </div>
+          <select id="projectFilter" class="cd-select focus:outline-none focus:ring-2 focus:ring-indigo-200">
+            <option value="">Tất cả dự án</option>
+          </select>
+        </div>
 
-      <!-- CCCD -->
-      <div>
-        <label class="block text-sm font-medium text-slate-700">CCCD *</label>
-        <input id="cccd" name="cccd" type="text"
-               class="mt-1 h-11 w-full rounded-lg border border-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-200 font-mono"
-               value="{{ customer.cccd or '' }}" placeholder="12 chữ số">
-        <p id="err_cccd" class="mt-1 text-sm text-rose-600 hidden"></p>
-      </div>
+        <div id="txSummary" class="grid grid-cols-2 gap-2 mb-2 shrink-0 hidden">
+          <div class="cd-stat">
+            <div class="l">Số đơn PAID</div>
+            <div class="n text-emerald-700 tabular-nums" id="txPaidCount">0</div>
+          </div>
+          <div class="cd-stat">
+            <div class="l">Tổng đã trả</div>
+            <div class="n text-indigo-700 tabular-nums text-sm" id="txPaidTotal">0</div>
+          </div>
+        </div>
 
-      <!-- Địa chỉ -->
-      <div>
-        <label class="block text-sm font-medium text-slate-700">Địa chỉ</label>
-        <input id="address" name="address" type="text"
-               class="mt-1 h-11 w-full rounded-lg border border-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-               value="{{ customer.address or '' }}" placeholder="Số nhà, đường, phường/xã…">
-        <p id="err_address" class="mt-1 text-sm text-rose-600 hidden"></p>
-      </div>
+        <div id="txLotHint" class="hidden text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-2 shrink-0">
+          Mã lô đặt cọc được ẩn với tài khoản của bạn. Chỉ quản trị viên mới xem được mã lô.
+        </div>
 
-      <!-- Phone -->
-      <div>
-        <label class="block text-sm font-medium text-slate-700">SĐT</label>
-        <input id="phone" name="phone" type="text"
-               class="mt-1 h-11 w-full rounded-lg border border-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-200 font-mono"
-               value="{{ customer.phone or '' }}" placeholder="10 chữ số, bắt đầu 0">
-        <p id="err_phone" class="mt-1 text-sm text-rose-600 hidden"></p>
-      </div>
+        <div id="txLoading" class="py-5 text-center text-slate-500 text-sm shrink-0">Đang tải…</div>
+        <div id="txError" class="hidden py-4 text-center text-rose-600 text-sm shrink-0"></div>
+        <div id="txEmpty" class="hidden py-5 text-center text-slate-500 text-sm shrink-0">Chưa có giao dịch PAID.</div>
 
-      <!-- Email -->
-      <div>
-        <label class="block text-sm font-medium text-slate-700">Email</label>
-        <input id="email" name="email" type="email"
-               class="mt-1 h-11 w-full rounded-lg border border-slate-300 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-               value="{{ customer.email or '' }}" placeholder="name@example.com">
-        <p id="err_email" class="mt-1 text-sm text-rose-600 hidden"></p>
+        <div id="txList" class="cd-tx-scroll space-y-0"></div>
       </div>
-
-      <div class="pt-3 flex items-center justify-end gap-3">
-        <button id="btnSave"
-                class="h-11 px-4 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
-                disabled>
-          💾 Lưu thay đổi
-        </button>
-      </div>
-    </form>
+    </div>
   </div>
 </div>
 
@@ -135,28 +244,33 @@
     email: {{ (customer.email or '')|tojson }},
   };
 
-  // Elements
   const el = (id) => document.getElementById(id);
   const btnSave = el('btnSave');
 
-  // Validation helpers
+  (function fmtCreatedAt(){
+    const raw = {{ (customer.created_at or '')|tojson }};
+    const box = el('createdAtDisplay');
+    if (!raw || !box) return;
+    try {
+      const d = new Date(raw);
+      if (!isNaN(d.getTime())) {
+        box.textContent = d.toLocaleString('vi-VN', {
+          year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'
+        });
+      }
+    } catch (_) {}
+  })();
+
   function showErr(id, msg) {
     const p = el('err_' + id);
     if (!p) return;
-    if (msg) {
-      p.textContent = msg;
-      p.classList.remove('hidden');
-    } else {
-      p.textContent = '';
-      p.classList.add('hidden');
-    }
+    if (msg) { p.textContent = msg; p.classList.remove('hidden'); }
+    else { p.textContent = ''; p.classList.add('hidden'); }
   }
-  function isEmail(s) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
-  }
+  function isEmail(s) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
+
   function validate(values) {
     let ok = true;
-    // Họ tên: >= 2 cụm (mỗi cụm >=2 ký tự)
     const name = (values.full_name || '').trim().replace(/\s+/g, ' ');
     const chunks = name.split(' ').filter(Boolean);
     if (chunks.length < 2 || chunks.some(x => x.length < 2)) {
@@ -164,21 +278,18 @@
       ok = false;
     } else showErr('full_name', '');
 
-    // CCCD: 12 chữ số
     const cccd = (values.cccd || '').trim();
     if (!/^\d{12}$/.test(cccd)) {
       showErr('cccd', 'CCCD phải đúng 12 chữ số.');
       ok = false;
     } else showErr('cccd', '');
 
-    // Phone: nếu nhập thì 10 chữ số, bắt đầu 0
     const phone = (values.phone || '').trim();
     if (phone && !/^0\d{9}$/.test(phone)) {
-      showErr('phone', 'SĐT phải gồm 10 chữ số và bắt đầu bằng 0.');
+      showErr('phone', 'SĐT phải gồm 10 chữ số, bắt đầu 0.');
       ok = false;
     } else showErr('phone', '');
 
-    // Email: nếu nhập phải hợp lệ
     const email = (values.email || '').trim();
     if (email && !isEmail(email)) {
       showErr('email', 'Email không hợp lệ.');
@@ -188,7 +299,6 @@
     return ok;
   }
 
-  // Dirty tracking
   function currentValues() {
     return {
       full_name: el('full_name').value,
@@ -202,63 +312,41 @@
     const v = currentValues();
     return Object.keys(initial).some(k => (initial[k] || '') !== (v[k] || ''));
   }
-  function updateSaveState() {
-    btnSave.disabled = !isDirty();
-  }
+  function updateSaveState() { btnSave.disabled = !isDirty(); }
 
   ['full_name','cccd','address','phone','email'].forEach(id => {
-    el(id).addEventListener('input', () => {
-      updateSaveState();
-      // live-clear error when user edits
-      showErr(id, '');
-    });
+    el(id).addEventListener('input', () => { updateSaveState(); showErr(id, ''); });
   });
   updateSaveState();
 
-  // Toast
   function toast(msg, kind='info') {
-    const box = document.getElementById('toastBox');
-    const wrap = document.getElementById('toast');
+    const box = el('toastBox');
+    const wrap = el('toast');
     box.textContent = msg;
-    box.className =
-      'rounded-lg shadow-lg px-4 py-3 text-sm ' +
+    box.className = 'rounded-lg shadow-lg px-3 py-2 text-xs ' +
       (kind === 'error' ? 'bg-rose-600 text-white' :
        kind === 'success' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-white');
     wrap.classList.remove('hidden');
     setTimeout(() => wrap.classList.add('hidden'), 2800);
   }
 
-  // Confirm modal
-  const mask = document.getElementById('confirmMask');
-  const modal = document.getElementById('confirmModal');
-  const btnCancelConfirm = document.getElementById('btnCancelConfirm');
-  const btnDoConfirm = document.getElementById('btnDoConfirm');
-  function openConfirm() {
-    mask.classList.remove('hidden');
-    modal.classList.remove('hidden');
-  }
-  function closeConfirm() {
-    mask.classList.add('hidden');
-    modal.classList.add('hidden');
-  }
-  btnCancelConfirm.addEventListener('click', closeConfirm);
+  const mask = el('confirmMask');
+  const modal = el('confirmModal');
+  el('btnCancelConfirm').addEventListener('click', () => {
+    mask.classList.add('hidden'); modal.classList.add('hidden');
+  });
+  const btnDoConfirm = el('btnDoConfirm');
 
-  // Save
   btnSave.addEventListener('click', async () => {
     const values = currentValues();
-    if (!validate(values)) {
-      toast('Vui lòng sửa các lỗi trước khi lưu.', 'error');
-      return;
-    }
-    if (!isDirty()) return; // nothing to do
-    openConfirm();
+    if (!validate(values)) { toast('Vui lòng sửa các lỗi trước khi lưu.', 'error'); return; }
+    if (!isDirty()) return;
+    mask.classList.remove('hidden'); modal.classList.remove('hidden');
 
-    // One-shot confirm handler
     const handler = async () => {
       btnDoConfirm.removeEventListener('click', handler);
-      closeConfirm();
+      mask.classList.add('hidden'); modal.classList.add('hidden');
       btnSave.disabled = true;
-
       try {
         const r = await fetch(`/customers/${customerId}`, {
           method: 'PUT',
@@ -266,41 +354,192 @@
           credentials: 'same-origin',
           body: JSON.stringify(values),
         });
-
         if (r.status === 401) {
           window.location.href = `/login?next=${encodeURIComponent(location.pathname)}`;
           return;
         }
-
         const data = await r.json().catch(() => ({}));
-
         if (!r.ok) {
-          // 409 trùng CCCD
           if (r.status === 409) {
-            showErr('cccd', (data.detail || 'CCCD đã tồn tại trong hệ thống.'));
-            toast('Không thể lưu: CCCD bị trùng.', 'error');
+            showErr('cccd', (data.detail || 'CCCD đã tồn tại.'));
+            toast('CCCD bị trùng.', 'error');
             btnSave.disabled = false;
             return;
           }
-          // 422/400…
-          const msg = data.detail || 'Lưu thất bại.';
-          toast(msg, 'error');
+          toast(data.detail || 'Lưu thất bại.', 'error');
           btnSave.disabled = false;
           return;
         }
-
-        // OK
-        toast('Đã lưu thay đổi.', 'success');
-        // Cập nhật initial để tắt trạng thái dirty
+        toast('Đã lưu.', 'success');
         Object.assign(initial, values);
         updateSaveState();
       } catch (e) {
-        toast('Lỗi mạng, thử lại sau.', 'error');
+        toast('Lỗi mạng.', 'error');
         btnSave.disabled = false;
       }
     };
     btnDoConfirm.addEventListener('click', handler, { once: true });
   });
+
+  // ===== Transactions =====
+  const txState = { orders: [], itemsByOrder: {}, projectCode: '', projectsFromApi: [], canViewLotCode: false };
+  const elProjectFilter = el('projectFilter');
+  const elTxList = el('txList');
+  const elTxLoading = el('txLoading');
+  const elTxError = el('txError');
+  const elTxEmpty = el('txEmpty');
+  const elTxSummary = el('txSummary');
+
+  function fmtMoney(n) { return Number(n || 0).toLocaleString('vi-VN') + ' đ'; }
+  function fmtDateShort(raw) {
+    if (!raw) return '—';
+    try {
+      const d = new Date(raw);
+      if (isNaN(d.getTime())) return raw;
+      return d.toLocaleString('vi-VN', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' });
+    } catch (_) { return raw; }
+  }
+  function esc(s) {
+    return (s ?? '').toString()
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+  }
+  function typeLabel(t) {
+    const u = (t || '').toUpperCase();
+    if (u === 'APPLICATION') return { text: 'Hồ sơ', cls: 'bg-violet-100 text-violet-700' };
+    if (u === 'DEPOSIT') return { text: 'Cọc', cls: 'bg-amber-100 text-amber-800' };
+    return { text: t || '—', cls: 'bg-slate-100 text-slate-600' };
+  }
+
+  function paidOrders() {
+    return (txState.orders || []).filter(o => (o.status || '').toUpperCase() === 'PAID');
+  }
+  function filteredPaidOrders() {
+    const paid = paidOrders();
+    const code = (txState.projectCode || '').trim().toLowerCase();
+    if (!code) return paid;
+    return paid.filter(o => (o.project_code || '').toLowerCase() === code);
+  }
+
+  function rebuildProjectFilter() {
+    const current = txState.projectCode;
+    elProjectFilter.innerHTML = '<option value="">Tất cả dự án</option>';
+    (txState.projectsFromApi || []).forEach(p => {
+      const code = p.project_code || '';
+      if (!code) return;
+      const opt = document.createElement('option');
+      opt.value = code;
+      opt.textContent = code;
+      opt.title = p.project_name || code;
+      elProjectFilter.appendChild(opt);
+    });
+    elProjectFilter.value = current;
+  }
+
+  function lotDisplay(code) {
+    if (!code) return '';
+    if (!txState.canViewLotCode && code !== '******') return '******';
+    return code;
+  }
+
+  function itemsLine(orderId) {
+    const items = txState.itemsByOrder[orderId] || [];
+    if (!items.length) return '';
+    const parts = items.slice(0, 2).map(i => {
+      if (i.lot_code) return `Lô ${lotDisplay(i.lot_code)}`;
+      const name = i.dossier_label || i.name || i.item_type || 'Hồ sơ';
+      return `${name} × ${i.qty ?? 1}`;
+    });
+    const tail = items.length > 2 ? ` +${items.length - 2}` : '';
+    return `<div class="text-xs text-slate-500 mt-1 truncate">${esc(parts.join(' · ') + tail)}</div>`;
+  }
+
+  function renderTransactions() {
+    const rows = filteredPaidOrders();
+    elTxLoading.classList.add('hidden');
+    elTxError.classList.add('hidden');
+
+    if (!rows.length) {
+      elTxEmpty.classList.remove('hidden');
+      elTxList.innerHTML = '';
+      elTxSummary.classList.add('hidden');
+      return;
+    }
+
+    elTxEmpty.classList.add('hidden');
+    elTxSummary.classList.remove('hidden');
+    el('txPaidCount').textContent = rows.length.toLocaleString('vi-VN');
+    el('txPaidTotal').textContent = fmtMoney(rows.reduce((s, o) => s + Number(o.paid_vnd || o.total_vnd || 0), 0));
+
+    elTxList.innerHTML = rows.map(o => {
+      const tl = typeLabel(o.type);
+      const paid = Number(o.paid_vnd || o.total_vnd || 0);
+      return `
+        <div class="cd-tx-row">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-xs font-semibold px-2 py-0.5 rounded-md ${tl.cls}">${esc(tl.text)}</span>
+              <span class="text-xs font-mono text-slate-600">${esc(o.order_code || ('#'+o.order_id))}</span>
+            </div>
+            <div class="text-sm font-semibold text-slate-900 truncate mt-1">${esc(o.name || o.project_code || '—')}</div>
+            <div class="text-xs text-slate-500">${esc(o.project_code || '')}</div>
+            ${itemsLine(o.order_id)}
+          </div>
+          <div class="text-right shrink-0 pl-1">
+            <div class="text-sm font-bold text-emerald-700 tabular-nums whitespace-nowrap">${esc(fmtMoney(paid))}</div>
+            <div class="text-xs text-slate-500 mt-0.5 whitespace-nowrap">${esc(fmtDateShort(o.paid_at || o.created_at))}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  async function loadTransactions() {
+    elTxLoading.classList.remove('hidden');
+    elTxError.classList.add('hidden');
+    elTxEmpty.classList.add('hidden');
+    elTxList.innerHTML = '';
+    elTxSummary.classList.add('hidden');
+
+    try {
+      const r = await fetch(`/customers/${customerId}/transactions`, { credentials: 'same-origin' });
+      if (r.status === 401) {
+        window.location.href = `/login?next=${encodeURIComponent(location.pathname)}`;
+        return;
+      }
+      if (!r.ok) {
+        elTxLoading.classList.add('hidden');
+        elTxError.textContent = `Không tải được lịch sử (${r.status}).`;
+        elTxError.classList.remove('hidden');
+        return;
+      }
+      const data = await r.json();
+      txState.orders = data.orders || [];
+      txState.projectsFromApi = data.projects || [];
+      txState.canViewLotCode = !!(data.permissions && data.permissions.can_view_lot_code);
+      const lotHint = el('txLotHint');
+      if (lotHint) lotHint.classList.toggle('hidden', txState.canViewLotCode);
+      txState.itemsByOrder = {};
+      (data.items || []).forEach(it => {
+        const oid = it.order_id;
+        if (!oid) return;
+        (txState.itemsByOrder[oid] ||= []).push(it);
+      });
+      rebuildProjectFilter();
+      renderTransactions();
+    } catch (e) {
+      elTxLoading.classList.add('hidden');
+      elTxError.textContent = 'Lỗi mạng khi tải lịch sử.';
+      elTxError.classList.remove('hidden');
+    }
+  }
+
+  elProjectFilter.addEventListener('change', () => {
+    txState.projectCode = elProjectFilter.value || '';
+    renderTransactions();
+  });
+
+  loadTransactions();
 })();
 </script>
 

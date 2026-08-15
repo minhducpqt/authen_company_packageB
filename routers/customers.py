@@ -201,3 +201,77 @@ async def customer_detail_save(
         return JSONResponse(body, status_code=r.status_code)
 
     return JSONResponse(r.json(), status_code=200)
+
+
+@router.get("/customers/{customer_id}/transactions", response_class=JSONResponse)
+async def customer_transactions_data(
+    request: Request,
+    customer_id: int = Path(..., ge=1),
+    project_code: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    include_items: bool = Query(True),
+):
+    """Proxy lịch sử giao dịch khách (API tối ưu Service A, không tải QR)."""
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    params: List[Tuple[str, str | int]] = []
+    if project_code:
+        params.append(("project_code", project_code))
+    if status:
+        params.append(("status", status))
+    params.append(("include_items", "true" if include_items else "false"))
+
+    async with httpx.AsyncClient() as client:
+        r = await _api_get(
+            client,
+            f"/api/v1/customers/{customer_id}/transactions",
+            token,
+            params,
+        )
+
+    if r.status_code == 401:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    if r.status_code == 404:
+        return JSONResponse({"error": "not_found"}, status_code=404)
+    if r.status_code >= 500:
+        return JSONResponse({"error": "server", "msg": r.text[:300]}, status_code=502)
+
+    return JSONResponse(r.json(), status_code=200)
+
+
+@router.get("/customers/{customer_id}/orders", response_class=JSONResponse)
+async def customer_orders_data(
+    request: Request,
+    customer_id: int = Path(..., ge=1),
+    project_code: Optional[str] = Query(None),
+    type: Optional[str] = Query(None),  # APPLICATION | DEPOSIT
+):
+    """Proxy lịch sử đơn hàng khách (pending + paid) từ Service A."""
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    params: List[Tuple[str, str | int]] = []
+    if project_code:
+        params.append(("project_code", project_code))
+    if type:
+        params.append(("type", type))
+
+    async with httpx.AsyncClient() as client:
+        r = await _api_get(
+            client,
+            f"/api/v1/overview/customers/{customer_id}/orders",
+            token,
+            params,
+        )
+
+    if r.status_code == 401:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    if r.status_code == 404:
+        return JSONResponse({"error": "not_found"}, status_code=404)
+    if r.status_code >= 500:
+        return JSONResponse({"error": "server", "msg": r.text[:300]}, status_code=502)
+
+    return JSONResponse(r.json(), status_code=200)
