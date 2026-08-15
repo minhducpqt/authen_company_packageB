@@ -241,6 +241,39 @@ async def customer_transactions_data(
     return JSONResponse(r.json(), status_code=200)
 
 
+@router.get("/customers/{customer_id}/auction-wins", response_class=JSONResponse)
+async def customer_auction_wins_data(
+    request: Request,
+    customer_id: int = Path(..., ge=1),
+    project_code: Optional[str] = Query(None),
+):
+    """Proxy danh sách lô trúng đấu giá của khách."""
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    params: List[Tuple[str, str | int]] = []
+    if project_code:
+        params.append(("project_code", project_code))
+
+    async with httpx.AsyncClient() as client:
+        r = await _api_get(
+            client,
+            f"/api/v1/customers/{customer_id}/auction-wins",
+            token,
+            params,
+        )
+
+    if r.status_code == 401:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    if r.status_code == 404:
+        return JSONResponse({"error": "not_found"}, status_code=404)
+    if r.status_code >= 500:
+        return JSONResponse({"error": "server", "msg": r.text[:300]}, status_code=502)
+
+    return JSONResponse(r.json(), status_code=200)
+
+
 @router.get("/customers/{customer_id}/orders", response_class=JSONResponse)
 async def customer_orders_data(
     request: Request,

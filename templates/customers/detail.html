@@ -55,6 +55,35 @@
     gap: 10px; align-items: start; padding: 10px 0; border-bottom: 1px solid #f1f5f9;
   }
   .cd-tx-row:last-child { border-bottom: none; }
+  .cd-win-row {
+    padding: 10px 0; border-bottom: 1px solid #f1f5f9;
+  }
+  .cd-win-row:last-child { border-bottom: none; }
+  .cd-win-lot {
+    font-size: 13px; font-weight: 700; color: #0f172a;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .cd-win-name { font-size: 12px; color: #64748b; margin-top: 2px; line-height: 1.35; }
+  .cd-win-grid {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 8px; margin-top: 8px;
+  }
+  .cd-win-kv {
+    padding: 6px 8px; border-radius: 8px; background: #f8fafc; border: 1px solid #eef2f7;
+    min-width: 0;
+  }
+  .cd-win-kv .k { font-size: 10px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.04em; }
+  .cd-win-kv .v { font-size: 12px; font-weight: 600; color: #0f172a; margin-top: 2px; word-break: break-word; }
+  .cd-win-kv .v.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
+  .cd-win-kv.highlight { background: #ecfdf5; border-color: #a7f3d0; }
+  .cd-win-kv.highlight .v { color: #047857; }
+  .cd-win-pct {
+    display: inline-flex; align-items: center; gap: 4px;
+    margin-top: 8px; padding: 4px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 700;
+    background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe;
+  }
+  .cd-win-pct.up { background: #fef3c7; color: #b45309; border-color: #fde68a; }
   .cd-btn-primary {
     height: 36px; padding: 0 14px; border-radius: 10px;
     background: #4f46e5; color: #fff; font-size: 13px; font-weight: 600;
@@ -67,10 +96,11 @@
   }
   @media (min-width: 1280px) {
     .cd-right-col {
-      position: sticky; top: 12px; align-self: start;
-      max-height: calc(100vh - 24px); display: flex; flex-direction: column;
+      align-self: start;
+      display: flex; flex-direction: column; gap: 12px;
     }
-    .cd-tx-scroll { overflow: auto; flex: 1; min-height: 0; }
+    .cd-tx-scroll { overflow: auto; flex: 1; min-height: 0; max-height: 42vh; }
+    .cd-win-scroll { overflow: auto; flex: 1; min-height: 0; max-height: 38vh; }
   }
 
   /* Confirm save — diff popup */
@@ -286,9 +316,10 @@
       </div>
     </div>
 
-    <!-- RIGHT: Transactions -->
+    <!-- RIGHT -->
     <div class="xl:col-span-5 cd-right-col">
-      <div class="cd-card cd-section flex flex-col min-h-0 flex-1">
+      <!-- Transactions -->
+      <div class="cd-card cd-section flex flex-col min-h-0">
         <div class="flex items-start justify-between gap-2 mb-2 shrink-0">
           <div>
             <div class="cd-h">Giao dịch đã thanh toán</div>
@@ -319,6 +350,40 @@
         <div id="txEmpty" class="hidden py-5 text-center text-slate-500 text-sm shrink-0">Chưa có giao dịch PAID.</div>
 
         <div id="txList" class="cd-tx-scroll space-y-0"></div>
+      </div>
+
+      <!-- Auction wins -->
+      <div class="cd-card cd-section flex flex-col min-h-0">
+        <div class="flex items-start justify-between gap-2 mb-2 shrink-0">
+          <div>
+            <div class="cd-h">Lô trúng đấu giá</div>
+            <div class="cd-sub">Kết quả đấu giá đã chốt (WON)</div>
+          </div>
+          <select id="winProjectFilter" class="cd-select focus:outline-none focus:ring-2 focus:ring-indigo-200">
+            <option value="">Tất cả dự án</option>
+          </select>
+        </div>
+
+        <div id="winSummary" class="grid grid-cols-2 gap-2 mb-2 shrink-0 hidden">
+          <div class="cd-stat">
+            <div class="l">Số lô trúng</div>
+            <div class="n text-amber-700 tabular-nums" id="winCount">0</div>
+          </div>
+          <div class="cd-stat">
+            <div class="l">Tổng giá trúng</div>
+            <div class="n text-emerald-700 tabular-nums text-sm" id="winTotal">0</div>
+          </div>
+        </div>
+
+        <div id="winLotHint" class="hidden text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-2 shrink-0">
+          Mã lô trúng đấu giá được ẩn với tài khoản của bạn.
+        </div>
+
+        <div id="winLoading" class="py-5 text-center text-slate-500 text-sm shrink-0">Đang tải…</div>
+        <div id="winError" class="hidden py-4 text-center text-rose-600 text-sm shrink-0"></div>
+        <div id="winEmpty" class="hidden py-5 text-center text-slate-500 text-sm shrink-0">Chưa có lô trúng đấu giá.</div>
+
+        <div id="winList" class="cd-win-scroll space-y-0"></div>
       </div>
     </div>
   </div>
@@ -730,6 +795,157 @@
   });
 
   loadTransactions();
+
+  // ===== Auction wins =====
+  const winState = { wins: [], projectCode: '', projectsFromApi: [], canViewLotCode: false };
+  const elWinProjectFilter = el('winProjectFilter');
+  const elWinList = el('winList');
+  const elWinLoading = el('winLoading');
+  const elWinError = el('winError');
+  const elWinEmpty = el('winEmpty');
+  const elWinSummary = el('winSummary');
+
+  function fmtPct(n) {
+    if (n == null || isNaN(n)) return '—';
+    return Number(n).toLocaleString('vi-VN', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + '%';
+  }
+  function fmtArea(n) {
+    if (!n) return '—';
+    return Number(n).toLocaleString('vi-VN', { maximumFractionDigits: 2 }) + ' m²';
+  }
+  function fmtPerSqm(n) {
+    if (!n) return '—';
+    return Number(n).toLocaleString('vi-VN') + ' đ/m²';
+  }
+
+  function filteredWins() {
+    const code = (winState.projectCode || '').trim().toLowerCase();
+    if (!code) return winState.wins || [];
+    return (winState.wins || []).filter(w => (w.project_code || '').toLowerCase() === code);
+  }
+
+  function rebuildWinProjectFilter() {
+    const current = winState.projectCode;
+    elWinProjectFilter.innerHTML = '<option value="">Tất cả dự án</option>';
+    (winState.projectsFromApi || []).forEach(p => {
+      const code = p.project_code || '';
+      if (!code) return;
+      const opt = document.createElement('option');
+      opt.value = code;
+      opt.textContent = code;
+      opt.title = p.project_name || code;
+      elWinProjectFilter.appendChild(opt);
+    });
+    elWinProjectFilter.value = current;
+  }
+
+  function winLotDisplay(code) {
+    if (!code) return '—';
+    if (!winState.canViewLotCode && code !== '******') return '******';
+    return code;
+  }
+
+  function renderAuctionWins() {
+    const rows = filteredWins();
+    elWinLoading.classList.add('hidden');
+    elWinError.classList.add('hidden');
+
+    if (!rows.length) {
+      elWinEmpty.classList.remove('hidden');
+      elWinList.innerHTML = '';
+      elWinSummary.classList.add('hidden');
+      return;
+    }
+
+    elWinEmpty.classList.add('hidden');
+    elWinSummary.classList.remove('hidden');
+    el('winCount').textContent = rows.length.toLocaleString('vi-VN');
+    el('winTotal').textContent = fmtMoney(rows.reduce((s, w) => s + Number(w.winning_price_total_vnd || 0), 0));
+
+    elWinList.innerHTML = rows.map(w => {
+      const pct = w.pct_of_starting;
+      const pctCls = pct != null && pct > 100 ? ' up' : '';
+      const lucky = w.is_lucky_draw
+        ? '<span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-violet-100 text-violet-700 ml-1">Bốc thăm</span>'
+        : '';
+      return `
+        <div class="cd-win-row">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <div class="flex items-center flex-wrap gap-1">
+                <span class="cd-win-lot">${escHtml(winLotDisplay(w.lot_code))}</span>${lucky}
+              </div>
+              <div class="cd-win-name">${escHtml(w.lot_name || '—')}</div>
+              <div class="text-[11px] text-slate-500 mt-0.5">${escHtml(w.project_code || '')}${w.area_sqm ? ' · ' + escHtml(fmtArea(w.area_sqm)) : ''}</div>
+            </div>
+          </div>
+          <div class="cd-win-grid">
+            <div class="cd-win-kv">
+              <div class="k">Khởi điểm / m²</div>
+              <div class="v mono">${escHtml(fmtPerSqm(w.starting_price_per_sqm_vnd))}</div>
+            </div>
+            <div class="cd-win-kv">
+              <div class="k">Khởi điểm cả lô</div>
+              <div class="v mono">${escHtml(fmtMoney(w.starting_price_total_vnd))}</div>
+            </div>
+            <div class="cd-win-kv highlight">
+              <div class="k">Trúng / m²</div>
+              <div class="v mono">${escHtml(fmtPerSqm(w.winning_price_per_sqm_vnd))}</div>
+            </div>
+            <div class="cd-win-kv highlight">
+              <div class="k">Trúng cả lô</div>
+              <div class="v mono">${escHtml(fmtMoney(w.winning_price_total_vnd))}</div>
+            </div>
+          </div>
+          <div class="cd-win-pct${pctCls}">
+            <i class="ri-percent-line"></i>
+            Giá trúng = ${escHtml(fmtPct(pct))} giá khởi điểm
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  async function loadAuctionWins() {
+    elWinLoading.classList.remove('hidden');
+    elWinError.classList.add('hidden');
+    elWinEmpty.classList.add('hidden');
+    elWinList.innerHTML = '';
+    elWinSummary.classList.add('hidden');
+
+    try {
+      const r = await fetch(`/customers/${customerId}/auction-wins`, { credentials: 'same-origin' });
+      if (r.status === 401) {
+        window.location.href = `/login?next=${encodeURIComponent(location.pathname)}`;
+        return;
+      }
+      if (!r.ok) {
+        elWinLoading.classList.add('hidden');
+        elWinError.textContent = `Không tải được lô trúng (${r.status}).`;
+        elWinError.classList.remove('hidden');
+        return;
+      }
+      const data = await r.json();
+      winState.wins = data.wins || [];
+      winState.projectsFromApi = data.projects || [];
+      winState.canViewLotCode = !!(data.permissions && data.permissions.can_view_lot_code);
+      const lotHint = el('winLotHint');
+      if (lotHint) lotHint.classList.toggle('hidden', winState.canViewLotCode);
+      rebuildWinProjectFilter();
+      renderAuctionWins();
+    } catch (e) {
+      elWinLoading.classList.add('hidden');
+      elWinError.textContent = 'Lỗi mạng khi tải lô trúng.';
+      elWinError.classList.remove('hidden');
+    }
+  }
+
+  elWinProjectFilter.addEventListener('change', () => {
+    winState.projectCode = elWinProjectFilter.value || '';
+    renderAuctionWins();
+  });
+
+  loadAuctionWins();
 })();
 </script>
 
