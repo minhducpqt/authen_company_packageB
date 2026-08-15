@@ -72,6 +72,93 @@
     }
     .cd-tx-scroll { overflow: auto; flex: 1; min-height: 0; }
   }
+
+  /* Confirm save — diff popup */
+  .cd-confirm-panel {
+    width: 100%; max-width: 480px; max-height: min(90vh, 640px);
+    display: flex; flex-direction: column;
+    border-radius: 16px; background: #fff;
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+    border: 1px solid #e2e8f0; overflow: hidden;
+  }
+  .cd-confirm-head {
+    padding: 16px 18px 14px;
+    background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 55%, #fff 100%);
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .cd-confirm-head h3 {
+    font-size: 16px; font-weight: 700; color: #0f172a; letter-spacing: -0.02em;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .cd-confirm-head h3 i { color: #4f46e5; font-size: 20px; }
+  .cd-confirm-sub { font-size: 12px; color: #64748b; margin-top: 4px; line-height: 1.45; }
+  .cd-confirm-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    margin-top: 8px; padding: 3px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 600; color: #4338ca;
+    background: #e0e7ff; border: 1px solid #c7d2fe;
+  }
+  .cd-confirm-body {
+    padding: 12px 14px; overflow-y: auto; flex: 1; min-height: 0;
+    background: #f8fafc;
+  }
+  .cd-change-card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+    padding: 10px 12px; margin-bottom: 8px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  }
+  .cd-change-card:last-child { margin-bottom: 0; }
+  .cd-change-card.sensitive { border-color: #fcd34d; background: linear-gradient(180deg, #fffbeb, #fff); }
+  .cd-change-label {
+    font-size: 11px; font-weight: 600; color: #64748b;
+    text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;
+  }
+  .cd-change-grid {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 8px; align-items: center;
+  }
+  .cd-change-col { min-width: 0; }
+  .cd-change-col-h {
+    font-size: 10px; font-weight: 600; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 3px;
+  }
+  .cd-change-val {
+    font-size: 13px; line-height: 1.35; word-break: break-word;
+    padding: 6px 8px; border-radius: 8px;
+  }
+  .cd-change-val.old {
+    color: #64748b; background: #f1f5f9; border: 1px solid #e2e8f0;
+    text-decoration: line-through; text-decoration-color: #cbd5e1;
+  }
+  .cd-change-val.new {
+    color: #0f172a; font-weight: 600; background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+  }
+  .cd-change-val.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+  .cd-change-val.empty { font-style: italic; color: #94a3b8; font-weight: 400; }
+  .cd-change-arrow {
+    width: 28px; height: 28px; border-radius: 999px;
+    background: #eef2ff; color: #4f46e5;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+  }
+  .cd-confirm-foot {
+    padding: 12px 14px; border-top: 1px solid #e2e8f0;
+    background: #fff; display: flex; justify-content: flex-end; gap: 8px;
+  }
+  .cd-btn-ghost {
+    height: 36px; padding: 0 14px; border-radius: 10px;
+    border: 1px solid #cbd5e1; background: #fff; color: #475569;
+    font-size: 13px; font-weight: 500;
+  }
+  .cd-btn-ghost:hover { background: #f8fafc; }
+  .cd-btn-save {
+    height: 36px; padding: 0 16px; border-radius: 10px;
+    background: #4f46e5; color: #fff; font-size: 13px; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .cd-btn-save:hover { background: #4338ca; }
+  .cd-btn-save:disabled { opacity: 0.55; cursor: not-allowed; }
 </style>
 
 <!-- Toast -->
@@ -79,17 +166,21 @@
   <div id="toastBox" class="rounded-lg shadow-lg px-3 py-2 text-xs bg-slate-800 text-white"></div>
 </div>
 
-<!-- Confirm Modal -->
-<div id="confirmMask" class="hidden fixed inset-0 z-40 bg-black/40"></div>
+<!-- Confirm Modal — hiển thị diff cũ / mới -->
+<div id="confirmMask" class="hidden fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-[2px]"></div>
 <div id="confirmModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
-  <div class="w-full max-w-sm rounded-xl bg-white shadow-xl border border-slate-200">
-    <div class="px-4 pt-4">
-      <h3 class="text-sm font-semibold text-slate-800">Xác nhận lưu thay đổi?</h3>
-      <p class="mt-1 text-slate-500 text-xs">Thông tin mới sẽ ghi đè dữ liệu hiện có.</p>
+  <div class="cd-confirm-panel" role="dialog" aria-labelledby="confirmTitle" aria-modal="true">
+    <div class="cd-confirm-head">
+      <h3 id="confirmTitle"><i class="ri-file-edit-line"></i> Xác nhận lưu thay đổi</h3>
+      <p class="cd-confirm-sub">Kiểm tra kỹ thông tin trước khi cập nhật hồ sơ khách hàng.</p>
+      <span id="confirmChangeBadge" class="cd-confirm-badge"></span>
     </div>
-    <div class="px-4 pb-4 mt-3 flex justify-end gap-2">
-      <button id="btnCancelConfirm" class="h-8 px-3 rounded-lg border border-slate-300 bg-white text-slate-700 text-xs hover:bg-slate-50">Hủy</button>
-      <button id="btnDoConfirm" class="h-8 px-3 rounded-lg bg-indigo-600 text-white text-xs hover:bg-indigo-700 disabled:opacity-50">Xác nhận</button>
+    <div id="confirmChangesList" class="cd-confirm-body"></div>
+    <div class="cd-confirm-foot">
+      <button id="btnCancelConfirm" type="button" class="cd-btn-ghost">Hủy</button>
+      <button id="btnDoConfirm" type="button" class="cd-btn-save">
+        <i class="ri-check-line"></i> Xác nhận lưu
+      </button>
     </div>
   </div>
 </div>
@@ -314,6 +405,85 @@
   }
   function updateSaveState() { btnSave.disabled = !isDirty(); }
 
+  const FIELD_META = {
+    full_name: { label: 'Họ tên', mono: false, sensitive: false },
+    cccd:      { label: 'CCCD', mono: true, sensitive: true },
+    phone:     { label: 'SĐT', mono: true, sensitive: false },
+    email:     { label: 'Email', mono: false, sensitive: false },
+    address:   { label: 'Địa chỉ', mono: false, sensitive: false },
+  };
+
+  function normVal(v) { return (v ?? '').toString().trim(); }
+  function displayVal(v) {
+    const s = normVal(v);
+    return s || null;
+  }
+
+  function collectChanges(values) {
+    const changes = [];
+    Object.keys(FIELD_META).forEach(key => {
+      const oldRaw = initial[key];
+      const newRaw = values[key];
+      if (normVal(oldRaw) === normVal(newRaw)) return;
+      changes.push({
+        key,
+        ...FIELD_META[key],
+        oldVal: displayVal(oldRaw),
+        newVal: displayVal(newRaw),
+      });
+    });
+    return changes;
+  }
+
+  function renderChangeCard(ch) {
+    const mono = ch.mono ? ' mono' : '';
+    const oldCls = ch.oldVal ? `cd-change-val old${mono}` : 'cd-change-val old empty';
+    const newCls = ch.newVal ? `cd-change-val new${mono}` : 'cd-change-val new empty';
+    const oldText = ch.oldVal ? esc(ch.oldVal) : '(trống)';
+    const newText = ch.newVal ? esc(ch.newVal) : '(trống)';
+    const sens = ch.sensitive ? ' sensitive' : '';
+    return `
+      <div class="cd-change-card${sens}">
+        <div class="cd-change-label">${esc(ch.label)}</div>
+        <div class="cd-change-grid">
+          <div class="cd-change-col">
+            <div class="cd-change-col-h">Trước</div>
+            <div class="${oldCls}">${oldText}</div>
+          </div>
+          <div class="cd-change-arrow" aria-hidden="true"><i class="ri-arrow-right-line"></i></div>
+          <div class="cd-change-col">
+            <div class="cd-change-col-h">Sau</div>
+            <div class="${newCls}">${newText}</div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function renderConfirmDiff(values) {
+    const changes = collectChanges(values);
+    const list = el('confirmChangesList');
+    const badge = el('confirmChangeBadge');
+    if (!list || !badge) return changes;
+
+    badge.textContent = changes.length === 1
+      ? '1 trường thay đổi'
+      : `${changes.length} trường thay đổi`;
+
+    if (!changes.length) {
+      list.innerHTML = '<p class="text-sm text-slate-500 text-center py-4">Không có thay đổi.</p>';
+      return changes;
+    }
+
+    list.innerHTML = changes.map(renderChangeCard).join('');
+    return changes;
+  }
+
+  function esc(s) {
+    return (s ?? '').toString()
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+  }
+
   ['full_name','cccd','address','phone','email'].forEach(id => {
     el(id).addEventListener('input', () => { updateSaveState(); showErr(id, ''); });
   });
@@ -332,21 +502,41 @@
 
   const mask = el('confirmMask');
   const modal = el('confirmModal');
-  el('btnCancelConfirm').addEventListener('click', () => {
-    mask.classList.add('hidden'); modal.classList.add('hidden');
-  });
   const btnDoConfirm = el('btnDoConfirm');
+
+  function closeConfirmModal() {
+    mask.classList.add('hidden');
+    modal.classList.add('hidden');
+  }
+
+  function openConfirmModal(values) {
+    renderConfirmDiff(values);
+    mask.classList.remove('hidden');
+    modal.classList.remove('hidden');
+  }
+
+  el('btnCancelConfirm').addEventListener('click', closeConfirmModal);
+  mask.addEventListener('click', closeConfirmModal);
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeConfirmModal();
+  });
+  el('confirmModal').querySelector('.cd-confirm-panel')?.addEventListener('click', (e) => e.stopPropagation());
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeConfirmModal();
+  });
 
   btnSave.addEventListener('click', async () => {
     const values = currentValues();
     if (!validate(values)) { toast('Vui lòng sửa các lỗi trước khi lưu.', 'error'); return; }
     if (!isDirty()) return;
-    mask.classList.remove('hidden'); modal.classList.remove('hidden');
+
+    openConfirmModal(values);
 
     const handler = async () => {
       btnDoConfirm.removeEventListener('click', handler);
-      mask.classList.add('hidden'); modal.classList.add('hidden');
+      closeConfirmModal();
       btnSave.disabled = true;
+      btnDoConfirm.disabled = true;
       try {
         const r = await fetch(`/customers/${customerId}`, {
           method: 'PUT',
@@ -363,11 +553,9 @@
           if (r.status === 409) {
             showErr('cccd', (data.detail || 'CCCD đã tồn tại.'));
             toast('CCCD bị trùng.', 'error');
-            btnSave.disabled = false;
             return;
           }
           toast(data.detail || 'Lưu thất bại.', 'error');
-          btnSave.disabled = false;
           return;
         }
         toast('Đã lưu.', 'success');
@@ -375,7 +563,9 @@
         updateSaveState();
       } catch (e) {
         toast('Lỗi mạng.', 'error');
-        btnSave.disabled = false;
+      } finally {
+        btnDoConfirm.disabled = false;
+        updateSaveState();
       }
     };
     btnDoConfirm.addEventListener('click', handler, { once: true });
@@ -399,7 +589,7 @@
       return d.toLocaleString('vi-VN', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' });
     } catch (_) { return raw; }
   }
-  function esc(s) {
+  function escHtml(s) {
     return (s ?? '').toString()
       .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
       .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
@@ -451,7 +641,7 @@
       return `${name} × ${i.qty ?? 1}`;
     });
     const tail = items.length > 2 ? ` +${items.length - 2}` : '';
-    return `<div class="text-xs text-slate-500 mt-1 truncate">${esc(parts.join(' · ') + tail)}</div>`;
+    return `<div class="text-xs text-slate-500 mt-1 truncate">${escHtml(parts.join(' · ') + tail)}</div>`;
   }
 
   function renderTransactions() {
@@ -478,16 +668,16 @@
         <div class="cd-tx-row">
           <div class="min-w-0">
             <div class="flex items-center gap-2 flex-wrap">
-              <span class="text-xs font-semibold px-2 py-0.5 rounded-md ${tl.cls}">${esc(tl.text)}</span>
-              <span class="text-xs font-mono text-slate-600">${esc(o.order_code || ('#'+o.order_id))}</span>
+              <span class="text-xs font-semibold px-2 py-0.5 rounded-md ${tl.cls}">${escHtml(tl.text)}</span>
+              <span class="text-xs font-mono text-slate-600">${escHtml(o.order_code || ('#'+o.order_id))}</span>
             </div>
-            <div class="text-sm font-semibold text-slate-900 truncate mt-1">${esc(o.name || o.project_code || '—')}</div>
-            <div class="text-xs text-slate-500">${esc(o.project_code || '')}</div>
+            <div class="text-sm font-semibold text-slate-900 truncate mt-1">${escHtml(o.name || o.project_code || '—')}</div>
+            <div class="text-xs text-slate-500">${escHtml(o.project_code || '')}</div>
             ${itemsLine(o.order_id)}
           </div>
           <div class="text-right shrink-0 pl-1">
-            <div class="text-sm font-bold text-emerald-700 tabular-nums whitespace-nowrap">${esc(fmtMoney(paid))}</div>
-            <div class="text-xs text-slate-500 mt-0.5 whitespace-nowrap">${esc(fmtDateShort(o.paid_at || o.created_at))}</div>
+            <div class="text-sm font-bold text-emerald-700 tabular-nums whitespace-nowrap">${escHtml(fmtMoney(paid))}</div>
+            <div class="text-xs text-slate-500 mt-0.5 whitespace-nowrap">${escHtml(fmtDateShort(o.paid_at || o.created_at))}</div>
           </div>
         </div>
       `;
