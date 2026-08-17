@@ -74,6 +74,8 @@ async def company_profile_save(
     address: str = Form(""),
     phone: str = Form(""),
     email: str = Form(""),
+    legal_representative_name: str = Form(""),
+    legal_representative_title: str = Form(""),
 ):
     token = get_access_token(request)
     me = await fetch_me(token)
@@ -90,6 +92,8 @@ async def company_profile_save(
         "address": (address or "").strip() or None,
         "phone": (phone or "").strip() or None,
         "email": (email or "").strip() or None,
+        "legal_representative_name": (legal_representative_name or "").strip() or None,
+        "legal_representative_title": (legal_representative_title or "").strip() or None,
     }
 
     headers = {"Authorization": f"Bearer {token}"}
@@ -110,8 +114,17 @@ async def company_profile_save_root(
     address: str = Form(""),
     phone: str = Form(""),
     email: str = Form(""),
+    legal_representative_name: str = Form(""),
+    legal_representative_title: str = Form(""),
 ):
     """Alias — form cũ POST /settings/company."""
     return await company_profile_save(
-        request, name=name, tax_code=tax_code, address=address, phone=phone, email=email
+        request,
+        name=name,
+        tax_code=tax_code,
+        address=address,
+        phone=phone,
+        email=email,
+        legal_representative_name=legal_representative_name,
+        legal_representative_title=legal_representative_title,
     )

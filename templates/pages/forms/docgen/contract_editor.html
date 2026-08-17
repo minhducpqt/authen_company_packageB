@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "pages/forms/_components.html" import forms_styles, forms_page_header, forms_status_badge %}
+{% from "pages/forms/_components.html" import forms_styles, forms_page_header, forms_status_badge, forms_dialog_shell, forms_dialog_script %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
 {{ forms_styles() }}
@@ -55,6 +55,14 @@
   .ce-left .ce-field:focus-within { background:#f8fafc; border-radius:8px; margin-left:-4px; margin-right:-4px; padding:0 4px; }
   .ce-left .legal-row:focus-within { border-color:#93c5fd; background:#f8fafc; }
   .ce-field-readonly .ce-readonly-val { padding:8px 10px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; font-size:12px; line-height:1.45; color:#334155; }
+  .ce-field.ce-invalid input, .ce-field.ce-invalid textarea, .ce-field.ce-invalid select,
+  .ce-field.ce-invalid .ce-readonly-val,
+  .legal-row.ce-invalid textarea,
+  .ce-lots tr.ce-invalid td { border-color:#dc2626 !important; background:#fef2f2 !important; box-shadow:inset 0 0 0 1px rgba(220,38,38,.25); }
+  .ce-btn-check { transition:background .15s,border-color .15s,color .15s; }
+  .ce-btn-check.is-ready { background:#16a34a; border-color:#16a34a; color:#fff; }
+  .ce-btn-check.is-incomplete { background:#dc2626; border-color:#dc2626; color:#fff; }
+  .ce-btn-check.is-neutral { background:#fff; border-color:#cbd5e1; color:#475569; }
 </style>
 <div class="fm-page">
   {{ forms_page_header(
@@ -76,6 +84,28 @@
         <div class="s">Chọn dùng dữ liệu có sẵn (địa phương / công ty / dự án) hoặc tự nhập cho riêng văn bản này.</div>
       </div>
       <div class="ce-body">
+        {% if not is_final %}
+        <div class="ce-sec">Xã / phường dự án</div>
+        <div class="ce-field">
+          <label>Xã hiện tại</label>
+          <div id="currentWardDisplay" class="ce-readonly-val">—</div>
+        </div>
+        <div class="ce-field">
+          <label>Tỉnh / Thành</label>
+          <select id="wardProvince">
+            <option value="">— Chọn tỉnh —</option>
+            {% for p in provinces %}<option value="{{ p.code }}">{{ p.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="ce-field">
+          <label>Đổi sang xã / phường</label>
+          <select id="wardSelect"><option value="">— Chọn xã —</option></select>
+          <div class="ce-hint">Đổi xã sẽ <strong>reset</strong> thông tin Bên A và địa điểm theo cấu hình xã mới (mất override đã nhập).</div>
+        </div>
+        <div class="ce-field">
+          <button type="button" class="ce-btn" id="btnApplyWard"><i class="ri-map-pin-line"></i> Áp dụng xã mới</button>
+        </div>
+        {% endif %}
         <div id="noLocalityBanner" class="ce-banner" style="display:none"></div>
         <div class="ce-sec">Thông tin chung</div>
         <div class="ce-field">
@@ -104,8 +134,15 @@
         <div class="ce-field" data-ov="party_b_name"><label>Tên Bên B</label></div>
         <div class="ce-field" data-ov="party_b_address"><label>Trụ sở</label></div>
         <div class="ce-field" data-ov="party_b_tax_code"><label>MST Bên B</label></div>
-        <div class="ce-field"><label>Người đại diện Bên B</label><input id="f_pb_rep" data-ce-field="party_b_rep" {% if is_final %}readonly{% endif %}><div class="ce-hint">Một nội dung — hiển thị 2 chỗ trong HĐ</div></div>
-        <div class="ce-field"><label>Chức vụ Bên B</label><input id="f_pb_title" data-ce-field="party_b_title" {% if is_final %}readonly{% endif %}></div>
+        <div class="ce-field ce-field-readonly">
+          <label>Người đại diện Bên B</label>
+          <div id="pbRepDisplay" class="ce-readonly-val">—</div>
+          <div class="ce-hint">Từ <a href="/settings/company" style="color:#4338ca">6.1 Thông tin công ty</a> · hiển thị 2 chỗ trong HĐ</div>
+        </div>
+        <div class="ce-field ce-field-readonly">
+          <label>Chức vụ Bên B</label>
+          <div id="pbTitleDisplay" class="ce-readonly-val">—</div>
+        </div>
         <div class="ce-field"><label>Ủy quyền Bên B</label><input id="f_pb_auth" data-ce-field="party_b_auth" {% if is_final %}readonly{% endif %} placeholder="01/2025/UQ-KĐ ngày …"></div>
 
         <div class="ce-sec">Đấu giá &amp; địa điểm</div>
@@ -148,7 +185,7 @@
         <button type="button" class="ce-btn ce-btn-primary" id="btnPreview"><i class="ri-eye-line"></i> Xem trước</button>
         {% if not is_final %}
         <button type="submit" formaction="/bieu-mau/truoc-phien/hop-dong/{{ instance.id }}/save" class="ce-btn"><i class="ri-save-line"></i> Lưu</button>
-        <button type="submit" formaction="/bieu-mau/truoc-phien/hop-dong/{{ instance.id }}/finalize" class="ce-btn ce-btn-warn" onclick="return confirm('Chốt văn bản? Sau khi chốt không sửa được.')"><i class="ri-lock-line"></i> Chốt</button>
+        <button type="submit" formaction="/bieu-mau/truoc-phien/hop-dong/{{ instance.id }}/finalize" class="ce-btn ce-btn-warn" id="btnFinalize"><i class="ri-lock-line"></i> Chốt</button>
         {% endif %}
         <a href="{{ download_html_url }}" class="ce-btn" target="_blank" rel="noopener"><i class="ri-file-code-line"></i> Tải HTML</a>
         <a href="{{ download_pdf_url }}" class="ce-btn" target="_blank" rel="noopener"><i class="ri-file-pdf-line"></i> Tải PDF</a>
@@ -163,9 +200,10 @@
         <div class="ce-ph-row" style="width:100%">
           <div>
             <div class="t">Xem trước</div>
-            <div class="s">Bấm ô bên trái để cuộn tới vị trí tương ứng · ô trống được tô vàng</div>
+            <div class="s">Bấm Check để kiểm tra đủ thông tin · ô trống được tô vàng trong preview</div>
           </div>
           <div class="ce-preview-toolbar">
+            <button type="button" class="ce-btn ce-btn-icon ce-btn-check is-neutral" id="btnReadinessCheck" title="Kiểm tra sẵn sàng"><i class="ri-checkbox-circle-line"></i> Check</button>
             <button type="button" class="ce-btn ce-btn-icon" id="btnPreviewFullscreen" title="Toàn màn hình"><i class="ri-fullscreen-line"></i> Full</button>
             <button type="button" class="ce-btn ce-btn-icon" id="btnPreviewHtml" title="Tải HTML"><i class="ri-file-code-line"></i> HTML</button>
             <button type="button" class="ce-btn ce-btn-icon" id="btnPreviewPrint" title="In"><i class="ri-printer-line"></i> In</button>
@@ -178,6 +216,8 @@
     </div>
   </form>
 </div>
+{{ forms_dialog_shell() }}
+{{ forms_dialog_script() }}
 <script>
 const PREVIEW_URL = {{ preview_url|tojson }};
 const DOWNLOAD_HTML_URL = {{ download_html_url|tojson }};
@@ -185,6 +225,9 @@ const IS_FINAL = {{ 'true' if is_final else 'false' }};
 const CTX = {{ ctx_json|safe }};
 const INIT_FIELDS = {{ fields_json|safe }};
 const INIT_OVERRIDES = {{ overrides_json|safe }};
+const INIT_WARD_CODE = {{ instance.ward_code|tojson }};
+const PROVINCES = {{ provinces|tojson }};
+const CHANGE_WARD_URL = {{ ('/bieu-mau/truoc-phien/hop-dong/' ~ instance.id ~ '/doi-xa')|tojson }};
 
 const PREVIEW_REPEAT = {
   subtitle: 2,
@@ -214,6 +257,18 @@ const OVERRIDE_LABELS = {
   signing_place: 'Địa điểm ký',
   auction_venue: 'Địa điểm đấu giá',
   dossier_reception_place: 'Tiếp nhận hồ sơ',
+};
+
+const OPTIONAL_OVERRIDE_KEYS = new Set(['party_a_authorization']);
+
+const FIELD_LABELS = {
+  subtitle: 'Tiêu đề / mô tả tài sản',
+  document_no: 'Số hợp đồng',
+  signed_at: 'Ngày/giờ ký',
+  bid_step: 'Bước giá',
+  payment_terms: 'Điều kiện thanh toán',
+  party_b_rep: 'Người đại diện Bên B',
+  party_b_title: 'Chức vụ Bên B',
 };
 
 function fmt0(v) {
@@ -300,6 +355,84 @@ function buildOverrideField(key) {
 
 Object.keys(OVERRIDE_LABELS).forEach(buildOverrideField);
 showNoLocalityBanner();
+
+async function loadWardCommunes(provinceCode, selectedWard) {
+  const wardSelect = document.getElementById('wardSelect');
+  if (!wardSelect) return;
+  wardSelect.innerHTML = '<option value="">— Đang tải —</option>';
+  if (!provinceCode) {
+    wardSelect.innerHTML = '<option value="">— Chọn xã —</option>';
+    return;
+  }
+  const r = await fetch('/bieu-mau/api/communes?province_code=' + encodeURIComponent(provinceCode));
+  const data = await r.json();
+  wardSelect.innerHTML = '<option value="">— Chọn xã —</option>';
+  (data.items || []).forEach(w => {
+    const o = document.createElement('option');
+    o.value = w.code;
+    o.textContent = w.name_with_type || w.name;
+    if (selectedWard && String(w.code) === String(selectedWard)) o.selected = true;
+    wardSelect.appendChild(o);
+  });
+}
+
+function initWardPicker() {
+  if (IS_FINAL) return;
+  const display = document.getElementById('currentWardDisplay');
+  const provinceEl = document.getElementById('wardProvince');
+  const wardSelect = document.getElementById('wardSelect');
+  const btn = document.getElementById('btnApplyWard');
+  if (!display || !provinceEl || !wardSelect || !btn) return;
+
+  const w = CTX.ward || {};
+  display.textContent = w.name
+    ? `${w.name}${w.province_name ? ', ' + w.province_name : ''}`
+    : '— chưa chọn —';
+
+  if (w.province_codename && Array.isArray(PROVINCES)) {
+    const prov = PROVINCES.find(p => p.codename === w.province_codename);
+    if (prov) {
+      provinceEl.value = String(prov.code);
+      loadWardCommunes(prov.code, INIT_WARD_CODE);
+    }
+  }
+
+  provinceEl.addEventListener('change', () => {
+    loadWardCommunes(provinceEl.value, null);
+  });
+
+  btn.addEventListener('click', async () => {
+    const wc = wardSelect.value;
+    if (!wc) {
+      await FmDialog.alert({ title: 'Chưa chọn xã', message: 'Vui lòng chọn xã / phường mới.', variant: 'info' });
+      return;
+    }
+    if (String(wc) === String(INIT_WARD_CODE || '')) {
+      await FmDialog.alert({ title: 'Không thay đổi', message: 'Đã là xã hiện tại.', variant: 'info' });
+      return;
+    }
+    const ok = await FmDialog.confirm({
+      title: 'Đổi xã / phường',
+      message: 'Đổi xã sẽ reset thông tin Bên A và địa điểm theo cấu hình xã mới. Tiếp tục?',
+      variant: 'warn',
+      okText: 'Áp dụng',
+      cancelText: 'Huỷ',
+    });
+    if (!ok) return;
+    btn.disabled = true;
+    const fd = new FormData();
+    fd.append('ward_code', wc);
+    try {
+      const r = await fetch(CHANGE_WARD_URL, { method: 'POST', body: fd, credentials: 'same-origin', redirect: 'follow' });
+      if (r.ok || r.redirected) window.location.reload();
+      else await FmDialog.alert({ title: 'Lỗi', message: 'Không đổi được xã. Vui lòng thử lại.', variant: 'danger' });
+    } catch (_) {
+      await FmDialog.alert({ title: 'Lỗi kết nối', message: 'Không thể kết nối máy chủ. Thử lại sau.', variant: 'danger' });
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
 
 function lotKey(lot) {
   return String(lot.id ?? lot.lot_code ?? '');
@@ -482,8 +615,6 @@ function collectFields() {
       signed_at: document.getElementById('f_signed_at')?.value || '',
       signed_place: document.querySelector('.ce-field[data-ov="signing_place"] .ce-val')?.value || '',
       copies: parseInt(document.getElementById('f_copies')?.value || '6', 10) || 6,
-      party_b_rep_name: document.getElementById('f_pb_rep')?.value || '',
-      party_b_rep_title: document.getElementById('f_pb_title')?.value || '',
       party_b_authorization: document.getElementById('f_pb_auth')?.value || '',
       bid_step: document.getElementById('f_bid_step')?.value || '',
     },
@@ -519,6 +650,16 @@ function renderServiceFeeDisplay() {
   el.textContent = 'Chưa tính được — kiểm tra giá khởi điểm các lô trong dự án.';
 }
 
+function renderCompanyRepDisplay() {
+  const repEl = document.getElementById('pbRepDisplay');
+  const titleEl = document.getElementById('pbTitleDisplay');
+  const defs = CTX.defaults || {};
+  const rep = (defs.party_b_rep_name || '').trim();
+  const title = (defs.party_b_rep_title || '').trim();
+  if (repEl) repEl.textContent = rep || '— (chưa cấu hình tại 6.1 Thông tin công ty)';
+  if (titleEl) titleEl.textContent = title || '—';
+}
+
 function hydrateFromFields() {
   const c = (INIT_FIELDS.contract || {});
   const f = (INIT_FIELDS.service_fees || {});
@@ -526,10 +667,9 @@ function hydrateFromFields() {
   const titleEl = document.getElementById('f_title');
   if (titleEl) titleEl.value = c.subtitle || titleEl.value || CTX.project?.name || '';
   renderServiceFeeDisplay();
+  renderCompanyRepDisplay();
   document.getElementById('f_signed_at').value = c.signed_at || '';
   document.getElementById('f_copies').value = c.copies || 6;
-  document.getElementById('f_pb_rep').value = c.party_b_rep_name || '';
-  document.getElementById('f_pb_title').value = c.party_b_rep_title || '';
   document.getElementById('f_pb_auth').value = c.party_b_authorization || '';
   document.getElementById('f_auction_days').value = a.deadline_days || 30;
   document.getElementById('f_bid_step').value = c.bid_step || '';
@@ -579,8 +719,6 @@ function collectMissingFieldKeys() {
     ['f_title', 'subtitle'],
     ['f_document_no', 'document_no'],
     ['f_signed_at', 'signed_at'],
-    ['f_pb_rep', 'party_b_rep'],
-    ['f_pb_title', 'party_b_title'],
     ['f_bid_step', 'bid_step'],
     ['f_payment_terms', 'payment_terms'],
   ].forEach(([id, key]) => {
@@ -589,8 +727,12 @@ function collectMissingFieldKeys() {
   });
 
   Object.keys(OVERRIDE_LABELS).forEach(k => {
+    if (OPTIONAL_OVERRIDE_KEYS.has(k)) return;
     if (isOverrideMissing(k)) add(k);
   });
+
+  if (isPlaceholderText((CTX.defaults || {}).party_b_rep_name)) add('party_b_rep');
+  if (isPlaceholderText((CTX.defaults || {}).party_b_rep_title)) add('party_b_title');
 
   document.querySelectorAll('[data-legal-row]').forEach((row, i) => {
     const text = row.querySelector('.lr-text')?.value?.trim() || '';
@@ -607,6 +749,117 @@ function collectMissingFieldKeys() {
     });
   }
   return missing;
+}
+
+let readinessActive = false;
+
+function missingKeyLabel(key) {
+  if (FIELD_LABELS[key]) return FIELD_LABELS[key];
+  if (OVERRIDE_LABELS[key]) return OVERRIDE_LABELS[key];
+  if (key.startsWith('legal_')) return 'Căn cứ dự án ' + (parseInt(key.replace('legal_', ''), 10) + 1);
+  if (key.includes('_sheet')) return 'Tờ đất (lô)';
+  if (key.includes('_parcel')) return 'Thửa đất (lô)';
+  return key;
+}
+
+function resolveDomForMissingKey(key) {
+  if (key.startsWith('legal_')) {
+    const i = parseInt(key.replace('legal_', ''), 10);
+    return document.querySelectorAll('[data-legal-row]')[i] || null;
+  }
+  if (key.startsWith('lot_map_')) {
+    const inp = document.querySelector(`[data-ce-field="${key}"]`);
+    if (!inp) return null;
+    return inp.closest('tr') || inp.closest('.ce-field');
+  }
+  const idMap = {
+    subtitle: 'f_title',
+    document_no: 'f_document_no',
+    signed_at: 'f_signed_at',
+    bid_step: 'f_bid_step',
+    payment_terms: 'f_payment_terms',
+    party_b_rep: 'pbRepDisplay',
+    party_b_title: 'pbTitleDisplay',
+  };
+  if (idMap[key]) {
+    const el = document.getElementById(idMap[key]);
+    return el?.closest('.ce-field') || el?.closest('.legal-row');
+  }
+  if (OVERRIDE_LABELS[key]) {
+    return document.querySelector(`.ce-field[data-ov="${key}"]`);
+  }
+  return null;
+}
+
+function clearReadinessHighlights() {
+  document.querySelectorAll('.ce-invalid').forEach(el => el.classList.remove('ce-invalid'));
+}
+
+function applyReadinessHighlights(missing) {
+  clearReadinessHighlights();
+  missing.forEach(key => {
+    const el = resolveDomForMissingKey(key);
+    if (el) el.classList.add('ce-invalid');
+  });
+}
+
+function updateReadinessButton(missing) {
+  const btn = document.getElementById('btnReadinessCheck');
+  if (!btn) return;
+  btn.classList.remove('is-ready', 'is-incomplete', 'is-neutral');
+  if (!readinessActive) {
+    btn.classList.add('is-neutral');
+    btn.title = 'Kiểm tra sẵn sàng';
+    return;
+  }
+  if (missing.length === 0) {
+    btn.classList.add('is-ready');
+    btn.title = 'Hợp đồng đã sẵn sàng';
+  } else {
+    btn.classList.add('is-incomplete');
+    btn.title = `Còn ${missing.length} mục cần bổ sung`;
+  }
+}
+
+function refreshReadinessState() {
+  if (!readinessActive) return;
+  const missing = collectMissingFieldKeys();
+  applyReadinessHighlights(missing);
+  updateReadinessButton(missing);
+  syncMissingMarks();
+}
+
+async function runReadinessCheck() {
+  readinessActive = true;
+  syncHidden();
+  const missing = collectMissingFieldKeys();
+  applyReadinessHighlights(missing);
+  updateReadinessButton(missing);
+  syncMissingMarks();
+
+  if (missing.length === 0) {
+    await FmDialog.alert({
+      title: 'Sẵn sàng',
+      message: 'Hợp đồng đã đủ thông tin cần nhập. Có thể lưu hoặc chốt văn bản.',
+      variant: 'success',
+      okText: 'Đã hiểu',
+    });
+    return;
+  }
+
+  const preview = missing.slice(0, 10).map(k => '• ' + missingKeyLabel(k)).join('\n');
+  const extra = missing.length > 10 ? `\n… và ${missing.length - 10} mục khác.` : '';
+  await FmDialog.alert({
+    title: 'Chưa sẵn sàng',
+    message: `Còn ${missing.length} mục cần bổ sung (đã đánh dấu đỏ bên trái):\n${preview}${extra}`,
+    variant: 'warn',
+    okText: 'Đã hiểu',
+  });
+
+  const first = resolveDomForMissingKey(missing[0]);
+  first?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const inp = first?.querySelector('input, textarea, select');
+  inp?.focus({ preventScroll: true });
 }
 
 function postToPreview(msg) {
@@ -720,6 +973,7 @@ function initPreviewBridge() {
       window.open(DOWNLOAD_HTML_URL, '_blank');
     }
   });
+  document.getElementById('btnReadinessCheck')?.addEventListener('click', () => runReadinessCheck());
 }
 
 function schedulePreview() {
@@ -769,12 +1023,14 @@ function initLivePreview() {
   form.addEventListener('input', (ev) => {
     if (ev.target.matches('input, textarea, select')) {
       queueMissingSync();
+      refreshReadinessState();
       if (!IS_FINAL) schedulePreview();
     }
   });
   form.addEventListener('change', (ev) => {
     if (ev.target.matches('input, textarea, select')) {
       queueMissingSync();
+      refreshReadinessState();
       if (!IS_FINAL) schedulePreview();
     }
   });
@@ -786,7 +1042,24 @@ document.getElementById('btnPreview')?.addEventListener('click', () => {
 });
 document.getElementById('ceForm')?.addEventListener('submit', () => syncHidden());
 
+document.getElementById('btnFinalize')?.addEventListener('click', async (e) => {
+  e.preventDefault();
+  const ok = await FmDialog.confirm({
+    title: 'Chốt văn bản',
+    message: 'Sau khi chốt, hợp đồng không thể sửa lại. Bạn có chắc muốn chốt?',
+    variant: 'warn',
+    okText: 'Chốt',
+    cancelText: 'Huỷ',
+  });
+  if (!ok) return;
+  syncHidden();
+  const form = document.getElementById('ceForm');
+  const btn = document.getElementById('btnFinalize');
+  if (form && btn) form.requestSubmit(btn);
+});
+
 initLotsPanel();
+initWardPicker();
 initLegal();
 reindexLegalFields();
 hydrateFromFields();

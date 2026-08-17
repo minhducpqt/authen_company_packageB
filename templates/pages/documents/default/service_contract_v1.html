@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <title>Hợp đồng dịch vụ đấu giá</title>
   <style>
-    @page { size: A4; margin: 18mm 16mm 20mm 16mm; }
+    @page { size: A4; margin: 25mm 20mm 25mm 30mm; }
     * { box-sizing: border-box; }
     html, body {
       margin: 0;
       padding: 0;
       font-family: "Times New Roman", Times, serif;
-      font-size: 13pt;
-      line-height: 1.35;
+      font-size: 14pt;
+      line-height: 1.5;
       color: #000;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
@@ -27,7 +27,7 @@
         border: 1px solid rgba(0,0,0,.1);
       }
       body.doc-preview .page {
-        padding: 18mm 16mm 20mm 16mm;
+        padding: 25mm 20mm 25mm 30mm;
         min-height: 297mm;
       }
       body.doc-preview .preview-meta {
@@ -46,27 +46,29 @@
     }
     body.doc-download .page { padding: 0; }
     .hd { text-align: center; }
-    .hd .cn { font-weight: 700; text-transform: uppercase; font-size: 13pt; }
+    .hd .cn { font-weight: 700; text-transform: uppercase; font-size: 14pt; }
     .hd .motto { font-weight: 700; margin: 4px 0 8px; }
     .hd .rule { margin: 6px 0 14px; }
-    h1.doc-title { text-align: center; font-size: 14pt; font-weight: 700; text-transform: uppercase; margin: 0 0 6px; }
-    .doc-sub { text-align: center; font-weight: 700; margin-bottom: 8px; }
-    .doc-no { text-align: center; margin-bottom: 14px; }
-    .legal p { margin: 0 0 4px; text-align: justify; }
-    .sec { margin-top: 12px; }
-    .sec h2 { font-size: 13pt; font-weight: 700; margin: 0 0 6px; text-transform: uppercase; }
-    .sec p, .sec li { text-align: justify; margin: 0 0 6px; }
-    .sec ul { margin: 4px 0 8px; padding-left: 22px; }
+    h1.doc-title { text-align: center; font-size: 14pt; font-weight: 700; text-transform: uppercase; margin: 0 0 8px; letter-spacing: 0.02em; }
+    .doc-sub { text-align: center; font-weight: 700; margin-bottom: 10px; }
+    .doc-no { text-align: center; margin-bottom: 16px; }
+    .legal p { margin: 0 0 6px; text-align: justify; text-indent: 28px; }
+    .sec { margin-top: 14px; }
+    .sec h2 { font-size: 14pt; font-weight: 700; margin: 0 0 8px; text-transform: uppercase; }
+    .sec p, .sec li { text-align: justify; margin: 0 0 8px; text-indent: 28px; }
+    .sec ul { margin: 6px 0 10px; padding-left: 28px; }
+    .sec li { text-indent: 0; }
     table.lots { width: 100%; border-collapse: collapse; font-size: 10.5pt; margin: 8px 0; }
     table.lots th, table.lots td { border: 1px solid #000; padding: 3px 4px; vertical-align: middle; text-align: center; }
     table.lots th { font-weight: 700; }
     table.lots td.left { text-align: left; }
     table.lots td.num { text-align: right; white-space: nowrap; }
-    .sign-block { margin-top: 24px; display: table; width: 100%; }
-    .sign-col { display: table-cell; width: 50%; text-align: center; vertical-align: top; padding: 0 8px; }
-    .sign-col .role { font-weight: 700; text-transform: uppercase; margin-bottom: 80px; }
+    .sign-block { margin-top: 28px; display: table; width: 100%; page-break-inside: avoid; }
+    .sign-col { display: table-cell; width: 50%; text-align: center; vertical-align: top; padding: 0 12px; }
+    .sign-col .role { font-weight: 700; text-transform: uppercase; margin-bottom: 88px; }
     .muted { color: #333; }
     .indent { text-indent: 28px; }
+    p.no-indent, .hd p, .doc-no, .doc-sub, h1.doc-title { text-indent: 0; }
     .ce-slot { border-radius: 2px; }
   </style>
 </head>
@@ -109,8 +111,8 @@
 {% set pb_addr = v.party_b_address or co.address or '……' %}
 {% set pb_tax = v.party_b_tax_code or co.tax_code or '……' %}
 {% set pb_phone = v.party_b_phone or co.phone or '' %}
-{% set pb_rep = contract.party_b_rep_name or v.party_b_rep_name or '……' %}
-{% set pb_title = contract.party_b_rep_title or v.party_b_rep_title or '……' %}
+{% set pb_rep = v.party_b_rep_name or contract.party_b_rep_name or '……' %}
+{% set pb_title = v.party_b_rep_title or contract.party_b_rep_title or '……' %}
 {% set pb_auth = contract.party_b_authorization or v.party_b_authorization or '' %}
 
 {% set total_area = namespace(v=0) %}

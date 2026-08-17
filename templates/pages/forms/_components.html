@@ -129,3 +129,27 @@
 <span class="fm-badge fm-badge--info">{{ template_info.label }}</span>
 {% endif %}
 {% endmacro %}
+
+{% macro forms_dialog_shell() %}
+<div id="fmDialogRoot" class="fm-dialog-root" aria-hidden="true">
+  <div class="fm-dialog-backdrop" data-fm-dialog-backdrop></div>
+  <div class="fm-dialog-card" role="dialog" aria-modal="true" aria-labelledby="fmDialogTitle">
+    <div class="fm-dialog-head">
+      <div class="fm-dialog-icon fm-dialog-icon--info" data-fm-dialog-icon><i class="ri-information-line" aria-hidden="true"></i></div>
+      <div class="fm-dialog-head-text">
+        <h2 class="fm-dialog-title" id="fmDialogTitle" data-fm-dialog-title>Thông báo</h2>
+      </div>
+      <button type="button" class="fm-dialog-close" data-fm-dialog-close aria-label="Đóng"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="fm-dialog-body" data-fm-dialog-message></div>
+    <div class="fm-dialog-foot">
+      <button type="button" class="fm-dialog-btn" data-fm-dialog-cancel>Huỷ</button>
+      <button type="button" class="fm-dialog-btn fm-dialog-btn--primary" data-fm-dialog-ok>OK</button>
+    </div>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro forms_dialog_script() %}
+<script src="/static/js/forms_dialog.js"></script>
+{% endmacro %}

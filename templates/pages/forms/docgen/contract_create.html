@@ -15,7 +15,7 @@
 <div class="fm-page dg-form">
   {{ forms_page_header(
     "Tạo hợp đồng",
-    subtitle="Chọn dự án và xã/phường. Cấu hình địa phương là tuỳ chọn — nếu xã chưa có cấu hình, bạn nhập thông tin trực tiếp trong hợp đồng.",
+    subtitle="Mỗi dự án chỉ một hợp đồng. Nếu dự án đã có HĐ, chọn lại sẽ mở bản hiện có.",
     breadcrumb_items=[
       {"label": "Biểu mẫu", "href": "/bieu-mau"},
       {"label": phase.name, "href": phase.href},
@@ -32,7 +32,7 @@
         <select name="project_id" required>
           <option value="">— Chọn dự án —</option>
           {% for p in projects %}
-          <option value="{{ p.id }}">{{ p.project_code }} — {{ p.name }}</option>
+          <option value="{{ p.id }}"{% if projects_with_contract.get(p.id) %} data-has-contract="1"{% endif %}>{{ p.project_code }} — {{ p.name }}{% if projects_with_contract.get(p.id) %} (đã có HĐ){% endif %}</option>
           {% endfor %}
         </select>
       </div>
@@ -51,7 +51,7 @@
         <p style="font-size:11px;color:#64748b;margin:6px 0 0">Gắn xã giúp hiển thị tên địa phương. Nếu chưa có cấu hình xã, hợp đồng vẫn tạo được — thông tin Bên A nhập trong editor.</p>
       </div>
       <div style="display:flex;gap:10px;margin-top:8px">
-        <button type="submit" class="dg-btn dg-btn-primary">Tạo hợp đồng <i class="ri-arrow-right-line"></i></button>
+        <button type="submit" class="dg-btn dg-btn-primary">Tạo / mở hợp đồng <i class="ri-arrow-right-line"></i></button>
         <a href="/bieu-mau/truoc-phien/hop-dong" class="dg-btn">Huỷ</a>
       </div>
     </form>

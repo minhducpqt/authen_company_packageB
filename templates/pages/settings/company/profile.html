@@ -91,6 +91,17 @@
           <dd class="mt-1 text-base text-slate-900">{{ V.email or '-' }}</dd>
         </div>
 
+        <div>
+          <dt class="text-xs font-medium text-slate-500">Người đại diện theo pháp luật</dt>
+          <dd class="mt-1 text-base text-slate-900">{{ V.legal_representative_name or '-' }}</dd>
+        </div>
+
+        <div>
+          <dt class="text-xs font-medium text-slate-500">Chức danh</dt>
+          <dd class="mt-1 text-base text-slate-900">{{ V.legal_representative_title or '-' }}</dd>
+          <p class="mt-2 text-xs text-slate-500">Dùng trên hợp đồng dịch vụ và các văn bản khác (phần đại diện Bên B).</p>
+        </div>
+
         <div class="md:col-span-2">
           <dt class="text-xs font-medium text-slate-500">Địa chỉ</dt>
           <dd class="mt-1 text-base text-slate-900">{{ V.address or '-' }}</dd>
@@ -137,6 +148,18 @@
           <label class="label">Email</label>
           <input type="email" name="email" value="{{ V.email | default('', true) }}"
                  class="input w-full h-12 text-base" placeholder="ketoan@company.vn" autocomplete="email">
+        </div>
+
+        <div>
+          <label class="label">Người đại diện theo pháp luật</label>
+          <input name="legal_representative_name" value="{{ V.legal_representative_name | default('', true) }}"
+                 class="input w-full h-12 text-base" placeholder="VD: Nguyễn Văn A">
+        </div>
+
+        <div>
+          <label class="label">Chức danh</label>
+          <input name="legal_representative_title" value="{{ V.legal_representative_title | default('', true) }}"
+                 class="input w-full h-12 text-base" placeholder="VD: Giám đốc">
         </div>
 
         <div class="md:col-span-2">

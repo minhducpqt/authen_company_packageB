@@ -5,6 +5,7 @@ import json
 import re
 from io import BytesIO
 from typing import Any, Dict, Optional
+from urllib.parse import quote
 
 from starlette.requests import Request
 
@@ -149,10 +150,20 @@ def html_to_pdf_bytes(html: str) -> bytes:
     return buf.getvalue()
 
 
+
 def download_filename(inst: Dict[str, Any], ext: str) -> str:
     no = (inst.get("document_no") or "").strip()
     base = _slug(no) if no else _slug(inst.get("title") or f"hop-dong-{inst.get('id')}")
     return f"{base}.{ext}"
+
+
+def attachment_content_disposition(filename: str) -> str:
+    """RFC 5987 — hỗ trợ tên file tiếng Việt trong header HTTP (latin-1 safe)."""
+    name = (filename or "download").replace('"', "'").strip() or "download"
+    ascii_name = re.sub(r"[^\x20-\x7E]", "_", name)
+    ascii_name = re.sub(r"[^\w.\-]+", "_", ascii_name).strip("._") or "download"
+    encoded = quote(name, safe="")
+    return f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{encoded}"
 
 
 def ctx_for_editor(ctx: Dict[str, Any]) -> str:

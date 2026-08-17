@@ -27,6 +27,7 @@ from services.docgen_v1_client import (
 from utils.auth import fetch_me, get_access_token
 from utils.document_templates.registry import DocKind, company_code_from_me, resolve_template
 from utils.docgen_contract_render import (
+    attachment_content_disposition,
     ctx_for_editor,
     download_filename,
     html_to_pdf_bytes,
@@ -281,10 +282,16 @@ async def contract_create_page(request: Request):
     phase = get_phase("pre_session")
     item = get_form_item("pre_session", "hop-dong")
     projects = []
+    projects_with_contract: Dict[int, int] = {}
     provinces = await fetch_provinces()
     error = None
     try:
         projects = await fetch_projects(token)
+        data = await list_instances(token, phase_slug="truoc-phien", category_slug="hop-dong")
+        for inst in data.get("items") or []:
+            pid = inst.get("project_id")
+            if pid:
+                projects_with_contract[int(pid)] = int(inst["id"])
     except Exception as e:
         error = _err_msg(e)
     return templates.TemplateResponse(
@@ -295,6 +302,7 @@ async def contract_create_page(request: Request):
             "phase": phase,
             "item": item,
             "projects": projects,
+            "projects_with_contract": projects_with_contract,
             "provinces": provinces,
             "error": error,
         },
@@ -323,6 +331,15 @@ async def contract_create_post(
         item = get_form_item("pre_session", "hop-dong")
         projects = await fetch_projects(token)
         provinces = await fetch_provinces()
+        projects_with_contract: Dict[int, int] = {}
+        try:
+            data = await list_instances(token, phase_slug="truoc-phien", category_slug="hop-dong")
+            for inst in data.get("items") or []:
+                pid = inst.get("project_id")
+                if pid:
+                    projects_with_contract[int(pid)] = int(inst["id"])
+        except Exception:
+            pass
         return templates.TemplateResponse(
             "pages/forms/docgen/contract_create.html",
             {
@@ -331,6 +348,7 @@ async def contract_create_post(
                 "phase": phase,
                 "item": item,
                 "projects": projects,
+                "projects_with_contract": projects_with_contract,
                 "provinces": provinces,
                 "error": _err_msg(e),
             },
@@ -388,6 +406,7 @@ async def contract_editor(request: Request, instance_id: int):
         return RedirectResponse(f"/bieu-mau/truoc-phien/hop-dong?error={_err_msg(e)}", status_code=303)
     fields_json = json.dumps(inst.get("fields") or {}, ensure_ascii=False)
     overrides_json = json.dumps(inst.get("overrides") or {}, ensure_ascii=False)
+    provinces = await fetch_provinces()
     return templates.TemplateResponse(
         "pages/forms/docgen/contract_editor.html",
         {
@@ -399,6 +418,7 @@ async def contract_editor(request: Request, instance_id: int):
             "fields_json": fields_json,
             "overrides_json": overrides_json,
             "ctx_json": ctx_for_editor(ctx),
+            "provinces": provinces,
             "preview_url": f"/bieu-mau/truoc-phien/hop-dong/{instance_id}/preview",
             "download_html_url": f"/bieu-mau/truoc-phien/hop-dong/{instance_id}/tai-html",
             "download_pdf_url": f"/bieu-mau/truoc-phien/hop-dong/{instance_id}/tai-pdf",
@@ -407,6 +427,23 @@ async def contract_editor(request: Request, instance_id: int):
             "is_final": inst.get("status") == "FINAL",
         },
     )
+
+
+@router.post("/truoc-phien/hop-dong/{instance_id}/doi-xa", response_class=HTMLResponse)
+async def contract_change_ward(
+    request: Request,
+    instance_id: int,
+    ward_code: int = Form(...),
+):
+    token = await _token(request)
+    try:
+        inst = await get_instance(token, instance_id)
+        if inst.get("status") == "FINAL":
+            return RedirectResponse(f"/bieu-mau/truoc-phien/hop-dong/{instance_id}", status_code=303)
+        await update_instance(token, instance_id, {"ward_code": ward_code})
+    except Exception:
+        pass
+    return RedirectResponse(f"/bieu-mau/truoc-phien/hop-dong/{instance_id}", status_code=303)
 
 
 @router.post("/truoc-phien/hop-dong/{instance_id}/save", response_class=HTMLResponse)
@@ -491,7 +528,7 @@ async def contract_download_html(request: Request, instance_id: int):
     return Response(
         content=html.encode("utf-8"),
         media_type="text/html; charset=utf-8",
-        headers={"Content-Disposition": f'attachment; filename="{fname}"'},
+        headers={"Content-Disposition": attachment_content_disposition(fname)},
     )
 
 
@@ -509,7 +546,7 @@ async def contract_download_pdf(request: Request, instance_id: int):
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{fname}"'},
+        headers={"Content-Disposition": attachment_content_disposition(fname)},
     )
 
 

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "pages/forms/_components.html" import forms_styles, forms_page_header %}
+{% from "pages/forms/_components.html" import forms_styles, forms_page_header, forms_dialog_shell, forms_dialog_script %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
 {{ forms_styles() }}
@@ -87,8 +87,8 @@
     </div>
   </form>
   {% if profile %}
-  <form method="post" action="/bieu-mau/cau-hinh/dia-phuong/{{ profile.id }}/xoa" style="margin-top:12px" onsubmit="return confirm('Xoá cấu hình này?')">
-    <button type="submit" class="dg-btn" style="color:#b91c1c;border-color:#fecaca">Xoá cấu hình</button>
+  <form id="deleteLocalityForm" method="post" action="/bieu-mau/cau-hinh/dia-phuong/{{ profile.id }}/xoa" style="margin-top:12px">
+    <button type="button" id="btnDeleteLocality" class="dg-btn" style="color:#b91c1c;border-color:#fecaca">Xoá cấu hình</button>
   </form>
   {% endif %}
 </div>
@@ -116,6 +116,8 @@
     </div>
   </div>
 </div>
+{{ forms_dialog_shell() }}
+{{ forms_dialog_script() }}
 <script>
 const CONFIRM_PHRASE = 'tôi xác nhận';
 const localityForm = document.getElementById('localityForm');
@@ -171,6 +173,17 @@ typedModal?.querySelectorAll('[data-close-confirm]').forEach(el => {
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && typedModal?.classList.contains('is-open')) closeTypedConfirm();
+});
+
+document.getElementById('btnDeleteLocality')?.addEventListener('click', async () => {
+  const ok = await FmDialog.confirm({
+    title: 'Xoá cấu hình',
+    message: 'Xoá cấu hình địa phương này? Hành động không thể hoàn tác.',
+    variant: 'danger',
+    okText: 'Xoá',
+    cancelText: 'Huỷ',
+  });
+  if (ok) document.getElementById('deleteLocalityForm')?.submit();
 });
 
 const provinceSelect = document.getElementById('provinceSelect');
