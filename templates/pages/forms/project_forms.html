@@ -48,7 +48,7 @@
   <form class="pf-toolbar" method="get" action="/bieu-mau/theo-du-an">
     <div class="pf-field">
       <label for="projectSelect">Dự án</label>
-      <select id="projectSelect" name="project_id" onchange="this.form.submit()">
+      <select id="projectSelect" name="project_id">
         <option value="">— Chọn dự án —</option>
         {% for p in projects %}
         <option value="{{ p.id }}" {% if project_id and p.id == project_id %}selected{% endif %}>{{ p.project_code }} — {{ p.name }}</option>
@@ -151,4 +151,44 @@
     {% endfor %}
   {% endif %}
 </div>
+<script>
+(function () {
+  const STORAGE_KEY = 'bieu-mau.theo-du-an.project_id';
+  const select = document.getElementById('projectSelect');
+  const form = select?.closest('form');
+  if (!select || !form) return;
+
+  function optionExists(pid) {
+    return Array.from(select.options).some(function (o) { return o.value === String(pid); });
+  }
+
+  function saveProjectId(pid) {
+    if (pid) localStorage.setItem(STORAGE_KEY, String(pid));
+    else localStorage.removeItem(STORAGE_KEY);
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const urlPid = params.get('project_id');
+
+  if (urlPid) {
+    if (optionExists(urlPid)) saveProjectId(urlPid);
+    else localStorage.removeItem(STORAGE_KEY);
+  } else {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved && optionExists(saved)) {
+      let target = '/bieu-mau/theo-du-an?project_id=' + encodeURIComponent(saved);
+      const err = params.get('error');
+      if (err) target += '&error=' + encodeURIComponent(err);
+      window.location.replace(target);
+      return;
+    }
+    if (saved) localStorage.removeItem(STORAGE_KEY);
+  }
+
+  select.addEventListener('change', function () {
+    saveProjectId(select.value);
+    form.submit();
+  });
+})();
+</script>
 {% endblock %}
