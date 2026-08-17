@@ -286,7 +286,7 @@ async def render_regulations_html(
     portal_links = customer_portal_link_set(company_code)
     portal_qr_data_uri = None
     if portal_links:
-        portal_qr_data_uri = qr_png_data_uri(portal_links["portal_home_url"], box_size=5)
+        portal_qr_data_uri = qr_png_data_uri(portal_links["portal_home_url"], box_size=6)
 
     html = templates.get_template(template_path).render(
         {

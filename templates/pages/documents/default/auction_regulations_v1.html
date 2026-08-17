@@ -117,18 +117,14 @@
 
     /* --- Khối QR cổng khách hàng --- */
     .portal-qr-single {
-      text-align: center; margin: 12px auto 16px; max-width: 62mm;
-      padding: 8px 10px; border: 1px solid #bbb; background: #fafafa;
+      text-align: center; margin: 12px auto 16px; max-width: 72mm;
+      padding: 10px 12px; border: 1px solid #bbb; background: #fafafa;
       page-break-inside: avoid;
     }
-    .portal-qr-single img { width: 28mm; height: 28mm; display: block; margin: 0 auto; }
+    .portal-qr-single img { width: 36mm; height: 36mm; display: block; margin: 0 auto; }
     .portal-qr-cap {
-      font-size: 9pt; font-weight: 700; margin: 8px 0 4px;
+      font-size: 9pt; font-weight: 700; margin: 10px 0 0;
       text-indent: 0; text-align: center; line-height: 1.35;
-    }
-    .portal-qr-url {
-      font-size: 8pt; word-break: break-all; color: #333;
-      text-indent: 0; text-align: center; margin: 0; line-height: 1.3;
     }
 
     /* --- Nơi nhận --- */
@@ -363,7 +359,6 @@
   <div class="portal-qr-single" aria-label="Mã QR cổng khách hàng">
     <img src="{{ portal_qr_data_uri }}" alt="QR cổng khách hàng">
     <p class="portal-qr-cap">Quét mã để vào cổng khách hàng (đăng ký, mua hồ sơ, nộp tiền đặt trước)</p>
-    <p class="portal-qr-url">{{ portal_home_url }}</p>
   </div>
   {% endif %}
   <p>Khách hàng sau khi đăng ký phải nộp lại hồ sơ từ {{ ce_slot('dossier_resubmit_from', reg.dossier_resubmit_from or reg.dossier_period_from or '……') }} đến {{ ce_slot('dossier_resubmit_to', reg.dossier_resubmit_to or reg.dossier_period_to or '……') }} (giờ hành chính).</p>
