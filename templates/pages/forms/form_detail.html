@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "pages/forms/_components.html" import forms_styles, forms_breadcrumb, forms_detail_header, forms_variant_card, forms_empty_state %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{{ forms_styles() }}
+<div class="fm-page">
+  {{ forms_breadcrumb([
+    {"label": "Biểu mẫu", "href": "/bieu-mau"},
+    {"label": phase.name, "href": phase.href},
+    {"label": item.name, "href": null},
+  ]) }}
+
+  {{ forms_detail_header(item) }}
+
+  {% if variants and variants|length > 0 %}
+  <div class="fm-tpl-grid">
+    {% for v in variants %}
+      {{ forms_variant_card(v) }}
+    {% endfor %}
+  </div>
+  {% elif item.status == 'coming_soon' %}
+    {{ forms_empty_state("Nội dung biểu mẫu sẽ được bổ sung sau.", icon="ri-file-text-line") }}
+  {% endif %}
+</div>
+{% endblock %}

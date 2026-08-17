@@ -1,38 +1,23 @@
 {% extends "base.html" %}
+{% from "pages/forms/_components.html" import forms_styles, forms_page_header, forms_variant_card, template_source_badge %}
 {% block title %}{{ title or "Phiếu trả giá" }}{% endblock %}
 {% block content %}
-<div class="max-w-4xl">
-  <div class="mb-2">
-    <a href="/bieu-mau" class="text-xs font-bold text-slate-500 hover:text-indigo-600">
-      ← Biểu mẫu
-    </a>
-  </div>
-  <div class="mb-6">
-    <h1 class="text-xl font-extrabold text-slate-900 flex items-center gap-2">
-      <i class="ri-file-list-3-line text-indigo-600"></i> Phiếu trả giá — danh sách mẫu
-    </h1>
-    <p class="mt-1 text-sm text-slate-500">
-      Chọn mẫu cần in thử. Hiện chỉ hỗ trợ mẫu <b>đấu thường</b> (đúng template production).
-    </p>
-  </div>
+{{ forms_styles() }}
+<div class="fm-page">
+  {{ forms_page_header(
+    "Phiếu trả giá",
+    subtitle="Thuộc giai đoạn Trong phiên. Chọn phiên bản mẫu để tạo biểu mẫu.",
+    breadcrumb_items=[
+      {"label": "Biểu mẫu", "href": "/bieu-mau"},
+      {"label": phase.name, "href": phase.href},
+      {"label": "Phiếu trả giá", "href": null},
+    ],
+  ) }}
+  {% if template_info %}{{ template_source_badge(template_info, company_code) }}{% endif %}
 
-  <div class="space-y-3">
+  <div class="fm-tpl-grid" style="margin-top:20px">
     {% for t in templates_list %}
-    <a href="{{ t.href if t.enabled else '#' }}"
-       class="flex items-start gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm
-              hover:border-indigo-300 hover:shadow-md transition
-              {% if not t.enabled %}opacity-50 pointer-events-none{% endif %}">
-      <div class="w-11 h-11 shrink-0 rounded-xl bg-emerald-50 text-emerald-700 grid place-items-center text-xl">
-        <i class="{{ t.icon }}"></i>
-      </div>
-      <div class="min-w-0 flex-1">
-        <div class="font-extrabold text-slate-900">{{ t.name }}</div>
-        <div class="mt-1 text-xs text-slate-500 leading-relaxed">{{ t.description }}</div>
-      </div>
-      <div class="text-xs font-bold text-indigo-600 whitespace-nowrap pt-1">
-        Mở studio <i class="ri-arrow-right-line"></i>
-      </div>
-    </a>
+      {{ forms_variant_card(t) }}
     {% endfor %}
   </div>
 </div>

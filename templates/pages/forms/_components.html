@@ -1,0 +1,131 @@
+{# Biểu mẫu — reusable UI components (Jinja macros) #}
+
+{% macro forms_styles() %}
+<link rel="stylesheet" href="/static/css/forms_module.css">
+{% endmacro %}
+
+{% macro forms_page_shell(open=true) %}
+{% if open %}<div class="fm-page">{% endif %}
+{% endmacro %}
+
+{% macro forms_page_shell_end(close=true) %}
+{% if close %}</div>{% endif %}
+{% endmacro %}
+
+{% macro forms_breadcrumb(items) %}
+<nav class="fm-bc" aria-label="Breadcrumb">
+  <ol class="fm-bc-list">
+    {% for it in items %}
+    <li class="fm-bc-item">
+      {% if not loop.last and it.href %}
+        <a href="{{ it.href }}">{{ it.label }}</a>
+      {% else %}
+        <span {% if loop.last %}aria-current="page"{% endif %}>{{ it.label }}</span>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+</nav>
+{% endmacro %}
+
+{% macro forms_page_header(title, subtitle=none, meta=none, breadcrumb_items=none) %}
+{% if breadcrumb_items %}{{ forms_breadcrumb(breadcrumb_items) }}{% endif %}
+<header class="fm-page-header">
+  <h1 class="fm-page-title">{{ title }}</h1>
+  {% if subtitle %}<p class="fm-page-subtitle">{{ subtitle }}</p>{% endif %}
+  {% if meta %}<p class="fm-page-meta">{{ meta }}</p>{% endif %}
+</header>
+{% endmacro %}
+
+{% macro forms_status_badge(status) %}
+{% if status == 'active' %}
+<span class="fm-badge fm-badge--ready">Sẵn sàng</span>
+{% elif status == 'coming_soon' %}
+<span class="fm-badge fm-badge--soon">Sắp triển khai</span>
+{% endif %}
+{% endmacro %}
+
+{% macro forms_category_card(phase) %}
+<a href="{{ phase.href }}" class="fm-cat-card" aria-label="{{ phase.name }} — {{ phase.count_label }}">
+  <div class="fm-cat-card-inner">
+    <div class="fm-ico fm-ico--{{ phase.color or 'indigo' }}"><i class="{{ phase.icon }}" aria-hidden="true"></i></div>
+    <div class="fm-cat-card-body">
+      <h2 class="fm-cat-card-title">{{ phase.name }}</h2>
+      <p class="fm-cat-card-desc">{{ phase.description }}</p>
+      <p class="fm-cat-card-count">{{ phase.count_label }}</p>
+    </div>
+    <i class="ri-arrow-right-s-line fm-cat-card-chevron" aria-hidden="true"></i>
+  </div>
+</a>
+{% endmacro %}
+
+{% macro forms_template_card(item) %}
+{% set is_ready = item.status == 'active' and item.enabled %}
+{% if is_ready %}
+<a href="{{ item.href }}" class="fm-tpl-card" aria-label="{{ item.name }} — Tạo biểu mẫu">
+{% else %}
+<div class="fm-tpl-card fm-tpl-card--disabled" aria-disabled="true">
+{% endif %}
+  <div class="fm-tpl-card-top">
+    <div class="fm-ico fm-ico--neutral"><i class="{{ item.icon }}" aria-hidden="true"></i></div>
+    {{ forms_status_badge(item.status) }}
+  </div>
+  <h3 class="fm-tpl-card-title">{{ item.name }}</h3>
+  <p class="fm-tpl-card-desc">{{ item.description }}</p>
+  {% if is_ready %}
+  <span class="fm-tpl-card-action">Tạo biểu mẫu <i class="ri-arrow-right-line" aria-hidden="true"></i></span>
+  {% else %}
+  <span class="fm-tpl-card-action fm-tpl-card-action--muted">Chưa khả dụng</span>
+  {% endif %}
+{% if is_ready %}</a>{% else %}</div>{% endif %}
+{% endmacro %}
+
+{% macro forms_variant_card(variant) %}
+{% if variant.enabled %}
+<a href="{{ variant.href }}" class="fm-tpl-card" aria-label="{{ variant.name }} — Tạo biểu mẫu">
+{% else %}
+<div class="fm-tpl-card fm-tpl-card--disabled" aria-disabled="true">
+{% endif %}
+  <div class="fm-tpl-card-top">
+    <div class="fm-ico fm-ico--indigo"><i class="{{ variant.icon }}" aria-hidden="true"></i></div>
+    <span class="fm-badge fm-badge--ready">Sẵn sàng</span>
+  </div>
+  <h3 class="fm-tpl-card-title">{{ variant.name }}</h3>
+  {% if variant.description %}
+  <p class="fm-tpl-card-desc">{{ variant.description }}</p>
+  {% endif %}
+  {% if variant.enabled %}
+  <span class="fm-tpl-card-action">Tạo biểu mẫu <i class="ri-arrow-right-line" aria-hidden="true"></i></span>
+  {% else %}
+  <span class="fm-tpl-card-action fm-tpl-card-action--muted">Chưa khả dụng</span>
+  {% endif %}
+{% if variant.enabled %}</a>{% else %}</div>{% endif %}
+{% endmacro %}
+
+{% macro forms_empty_state(message, icon='ri-inbox-line') %}
+<div class="fm-empty" role="status">
+  <i class="{{ icon }} fm-empty-icon" aria-hidden="true"></i>
+  {{ message }}
+</div>
+{% endmacro %}
+
+{% macro forms_detail_header(item) %}
+<div class="fm-detail-head">
+  <div class="fm-ico fm-ico--neutral"><i class="{{ item.icon }}" aria-hidden="true"></i></div>
+  <div class="fm-detail-head-body">
+    <div class="fm-detail-head-row">
+      <h1 class="fm-detail-head-title">{{ item.name }}</h1>
+      {{ forms_status_badge(item.status) }}
+    </div>
+    {% if item.description %}
+    <p class="fm-detail-head-desc">{{ item.description }}</p>
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}
+
+{% macro template_source_badge(template_info, company_code=none) %}
+{% if template_info and template_info.source != 'none' %}
+<span class="fm-badge fm-badge--info">{{ template_info.label }}</span>
+{% endif %}
+{% endmacro %}

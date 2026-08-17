@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% from "pages/forms/_components.html" import forms_styles, forms_page_header, forms_template_card, forms_empty_state %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{{ forms_styles() }}
+<div class="fm-page">
+  {% if item_count == 0 %}
+    {% set count_meta = "Chưa có biểu mẫu" %}
+  {% elif item_count == 1 %}
+    {% set count_meta = "1 biểu mẫu" %}
+  {% else %}
+    {% set count_meta = item_count ~ " biểu mẫu" %}
+  {% endif %}
+  {{ forms_page_header(
+    phase.name,
+    subtitle=phase.description,
+    meta=count_meta,
+    breadcrumb_items=[
+      {"label": "Biểu mẫu", "href": "/bieu-mau"},
+      {"label": phase.name, "href": null},
+    ],
+  ) }}
+
+  {% if items and items|length > 0 %}
+  <div class="fm-tpl-grid">
+    {% for item in items %}
+      {{ forms_template_card(item) }}
+    {% endfor %}
+  </div>
+  {% else %}
+    {{ forms_empty_state("Chưa có biểu mẫu trong giai đoạn này.") }}
+  {% endif %}
+</div>
+{% endblock %}

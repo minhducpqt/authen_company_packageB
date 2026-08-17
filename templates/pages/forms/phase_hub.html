@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% from "pages/forms/_components.html" import forms_styles, forms_page_header, forms_category_card %}
+{% block title %}{{ title or "Biểu mẫu" }}{% endblock %}
+{% block content %}
+{{ forms_styles() }}
+<div class="fm-page">
+  {{ forms_page_header(
+    "Biểu mẫu",
+    subtitle="Quản lý và tạo các giấy tờ, biểu mẫu phục vụ phiên đấu giá.",
+    breadcrumb_items=[{"label": "Biểu mẫu", "href": null}],
+  ) }}
+
+  <div class="fm-cat-grid">
+    {% for p in phases %}
+      {{ forms_category_card(p) }}
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
