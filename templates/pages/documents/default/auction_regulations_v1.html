@@ -22,8 +22,9 @@
     }
     @media print {
       body { background: #fff; }
-      .sheet { box-shadow: none !important; border: none !important; }
-      .page { padding: 0; }
+      .sheet { box-shadow: none !important; border: none !important; min-height: 0 !important; height: auto !important; margin: 0 !important; }
+      .page { padding: 0; min-height: 0 !important; height: auto !important; }
+      .sec { page-break-inside: auto !important; break-inside: auto !important; }
     }
     body.doc-download .page { padding: 0; }
 
@@ -77,14 +78,17 @@
     }
 
     /* --- Điều khoản --- */
-    .sec { margin-top: 16px; page-break-inside: avoid; }
+    .sec { margin-top: 16px; }
     .sec h2 {
       font-size: 13pt; font-weight: 700; margin: 0 0 10px;
       text-transform: uppercase; line-height: 1.35;
       padding-bottom: 4px; border-bottom: 1px solid #000;
+      break-after: avoid;
+      page-break-after: avoid;
     }
     .sec p, .sec li {
       text-align: justify; margin: 0 0 8px; text-indent: 28px; line-height: 1.45;
+      orphans: 2; widows: 2;
     }
     .sec p.no-indent, .sec p.clause-head, .clause-head { text-indent: 0; }
     .sec p.clause-head { margin-bottom: 4px; }
@@ -110,6 +114,7 @@
       text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums;
     }
     table.lots tr.total-row td { font-weight: 700; background: #f0f0f0; }
+    table.lots tbody tr { page-break-inside: avoid; break-inside: avoid; }
     .table-caption {
       text-align: center; font-weight: 700; margin: 8px 0 6px;
       text-indent: 0; line-height: 1.4;
@@ -140,7 +145,7 @@
     /* --- Chữ ký --- */
     .sign-block {
       margin-top: 36px; text-align: center; font-weight: 700;
-      text-transform: uppercase; page-break-inside: avoid;
+      text-transform: uppercase; page-break-inside: avoid; break-inside: avoid;
     }
     .sign-block .org { font-size: 13pt; letter-spacing: 0.03em; line-height: 1.35; }
     .sign-space { min-height: 88px; }

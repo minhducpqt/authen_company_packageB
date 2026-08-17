@@ -40,9 +40,10 @@
     }
     @media print {
       body { background: #fff; }
-      .sheet { box-shadow: none !important; border: none !important; }
-      .page { padding: 0; }
+      .sheet { box-shadow: none !important; border: none !important; min-height: 0 !important; height: auto !important; margin: 0 !important; }
+      .page { padding: 0; min-height: 0 !important; height: auto !important; }
       .preview-meta { display: none !important; }
+      .sec { page-break-inside: auto !important; break-inside: auto !important; }
     }
     body.doc-download .page { padding: 0; }
     .hd { text-align: center; margin-bottom: 4px; }
@@ -73,7 +74,7 @@
     .party-row { margin: 0 0 4px; line-height: 1.45; text-indent: 0; }
     .party-row .party-lbl { display: inline; }
     .party-row .party-pair { display: inline; }
-    .sec { margin-top: 16px; page-break-inside: avoid; }
+    .sec { margin-top: 16px; }
     .sec h2 {
       font-size: 13pt;
       font-weight: 700;
@@ -82,8 +83,10 @@
       line-height: 1.35;
       padding-bottom: 4px;
       border-bottom: 1px solid #000;
+      break-after: avoid;
+      page-break-after: avoid;
     }
-    .sec p, .sec li { text-align: justify; margin: 0 0 8px; text-indent: 28px; line-height: 1.45; }
+    .sec p, .sec li { text-align: justify; margin: 0 0 8px; text-indent: 28px; line-height: 1.45; orphans: 2; widows: 2; }
     .sec p.clause-head, .sec p.no-indent { text-indent: 0; }
     .sec ul { margin: 4px 0 10px; padding-left: 0; list-style: none; }
     .sec ul.asset-items, .sec ul.clause-list { padding-left: 28px; }
@@ -106,7 +109,8 @@
     table.lots tr.total-row td { font-weight: 700; background: #f0f0f0; }
     table.lots td.left { text-align: left; }
     table.lots td.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-    .sign-block { margin-top: 32px; display: table; width: 100%; page-break-inside: avoid; }
+    table.lots tbody tr { page-break-inside: avoid; break-inside: avoid; }
+    .sign-block { margin-top: 32px; display: table; width: 100%; page-break-inside: avoid; break-inside: avoid; }
     .sign-col { display: table-cell; width: 50%; text-align: center; vertical-align: top; padding: 0 16px; }
     .sign-col .role { font-weight: 700; text-transform: uppercase; margin-bottom: 0; font-size: 13pt; }
     .sign-col .sign-space { min-height: 88px; }
