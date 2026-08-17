@@ -194,13 +194,23 @@ def merge_ctx_values_for_render(
     return ctx
 
 
+def _lot_sort_key(lot: Dict[str, Any]) -> tuple:
+    lid = lot.get("id")
+    if lid is not None:
+        try:
+            return (0, int(lid))
+        except (TypeError, ValueError):
+            pass
+    return (1, str(lot.get("lot_code") or ""))
+
+
 def apply_lot_table(fields: Dict[str, Any], lots: list) -> tuple[list, bool]:
     """Merge per-lot tờ/thửa from fields.lot_table into ctx.lots for render."""
     lot_table = fields.get("lot_table") or {}
     show = bool(lot_table.get("show_map_parcel"))
     items = lot_table.get("items") or {}
     enriched = []
-    for lot in lots or []:
+    for lot in sorted(lots or [], key=_lot_sort_key):
         row = dict(lot)
         if show:
             kid = str(row.get("id") or "")
@@ -337,10 +347,11 @@ def ctx_for_editor(ctx: Dict[str, Any]) -> str:
             return [clean(x) for x in obj]
         return str(obj)
 
+    lots = sorted(ctx.get("lots") or [], key=_lot_sort_key)
     subset = {
         "defaults": clean(ctx.get("defaults") or {}),
         "project": clean(ctx.get("project") or {}),
-        "lots": clean(ctx.get("lots") or []),
+        "lots": clean(lots),
         "company": clean(ctx.get("company") or {}),
         "locality": clean(ctx.get("locality")) if ctx.get("locality") else None,
         "ward": clean(ctx.get("ward")) if ctx.get("ward") else None,
