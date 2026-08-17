@@ -15,7 +15,16 @@ from utils.document_templates.registry import (
     _template_file_exists,
 )
 
-# --- Giai đoạn phiên ---
+FORM_CONFIG_ITEMS: List[Dict[str, Any]] = [
+    {
+        "id": "dia-phuong",
+        "slug": "dia-phuong",
+        "name": "Địa phương",
+        "description": "Cấu hình mặc định Bên A, đại diện và địa điểm theo xã/phường.",
+        "icon": "ri-map-pin-line",
+        "href": "/bieu-mau/cau-hinh/dia-phuong",
+    },
+]
 
 FORM_PHASES: List[Dict[str, Any]] = [
     {
@@ -55,12 +64,13 @@ _FORM_ITEMS: Dict[str, List[Dict[str, Any]]] = {
             "id": "hop-dong",
             "slug": "hop-dong",
             "name": "Hợp đồng",
-            "description": "Mẫu hợp đồng liên quan đấu giá — đang quy hoạch, chưa triển khai.",
+            "description": "Hợp đồng dịch vụ đấu giá tài sản và các tài liệu liên quan.",
             "icon": "ri-file-text-line",
             "href": "/bieu-mau/truoc-phien/hop-dong",
             "enabled": True,
-            "status": "coming_soon",
-            "doc_kind": None,
+            "status": "active",
+            "doc_kind": DocKind.SERVICE_CONTRACT,
+            "template_key": "service_contract_v1",
         },
     ],
     "in_session": [
@@ -194,3 +204,7 @@ def enrich_items_with_template_source(
         )
         out.append(row)
     return out
+
+
+def list_config_items() -> List[Dict[str, Any]]:
+    return [dict(x) for x in FORM_CONFIG_ITEMS]

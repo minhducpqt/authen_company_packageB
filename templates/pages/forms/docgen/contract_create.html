@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% from "pages/forms/_components.html" import forms_styles, forms_page_header %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{{ forms_styles() }}
+<style>
+  .dg-form { max-width:560px; }
+  .dg-field { margin-bottom:14px; }
+  .dg-field label { display:block; font-size:12px; font-weight:700; color:#475569; margin-bottom:5px; }
+  .dg-field select { width:100%; padding:9px 11px; border:1px solid #cbd5e1; border-radius:10px; font-size:14px; }
+  .dg-btn { display:inline-flex; align-items:center; gap:6px; padding:9px 16px; border-radius:10px; font-size:13px; font-weight:600; border:1px solid #cbd5e1; background:#fff; cursor:pointer; text-decoration:none; color:#334155; }
+  .dg-btn-primary { background:#4f46e5; border-color:#4f46e5; color:#fff; }
+  .dg-alert { padding:12px 14px; border-radius:10px; background:#fef2f2; color:#b91c1c; font-size:13px; margin-bottom:16px; }
+</style>
+<div class="fm-page dg-form">
+  {{ forms_page_header(
+    "Tạo hợp đồng",
+    subtitle="Chọn dự án và xã/phường. Cấu hình địa phương là tuỳ chọn — nếu xã chưa có cấu hình, bạn nhập thông tin trực tiếp trong hợp đồng.",
+    breadcrumb_items=[
+      {"label": "Biểu mẫu", "href": "/bieu-mau"},
+      {"label": phase.name, "href": phase.href},
+      {"label": item.name, "href": "/bieu-mau/truoc-phien/hop-dong"},
+      {"label": "Tạo mới", "href": null},
+    ],
+  ) }}
+  {% if error %}<div class="dg-alert">{{ error }}</div>{% endif %}
+
+  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:20px">
+    <form method="post" action="/bieu-mau/truoc-phien/hop-dong/tao">
+      <div class="dg-field">
+        <label>Dự án *</label>
+        <select name="project_id" required>
+          <option value="">— Chọn dự án —</option>
+          {% for p in projects %}
+          <option value="{{ p.id }}">{{ p.project_code }} — {{ p.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="dg-field">
+        <label>Tỉnh / Thành</label>
+        <select id="provinceSelect">
+          <option value="">— Chọn tỉnh —</option>
+          {% for p in provinces %}<option value="{{ p.code }}">{{ p.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="dg-field">
+        <label>Xã / Phường</label>
+        <select name="ward_code" id="wardSelect">
+          <option value="">— Không chọn / nhập sau —</option>
+        </select>
+        <p style="font-size:11px;color:#64748b;margin:6px 0 0">Gắn xã giúp hiển thị tên địa phương. Nếu chưa có cấu hình xã, hợp đồng vẫn tạo được — thông tin Bên A nhập trong editor.</p>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:8px">
+        <button type="submit" class="dg-btn dg-btn-primary">Tạo hợp đồng <i class="ri-arrow-right-line"></i></button>
+        <a href="/bieu-mau/truoc-phien/hop-dong" class="dg-btn">Huỷ</a>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+const provinceSelect = document.getElementById('provinceSelect');
+const wardSelect = document.getElementById('wardSelect');
+if (provinceSelect && wardSelect) {
+  provinceSelect.addEventListener('change', async () => {
+    wardSelect.innerHTML = '<option value="">— Đang tải —</option>';
+    const pc = provinceSelect.value;
+    if (!pc) { wardSelect.innerHTML = '<option value="">— Không chọn —</option>'; return; }
+    const r = await fetch('/bieu-mau/api/communes?province_code=' + encodeURIComponent(pc));
+    const data = await r.json();
+    wardSelect.innerHTML = '<option value="">— Không chọn —</option>';
+    (data.items || []).forEach(w => {
+      const o = document.createElement('option');
+      o.value = w.code; o.textContent = w.name_with_type || w.name;
+      wardSelect.appendChild(o);
+    });
+  });
+}
+</script>
+{% endblock %}

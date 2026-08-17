@@ -10,9 +10,26 @@
     breadcrumb_items=[{"label": "Biểu mẫu", "href": null}],
   ) }}
 
-  <div class="fm-cat-grid">
+  <p class="fm-section-label" style="margin-bottom:10px">Giai đoạn phiên</p>
+  <div class="fm-cat-grid" style="margin-bottom:28px">
     {% for p in phases %}
       {{ forms_category_card(p) }}
+    {% endfor %}
+  </div>
+
+  <p class="fm-section-label" style="margin-bottom:10px">Cấu hình</p>
+  <div class="fm-cat-grid">
+    {% for c in config_items %}
+    <a href="{{ c.href }}" class="fm-cat-card">
+      <div class="fm-cat-card-inner">
+        <div class="fm-ico fm-ico--indigo"><i class="{{ c.icon }}"></i></div>
+        <div class="fm-cat-card-body">
+          <h2 class="fm-cat-card-title">{{ c.name }}</h2>
+          <p class="fm-cat-card-desc">{{ c.description }}</p>
+        </div>
+        <i class="ri-arrow-right-s-line fm-cat-card-chevron"></i>
+      </div>
+    </a>
     {% endfor %}
   </div>
 </div>

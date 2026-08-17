@@ -1,0 +1,33 @@
+{# Article 2 — static paragraphs after lots table #}
+{% from 'pages/documents/default/_ce_slot.html' import ce_slot %}
+{% set bid_step_val = auction.bid_step or contract.bid_step or proj.bid_step_policy or 'Tối thiểu ……/m² (Bằng chữ: …… trên một mét vuông). Không hạn chế bước giá tối đa.' %}
+<p>Giá khởi điểm trên chưa bao gồm các loại thuế, phí, lệ phí. Người mua được tài sản phải nộp tất cả các loại thuế, phí, lệ phí liên quan đến việc chuyển quyền sở hữu, sử dụng theo quy định của pháp luật.</p>
+
+<p><strong>2. Bước giá, cách thức áp dụng bước giá:</strong><br>
+- Bước giá: {{ ce_slot('bid_step', bid_step_val) }}<br>
+- Cách thức áp dụng bước giá: {{ auction.bid_step_rule or contract.bid_step_rule or 'Giá trả hợp lệ = Giá khởi điểm + n × bước giá' }}.</p>
+
+<p><strong>3. Địa điểm, hình thức nộp hồ sơ tham gia đấu giá, thời hạn nộp tiền đặt trước:</strong></p>
+<p><strong>3.1. Địa điểm bán hồ sơ mời tham gia đấu giá, tiếp nhận hồ sơ tham gia đấu giá:</strong><br>
+{% set dossier_txt = v.dossier_reception_place or defs.dossier_reception_place or ('Văn phòng Giao dịch ' ~ pb_name ~ ' và trụ sở ' ~ pa_name) %}
+Các bên thống nhất địa điểm tiếp nhận hồ sơ tham gia đấu giá tại {{ ce_slot('dossier_reception_place', dossier_txt) }}.</p>
+<p><strong>3.2. Cách thức nộp tiền đặt trước tham gia đấu giá:</strong><br>
+Khách hàng đăng ký tham gia đấu giá phải nộp khoản tiền đặt trước vào tài khoản của bên B trong thời hạn từ ngày niêm yết việc đấu giá tài sản đến trước ngày mở phiên đấu giá 02 (hai) ngày làm việc, cụ thể:<br>
+Đơn vị hưởng: {{ ce_slot('party_b_name', pb_name) }}<br>
+Tài khoản số: {{ ctx.payment_accounts.deposit_account if ctx.payment_accounts and ctx.payment_accounts.deposit_account else '……' }}<br>
+Ngân hàng: {{ ctx.payment_accounts.deposit_bank if ctx.payment_accounts and ctx.payment_accounts.deposit_bank else '……' }}</p>
+
+<p><strong>4. Phương thức thu và xử lý tiền bán hồ sơ mời tham gia đấu giá, tiền đặt trước</strong></p>
+<p><strong>4.1. Đối với tiền bán hồ sơ mời tham gia đấu giá</strong><br>
+Bên B chịu trách nhiệm thu tiền bán hồ sơ mời tham gia đấu giá theo quy định. Bên A bố trí địa điểm và nhân sự hỗ trợ Bên B trong việc bán hồ sơ mời tham gia đấu giá và thu tiền bán hồ sơ tại địa điểm trụ sở Bên A.<br>
+Tiền bán hồ sơ mời tham gia đấu giá không trả lại trong mọi trường hợp trừ khi phiên đấu giá không được mở. Toàn bộ tiền bán hồ sơ mời tham gia đấu giá được thu, quản lý và sử dụng theo đúng quy định khoản 14; khoản 40 Điều 1 Luật sửa đổi, bổ sung một số điều của Luật Đấu giá tài sản số 37/2024/QH15 ngày 27/6/2024 và khoản 1 Điều 7 Thông tư số 03/2025/TT-BTC.<br>
+Trường hợp phiên đấu giá không tổ chức được thì người tham gia đấu giá được hoàn lại toàn bộ tiền mua hồ sơ mời tham gia đấu giá đã nộp trong thời hạn 02 ngày (hai ngày) làm việc, kể từ ngày dự kiến tổ chức phiên đấu giá.</p>
+<p><strong>4.2. Đối với khoản tiền đặt trước:</strong></p>
+<ul>
+  <li>Bên B chịu trách nhiệm thu tiền đặt trước của người đăng ký tham gia đấu giá. Toàn bộ tiền đặt trước của người đăng ký tham gia đấu giá được giữ tại tài khoản của bên B từ ngày thu tiền đến ngày hoàn trả tiền đặt trước cho khách hàng không trúng đấu giá và chuyển tiền đặt cọc của người trúng đấu giá vào tài khoản của bên A.</li>
+  <li>Khoản tiền đặt trước của người trúng đấu giá kể từ thời điểm đấu giá viên công bố người trúng đấu giá được chuyển thành tiền đặt cọc để bảo đảm nghĩa vụ mua tài sản. Nếu khách hàng trúng đấu giá vi phạm thời hạn thanh toán đã ký kết, khoản tiền đặt trước của người trúng đấu giá sẽ được thực hiện theo quy định của pháp luật về đấu giá tài sản và các quy định khác liên quan.</li>
+  <li>Khoản tiền đặt trước của người trúng đấu giá sẽ được bên B chuyển cho bên A trong thời hạn 03 (ba) ngày làm việc kể từ ngày kết thúc phiên đấu giá.</li>
+  <li>Khoản tiền đặt trước của người tham gia đấu giá không trúng đấu giá mà không vi phạm quy chế cuộc đấu giá sẽ được bên B trả lại trong thời hạn 03 ngày làm việc kể từ ngày kết thúc phiên đấu giá.</li>
+  <li>Trường hợp người tham gia đấu giá không được nhận lại tiền đặt trước theo quy định tại khoản 6 Điều 39 Luật đấu giá tài sản 2016 thì khoản tiền đặt trước thuộc về bên A, bên B có nghĩa vụ chuyển số tiền đó vào tài khoản của bên A sau 03 ngày làm việc kể từ ngày kết thúc phiên đấu giá.</li>
+  <li>Người tham gia đấu giá có quyền từ chối tham gia đấu giá và nhận lại tiền đặt trước trong trường hợp có thay đổi về giá khởi điểm, số lượng, chất lượng tài sản, thời gian, địa điểm tổ chức phiên đấu giá, hình thức đấu giá, phương thức đấu giá đã niêm yết, thông báo công khai (theo khoản 24 Điều 1 Luật sửa đổi, bổ sung một số điều của Luật Đấu giá tài sản số: 37/2024/QH15 ngày 27/6/2024).</li>
+</ul>

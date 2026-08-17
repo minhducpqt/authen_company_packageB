@@ -42,6 +42,7 @@ class DocKind:
     ATTENDANCE_PUBLIC_NOTICE = "attendance_public_notice"
     ATTENDANCE_SEAT_LABELS = "attendance_seat_labels"
     WINNER_SIGN_LIST = "winner_sign_list"
+    SERVICE_CONTRACT = "service_contract"
 
 
 TEMPLATE_FILES: Dict[str, str] = {
@@ -57,6 +58,7 @@ TEMPLATE_FILES: Dict[str, str] = {
     DocKind.ATTENDANCE_PUBLIC_NOTICE: "attendance_public_notice.html",
     DocKind.ATTENDANCE_SEAT_LABELS: "attendance_seat_labels.html",
     DocKind.WINNER_SIGN_LIST: "winner_sign_list.html",
+    DocKind.SERVICE_CONTRACT: "service_contract_v1.html",
 }
 
 

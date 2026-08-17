@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>Hợp đồng dịch vụ đấu giá</title>
+  <style>
+    @page { size: A4; margin: 18mm 16mm 20mm 16mm; }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: "Times New Roman", Times, serif;
+      font-size: 13pt;
+      line-height: 1.35;
+      color: #000;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    @media screen {
+      body.doc-preview { background: #64748b; }
+      body.doc-preview .sheet {
+        width: 210mm;
+        min-height: 297mm;
+        margin: 16px auto 24px;
+        background: #fff;
+        box-shadow: 0 8px 32px rgba(0,0,0,.22);
+        border: 1px solid rgba(0,0,0,.1);
+      }
+      body.doc-preview .page {
+        padding: 18mm 16mm 20mm 16mm;
+        min-height: 297mm;
+      }
+      body.doc-preview .preview-meta {
+        width: 210mm;
+        margin: 0 auto 16px;
+        text-align: center;
+        font-size: 10pt;
+        color: #e2e8f0;
+      }
+    }
+    @media print {
+      body { background: #fff; }
+      .sheet { box-shadow: none !important; border: none !important; }
+      .page { padding: 0; }
+      .preview-meta { display: none !important; }
+    }
+    body.doc-download .page { padding: 0; }
+    .hd { text-align: center; }
+    .hd .cn { font-weight: 700; text-transform: uppercase; font-size: 13pt; }
+    .hd .motto { font-weight: 700; margin: 4px 0 8px; }
+    .hd .rule { margin: 6px 0 14px; }
+    h1.doc-title { text-align: center; font-size: 14pt; font-weight: 700; text-transform: uppercase; margin: 0 0 6px; }
+    .doc-sub { text-align: center; font-weight: 700; margin-bottom: 8px; }
+    .doc-no { text-align: center; margin-bottom: 14px; }
+    .legal p { margin: 0 0 4px; text-align: justify; }
+    .sec { margin-top: 12px; }
+    .sec h2 { font-size: 13pt; font-weight: 700; margin: 0 0 6px; text-transform: uppercase; }
+    .sec p, .sec li { text-align: justify; margin: 0 0 6px; }
+    .sec ul { margin: 4px 0 8px; padding-left: 22px; }
+    table.lots { width: 100%; border-collapse: collapse; font-size: 10.5pt; margin: 8px 0; }
+    table.lots th, table.lots td { border: 1px solid #000; padding: 3px 4px; vertical-align: middle; text-align: center; }
+    table.lots th { font-weight: 700; }
+    table.lots td.left { text-align: left; }
+    table.lots td.num { text-align: right; white-space: nowrap; }
+    .sign-block { margin-top: 24px; display: table; width: 100%; }
+    .sign-col { display: table-cell; width: 50%; text-align: center; vertical-align: top; padding: 0 8px; }
+    .sign-col .role { font-weight: 700; text-transform: uppercase; margin-bottom: 80px; }
+    .muted { color: #333; }
+    .indent { text-indent: 28px; }
+    .ce-slot { border-radius: 2px; }
+  </style>
+</head>
+<body class="{% if for_download %}doc-download{% else %}doc-preview{% endif %}">
+<div class="sheet"><div class="page">
+{% set v = ctx.values if ctx and ctx.values else {} %}
+{% set doc = doc or {} %}
+{% set contract = doc.contract or {} %}
+{% set fees = doc.service_fees or {} %}
+{% set auction = doc.auction or {} %}
+{% set legal = doc.legal_refs or [] %}
+{% set proj = ctx.project if ctx else {} %}
+{% set lots = ctx.lots if ctx else [] %}
+{% set co = ctx.company if ctx else {} %}
+{% set defs = ctx.defaults if ctx else {} %}
+{% set show_map = show_map_parcel if show_map_parcel is defined else false %}
+{% from 'pages/documents/default/_ce_slot.html' import ce_slot %}
+
+{% macro fmt0(n) -%}
+{%- if n is none or n == '' -%}—{%- else -%}{{ "{:,.0f}".format(n|float).replace(",", ".") }}{%- endif -%}
+{%- endmacro %}
+
+{% set subtitle = contract.subtitle or contract.asset_title or proj.name or 'Quyền sử dụng đất' %}
+{% set lot_count = lots|length if lots else 0 %}
+{% set doc_no = contract.document_no or v.document_no or '……/HĐDV/……' %}
+{% set signed_at = contract.signed_at or '…… giờ …… phút, ngày …… tháng …… năm ……' %}
+{% set signed_place = contract.signed_place or v.signing_place or v.auction_venue or '……' %}
+{% set copies = contract.copies or 6 %}
+
+{% set pa_name = v.party_a_name or defs.party_a_name or 'UBND ……' %}
+{% set pa_addr = v.party_a_address or defs.party_a_address or '……' %}
+{% set pa_tax = v.party_a_tax_code or defs.party_a_tax_code or '……' %}
+{% set pa_treasury = v.party_a_treasury_account or defs.party_a_treasury_account or '……' %}
+{% set pa_treasury_off = v.party_a_treasury_office or defs.party_a_treasury_office or '……' %}
+{% set pa_rep = v.party_a_representative_name or defs.party_a_representative_name or '……' %}
+{% set pa_title = v.party_a_representative_title or defs.party_a_representative_title or '……' %}
+{% set pa_auth = v.party_a_authorization or defs.party_a_authorization or '' %}
+
+{% set pb_name = v.party_b_name or co.name or '……' %}
+{% set pb_addr = v.party_b_address or co.address or '……' %}
+{% set pb_tax = v.party_b_tax_code or co.tax_code or '……' %}
+{% set pb_phone = v.party_b_phone or co.phone or '' %}
+{% set pb_rep = contract.party_b_rep_name or v.party_b_rep_name or '……' %}
+{% set pb_title = contract.party_b_rep_title or v.party_b_rep_title or '……' %}
+{% set pb_auth = contract.party_b_authorization or v.party_b_authorization or '' %}
+
+{% set total_area = namespace(v=0) %}
+{% set total_start = namespace(v=0) %}
+{% set total_deposit = namespace(v=0) %}
+{% set total_dossier = namespace(v=0) %}
+{% for lot in lots %}
+  {% if lot.area %}{% set total_area.v = total_area.v + (lot.area|float) %}{% endif %}
+  {% if lot.starting_price_vnd %}{% set total_start.v = total_start.v + (lot.starting_price_vnd|float) %}{% endif %}
+  {% if lot.deposit_vnd %}{% set total_deposit.v = total_deposit.v + (lot.deposit_vnd|float) %}{% endif %}
+  {% if lot.dossier_fee_vnd %}{% set total_dossier.v = total_dossier.v + (lot.dossier_fee_vnd|float) %}{% endif %}
+{% endfor %}
+
+<div class="hd">
+  <div class="cn">Cộng hòa xã hội chủ nghĩa Việt Nam</div>
+  <div class="motto">Độc lập - Tự do - Hạnh phúc</div>
+  <div class="rule">------------------</div>
+</div>
+
+<h1 class="doc-title">Hợp đồng dịch vụ đấu giá tài sản</h1>
+<p class="doc-sub">{{ ce_slot('subtitle', subtitle) }}</p>
+<p class="doc-no">Số: <strong>{{ ce_slot('document_no', doc_no) }}</strong></p>
+
+{% include 'pages/documents/default/_service_contract_v1_legal.html' %}
+
+<p class="indent">Hôm nay, vào hồi {{ ce_slot('signed_at', signed_at) }}, tại {{ ce_slot('signing_place', signed_place) }}</p>
+<p><strong>CHÚNG TÔI GỒM:</strong></p>
+
+<p><strong>I. Người có tài sản đấu giá (Bên A):</strong> {{ ce_slot('party_a_name', pa_name) }}<br>
+Đại diện người có tài sản: {{ ce_slot('party_a_representative_name', pa_rep) }}<br>
+Địa chỉ: {{ ce_slot('party_a_address', pa_addr) }}<br>
+Tài khoản số: {{ ce_slot('party_a_treasury_account', pa_treasury) }} tại {{ ce_slot('party_a_treasury_office', pa_treasury_off) }}<br>
+Mã số thuế: {{ ce_slot('party_a_tax_code', pa_tax) }}<br>
+Đại diện: {{ ce_slot('party_a_representative_name', pa_rep) }} &nbsp;&nbsp; Chức vụ: {{ ce_slot('party_a_representative_title', pa_title) }}
+{% if pa_auth %}<br>(Theo {{ ce_slot('party_a_authorization', pa_auth) }}){% endif %}
+</p>
+
+<p><strong>II. Tổ chức hành nghề đấu giá tài sản (Bên B):</strong> {{ ce_slot('party_b_name', pb_name) }}<br>
+Trụ sở: {{ ce_slot('party_b_address', pb_addr) }}<br>
+{% if pb_phone %}Điện thoại: {{ pb_phone }}<br>{% endif %}
+Mã số thuế: {{ ce_slot('party_b_tax_code', pb_tax) }}<br>
+Người đại diện: {{ ce_slot('party_b_rep', pb_rep) }} &nbsp;&nbsp; Chức vụ: {{ ce_slot('party_b_title', pb_title) }}
+{% if pb_auth %}<br>(Theo {{ ce_slot('party_b_auth', pb_auth) }}){% endif %}
+</p>
+
+<p class="indent">Hai bên cùng thỏa thuận và thống nhất ký kết Hợp đồng dịch vụ đấu giá tài sản với các điều khoản như sau:</p>
+
+<div class="sec">
+  <h2>Điều 1. Tài sản đấu giá, căn cứ pháp lý, mục đích, hình thức giao đất và thời hạn sử dụng đất</h2>
+  <p><strong>1. Tài sản đấu giá:</strong> {{ ce_slot('subtitle', subtitle) }}, cụ thể như sau:</p>
+  <p>a) Vị trí: {{ ce_slot('asset_location', proj.location or contract.asset_location or '……') }}{% if contract.boundary_north or contract.boundary_south or contract.boundary_east or contract.boundary_west %} có giáp ranh như sau:{% endif %}<br>
+  {% if contract.boundary_north %}+ Phía Bắc: {{ contract.boundary_north }}<br>{% endif %}
+  {% if contract.boundary_south %}+ Phía Nam: {{ contract.boundary_south }}<br>{% endif %}
+  {% if contract.boundary_east %}+ Phía Đông: {{ contract.boundary_east }}<br>{% endif %}
+  {% if contract.boundary_west %}+ Phía Tây: {{ contract.boundary_west }}<br>{% endif %}
+  b) Diện tích: Tổng diện tích đấu giá khoảng {{ fmt0(total_area.v) if total_area.v else '……' }} m², gồm {{ lot_count or '……' }} lô đất ở{% if contract.min_lot_area or contract.max_lot_area %}, diện tích các lô từ {{ contract.min_lot_area or '……' }} m² đến {{ contract.max_lot_area or '……' }} m²{% endif %}.<br>
+  c) Hiện trạng: {{ ce_slot('land_status', contract.land_status or proj.description or '……') }}<br>
+  - Tổng giá khởi điểm: {{ fmt0(total_start.v) if total_start.v else '……' }} đồng{% if contract.total_starting_price_words %} (Bằng chữ: {{ contract.total_starting_price_words }}){% endif %}.</p>
+  <p><strong>2. Mục đích, hình thức giao đất, thời hạn sử dụng đất:</strong><br>
+  - Mục đích sử dụng đất: {{ contract.land_use_purpose or 'Đất ở ……' }}<br>
+  - Hình thức giao đất: {{ contract.land_delivery_form or 'Nhà nước giao đất có thu tiền sử dụng đất' }}<br>
+  - Thời hạn sử dụng đất: {{ contract.land_use_term or 'Lâu dài' }}.</p>
+  <p><strong>3. Hồ sơ pháp lý của tài sản:</strong> {{ ce_slot('legal_dossier_ref', contract.legal_dossier_ref or 'Quyết định số ……') }}</p>
+</div>
+
+<div class="sec">
+  <h2>Điều 2. Giá khởi điểm, tiền đặt trước, tiền mua hồ sơ mời tham gia đấu giá, bước giá</h2>
+  <p><strong>1. Giá khởi điểm, tiền đặt trước, tiền hồ sơ tham gia đấu giá:</strong></p>
+  {% if lots and lots|length > 0 %}
+  <table class="lots" data-ce-field="lots_table">
+    <thead>
+      <tr>
+        <th{% if show_map %} rowspan="2"{% endif %}>STT</th>
+        {% if show_map %}<th colspan="2">Vị trí</th>{% endif %}
+        <th{% if show_map %} rowspan="2"{% endif %}>Tên lô đất</th>
+        <th{% if show_map %} rowspan="2"{% endif %}>Diện tích<br>(m²)</th>
+        <th{% if show_map %} rowspan="2"{% endif %}>Giá khởi điểm<br>(đồng/m²)</th>
+        <th{% if show_map %} rowspan="2"{% endif %}>Tổng giá trị khởi điểm<br>(đồng)</th>
+        <th{% if show_map %} rowspan="2"{% endif %}>Phí hồ sơ<br>(đồng)</th>
+        <th{% if show_map %} rowspan="2"{% endif %}>Tiền đặt trước<br>(đồng)</th>
+        <th{% if show_map %} rowspan="2"{% endif %}>Ghi chú</th>
+      </tr>
+      {% if show_map %}<tr><th>Tờ</th><th>Thửa</th></tr>{% endif %}
+    </thead>
+    <tbody>
+      {% for lot in lots %}
+      {% set area = lot.area|float if lot.area else 0 %}
+      {% set start_total = lot.starting_price_vnd|float if lot.starting_price_vnd else 0 %}
+      {% set price_m2 = (start_total / area) if area > 0 and start_total > 0 else none %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        {% if show_map %}
+        {% set lk = lot.id|string if lot.id is defined and lot.id is not none else (lot.lot_code|string if lot.lot_code else loop.index|string) %}
+        <td>{{ ce_slot('lot_map_' ~ lk ~ '_sheet', lot.map_sheet or '—') }}</td>
+        <td>{{ ce_slot('lot_map_' ~ lk ~ '_parcel', lot.parcel_no or '—') }}</td>
+        {% endif %}
+        <td class="left">{{ lot.lot_code or lot.name or '—' }}</td>
+        <td class="num">{{ fmt0(lot.area) if lot.area else '—' }}</td>
+        <td class="num">{{ fmt0(price_m2) if price_m2 else '—' }}</td>
+        <td class="num">{{ fmt0(lot.starting_price_vnd) if lot.starting_price_vnd else '—' }}</td>
+        <td class="num">{{ fmt0(lot.dossier_fee_vnd) if lot.dossier_fee_vnd else '—' }}</td>
+        <td class="num">{{ fmt0(lot.deposit_vnd) if lot.deposit_vnd else '—' }}</td>
+        <td class="left">{{ lot.description or '' }}</td>
+      </tr>
+      {% endfor %}
+      <tr>
+        <td colspan="{{ 4 if show_map else 2 }}"><strong>TỔNG</strong></td>
+        <td class="num"><strong>{{ fmt0(total_area.v) if total_area.v else '—' }}</strong></td>
+        <td></td>
+        <td class="num"><strong>{{ fmt0(total_start.v) if total_start.v else '—' }}</strong></td>
+        <td class="num"><strong>{{ fmt0(total_dossier.v) if total_dossier.v else '—' }}</strong></td>
+        <td class="num"><strong>{{ fmt0(total_deposit.v) if total_deposit.v else '—' }}</strong></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <p>Tổng giá khởi điểm của tài sản: <strong>{{ fmt0(total_start.v) if total_start.v else '……' }} đồng</strong>
+  {% if contract.total_starting_price_words %} (Bằng chữ: {{ contract.total_starting_price_words }}){% endif %}.</p>
+  {% else %}
+  <p class="muted">Chưa có dữ liệu lô từ dự án.</p>
+  {% endif %}
+  {% include 'pages/documents/default/_service_contract_v1_art2_tail.html' %}
+</div>
+
+<div class="sec">
+  <h2>Điều 3. Thời hạn, địa điểm, nguyên tắc, phương thức, hình thức đấu giá</h2>
+  <p>1. Thời hạn tổ chức đấu giá: Trong thời hạn {{ ce_slot('auction_days', auction.deadline_days or contract.auction_deadline_days or 30) }} ({{ 'ba mươi' if (auction.deadline_days or contract.auction_deadline_days or 30)|int == 30 else '……' }}) ngày kể từ ngày ký hợp đồng.<br>
+  2. Địa điểm tổ chức đấu giá: {{ ce_slot('auction_venue', v.auction_venue or defs.auction_venue or signed_place) }}<br>
+  3. Hình thức đấu giá: {{ auction.form or contract.auction_form or 'Đấu giá bằng hình thức bỏ phiếu trực tiếp tại phiên đấu giá (01 vòng)' }}<br>
+  4. Phương thức đấu giá: {{ auction.method or contract.auction_method or 'Phương thức trả giá lên' }}</p>
+  {% include 'pages/documents/default/_service_contract_v1_art3_tail.html' %}
+</div>
+
+{% include 'pages/documents/default/_service_contract_v1_articles_rest.html' %}
+
+<div class="sign-block">
+  <div class="sign-col">
+    <div class="role">Đại diện Bên A</div>
+    <div>{{ ce_slot('party_a_representative_name', pa_rep) }}</div>
+  </div>
+  <div class="sign-col">
+    <div class="role">Đại diện Bên B</div>
+    <div>{{ ce_slot('party_b_rep', pb_rep) }}</div>
+  </div>
+</div>
+
+</div></div>
+
+{% if not for_download %}
+<p class="preview-meta muted">Preview — nguồn: {{ ctx.meta.source if ctx and ctx.meta else 'live' }}</p>
+{% endif %}
+</body>
+</html>

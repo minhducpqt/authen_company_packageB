@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% from "pages/forms/_components.html" import forms_styles, forms_page_header %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{{ forms_styles() }}
+{% set pa = (profile.party_a if profile else (form.party_a if form else {})) or {} %}
+{% set rep = (profile.representative if profile else (form.representative if form else {})) or {} %}
+{% set defs = (profile.defaults if profile else (form.defaults if form else {})) or {} %}
+<style>
+  .dg-form { max-width:720px; }
+  .dg-field { margin-bottom:14px; }
+  .dg-field label { display:block; font-size:12px; font-weight:700; color:#475569; margin-bottom:5px; }
+  .dg-field input, .dg-field select, .dg-field textarea { width:100%; padding:9px 11px; border:1px solid #cbd5e1; border-radius:10px; font-size:14px; }
+  .dg-field input::placeholder { color:#94a3b8; font-weight:400; font-size:13px; }
+  .dg-sec { margin:24px 0 12px; font-size:13px; font-weight:700; color:#334155; padding-bottom:8px; border-bottom:1px solid #e2e8f0; }
+  .dg-btn { display:inline-flex; align-items:center; gap:6px; padding:9px 16px; border-radius:10px; font-size:13px; font-weight:600; border:1px solid #cbd5e1; background:#fff; cursor:pointer; text-decoration:none; color:#334155; }
+  .dg-btn-primary { background:#4f46e5; border-color:#4f46e5; color:#fff; }
+  .dg-btn-primary:disabled { opacity:0.45; cursor:not-allowed; }
+  .dg-alert { padding:12px 14px; border-radius:10px; background:#fef2f2; color:#b91c1c; font-size:13px; margin-bottom:16px; }
+  .dg-modal { position:fixed; inset:0; z-index:120; display:none; }
+  .dg-modal.is-open { display:block; }
+  .dg-modal-backdrop { position:absolute; inset:0; background:rgba(15,23,42,.45); }
+  .dg-modal-box { position:relative; z-index:1; max-width:480px; margin:10vh auto 0; background:#fff; border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 20px 40px rgba(15,23,42,.15); overflow:hidden; }
+  .dg-modal-hd { padding:16px 20px; border-bottom:1px solid #f1f5f9; }
+  .dg-modal-hd .t { font-size:16px; font-weight:700; color:#0f172a; }
+  .dg-modal-hd .s { font-size:13px; color:#64748b; margin-top:4px; }
+  .dg-modal-bd { padding:16px 20px; }
+  .dg-modal-warn { padding:10px 12px; border-radius:10px; background:#fffbeb; border:1px solid #fde68a; font-size:13px; color:#92400e; margin-bottom:12px; }
+  .dg-modal-ft { padding:14px 20px; border-top:1px solid #f1f5f9; display:flex; justify-content:flex-end; gap:8px; }
+  .dg-confirm-err { font-size:12px; color:#b91c1c; margin-top:8px; display:none; }
+</style>
+<div class="fm-page dg-form">
+  {{ forms_page_header(
+    title,
+    breadcrumb_items=[
+      {"label": "Biểu mẫu", "href": "/bieu-mau"},
+      {"label": "Cấu hình", "href": "/bieu-mau/cau-hinh"},
+      {"label": "Địa phương", "href": "/bieu-mau/cau-hinh/dia-phuong"},
+      {"label": "Thêm" if not profile else "Sửa", "href": null},
+    ],
+  ) }}
+  {% if error %}<div class="dg-alert">{{ error }}</div>{% endif %}
+
+  <form id="localityForm" method="post" action="{% if profile %}/bieu-mau/cau-hinh/dia-phuong/{{ profile.id }}{% else %}/bieu-mau/cau-hinh/dia-phuong/tao{% endif %}">
+    {% if not profile %}
+    <div class="dg-sec">Chọn địa phương</div>
+    <div class="dg-field">
+      <label>Tỉnh / Thành</label>
+      <select id="provinceSelect">
+        <option value="">— Chọn tỉnh —</option>
+        {% for p in provinces %}<option value="{{ p.code }}">{{ p.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="dg-field">
+      <label>Xã / Phường *</label>
+      <select name="ward_code" id="wardSelect" required>
+        <option value="">— Chọn xã/phường —</option>
+      </select>
+    </div>
+    {% else %}
+    <input type="hidden" name="ward_code" value="{{ profile.ward_code }}">
+    <p style="font-size:14px;color:#64748b;margin-bottom:16px">{{ profile.ward_name }}{% if profile.province_name %}, {{ profile.province_name }}{% endif %}</p>
+    {% endif %}
+
+    <div class="dg-field"><label>Nhãn (tuỳ chọn)</label><input name="label" value="{{ profile.label if profile else '' }}" placeholder="VD: Xã Gia Viễn — cấu hình chính thức"></div>
+
+    <div class="dg-sec">Bên A (cơ quan có tài sản)</div>
+    <div class="dg-field"><label>Tên</label><input name="party_a_name" value="{{ pa.get('name','') }}" placeholder="VD: Ủy ban nhân dân xã Gia Viễn"></div>
+    <div class="dg-field"><label>Địa chỉ</label><input name="party_a_address" value="{{ pa.get('address','') }}" placeholder="VD: Thôn Trung Tâm, xã Gia Viễn, huyện Gia Viễn, tỉnh Ninh Bình"></div>
+    <div class="dg-field"><label>Mã số thuế</label><input name="party_a_tax_code" value="{{ pa.get('tax_code','') }}" placeholder="VD: 3700123456"></div>
+    <div class="dg-field"><label>Tài khoản Kho bạc</label><input name="party_a_treasury_account" value="{{ pa.get('treasury_account','') }}" placeholder="VD: 3712345678901"></div>
+    <div class="dg-field"><label>Kho bạc / Phòng giao dịch</label><input name="party_a_treasury_office" value="{{ pa.get('treasury_office','') }}" placeholder="VD: Kho bạc Nhà nước huyện Gia Viễn"></div>
+
+    <div class="dg-sec">Người đại diện Bên A</div>
+    <div class="dg-field"><label>Họ tên</label><input name="rep_name" value="{{ rep.get('name','') }}" placeholder="VD: Nguyễn Văn A"></div>
+    <div class="dg-field"><label>Chức vụ</label><input name="rep_title" value="{{ rep.get('title','') }}" placeholder="VD: Chủ tịch UBND xã"></div>
+    <div class="dg-field"><label>Ủy quyền (nếu có)</label><input name="rep_authorization" value="{{ rep.get('authorization','') }}" placeholder="VD: Quyết định số 123/QĐ-UBND ngày 01/01/2024"></div>
+
+    <div class="dg-sec">Địa điểm mặc định</div>
+    <div class="dg-field"><label>Địa điểm ký hợp đồng</label><input name="signing_place" value="{{ defs.get('signing_place','') }}" placeholder="VD: Trụ sở UBND xã Gia Viễn"></div>
+    <div class="dg-field"><label>Địa điểm tiếp nhận hồ sơ</label><input name="dossier_reception_place" value="{{ defs.get('dossier_reception_place','') }}" placeholder="VD: Phòng Tài chính — Kế toán UBND xã Gia Viễn"></div>
+    <div class="dg-field"><label>Địa điểm tổ chức đấu giá</label><input name="auction_venue" value="{{ defs.get('auction_venue','') }}" placeholder="VD: Hội trường UBND xã Gia Viễn"></div>
+
+    <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
+      <button type="button" id="btnOpenConfirm" class="dg-btn dg-btn-primary"><i class="ri-save-line"></i> Lưu</button>
+      <a href="/bieu-mau/cau-hinh/dia-phuong" class="dg-btn">Huỷ</a>
+    </div>
+  </form>
+  {% if profile %}
+  <form method="post" action="/bieu-mau/cau-hinh/dia-phuong/{{ profile.id }}/xoa" style="margin-top:12px" onsubmit="return confirm('Xoá cấu hình này?')">
+    <button type="submit" class="dg-btn" style="color:#b91c1c;border-color:#fecaca">Xoá cấu hình</button>
+  </form>
+  {% endif %}
+</div>
+
+<!-- Typed confirm -->
+<div id="typedConfirmModal" class="dg-modal" aria-hidden="true">
+  <div class="dg-modal-backdrop" data-close-confirm></div>
+  <div class="dg-modal-box" role="dialog" aria-labelledby="confirmTitle">
+    <div class="dg-modal-hd">
+      <div class="t" id="confirmTitle">{% if profile %}Xác nhận lưu cấu hình{% else %}Xác nhận tạo cấu hình{% endif %}</div>
+      <div class="s">Thay đổi cấu hình địa phương ảnh hưởng dữ liệu mặc định khi sinh văn bản mới.</div>
+    </div>
+    <div class="dg-modal-bd">
+      <div class="dg-modal-warn">
+        Nhập chính xác <strong>tôi xác nhận</strong> để bật nút xác nhận.
+      </div>
+      <input id="confirmText" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"
+             class="dg-field" style="margin:0"
+             placeholder="tôi xác nhận" />
+      <div id="confirmErr" class="dg-confirm-err"></div>
+    </div>
+    <div class="dg-modal-ft">
+      <button type="button" class="dg-btn" data-close-confirm>Huỷ</button>
+      <button type="button" id="btnDoConfirm" class="dg-btn dg-btn-primary" disabled>Xác nhận lưu</button>
+    </div>
+  </div>
+</div>
+<script>
+const CONFIRM_PHRASE = 'tôi xác nhận';
+const localityForm = document.getElementById('localityForm');
+const typedModal = document.getElementById('typedConfirmModal');
+const confirmText = document.getElementById('confirmText');
+const confirmErr = document.getElementById('confirmErr');
+const btnDoConfirm = document.getElementById('btnDoConfirm');
+const btnOpenConfirm = document.getElementById('btnOpenConfirm');
+
+function normPhrase(s) {
+  return (s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function openTypedConfirm() {
+  confirmText.value = '';
+  confirmErr.style.display = 'none';
+  confirmErr.textContent = '';
+  btnDoConfirm.disabled = true;
+  typedModal.classList.add('is-open');
+  typedModal.setAttribute('aria-hidden', 'false');
+  setTimeout(() => confirmText.focus(), 50);
+}
+
+function closeTypedConfirm() {
+  typedModal.classList.remove('is-open');
+  typedModal.setAttribute('aria-hidden', 'true');
+}
+
+function syncConfirmButton() {
+  btnDoConfirm.disabled = normPhrase(confirmText.value) !== CONFIRM_PHRASE;
+}
+
+btnOpenConfirm?.addEventListener('click', () => {
+  if (!localityForm.reportValidity()) return;
+  openTypedConfirm();
+});
+
+confirmText?.addEventListener('input', syncConfirmButton);
+
+btnDoConfirm?.addEventListener('click', () => {
+  if (normPhrase(confirmText.value) !== CONFIRM_PHRASE) {
+    confirmErr.textContent = 'Bạn phải nhập đúng: tôi xác nhận';
+    confirmErr.style.display = 'block';
+    return;
+  }
+  closeTypedConfirm();
+  localityForm.submit();
+});
+
+typedModal?.querySelectorAll('[data-close-confirm]').forEach(el => {
+  el.addEventListener('click', closeTypedConfirm);
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && typedModal?.classList.contains('is-open')) closeTypedConfirm();
+});
+
+const provinceSelect = document.getElementById('provinceSelect');
+const wardSelect = document.getElementById('wardSelect');
+if (provinceSelect && wardSelect) {
+  provinceSelect.addEventListener('change', async () => {
+    wardSelect.innerHTML = '<option value="">— Đang tải —</option>';
+    const pc = provinceSelect.value;
+    if (!pc) { wardSelect.innerHTML = '<option value="">— Chọn xã/phường —</option>'; return; }
+    const r = await fetch('/bieu-mau/api/communes?province_code=' + encodeURIComponent(pc));
+    const data = await r.json();
+    wardSelect.innerHTML = '<option value="">— Chọn xã/phường —</option>';
+    (data.items || []).forEach(w => {
+      const o = document.createElement('option');
+      o.value = w.code; o.textContent = w.name_with_type || w.name;
+      wardSelect.appendChild(o);
+    });
+  });
+}
+</script>
+{% endblock %}

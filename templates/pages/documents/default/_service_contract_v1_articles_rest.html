@@ -1,0 +1,119 @@
+{# Article 4 #}
+<div class="sec">
+  <h2>Điều 4. Đối tượng, điều kiện được tham gia đấu giá</h2>
+  <p><strong>1. Đối tượng đăng ký tham gia đấu giá:</strong> Cá nhân thuộc đối tượng được Nhà nước giao đất theo quy định tại Khoản 1 Điều 119 Luật đất đai 2024, Khoản 2 Điều 55 Nghị định số 102/2024/NĐ-CP ngày 30/7/2024 của Chính phủ và không thuộc các trường hợp không được đăng ký tham gia đấu giá theo quy định tại khoản 4 Điều 38 Luật Đấu giá tài sản năm 2016.</p>
+  <p><strong>2. Cách thức, điều kiện đăng ký tham gia đấu giá:</strong><br>
+  Cá nhân đăng ký tham gia đấu giá thông qua việc mua và nộp hồ sơ tham gia đấu giá hợp lệ, nộp tiền đặt trước đúng quy định cho tổ chức hành nghề đấu giá tài sản theo quy định tại thông báo mời đấu giá, quy chế cuộc đấu giá.<br>
+  Người tham gia đấu giá có thể đăng ký đấu giá một hay nhiều thửa đất theo thông báo mời đấu giá đã phát hành và tham gia trả giá đấu giá cho các thửa đất đăng ký đủ điều kiện được tổ chức trong cùng phiên đấu giá, nhưng phải tham khảo thông tin hồ sơ mời đấu giá, nộp tiền mua hồ sơ và khoản tiền đặt trước tham gia đấu giá tương ứng với số lượng lô đất đăng ký đấu giá.<br>
+  Người tham gia đấu giá có thể ủy quyền cho người khác tham gia đấu giá. Việc ủy quyền phải được thực hiện bằng văn bản ủy quyền đúng quy định của pháp luật. Người đã tham gia đấu giá thửa đất nào thì không được nhận ủy quyền của người khác cùng tham gia đấu giá thửa đất đó. Một người không được nhận ủy quyền cùng lúc của từ 02 người trở lên. Một người chỉ được ủy quyền cho một người tham gia đấu giá đối với tất cả các thửa đất mà mình đăng ký đấu giá.<br>
+  Người tham gia đấu giá không được tham gia đấu giá thửa đất có vợ, chồng, anh ruột, chị ruột, em ruột của mình cũng là người tham gia đấu giá thửa đất đó.</p>
+  <p><strong>1.3. Các trường hợp không được đăng ký tham gia đấu giá:</strong></p>
+  <p>a) Người không có năng lực hành vi dân sự, người bị mất hoặc bị hạn chế năng lực hành vi dân sự, người có khó khăn trong nhận thức, làm chủ hành vi hoặc người tại thời điểm đăng ký tham gia đấu giá không nhận thức, làm chủ được hành vi của mình;<br>
+  b) Người làm việc trong tổ chức hành nghề đấu giá tài sản thực hiện cuộc đấu giá; cha, mẹ, vợ, chồng, con, anh ruột, chị ruột, em ruột của đấu giá viên điều hành phiên đấu giá; người trực tiếp giám định, định giá tài sản; cha, mẹ, vợ, chồng, con, anh ruột, chị ruột, em ruột của người trực tiếp giám định, định giá tài sản;<br>
+  c) Người được chủ sở hữu tài sản ủy quyền xử lý tài sản, người có quyền quyết định bán tài sản, người ký hợp đồng dịch vụ đấu giá tài sản, người có quyền quyết định bán tài sản của người khác theo quy định của pháp luật;<br>
+  d) Cha, mẹ, vợ, chồng, con, anh ruột, chị ruột, em ruột của người quy định tại điểm c khoản này;<br>
+  đ) Người không thuộc đối tượng được Nhà nước giao đất theo quy định tại khoản 1, Điều 119 Luật đất đai 2024.</p>
+</div>
+
+<div class="sec">
+  <h2>Điều 5. Giá dịch vụ đấu giá, chi phí đấu giá tài sản và cách thức thanh toán</h2>
+{# Article 5 static body #}
+{% from 'pages/documents/default/_ce_slot.html' import ce_slot %}
+{% set svc = ctx.service_fee if ctx and ctx.service_fee else {} %}
+{% set svc_fee = svc.formula or fees.service_fee_formula or fees.service_fee_vnd or '……' %}
+{% set vat_note = svc.vat_note or 'Chưa bao gồm thuế VAT' %}
+{% set pay_terms = fees.payment_terms or 'Trong vòng 20 (hai mươi) ngày kể từ ngày bên A đã nhận được kết quả đấu giá, hóa đơn GTGT và biên bản thanh lý Hợp đồng.' %}
+<p>Căn cứ Quyết định số 1311/QĐ-BTP ngày 22/4/2025 của Bộ trưởng Bộ Tư pháp về việc ban hành khung giá dịch vụ đấu giá tài sản mà pháp luật quy định phải bán thông qua đấu giá.</p>
+<p>Đối với giá trị quyền sử dụng đất theo giá khởi điểm từ {{ fmt0(total_start.v) if total_start.v else '……' }} đồng là: {{ svc_fee }} (Giá dịch vụ không quá 400.000.000 đồng/cuộc đấu giá), ({{ vat_note }}). Như vậy, giá dịch vụ đấu giá, chi phí đấu giá được tính như sau:</p>
+<ul>
+  <li>Giá dịch vụ, chi phí dịch vụ đấu giá trong trường hợp đấu giá thành: Bên A thanh toán cho Bên B giá dịch vụ là: {{ svc_fee }} ({{ vat_note }}).</li>
+  <li>Chi phí đấu giá: Được quy định tại khoản 2 Điều 66 Luật Đấu giá tài sản 2016; Luật sửa đổi, bổ sung một số điều của Luật đấu giá tài sản ngày 27/6/2024: Chi phí thông báo công khai trên Báo; chi phí Thông báo đấu giá tài sản trên Cổng Đấu giá tài sản Quốc gia; chi phí hành chính (photo hồ sơ đấu giá; soạn thảo quy chế, chi phí niêm yết việc đấu giá tài sản...): Căn cứ theo hóa đơn và chứng từ thực tế, tối đa không quá {{ fmt0(fees.max_auction_cost_vnd) if fees.max_auction_cost_vnd else '……' }} đồng.</li>
+  <li>Giá dịch vụ, chi phí dịch vụ đấu giá trong trường hợp đấu giá một phần không thành: Trong trường hợp đấu giá một phần không thành, đề nghị Bên A thanh toán cho Bên B khoản giá dịch vụ là: tỷ lệ (%) đấu giá thành theo giá khởi điểm đối với các lô đất đấu giá thành × {{ fees.partial_fail_formula or '……' }} và Chi phí đấu giá tài sản.</li>
+  <li>Chi phí đấu giá tài sản trong trường hợp đấu giá không thành: Căn cứ theo hóa đơn và chứng từ thực tế, tối đa không quá {{ fmt0(fees.max_fail_cost_vnd) if fees.max_fail_cost_vnd else '……' }} đồng.</li>
+  <li>Hình thức thanh toán: Chuyển khoản vào tài khoản của Bên B.</li>
+  <li>Thời gian thanh toán: {{ ce_slot('payment_terms', pay_terms) }}</li>
+</ul>
+
+<div class="sec">
+  <h2>Điều 6. Bàn giao hồ sơ, tài liệu hồ sơ đấu giá tài sản</h2>
+  <ul>
+    <li>Khi ký hợp đồng dịch vụ đấu giá tài sản, Bên A có trách nhiệm bàn giao các giấy tờ, tài liệu pháp lý có liên quan tới việc tổ chức đấu giá tài sản cho Bên B làm căn cứ để ký kết và triển khai hợp đồng. (Căn cứ khoản 2, điều 33, Luật Đấu giá tài sản năm 2016, sửa đổi bổ sung năm 2024).</li>
+    <li>Trong thời hạn chậm nhất là 03 ngày (ba ngày) làm việc kể từ ngày kết thúc phiên đấu giá, Bên B có trách nhiệm bàn giao toàn bộ hồ sơ liên quan đến phiên đấu giá cho Bên A.</li>
+  </ul>
+</div>
+
+<div class="sec">
+  <h2>Điều 7. Quyền và nghĩa vụ của các bên</h2>
+  <p><strong>1. Bên A có nghĩa vụ:</strong></p>
+  <ul>
+    <li>Cung cấp các thông tin và tài liệu cần thiết để bên B thực hiện việc tổ chức đấu giá tài sản và chịu trách nhiệm về các thông tin, tài liệu đã cung cấp;</li>
+    <li>Chịu trách nhiệm về nguồn gốc, tính hợp pháp của tài sản đấu giá;</li>
+    <li>Chịu trách nhiệm về tính hợp pháp của các điều kiện đăng ký tham gia đấu giá đưa ra tại Hợp đồng này;</li>
+    <li>Nghiên cứu, xem xét Quy chế đấu giá, Thông báo đấu giá, Phiếu đăng ký tham gia đấu giá do Bên B xây dựng, để công ty ban hành và thống nhất thực hiện.</li>
+    <li>Chịu trách nhiệm thực hiện các cam kết trong phạm vi hợp đồng;</li>
+    <li>Phối hợp với bên B thực hiện việc niêm yết, thông báo đấu giá và hướng dẫn người tham gia đấu giá xem tài sản theo quy định; hỗ trợ bên B chuẩn bị các điều kiện cho phiên đấu giá;</li>
+    <li>Phối hợp với bên B xử lý các tình huống xảy ra trong phiên đấu giá;</li>
+    <li>Trả giá dịch vụ đấu giá tài sản, chi phí đấu giá tài sản và các khoản phí dịch vụ khác (nếu có);</li>
+    <li>Bồi thường thiệt hại do vi phạm nghĩa vụ hợp đồng;</li>
+    <li>Các nghĩa vụ khác theo quy định của pháp luật.</li>
+  </ul>
+  <p><strong>2. Bên A có quyền:</strong></p>
+  <ul>
+    <li>Tham dự, giám sát quá trình tổ chức thực hiện việc đấu giá tài sản;</li>
+    <li>Yêu cầu bên B dừng việc tổ chức đấu giá khi có căn cứ cho rằng bên B có hành vi vi phạm quy định tại điểm b, điểm c khoản 2 Điều 9 Luật đấu giá tài sản;</li>
+    <li>Yêu cầu đấu giá viên điều hành phiên đấu giá dừng phiên đấu giá khi có căn cứ cho rằng đấu giá viên có hành vi vi phạm quy định tại điểm c khoản 1 Điều 9 Luật Đấu giá tài sản; người tham gia đấu giá có hành vi vi phạm quy định tại các điểm b, c hoặc d khoản 5 Điều 9 Luật Đấu giá tài sản;</li>
+    <li>Đơn phương chấm dứt thực hiện hợp đồng dịch vụ đấu giá tài sản theo quy định của pháp luật về dân sự trước khi tổ chức đấu giá tài sản nhận hồ sơ tham gia đấu giá của người tham gia đấu giá trừ trường hợp luật có quy định khác; hủy bỏ hợp đồng dịch vụ đấu giá tài sản hoặc đề nghị Tòa án tuyên bố hợp đồng dịch vụ đấu giá tài sản vô hiệu theo quy định của Luật đấu giá tài sản và quy định của pháp luật về dân sự;</li>
+    <li>Được bồi thường thiệt hại nếu bên B vi phạm nghĩa vụ hợp đồng.</li>
+    <li>Yêu cầu bên B thông báo đầy đủ các thông tin về việc thực hiện các công việc đã cam kết.</li>
+  </ul>
+  <p><strong>3. Bên B có nghĩa vụ:</strong></p>
+  <ul>
+    <li>Thực hiện các trình tự thủ tục đấu giá tài sản theo đúng quy định của Luật đấu giá tài sản.</li>
+    <li>Thông báo công khai việc đấu giá tài sản theo quy định của Luật đấu giá tài sản;</li>
+    <li>Thực hiện công việc đã cam kết theo đúng quy định của pháp luật và thông báo cho bên A về quá trình thực hiện công việc đó;</li>
+    <li>Trước ngày tổ chức phiên đấu giá Bên B có trách nhiệm báo cáo về số lượng lô đất đủ điều kiện đưa ra đấu giá; số lượng hồ sơ đã bán và khoản tiền thu được từ việc bán hồ sơ đấu giá cho Bên A.</li>
+    <li>Mời đại diện bên A đến tham dự, giám sát thực hiện phiên đấu giá quyền sử dụng đất;</li>
+    <li>Nộp tiền đặt trước của người tham gia đấu giá trong những trường hợp người tham gia đấu giá không được lấy lại tiền đặt trước vào ngân sách Nhà nước theo Quy chế mà Bên B ban hành;</li>
+    <li>Bồi thường thiệt hại do vi phạm nghĩa vụ hợp đồng.</li>
+    <li>Không vi phạm các quy định tại Khoản 2 Điều 9 Luật đấu giá tài sản.</li>
+  </ul>
+  <p><strong>4. Bên B có quyền:</strong></p>
+  <ul>
+    <li>Yêu cầu bên A cung cấp đầy đủ, chính xác thông tin và tài liệu cần thiết để thực hiện hợp đồng;</li>
+    <li>Nhận giá dịch vụ đấu giá, chi phí đấu giá tài sản và các khoản phí dịch vụ khác;</li>
+    <li>Đơn phương chấm dứt thực hiện hợp đồng dịch vụ đấu giá tài sản theo quy định của pháp luật về dân sự trước khi tổ chức đấu giá tài sản nhận hồ sơ tham gia đấu giá của người tham gia đấu giá trừ trường hợp luật có quy định khác; hủy bỏ hợp đồng dịch vụ đấu giá tài sản hoặc yêu cầu Tòa án tuyên bố Hợp đồng dịch vụ đấu giá tài sản vô hiệu theo quy định của pháp luật về dân sự và quy định của Luật đấu giá tài sản;</li>
+    <li>Được bồi thường thiệt hại nếu bên A vi phạm nghĩa vụ hợp đồng.</li>
+  </ul>
+</div>
+
+<div class="sec">
+  <h2>Điều 8. Sự kiện bất khả kháng</h2>
+  <p><strong>1.</strong> Sự kiện bất khả kháng là sự kiện xảy ra một cách khách quan không thể lường trước được và không thể khắc phục được mặc dù đã áp dụng mọi biện pháp cần thiết và khả năng cho phép, bao gồm nhưng không giới hạn các sự kiện sau: chiến tranh, bạo loạn, đình công, hỏa hoạn, bão, lũ lụt, đông đất, sóng thần, dịch bệnh, cách ly kiểm dịch, sự phản đối, khiếu kiện của người dân, sự thay đổi trong chính sách và pháp luật.</p>
+  <p>Bất khả kháng không bao gồm sự sơ xuất hoặc cố ý của một bên nào đó, hoặc bất kỳ sự cố nào mà một bên đã dự kiến được vào thời điểm ký kết Hợp đồng và tránh (hoặc khắc phục) trong quá trình thực hiện Hợp đồng.</p>
+  <p>Việc một bên không hoàn thành nghĩa vụ của mình sẽ không bị coi là vi phạm Hợp đồng trong trường hợp phát sinh từ sự kiện bất khả kháng với điều kiện bên bị ảnh hưởng bởi sự kiện bất khả kháng đã thực hiện các biện pháp đề phòng theo nội dung của Hợp đồng này.</p>
+  <p><strong>2. Các biện pháp thực hiện khi xảy ra sự kiện bất khả kháng</strong></p>
+  <ul>
+    <li>Khi xảy ra sự kiện bất khả kháng, bên bị ảnh hưởng bởi sự kiện bất khả kháng phải kịp thời thông báo bằng văn bản/email cho bên kia biết về sự kiện bất khả kháng vào thời gian sớm nhất nhưng không chậm hơn 03 ngày sau khi sự kiện bất khả kháng xảy ra. Đồng thời, chuyển cho bên kia các văn bản xác nhận của cơ quan có thẩm quyền hoặc tài liệu, chứng cứ hợp pháp khác có giá trị để chứng minh sự kiện đó là bất khả kháng. Nếu không có tài liệu chứng minh thì không được công nhận sự kiện đó là bất khả kháng.</li>
+    <li>Trong khoảng thời gian xảy ra sự kiện bất khả kháng, bên bị ảnh hưởng bởi sự kiện bất khả kháng vẫn phải tiếp tục thực hiện các nghĩa vụ của mình theo hợp đồng đã ký. Các bên sẽ thực hiện mọi biện pháp để giảm tối đa mức thiệt hại do sự kiện bất khả kháng gây ra.</li>
+    <li>Trong trường hợp xảy ra bất khả kháng, các bên sẽ gia hạn thời gian thực hiện hợp đồng tương ứng bằng thời gian diễn ra sự kiện bất khả kháng mà bên bị ảnh hưởng không thể thực hiện nghĩa vụ theo hợp đồng của mình.</li>
+    <li>Nếu trường hợp bất khả kháng xảy ra mà mọi nỗ lực của một bên hoặc các bên không đem lại kết quả và buộc phải chấm dứt công việc tại một thời điểm bất kỳ, một bên sẽ gửi thông báo việc chấp dứt hợp đồng bằng văn bản cho bên kia và việc chấm dứt sẽ có hiệu lực 10 ngày sau khi bên kia nhận được thông báo.</li>
+  </ul>
+  <p><strong>3.</strong> Trường hợp xảy ra sự kiện bất khả kháng đã quy định các nội dung thông báo và thực hiện trong hợp đồng mà bên bị ảnh hưởng không thực hiện thông báo kèm theo các hồ sơ chứng minh gửi về đúng các địa chỉ quy định trong hợp đồng cho bên kia thì bên bị ảnh hưởng phải bồi thường toàn bộ thiệt hại xảy ra cho bên kia.</p>
+  <p><strong>4.</strong> Toàn bộ bản chính các hồ sơ để chứng minh sự kiện bất khả kháng xảy ra và các hồ sơ xử lý giữa các bên phải được lưu tại hồ sơ quyết toán hợp đồng.</p>
+</div>
+
+<div class="sec">
+  <h2>Điều 9. Những thỏa thuận khác</h2>
+  <p><strong>1.</strong> Bên A cam kết tài sản mà bên B tổ chức đấu giá là tài sản của bên A được quyền bán theo quy định của pháp luật.</p>
+  <p><strong>2.</strong> Hết thời hạn thông báo bán tài sản mà không có khách hàng đăng ký mua thì Bên B thông báo cho Bên A bằng văn bản để Bên A xem xét lại và hai bên cùng ký kết Phụ lục hợp đồng sửa đổi (nếu có), bổ sung hợp đồng dịch vụ đấu giá tài sản. Phụ lục hợp đồng là một phần không thể tách rời của Hợp đồng này, hai bên phải nghiêm chỉnh thực hiện, bên nào vi phạm hoặc gây thiệt hại phải bồi thường cho bên kia.</p>
+</div>
+
+<div class="sec">
+  <h2>Điều 10. Điều khoản thi hành</h2>
+  <p><strong>1.</strong> Hai bên thực hiện đúng các điều khoản, thỏa thuận ghi trong hợp đồng này và theo các quy định của pháp luật có liên quan.</p>
+  <p><strong>2.</strong> Mọi sửa đổi, bổ sung Hợp đồng này phải được lập thành văn bản và có đầy đủ chữ ký của hai Bên mới có giá trị thực hiện.</p>
+  <p><strong>3.</strong> Trong quá trình thực hiện hợp đồng nếu phát sinh tranh chấp trong việc thực hiện hợp đồng thì hai Bên cùng nhau bàn bạc, thỏa thuận, thống nhất cách giải quyết trên cơ sở công bằng, tự nguyện, cùng có lợi. Trường hợp không tự giải quyết được thì hai Bên có quyền đưa ra Tòa án nhân dân cấp có thẩm quyền để giải quyết theo thủ tục tố tụng dân sự.</p>
+  <p><strong>4.</strong> Thời hạn thực hiện hợp đồng được xác định từ khi Hợp đồng được hai Bên ký kết cho đến khi hai bên thanh lý Hợp đồng. Việc thanh lý Hợp đồng này sẽ được thực hiện bằng Biên bản thanh lý do hai Bên cùng ký kết.</p>
+  <p><strong>5.</strong> Hợp đồng này có hiệu lực kể từ ngày hai bên ký hợp đồng. Hợp đồng hết hiệu lực sau khi hai bên tiến hành thanh lý hợp đồng theo luật định.</p>
+  <p>Hợp đồng này được lập thành {{ copies }} bản có giá trị pháp lý như nhau, bên A giữ {{ (copies // 2) if copies >= 2 else copies }} bản, bên B giữ {{ (copies // 2) if copies >= 2 else copies }} bản để thực hiện./.</p>
+</div>

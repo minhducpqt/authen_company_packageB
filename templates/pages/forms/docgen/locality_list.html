@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% from "pages/forms/_components.html" import forms_styles, forms_page_header, forms_status_badge %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{{ forms_styles() }}
+<style>
+  .dg-table { width:100%; border-collapse:collapse; font-size:14px; }
+  .dg-table th, .dg-table td { padding:12px 14px; border-bottom:1px solid #e2e8f0; text-align:left; }
+  .dg-table th { font-size:12px; text-transform:uppercase; color:#64748b; background:#f8fafc; }
+  .dg-toolbar { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+  .dg-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:10px; font-size:13px; font-weight:600; text-decoration:none; border:1px solid #cbd5e1; background:#fff; color:#334155; }
+  .dg-btn-primary { background:#4f46e5; border-color:#4f46e5; color:#fff; }
+  .dg-alert { padding:12px 14px; border-radius:10px; background:#fef2f2; color:#b91c1c; font-size:13px; margin-bottom:16px; }
+</style>
+<div class="fm-page">
+  {{ forms_page_header(
+    "Cấu hình địa phương",
+    subtitle="Quản lý thông tin mặc định Bên A, đại diện và địa điểm theo xã/phường.",
+    breadcrumb_items=[
+      {"label": "Biểu mẫu", "href": "/bieu-mau"},
+      {"label": "Cấu hình", "href": "/bieu-mau/cau-hinh"},
+      {"label": "Địa phương", "href": null},
+    ],
+  ) }}
+
+  {% if error %}<div class="dg-alert">{{ error }}</div>{% endif %}
+
+  <div class="dg-toolbar">
+    <span style="font-size:13px;color:#64748b">{{ profiles|length }} cấu hình</span>
+    <a href="/bieu-mau/cau-hinh/dia-phuong/tao" class="dg-btn dg-btn-primary"><i class="ri-add-line"></i> Thêm cấu hình</a>
+  </div>
+
+  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden">
+    <table class="dg-table">
+      <thead>
+        <tr>
+          <th>Xã / Phường</th>
+          <th>Tỉnh</th>
+          <th>Bên A</th>
+          <th>Nhãn</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in profiles %}
+        <tr>
+          <td><strong>{{ p.ward_name or p.ward_code }}</strong></td>
+          <td>{{ p.province_name or '—' }}</td>
+          <td>{{ (p.party_a or {}).get('name') or '—' }}</td>
+          <td>{{ p.label or '—' }}</td>
+          <td><a href="/bieu-mau/cau-hinh/dia-phuong/{{ p.id }}" class="dg-btn">Sửa</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:32px">Chưa có cấu hình. Nhấn "Thêm cấu hình" để bắt đầu.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

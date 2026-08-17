@@ -1,0 +1,24 @@
+{# Căn cứ pháp lý cố định theo mẫu M3 + căn cứ riêng dự án (legal_refs) #}
+{% from 'pages/documents/default/_ce_slot.html' import ce_slot %}
+<div class="legal legal-static">
+  <p>Căn cứ Luật Tổ chức Chính quyền địa phương ngày 16/6/2025;</p>
+  <p>Căn cứ Luật Đất đai ngày 18 tháng 01 năm 2024;</p>
+  <p>Căn cứ Luật Đấu giá tài sản ngày 17 tháng 11 năm 2016;</p>
+  <p>Căn cứ Luật số 37/2024/QH15 sửa đổi, bổ sung một số điều của Luật Đấu giá tài sản ngày 27 tháng 6 năm 2024;</p>
+  <p>Căn cứ các Nghị định của Chính phủ: số 102/2024/NĐ-CP ngày 2 tháng 7 năm 2024 quy định chi tiết thi hành một số điều của Luật Đất đai; số 103/2024/NĐ-CP ngày 30 tháng 7 năm 2024 quy định về tiền sử dụng đất, tiền thuê đất; số 172/2024/NĐ-CP ngày 27 tháng 12 năm 2024 của Chính phủ quy định chi tiết một số điều của Luật Đấu giá tài sản số 01/2016/QH14 được sửa đổi, bổ sung một số điều theo Luật số 37/2024/QH15; số 226/2025/NĐ-CP ngày 15 tháng 08 năm 2025 của Chính phủ sửa đổi, bổ sung một số điều của các nghị định quy định chi tiết thi hành Luật Đất đai; số 151/2025/NĐ-CP ngày 12 tháng 06 năm 2025 của Chính phủ quy định về phân định thẩm quyền của chính quyền địa phương 02 cấp, phân quyền, phân cấp trong lĩnh vực đất đai;</p>
+  <p>Căn cứ Nghị quyết số 66.11/2026/NQ-CP ngày 06 tháng 01 năm 2026 của Chính phủ quy định xử lý khó khăn, vướng mắc về đấu giá quyền sử dụng đất trong trường hợp giao đất ở theo quy định của Luật Đất đai;</p>
+  <p>Căn cứ Quyết định số 1311/QĐ-BTP ngày 22/4/2025 của Bộ Tư pháp quy định về khung giá dịch vụ đấu giá tài sản mà pháp luật quy định phải bán thông qua đấu giá;</p>
+  <p>Căn cứ Thông tư số 03/2025/TT-BTC ngày 22 tháng 01 năm 2025 hướng dẫn về chế độ tài chính trong hoạt động đấu giá tài sản; quy định việc thu, chi, quản lý và sử dụng tiền bán hồ sơ mời tham gia đấu giá, tiền đặt trước của người tham gia đấu giá không được nhận lại theo quy định của pháp luật về đấu giá tài sản;</p>
+  <p>Căn cứ Thông tư số 19/2024/TT-BTP ngày 31 tháng 12 năm 2024 của Bộ trưởng Bộ Tư pháp về việc quy định chi tiết và hướng dẫn thi hành một số điều của Luật Đấu giá tài sản số 01/2016/QH14 được sửa đổi, bổ sung một số điều theo Luật số 37/2024/QH15;</p>
+  {% if legal and legal|length > 0 %}
+    {% for ref in legal %}
+    <p>Căn cứ {{ ce_slot('legal_' ~ loop.index0, ref.text or '……') }};</p>
+    {% endfor %}
+  {% else %}
+    <p>Căn cứ {{ ce_slot('legal_0', 'Quyết định số ..../QĐ-UBND ngày .......') }};</p>
+    <p>Căn cứ {{ ce_slot('legal_1', 'Thông báo số ...../TB-UBND ngày ..../..../2026 của UBND xã ...... về việc lựa chọn tổ chức hành nghề đấu giá tài sản') }};</p>
+    <p>Căn cứ {{ ce_slot('legal_2', 'Quyết định số .../QĐ-UBND ngày ..../.../2026 của UBND xã ...... về việc phê duyệt kết quả lựa chọn tổ chức hành nghề đấu giá tài sản') }};</p>
+  {% endif %}
+  <p>Căn cứ các văn bản pháp luật quy định hiện hành có liên quan;</p>
+  <p>Theo chức năng, nhiệm vụ, nhu cầu của các bên.</p>
+</div>

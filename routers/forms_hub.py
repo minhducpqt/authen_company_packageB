@@ -12,6 +12,7 @@ from utils.forms_catalog.catalog import (
     get_form_item,
     get_phase,
     list_form_items,
+    list_config_items,
     template_source_for_item,
 )
 from utils.templates import templates
@@ -46,6 +47,7 @@ async def forms_phase_hub(request: Request):
             "request": request,
             "title": "Biểu mẫu",
             "phases": enrich_phases_with_counts(),
+            "config_items": list_config_items(),
             "company_code": ctx["company_code"],
         },
     )
@@ -58,25 +60,6 @@ async def forms_pre_session(request: Request):
     return templates.TemplateResponse(
         "pages/forms/phase_items.html",
         {"request": request, "title": "Trước phiên — Biểu mẫu", **data},
-    )
-
-
-@router.get("/truoc-phien/hop-dong", response_class=HTMLResponse)
-async def forms_pre_session_contract(request: Request):
-    ctx = await _company_ctx(request)
-    phase = get_phase("pre_session")
-    item = get_form_item("pre_session", "hop-dong")
-    return templates.TemplateResponse(
-        "pages/forms/form_detail.html",
-        {
-            "request": request,
-            "title": "Hợp đồng — Trước phiên",
-            "phase": phase,
-            "item": item,
-            "variants": [],
-            "company_code": ctx["company_code"],
-            "template_info": template_source_for_item(ctx["company_code"], None),
-        },
     )
 
 
