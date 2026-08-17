@@ -154,40 +154,49 @@
 <script>
 (function () {
   const STORAGE_KEY = 'bieu-mau.theo-du-an.project_id';
+  const COOKIE_NAME = 'pf_project_id';
+  const COOKIE_MAX_AGE = 365 * 24 * 3600;
   const select = document.getElementById('projectSelect');
-  const form = select?.closest('form');
+  const form = select && select.closest('form');
   if (!select || !form) return;
 
-  function optionExists(pid) {
-    return Array.from(select.options).some(function (o) { return o.value === String(pid); });
+  function setSavedProject(pid) {
+    if (pid) {
+      localStorage.setItem(STORAGE_KEY, String(pid));
+      document.cookie = COOKIE_NAME + '=' + encodeURIComponent(String(pid))
+        + '; path=/bieu-mau; max-age=' + COOKIE_MAX_AGE + '; samesite=lax';
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+      document.cookie = COOKIE_NAME + '=; path=/bieu-mau; max-age=0; samesite=lax';
+    }
   }
 
-  function saveProjectId(pid) {
-    if (pid) localStorage.setItem(STORAGE_KEY, String(pid));
-    else localStorage.removeItem(STORAGE_KEY);
-  }
-
-  const params = new URLSearchParams(window.location.search);
-  const urlPid = params.get('project_id');
-
+  var params = new URLSearchParams(window.location.search);
+  var urlPid = params.get('project_id');
   if (urlPid) {
-    if (optionExists(urlPid)) saveProjectId(urlPid);
-    else localStorage.removeItem(STORAGE_KEY);
-  } else {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved && optionExists(saved)) {
-      let target = '/bieu-mau/theo-du-an?project_id=' + encodeURIComponent(saved);
-      const err = params.get('error');
-      if (err) target += '&error=' + encodeURIComponent(err);
-      window.location.replace(target);
+    setSavedProject(urlPid);
+  } else if (params.get('clear_project') !== '1') {
+    var saved = localStorage.getItem(STORAGE_KEY);
+    var hasOption = saved && Array.from(select.options).some(function (o) {
+      return o.value === String(saved);
+    });
+    if (hasOption) {
+      setSavedProject(saved);
+      window.location.replace('/bieu-mau/theo-du-an?project_id=' + encodeURIComponent(saved));
       return;
     }
     if (saved) localStorage.removeItem(STORAGE_KEY);
   }
 
   select.addEventListener('change', function () {
-    saveProjectId(select.value);
-    form.submit();
+    var v = select.value;
+    if (v) {
+      setSavedProject(v);
+      form.submit();
+      return;
+    }
+    setSavedProject('');
+    window.location.href = '/bieu-mau/theo-du-an?clear_project=1';
   });
 })();
 </script>

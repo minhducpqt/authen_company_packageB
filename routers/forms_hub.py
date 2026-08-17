@@ -27,6 +27,26 @@ from utils.templates import templates
 
 router = APIRouter(tags=["forms-hub"])
 
+_PF_PROJECT_COOKIE = "pf_project_id"
+_PF_PROJECT_COOKIE_MAX_AGE = 365 * 24 * 3600
+
+
+def _parse_project_id(raw: Optional[str]) -> Optional[int]:
+    if raw is None:
+        return None
+    text = str(raw).strip()
+    if not text:
+        return None
+    try:
+        pid = int(text)
+    except ValueError:
+        return None
+    return pid if pid >= 1 else None
+
+
+def _project_exists(projects: list, project_id: int) -> bool:
+    return any(int(p.get("id") or 0) == int(project_id) for p in projects)
+
 
 async def _company_ctx(request: Request) -> dict:
     token = get_access_token(request)
@@ -108,10 +128,7 @@ def _err_msg(exc: Exception) -> str:
 
 
 @router.get("/theo-du-an", response_class=HTMLResponse)
-async def forms_by_project(
-    request: Request,
-    project_id: Optional[int] = Query(None, ge=1),
-):
+async def forms_by_project(request: Request):
     token = get_access_token(request)
     hub = get_project_forms_hub()
     projects: list = []
@@ -121,10 +138,23 @@ async def forms_by_project(
     workflow_steps: list = []
     selected_project = None
     error = request.query_params.get("error")
+    clear_saved_project = request.query_params.get("clear_project") == "1"
+    project_id = None if clear_saved_project else _parse_project_id(
+        request.query_params.get("project_id")
+    )
+
     try:
         projects = await fetch_projects(token)
     except Exception as e:
         error = _err_msg(e)
+
+    if not project_id and not clear_saved_project:
+        saved_pid = _parse_project_id(request.cookies.get(_PF_PROJECT_COOKIE))
+        if saved_pid and _project_exists(projects, saved_pid):
+            url = f"/bieu-mau/theo-du-an?project_id={saved_pid}"
+            if error:
+                url += f"&error={quote(error)}"
+            return RedirectResponse(url, status_code=302)
 
     if project_id:
         selected_project = next(
@@ -144,7 +174,7 @@ async def forms_by_project(
             error = error or "Không tìm thấy dự án."
 
     total_instances = len(instances) if instances else sum(g["count"] for g in groups)
-    return templates.TemplateResponse(
+    response = templates.TemplateResponse(
         "pages/forms/project_forms.html",
         {
             "request": request,
@@ -160,6 +190,18 @@ async def forms_by_project(
             "error": error,
         },
     )
+    if project_id and selected_project:
+        response.set_cookie(
+            _PF_PROJECT_COOKIE,
+            str(project_id),
+            max_age=_PF_PROJECT_COOKIE_MAX_AGE,
+            path="/bieu-mau",
+            samesite="lax",
+            httponly=False,
+        )
+    elif clear_saved_project or (project_id and not selected_project):
+        response.delete_cookie(_PF_PROJECT_COOKIE, path="/bieu-mau")
+    return response
 
 
 @router.get("/theo-du-an/sinh-quy-che")
