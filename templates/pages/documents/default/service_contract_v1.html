@@ -65,7 +65,9 @@
     table.lots td.num { text-align: right; white-space: nowrap; }
     .sign-block { margin-top: 28px; display: table; width: 100%; page-break-inside: avoid; }
     .sign-col { display: table-cell; width: 50%; text-align: center; vertical-align: top; padding: 0 12px; }
-    .sign-col .role { font-weight: 700; text-transform: uppercase; margin-bottom: 88px; }
+    .sign-col .role { font-weight: 700; text-transform: uppercase; margin-bottom: 0; }
+    .sign-col .sign-space { min-height: 88px; }
+    .sign-col .sign-hint { font-style: italic; }
     .muted { color: #333; }
     .indent { text-indent: 28px; }
     p.no-indent, .hd p, .doc-no, .doc-sub, h1.doc-title { text-indent: 0; }
@@ -113,6 +115,7 @@
 {% set pa_treasury = v.party_a_treasury_account or defs.party_a_treasury_account or '……' %}
 {% set pa_treasury_off = v.party_a_treasury_office or defs.party_a_treasury_office or '……' %}
 {% set pa_rep = v.party_a_representative_name or defs.party_a_representative_name or '……' %}
+{% set pa_rep_dept = v.party_a_representative_department or defs.party_a_representative_department or pa_rep %}
 {% set pa_title = v.party_a_representative_title or defs.party_a_representative_title or '……' %}
 {% set pa_auth = v.party_a_authorization or defs.party_a_authorization or '' %}
 
@@ -152,7 +155,7 @@
 <p><strong>CHÚNG TÔI GỒM:</strong></p>
 
 <p><strong>I. Người có tài sản đấu giá (Bên A):</strong> {{ ce_slot('party_a_name', pa_name) }}<br>
-Đại diện người có tài sản: {{ ce_slot('party_a_representative_name', pa_rep) }}<br>
+Đại diện người có tài sản: {{ ce_slot('party_a_representative_department', pa_rep_dept) }}<br>
 Địa chỉ: {{ ce_slot('party_a_address', pa_addr) }}<br>
 Tài khoản số: {{ ce_slot('party_a_treasury_account', pa_treasury) }} tại {{ ce_slot('party_a_treasury_office', pa_treasury_off) }}<br>
 Mã số thuế: {{ ce_slot('party_a_tax_code', pa_tax) }}<br>
@@ -261,11 +264,13 @@ Người đại diện: {{ ce_slot('party_b_rep', pb_rep) }} &nbsp;&nbsp; Chức
 <div class="sign-block">
   <div class="sign-col">
     <div class="role">Đại diện Bên A</div>
-    <div>{{ ce_slot('party_a_representative_name', pa_rep) }}</div>
+    <div class="sign-space"></div>
+    <div class="sign-hint">(Ký, ghi rõ họ tên)</div>
   </div>
   <div class="sign-col">
     <div class="role">Đại diện Bên B</div>
-    <div>{{ ce_slot('party_b_rep', pb_rep) }}</div>
+    <div class="sign-space"></div>
+    <div class="sign-hint">(Ký, ghi rõ họ tên)</div>
   </div>
 </div>
 

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "pages/forms/_components.html" import forms_styles, forms_page_header, forms_dialog_shell, forms_dialog_script %}
+{% from "pages/forms/_components.html" import forms_styles, forms_page_header, forms_dialog_shell, forms_dialog_script, forms_division_picker, forms_division_picker_modal, forms_division_picker_script %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
 {{ forms_styles() }}
@@ -15,8 +15,10 @@
   .dg-sec { margin:24px 0 12px; font-size:13px; font-weight:700; color:#334155; padding-bottom:8px; border-bottom:1px solid #e2e8f0; }
   .dg-btn { display:inline-flex; align-items:center; gap:6px; padding:9px 16px; border-radius:10px; font-size:13px; font-weight:600; border:1px solid #cbd5e1; background:#fff; cursor:pointer; text-decoration:none; color:#334155; }
   .dg-btn-primary { background:#4f46e5; border-color:#4f46e5; color:#fff; }
-  .dg-btn-primary:disabled { opacity:0.45; cursor:not-allowed; }
+  .dg-btn-danger { background:#dc2626; border-color:#dc2626; color:#fff; }
+  .dg-btn-primary:disabled, .dg-btn-danger:disabled { opacity:0.45; cursor:not-allowed; }
   .dg-alert { padding:12px 14px; border-radius:10px; background:#fef2f2; color:#b91c1c; font-size:13px; margin-bottom:16px; }
+  .dg-hint { font-size:11px; color:#64748b; margin:8px 0 0; line-height:1.45; }
   .dg-modal { position:fixed; inset:0; z-index:120; display:none; }
   .dg-modal.is-open { display:block; }
   .dg-modal-backdrop { position:absolute; inset:0; background:rgba(15,23,42,.45); }
@@ -45,17 +47,9 @@
     {% if not profile %}
     <div class="dg-sec">Chọn địa phương</div>
     <div class="dg-field">
-      <label>Tỉnh / Thành</label>
-      <select id="provinceSelect">
-        <option value="">— Chọn tỉnh —</option>
-        {% for p in provinces %}<option value="{{ p.code }}">{{ p.name }}</option>{% endfor %}
-      </select>
-    </div>
-    <div class="dg-field">
-      <label>Xã / Phường *</label>
-      <select name="ward_code" id="wardSelect" required>
-        <option value="">— Chọn xã/phường —</option>
-      </select>
+      <label>Tỉnh / Thành &amp; Xã / Phường *</label>
+      {{ forms_division_picker('localityDivPicker', ward_input_name='ward_code') }}
+      <p class="dg-hint">Bấm <strong>Tìm</strong> để gõ tên tỉnh hoặc xã. Sau khi chọn xã, hệ thống tự điền UBND, Phòng Kinh tế, địa chỉ và địa điểm — <strong>không</strong> điền MST, tài khoản Kho bạc hay họ tên cán bộ.</p>
     </div>
     {% else %}
     <input type="hidden" name="ward_code" value="{{ profile.ward_code }}">
@@ -65,21 +59,22 @@
     <div class="dg-field"><label>Nhãn (tuỳ chọn)</label><input name="label" value="{{ profile.label if profile else '' }}" placeholder="VD: Xã Gia Viễn — cấu hình chính thức"></div>
 
     <div class="dg-sec">Bên A (cơ quan có tài sản)</div>
-    <div class="dg-field"><label>Tên</label><input name="party_a_name" value="{{ pa.get('name','') }}" placeholder="VD: Ủy ban nhân dân xã Gia Viễn"></div>
-    <div class="dg-field"><label>Địa chỉ</label><input name="party_a_address" value="{{ pa.get('address','') }}" placeholder="VD: Thôn Trung Tâm, xã Gia Viễn, huyện Gia Viễn, tỉnh Ninh Bình"></div>
-    <div class="dg-field"><label>Mã số thuế</label><input name="party_a_tax_code" value="{{ pa.get('tax_code','') }}" placeholder="VD: 3700123456"></div>
-    <div class="dg-field"><label>Tài khoản Kho bạc</label><input name="party_a_treasury_account" value="{{ pa.get('treasury_account','') }}" placeholder="VD: 3712345678901"></div>
-    <div class="dg-field"><label>Kho bạc / Phòng giao dịch</label><input name="party_a_treasury_office" value="{{ pa.get('treasury_office','') }}" placeholder="VD: Kho bạc Nhà nước huyện Gia Viễn"></div>
+    <div class="dg-field"><label>Tên</label><input name="party_a_name" value="{{ pa.get('name','') }}" placeholder="VD: UBND xã Quang Hưng"></div>
+    <div class="dg-field"><label>Địa chỉ</label><input name="party_a_address" value="{{ pa.get('address','') }}" placeholder="VD: Xã Quang Hưng, tỉnh Ninh Bình"></div>
+    <div class="dg-field"><label>Mã số thuế</label><input name="party_a_tax_code" value="{{ pa.get('tax_code','') }}" placeholder="VD: 0601295372 — nhập thủ công"></div>
+    <div class="dg-field"><label>Tài khoản Kho bạc</label><input name="party_a_treasury_account" value="{{ pa.get('treasury_account','') }}" placeholder="VD: 952741152088 — nhập thủ công"></div>
+    <div class="dg-field"><label>Kho bạc / Phòng giao dịch</label><input name="party_a_treasury_office" value="{{ pa.get('treasury_office','') }}" placeholder="VD: Kho bạc NN khu vực V — PGD số 6 — nhập thủ công"></div>
 
     <div class="dg-sec">Người đại diện Bên A</div>
-    <div class="dg-field"><label>Họ tên</label><input name="rep_name" value="{{ rep.get('name','') }}" placeholder="VD: Nguyễn Văn A"></div>
-    <div class="dg-field"><label>Chức vụ</label><input name="rep_title" value="{{ rep.get('title','') }}" placeholder="VD: Chủ tịch UBND xã"></div>
-    <div class="dg-field"><label>Ủy quyền (nếu có)</label><input name="rep_authorization" value="{{ rep.get('authorization','') }}" placeholder="VD: Quyết định số 123/QĐ-UBND ngày 01/01/2024"></div>
+    <div class="dg-field"><label>Phòng / ban đại diện</label><input name="rep_department" value="{{ rep.get('department','') }}" placeholder="VD: Phòng Kinh tế xã Quang Hưng"></div>
+    <div class="dg-field"><label>Họ tên cán bộ ký</label><input name="rep_name" value="{{ rep.get('name','') }}" placeholder="VD: Ông Trần Văn Oánh — nhập thủ công"></div>
+    <div class="dg-field"><label>Chức vụ</label><input name="rep_title" value="{{ rep.get('title','') }}" placeholder="VD: Trưởng phòng — nhập thủ công"></div>
+    <div class="dg-field"><label>Giấy ủy quyền (nếu có)</label><input name="rep_authorization" value="{{ rep.get('authorization','') }}" placeholder="VD: Quyết định số 123/QĐ-UBND ngày 01/01/2024"></div>
 
     <div class="dg-sec">Địa điểm mặc định</div>
-    <div class="dg-field"><label>Địa điểm ký hợp đồng</label><input name="signing_place" value="{{ defs.get('signing_place','') }}" placeholder="VD: Trụ sở UBND xã Gia Viễn"></div>
-    <div class="dg-field"><label>Địa điểm tiếp nhận hồ sơ</label><input name="dossier_reception_place" value="{{ defs.get('dossier_reception_place','') }}" placeholder="VD: Phòng Tài chính — Kế toán UBND xã Gia Viễn"></div>
-    <div class="dg-field"><label>Địa điểm tổ chức đấu giá</label><input name="auction_venue" value="{{ defs.get('auction_venue','') }}" placeholder="VD: Hội trường UBND xã Gia Viễn"></div>
+    <div class="dg-field"><label>Địa điểm ký hợp đồng</label><input name="signing_place" value="{{ defs.get('signing_place','') }}" placeholder="VD: UBND xã Quang Hưng, tỉnh Ninh Bình"></div>
+    <div class="dg-field"><label>Địa điểm tiếp nhận hồ sơ</label><input name="dossier_reception_place" value="{{ defs.get('dossier_reception_place','') }}" placeholder="VD: Phòng Kinh tế xã Quang Hưng"></div>
+    <div class="dg-field"><label>Địa điểm tổ chức đấu giá</label><input name="auction_venue" value="{{ defs.get('auction_venue','') }}" placeholder="VD: Hội trường UBND xã Quang Hưng"></div>
 
     <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
       <button type="button" id="btnOpenConfirm" class="dg-btn dg-btn-primary"><i class="ri-save-line"></i> Lưu</button>
@@ -98,8 +93,8 @@
   <div class="dg-modal-backdrop" data-close-confirm></div>
   <div class="dg-modal-box" role="dialog" aria-labelledby="confirmTitle">
     <div class="dg-modal-hd">
-      <div class="t" id="confirmTitle">{% if profile %}Xác nhận lưu cấu hình{% else %}Xác nhận tạo cấu hình{% endif %}</div>
-      <div class="s">Thay đổi cấu hình địa phương ảnh hưởng dữ liệu mặc định khi sinh văn bản mới.</div>
+      <div class="t" id="confirmTitle">{% if profile %}Xác nhận sửa cấu hình xã{% else %}Xác nhận tạo cấu hình{% endif %}</div>
+      <div class="s" id="confirmSubtitle">{% if profile %}Thay đổi cấu hình địa phương này ảnh hưởng dữ liệu mặc định khi sinh văn bản mới.{% else %}Tạo cấu hình mới cho xã đã chọn.{% endif %}</div>
     </div>
     <div class="dg-modal-bd">
       <div class="dg-modal-warn">
@@ -118,24 +113,60 @@
 </div>
 {{ forms_dialog_shell() }}
 {{ forms_dialog_script() }}
+{% if not profile %}
+{{ forms_division_picker_modal() }}
+{{ forms_division_picker_script() }}
+{% endif %}
 <script>
 const CONFIRM_PHRASE = 'tôi xác nhận';
+const IS_CREATE = {{ 'true' if not profile else 'false' }};
+let localitySubmitConfirmed = false;
+let deleteSubmitConfirmed = false;
+let confirmMode = 'save';
 const localityForm = document.getElementById('localityForm');
+const deleteLocalityForm = document.getElementById('deleteLocalityForm');
 const typedModal = document.getElementById('typedConfirmModal');
+const confirmTitleEl = document.getElementById('confirmTitle');
+const confirmSubtitleEl = document.getElementById('confirmSubtitle');
 const confirmText = document.getElementById('confirmText');
 const confirmErr = document.getElementById('confirmErr');
 const btnDoConfirm = document.getElementById('btnDoConfirm');
 const btnOpenConfirm = document.getElementById('btnOpenConfirm');
 
+const CONFIRM_COPY = {
+  save: {
+    title: IS_CREATE ? 'Xác nhận tạo cấu hình' : 'Xác nhận sửa cấu hình xã',
+    subtitle: IS_CREATE
+      ? 'Tạo cấu hình mới cho xã đã chọn.'
+      : 'Thay đổi cấu hình địa phương này ảnh hưởng dữ liệu mặc định khi sinh văn bản mới.',
+    okText: 'Xác nhận lưu',
+    okClass: 'dg-btn-primary',
+  },
+  delete: {
+    title: 'Xác nhận xoá cấu hình',
+    subtitle: 'Xoá cấu hình địa phương này? Hành động không thể hoàn tác.',
+    okText: 'Xác nhận xoá',
+    okClass: 'dg-btn-danger',
+  },
+};
+
 function normPhrase(s) {
   return (s || '').trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
-function openTypedConfirm() {
+function openTypedConfirm(mode) {
+  confirmMode = mode || 'save';
+  const copy = CONFIRM_COPY[confirmMode] || CONFIRM_COPY.save;
+  if (confirmTitleEl) confirmTitleEl.textContent = copy.title;
+  if (confirmSubtitleEl) confirmSubtitleEl.textContent = copy.subtitle;
+  if (btnDoConfirm) {
+    btnDoConfirm.textContent = copy.okText;
+    btnDoConfirm.className = 'dg-btn ' + copy.okClass;
+    btnDoConfirm.disabled = true;
+  }
   confirmText.value = '';
   confirmErr.style.display = 'none';
   confirmErr.textContent = '';
-  btnDoConfirm.disabled = true;
   typedModal.classList.add('is-open');
   typedModal.setAttribute('aria-hidden', 'false');
   setTimeout(() => confirmText.focus(), 50);
@@ -150,12 +181,75 @@ function syncConfirmButton() {
   btnDoConfirm.disabled = normPhrase(confirmText.value) !== CONFIRM_PHRASE;
 }
 
-btnOpenConfirm?.addEventListener('click', () => {
+function setLocalityField(name, value) {
+  const el = localityForm?.querySelector(`[name="${name}"]`);
+  if (el) el.value = value || '';
+}
+
+function wardCommuneLabel(rawName) {
+  const n = (rawName || '').trim();
+  if (!n) return 'xã ……';
+  const lower = n.toLowerCase();
+  if (/^(xã|phường|thị trấn|đặc khu)\s/.test(lower)) return n;
+  return 'xã ' + n;
+}
+
+function provinceLabel(pn) {
+  const p = (pn || '').trim();
+  if (!p) return '';
+  const lower = p.toLowerCase();
+  if (lower.startsWith('tỉnh ') || lower.startsWith('thành phố ') || lower.startsWith('tp. ')) return p;
+  if (lower.includes('thành phố')) return p;
+  return 'tỉnh ' + p;
+}
+
+function applyLocalityWardDefaults(wardName, provinceName) {
+  const commune = wardCommuneLabel(wardName);
+  const ubnd = 'UBND ' + commune;
+  const prov = provinceLabel(provinceName);
+  const address = prov ? `${commune}, ${prov}` : commune;
+  const signing = prov ? `${ubnd}, ${prov}` : ubnd;
+  const kinhTe = `Phòng Kinh tế ${commune}`;
+
+  setLocalityField('party_a_name', ubnd);
+  setLocalityField('party_a_address', address);
+  setLocalityField('rep_department', kinhTe);
+  setLocalityField('signing_place', signing);
+  setLocalityField('auction_venue', `Hội trường ${ubnd}`);
+  setLocalityField('dossier_reception_place', kinhTe);
+}
+
+btnOpenConfirm?.addEventListener('click', async () => {
+  if (IS_CREATE) {
+    const wc = localityForm?.querySelector('[name="ward_code"]')?.value || '';
+    if (!wc) {
+      await FmDialog.alert({
+        title: 'Chưa chọn xã',
+        message: 'Vui lòng chọn tỉnh và xã/phường trước khi lưu.',
+        variant: 'info',
+      });
+      return;
+    }
+  }
   if (!localityForm.reportValidity()) return;
-  openTypedConfirm();
+  openTypedConfirm('save');
+});
+
+localityForm?.addEventListener('submit', (e) => {
+  if (!localitySubmitConfirmed) {
+    e.preventDefault();
+    btnOpenConfirm?.click();
+  }
 });
 
 confirmText?.addEventListener('input', syncConfirmButton);
+
+confirmText?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !btnDoConfirm.disabled) {
+    e.preventDefault();
+    btnDoConfirm.click();
+  }
+});
 
 btnDoConfirm?.addEventListener('click', () => {
   if (normPhrase(confirmText.value) !== CONFIRM_PHRASE) {
@@ -164,6 +258,12 @@ btnDoConfirm?.addEventListener('click', () => {
     return;
   }
   closeTypedConfirm();
+  if (confirmMode === 'delete') {
+    deleteSubmitConfirmed = true;
+    deleteLocalityForm?.submit();
+    return;
+  }
+  localitySubmitConfirmed = true;
   localityForm.submit();
 });
 
@@ -175,33 +275,25 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && typedModal?.classList.contains('is-open')) closeTypedConfirm();
 });
 
-document.getElementById('btnDeleteLocality')?.addEventListener('click', async () => {
-  const ok = await FmDialog.confirm({
-    title: 'Xoá cấu hình',
-    message: 'Xoá cấu hình địa phương này? Hành động không thể hoàn tác.',
-    variant: 'danger',
-    okText: 'Xoá',
-    cancelText: 'Huỷ',
-  });
-  if (ok) document.getElementById('deleteLocalityForm')?.submit();
+document.getElementById('btnDeleteLocality')?.addEventListener('click', () => {
+  openTypedConfirm('delete');
 });
 
-const provinceSelect = document.getElementById('provinceSelect');
-const wardSelect = document.getElementById('wardSelect');
-if (provinceSelect && wardSelect) {
-  provinceSelect.addEventListener('change', async () => {
-    wardSelect.innerHTML = '<option value="">— Đang tải —</option>';
-    const pc = provinceSelect.value;
-    if (!pc) { wardSelect.innerHTML = '<option value="">— Chọn xã/phường —</option>'; return; }
-    const r = await fetch('/bieu-mau/api/communes?province_code=' + encodeURIComponent(pc));
-    const data = await r.json();
-    wardSelect.innerHTML = '<option value="">— Chọn xã/phường —</option>';
-    (data.items || []).forEach(w => {
-      const o = document.createElement('option');
-      o.value = w.code; o.textContent = w.name_with_type || w.name;
-      wardSelect.appendChild(o);
-    });
-  });
-}
+deleteLocalityForm?.addEventListener('submit', (e) => {
+  if (!deleteSubmitConfirmed) {
+    e.preventDefault();
+    openTypedConfirm('delete');
+  }
+});
+
+{% if not profile %}
+FmDivisionPicker.mount({
+  rootId: 'localityDivPicker',
+  provinces: {{ provinces|tojson }},
+  onChange: ({ wardCode, wardName, provinceName }) => {
+    if (wardCode && wardName) applyLocalityWardDefaults(wardName, provinceName);
+  },
+});
+{% endif %}
 </script>
 {% endblock %}

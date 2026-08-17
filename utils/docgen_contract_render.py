@@ -26,6 +26,96 @@ _LAND_ARTICLE_DEFAULTS = {
     "legal_dossier_ref": "Quyết định số ……",
 }
 
+_PAYMENT_TERMS_TAIL = (
+    "kể từ ngày bên A đã nhận được kết quả đấu giá, "
+    "hóa đơn GTGT và biên bản thanh lý Hợp đồng."
+)
+_DEFAULT_PAYMENT_DAYS = 20
+_VI_DIGITS = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"]
+
+
+def _vi_read_int(n: int) -> str:
+    n = int(n)
+    if n < 0:
+        return ""
+    if n == 0:
+        return "không"
+
+    def doc_block(b: int) -> str:
+        if not b:
+            return ""
+        parts: list[str] = []
+        tram = b // 100
+        chuc = (b % 100) // 10
+        don = b % 10
+        if tram:
+            parts.append(("một" if tram == 1 else _VI_DIGITS[tram]) + " trăm")
+        if chuc == 0 and don and tram:
+            parts.append("lẻ")
+        if chuc == 1:
+            parts.append("mười")
+        elif chuc > 1:
+            parts.append(_VI_DIGITS[chuc] + " mươi")
+        if don == 1 and chuc > 1:
+            parts.append("mốt")
+        elif don == 4 and chuc > 1:
+            parts.append("tư")
+        elif don == 5 and chuc > 0:
+            parts.append("lăm")
+        elif don:
+            parts.append(_VI_DIGITS[don])
+        return " ".join(parts).strip()
+
+    if n < 1000:
+        return doc_block(n)
+    nghin = n // 1000
+    rest = n % 1000
+    out = doc_block(nghin) + " nghìn"
+    if rest:
+        if rest < 100:
+            out += " lẻ"
+        out += " " + doc_block(rest)
+    return out.strip()
+
+
+def format_payment_terms(days: int) -> str:
+    n = max(1, int(days or _DEFAULT_PAYMENT_DAYS))
+    words = _vi_read_int(n) or str(n)
+    return f"Trong vòng {n} ({words}) ngày {_PAYMENT_TERMS_TAIL}"
+
+
+def parse_payment_days_from_fees(fees: Dict[str, Any]) -> int:
+    if not isinstance(fees, dict):
+        return _DEFAULT_PAYMENT_DAYS
+    raw_days = fees.get("payment_terms_days")
+    if raw_days is not None and str(raw_days).strip():
+        try:
+            d = int(raw_days)
+            if d > 0:
+                return d
+        except (TypeError, ValueError):
+            pass
+    text = str(fees.get("payment_terms") or "")
+    m = re.search(r"Trong vòng\s+(\d+)", text, re.I) or re.search(r"(\d+)\s*\(", text)
+    if m:
+        try:
+            d = int(m.group(1))
+            if d > 0:
+                return d
+        except (TypeError, ValueError):
+            pass
+    return _DEFAULT_PAYMENT_DAYS
+
+
+def normalize_service_fees(fields: Dict[str, Any]) -> None:
+    fees = fields.setdefault("service_fees", {})
+    if not isinstance(fees, dict):
+        fees = {}
+        fields["service_fees"] = fees
+    days = parse_payment_days_from_fees(fees)
+    fees["payment_terms_days"] = days
+    fees["payment_terms"] = format_payment_terms(days)
+
 
 def _company_rep_from_ctx(ctx: Dict[str, Any]) -> tuple[str, str]:
     defs = ctx.get("defaults") or {}
@@ -67,6 +157,7 @@ def merge_fields_for_render(
     for key, default in _LAND_ARTICLE_DEFAULTS.items():
         if not (contract.get(key) or "").strip():
             contract[key] = default
+    normalize_service_fees(fields)
     doc_no = contract.get("document_no") or inst.get("document_no")
     if doc_no:
         ctx = dict(ctx)

@@ -129,6 +129,7 @@ async def locality_config_create_post(
     party_a_treasury_account: str = Form(""),
     party_a_treasury_office: str = Form(""),
     rep_name: str = Form(""),
+    rep_department: str = Form(""),
     rep_title: str = Form(""),
     rep_authorization: str = Form(""),
     signing_place: str = Form(""),
@@ -148,6 +149,7 @@ async def locality_config_create_post(
         },
         "representative": {
             "name": rep_name,
+            "department": rep_department,
             "title": rep_title,
             "authorization": rep_authorization,
         },
@@ -187,6 +189,7 @@ async def locality_config_update_post(
     party_a_treasury_account: str = Form(""),
     party_a_treasury_office: str = Form(""),
     rep_name: str = Form(""),
+    rep_department: str = Form(""),
     rep_title: str = Form(""),
     rep_authorization: str = Form(""),
     signing_place: str = Form(""),
@@ -205,6 +208,7 @@ async def locality_config_update_post(
         },
         "representative": {
             "name": rep_name,
+            "department": rep_department,
             "title": rep_title,
             "authorization": rep_authorization,
         },

@@ -69,6 +69,14 @@
     font-size: 13px;
     line-height: 1.45;
   }
+  .ce-days-input {
+    width: 120px;
+    max-width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 14px;
+  }
   .ce-left .ce-field:focus-within { background:#f8fafc; border-radius:8px; margin-left:-4px; margin-right:-4px; padding:0 4px; }
   .ce-left .legal-row:focus-within { border-color:#93c5fd; background:#f8fafc; }
   .ce-field-readonly .ce-readonly-val { padding:8px 10px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; font-size:12px; line-height:1.45; color:#334155; }
@@ -185,7 +193,18 @@
           <div id="serviceFeeDisplay" class="ce-readonly-val">…</div>
           <div class="ce-hint">Theo tổng giá khởi điểm dự án và khung QĐ 1311/QĐ-BTP (22/4/2025): cơ sở theo bậc + 1% phần chênh lệch. (Chưa bao gồm thuế VAT).</div>
         </div>
-        <div class="ce-field"><label>Điều kiện thanh toán</label><textarea id="f_payment_terms" data-ce-field="payment_terms" rows="2" {% if is_final %}readonly{% endif %} placeholder="Trong 20 ngày kể từ khi nhận kết quả đấu giá…"></textarea></div>
+        <div class="ce-field">
+          <label>Điều kiện thanh toán — số ngày</label>
+          {% if is_final %}
+          <div class="ce-readonly-val" id="f_payment_terms_display">—</div>
+          <input type="hidden" id="f_payment_terms" data-ce-field="payment_terms">
+          {% else %}
+          <input id="f_payment_days" type="number" min="1" max="999" value="20" class="ce-days-input">
+          <input type="hidden" id="f_payment_terms" data-ce-field="payment_terms">
+          <div id="f_payment_terms_preview" class="ce-readonly-val ce-signed-preview">—</div>
+          <div class="ce-hint">Chỉ nhập số ngày — hệ thống tự tạo câu «Thời gian thanh toán» trong HĐ</div>
+          {% endif %}
+        </div>
 
         <div class="ce-sec">Điều 1 — Mục đích &amp; hồ sơ pháp lý</div>
         <div class="ce-field">
@@ -335,11 +354,113 @@ const LAND_ARTICLE_DEFAULTS = {
   legal_dossier_ref: 'Quyết định số ……',
 };
 
+const DEFAULT_PAYMENT_DAYS = 20;
+const PAYMENT_TERMS_TAIL = 'kể từ ngày bên A đã nhận được kết quả đấu giá, hóa đơn GTGT và biên bản thanh lý Hợp đồng.';
+
+function viReadInt(n) {
+  n = Math.floor(Number(n));
+  if (!isFinite(n) || n < 0) return '';
+  if (n === 0) return 'không';
+  const dv = ['không', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín'];
+  function docBlock(b) {
+    b = Math.floor(b);
+    if (!b) return '';
+    let str = '';
+    const tram = Math.floor(b / 100);
+    const chuc = Math.floor((b % 100) / 10);
+    const don = b % 10;
+    if (tram) str += (tram === 1 ? 'một' : dv[tram]) + ' trăm';
+    if (chuc === 0 && don && tram) str += ' lẻ';
+    if (chuc === 1) str += (str ? ' ' : '') + 'mười';
+    else if (chuc > 1) str += (str ? ' ' : '') + dv[chuc] + ' mươi';
+    if (don === 1 && chuc > 1) str += ' mốt';
+    else if (don === 4 && chuc > 1) str += ' tư';
+    else if (don === 5 && chuc > 0) str += ' lăm';
+    else if (don) str += (str ? ' ' : '') + dv[don];
+    return str.trim();
+  }
+  if (n < 1000) return docBlock(n);
+  const nghin = Math.floor(n / 1000);
+  const rest = n % 1000;
+  let out = docBlock(nghin) + ' nghìn';
+  if (rest) {
+    if (rest < 100) out += ' lẻ';
+    out += ' ' + docBlock(rest);
+  }
+  return out.trim();
+}
+
+function formatPaymentTerms(days) {
+  const n = Math.max(1, parseInt(days, 10) || DEFAULT_PAYMENT_DAYS);
+  const words = viReadInt(n) || String(n);
+  return `Trong vòng ${n} (${words}) ngày ${PAYMENT_TERMS_TAIL}`;
+}
+
+function parsePaymentDaysFromFields(fees) {
+  if (!fees || typeof fees !== 'object') return DEFAULT_PAYMENT_DAYS;
+  if (fees.payment_terms_days != null && fees.payment_terms_days !== '') {
+    const d = parseInt(fees.payment_terms_days, 10);
+    if (isFinite(d) && d > 0) return d;
+  }
+  const text = String(fees.payment_terms || '');
+  const m = text.match(/Trong vòng\s+(\d+)/i) || text.match(/(\d+)\s*\(/);
+  if (m) {
+    const d = parseInt(m[1], 10);
+    if (isFinite(d) && d > 0) return d;
+  }
+  return DEFAULT_PAYMENT_DAYS;
+}
+
+function syncPaymentTermsHidden() {
+  const daysEl = document.getElementById('f_payment_days');
+  const hidden = document.getElementById('f_payment_terms');
+  if (!hidden) return;
+  const days = daysEl?.value || DEFAULT_PAYMENT_DAYS;
+  hidden.value = formatPaymentTerms(days);
+}
+
+function updatePaymentTermsFromDays() {
+  syncPaymentTermsHidden();
+  const preview = document.getElementById('f_payment_terms_preview');
+  const hidden = document.getElementById('f_payment_terms');
+  if (preview && hidden) preview.textContent = hidden.value;
+  schedulePreview();
+}
+
+function initPaymentTermsDays() {
+  const daysEl = document.getElementById('f_payment_days');
+  if (!daysEl || IS_FINAL) return;
+  daysEl.addEventListener('input', updatePaymentTermsFromDays);
+  daysEl.addEventListener('change', updatePaymentTermsFromDays);
+}
+
+function hydratePaymentTermsFields(fees) {
+  const days = parsePaymentDaysFromFields(fees);
+  const text = formatPaymentTerms(days);
+  const hidden = document.getElementById('f_payment_terms');
+  const daysEl = document.getElementById('f_payment_days');
+  const preview = document.getElementById('f_payment_terms_preview');
+  const display = document.getElementById('f_payment_terms_display');
+  if (hidden) hidden.value = text;
+  if (daysEl) daysEl.value = String(days);
+  if (preview) preview.textContent = text;
+  if (display) display.textContent = text;
+}
+
 function fmt0(v) {
   if (v === null || v === undefined || v === '') return '—';
   const n = Number(v);
   if (!isFinite(n)) return String(v);
   return n.toLocaleString('vi-VN', { maximumFractionDigits: 0 });
+}
+
+const DEFAULT_SIGNED_AT_TIME = '09:00';
+
+function withDefaultSignedAtTime(isoLocal) {
+  if (!isoLocal) return '';
+  const m = String(isoLocal).match(/^(\d{4}-\d{2}-\d{2})T00:00(?::\d{2})?$/);
+  if (m) return `${m[1]}T${DEFAULT_SIGNED_AT_TIME}`;
+  return isoLocal;
 }
 
 function formatSignedAtVi(isoLocal) {
@@ -358,7 +479,14 @@ function updateSignedAtFromPicker() {
   const picker = document.getElementById('f_signed_at_picker');
   const hidden = document.getElementById('f_signed_at');
   const preview = document.getElementById('f_signed_at_preview');
-  const iso = picker?.value || '';
+  let iso = picker?.value || '';
+  if (iso) {
+    const normalized = withDefaultSignedAtTime(iso);
+    if (normalized !== iso && picker) {
+      picker.value = normalized;
+      iso = normalized;
+    }
+  }
   const text = formatSignedAtVi(iso);
   if (hidden) hidden.value = text;
   if (preview) preview.textContent = text || '— chọn ngày giờ —';
@@ -764,6 +892,7 @@ function collectOverrides() {
 }
 
 function collectFields() {
+  syncPaymentTermsHidden();
   const legal = [];
   document.querySelectorAll('[data-legal-row]').forEach(row => {
     legal.push({ text: row.querySelector('.lr-text')?.value?.trim() || '' });
@@ -795,7 +924,15 @@ function collectFields() {
     },
     service_fees: {
       ...(prev.service_fees || {}),
-      payment_terms: document.getElementById('f_payment_terms')?.value || '',
+      payment_terms_days: (() => {
+        const daysEl = document.getElementById('f_payment_days');
+        const hiddenVal = document.getElementById('f_payment_terms')?.value || '';
+        if (daysEl) {
+          return parseInt(daysEl.value || String(DEFAULT_PAYMENT_DAYS), 10) || DEFAULT_PAYMENT_DAYS;
+        }
+        return parsePaymentDaysFromFields({ payment_terms: hiddenVal });
+      })(),
+      payment_terms: document.getElementById('f_payment_terms')?.value || formatPaymentTerms(DEFAULT_PAYMENT_DAYS),
     },
     legal_refs: legal.filter(r => r.text),
     lot_table: {
@@ -859,11 +996,11 @@ function hydrateFromFields() {
   renderCompanyRepDisplay();
   renderDepositAccountDisplay();
   hydrateSignedAtFields(c);
+  hydratePaymentTermsFields(f);
   document.getElementById('f_copies').value = c.copies || 6;
   document.getElementById('f_pb_auth').value = c.party_b_authorization || '';
   document.getElementById('f_auction_days').value = a.deadline_days || 30;
   document.getElementById('f_bid_step').value = c.bid_step || '';
-  document.getElementById('f_payment_terms').value = f.payment_terms || '';
   document.getElementById('f_land_use_purpose').value = c.land_use_purpose || LAND_ARTICLE_DEFAULTS.land_use_purpose;
   document.getElementById('f_land_delivery_form').value = c.land_delivery_form || LAND_ARTICLE_DEFAULTS.land_delivery_form;
   document.getElementById('f_land_use_term').value = c.land_use_term || LAND_ARTICLE_DEFAULTS.land_use_term;
@@ -885,7 +1022,8 @@ function isPlaceholderText(s) {
   if (t === '—' || t === '–' || t === '-') return true;
   if (/^[.\u2026…\-—\s]+$/.test(t)) return true;
   if (/^UBND\s*[.\u2026…]{2,}$/i.test(t)) return true;
-  if (/\.{2,}/.test(t) && (t.match(/\./g) || []).length >= 2) return true;
+  // Phần chưa điền: …… hoặc .. (vd. «Đất ở ……», «Quyết định số ……»)
+  if (/[\u2026…]/.test(t) || /\.{2,}/.test(t)) return true;
   if (DEFAULT_PROJECT_LEGAL_PLACEHOLDER_RE.test(t)) return true;
   if (defaultProjectLegal().some(d => d.text === t)) return true;
   return false;
@@ -915,7 +1053,6 @@ function collectMissingFieldKeys() {
     ['f_title', 'subtitle'],
     ['f_document_no', 'document_no'],
     ['f_bid_step', 'bid_step'],
-    ['f_payment_terms', 'payment_terms'],
     ['f_land_use_purpose', 'land_use_purpose'],
     ['f_land_delivery_form', 'land_delivery_form'],
     ['f_land_use_term', 'land_use_term'],
@@ -925,6 +1062,8 @@ function collectMissingFieldKeys() {
     if (el && isPlaceholderText(el.value)) add(key);
   });
   if (isPlaceholderText(document.getElementById('f_signed_at')?.value)) add('signed_at');
+  const payDays = parseInt(document.getElementById('f_payment_days')?.value || '0', 10);
+  if (!payDays || payDays < 1) add('payment_terms');
 
   Object.keys(OVERRIDE_LABELS).forEach(k => {
     if (OPTIONAL_OVERRIDE_KEYS.has(k)) return;
@@ -983,7 +1122,7 @@ function resolveDomForMissingKey(key) {
     document_no: 'f_document_no',
     signed_at: 'f_signed_at_picker',
     bid_step: 'f_bid_step',
-    payment_terms: 'f_payment_terms',
+    payment_terms: 'f_payment_days',
     land_use_purpose: 'f_land_use_purpose',
     land_delivery_form: 'f_land_delivery_form',
     land_use_term: 'f_land_use_term',
@@ -1289,6 +1428,7 @@ document.getElementById('btnReopen')?.addEventListener('click', async (e) => {
 
 initLotsPanel();
 initSignedAtPicker();
+initPaymentTermsDays();
 initWardPicker();
 initLegal();
 reindexLegalFields();
