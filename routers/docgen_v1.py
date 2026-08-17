@@ -33,6 +33,7 @@ from utils.docgen_contract_render import (
     download_filename,
     html_to_pdf_bytes,
     merge_fields_for_render,
+    merge_ctx_values_for_render,
     render_contract_html,
 )
 from utils.forms_catalog.catalog import get_form_item, get_phase, list_config_items
@@ -382,6 +383,8 @@ async def _render_contract(
         ctx,
         fields_override if fields_override is not None else inst.get("fields"),
     )
+    ov = overrides_override if overrides_override is not None else (inst.get("overrides") or {})
+    ctx = merge_ctx_values_for_render(ctx, fields, ov)
     html = await render_contract_html(
         request,
         template_path=tpl,

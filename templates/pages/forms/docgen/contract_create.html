@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "pages/forms/_components.html" import forms_styles, forms_page_header %}
+{% from "pages/forms/_components.html" import forms_styles, forms_page_header, forms_division_picker, forms_division_picker_modal, forms_division_picker_script %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
 {{ forms_styles() }}
@@ -37,18 +37,9 @@
         </select>
       </div>
       <div class="dg-field">
-        <label>Tỉnh / Thành</label>
-        <select id="provinceSelect">
-          <option value="">— Chọn tỉnh —</option>
-          {% for p in provinces %}<option value="{{ p.code }}">{{ p.name }}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="dg-field">
-        <label>Xã / Phường</label>
-        <select name="ward_code" id="wardSelect">
-          <option value="">— Không chọn / nhập sau —</option>
-        </select>
-        <p style="font-size:11px;color:#64748b;margin:6px 0 0">Gắn xã giúp hiển thị tên địa phương. Nếu chưa có cấu hình xã, hợp đồng vẫn tạo được — thông tin Bên A nhập trong editor.</p>
+        <label>Tỉnh / Thành &amp; Xã / Phường</label>
+        {{ forms_division_picker('contractCreateDivPicker', optional_ward=true) }}
+        <p style="font-size:11px;color:#64748b;margin:8px 0 0">Bấm <strong>Tìm</strong> để gõ tên tỉnh hoặc xã (giống đăng ký tham gia đấu giá). Gắn xã giúp tự điền UBND và căn cứ pháp lý.</p>
       </div>
       <div style="display:flex;gap:10px;margin-top:8px">
         <button type="submit" class="dg-btn dg-btn-primary">Tạo / mở hợp đồng <i class="ri-arrow-right-line"></i></button>
@@ -57,23 +48,13 @@
     </form>
   </div>
 </div>
+{{ forms_division_picker_modal() }}
+{{ forms_division_picker_script() }}
 <script>
-const provinceSelect = document.getElementById('provinceSelect');
-const wardSelect = document.getElementById('wardSelect');
-if (provinceSelect && wardSelect) {
-  provinceSelect.addEventListener('change', async () => {
-    wardSelect.innerHTML = '<option value="">— Đang tải —</option>';
-    const pc = provinceSelect.value;
-    if (!pc) { wardSelect.innerHTML = '<option value="">— Không chọn —</option>'; return; }
-    const r = await fetch('/bieu-mau/api/communes?province_code=' + encodeURIComponent(pc));
-    const data = await r.json();
-    wardSelect.innerHTML = '<option value="">— Không chọn —</option>';
-    (data.items || []).forEach(w => {
-      const o = document.createElement('option');
-      o.value = w.code; o.textContent = w.name_with_type || w.name;
-      wardSelect.appendChild(o);
-    });
-  });
-}
+FmDivisionPicker.mount({
+  rootId: 'contractCreateDivPicker',
+  provinces: {{ provinces|tojson }},
+  wardPlaceholder: 'Không chọn / nhập sau',
+});
 </script>
 {% endblock %}

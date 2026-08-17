@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% from "pages/forms/_components.html" import forms_styles, forms_page_header %}
+{% block title %}{{ title or "Hướng dẫn Biểu mẫu" }}{% endblock %}
+{% block content %}
+{{ forms_styles() }}
+<div class="fm-page" style="max-width:820px">
+  {{ forms_page_header(
+    "Hướng dẫn sử dụng Biểu mẫu",
+    subtitle="Quy trình tạo văn bản, xem trước, chốt và xuất DOCX từ HTML.",
+    breadcrumb_items=[
+      {"label": "Biểu mẫu", "href": "/bieu-mau"},
+      {"label": "Hướng dẫn", "href": null},
+    ],
+  ) }}
+
+  <nav class="fm-guide-toc" aria-label="Mục lục hướng dẫn">
+    <h2>Câu hỏi thường gặp</h2>
+    <ol>
+      <li><a href="#q-tao-bieu-mau">Làm sao để tạo một biểu mẫu (hợp đồng)?</a></li>
+      <li><a href="#q-dien-chot">Làm sao điền thông tin, kiểm tra và chốt văn bản?</a></li>
+      <li><a href="#q-tai-html">Làm sao tải file HTML về máy?</a></li>
+      <li><a href="#q-html-sang-docx">Làm sao mở HTML bằng Office và lưu thành DOCX?</a></li>
+      <li><a href="#q-theo-du-an">Làm sao tra cứu biểu mẫu theo dự án?</a></li>
+    </ol>
+  </nav>
+
+  <section class="fm-guide-sec" id="q-tao-bieu-mau">
+    <h2>1. Làm sao để tạo một biểu mẫu (hợp đồng)?</h2>
+    <ol>
+      <li>Vào <strong>Biểu mẫu</strong> → chọn giai đoạn <strong>Trước phiên</strong> → <strong>Hợp đồng dịch vụ</strong>.</li>
+      <li>Bấm <strong>Tạo hợp đồng</strong>.</li>
+      <li>Chọn <strong>dự án</strong> (mỗi dự án chỉ một hợp đồng — nếu đã có sẽ mở bản hiện có).</li>
+      <li>Chọn <strong>Tỉnh/Thành</strong> và <strong>Xã/Phường</strong> bằng nút <strong>Tìm</strong> (gõ tên để lọc nhanh).</li>
+      <li>Bấm <strong>Tạo / mở hợp đồng</strong> để vào màn hình biên tập.</li>
+    </ol>
+    <p>Hệ thống tự điền tên UBND xã, địa điểm đấu giá, căn cứ QĐ/TB theo xã đã chọn. Bạn có thể bổ sung hoặc sửa trong editor.</p>
+  </section>
+
+  <section class="fm-guide-sec" id="q-dien-chot">
+    <h2>2. Làm sao điền thông tin, kiểm tra và chốt văn bản?</h2>
+    <ol>
+      <li>Panel trái: nhập / chỉnh thông tin hợp đồng (Bên A, Bên B, lô đất, căn cứ riêng…).</li>
+      <li>Panel phải <strong>Xem trước</strong>: bấm <strong>Check</strong> để kiểm tra ô còn thiếu (đỏ bên trái, vàng trong preview).</li>
+      <li>Bấm <strong>Lưu</strong> thường xuyên khi chỉnh sửa.</li>
+      <li>Khi đủ thông tin, trên toolbar xem trước bấm <strong>Chốt</strong> → gõ <strong>tôi xác nhận</strong> → xác nhận.</li>
+      <li>Sau chốt vẫn có thể <strong>Mở chốt</strong> (cũng cần gõ <strong>tôi xác nhận</strong>) nếu cần sửa lại.</li>
+    </ol>
+  </section>
+
+  <section class="fm-guide-sec" id="q-tai-html">
+    <h2>3. Làm sao tải file HTML về máy?</h2>
+    <ol>
+      <li>Mở hợp đồng trong editor.</li>
+      <li>Bấm <strong>Tải HTML</strong> (thanh dưới panel trái) hoặc nút <strong>HTML</strong> trên toolbar xem trước.</li>
+      <li>Trình duyệt tải file <code>.html</code> về máy — đây là bản in đúng định dạng hợp đồng.</li>
+    </ol>
+    <p>Nên <strong>chốt văn bản</strong> trước khi tải để nội dung khớp bản cuối.</p>
+  </section>
+
+  <section class="fm-guide-sec" id="q-html-sang-docx">
+    <h2>4. Làm sao mở HTML bằng Office và lưu thành DOCX?</h2>
+    <ol>
+      <li>Tải file HTML như mục 3.</li>
+      <li>Mở <strong>Microsoft Word</strong> (hoặc Word trong Microsoft 365).</li>
+      <li>Chọn <strong>File → Open → Browse</strong>, chọn file <code>.html</code> vừa tải.</li>
+      <li>Word hiển thị nội dung hợp đồng — kiểm tra lại bố cục, font Times New Roman 14pt nếu cần.</li>
+      <li>Chọn <strong>File → Save As</strong> (Lưu thành) → định dạng <strong>Word Document (*.docx)</strong>.</li>
+      <li>Đặt tên file và lưu.</li>
+    </ol>
+    <p>Lưu ý: Một số chi tiết CSS phức tạp có thể lệch nhẹ sau khi Word chuyển đổi — nên rà soát trang nền, bảng lô đất và khối chữ ký trước khi in.</p>
+  </section>
+
+  <section class="fm-guide-sec" id="q-theo-du-an">
+    <h2>5. Làm sao tra cứu biểu mẫu theo dự án?</h2>
+    <ol>
+      <li>Từ trang <strong>Biểu mẫu</strong>, mục <strong>Theo dự án</strong> → <strong>Các biểu mẫu theo dự án</strong>.</li>
+      <li>Chọn dự án trong dropdown → bấm <strong>Xem</strong>.</li>
+      <li>Danh sách gom theo <strong>Trước / Trong / Sau phiên</strong>; bấm <strong>Mở</strong> để vào từng văn bản.</li>
+    </ol>
+  </section>
+
+  <p style="margin-top:8px"><a href="/bieu-mau" class="fm-guide-btn"><i class="ri-arrow-left-line"></i> Quay lại Biểu mẫu</a></p>
+</div>
+{% endblock %}

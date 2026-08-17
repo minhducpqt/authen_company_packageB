@@ -98,7 +98,16 @@
 {% set signed_place = contract.signed_place or v.signing_place or v.auction_venue or '……' %}
 {% set copies = contract.copies or 6 %}
 
-{% set pa_name = v.party_a_name or defs.party_a_name or 'UBND ……' %}
+{% set ward = ctx.ward if ctx else none %}
+{% set wn = ward.name if ward and ward.name else '' %}
+{% if wn and (wn.lower().startswith('xã ') or wn.lower().startswith('phường ') or wn.lower().startswith('thị trấn ')) %}
+  {% set ward_ubnd_fallback = 'UBND ' ~ wn %}
+{% elif wn %}
+  {% set ward_ubnd_fallback = 'UBND xã ' ~ wn %}
+{% else %}
+  {% set ward_ubnd_fallback = 'UBND ……' %}
+{% endif %}
+{% set pa_name = v.party_a_name or defs.party_a_name or ward_ubnd_fallback %}
 {% set pa_addr = v.party_a_address or defs.party_a_address or '……' %}
 {% set pa_tax = v.party_a_tax_code or defs.party_a_tax_code or '……' %}
 {% set pa_treasury = v.party_a_treasury_account or defs.party_a_treasury_account or '……' %}
@@ -111,8 +120,9 @@
 {% set pb_addr = v.party_b_address or co.address or '……' %}
 {% set pb_tax = v.party_b_tax_code or co.tax_code or '……' %}
 {% set pb_phone = v.party_b_phone or co.phone or '' %}
-{% set pb_rep = v.party_b_rep_name or contract.party_b_rep_name or '……' %}
-{% set pb_title = v.party_b_rep_title or contract.party_b_rep_title or '……' %}
+{% set co_ex = co.extras if co and co.extras is mapping else {} %}
+{% set pb_rep = v.party_b_rep_name or defs.party_b_rep_name or contract.party_b_rep_name or co.legal_representative_name or co_ex.legal_representative_name or co_ex.legal_representative or '……' %}
+{% set pb_title = v.party_b_rep_title or defs.party_b_rep_title or contract.party_b_rep_title or co.legal_representative_title or co_ex.legal_representative_title or '……' %}
 {% set pb_auth = contract.party_b_authorization or v.party_b_authorization or '' %}
 
 {% set total_area = namespace(v=0) %}
@@ -172,9 +182,9 @@ Người đại diện: {{ ce_slot('party_b_rep', pb_rep) }} &nbsp;&nbsp; Chức
   c) Hiện trạng: {{ ce_slot('land_status', contract.land_status or proj.description or '……') }}<br>
   - Tổng giá khởi điểm: {{ fmt0(total_start.v) if total_start.v else '……' }} đồng{% if contract.total_starting_price_words %} (Bằng chữ: {{ contract.total_starting_price_words }}){% endif %}.</p>
   <p><strong>2. Mục đích, hình thức giao đất, thời hạn sử dụng đất:</strong><br>
-  - Mục đích sử dụng đất: {{ contract.land_use_purpose or 'Đất ở ……' }}<br>
-  - Hình thức giao đất: {{ contract.land_delivery_form or 'Nhà nước giao đất có thu tiền sử dụng đất' }}<br>
-  - Thời hạn sử dụng đất: {{ contract.land_use_term or 'Lâu dài' }}.</p>
+  - Mục đích sử dụng đất: {{ ce_slot('land_use_purpose', contract.land_use_purpose or 'Đất ở ……') }}<br>
+  - Hình thức giao đất: {{ ce_slot('land_delivery_form', contract.land_delivery_form or 'Nhà nước giao đất có thu tiền sử dụng đất.') }}<br>
+  - Thời hạn sử dụng đất: {{ ce_slot('land_use_term', contract.land_use_term or 'Lâu dài') }}.</p>
   <p><strong>3. Hồ sơ pháp lý của tài sản:</strong> {{ ce_slot('legal_dossier_ref', contract.legal_dossier_ref or 'Quyết định số ……') }}</p>
 </div>
 

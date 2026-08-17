@@ -19,6 +19,32 @@ def _slug(s: str) -> str:
     return s.strip("-") or "hop-dong"
 
 
+_LAND_ARTICLE_DEFAULTS = {
+    "land_use_purpose": "Đất ở ……",
+    "land_delivery_form": "Nhà nước giao đất có thu tiền sử dụng đất.",
+    "land_use_term": "Lâu dài",
+    "legal_dossier_ref": "Quyết định số ……",
+}
+
+
+def _company_rep_from_ctx(ctx: Dict[str, Any]) -> tuple[str, str]:
+    defs = ctx.get("defaults") or {}
+    co = ctx.get("company") or {}
+    co_ex = co.get("extras") if isinstance(co.get("extras"), dict) else {}
+    rep = (
+        (defs.get("party_b_rep_name") or "").strip()
+        or (co.get("legal_representative_name") or "").strip()
+        or (co_ex.get("legal_representative_name") or "").strip()
+        or (co_ex.get("legal_representative") or "").strip()
+    )
+    title = (
+        (defs.get("party_b_rep_title") or "").strip()
+        or (co.get("legal_representative_title") or "").strip()
+        or (co_ex.get("legal_representative_title") or "").strip()
+    )
+    return rep, title
+
+
 def merge_fields_for_render(
     inst: Dict[str, Any],
     ctx: Dict[str, Any],
@@ -33,12 +59,48 @@ def merge_fields_for_render(
         contract["document_no"] = inst["document_no"]
     if inst.get("title") and not contract.get("subtitle"):
         contract["subtitle"] = inst["title"]
-    ctx = dict(ctx)
-    ctx.setdefault("values", {})
+    rep, title = _company_rep_from_ctx(ctx)
+    if rep and not (contract.get("party_b_rep_name") or "").strip():
+        contract["party_b_rep_name"] = rep
+    if title and not (contract.get("party_b_rep_title") or "").strip():
+        contract["party_b_rep_title"] = title
+    for key, default in _LAND_ARTICLE_DEFAULTS.items():
+        if not (contract.get(key) or "").strip():
+            contract[key] = default
     doc_no = contract.get("document_no") or inst.get("document_no")
     if doc_no:
+        ctx = dict(ctx)
+        ctx.setdefault("values", {})
         ctx["values"]["document_no"] = doc_no
     return fields
+
+
+def merge_ctx_values_for_render(
+    ctx: Dict[str, Any],
+    fields: Dict[str, Any],
+    overrides: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """Merge defaults + contract + overrides thành ctx.values phẳng cho template."""
+    ctx = dict(ctx)
+    values = dict(ctx.get("defaults") or {})
+    rep, title = _company_rep_from_ctx(ctx)
+    if rep:
+        values.setdefault("party_b_rep_name", rep)
+    if title:
+        values.setdefault("party_b_rep_title", title)
+    contract = (fields or {}).get("contract") or {}
+    if isinstance(contract, dict):
+        for key, val in contract.items():
+            if val is not None and str(val).strip():
+                values[key] = val
+    if overrides:
+        for key, val in overrides.items():
+            if val is not None and str(val).strip():
+                values[key] = val
+    ctx["values"] = values
+    if overrides is not None:
+        ctx["overrides"] = overrides
+    return ctx
 
 
 def apply_lot_table(fields: Dict[str, Any], lots: list) -> tuple[list, bool]:

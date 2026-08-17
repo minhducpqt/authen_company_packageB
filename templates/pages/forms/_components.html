@@ -159,3 +159,41 @@
 {% macro forms_dialog_script() %}
 <script src="/static/js/forms_dialog.js"></script>
 {% endmacro %}
+
+{% macro forms_division_picker_modal() %}
+<div id="fmDivPickModal" class="fm-div-pick-modal" aria-hidden="true" role="dialog" aria-modal="true">
+  <div class="fm-div-pick-modal-backdrop" data-fm-div-pick-backdrop></div>
+  <div class="fm-div-pick-modal-card">
+    <div class="fm-div-pick-modal-head">
+      <div class="fm-div-pick-modal-title" data-fm-div-pick-title>Chọn</div>
+      <button type="button" class="fm-div-pick-modal-close" data-fm-div-pick-close>Đóng</button>
+    </div>
+    <div class="fm-div-pick-search-wrap">
+      <input type="search" class="fm-div-pick-search" data-fm-div-pick-search
+             placeholder="Gõ để tìm nhanh (không dấu cũng được)..." autocomplete="off" />
+    </div>
+    <div class="fm-div-pick-list" data-fm-div-pick-list></div>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro forms_division_picker(root_id, ward_input_name='ward_code', optional_ward=false) %}
+<div class="fm-div-picker" id="{{ root_id }}">
+  <div class="fm-div-picker-row">
+    <button type="button" class="fm-div-pick-btn" data-role="province-btn" aria-label="Chọn Tỉnh/Thành">
+      <span class="t is-placeholder" data-role="province-text">Chọn Tỉnh/Thành</span>
+      <span class="tag">Tìm</span>
+    </button>
+    <button type="button" class="fm-div-pick-btn" data-role="ward-btn" aria-label="Chọn Xã/Phường" disabled>
+      <span class="t is-placeholder" data-role="ward-text">{% if optional_ward %}Không chọn / nhập sau{% else %}Chọn Xã/Phường{% endif %}</span>
+      <span class="tag">Tìm</span>
+    </button>
+  </div>
+  <input type="hidden" data-role="province-code" value="" />
+  <input type="hidden" data-role="ward-code" name="{{ ward_input_name }}" value="" />
+</div>
+{% endmacro %}
+
+{% macro forms_division_picker_script() %}
+<script src="/static/js/forms_division_picker.js"></script>
+{% endmacro %}

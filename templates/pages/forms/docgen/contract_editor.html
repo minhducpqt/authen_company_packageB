@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "pages/forms/_components.html" import forms_styles, forms_page_header, forms_status_badge, forms_dialog_shell, forms_dialog_script %}
+{% from "pages/forms/_components.html" import forms_styles, forms_page_header, forms_status_badge, forms_dialog_shell, forms_dialog_script, forms_division_picker, forms_division_picker_modal, forms_division_picker_script %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
 {{ forms_styles() }}
@@ -94,16 +94,9 @@
           <div id="currentWardDisplay" class="ce-readonly-val">—</div>
         </div>
         <div class="ce-field">
-          <label>Tỉnh / Thành</label>
-          <select id="wardProvince">
-            <option value="">— Chọn tỉnh —</option>
-            {% for p in provinces %}<option value="{{ p.code }}">{{ p.name }}</option>{% endfor %}
-          </select>
-        </div>
-        <div class="ce-field">
-          <label>Đổi sang xã / phường</label>
-          <select id="wardSelect"><option value="">— Chọn xã —</option></select>
-          <div class="ce-hint">Đổi xã sẽ <strong>reset</strong> thông tin Bên A và địa điểm theo cấu hình xã mới (mất override đã nhập).</div>
+          <label>Đổi sang tỉnh / xã khác</label>
+          {{ forms_division_picker('contractEditorDivPicker') }}
+          <div class="ce-hint">Bấm <strong>Tìm</strong> để gõ tên tỉnh hoặc xã. Đổi xã sẽ <strong>reset</strong> thông tin Bên A và địa điểm theo xã mới.</div>
         </div>
         <div class="ce-field">
           <button type="button" class="ce-btn" id="btnApplyWard"><i class="ri-map-pin-line"></i> Áp dụng xã mới</button>
@@ -161,6 +154,25 @@
           <div class="ce-hint">Theo tổng giá khởi điểm dự án và khung QĐ 1311/QĐ-BTP (22/4/2025): cơ sở theo bậc + 1% phần chênh lệch. (Chưa bao gồm thuế VAT).</div>
         </div>
         <div class="ce-field"><label>Điều kiện thanh toán</label><textarea id="f_payment_terms" data-ce-field="payment_terms" rows="2" {% if is_final %}readonly{% endif %} placeholder="Trong 20 ngày kể từ khi nhận kết quả đấu giá…"></textarea></div>
+
+        <div class="ce-sec">Điều 1 — Mục đích &amp; hồ sơ pháp lý</div>
+        <div class="ce-field">
+          <label>Mục đích sử dụng đất</label>
+          <input id="f_land_use_purpose" data-ce-field="land_use_purpose" {% if is_final %}readonly{% endif %} placeholder="Đất ở ……">
+        </div>
+        <div class="ce-field">
+          <label>Hình thức giao đất</label>
+          <input id="f_land_delivery_form" data-ce-field="land_delivery_form" {% if is_final %}readonly{% endif %} placeholder="Nhà nước giao đất có thu tiền sử dụng đất.">
+        </div>
+        <div class="ce-field">
+          <label>Thời hạn sử dụng đất</label>
+          <input id="f_land_use_term" data-ce-field="land_use_term" {% if is_final %}readonly{% endif %} placeholder="Lâu dài">
+        </div>
+        <div class="ce-field">
+          <label>Hồ sơ pháp lý của tài sản</label>
+          <input id="f_legal_dossier_ref" data-ce-field="legal_dossier_ref" {% if is_final %}readonly{% endif %} placeholder="Quyết định số ……">
+          <div class="ce-hint">VD: Quyết định số 123/QĐ-UBND ngày …/…/2026</div>
+        </div>
 
         <div class="ce-collapse" id="lotsCollapse">
           <button type="button" class="ce-collapse-hd" id="lotsCollapseBtn" aria-expanded="false">
@@ -225,6 +237,8 @@
 </div>
 {{ forms_dialog_shell() }}
 {{ forms_dialog_script() }}
+{{ forms_division_picker_modal() }}
+{{ forms_division_picker_script() }}
 <script>
 const PREVIEW_URL = {{ preview_url|tojson }};
 const DOWNLOAD_HTML_URL = {{ download_html_url|tojson }};
@@ -276,6 +290,17 @@ const FIELD_LABELS = {
   payment_terms: 'Điều kiện thanh toán',
   party_b_rep: 'Người đại diện Bên B',
   party_b_title: 'Chức vụ Bên B',
+  land_use_purpose: 'Mục đích sử dụng đất',
+  land_delivery_form: 'Hình thức giao đất',
+  land_use_term: 'Thời hạn sử dụng đất',
+  legal_dossier_ref: 'Hồ sơ pháp lý của tài sản',
+};
+
+const LAND_ARTICLE_DEFAULTS = {
+  land_use_purpose: 'Đất ở ……',
+  land_delivery_form: 'Nhà nước giao đất có thu tiền sử dụng đất.',
+  land_use_term: 'Lâu dài',
+  legal_dossier_ref: 'Quyết định số ……',
 };
 
 function fmt0(v) {
@@ -332,7 +357,9 @@ function buildOverrideField(key) {
   const defVal = (CTX.defaults || {})[key] || '';
   const ovVal = (INIT_OVERRIDES || {})[key];
   const mustManual = LOCALITY_OVERRIDE_KEYS.has(key) && !HAS_LOCALITY;
-  const isCustom = mustManual || (ovVal !== undefined && ovVal !== null && String(ovVal).length > 0);
+  const hasOverride = ovVal !== undefined && ovVal !== null && String(ovVal).length > 0;
+  const isCustom = mustManual ? hasOverride : hasOverride;
+  const displayVal = hasOverride ? String(ovVal) : String(defVal || '');
   const ph = PARTY_A_PLACEHOLDERS[key] || (defVal || '');
   const modeHtml = mustManual ? '' : `
     <select class="ce-mode" data-key="${key}" ${IS_FINAL ? 'disabled' : ''}>
@@ -340,14 +367,16 @@ function buildOverrideField(key) {
       <option value="custom"${isCustom ? ' selected' : ''}>Tự nhập</option>
     </select>`;
   const hintHtml = mustManual
-    ? '<div class="ce-hint">Chưa có cấu hình — nhập cho riêng hợp đồng này</div>'
+    ? (defVal
+      ? `<div class="ce-hint">Đã điền theo xã đã chọn: ${defVal} — có thể sửa</div>`
+      : '<div class="ce-hint">Chưa có cấu hình — nhập cho riêng hợp đồng này</div>')
     : `<div class="ce-hint">Mặc định: ${defVal || '—'}</div>`;
   host.innerHTML = `
     <label>${label}</label>
     ${modeHtml}
     <input class="ce-val" data-key="${key}" data-ce-field="${key}" data-must-manual="${mustManual ? '1' : '0'}"
-           value="${isCustom ? String(ovVal ?? '').replace(/"/g, '&quot;') : (mustManual ? String(ovVal ?? '').replace(/"/g, '&quot;') : String(defVal).replace(/"/g, '&quot;'))}"
-           ${IS_FINAL || (!isCustom && !mustManual) ? 'readonly' : ''}
+           value="${displayVal.replace(/"/g, '&quot;')}"
+           ${IS_FINAL || (!mustManual && !isCustom) ? 'readonly' : ''}
            placeholder="${String(ph).replace(/"/g, '&quot;')}">
     ${hintHtml}${repeatHintHtml(key)}`;
   const mode = host.querySelector('.ce-mode');
@@ -363,53 +392,51 @@ function buildOverrideField(key) {
 Object.keys(OVERRIDE_LABELS).forEach(buildOverrideField);
 showNoLocalityBanner();
 
-async function loadWardCommunes(provinceCode, selectedWard) {
-  const wardSelect = document.getElementById('wardSelect');
-  if (!wardSelect) return;
-  wardSelect.innerHTML = '<option value="">— Đang tải —</option>';
-  if (!provinceCode) {
-    wardSelect.innerHTML = '<option value="">— Chọn xã —</option>';
-    return;
-  }
-  const r = await fetch('/bieu-mau/api/communes?province_code=' + encodeURIComponent(provinceCode));
-  const data = await r.json();
-  wardSelect.innerHTML = '<option value="">— Chọn xã —</option>';
-  (data.items || []).forEach(w => {
-    const o = document.createElement('option');
-    o.value = w.code;
-    o.textContent = w.name_with_type || w.name;
-    if (selectedWard && String(w.code) === String(selectedWard)) o.selected = true;
-    wardSelect.appendChild(o);
-  });
-}
+let wardPickerInstance = null;
 
 function initWardPicker() {
   if (IS_FINAL) return;
   const display = document.getElementById('currentWardDisplay');
-  const provinceEl = document.getElementById('wardProvince');
-  const wardSelect = document.getElementById('wardSelect');
   const btn = document.getElementById('btnApplyWard');
-  if (!display || !provinceEl || !wardSelect || !btn) return;
+  if (!display || !btn) return;
 
   const w = CTX.ward || {};
-  display.textContent = w.name
-    ? `${w.name}${w.province_name ? ', ' + w.province_name : ''}`
+  const wardLabel = (w.name_with_type || w.name || '').trim();
+  display.textContent = wardLabel
+    ? `${wardLabel}${w.province_name ? ', ' + w.province_name : ''}`
     : '— chưa chọn —';
 
-  if (w.province_codename && Array.isArray(PROVINCES)) {
-    const prov = PROVINCES.find(p => p.codename === w.province_codename);
-    if (prov) {
-      provinceEl.value = String(prov.code);
-      loadWardCommunes(prov.code, INIT_WARD_CODE);
+  let initProvCode = '';
+  if (Array.isArray(PROVINCES)) {
+    if (w.province_code != null && w.province_code !== '') {
+      initProvCode = String(w.province_code);
+    }
+    if (!initProvCode && w.province_codename) {
+      const prov = PROVINCES.find(p => p.codename === w.province_codename);
+      if (prov) initProvCode = String(prov.code);
+    }
+    if (!initProvCode && w.province_name) {
+      const pn = String(w.province_name).trim();
+      const prov = PROVINCES.find(p =>
+        (p.name_with_type || p.name || '') === pn || (p.name || '') === pn
+      );
+      if (prov) initProvCode = String(prov.code);
     }
   }
 
-  provinceEl.addEventListener('change', () => {
-    loadWardCommunes(provinceEl.value, null);
+  const initWardCode = INIT_WARD_CODE ? String(INIT_WARD_CODE) : '';
+  const initWardName = (w.name_with_type || w.name || '').trim();
+
+  wardPickerInstance = FmDivisionPicker.mount({
+    rootId: 'contractEditorDivPicker',
+    provinces: PROVINCES,
+    initialProvinceCode: initProvCode,
+    initialWardCode: initWardCode,
+    initialWardName: initWardName,
   });
 
   btn.addEventListener('click', async () => {
-    const wc = wardSelect.value;
+    const wc = wardPickerInstance?.getWardCode() || '';
     if (!wc) {
       await FmDialog.alert({ title: 'Chưa chọn xã', message: 'Vui lòng chọn xã / phường mới.', variant: 'info' });
       return;
@@ -543,17 +570,44 @@ function initLotsPanel() {
   renderLots();
 }
 
-const DEFAULT_PROJECT_LEGAL = [
-  { text: 'Quyết định số ..../QĐ-UBND ngày .......' },
-  { text: 'Thông báo số ...../TB-UBND ngày ..../..../2026 của UBND xã ...... về việc lựa chọn tổ chức hành nghề đấu giá tài sản' },
-  { text: 'Quyết định số .../QĐ-UBND ngày ..../.../2026 của UBND xã ...... về việc phê duyệt kết quả lựa chọn tổ chức hành nghề đấu giá tài sản' },
-];
+const DEFAULT_PROJECT_LEGAL_PLACEHOLDER_RE = /UBND\s+(xã|phường|thị trấn)\s*[.\u2026…]{2,}/i;
+
+function wardCommuneLabel(ward) {
+  const name = (ward?.name || '').trim();
+  if (!name) return 'xã ……';
+  const lower = name.toLowerCase();
+  if (lower.startsWith('xã ') || lower.startsWith('phường ') || lower.startsWith('thị trấn ')) return name;
+  return 'xã ' + name;
+}
+
+function ubndWardName(ward) {
+  return 'UBND ' + wardCommuneLabel(ward);
+}
+
+function defaultProjectLegal() {
+  const ubnd = ubndWardName(CTX.ward);
+  return [
+    { text: 'Quyết định số ..../QĐ-UBND ngày .......' },
+    { text: `Thông báo số ...../TB-UBND ngày ..../..../2026 của ${ubnd} về việc lựa chọn tổ chức hành nghề đấu giá tài sản` },
+    { text: `Quyết định số .../QĐ-UBND ngày ..../.../2026 của ${ubnd} về việc phê duyệt kết quả lựa chọn tổ chức hành nghề đấu giá tài sản` },
+  ];
+}
+
+function normalizeLegalRefs(refs) {
+  const defaults = defaultProjectLegal();
+  if (!refs.length) return defaults;
+  return refs.map((r, i) => {
+    const text = (r?.text || '').trim();
+    if (DEFAULT_PROJECT_LEGAL_PLACEHOLDER_RE.test(text)) return defaults[i] || r;
+    return r;
+  });
+}
 
 function initLegal() {
-  const refs = (INIT_FIELDS.legal_refs || []);
+  const refs = normalizeLegalRefs(INIT_FIELDS.legal_refs || []);
   const host = document.getElementById('legalRefsHost');
   host.innerHTML = '';
-  const rows = refs.length ? refs : (!IS_FINAL ? DEFAULT_PROJECT_LEGAL : []);
+  const rows = refs.length ? refs : (!IS_FINAL ? defaultProjectLegal() : []);
   rows.forEach(r => addLegalRow(r));
 }
 
@@ -614,6 +668,7 @@ function collectFields() {
   });
   const titleVal = document.getElementById('f_title')?.value?.trim() || '';
   const prev = INIT_FIELDS || {};
+  const { rep: pbRep, title: pbTitle } = companyRepDefaults();
   return {
     contract: {
       ...(prev.contract || {}),
@@ -623,7 +678,13 @@ function collectFields() {
       signed_place: document.querySelector('.ce-field[data-ov="signing_place"] .ce-val')?.value || '',
       copies: parseInt(document.getElementById('f_copies')?.value || '6', 10) || 6,
       party_b_authorization: document.getElementById('f_pb_auth')?.value || '',
+      party_b_rep_name: pbRep,
+      party_b_rep_title: pbTitle,
       bid_step: document.getElementById('f_bid_step')?.value || '',
+      land_use_purpose: document.getElementById('f_land_use_purpose')?.value?.trim() || LAND_ARTICLE_DEFAULTS.land_use_purpose,
+      land_delivery_form: document.getElementById('f_land_delivery_form')?.value?.trim() || LAND_ARTICLE_DEFAULTS.land_delivery_form,
+      land_use_term: document.getElementById('f_land_use_term')?.value?.trim() || LAND_ARTICLE_DEFAULTS.land_use_term,
+      legal_dossier_ref: document.getElementById('f_legal_dossier_ref')?.value?.trim() || LAND_ARTICLE_DEFAULTS.legal_dossier_ref,
     },
     auction: {
       ...(prev.auction || {}),
@@ -657,12 +718,30 @@ function renderServiceFeeDisplay() {
   el.textContent = 'Chưa tính được — kiểm tra giá khởi điểm các lô trong dự án.';
 }
 
+function companyRepDefaults() {
+  const defs = CTX.defaults || {};
+  const co = CTX.company || {};
+  const coEx = co.extras || {};
+  const rep = (
+    defs.party_b_rep_name
+    || co.legal_representative_name
+    || coEx.legal_representative_name
+    || coEx.legal_representative
+    || ''
+  ).trim();
+  const title = (
+    defs.party_b_rep_title
+    || co.legal_representative_title
+    || coEx.legal_representative_title
+    || ''
+  ).trim();
+  return { rep, title };
+}
+
 function renderCompanyRepDisplay() {
   const repEl = document.getElementById('pbRepDisplay');
   const titleEl = document.getElementById('pbTitleDisplay');
-  const defs = CTX.defaults || {};
-  const rep = (defs.party_b_rep_name || '').trim();
-  const title = (defs.party_b_rep_title || '').trim();
+  const { rep, title } = companyRepDefaults();
   if (repEl) repEl.textContent = rep || '— (chưa cấu hình tại 6.1 Thông tin công ty)';
   if (titleEl) titleEl.textContent = title || '—';
 }
@@ -681,6 +760,10 @@ function hydrateFromFields() {
   document.getElementById('f_auction_days').value = a.deadline_days || 30;
   document.getElementById('f_bid_step').value = c.bid_step || '';
   document.getElementById('f_payment_terms').value = f.payment_terms || '';
+  document.getElementById('f_land_use_purpose').value = c.land_use_purpose || LAND_ARTICLE_DEFAULTS.land_use_purpose;
+  document.getElementById('f_land_delivery_form').value = c.land_delivery_form || LAND_ARTICLE_DEFAULTS.land_delivery_form;
+  document.getElementById('f_land_use_term').value = c.land_use_term || LAND_ARTICLE_DEFAULTS.land_use_term;
+  document.getElementById('f_legal_dossier_ref').value = c.legal_dossier_ref || LAND_ARTICLE_DEFAULTS.legal_dossier_ref;
 }
 
 document.getElementById('btnAddLegal')?.addEventListener('click', () => {
@@ -697,8 +780,10 @@ function isPlaceholderText(s) {
   if (!t) return true;
   if (t === '—' || t === '–' || t === '-') return true;
   if (/^[.\u2026…\-—\s]+$/.test(t)) return true;
+  if (/^UBND\s*[.\u2026…]{2,}$/i.test(t)) return true;
   if (/\.{2,}/.test(t) && (t.match(/\./g) || []).length >= 2) return true;
-  if (DEFAULT_PROJECT_LEGAL.some(d => d.text === t)) return true;
+  if (DEFAULT_PROJECT_LEGAL_PLACEHOLDER_RE.test(t)) return true;
+  if (defaultProjectLegal().some(d => d.text === t)) return true;
   return false;
 }
 
@@ -728,6 +813,10 @@ function collectMissingFieldKeys() {
     ['f_signed_at', 'signed_at'],
     ['f_bid_step', 'bid_step'],
     ['f_payment_terms', 'payment_terms'],
+    ['f_land_use_purpose', 'land_use_purpose'],
+    ['f_land_delivery_form', 'land_delivery_form'],
+    ['f_land_use_term', 'land_use_term'],
+    ['f_legal_dossier_ref', 'legal_dossier_ref'],
   ].forEach(([id, key]) => {
     const el = document.getElementById(id);
     if (el && isPlaceholderText(el.value)) add(key);
@@ -738,8 +827,8 @@ function collectMissingFieldKeys() {
     if (isOverrideMissing(k)) add(k);
   });
 
-  if (isPlaceholderText((CTX.defaults || {}).party_b_rep_name)) add('party_b_rep');
-  if (isPlaceholderText((CTX.defaults || {}).party_b_rep_title)) add('party_b_title');
+  if (isPlaceholderText(companyRepDefaults().rep)) add('party_b_rep');
+  if (isPlaceholderText(companyRepDefaults().title)) add('party_b_title');
 
   document.querySelectorAll('[data-legal-row]').forEach((row, i) => {
     const text = row.querySelector('.lr-text')?.value?.trim() || '';
@@ -785,6 +874,10 @@ function resolveDomForMissingKey(key) {
     signed_at: 'f_signed_at',
     bid_step: 'f_bid_step',
     payment_terms: 'f_payment_terms',
+    land_use_purpose: 'f_land_use_purpose',
+    land_delivery_form: 'f_land_delivery_form',
+    land_use_term: 'f_land_use_term',
+    legal_dossier_ref: 'f_legal_dossier_ref',
     party_b_rep: 'pbRepDisplay',
     party_b_title: 'pbTitleDisplay',
   };

@@ -1,5 +1,14 @@
 {# Căn cứ pháp lý cố định theo mẫu M3 + căn cứ riêng dự án (legal_refs) #}
 {% from 'pages/documents/default/_ce_slot.html' import ce_slot %}
+{% set ward = ctx.ward if ctx else none %}
+{% set wn = ward.name if ward and ward.name else '' %}
+{% if wn and (wn.lower().startswith('xã ') or wn.lower().startswith('phường ') or wn.lower().startswith('thị trấn ')) %}
+  {% set ward_ubnd = 'UBND ' ~ wn %}
+{% elif wn %}
+  {% set ward_ubnd = 'UBND xã ' ~ wn %}
+{% else %}
+  {% set ward_ubnd = 'UBND xã ……' %}
+{% endif %}
 <div class="legal legal-static">
   <p>Căn cứ Luật Tổ chức Chính quyền địa phương ngày 16/6/2025;</p>
   <p>Căn cứ Luật Đất đai ngày 18 tháng 01 năm 2024;</p>
@@ -16,8 +25,8 @@
     {% endfor %}
   {% else %}
     <p>Căn cứ {{ ce_slot('legal_0', 'Quyết định số ..../QĐ-UBND ngày .......') }};</p>
-    <p>Căn cứ {{ ce_slot('legal_1', 'Thông báo số ...../TB-UBND ngày ..../..../2026 của UBND xã ...... về việc lựa chọn tổ chức hành nghề đấu giá tài sản') }};</p>
-    <p>Căn cứ {{ ce_slot('legal_2', 'Quyết định số .../QĐ-UBND ngày ..../.../2026 của UBND xã ...... về việc phê duyệt kết quả lựa chọn tổ chức hành nghề đấu giá tài sản') }};</p>
+    <p>Căn cứ {{ ce_slot('legal_1', 'Thông báo số ...../TB-UBND ngày ..../..../2026 của ' ~ ward_ubnd ~ ' về việc lựa chọn tổ chức hành nghề đấu giá tài sản') }};</p>
+    <p>Căn cứ {{ ce_slot('legal_2', 'Quyết định số .../QĐ-UBND ngày ..../.../2026 của ' ~ ward_ubnd ~ ' về việc phê duyệt kết quả lựa chọn tổ chức hành nghề đấu giá tài sản') }};</p>
   {% endif %}
   <p>Căn cứ các văn bản pháp luật quy định hiện hành có liên quan;</p>
   <p>Theo chức năng, nhiệm vụ, nhu cầu của các bên.</p>

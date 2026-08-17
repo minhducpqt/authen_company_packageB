@@ -59,6 +59,17 @@ async def forms_phase_hub(request: Request):
     )
 
 
+@router.get("/huong-dan", response_class=HTMLResponse)
+async def forms_guide(request: Request):
+    return templates.TemplateResponse(
+        "pages/forms/guide.html",
+        {
+            "request": request,
+            "title": "Hướng dẫn Biểu mẫu",
+        },
+    )
+
+
 @router.get("/truoc-phien", response_class=HTMLResponse)
 async def forms_pre_session(request: Request):
     ctx = await _company_ctx(request)
