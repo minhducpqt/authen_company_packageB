@@ -180,6 +180,13 @@ async def render_contract_html(
     for_download: bool = False,
 ) -> str:
     ctx = dict(ctx)
+    pa = dict(ctx.get("payment_accounts") or {})
+    dep = pa.get("deposit")
+    if isinstance(dep, dict):
+        pa.setdefault("deposit_account", dep.get("account_number") or "")
+        pa.setdefault("deposit_bank", dep.get("bank_name") or "")
+        pa.setdefault("deposit_account_name", dep.get("account_name") or "")
+    ctx["payment_accounts"] = pa
     lots, show_map_parcel = apply_lot_table(fields, ctx.get("lots") or [])
     ctx["lots"] = lots
     if not ctx.get("service_fee") or not (ctx.get("service_fee") or {}).get("formula"):

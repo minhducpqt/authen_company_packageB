@@ -55,6 +55,20 @@
   .ce-preview-panel:fullscreen { background:#64748b; display:flex; flex-direction:column; }
   .ce-preview-panel:fullscreen .ce-preview-wrap { flex:1; min-height:0; max-height:none; }
   .ce-preview-panel:fullscreen .ce-iframe { min-height:100%; }
+
+  .ce-datetime {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  .ce-signed-preview {
+    margin-top: 8px;
+    font-size: 13px;
+    line-height: 1.45;
+  }
   .ce-left .ce-field:focus-within { background:#f8fafc; border-radius:8px; margin-left:-4px; margin-right:-4px; padding:0 4px; }
   .ce-left .legal-row:focus-within { border-color:#93c5fd; background:#f8fafc; }
   .ce-field-readonly .ce-readonly-val { padding:8px 10px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; font-size:12px; line-height:1.45; color:#334155; }
@@ -112,7 +126,18 @@
         <div class="ce-field"><label>Số hợp đồng</label><input name="document_no" id="f_document_no" data-ce-field="document_no" value="{{ instance.document_no or '' }}" {% if is_final %}readonly{% endif %} placeholder="23/2026/HĐDV/QH-KĐ"></div>
 
         <div class="ce-sec">Thông tin ký</div>
-        <div class="ce-field"><label>Ngày/giờ ký</label><input id="f_signed_at" data-ce-field="signed_at" {% if is_final %}readonly{% endif %} placeholder="10 giờ 00 phút, ngày 23 tháng 7 năm 2026"></div>
+        <div class="ce-field">
+          <label>Ngày/giờ ký</label>
+          {% if is_final %}
+          <div class="ce-readonly-val" id="f_signed_at_display">—</div>
+          <input type="hidden" id="f_signed_at" data-ce-field="signed_at">
+          {% else %}
+          <input type="datetime-local" id="f_signed_at_picker" class="ce-datetime">
+          <input type="hidden" id="f_signed_at" data-ce-field="signed_at">
+          <div id="f_signed_at_preview" class="ce-readonly-val ce-signed-preview">— chọn ngày giờ —</div>
+          <div class="ce-hint">Chọn ngày giờ — hệ thống tự tạo dòng văn bản trong HĐ</div>
+          {% endif %}
+        </div>
         <div class="ce-field" data-ov="signing_place"><label>Địa điểm ký</label></div>
         <div class="ce-field"><label>Số bản hợp đồng</label><input id="f_copies" type="number" value="6" {% if is_final %}readonly{% endif %}></div>
 
@@ -146,6 +171,13 @@
         <div class="ce-field" data-ov="dossier_reception_place"><label>Tiếp nhận hồ sơ</label></div>
         <div class="ce-field"><label>Thời hạn tổ chức (ngày)</label><input id="f_auction_days" data-ce-field="auction_days" type="number" value="30" {% if is_final %}readonly{% endif %}></div>
         <div class="ce-field"><label>Bước giá</label><input id="f_bid_step" data-ce-field="bid_step" {% if is_final %}readonly{% endif %} placeholder="100.000 đồng/m²"></div>
+
+        <div class="ce-sec">TK nhận tiền đặt trước <span class="ce-tag">Từ dự án</span></div>
+        <div class="ce-field ce-field-readonly">
+          <label>Tài khoản đặt trước (mục 3.2 HĐ)</label>
+          <div id="depositAccountDisplay" class="ce-readonly-val">—</div>
+          <div class="ce-hint">Lấy từ cấu hình TK dự án loại <strong>DEPOSIT</strong></div>
+        </div>
 
         <div class="ce-sec">Giá dịch vụ đấu giá</div>
         <div class="ce-field ce-field-readonly">
@@ -308,6 +340,76 @@ function fmt0(v) {
   const n = Number(v);
   if (!isFinite(n)) return String(v);
   return n.toLocaleString('vi-VN', { maximumFractionDigits: 0 });
+}
+
+function formatSignedAtVi(isoLocal) {
+  if (!isoLocal) return '';
+  const parts = String(isoLocal).match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if (!parts) return '';
+  const year = parseInt(parts[1], 10);
+  const month = parseInt(parts[2], 10);
+  const day = parseInt(parts[3], 10);
+  const hour = parseInt(parts[4], 10);
+  const minute = parts[5];
+  return `${hour} giờ ${minute} phút, ngày ${day} tháng ${month} năm ${year}`;
+}
+
+function updateSignedAtFromPicker() {
+  const picker = document.getElementById('f_signed_at_picker');
+  const hidden = document.getElementById('f_signed_at');
+  const preview = document.getElementById('f_signed_at_preview');
+  const iso = picker?.value || '';
+  const text = formatSignedAtVi(iso);
+  if (hidden) hidden.value = text;
+  if (preview) preview.textContent = text || '— chọn ngày giờ —';
+  schedulePreview();
+}
+
+function initSignedAtPicker() {
+  const picker = document.getElementById('f_signed_at_picker');
+  if (!picker || IS_FINAL) return;
+  picker.addEventListener('change', updateSignedAtFromPicker);
+  picker.addEventListener('input', updateSignedAtFromPicker);
+}
+
+function hydrateSignedAtFields(c) {
+  const hidden = document.getElementById('f_signed_at');
+  const picker = document.getElementById('f_signed_at_picker');
+  const preview = document.getElementById('f_signed_at_preview');
+  const display = document.getElementById('f_signed_at_display');
+  const text = c.signed_at || '';
+  const iso = c.signed_at_iso || '';
+  if (hidden) hidden.value = text;
+  if (display) display.textContent = text || '—';
+  if (picker) {
+    if (iso) picker.value = iso;
+    if (preview) preview.textContent = text || (iso ? formatSignedAtVi(iso) : '— chọn ngày giờ —');
+  }
+}
+
+function depositAccountFromCtx() {
+  const pa = CTX.payment_accounts || {};
+  const nested = pa.deposit || {};
+  return {
+    account: (pa.deposit_account || nested.account_number || '').trim(),
+    bank: (pa.deposit_bank || nested.bank_name || '').trim(),
+    name: (pa.deposit_account_name || nested.account_name || '').trim(),
+  };
+}
+
+function renderDepositAccountDisplay() {
+  const el = document.getElementById('depositAccountDisplay');
+  if (!el) return;
+  const { account, bank, name } = depositAccountFromCtx();
+  if (!account && !bank) {
+    el.textContent = '— (chưa cấu hình TK đặt cọc DEPOSIT cho dự án)';
+    return;
+  }
+  const parts = [];
+  if (name) parts.push(name);
+  if (account) parts.push('STK: ' + account);
+  if (bank) parts.push(bank);
+  el.textContent = parts.join(' · ');
 }
 
 const HAS_LOCALITY = !!CTX.has_locality_profile;
@@ -675,6 +777,7 @@ function collectFields() {
       subtitle: titleVal,
       document_no: document.getElementById('f_document_no')?.value || '',
       signed_at: document.getElementById('f_signed_at')?.value || '',
+      signed_at_iso: document.getElementById('f_signed_at_picker')?.value || '',
       signed_place: document.querySelector('.ce-field[data-ov="signing_place"] .ce-val')?.value || '',
       copies: parseInt(document.getElementById('f_copies')?.value || '6', 10) || 6,
       party_b_authorization: document.getElementById('f_pb_auth')?.value || '',
@@ -754,7 +857,8 @@ function hydrateFromFields() {
   if (titleEl) titleEl.value = c.subtitle || titleEl.value || CTX.project?.name || '';
   renderServiceFeeDisplay();
   renderCompanyRepDisplay();
-  document.getElementById('f_signed_at').value = c.signed_at || '';
+  renderDepositAccountDisplay();
+  hydrateSignedAtFields(c);
   document.getElementById('f_copies').value = c.copies || 6;
   document.getElementById('f_pb_auth').value = c.party_b_authorization || '';
   document.getElementById('f_auction_days').value = a.deadline_days || 30;
@@ -810,7 +914,6 @@ function collectMissingFieldKeys() {
   [
     ['f_title', 'subtitle'],
     ['f_document_no', 'document_no'],
-    ['f_signed_at', 'signed_at'],
     ['f_bid_step', 'bid_step'],
     ['f_payment_terms', 'payment_terms'],
     ['f_land_use_purpose', 'land_use_purpose'],
@@ -821,6 +924,7 @@ function collectMissingFieldKeys() {
     const el = document.getElementById(id);
     if (el && isPlaceholderText(el.value)) add(key);
   });
+  if (isPlaceholderText(document.getElementById('f_signed_at')?.value)) add('signed_at');
 
   Object.keys(OVERRIDE_LABELS).forEach(k => {
     if (OPTIONAL_OVERRIDE_KEYS.has(k)) return;
@@ -859,6 +963,12 @@ function missingKeyLabel(key) {
 }
 
 function resolveDomForMissingKey(key) {
+  if (key === 'signed_at') {
+    const el = document.getElementById('f_signed_at_picker')
+      || document.getElementById('f_signed_at_display')
+      || document.getElementById('f_signed_at');
+    return el?.closest('.ce-field') || el;
+  }
   if (key.startsWith('legal_')) {
     const i = parseInt(key.replace('legal_', ''), 10);
     return document.querySelectorAll('[data-legal-row]')[i] || null;
@@ -871,7 +981,7 @@ function resolveDomForMissingKey(key) {
   const idMap = {
     subtitle: 'f_title',
     document_no: 'f_document_no',
-    signed_at: 'f_signed_at',
+    signed_at: 'f_signed_at_picker',
     bid_step: 'f_bid_step',
     payment_terms: 'f_payment_terms',
     land_use_purpose: 'f_land_use_purpose',
@@ -1178,6 +1288,7 @@ document.getElementById('btnReopen')?.addEventListener('click', async (e) => {
 });
 
 initLotsPanel();
+initSignedAtPicker();
 initWardPicker();
 initLegal();
 reindexLegalFields();
