@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% from "pages/forms/_components.html" import forms_styles, forms_page_header, forms_status_badge %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{{ forms_styles() }}
+<style>
+  .pf-toolbar { display:flex; flex-wrap:wrap; align-items:flex-end; gap:14px; margin-bottom:20px; padding:16px 18px; background:#fff; border:1px solid #e2e8f0; border-radius:14px; }
+  .pf-field { flex:1; min-width:240px; }
+  .pf-field label { display:block; font-size:12px; font-weight:700; color:#475569; margin-bottom:6px; }
+  .pf-field select { width:100%; padding:10px 12px; border:1px solid #cbd5e1; border-radius:10px; font-size:14px; background:#fff; }
+  .pf-meta { font-size:13px; color:#64748b; padding-bottom:2px; }
+  .pf-group { margin-bottom:22px; }
+  .pf-group-hd { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; padding-bottom:8px; border-bottom:2px solid #e2e8f0; }
+  .pf-group-title { margin:0; font-size:15px; font-weight:700; color:#0f172a; display:flex; align-items:center; gap:8px; }
+  .pf-group-count { font-size:12px; color:#64748b; font-weight:600; }
+  .pf-table { width:100%; border-collapse:collapse; font-size:14px; background:#fff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; }
+  .pf-table th, .pf-table td { padding:11px 14px; border-bottom:1px solid #e2e8f0; text-align:left; vertical-align:middle; }
+  .pf-table th { font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:#64748b; background:#f8fafc; }
+  .pf-table tr:last-child td { border-bottom:0; }
+  .pf-empty { text-align:center; color:#94a3b8; padding:20px 14px; font-size:13px; background:#fff; border:1px dashed #e2e8f0; border-radius:12px; }
+  .pf-btn { display:inline-flex; align-items:center; gap:5px; padding:7px 12px; border-radius:9px; font-size:12px; font-weight:600; text-decoration:none; border:1px solid #cbd5e1; background:#fff; color:#334155; }
+  .pf-alert { padding:12px 14px; border-radius:10px; background:#fef2f2; color:#b91c1c; font-size:13px; margin-bottom:16px; }
+  .pf-hint { font-size:13px; color:#64748b; margin:0 0 18px; }
+</style>
+<div class="fm-page">
+  {{ forms_page_header(
+    hub.name,
+    subtitle=hub.description,
+    breadcrumb_items=[
+      {"label": "Biểu mẫu", "href": "/bieu-mau"},
+      {"label": hub.name, "href": null},
+    ],
+  ) }}
+  {% if error %}<div class="pf-alert">{{ error }}</div>{% endif %}
+
+  <form class="pf-toolbar" method="get" action="/bieu-mau/theo-du-an">
+    <div class="pf-field">
+      <label for="projectSelect">Dự án</label>
+      <select id="projectSelect" name="project_id" onchange="this.form.submit()">
+        <option value="">— Chọn dự án —</option>
+        {% for p in projects %}
+        <option value="{{ p.id }}" {% if project_id and p.id == project_id %}selected{% endif %}>{{ p.project_code }} — {{ p.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% if selected_project %}
+    <div class="pf-meta">{{ total_instances }} biểu mẫu · {{ selected_project.project_code }}</div>
+    {% endif %}
+  </form>
+
+  {% if not project_id %}
+  <p class="pf-hint">Chọn dự án để xem tất cả biểu mẫu đã tạo, nhóm theo Trước / Trong / Sau phiên.</p>
+  {% else %}
+    {% for g in groups %}
+    <section class="pf-group" aria-labelledby="pf-phase-{{ g.phase.slug }}">
+      <div class="pf-group-hd">
+        <h2 class="pf-group-title" id="pf-phase-{{ g.phase.slug }}">
+          <i class="{{ g.phase.icon }}" aria-hidden="true"></i>
+          {{ g.phase.name }}
+        </h2>
+        <span class="pf-group-count">{{ g.count }} biểu mẫu</span>
+      </div>
+      {% if g.forms %}
+      <table class="pf-table">
+        <thead>
+          <tr>
+            <th>Loại biểu mẫu</th>
+            <th>Tiêu đề</th>
+            <th>Số văn bản</th>
+            <th>Trạng thái</th>
+            <th>Cập nhật</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in g.forms %}
+          <tr>
+            <td><strong>{{ i.type_label }}</strong></td>
+            <td>{{ i.title or '—' }}</td>
+            <td>{{ i.document_no or '—' }}</td>
+            <td>{% if i.status == 'FINAL' %}{{ forms_status_badge('active') }}{% else %}<span class="fm-badge fm-badge--soon">Nháp</span>{% endif %}</td>
+            <td style="font-size:12px;color:#64748b">{{ i.updated_at[:16] if i.updated_at else '—' }}</td>
+            <td><a href="{{ i.open_href }}" class="pf-btn">Mở</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="pf-empty">Chưa có biểu mẫu {{ g.phase.name|lower }} cho dự án này.</div>
+      {% endif %}
+    </section>
+    {% endfor %}
+  {% endif %}
+</div>
+{% endblock %}

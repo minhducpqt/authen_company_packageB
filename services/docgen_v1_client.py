@@ -109,6 +109,10 @@ async def finalize_instance(token: Optional[str], instance_id: int) -> Dict[str,
     return await _req("POST", f"/api/v1/docgen/instances/{instance_id}/finalize", token)
 
 
+async def reopen_instance(token: Optional[str], instance_id: int) -> Dict[str, Any]:
+    return await _req("POST", f"/api/v1/docgen/instances/{instance_id}/reopen", token)
+
+
 async def fetch_projects(token: Optional[str]) -> List[Dict[str, Any]]:
     data = await _req("GET", "/api/v1/projects", token, params={"page": 1, "size": 200})
     if isinstance(data, list):

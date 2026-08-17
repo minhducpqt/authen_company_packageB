@@ -208,3 +208,63 @@ def enrich_items_with_template_source(
 
 def list_config_items() -> List[Dict[str, Any]]:
     return [dict(x) for x in FORM_CONFIG_ITEMS]
+
+
+def get_project_forms_hub() -> Dict[str, Any]:
+    return {
+        "id": "theo-du-an",
+        "name": "Các biểu mẫu theo dự án",
+        "description": "Tra cứu biểu mẫu đã tạo theo dự án, gom Trước / Trong / Sau phiên trên một màn hình.",
+        "icon": "ri-folder-chart-line",
+        "color": "indigo",
+        "href": "/bieu-mau/theo-du-an",
+        "count_label": "Tra cứu theo dự án",
+    }
+
+
+def resolve_instance_type_label(phase_slug: str, category_slug: str) -> str:
+    item = get_form_item_by_phase_slug(phase_slug, category_slug)
+    if item:
+        return item.get("name") or category_slug
+    return category_slug.replace("-", " ").title()
+
+
+def resolve_instance_href(inst: Dict[str, Any]) -> str:
+    phase_slug = inst.get("phase_slug") or ""
+    category_slug = inst.get("category_slug") or ""
+    iid = inst.get("id")
+    if phase_slug == "truoc-phien" and category_slug == "hop-dong" and iid:
+        return f"/bieu-mau/truoc-phien/hop-dong/{iid}"
+    item = get_form_item_by_phase_slug(phase_slug, category_slug)
+    if item and item.get("href"):
+        return str(item["href"])
+    phase = get_phase_by_slug(phase_slug)
+    if phase:
+        return str(phase.get("href") or "/bieu-mau")
+    return "/bieu-mau"
+
+
+def enrich_instances_for_project_view(instances: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    out = []
+    for inst in instances:
+        row = dict(inst)
+        row["type_label"] = resolve_instance_type_label(
+            row.get("phase_slug") or "", row.get("category_slug") or ""
+        )
+        row["open_href"] = resolve_instance_href(row)
+        out.append(row)
+    return out
+
+
+def group_instances_by_phase(instances: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    enriched = enrich_instances_for_project_view(instances)
+    buckets: Dict[str, List[Dict[str, Any]]] = {p["slug"]: [] for p in FORM_PHASES}
+    for inst in enriched:
+        slug = inst.get("phase_slug") or ""
+        if slug in buckets:
+            buckets[slug].append(inst)
+    groups = []
+    for phase in FORM_PHASES:
+        items = buckets.get(phase["slug"], [])
+        groups.append({"phase": dict(phase), "forms": items, "count": len(items)})
+    return groups

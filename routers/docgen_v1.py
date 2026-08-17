@@ -21,6 +21,7 @@ from services.docgen_v1_client import (
     get_render_context,
     list_instances,
     list_locality_profiles,
+    reopen_instance,
     update_instance,
     update_locality_profile,
 )
@@ -482,6 +483,16 @@ async def contract_finalize(request: Request, instance_id: int):
     token = await _token(request)
     try:
         await finalize_instance(token, instance_id)
+    except Exception:
+        pass
+    return RedirectResponse(f"/bieu-mau/truoc-phien/hop-dong/{instance_id}", status_code=303)
+
+
+@router.post("/truoc-phien/hop-dong/{instance_id}/reopen", response_class=HTMLResponse)
+async def contract_reopen(request: Request, instance_id: int):
+    token = await _token(request)
+    try:
+        await reopen_instance(token, instance_id)
     except Exception:
         pass
     return RedirectResponse(f"/bieu-mau/truoc-phien/hop-dong/{instance_id}", status_code=303)

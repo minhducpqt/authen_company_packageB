@@ -48,6 +48,9 @@
   .ce-banner strong { color:#78350f; }
   .ce-ph-row { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
   .ce-preview-toolbar { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+  .ce-preview-toolbar-sep { width:1px; height:22px; background:#cbd5e1; margin:0 2px; flex-shrink:0; }
+  .ce-preview-toolbar .ce-btn-warn { background:#f59e0b; border-color:#f59e0b; color:#fff; }
+  .ce-preview-toolbar .ce-btn-warn:hover { background:#d97706; border-color:#d97706; }
   .ce-btn-icon { padding:6px 10px; font-size:11px; }
   .ce-preview-panel:fullscreen { background:#64748b; display:flex; flex-direction:column; }
   .ce-preview-panel:fullscreen .ce-preview-wrap { flex:1; min-height:0; max-height:none; }
@@ -185,10 +188,8 @@
         <button type="button" class="ce-btn ce-btn-primary" id="btnPreview"><i class="ri-eye-line"></i> Xem trước</button>
         {% if not is_final %}
         <button type="submit" formaction="/bieu-mau/truoc-phien/hop-dong/{{ instance.id }}/save" class="ce-btn"><i class="ri-save-line"></i> Lưu</button>
-        <button type="submit" formaction="/bieu-mau/truoc-phien/hop-dong/{{ instance.id }}/finalize" class="ce-btn ce-btn-warn" id="btnFinalize"><i class="ri-lock-line"></i> Chốt</button>
         {% endif %}
         <a href="{{ download_html_url }}" class="ce-btn" target="_blank" rel="noopener"><i class="ri-file-code-line"></i> Tải HTML</a>
-        <a href="{{ download_pdf_url }}" class="ce-btn" target="_blank" rel="noopener"><i class="ri-file-pdf-line"></i> Tải PDF</a>
         <a href="/bieu-mau/truoc-phien/hop-dong" class="ce-btn">Danh sách</a>
       </div>
       <input type="hidden" name="fields_json" id="fieldsJson">
@@ -207,6 +208,12 @@
             <button type="button" class="ce-btn ce-btn-icon" id="btnPreviewFullscreen" title="Toàn màn hình"><i class="ri-fullscreen-line"></i> Full</button>
             <button type="button" class="ce-btn ce-btn-icon" id="btnPreviewHtml" title="Tải HTML"><i class="ri-file-code-line"></i> HTML</button>
             <button type="button" class="ce-btn ce-btn-icon" id="btnPreviewPrint" title="In"><i class="ri-printer-line"></i> In</button>
+            <span class="ce-preview-toolbar-sep" aria-hidden="true"></span>
+            {% if not is_final %}
+            <button type="submit" formaction="/bieu-mau/truoc-phien/hop-dong/{{ instance.id }}/finalize" class="ce-btn ce-btn-icon ce-btn-warn" id="btnFinalize" title="Chốt văn bản"><i class="ri-lock-line"></i> Chốt</button>
+            {% else %}
+            <button type="submit" formaction="/bieu-mau/truoc-phien/hop-dong/{{ instance.id }}/reopen" class="ce-btn ce-btn-icon ce-btn-warn" id="btnReopen" title="Mở khóa chốt"><i class="ri-lock-unlock-line"></i> Mở chốt</button>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -1044,17 +1051,36 @@ document.getElementById('ceForm')?.addEventListener('submit', () => syncHidden()
 
 document.getElementById('btnFinalize')?.addEventListener('click', async (e) => {
   e.preventDefault();
-  const ok = await FmDialog.confirm({
+  const ok = await FmDialog.confirmTyped({
     title: 'Chốt văn bản',
-    message: 'Sau khi chốt, hợp đồng không thể sửa lại. Bạn có chắc muốn chốt?',
+    message: 'Sau khi chốt, hợp đồng không thể sửa cho đến khi mở khóa chốt.',
+    sub: 'Hành động này lưu snapshot văn bản và khoá chỉnh sửa.',
     variant: 'warn',
-    okText: 'Chốt',
+    okText: 'Tôi xác nhận',
     cancelText: 'Huỷ',
+    requiredPhrase: 'tôi xác nhận',
   });
   if (!ok) return;
   syncHidden();
   const form = document.getElementById('ceForm');
   const btn = document.getElementById('btnFinalize');
+  if (form && btn) form.requestSubmit(btn);
+});
+
+document.getElementById('btnReopen')?.addEventListener('click', async (e) => {
+  e.preventDefault();
+  const ok = await FmDialog.confirmTyped({
+    title: 'Mở khóa chốt',
+    message: 'Văn bản sẽ chuyển về trạng thái nháp và có thể chỉnh sửa lại.',
+    sub: 'Chỉ dùng khi thật sự cần cập nhật sau khi đã chốt.',
+    variant: 'danger',
+    okText: 'Tôi xác nhận',
+    cancelText: 'Huỷ',
+    requiredPhrase: 'tôi xác nhận',
+  });
+  if (!ok) return;
+  const form = document.getElementById('ceForm');
+  const btn = document.getElementById('btnReopen');
   if (form && btn) form.requestSubmit(btn);
 });
 
