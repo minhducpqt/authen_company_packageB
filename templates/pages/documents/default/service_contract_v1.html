@@ -142,6 +142,10 @@
 {%- if n is none or n == '' -%}—{%- else -%}{{ "{:,.0f}".format(n|float).replace(",", ".") }}{%- endif -%}
 {%- endmacro %}
 
+{% macro fmtArea(n) -%}
+{%- if n is none or n == '' -%}—{%- else -%}{{ "{:.2f}".format(n|float) }}{%- endif -%}
+{%- endmacro %}
+
 {% set subtitle = contract.subtitle or contract.asset_title or proj.name or 'Quyền sử dụng đất' %}
 {% set lot_count = lots|length if lots else 0 %}
 {% set doc_no = contract.document_no or v.document_no or '……/HĐDV/……' %}
@@ -242,7 +246,7 @@
       </ul>
       {% endif %}
     </li>
-    <li class="marker-item">b) Diện tích: Tổng diện tích đấu giá khoảng {{ fmt0(total_area.v) if total_area.v else '……' }} m², gồm {{ lot_count or '……' }} lô đất ở{% if contract.min_lot_area or contract.max_lot_area %}, diện tích các lô từ {{ contract.min_lot_area or '……' }} m² đến {{ contract.max_lot_area or '……' }} m²{% endif %}.</li>
+    <li class="marker-item">b) Diện tích: Tổng diện tích đấu giá khoảng {{ fmtArea(total_area.v) if total_area.v else '……' }} m², gồm {{ lot_count or '……' }} lô đất ở{% if contract.min_lot_area or contract.max_lot_area %}, diện tích các lô từ {{ contract.min_lot_area or '……' }} m² đến {{ contract.max_lot_area or '……' }} m²{% endif %}.</li>
     <li class="marker-item">c) Hiện trạng: {{ ce_slot('land_status', contract.land_status or proj.description or '……') }}</li>
     <li class="marker-item">Tổng giá khởi điểm: {{ fmt0(total_start.v) if total_start.v else '……' }} đồng{% if contract.total_starting_price_words %} (Bằng chữ: {{ contract.total_starting_price_words }}){% endif %}.</li>
   </ul>
@@ -287,7 +291,7 @@
         <td>{{ ce_slot('lot_map_' ~ lk ~ '_parcel', lot.parcel_no or '—') }}</td>
         {% endif %}
         <td class="left">{{ lot.lot_code or lot.name or '—' }}</td>
-        <td class="num">{{ fmt0(lot.area) if lot.area else '—' }}</td>
+        <td class="num">{{ fmtArea(lot.area) if lot.area is not none and lot.area != '' else '—' }}</td>
         <td class="num">{{ fmt0(price_m2) if price_m2 else '—' }}</td>
         <td class="num">{{ fmt0(lot.starting_price_vnd) if lot.starting_price_vnd else '—' }}</td>
         <td class="num">{{ fmt0(lot.dossier_fee_vnd) if lot.dossier_fee_vnd else '—' }}</td>
@@ -297,7 +301,7 @@
       {% endfor %}
       <tr class="total-row">
         <td colspan="{{ 4 if show_map else 2 }}">TỔNG</td>
-        <td class="num">{{ fmt0(total_area.v) if total_area.v else '—' }}</td>
+        <td class="num">{{ fmtArea(total_area.v) if total_area.v else '—' }}</td>
         <td></td>
         <td class="num">{{ fmt0(total_start.v) if total_start.v else '—' }}</td>
         <td class="num">{{ fmt0(total_dossier.v) if total_dossier.v else '—' }}</td>

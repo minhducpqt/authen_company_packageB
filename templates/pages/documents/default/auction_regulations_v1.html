@@ -182,6 +182,10 @@
 {%- if n is none or n == '' -%}—{%- else -%}{{ "{:,.0f}".format(n|float).replace(",", ".") }}{%- endif -%}
 {%- endmacro %}
 
+{% macro fmtArea(n) -%}
+{%- if n is none or n == '' -%}—{%- else -%}{{ "{:.2f}".format(n|float) }}{%- endif -%}
+{%- endmacro %}
+
 {% set ward = ctx.ward if ctx else none %}
 {% set wn = ward.name if ward and ward.name else '' %}
 {% if wn and (wn.lower().startswith('xã ') or wn.lower().startswith('phường ') or wn.lower().startswith('thị trấn ')) %}
@@ -312,7 +316,7 @@
         <td>{{ ce_slot('lot_map_' ~ lk ~ '_parcel', lot.parcel_no or '—') }}</td>
         {% endif %}
         <td class="left">{{ lot.lot_code or lot.name or '—' }}</td>
-        <td class="num">{{ fmt0(lot.area) if lot.area else '—' }}</td>
+        <td class="num">{{ fmtArea(lot.area) if lot.area is not none and lot.area != '' else '—' }}</td>
         <td class="num">{{ fmt0(price_m2) if price_m2 else '—' }}</td>
         <td class="num">{{ fmt0(lot.starting_price_vnd) if lot.starting_price_vnd else '—' }}</td>
         <td class="num">{{ fmt0(lot.dossier_fee_vnd) if lot.dossier_fee_vnd else '—' }}</td>
@@ -322,7 +326,7 @@
       {% endfor %}
       <tr class="total-row">
         <td colspan="{{ 4 if show_map else 2 }}"><strong>TỔNG</strong></td>
-        <td class="num">{{ fmt0(total_area.v) if total_area.v else '—' }}</td>
+        <td class="num">{{ fmtArea(total_area.v) if total_area.v else '—' }}</td>
         <td></td>
         <td class="num">{{ fmt0(total_start.v) if total_start.v else '—' }}</td>
         <td class="num">{{ fmt0(total_dossier.v) if total_dossier.v else '—' }}</td>

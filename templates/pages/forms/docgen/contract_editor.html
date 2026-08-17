@@ -493,6 +493,13 @@ function fmt0(v) {
   return n.toLocaleString('vi-VN', { maximumFractionDigits: 0 });
 }
 
+function fmtArea(v) {
+  if (v === null || v === undefined || v === '') return '—';
+  const n = Number(v);
+  if (!isFinite(n)) return String(v);
+  return n.toFixed(2);
+}
+
 const DEFAULT_SIGNED_AT_TIME = '09:00';
 
 function withDefaultSignedAtTime(isoLocal) {
@@ -822,7 +829,7 @@ function renderLots() {
     rowParts.push(`<tr data-lot-row="${i}">
       <td>${i + 1}</td>${mapCells}
       <td>${lot.lot_code || lot.name || '—'}</td>
-      <td class="num">${fmt0(lot.area)}</td>
+      <td class="num">${fmtArea(lot.area)}</td>
       <td class="num">${pm2 ? fmt0(pm2) : '—'}</td>
       <td class="num">${fmt0(lot.starting_price_vnd)}</td>
       <td class="num">${fmt0(lot.deposit_vnd)}</td>
@@ -833,7 +840,7 @@ function renderLots() {
   host.innerHTML = `<table class="ce-lots"><thead><tr>
     <th>STT</th>${mapHead}<th>Lô</th><th>m²</th><th>Giá/m²</th><th>Giá KD</th><th>Đặt trước</th>
   </tr></thead><tbody>${rows}
-  <tr><td colspan="${totalColspan}"><strong>Tổng</strong></td><td class="num">${fmt0(totalArea)}</td><td></td><td class="num">${fmt0(totalStart)}</td><td class="num">${fmt0(totalDep)}</td></tr>
+  <tr><td colspan="${totalColspan}"><strong>Tổng</strong></td><td class="num">${fmtArea(totalArea)}</td><td></td><td class="num">${fmt0(totalStart)}</td><td class="num">${fmt0(totalDep)}</td></tr>
   </tbody></table>`;
 }
 
