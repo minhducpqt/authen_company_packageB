@@ -187,11 +187,11 @@
           <div class="ce-hint">Lấy từ cấu hình TK dự án loại <strong>DEPOSIT</strong></div>
         </div>
 
-        <div class="ce-sec">Giá dịch vụ đấu giá</div>
+        <div class="ce-sec">Giá dịch vụ đấu giá (tự tính)</div>
         <div class="ce-field ce-field-readonly">
-          <label>Công thức giá dịch vụ (tự tính)</label>
+          <label>Giá DV — trường hợp đấu giá thành</label>
           <div id="serviceFeeDisplay" class="ce-readonly-val">…</div>
-          <div class="ce-hint">Theo tổng giá khởi điểm dự án và khung QĐ 1311/QĐ-BTP (22/4/2025): cơ sở theo bậc + 1% phần chênh lệch. (Chưa bao gồm thuế VAT).</div>
+          <div class="ce-hint">Tự tính theo tổng giá khởi điểm dự án và khung QĐ 1311/QĐ-BTP (22/4/2025): cơ sở theo bậc + 1% phần chênh lệch. (Chưa bao gồm thuế VAT). <strong>Không chỉnh tay</strong> — dùng cho mục «Giá dịch vụ… đấu giá thành» trong Điều 5.</div>
         </div>
         <div class="ce-field">
           <label>Điều kiện thanh toán — số ngày</label>
@@ -204,6 +204,23 @@
           <div id="f_payment_terms_preview" class="ce-readonly-val ce-signed-preview">—</div>
           <div class="ce-hint">Chỉ nhập số ngày — hệ thống tự tạo câu «Thời gian thanh toán» trong HĐ</div>
           {% endif %}
+        </div>
+
+        <div class="ce-sec">Điều 5 — Chi phí đấu giá (nhập tay)</div>
+        <div class="ce-field">
+          <label>Chi phí đấu giá tài sản tối đa (chi phí TB, cổng QG, hành chính…)</label>
+          <input id="f_max_auction_cost" type="text" inputmode="numeric" data-ce-field="max_auction_cost_vnd" {% if is_final %}readonly{% endif %} placeholder="……">
+          <div class="ce-hint">Khác với «giá dịch vụ đấu giá thành» (tự tính ở trên). Số tiền VNĐ cho câu «Chi phí đấu giá… tối đa không quá … đồng».</div>
+        </div>
+        <div class="ce-field">
+          <label>Công thức giá DV (đấu giá một phần không thành)</label>
+          <input id="f_partial_fail_formula" type="text" data-ce-field="partial_fail_formula" {% if is_final %}readonly{% endif %} placeholder="……">
+          <div class="ce-hint">Phần nhân sau «tỷ lệ (%) đấu giá thành … × …»</div>
+        </div>
+        <div class="ce-field">
+          <label>Chi phí đấu giá tối đa (trường hợp không thành)</label>
+          <input id="f_max_fail_cost" type="text" inputmode="numeric" data-ce-field="max_fail_cost_vnd" {% if is_final %}readonly{% endif %} placeholder="……">
+          <div class="ce-hint">Số tiền VNĐ — «tối đa không quá … đồng» khi đấu giá không thành</div>
         </div>
 
         <div class="ce-sec">Điều 1 — Mục đích &amp; hồ sơ pháp lý</div>
@@ -345,6 +362,9 @@ const FIELD_LABELS = {
   land_delivery_form: 'Hình thức giao đất',
   land_use_term: 'Thời hạn sử dụng đất',
   legal_dossier_ref: 'Hồ sơ pháp lý của tài sản',
+  max_auction_cost_vnd: 'Chi phí đấu giá tài sản tối đa (TB, hành chính…)',
+  partial_fail_formula: 'Công thức giá DV (một phần không thành)',
+  max_fail_cost_vnd: 'Chi phí đấu giá tối đa (không thành)',
 };
 
 const LAND_ARTICLE_DEFAULTS = {
@@ -461,6 +481,20 @@ function withDefaultSignedAtTime(isoLocal) {
   const m = String(isoLocal).match(/^(\d{4}-\d{2}-\d{2})T00:00(?::\d{2})?$/);
   if (m) return `${m[1]}T${DEFAULT_SIGNED_AT_TIME}`;
   return isoLocal;
+}
+
+function parseVndInput(id) {
+  const raw = document.getElementById(id)?.value || '';
+  const n = parseInt(String(raw).replace(/[^\d]/g, ''), 10);
+  return isFinite(n) && n > 0 ? n : null;
+}
+
+function isVndFieldMissing(id) {
+  const el = document.getElementById(id);
+  if (!el) return true;
+  const raw = String(el.value ?? '').trim();
+  if (!raw || isPlaceholderText(raw)) return true;
+  return !parseVndInput(id);
 }
 
 function formatSignedAtVi(isoLocal) {
@@ -933,6 +967,9 @@ function collectFields() {
         return parsePaymentDaysFromFields({ payment_terms: hiddenVal });
       })(),
       payment_terms: document.getElementById('f_payment_terms')?.value || formatPaymentTerms(DEFAULT_PAYMENT_DAYS),
+      max_auction_cost_vnd: parseVndInput('f_max_auction_cost'),
+      partial_fail_formula: document.getElementById('f_partial_fail_formula')?.value?.trim() || '',
+      max_fail_cost_vnd: parseVndInput('f_max_fail_cost'),
     },
     legal_refs: legal.filter(r => r.text),
     lot_table: {
@@ -997,6 +1034,12 @@ function hydrateFromFields() {
   renderDepositAccountDisplay();
   hydrateSignedAtFields(c);
   hydratePaymentTermsFields(f);
+  const maxAuction = document.getElementById('f_max_auction_cost');
+  if (maxAuction) maxAuction.value = f.max_auction_cost_vnd ? String(f.max_auction_cost_vnd) : '';
+  const partialFail = document.getElementById('f_partial_fail_formula');
+  if (partialFail) partialFail.value = f.partial_fail_formula || '';
+  const maxFail = document.getElementById('f_max_fail_cost');
+  if (maxFail) maxFail.value = f.max_fail_cost_vnd ? String(f.max_fail_cost_vnd) : '';
   document.getElementById('f_copies').value = c.copies || 6;
   document.getElementById('f_pb_auth').value = c.party_b_authorization || '';
   document.getElementById('f_auction_days').value = a.deadline_days || 30;
@@ -1064,6 +1107,9 @@ function collectMissingFieldKeys() {
   if (isPlaceholderText(document.getElementById('f_signed_at')?.value)) add('signed_at');
   const payDays = parseInt(document.getElementById('f_payment_days')?.value || '0', 10);
   if (!payDays || payDays < 1) add('payment_terms');
+  if (isVndFieldMissing('f_max_auction_cost')) add('max_auction_cost_vnd');
+  if (isPlaceholderText(document.getElementById('f_partial_fail_formula')?.value)) add('partial_fail_formula');
+  if (isVndFieldMissing('f_max_fail_cost')) add('max_fail_cost_vnd');
 
   Object.keys(OVERRIDE_LABELS).forEach(k => {
     if (OPTIONAL_OVERRIDE_KEYS.has(k)) return;
@@ -1127,6 +1173,9 @@ function resolveDomForMissingKey(key) {
     land_delivery_form: 'f_land_delivery_form',
     land_use_term: 'f_land_use_term',
     legal_dossier_ref: 'f_legal_dossier_ref',
+    max_auction_cost_vnd: 'f_max_auction_cost',
+    partial_fail_formula: 'f_partial_fail_formula',
+    max_fail_cost_vnd: 'f_max_fail_cost',
     party_b_rep: 'pbRepDisplay',
     party_b_title: 'pbTitleDisplay',
   };

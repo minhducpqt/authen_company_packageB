@@ -45,33 +45,82 @@
       .preview-meta { display: none !important; }
     }
     body.doc-download .page { padding: 0; }
-    .hd { text-align: center; }
-    .hd .cn { font-weight: 700; text-transform: uppercase; font-size: 14pt; }
-    .hd .motto { font-weight: 700; margin: 4px 0 8px; }
-    .hd .rule { margin: 6px 0 14px; }
-    h1.doc-title { text-align: center; font-size: 14pt; font-weight: 700; text-transform: uppercase; margin: 0 0 8px; letter-spacing: 0.02em; }
-    .doc-sub { text-align: center; font-weight: 700; margin-bottom: 10px; }
-    .doc-no { text-align: center; margin-bottom: 16px; }
-    .legal p { margin: 0 0 6px; text-align: justify; text-indent: 28px; }
-    .sec { margin-top: 14px; }
-    .sec h2 { font-size: 14pt; font-weight: 700; margin: 0 0 8px; text-transform: uppercase; }
-    .sec p, .sec li { text-align: justify; margin: 0 0 8px; text-indent: 28px; }
-    .sec ul { margin: 6px 0 10px; padding-left: 28px; }
-    .sec li { text-indent: 0; }
-    table.lots { width: 100%; border-collapse: collapse; font-size: 10.5pt; margin: 8px 0; }
-    table.lots th, table.lots td { border: 1px solid #000; padding: 3px 4px; vertical-align: middle; text-align: center; }
-    table.lots th { font-weight: 700; }
+    .hd { text-align: center; margin-bottom: 4px; }
+    .hd .cn { font-weight: 700; text-transform: uppercase; font-size: 13pt; letter-spacing: 0.03em; }
+    .hd .motto { font-weight: 700; font-size: 13pt; margin: 6px 0 0; }
+    .hd .rule {
+      display: inline-block;
+      width: 48mm;
+      max-width: 55%;
+      border: none;
+      border-bottom: 1px solid #000;
+      margin: 10px 0 18px;
+      height: 0;
+      font-size: 0;
+      line-height: 0;
+      overflow: hidden;
+      color: transparent;
+    }
+    h1.doc-title { text-align: center; font-size: 14pt; font-weight: 700; text-transform: uppercase; margin: 0 0 6px; letter-spacing: 0.04em; line-height: 1.35; }
+    .doc-sub { text-align: center; font-weight: 700; margin: 0 0 8px; line-height: 1.4; padding: 0 8mm; }
+    .doc-no { text-align: center; margin-bottom: 14px; font-size: 13pt; }
+    .doc-intro { margin: 12px 0 10px; }
+    .legal { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #ccc; }
+    .legal p { margin: 0 0 5px; text-align: justify; text-indent: 28px; line-height: 1.45; }
+    .party-block { margin: 0 0 12px; text-align: justify; }
+    .party-block .party-head { margin: 0 0 6px; text-indent: 28px; }
+    .party-detail { margin: 0 0 0 28px; padding: 0; }
+    .party-row { margin: 0 0 4px; line-height: 1.45; text-indent: 0; }
+    .party-row .party-lbl { display: inline; }
+    .party-row .party-pair { display: inline; }
+    .sec { margin-top: 16px; page-break-inside: avoid; }
+    .sec h2 {
+      font-size: 13pt;
+      font-weight: 700;
+      margin: 0 0 10px;
+      text-transform: uppercase;
+      line-height: 1.35;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #000;
+    }
+    .sec p, .sec li { text-align: justify; margin: 0 0 8px; text-indent: 28px; line-height: 1.45; }
+    .sec p.clause-head, .sec p.no-indent { text-indent: 0; }
+    .sec ul { margin: 4px 0 10px; padding-left: 0; list-style: none; }
+    .sec ul.asset-items, .sec ul.clause-list { padding-left: 28px; }
+    .sec li { text-indent: 0; margin-bottom: 6px; line-height: 1.45; }
+    .sec li.marker-item { padding-left: 0; }
+    .info-block {
+      margin: 6px 0 10px 28px;
+      padding: 6px 10px;
+      border: 1px solid #bbb;
+      background: #fafafa;
+      text-indent: 0;
+    }
+    .info-block .info-row { margin: 0 0 3px; text-indent: 0; line-height: 1.4; }
+    .info-block .info-row:last-child { margin-bottom: 0; }
+    table.lots { width: 100%; border-collapse: collapse; font-size: 10pt; margin: 10px 0 12px; page-break-inside: auto; }
+    table.lots thead { display: table-header-group; }
+    table.lots th, table.lots td { border: 1px solid #000; padding: 4px 5px; vertical-align: middle; text-align: center; line-height: 1.3; }
+    table.lots th { font-weight: 700; background: #eee; }
+    table.lots tbody tr:nth-child(even) { background: #fafafa; }
+    table.lots tr.total-row td { font-weight: 700; background: #f0f0f0; }
     table.lots td.left { text-align: left; }
-    table.lots td.num { text-align: right; white-space: nowrap; }
-    .sign-block { margin-top: 28px; display: table; width: 100%; page-break-inside: avoid; }
-    .sign-col { display: table-cell; width: 50%; text-align: center; vertical-align: top; padding: 0 12px; }
-    .sign-col .role { font-weight: 700; text-transform: uppercase; margin-bottom: 0; }
+    table.lots td.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .sign-block { margin-top: 32px; display: table; width: 100%; page-break-inside: avoid; }
+    .sign-col { display: table-cell; width: 50%; text-align: center; vertical-align: top; padding: 0 16px; }
+    .sign-col .role { font-weight: 700; text-transform: uppercase; margin-bottom: 0; font-size: 13pt; }
     .sign-col .sign-space { min-height: 88px; }
-    .sign-col .sign-hint { font-style: italic; }
+    .sign-col .sign-hint { font-style: italic; font-size: 13pt; }
+    .closing-copies { margin-top: 8px; font-weight: 400; }
     .muted { color: #333; }
     .indent { text-indent: 28px; }
-    p.no-indent, .hd p, .doc-no, .doc-sub, h1.doc-title { text-indent: 0; }
+    p.no-indent, .hd p, .doc-no, .doc-sub, h1.doc-title, .party-block, .party-detail, .info-block { text-indent: 0; }
     .ce-slot { border-radius: 2px; }
+    @media print {
+      table.lots th { background: #eee !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      table.lots tbody tr:nth-child(even) { background: #fafafa !important; }
+      .info-block { background: #fafafa !important; }
+    }
   </style>
 </head>
 <body class="{% if for_download %}doc-download{% else %}doc-preview{% endif %}">
@@ -142,7 +191,7 @@
 <div class="hd">
   <div class="cn">Cộng hòa xã hội chủ nghĩa Việt Nam</div>
   <div class="motto">Độc lập - Tự do - Hạnh phúc</div>
-  <div class="rule">------------------</div>
+  <div class="rule" aria-hidden="true">------------------</div>
 </div>
 
 <h1 class="doc-title">Hợp đồng dịch vụ đấu giá tài sản</h1>
@@ -151,44 +200,59 @@
 
 {% include 'pages/documents/default/_service_contract_v1_legal.html' %}
 
-<p class="indent">Hôm nay, vào hồi {{ ce_slot('signed_at', signed_at) }}, tại {{ ce_slot('signing_place', signed_place) }}</p>
-<p><strong>CHÚNG TÔI GỒM:</strong></p>
+<p class="indent doc-intro">Hôm nay, vào hồi {{ ce_slot('signed_at', signed_at) }}, tại {{ ce_slot('signing_place', signed_place) }}</p>
+<p class="no-indent"><strong>CHÚNG TÔI GỒM:</strong></p>
 
-<p><strong>I. Người có tài sản đấu giá (Bên A):</strong> {{ ce_slot('party_a_name', pa_name) }}<br>
-Đại diện người có tài sản: {{ ce_slot('party_a_representative_department', pa_rep_dept) }}<br>
-Địa chỉ: {{ ce_slot('party_a_address', pa_addr) }}<br>
-Tài khoản số: {{ ce_slot('party_a_treasury_account', pa_treasury) }} tại {{ ce_slot('party_a_treasury_office', pa_treasury_off) }}<br>
-Mã số thuế: {{ ce_slot('party_a_tax_code', pa_tax) }}<br>
-Đại diện: {{ ce_slot('party_a_representative_name', pa_rep) }} &nbsp;&nbsp; Chức vụ: {{ ce_slot('party_a_representative_title', pa_title) }}
-{% if pa_auth %}<br>(Theo {{ ce_slot('party_a_authorization', pa_auth) }}){% endif %}
-</p>
+<div class="party-block">
+  <p class="party-head no-indent"><strong>I. Người có tài sản đấu giá (Bên A):</strong> {{ ce_slot('party_a_name', pa_name) }}</p>
+  <div class="party-detail">
+    <p class="party-row no-indent"><span class="party-lbl">Đại diện người có tài sản:</span> {{ ce_slot('party_a_representative_department', pa_rep_dept) }}</p>
+    <p class="party-row no-indent"><span class="party-lbl">Địa chỉ:</span> {{ ce_slot('party_a_address', pa_addr) }}</p>
+    <p class="party-row no-indent"><span class="party-lbl">Tài khoản số:</span> {{ ce_slot('party_a_treasury_account', pa_treasury) }} tại {{ ce_slot('party_a_treasury_office', pa_treasury_off) }}</p>
+    <p class="party-row no-indent"><span class="party-lbl">Mã số thuế:</span> {{ ce_slot('party_a_tax_code', pa_tax) }}</p>
+    <p class="party-row no-indent"><span class="party-pair"><span class="party-lbl">Đại diện:</span> {{ ce_slot('party_a_representative_name', pa_rep) }}</span> &nbsp;&nbsp; <span class="party-pair"><span class="party-lbl">Chức vụ:</span> {{ ce_slot('party_a_representative_title', pa_title) }}</span></p>
+    {% if pa_auth %}<p class="party-row no-indent">(Theo {{ ce_slot('party_a_authorization', pa_auth) }})</p>{% endif %}
+  </div>
+</div>
 
-<p><strong>II. Tổ chức hành nghề đấu giá tài sản (Bên B):</strong> {{ ce_slot('party_b_name', pb_name) }}<br>
-Trụ sở: {{ ce_slot('party_b_address', pb_addr) }}<br>
-{% if pb_phone %}Điện thoại: {{ pb_phone }}<br>{% endif %}
-Mã số thuế: {{ ce_slot('party_b_tax_code', pb_tax) }}<br>
-Người đại diện: {{ ce_slot('party_b_rep', pb_rep) }} &nbsp;&nbsp; Chức vụ: {{ ce_slot('party_b_title', pb_title) }}
-{% if pb_auth %}<br>(Theo {{ ce_slot('party_b_auth', pb_auth) }}){% endif %}
-</p>
+<div class="party-block">
+  <p class="party-head no-indent"><strong>II. Tổ chức hành nghề đấu giá tài sản (Bên B):</strong> {{ ce_slot('party_b_name', pb_name) }}</p>
+  <div class="party-detail">
+    <p class="party-row no-indent"><span class="party-lbl">Trụ sở:</span> {{ ce_slot('party_b_address', pb_addr) }}</p>
+    {% if pb_phone %}<p class="party-row no-indent"><span class="party-lbl">Điện thoại:</span> {{ pb_phone }}</p>{% endif %}
+    <p class="party-row no-indent"><span class="party-lbl">Mã số thuế:</span> {{ ce_slot('party_b_tax_code', pb_tax) }}</p>
+    <p class="party-row no-indent"><span class="party-pair"><span class="party-lbl">Người đại diện:</span> {{ ce_slot('party_b_rep', pb_rep) }}</span> &nbsp;&nbsp; <span class="party-pair"><span class="party-lbl">Chức vụ:</span> {{ ce_slot('party_b_title', pb_title) }}</span></p>
+    {% if pb_auth %}<p class="party-row no-indent">(Theo {{ ce_slot('party_b_auth', pb_auth) }})</p>{% endif %}
+  </div>
+</div>
 
 <p class="indent">Hai bên cùng thỏa thuận và thống nhất ký kết Hợp đồng dịch vụ đấu giá tài sản với các điều khoản như sau:</p>
 
 <div class="sec">
   <h2>Điều 1. Tài sản đấu giá, căn cứ pháp lý, mục đích, hình thức giao đất và thời hạn sử dụng đất</h2>
-  <p><strong>1. Tài sản đấu giá:</strong> {{ ce_slot('subtitle', subtitle) }}, cụ thể như sau:</p>
-  <p>a) Vị trí: {{ ce_slot('asset_location', proj.location or contract.asset_location or '……') }}{% if contract.boundary_north or contract.boundary_south or contract.boundary_east or contract.boundary_west %} có giáp ranh như sau:{% endif %}<br>
-  {% if contract.boundary_north %}+ Phía Bắc: {{ contract.boundary_north }}<br>{% endif %}
-  {% if contract.boundary_south %}+ Phía Nam: {{ contract.boundary_south }}<br>{% endif %}
-  {% if contract.boundary_east %}+ Phía Đông: {{ contract.boundary_east }}<br>{% endif %}
-  {% if contract.boundary_west %}+ Phía Tây: {{ contract.boundary_west }}<br>{% endif %}
-  b) Diện tích: Tổng diện tích đấu giá khoảng {{ fmt0(total_area.v) if total_area.v else '……' }} m², gồm {{ lot_count or '……' }} lô đất ở{% if contract.min_lot_area or contract.max_lot_area %}, diện tích các lô từ {{ contract.min_lot_area or '……' }} m² đến {{ contract.max_lot_area or '……' }} m²{% endif %}.<br>
-  c) Hiện trạng: {{ ce_slot('land_status', contract.land_status or proj.description or '……') }}<br>
-  - Tổng giá khởi điểm: {{ fmt0(total_start.v) if total_start.v else '……' }} đồng{% if contract.total_starting_price_words %} (Bằng chữ: {{ contract.total_starting_price_words }}){% endif %}.</p>
-  <p><strong>2. Mục đích, hình thức giao đất, thời hạn sử dụng đất:</strong><br>
-  - Mục đích sử dụng đất: {{ ce_slot('land_use_purpose', contract.land_use_purpose or 'Đất ở ……') }}<br>
-  - Hình thức giao đất: {{ ce_slot('land_delivery_form', contract.land_delivery_form or 'Nhà nước giao đất có thu tiền sử dụng đất.') }}<br>
-  - Thời hạn sử dụng đất: {{ ce_slot('land_use_term', contract.land_use_term or 'Lâu dài') }}.</p>
-  <p><strong>3. Hồ sơ pháp lý của tài sản:</strong> {{ ce_slot('legal_dossier_ref', contract.legal_dossier_ref or 'Quyết định số ……') }}</p>
+  <p class="clause-head"><strong>1. Tài sản đấu giá:</strong> {{ ce_slot('subtitle', subtitle) }}, cụ thể như sau:</p>
+  <ul class="asset-items">
+    <li class="marker-item">a) Vị trí: {{ ce_slot('asset_location', proj.location or contract.asset_location or '……') }}{% if contract.boundary_north or contract.boundary_south or contract.boundary_east or contract.boundary_west %} có giáp ranh như sau:{% endif %}
+      {% if contract.boundary_north or contract.boundary_south or contract.boundary_east or contract.boundary_west %}
+      <ul class="clause-list">
+        {% if contract.boundary_north %}<li>+ Phía Bắc: {{ contract.boundary_north }}</li>{% endif %}
+        {% if contract.boundary_south %}<li>+ Phía Nam: {{ contract.boundary_south }}</li>{% endif %}
+        {% if contract.boundary_east %}<li>+ Phía Đông: {{ contract.boundary_east }}</li>{% endif %}
+        {% if contract.boundary_west %}<li>+ Phía Tây: {{ contract.boundary_west }}</li>{% endif %}
+      </ul>
+      {% endif %}
+    </li>
+    <li class="marker-item">b) Diện tích: Tổng diện tích đấu giá khoảng {{ fmt0(total_area.v) if total_area.v else '……' }} m², gồm {{ lot_count or '……' }} lô đất ở{% if contract.min_lot_area or contract.max_lot_area %}, diện tích các lô từ {{ contract.min_lot_area or '……' }} m² đến {{ contract.max_lot_area or '……' }} m²{% endif %}.</li>
+    <li class="marker-item">c) Hiện trạng: {{ ce_slot('land_status', contract.land_status or proj.description or '……') }}</li>
+    <li class="marker-item">Tổng giá khởi điểm: {{ fmt0(total_start.v) if total_start.v else '……' }} đồng{% if contract.total_starting_price_words %} (Bằng chữ: {{ contract.total_starting_price_words }}){% endif %}.</li>
+  </ul>
+  <p class="clause-head"><strong>2. Mục đích, hình thức giao đất, thời hạn sử dụng đất:</strong></p>
+  <ul class="asset-items">
+    <li class="marker-item">Mục đích sử dụng đất: {{ ce_slot('land_use_purpose', contract.land_use_purpose or 'Đất ở ……') }}</li>
+    <li class="marker-item">Hình thức giao đất: {{ ce_slot('land_delivery_form', contract.land_delivery_form or 'Nhà nước giao đất có thu tiền sử dụng đất.') }}</li>
+    <li class="marker-item">Thời hạn sử dụng đất: {{ ce_slot('land_use_term', contract.land_use_term or 'Lâu dài') }}.</li>
+  </ul>
+  <p class="clause-head"><strong>3. Hồ sơ pháp lý của tài sản:</strong> {{ ce_slot('legal_dossier_ref', contract.legal_dossier_ref or 'Quyết định số ……') }}</p>
 </div>
 
 <div class="sec">
@@ -231,13 +295,13 @@ Người đại diện: {{ ce_slot('party_b_rep', pb_rep) }} &nbsp;&nbsp; Chức
         <td class="left">{{ lot.description or '' }}</td>
       </tr>
       {% endfor %}
-      <tr>
-        <td colspan="{{ 4 if show_map else 2 }}"><strong>TỔNG</strong></td>
-        <td class="num"><strong>{{ fmt0(total_area.v) if total_area.v else '—' }}</strong></td>
+      <tr class="total-row">
+        <td colspan="{{ 4 if show_map else 2 }}">TỔNG</td>
+        <td class="num">{{ fmt0(total_area.v) if total_area.v else '—' }}</td>
         <td></td>
-        <td class="num"><strong>{{ fmt0(total_start.v) if total_start.v else '—' }}</strong></td>
-        <td class="num"><strong>{{ fmt0(total_dossier.v) if total_dossier.v else '—' }}</strong></td>
-        <td class="num"><strong>{{ fmt0(total_deposit.v) if total_deposit.v else '—' }}</strong></td>
+        <td class="num">{{ fmt0(total_start.v) if total_start.v else '—' }}</td>
+        <td class="num">{{ fmt0(total_dossier.v) if total_dossier.v else '—' }}</td>
+        <td class="num">{{ fmt0(total_deposit.v) if total_deposit.v else '—' }}</td>
         <td></td>
       </tr>
     </tbody>
@@ -252,10 +316,12 @@ Người đại diện: {{ ce_slot('party_b_rep', pb_rep) }} &nbsp;&nbsp; Chức
 
 <div class="sec">
   <h2>Điều 3. Thời hạn, địa điểm, nguyên tắc, phương thức, hình thức đấu giá</h2>
-  <p>1. Thời hạn tổ chức đấu giá: Trong thời hạn {{ ce_slot('auction_days', auction.deadline_days or contract.auction_deadline_days or 30) }} ({{ 'ba mươi' if (auction.deadline_days or contract.auction_deadline_days or 30)|int == 30 else '……' }}) ngày kể từ ngày ký hợp đồng.<br>
-  2. Địa điểm tổ chức đấu giá: {{ ce_slot('auction_venue', v.auction_venue or defs.auction_venue or signed_place) }}<br>
-  3. Hình thức đấu giá: {{ auction.form or contract.auction_form or 'Đấu giá bằng hình thức bỏ phiếu trực tiếp tại phiên đấu giá (01 vòng)' }}<br>
-  4. Phương thức đấu giá: {{ auction.method or contract.auction_method or 'Phương thức trả giá lên' }}</p>
+  <ul class="clause-list">
+    <li>1. Thời hạn tổ chức đấu giá: Trong thời hạn {{ ce_slot('auction_days', auction.deadline_days or contract.auction_deadline_days or 30) }} ({{ 'ba mươi' if (auction.deadline_days or contract.auction_deadline_days or 30)|int == 30 else '……' }}) ngày kể từ ngày ký hợp đồng.</li>
+    <li>2. Địa điểm tổ chức đấu giá: {{ ce_slot('auction_venue', v.auction_venue or defs.auction_venue or signed_place) }}</li>
+    <li>3. Hình thức đấu giá: {{ auction.form or contract.auction_form or 'Đấu giá bằng hình thức bỏ phiếu trực tiếp tại phiên đấu giá (01 vòng)' }}</li>
+    <li>4. Phương thức đấu giá: {{ auction.method or contract.auction_method or 'Phương thức trả giá lên' }}</li>
+  </ul>
   {% include 'pages/documents/default/_service_contract_v1_art3_tail.html' %}
 </div>
 

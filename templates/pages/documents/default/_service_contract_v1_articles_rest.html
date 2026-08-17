@@ -23,16 +23,20 @@
 {% set svc_fee = svc.formula or fees.service_fee_formula or fees.service_fee_vnd or '……' %}
 {% set vat_note = svc.vat_note or 'Chưa bao gồm thuế VAT' %}
 {% set pay_terms = fees.payment_terms or 'Trong vòng 20 (hai mươi) ngày kể từ ngày bên A đã nhận được kết quả đấu giá, hóa đơn GTGT và biên bản thanh lý Hợp đồng.' %}
+{% set max_auction_cost = fmt0(fees.max_auction_cost_vnd) if fees.max_auction_cost_vnd else '……' %}
+{% set partial_fail_formula = fees.partial_fail_formula or '……' %}
+{% set max_fail_cost = fmt0(fees.max_fail_cost_vnd) if fees.max_fail_cost_vnd else '……' %}
 <p>Căn cứ Quyết định số 1311/QĐ-BTP ngày 22/4/2025 của Bộ trưởng Bộ Tư pháp về việc ban hành khung giá dịch vụ đấu giá tài sản mà pháp luật quy định phải bán thông qua đấu giá.</p>
 <p>Đối với giá trị quyền sử dụng đất theo giá khởi điểm từ {{ fmt0(total_start.v) if total_start.v else '……' }} đồng là: {{ svc_fee }} (Giá dịch vụ không quá 400.000.000 đồng/cuộc đấu giá), ({{ vat_note }}). Như vậy, giá dịch vụ đấu giá, chi phí đấu giá được tính như sau:</p>
 <ul>
   <li>Giá dịch vụ, chi phí dịch vụ đấu giá trong trường hợp đấu giá thành: Bên A thanh toán cho Bên B giá dịch vụ là: {{ svc_fee }} ({{ vat_note }}).</li>
-  <li>Chi phí đấu giá: Được quy định tại khoản 2 Điều 66 Luật Đấu giá tài sản 2016; Luật sửa đổi, bổ sung một số điều của Luật đấu giá tài sản ngày 27/6/2024: Chi phí thông báo công khai trên Báo; chi phí Thông báo đấu giá tài sản trên Cổng Đấu giá tài sản Quốc gia; chi phí hành chính (photo hồ sơ đấu giá; soạn thảo quy chế, chi phí niêm yết việc đấu giá tài sản...): Căn cứ theo hóa đơn và chứng từ thực tế, tối đa không quá {{ fmt0(fees.max_auction_cost_vnd) if fees.max_auction_cost_vnd else '……' }} đồng.</li>
-  <li>Giá dịch vụ, chi phí dịch vụ đấu giá trong trường hợp đấu giá một phần không thành: Trong trường hợp đấu giá một phần không thành, đề nghị Bên A thanh toán cho Bên B khoản giá dịch vụ là: tỷ lệ (%) đấu giá thành theo giá khởi điểm đối với các lô đất đấu giá thành × {{ fees.partial_fail_formula or '……' }} và Chi phí đấu giá tài sản.</li>
-  <li>Chi phí đấu giá tài sản trong trường hợp đấu giá không thành: Căn cứ theo hóa đơn và chứng từ thực tế, tối đa không quá {{ fmt0(fees.max_fail_cost_vnd) if fees.max_fail_cost_vnd else '……' }} đồng.</li>
+  <li>Chi phí đấu giá: Được quy định tại khoản 2 Điều 66 Luật Đấu giá tài sản 2016; Luật sửa đổi, bổ sung một số điều của Luật đấu giá tài sản ngày 27/6/2024: Chi phí thông báo công khai trên Báo; chi phí Thông báo đấu giá tài sản trên Cổng Đấu giá tài sản Quốc gia; chi phí hành chính (photo hồ sơ đấu giá; soạn thảo quy chế, chi phí niêm yết việc đấu giá tài sản...): Căn cứ theo hóa đơn và chứng từ thực tế, tối đa không quá {{ ce_slot('max_auction_cost_vnd', max_auction_cost) }} đồng.</li>
+  <li>Giá dịch vụ, chi phí dịch vụ đấu giá trong trường hợp đấu giá một phần không thành: Trong trường hợp đấu giá một phần không thành, đề nghị Bên A thanh toán cho Bên B khoản giá dịch vụ là: tỷ lệ (%) đấu giá thành theo giá khởi điểm đối với các lô đất đấu giá thành × {{ ce_slot('partial_fail_formula', partial_fail_formula) }} và Chi phí đấu giá tài sản.</li>
+  <li>Chi phí đấu giá tài sản trong trường hợp đấu giá không thành: Căn cứ theo hóa đơn và chứng từ thực tế, tối đa không quá {{ ce_slot('max_fail_cost_vnd', max_fail_cost) }} đồng.</li>
   <li>Hình thức thanh toán: Chuyển khoản vào tài khoản của Bên B.</li>
   <li>Thời gian thanh toán: {{ ce_slot('payment_terms', pay_terms) }}</li>
 </ul>
+</div>
 
 <div class="sec">
   <h2>Điều 6. Bàn giao hồ sơ, tài liệu hồ sơ đấu giá tài sản</h2>
@@ -115,5 +119,5 @@
   <p><strong>3.</strong> Trong quá trình thực hiện hợp đồng nếu phát sinh tranh chấp trong việc thực hiện hợp đồng thì hai Bên cùng nhau bàn bạc, thỏa thuận, thống nhất cách giải quyết trên cơ sở công bằng, tự nguyện, cùng có lợi. Trường hợp không tự giải quyết được thì hai Bên có quyền đưa ra Tòa án nhân dân cấp có thẩm quyền để giải quyết theo thủ tục tố tụng dân sự.</p>
   <p><strong>4.</strong> Thời hạn thực hiện hợp đồng được xác định từ khi Hợp đồng được hai Bên ký kết cho đến khi hai bên thanh lý Hợp đồng. Việc thanh lý Hợp đồng này sẽ được thực hiện bằng Biên bản thanh lý do hai Bên cùng ký kết.</p>
   <p><strong>5.</strong> Hợp đồng này có hiệu lực kể từ ngày hai bên ký hợp đồng. Hợp đồng hết hiệu lực sau khi hai bên tiến hành thanh lý hợp đồng theo luật định.</p>
-  <p>Hợp đồng này được lập thành {{ copies }} bản có giá trị pháp lý như nhau, bên A giữ {{ (copies // 2) if copies >= 2 else copies }} bản, bên B giữ {{ (copies // 2) if copies >= 2 else copies }} bản để thực hiện./.</p>
+  <p class="closing-copies">Hợp đồng này được lập thành {{ copies }} bản có giá trị pháp lý như nhau, bên A giữ {{ (copies // 2) if copies >= 2 else copies }} bản, bên B giữ {{ (copies // 2) if copies >= 2 else copies }} bản để thực hiện./.</p>
 </div>

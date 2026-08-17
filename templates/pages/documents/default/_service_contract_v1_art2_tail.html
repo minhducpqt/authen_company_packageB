@@ -12,13 +12,15 @@
 {% set dossier_txt = v.dossier_reception_place or defs.dossier_reception_place or ('Văn phòng Giao dịch ' ~ pb_name ~ ' và trụ sở ' ~ pa_name) %}
 Các bên thống nhất địa điểm tiếp nhận hồ sơ tham gia đấu giá tại {{ ce_slot('dossier_reception_place', dossier_txt) }}.</p>
 <p><strong>3.2. Cách thức nộp tiền đặt trước tham gia đấu giá:</strong><br>
-Khách hàng đăng ký tham gia đấu giá phải nộp khoản tiền đặt trước vào tài khoản của bên B trong thời hạn từ ngày niêm yết việc đấu giá tài sản đến trước ngày mở phiên đấu giá 02 (hai) ngày làm việc, cụ thể:<br>
+Khách hàng đăng ký tham gia đấu giá phải nộp khoản tiền đặt trước vào tài khoản của bên B trong thời hạn từ ngày niêm yết việc đấu giá tài sản đến trước ngày mở phiên đấu giá 02 (hai) ngày làm việc, cụ thể:</p>
 {% set pa = ctx.payment_accounts if ctx else {} %}
 {% set dep_acct = pa.deposit_account or '……' %}
 {% set dep_bank = pa.deposit_bank or '……' %}
-Đơn vị hưởng: {{ ce_slot('party_b_name', pb_name) }}<br>
-Tài khoản số: {{ dep_acct }}<br>
-Ngân hàng: {{ dep_bank }}</p>
+<div class="info-block">
+  <p class="info-row">Đơn vị hưởng: {{ ce_slot('party_b_name', pb_name) }}</p>
+  <p class="info-row">Tài khoản số: {{ dep_acct }}</p>
+  <p class="info-row">Ngân hàng: {{ dep_bank }}</p>
+</div>
 
 <p><strong>4. Phương thức thu và xử lý tiền bán hồ sơ mời tham gia đấu giá, tiền đặt trước</strong></p>
 <p><strong>4.1. Đối với tiền bán hồ sơ mời tham gia đấu giá</strong><br>
