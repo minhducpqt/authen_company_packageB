@@ -21,6 +21,18 @@
   .pf-btn { display:inline-flex; align-items:center; gap:5px; padding:7px 12px; border-radius:9px; font-size:12px; font-weight:600; text-decoration:none; border:1px solid #cbd5e1; background:#fff; color:#334155; }
   .pf-alert { padding:12px 14px; border-radius:10px; background:#fef2f2; color:#b91c1c; font-size:13px; margin-bottom:16px; }
   .pf-hint { font-size:13px; color:#64748b; margin:0 0 18px; }
+  .pf-workflow { margin-bottom:24px; }
+  .pf-workflow-hd { margin:0 0 12px; font-size:13px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.04em; }
+  .pf-docgen { margin-bottom:14px; padding:16px 18px; background:#fff; border:1px solid #e2e8f0; border-radius:14px; }
+  .pf-docgen:last-child { margin-bottom:0; }
+  .pf-docgen-hd { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; flex-wrap:wrap; }
+  .pf-docgen-title { margin:0; font-size:15px; font-weight:700; color:#0f172a; display:flex; align-items:center; gap:8px; }
+  .pf-docgen-desc { font-size:13px; color:#64748b; margin:0 0 12px; line-height:1.45; }
+  .pf-docgen-meta { display:flex; flex-wrap:wrap; gap:14px 20px; font-size:13px; color:#475569; margin:0 0 12px; }
+  .pf-docgen-meta dt { font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:#94a3b8; margin:0 0 2px; }
+  .pf-docgen-meta dd { margin:0; font-weight:600; color:#0f172a; }
+  .pf-docgen-actions { display:flex; flex-wrap:wrap; gap:8px; }
+  .pf-btn-primary { background:#4f46e5; border-color:#4f46e5; color:#fff; }
 </style>
 <div class="fm-page">
   {{ forms_page_header(
@@ -49,9 +61,59 @@
   </form>
 
   {% if not project_id %}
-  <p class="pf-hint">Chọn dự án để xem tất cả biểu mẫu đã tạo, nhóm theo Trước / Trong / Sau phiên.</p>
+  <p class="pf-hint">Chọn dự án để xem luồng giấy tờ (hợp đồng → quy chế → …) và các biểu mẫu khác theo giai đoạn phiên.</p>
   {% else %}
+    {% if workflow_steps %}
+    <section class="pf-workflow" aria-labelledby="pf-workflow-title">
+      <h2 class="pf-workflow-hd" id="pf-workflow-title">Luồng giấy tờ dự án</h2>
+      {% for step in workflow_steps %}
+      <article class="pf-docgen" aria-labelledby="pf-step-{{ step.slug }}">
+        <div class="pf-docgen-hd">
+          <h3 class="pf-docgen-title" id="pf-step-{{ step.slug }}">
+            <i class="{{ step.icon }}" aria-hidden="true"></i>
+            {{ step.name }}
+          </h3>
+          {% if step.instance %}
+            {% if step.instance.status == 'FINAL' %}
+              {{ forms_status_badge('active') }}
+            {% else %}
+              <span class="fm-badge fm-badge--soon">Nháp</span>
+            {% endif %}
+          {% endif %}
+        </div>
+        {% if step.instance %}
+        <dl class="pf-docgen-meta">
+          <div>
+            <dt>Tiêu đề</dt>
+            <dd>{{ step.instance.title or '—' }}</dd>
+          </div>
+          <div>
+            <dt>Số văn bản</dt>
+            <dd>{{ step.instance.document_no or '—' }}</dd>
+          </div>
+          <div>
+            <dt>Cập nhật</dt>
+            <dd>{{ step.instance.updated_at[:16] if step.instance.updated_at else '—' }}</dd>
+          </div>
+        </dl>
+        {% else %}
+        <p class="pf-docgen-desc">{{ step.desc }}</p>
+        {% endif %}
+        <div class="pf-docgen-actions">
+          {% if step.primary_href %}
+          <a href="{{ step.primary_href }}" class="pf-btn pf-btn-primary"><i class="{{ step.primary_icon or 'ri-arrow-right-line' }}"></i> {{ step.primary_label }}</a>
+          {% endif %}
+          {% if step.secondary_href %}
+          <a href="{{ step.secondary_href }}" class="pf-btn"><i class="ri-file-text-line"></i> {{ step.secondary_label }}</a>
+          {% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    </section>
+    {% endif %}
+
     {% for g in groups %}
+    {% if g.count > 0 %}
     <section class="pf-group" aria-labelledby="pf-phase-{{ g.phase.slug }}">
       <div class="pf-group-hd">
         <h2 class="pf-group-title" id="pf-phase-{{ g.phase.slug }}">
@@ -60,7 +122,6 @@
         </h2>
         <span class="pf-group-count">{{ g.count }} biểu mẫu</span>
       </div>
-      {% if g.forms %}
       <table class="pf-table">
         <thead>
           <tr>
@@ -85,10 +146,8 @@
           {% endfor %}
         </tbody>
       </table>
-      {% else %}
-      <div class="pf-empty">Chưa có biểu mẫu {{ g.phase.name|lower }} cho dự án này.</div>
-      {% endif %}
     </section>
+    {% endif %}
     {% endfor %}
   {% endif %}
 </div>

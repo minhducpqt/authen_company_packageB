@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from typing import Optional
+from urllib.parse import quote
 
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -18,6 +19,8 @@ from utils.forms_catalog.catalog import (
     group_instances_by_phase,
     list_form_items,
     list_config_items,
+    project_docgen_actions,
+    project_workflow_steps,
     template_source_for_item,
 )
 from utils.templates import templates
@@ -113,8 +116,11 @@ async def forms_by_project(
     hub = get_project_forms_hub()
     projects: list = []
     groups: list = []
+    instances: list = []
+    docgen_actions: dict = {}
+    workflow_steps: list = []
     selected_project = None
-    error = None
+    error = request.query_params.get("error")
     try:
         projects = await fetch_projects(token)
     except Exception as e:
@@ -128,13 +134,16 @@ async def forms_by_project(
         if selected_project:
             try:
                 data = await list_instances(token, project_id=project_id)
-                groups = group_instances_by_phase(data.get("items") or [])
+                instances = data.get("items") or []
+                groups = group_instances_by_phase(instances)
+                docgen_actions = project_docgen_actions(instances, project_id=project_id)
+                workflow_steps = project_workflow_steps(instances, project_id=project_id)
             except Exception as e:
                 error = _err_msg(e)
         else:
             error = error or "Không tìm thấy dự án."
 
-    total_instances = sum(g["count"] for g in groups)
+    total_instances = len(instances) if instances else sum(g["count"] for g in groups)
     return templates.TemplateResponse(
         "pages/forms/project_forms.html",
         {
@@ -146,9 +155,46 @@ async def forms_by_project(
             "selected_project": selected_project,
             "groups": groups,
             "total_instances": total_instances,
+            "docgen_actions": docgen_actions,
+            "workflow_steps": workflow_steps,
             "error": error,
         },
     )
+
+
+@router.get("/theo-du-an/sinh-quy-che")
+async def spawn_regulations_from_project(
+    request: Request,
+    project_id: int = Query(..., ge=1),
+):
+    """Sinh quy chế từ hợp đồng đã chốt của dự án (entry từ «Theo dự án»)."""
+    token = get_access_token(request)
+    back = f"/bieu-mau/theo-du-an?project_id={project_id}"
+    try:
+        data = await list_instances(
+            token,
+            phase_slug="truoc-phien",
+            category_slug="hop-dong",
+            project_id=project_id,
+        )
+        contracts = data.get("items") or []
+        if not contracts:
+            return RedirectResponse(
+                f"{back}&error={quote('Dự án chưa có hợp đồng.')}",
+                status_code=303,
+            )
+        contract = contracts[0]
+        if contract.get("status") != "FINAL":
+            return RedirectResponse(
+                f"{back}&error={quote('Cần chốt hợp đồng trước khi sinh quy chế.')}",
+                status_code=303,
+            )
+        return RedirectResponse(
+            f"/bieu-mau/truoc-phien/quy-che/tao-tu-hop-dong/{contract['id']}",
+            status_code=303,
+        )
+    except Exception as e:
+        return RedirectResponse(f"{back}&error={quote(_err_msg(e))}", status_code=303)
 
 
 @router.get("/phieu-tra-gia")

@@ -89,6 +89,28 @@ _FORM_ITEMS: Dict[str, List[Dict[str, Any]]] = {
     "post_session": [],
 }
 
+# Quy chế: sinh từ HĐ đã chốt, quản lý tại «Theo dự án» — không hiện trong hub Trước phiên.
+# Thứ tự luồng giấy tờ trên màn «Theo dự án» (trên → dưới).
+_PROJECT_WORKFLOW: List[tuple[str, str]] = [
+    ("truoc-phien", "hop-dong"),
+    ("truoc-phien", "quy-che"),
+]
+
+_WORKFLOW_INSTANCE_KEYS = frozenset(_PROJECT_WORKFLOW)
+
+_PROJECT_DOC_TYPES: Dict[str, Dict[str, Any]] = {
+    "quy-che": {
+        "id": "quy-che",
+        "slug": "quy-che",
+        "phase_id": "pre_session",
+        "name": "Quy chế",
+        "description": "Quy chế cuộc đấu giá (M5.1) — sinh từ hợp đồng đã chốt.",
+        "icon": "ri-book-2-line",
+        "doc_kind": DocKind.AUCTION_REGULATIONS,
+        "template_key": "auction_regulations_v1",
+    },
+}
+
 # --- Chi tiết mẫu con (vd. phiếu trả giá đấu thường) ---
 
 BID_SHEET_VARIANTS: List[Dict[str, Any]] = [
@@ -142,7 +164,14 @@ def get_form_item(phase_id: str, item_slug: str) -> Optional[Dict[str, Any]]:
     for item in _FORM_ITEMS.get(phase_id, []):
         if item.get("slug") == item_slug:
             return dict(item)
+    meta = _PROJECT_DOC_TYPES.get(item_slug)
+    if meta and meta.get("phase_id") == phase_id:
+        return dict(meta)
     return None
+
+
+def get_project_doc_type(category_slug: str) -> Optional[Dict[str, Any]]:
+    return dict(_PROJECT_DOC_TYPES[category_slug]) if category_slug in _PROJECT_DOC_TYPES else None
 
 
 def get_form_item_by_phase_slug(phase_slug: str, item_slug: str) -> Optional[Dict[str, Any]]:
@@ -214,7 +243,7 @@ def get_project_forms_hub() -> Dict[str, Any]:
     return {
         "id": "theo-du-an",
         "name": "Các biểu mẫu theo dự án",
-        "description": "Tra cứu biểu mẫu đã tạo theo dự án, gom Trước / Trong / Sau phiên trên một màn hình.",
+        "description": "Tra cứu biểu mẫu theo dự án: luồng hợp đồng → quy chế và các giấy tờ khác theo giai đoạn phiên.",
         "icon": "ri-folder-chart-line",
         "color": "indigo",
         "href": "/bieu-mau/theo-du-an",
@@ -226,7 +255,168 @@ def resolve_instance_type_label(phase_slug: str, category_slug: str) -> str:
     item = get_form_item_by_phase_slug(phase_slug, category_slug)
     if item:
         return item.get("name") or category_slug
+    meta = get_project_doc_type(category_slug)
+    if meta:
+        return meta.get("name") or category_slug
     return category_slug.replace("-", " ").title()
+
+
+def _workflow_doc_meta(phase_slug: str, category_slug: str) -> Dict[str, Any]:
+    item = get_form_item_by_phase_slug(phase_slug, category_slug)
+    if item:
+        return {
+            "name": item.get("name") or category_slug,
+            "description": item.get("description") or "",
+            "icon": item.get("icon") or "ri-file-line",
+        }
+    meta = get_project_doc_type(category_slug)
+    if meta:
+        return {
+            "name": meta.get("name") or category_slug,
+            "description": meta.get("description") or "",
+            "icon": meta.get("icon") or "ri-file-line",
+        }
+    return {
+        "name": category_slug.replace("-", " ").title(),
+        "description": "",
+        "icon": "ri-file-line",
+    }
+
+
+def project_docgen_actions(
+    instances: List[Dict[str, Any]],
+    *,
+    project_id: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Trạng thái HĐ / quy chế của dự án cho màn «Theo dự án»."""
+    contract: Optional[Dict[str, Any]] = None
+    regulations: Optional[Dict[str, Any]] = None
+    for inst in instances or []:
+        if (inst.get("phase_slug"), inst.get("category_slug")) == ("truoc-phien", "hop-dong"):
+            contract = inst
+        elif (inst.get("phase_slug"), inst.get("category_slug")) == ("truoc-phien", "quy-che"):
+            regulations = inst
+    contract_final = bool(contract and contract.get("status") == "FINAL")
+    pid = int(project_id) if project_id else None
+    spawn_href = (
+        f"/bieu-mau/theo-du-an/sinh-quy-che?project_id={pid}"
+        if pid and contract_final and not regulations
+        else None
+    )
+    create_contract_href = (
+        f"/bieu-mau/truoc-phien/hop-dong/tao?project_id={pid}"
+        if pid and not contract
+        else None
+    )
+    return {
+        "contract": contract,
+        "contract_id": contract.get("id") if contract else None,
+        "contract_final": contract_final,
+        "regulations": regulations,
+        "regulations_id": regulations.get("id") if regulations else None,
+        "can_spawn_regulations": contract_final and not regulations,
+        "spawn_regulations_href": spawn_href,
+        "can_create_contract": bool(pid and not contract),
+        "create_contract_href": create_contract_href,
+    }
+
+
+def project_workflow_steps(
+    instances: List[Dict[str, Any]],
+    *,
+    project_id: Optional[int] = None,
+) -> List[Dict[str, Any]]:
+    """Các bước luồng giấy tờ theo dự án (HĐ → quy chế → …)."""
+    actions = project_docgen_actions(instances, project_id=project_id)
+    contract = actions.get("contract")
+    regulations = actions.get("regulations")
+    steps: List[Dict[str, Any]] = []
+
+    meta = _workflow_doc_meta("truoc-phien", "hop-dong")
+    if contract:
+        row = dict(contract)
+        row["type_label"] = resolve_instance_type_label("truoc-phien", "hop-dong")
+        row["open_href"] = resolve_instance_href(row)
+        steps.append(
+            {
+                **meta,
+                "slug": "hop-dong",
+                "instance": row,
+                "status": "ready",
+                "desc": "Hợp đồng dịch vụ đấu giá của dự án.",
+                "primary_href": row["open_href"],
+                "primary_label": "Mở hợp đồng",
+                "primary_icon": "ri-file-text-line",
+            }
+        )
+    else:
+        steps.append(
+            {
+                **meta,
+                "slug": "hop-dong",
+                "instance": None,
+                "status": "missing",
+                "desc": "Tạo hợp đồng dịch vụ đấu giá cho dự án (một hợp đồng / dự án).",
+                "primary_href": actions.get("create_contract_href"),
+                "primary_label": "Tạo hợp đồng",
+                "primary_icon": "ri-add-line",
+            }
+        )
+
+    meta = _workflow_doc_meta("truoc-phien", "quy-che")
+    if regulations:
+        row = dict(regulations)
+        row["type_label"] = resolve_instance_type_label("truoc-phien", "quy-che")
+        row["open_href"] = resolve_instance_href(row)
+        steps.append(
+            {
+                **meta,
+                "slug": "quy-che",
+                "instance": row,
+                "status": "ready",
+                "desc": "Quy chế đấu giá đã sinh từ hợp đồng đã chốt.",
+                "primary_href": row["open_href"],
+                "primary_label": "Mở quy chế",
+                "primary_icon": "ri-book-2-line",
+            }
+        )
+    elif actions.get("can_spawn_regulations"):
+        steps.append(
+            {
+                **meta,
+                "slug": "quy-che",
+                "instance": None,
+                "status": "action",
+                "desc": "Hợp đồng đã chốt — sinh quy chế từ dữ liệu hợp đồng (một quy chế / dự án).",
+                "primary_href": actions.get("spawn_regulations_href"),
+                "primary_label": "Sinh quy chế",
+                "primary_icon": "ri-add-line",
+            }
+        )
+    elif contract and not actions.get("contract_final"):
+        steps.append(
+            {
+                **meta,
+                "slug": "quy-che",
+                "instance": None,
+                "status": "blocked",
+                "desc": "Cần chốt hợp đồng trước khi sinh quy chế.",
+                "secondary_href": f"/bieu-mau/truoc-phien/hop-dong/{actions['contract_id']}",
+                "secondary_label": "Mở hợp đồng",
+            }
+        )
+    else:
+        steps.append(
+            {
+                **meta,
+                "slug": "quy-che",
+                "instance": None,
+                "status": "blocked",
+                "desc": "Tạo và chốt hợp đồng trước, sau đó sinh quy chế tại đây.",
+            }
+        )
+
+    return steps
 
 
 def resolve_instance_href(inst: Dict[str, Any]) -> str:
@@ -235,6 +425,8 @@ def resolve_instance_href(inst: Dict[str, Any]) -> str:
     iid = inst.get("id")
     if phase_slug == "truoc-phien" and category_slug == "hop-dong" and iid:
         return f"/bieu-mau/truoc-phien/hop-dong/{iid}"
+    if phase_slug == "truoc-phien" and category_slug == "quy-che" and iid:
+        return f"/bieu-mau/truoc-phien/quy-che/{iid}"
     item = get_form_item_by_phase_slug(phase_slug, category_slug)
     if item and item.get("href"):
         return str(item["href"])
@@ -260,6 +452,9 @@ def group_instances_by_phase(instances: List[Dict[str, Any]]) -> List[Dict[str, 
     enriched = enrich_instances_for_project_view(instances)
     buckets: Dict[str, List[Dict[str, Any]]] = {p["slug"]: [] for p in FORM_PHASES}
     for inst in enriched:
+        key = (inst.get("phase_slug") or "", inst.get("category_slug") or "")
+        if key in _WORKFLOW_INSTANCE_KEYS:
+            continue
         slug = inst.get("phase_slug") or ""
         if slug in buckets:
             buckets[slug].append(inst)

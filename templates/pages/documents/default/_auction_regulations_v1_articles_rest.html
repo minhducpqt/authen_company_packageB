@@ -1,0 +1,69 @@
+{# Điều 9–25: nội dung tĩnh theo mẫu M5.1 (rút gọn định dạng, giữ nguyên văn bản pháp lý) #}
+{% from 'pages/documents/default/_ce_slot.html' import ce_slot %}
+
+<div class="sec">
+  <h2>Điều 9. Đối tượng được tham gia đấu giá, không được tham gia đấu giá; hồ sơ; xét duyệt</h2>
+  <p class="clause-head"><strong>1. Đối tượng tham gia đấu giá:</strong> Các cá nhân thuộc đối tượng được Nhà nước giao đất có thu tiền sử dụng đất theo quy định tại Khoản 1 Điều 119 Luật đất đai 2024, Khoản 2 Điều 55 Nghị định số 102/2024/NĐ-CP và không thuộc các trường hợp không được đăng ký tham gia đấu giá theo quy định tại khoản 4 Điều 38 Luật Đấu giá tài sản năm 2016, sửa đổi bổ sung năm 2024.</p>
+  <p class="clause-head"><strong>2. Điều kiện tham gia đấu giá</strong> theo quy chế này và nộp tiền mua hồ sơ, tiền đặt trước theo Điều 6.</p>
+  <p class="clause-head"><strong>3. Đối tượng không được tham gia đấu giá</strong> theo quy định của Luật Đấu giá tài sản và pháp luật đất đai.</p>
+  <p class="clause-head"><strong>4. Hồ sơ tham gia đấu giá</strong> theo mục 2 Điều 4 của Quy chế này.</p>
+  <p class="clause-head"><strong>5. Xét duyệt điều kiện</strong> được tiến hành sau khi kết thúc thời hạn nộp hồ sơ, trong điều kiện bảo mật.</p>
+</div>
+
+<div class="sec">
+  <h2>Điều 10. Nội quy phòng đấu giá</h2>
+  <p>Người tham gia đấu giá phải có tên trong Danh sách đủ điều kiện, được cấp thẻ khách hàng và trực tiếp trả giá; tuân thủ nội quy phòng đấu giá; không gây rối, thông đồng dìm giá hoặc nâng giá. Vi phạm bị truất quyền và xử lý theo quy định pháp luật.</p>
+</div>
+
+<div class="sec">
+  <h2>Điều 11. Trình tự phiên đấu giá, cách thức trả giá và xác định giá trúng đấu giá</h2>
+  <p class="clause-head"><strong>1. Trình tự phiên đấu giá</strong> do Đấu giá viên điều hành: giới thiệu, điểm danh, phổ biến Quy chế, giới thiệu lô đất, công bố hình thức đấu giá 01 vòng bỏ phiếu trực tiếp.</p>
+  <p>Nhắc lại mức giá khởi điểm, bước giá; thời gian ghi phiếu và bỏ phiếu trả giá không quá {{ ce_slot('ballot_minutes', reg.ballot_minutes or '……') }} phút{% if reg.ballot_minutes_words %} ({{ ce_slot('ballot_minutes_words', reg.ballot_minutes_words) }}){% endif %} trong phiên đấu giá.</p>
+  <p class="clause-head"><strong>2. Cách thức trả giá:</strong> Mỗi người được phát duy nhất một phiếu trả giá với một lô đất; trả giá theo 01m² đất; xét giá công khai tại chỗ sau khi kết thúc thời gian bỏ phiếu.</p>
+  <p class="clause-head"><strong>3. Xác định người trúng đấu giá:</strong> Giá trúng phải cao hơn giá khởi điểm tối thiểu ít nhất một bước giá cho 01 m² đất; người có phiếu trả giá hợp lệ cao nhất được công bố trúng đấu giá.</p>
+</div>
+
+<div class="sec">
+  <h2>Điều 13. Rút lại giá đã trả (Điều 50 Luật Đấu giá tài sản)</h2>
+  <p>Người rút lại giá trước khi công bố trúng đấu giá bị truất quyền và không được nhận lại tiền đặt trước; phiên đấu giá tiếp tục từ mức giá liền kề thấp hơn.</p>
+</div>
+
+<div class="sec">
+  <h2>Điều 14. Từ chối kết quả trúng đấu giá (Điều 51 Luật Đấu giá tài sản)</h2>
+  <p>Theo quy định Luật Đấu giá tài sản: người trả giá liền kề có thể trở thành người trúng đấu giá nếu đáp ứng điều kiện về tiền đặt trước và chấp nhận mua tài sản.</p>
+</div>
+
+<div class="sec">
+  <h2>Điều 15. Các trường hợp vi phạm và không được trả lại tiền đặt trước</h2>
+  <p>Bao gồm: không tham dự phiên không có lý do chính đáng; rút giá; từ chối kết quả trúng đấu giá; vi phạm nội quy phòng đấu giá; và các trường hợp theo Luật Đấu giá tài sản.</p>
+</div>
+
+<div class="sec">
+  <h2>Điều 16. Biên bản đấu giá, công nhận kết quả đấu giá</h2>
+  <p>Biên bản đấu giá được lập tại phiên, có chữ ký Đấu giá viên, người ghi biên bản, người trúng đấu giá và đại diện các bên. Kết quả gửi {{ ce_slot('party_a_name', pa_name) }} để cơ quan có thẩm quyền ra quyết định công nhận.</p>
+</div>
+
+<div class="sec">
+  <h2>Điều 18. Đấu giá không thành</h2>
+  <p>Các trường hợp: ít hơn 2 người đăng ký/đủ điều kiện/tham dự/trả giá hợp lệ; từ chối ký biên bản; rút giá không còn người trả tiếp; từ chối kết quả trúng đấu giá theo quy định pháp luật.</p>
+</div>
+
+<div class="sec">
+  <h2>Điều 19. Trường hợp chỉ có một người đăng ký/tham gia/trả giá</h2>
+  <p>Không áp dụng với tài sản là Quyền sử dụng đất khi Nhà nước giao đất có thu tiền sử dụng đất theo quy định pháp luật về đấu giá tài sản và pháp luật đất đai.</p>
+</div>
+
+<div class="sec">
+  <h2>Điều 20–21. Xử lý vi phạm; Nộp tiền sử dụng đất</h2>
+  <p>Xử lý vi phạm hành chính và truy cứu trách nhiệm hình sự theo quy định pháp luật. Người trúng đấu giá có nghĩa vụ nộp tiền sử dụng đất đúng thời hạn thông báo của cơ quan có thẩm quyền.</p>
+</div>
+
+<div class="sec">
+  <h2>Điều 22–23. Quyền và nghĩa vụ người tham gia / trúng đấu giá</h2>
+  <p>Theo quy định Luật Đấu giá tài sản, Luật Đất đai và Quy chế này: quyền được tham dự phiên, được cung cấp thông tin, được hoàn tiền đặt trước nếu không trúng; nghĩa vụ nộp hồ sơ, tiền đặt trước, có mặt đúng giờ và tuân thủ Quy chế.</p>
+</div>
+
+<div class="sec">
+  <h2>Điều 24–25. Trách nhiệm về giá trị tài sản; Giải quyết tranh chấp</h2>
+  <p>Công ty không chịu trách nhiệm về giá trị, chất lượng, pháp lý tài sản trừ khi không thông báo đầy đủ thông tin. Tranh chấp được giải quyết trên tinh thần thương lượng, hòa giải hoặc theo quy định pháp luật.</p>
+</div>

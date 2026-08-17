@@ -14,36 +14,36 @@
 </style>
 <div class="fm-page dg-form">
   {{ forms_page_header(
-    "Tạo hợp đồng",
-    subtitle="Mỗi dự án chỉ một hợp đồng. Nếu dự án đã có HĐ, chọn lại sẽ mở bản hiện có.",
+    "Tạo quy chế",
+    subtitle="Mỗi dự án chỉ một quy chế. Nếu dự án đã có QC, chọn lại sẽ mở bản hiện có.",
     breadcrumb_items=[
       {"label": "Biểu mẫu", "href": "/bieu-mau"},
       {"label": phase.name, "href": phase.href},
-      {"label": item.name, "href": "/bieu-mau/truoc-phien/hop-dong"},
+      {"label": item.name, "href": "/bieu-mau/truoc-phien/quy-che"},
       {"label": "Tạo mới", "href": null},
     ],
   ) }}
   {% if error %}<div class="dg-alert">{{ error }}</div>{% endif %}
 
   <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:20px">
-    <form method="post" action="/bieu-mau/truoc-phien/hop-dong/tao">
+    <form method="post" action="/bieu-mau/truoc-phien/quy-che/tao">
       <div class="dg-field">
         <label>Dự án *</label>
         <select name="project_id" required>
           <option value="">— Chọn dự án —</option>
           {% for p in projects %}
-          <option value="{{ p.id }}"{% if preselected_project_id and p.id == preselected_project_id %} selected{% endif %}{% if projects_with_contract.get(p.id) %} data-has-contract="1"{% endif %}>{{ p.project_code }} — {{ p.name }}{% if projects_with_contract.get(p.id) %} (đã có HĐ){% endif %}</option>
+          <option value="{{ p.id }}"{% if projects_with_reg.get(p.id) %} data-has-reg="1"{% endif %}>{{ p.project_code }} — {{ p.name }}{% if projects_with_reg.get(p.id) %} (đã có QC){% endif %}</option>
           {% endfor %}
         </select>
       </div>
       <div class="dg-field">
         <label>Tỉnh / Thành &amp; Xã / Phường</label>
-        {{ forms_division_picker('contractCreateDivPicker', optional_ward=true) }}
-        <p style="font-size:11px;color:#64748b;margin:8px 0 0">Bấm <strong>Tìm</strong> để gõ tên tỉnh hoặc xã (giống đăng ký tham gia đấu giá). Gắn xã giúp tự điền UBND và căn cứ pháp lý.</p>
+        {{ forms_division_picker('regulationsCreateDivPicker', optional_ward=true) }}
+        <p style="font-size:11px;color:#64748b;margin:8px 0 0">Gắn xã giúp tự điền UBND và địa điểm. Nếu đã có hợp đồng cùng dự án, thông tin sẽ được điền từ HĐ.</p>
       </div>
       <div style="display:flex;gap:10px;margin-top:8px">
-        <button type="submit" class="dg-btn dg-btn-primary">Tạo / mở hợp đồng <i class="ri-arrow-right-line"></i></button>
-        <a href="/bieu-mau/truoc-phien/hop-dong" class="dg-btn">Huỷ</a>
+        <button type="submit" class="dg-btn dg-btn-primary">Tạo / mở quy chế <i class="ri-arrow-right-line"></i></button>
+        <a href="/bieu-mau/truoc-phien/quy-che" class="dg-btn">Huỷ</a>
       </div>
     </form>
   </div>
@@ -52,7 +52,7 @@
 {{ forms_division_picker_script() }}
 <script>
 FmDivisionPicker.mount({
-  rootId: 'contractCreateDivPicker',
+  rootId: 'regulationsCreateDivPicker',
   provinces: {{ provinces|tojson }},
   wardPlaceholder: 'Không chọn / nhập sau',
 });

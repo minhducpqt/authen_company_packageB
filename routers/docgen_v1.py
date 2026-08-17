@@ -3,9 +3,10 @@ from __future__ import annotations
 
 import json
 from typing import Any, Dict, Optional
+from urllib.parse import quote
 
 import httpx
-from fastapi import APIRouter, Form, Request
+from fastapi import APIRouter, Form, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from services.docgen_v1_client import (
@@ -35,6 +36,11 @@ from utils.docgen_contract_render import (
     merge_fields_for_render,
     merge_ctx_values_for_render,
     render_contract_html,
+)
+from utils.docgen_regulations_render import (
+    merge_ctx_values_for_render as merge_reg_ctx_values,
+    merge_fields_for_render as merge_reg_fields,
+    render_regulations_html,
 )
 from utils.forms_catalog.catalog import get_form_item, get_phase, list_config_items
 from utils.templates import templates
@@ -283,7 +289,10 @@ async def contract_list(request: Request):
 
 
 @router.get("/truoc-phien/hop-dong/tao", response_class=HTMLResponse)
-async def contract_create_page(request: Request):
+async def contract_create_page(
+    request: Request,
+    project_id: Optional[int] = Query(None, ge=1),
+):
     token = await _token(request)
     phase = get_phase("pre_session")
     item = get_form_item("pre_session", "hop-dong")
@@ -310,6 +319,7 @@ async def contract_create_page(request: Request):
             "projects": projects,
             "projects_with_contract": projects_with_contract,
             "provinces": provinces,
+            "preselected_project_id": project_id,
             "error": error,
         },
     )
@@ -412,6 +422,19 @@ async def contract_editor(request: Request, instance_id: int):
         ctx = await get_render_context(token, instance_id)
     except Exception as e:
         return RedirectResponse(f"/bieu-mau/truoc-phien/hop-dong?error={_err_msg(e)}", status_code=303)
+    regulations_id = None
+    try:
+        data = await list_instances(
+            token,
+            phase_slug="truoc-phien",
+            category_slug="quy-che",
+            project_id=inst.get("project_id"),
+        )
+        items = data.get("items") or []
+        if items:
+            regulations_id = items[0].get("id")
+    except Exception:
+        pass
     fields_json = json.dumps(inst.get("fields") or {}, ensure_ascii=False)
     overrides_json = json.dumps(inst.get("overrides") or {}, ensure_ascii=False)
     provinces = await fetch_provinces()
@@ -433,6 +456,8 @@ async def contract_editor(request: Request, instance_id: int):
             "template_path": tpl,
             "company_code": cc,
             "is_final": inst.get("status") == "FINAL",
+            "regulations_id": regulations_id,
+            "regulations_create_url": f"/bieu-mau/truoc-phien/quy-che/tao-tu-hop-dong/{instance_id}",
         },
     )
 
@@ -572,3 +597,306 @@ async def contract_download_pdf(request: Request, instance_id: int):
 @router.get("/cau-hinh", response_class=HTMLResponse)
 async def config_hub(request: Request):
     return RedirectResponse("/bieu-mau/cau-hinh/dia-phuong", status_code=302)
+
+
+# ---------------------------------------------------------------------------
+# Quy chế — danh sách & tạo
+# ---------------------------------------------------------------------------
+
+@router.get("/truoc-phien/quy-che")
+async def regulations_list(request: Request):
+    return RedirectResponse("/bieu-mau/theo-du-an", status_code=302)
+
+
+@router.get("/truoc-phien/quy-che/tao", response_class=HTMLResponse)
+async def regulations_create_page(request: Request):
+    return RedirectResponse("/bieu-mau/theo-du-an", status_code=302)
+
+
+@router.post("/truoc-phien/quy-che/tao", response_class=HTMLResponse)
+async def regulations_create_post(
+    request: Request,
+    project_id: int = Form(...),
+    ward_code: Optional[int] = Form(None),
+):
+    return RedirectResponse(
+        f"/bieu-mau/theo-du-an?project_id={project_id}&error={quote('Sinh quy chế từ mục «Theo dự án» sau khi đã chốt hợp đồng.')}",
+        status_code=303,
+    )
+
+
+@router.get("/truoc-phien/quy-che/tao-tu-hop-dong/{contract_id}", response_class=HTMLResponse)
+async def regulations_create_from_contract(request: Request, contract_id: int):
+    """Tạo hoặc mở quy chế cho cùng dự án với hợp đồng đã chốt."""
+    token = await _token(request)
+    try:
+        contract = await get_instance(token, contract_id)
+    except Exception as e:
+        return RedirectResponse(f"/bieu-mau/truoc-phien/hop-dong?error={_err_msg(e)}", status_code=303)
+    project_id = contract.get("project_id")
+    if contract.get("status") != "FINAL":
+        back = f"/bieu-mau/theo-du-an?project_id={project_id}" if project_id else "/bieu-mau/theo-du-an"
+        return RedirectResponse(
+            f"{back}&error={quote('Cần chốt hợp đồng trước khi sinh quy chế.')}",
+            status_code=303,
+        )
+    ward_code = contract.get("ward_code")
+    try:
+        data = await list_instances(
+            token,
+            phase_slug="truoc-phien",
+            category_slug="quy-che",
+            project_id=project_id,
+        )
+        items = data.get("items") or []
+        if items:
+            return RedirectResponse(f"/bieu-mau/truoc-phien/quy-che/{items[0]['id']}", status_code=303)
+    except Exception:
+        pass
+    body = {
+        "template_key": "auction_regulations_v1",
+        "phase_slug": "truoc-phien",
+        "category_slug": "quy-che",
+        "project_id": project_id,
+        "ward_code": ward_code,
+    }
+    try:
+        inst = await create_instance(token, body)
+        return RedirectResponse(f"/bieu-mau/truoc-phien/quy-che/{inst['id']}", status_code=303)
+    except Exception as e:
+        back = f"/bieu-mau/theo-du-an?project_id={project_id}" if project_id else "/bieu-mau/theo-du-an"
+        return RedirectResponse(f"{back}&error={quote(_err_msg(e))}", status_code=303)
+
+
+async def _render_regulations(
+    request: Request,
+    token: Optional[str],
+    instance_id: int,
+    cc: str,
+    *,
+    fields_override: Optional[Dict[str, Any]] = None,
+    overrides_override: Optional[Dict[str, Any]] = None,
+    persist: bool = False,
+    for_download: bool = False,
+) -> tuple[str, Dict[str, Any], Dict[str, Any], str]:
+    tpl = resolve_template(cc, DocKind.AUCTION_REGULATIONS)
+    if persist and (fields_override is not None or overrides_override is not None):
+        body: Dict[str, Any] = {}
+        if fields_override is not None:
+            body["fields"] = fields_override
+        if overrides_override is not None:
+            body["overrides"] = overrides_override
+        await update_instance(token, instance_id, body)
+    inst = await get_instance(token, instance_id)
+    ctx = await get_render_context(token, instance_id)
+    fields = merge_reg_fields(
+        inst,
+        ctx,
+        fields_override if fields_override is not None else inst.get("fields"),
+    )
+    ov = overrides_override if overrides_override is not None else (inst.get("overrides") or {})
+    ctx = merge_reg_ctx_values(ctx, fields, ov)
+    html = await render_regulations_html(
+        request,
+        template_path=tpl,
+        ctx=ctx,
+        fields=fields,
+        for_download=for_download,
+    )
+    return html, inst, ctx, tpl
+
+
+@router.get("/truoc-phien/quy-che/{instance_id}", response_class=HTMLResponse)
+async def regulations_editor(request: Request, instance_id: int):
+    token = await _token(request)
+    me = await fetch_me(token)
+    cc = company_code_from_me(me)
+    phase = get_phase("pre_session")
+    item = get_form_item("pre_session", "quy-che")
+    tpl = resolve_template(cc, DocKind.AUCTION_REGULATIONS)
+    try:
+        inst = await get_instance(token, instance_id)
+        ctx = await get_render_context(token, instance_id)
+    except Exception as e:
+        return RedirectResponse(
+            f"/bieu-mau/theo-du-an?error={quote(_err_msg(e))}",
+            status_code=303,
+        )
+    contract_id = None
+    try:
+        data = await list_instances(
+            token,
+            phase_slug="truoc-phien",
+            category_slug="hop-dong",
+            project_id=inst.get("project_id"),
+        )
+        items = data.get("items") or []
+        if items:
+            contract_id = items[0].get("id")
+    except Exception:
+        pass
+    fields_json = json.dumps(inst.get("fields") or {}, ensure_ascii=False)
+    overrides_json = json.dumps(inst.get("overrides") or {}, ensure_ascii=False)
+    provinces = await fetch_provinces()
+    return templates.TemplateResponse(
+        "pages/forms/docgen/regulations_editor.html",
+        {
+            "request": request,
+            "title": inst.get("title") or "Quy chế",
+            "phase": phase,
+            "item": item,
+            "instance": inst,
+            "fields_json": fields_json,
+            "overrides_json": overrides_json,
+            "ctx_json": ctx_for_editor(ctx),
+            "provinces": provinces,
+            "preview_url": f"/bieu-mau/truoc-phien/quy-che/{instance_id}/preview",
+            "download_html_url": f"/bieu-mau/truoc-phien/quy-che/{instance_id}/tai-html",
+            "download_pdf_url": f"/bieu-mau/truoc-phien/quy-che/{instance_id}/tai-pdf",
+            "template_path": tpl,
+            "company_code": cc,
+            "is_final": inst.get("status") == "FINAL",
+            "contract_id": contract_id,
+            "project_forms_url": f"/bieu-mau/theo-du-an?project_id={inst.get('project_id')}" if inst.get("project_id") else "/bieu-mau/theo-du-an",
+        },
+    )
+
+
+@router.post("/truoc-phien/quy-che/{instance_id}/doi-xa", response_class=HTMLResponse)
+async def regulations_change_ward(
+    request: Request,
+    instance_id: int,
+    ward_code: int = Form(...),
+):
+    token = await _token(request)
+    try:
+        inst = await get_instance(token, instance_id)
+        if inst.get("status") == "FINAL":
+            return RedirectResponse(f"/bieu-mau/truoc-phien/quy-che/{instance_id}", status_code=303)
+        await update_instance(token, instance_id, {"ward_code": ward_code})
+    except Exception:
+        pass
+    return RedirectResponse(f"/bieu-mau/truoc-phien/quy-che/{instance_id}", status_code=303)
+
+
+@router.post("/truoc-phien/quy-che/{instance_id}/save", response_class=HTMLResponse)
+async def regulations_save(
+    request: Request,
+    instance_id: int,
+    title: str = Form(""),
+    document_no: str = Form(""),
+    fields_json: str = Form("{}"),
+    overrides_json: str = Form("{}"),
+):
+    token = await _token(request)
+    try:
+        fields = json.loads(fields_json or "{}")
+    except json.JSONDecodeError:
+        fields = {}
+    try:
+        overrides = json.loads(overrides_json or "{}")
+    except json.JSONDecodeError:
+        overrides = {}
+    body = {
+        "title": title or None,
+        "document_no": document_no or None,
+        "fields": fields,
+        "overrides": overrides,
+    }
+    try:
+        await update_instance(token, instance_id, body)
+    except Exception:
+        pass
+    return RedirectResponse(f"/bieu-mau/truoc-phien/quy-che/{instance_id}", status_code=303)
+
+
+@router.post("/truoc-phien/quy-che/{instance_id}/finalize", response_class=HTMLResponse)
+async def regulations_finalize(request: Request, instance_id: int):
+    token = await _token(request)
+    try:
+        await finalize_instance(token, instance_id)
+    except Exception:
+        pass
+    return RedirectResponse(f"/bieu-mau/truoc-phien/quy-che/{instance_id}", status_code=303)
+
+
+@router.post("/truoc-phien/quy-che/{instance_id}/reopen", response_class=HTMLResponse)
+async def regulations_reopen(request: Request, instance_id: int):
+    token = await _token(request)
+    try:
+        await reopen_instance(token, instance_id)
+    except Exception:
+        pass
+    return RedirectResponse(f"/bieu-mau/truoc-phien/quy-che/{instance_id}", status_code=303)
+
+
+@router.post("/truoc-phien/quy-che/{instance_id}/preview", response_class=HTMLResponse)
+async def regulations_preview(
+    request: Request,
+    instance_id: int,
+    fields_json: str = Form("{}"),
+    overrides_json: str = Form("{}"),
+):
+    token = await _token(request)
+    me = await fetch_me(token)
+    cc = company_code_from_me(me)
+    try:
+        fields = json.loads(fields_json or "{}")
+    except json.JSONDecodeError:
+        fields = {}
+    try:
+        overrides = json.loads(overrides_json or "{}")
+    except json.JSONDecodeError:
+        overrides = {}
+    try:
+        html, _, _, _ = await _render_regulations(
+            request,
+            token,
+            instance_id,
+            cc,
+            fields_override=fields,
+            overrides_override=overrides,
+            persist=False,
+        )
+    except Exception as e:
+        return HTMLResponse(f"<pre>Preview error: {_err_msg(e)}</pre>", status_code=500)
+    return HTMLResponse(html)
+
+
+@router.get("/truoc-phien/quy-che/{instance_id}/tai-html")
+async def regulations_download_html(request: Request, instance_id: int):
+    token = await _token(request)
+    me = await fetch_me(token)
+    cc = company_code_from_me(me)
+    try:
+        html, inst, _, _ = await _render_regulations(request, token, instance_id, cc, for_download=True)
+    except Exception as e:
+        return HTMLResponse(f"Error: {_err_msg(e)}", status_code=500)
+    from utils.docgen_regulations_render import download_filename as reg_download_filename
+
+    fname = reg_download_filename(inst, "html")
+    return Response(
+        content=html.encode("utf-8"),
+        media_type="text/html; charset=utf-8",
+        headers={"Content-Disposition": attachment_content_disposition(fname)},
+    )
+
+
+@router.get("/truoc-phien/quy-che/{instance_id}/tai-pdf")
+async def regulations_download_pdf(request: Request, instance_id: int):
+    token = await _token(request)
+    me = await fetch_me(token)
+    cc = company_code_from_me(me)
+    try:
+        html, inst, _, _ = await _render_regulations(request, token, instance_id, cc, for_download=True)
+        pdf_bytes = html_to_pdf_bytes(html)
+    except Exception as e:
+        return HTMLResponse(f"Không tạo được PDF: {_err_msg(e)}", status_code=500)
+    from utils.docgen_regulations_render import download_filename as reg_download_filename
+
+    fname = reg_download_filename(inst, "pdf")
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": attachment_content_disposition(fname)},
+    )

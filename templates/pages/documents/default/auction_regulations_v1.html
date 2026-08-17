@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>Quy chế cuộc đấu giá tài sản</title>
+  <style>
+    @page { size: A4; margin: 25mm 20mm 25mm 30mm; }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      font-family: "Times New Roman", Times, serif;
+      font-size: 14pt; line-height: 1.5; color: #000;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    @media screen {
+      body.doc-preview { background: #64748b; }
+      body.doc-preview .sheet {
+        width: 210mm; min-height: 297mm; margin: 16px auto 24px;
+        background: #fff; box-shadow: 0 8px 32px rgba(0,0,0,.22); border: 1px solid rgba(0,0,0,.1);
+      }
+      body.doc-preview .page { padding: 25mm 20mm 25mm 30mm; min-height: 297mm; }
+    }
+    @media print {
+      body { background: #fff; }
+      .sheet { box-shadow: none !important; border: none !important; }
+      .page { padding: 0; }
+    }
+    body.doc-download .page { padding: 0; }
+
+    /* --- Tiêu đề quốc hiệu / đơn vị --- */
+    .hd-row { display: table; width: 100%; margin-bottom: 6px; table-layout: fixed; }
+    .hd-left, .hd-right { display: table-cell; vertical-align: top; width: 50%; padding: 0 4mm; }
+    .hd-left {
+      text-align: center; font-weight: 700; font-size: 13pt;
+      text-transform: uppercase; letter-spacing: 0.03em; line-height: 1.35;
+    }
+    .hd-right { text-align: center; font-size: 13pt; line-height: 1.35; }
+    .hd-right .motto { font-weight: 700; margin: 0 0 2px; }
+    .hd-right .rule {
+      display: inline-block; width: 48mm; max-width: 55%;
+      border: none; border-bottom: 1px solid #000;
+      margin: 8px 0 0; height: 0; overflow: hidden;
+    }
+
+    /* --- Số văn bản, tiêu đề --- */
+    .hd-row + .doc-no-line { margin-top: 12px; }
+    .doc-no-line {
+      text-align: right; font-size: 13pt; margin: 0;
+      line-height: 1.45; text-indent: 0;
+    }
+    .doc-date-line { margin: 2px 0 16px; font-style: italic; }
+    h1.doc-title {
+      text-align: center; font-size: 14pt; font-weight: 700;
+      text-transform: uppercase; margin: 0 0 8px;
+      letter-spacing: 0.04em; line-height: 1.35;
+    }
+    .doc-sub {
+      text-align: center; font-weight: 700; margin: 0 0 14px;
+      line-height: 1.4; padding: 0 6mm;
+    }
+
+    /* --- Phần căn cứ pháp lý --- */
+    .legal {
+      margin-bottom: 14px; padding-bottom: 12px;
+      border-bottom: 1px solid #ccc;
+    }
+    .legal p { text-align: justify; margin: 0 0 6px; text-indent: 28px; line-height: 1.45; }
+    .legal p.no-indent { text-indent: 0; margin-bottom: 4px; }
+
+    /* --- Chương / mục lớn --- */
+    .sec-title {
+      text-align: center; font-weight: 700; text-transform: uppercase;
+      margin: 20px 0 14px; font-size: 13pt; letter-spacing: 0.03em;
+      line-height: 1.35; padding: 6px 0;
+      border-top: 1px solid #000; border-bottom: 1px solid #000;
+      page-break-after: avoid;
+    }
+
+    /* --- Điều khoản --- */
+    .sec { margin-top: 16px; page-break-inside: avoid; }
+    .sec h2 {
+      font-size: 13pt; font-weight: 700; margin: 0 0 10px;
+      text-transform: uppercase; line-height: 1.35;
+      padding-bottom: 4px; border-bottom: 1px solid #000;
+    }
+    .sec p, .sec li {
+      text-align: justify; margin: 0 0 8px; text-indent: 28px; line-height: 1.45;
+    }
+    .sec p.no-indent, .sec p.clause-head, .clause-head { text-indent: 0; }
+    .sec p.clause-head { margin-bottom: 4px; }
+    .sec ul {
+      margin: 4px 0 10px; padding-left: 28px; list-style: none;
+    }
+    .sec li { text-indent: 0; margin-bottom: 6px; line-height: 1.45; }
+
+    /* --- Bảng lô đất --- */
+    table.lots {
+      width: 100%; border-collapse: collapse; font-size: 10pt;
+      margin: 10px 0 12px; page-break-inside: auto;
+    }
+    table.lots thead { display: table-header-group; }
+    table.lots th, table.lots td {
+      border: 1px solid #000; padding: 4px 5px;
+      text-align: center; vertical-align: middle; line-height: 1.3;
+    }
+    table.lots th { font-weight: 700; background: #eee; }
+    table.lots tbody tr:nth-child(even) { background: #fafafa; }
+    table.lots td.left { text-align: left; }
+    table.lots td.num {
+      text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums;
+    }
+    table.lots tr.total-row td { font-weight: 700; background: #f0f0f0; }
+    .table-caption {
+      text-align: center; font-weight: 700; margin: 8px 0 6px;
+      text-indent: 0; line-height: 1.4;
+    }
+
+    /* --- Khối QR cổng khách hàng --- */
+    .portal-qr-single {
+      text-align: center; margin: 12px auto 16px; max-width: 62mm;
+      padding: 8px 10px; border: 1px solid #bbb; background: #fafafa;
+      page-break-inside: avoid;
+    }
+    .portal-qr-single img { width: 28mm; height: 28mm; display: block; margin: 0 auto; }
+    .portal-qr-cap {
+      font-size: 9pt; font-weight: 700; margin: 8px 0 4px;
+      text-indent: 0; text-align: center; line-height: 1.35;
+    }
+    .portal-qr-url {
+      font-size: 8pt; word-break: break-all; color: #333;
+      text-indent: 0; text-align: center; margin: 0; line-height: 1.3;
+    }
+
+    /* --- Nơi nhận --- */
+    .recipients {
+      margin-top: 4px; padding: 8px 12px;
+      border-left: 3px solid #999; background: #fafafa;
+      page-break-inside: avoid;
+    }
+    .recipients-title { margin-top: 12px; margin-bottom: 4px; }
+    .recipients p { text-indent: 0; margin: 0 0 3px; line-height: 1.4; }
+    .recipients p:last-child { margin-bottom: 0; }
+
+    /* --- Chữ ký --- */
+    .sign-block {
+      margin-top: 36px; text-align: center; font-weight: 700;
+      text-transform: uppercase; page-break-inside: avoid;
+    }
+    .sign-block .org { font-size: 13pt; letter-spacing: 0.03em; line-height: 1.35; }
+    .sign-space { min-height: 88px; }
+
+    .ce-slot { border-radius: 2px; }
+    .m5-tag {
+      font-size: 9pt; color: #888; text-align: right;
+      margin-bottom: 2px; letter-spacing: 0.02em;
+    }
+    .muted { color: #555; font-style: italic; text-indent: 28px; }
+
+    p.no-indent, .hd-row, .doc-no-line, .doc-date-line, .doc-sub, h1.doc-title, .sec-title, .table-caption, .recipients-title { text-indent: 0; }
+
+    @media print {
+      table.lots th { background: #eee !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      table.lots tbody tr:nth-child(even) { background: #fafafa !important; }
+      table.lots tr.total-row td { background: #f0f0f0 !important; }
+      .portal-qr-single, .recipients { background: #fafafa !important; }
+    }
+  </style>
+</head>
+<body class="{% if for_download %}doc-download{% else %}doc-preview{% endif %}">
+<div class="sheet"><div class="page">
+{% set v = ctx.values if ctx and ctx.values else {} %}
+{% set doc = doc or {} %}
+{% set reg = doc.regulations or {} %}
+{% set proj = ctx.project if ctx else {} %}
+{% set lots = ctx.lots if ctx else [] %}
+{% set co = ctx.company if ctx else {} %}
+{% set defs = ctx.defaults if ctx else {} %}
+{% set show_map = show_map_parcel if show_map_parcel is defined else false %}
+{% from 'pages/documents/default/_ce_slot.html' import ce_slot %}
+
+{% macro fmt0(n) -%}
+{%- if n is none or n == '' -%}—{%- else -%}{{ "{:,.0f}".format(n|float).replace(",", ".") }}{%- endif -%}
+{%- endmacro %}
+
+{% set ward = ctx.ward if ctx else none %}
+{% set wn = ward.name if ward and ward.name else '' %}
+{% if wn and (wn.lower().startswith('xã ') or wn.lower().startswith('phường ') or wn.lower().startswith('thị trấn ')) %}
+  {% set ward_ubnd = 'UBND ' ~ wn %}
+{% elif wn %}
+  {% set ward_ubnd = 'UBND xã ' ~ wn %}
+{% else %}
+  {% set ward_ubnd = 'UBND xã ……' %}
+{% endif %}
+
+{% set pa_name = v.party_a_name or defs.party_a_name or ward_ubnd %}
+{% set pb_name = v.party_b_name or co.name or 'Công ty Đấu giá hợp danh Kinh Đô' %}
+{% set asset_title = reg.asset_title or v.asset_title or proj.name or 'Quyền sử dụng đất ……' %}
+{% set doc_no = reg.document_no or v.document_no or '……/2026/QCĐG-KĐ' %}
+{% set issued_at = reg.issued_at or '…… tháng …… năm 2026' %}
+{% set issued_place = reg.issued_place or 'Hà Nội' %}
+{% set contract_no = reg.contract_ref_no or v.contract_ref_no or '……/2026/HĐDV/……-KĐ' %}
+{% set contract_date = reg.contract_ref_date or v.contract_ref_date or '……/……/2026' %}
+{% set auction_venue = v.auction_venue or defs.auction_venue or 'Hội trường ' ~ pa_name %}
+
+{% set total_area = namespace(v=0) %}
+{% set total_start = namespace(v=0) %}
+{% set total_deposit = namespace(v=0) %}
+{% set total_dossier = namespace(v=0) %}
+{% for lot in lots %}
+  {% if lot.area %}{% set total_area.v = total_area.v + (lot.area|float) %}{% endif %}
+  {% if lot.starting_price_vnd %}{% set total_start.v = total_start.v + (lot.starting_price_vnd|float) %}{% endif %}
+  {% if lot.deposit_vnd %}{% set total_deposit.v = total_deposit.v + (lot.deposit_vnd|float) %}{% endif %}
+  {% if lot.dossier_fee_vnd %}{% set total_dossier.v = total_dossier.v + (lot.dossier_fee_vnd|float) %}{% endif %}
+{% endfor %}
+
+<div class="m5-tag">M5.1</div>
+<div class="hd-row">
+  <div class="hd-left">
+    CÔNG TY ĐẤU GIÁ HỢP DANH<br>KINH ĐÔ
+  </div>
+  <div class="hd-right">
+    <div class="motto">Cộng hòa xã hội chủ nghĩa Việt Nam</div>
+    <div class="motto">Độc lập - Tự do - Hạnh phúc</div>
+    <div class="rule"></div>
+  </div>
+</div>
+<p class="doc-no-line">Số: <strong>{{ ce_slot('document_no', doc_no) }}</strong></p>
+<p class="doc-no-line doc-date-line">{{ ce_slot('issued_place', issued_place) }}, ngày {{ ce_slot('issued_at', issued_at) }}</p>
+
+<h1 class="doc-title">Quy chế cuộc đấu giá tài sản</h1>
+<p class="doc-sub">{{ ce_slot('asset_title', asset_title) }}</p>
+
+<div class="legal">
+  <p class="no-indent"><strong>Căn cứ:</strong></p>
+  <p>Luật Đất đai số 2024 số 31/2024/QH15 ngày 18/01/2025; Luật sửa đổi, bổ sung một số điều của Luật đất đai, Luật nhà ở, Luật kinh doanh bất động sản và Luật các tổ chức tín dụng số 43/2024/QH15 ngày 29/6/2024;</p>
+  <p>Luật Đấu giá tài sản số 01/2016/QH14 ngày 17/11/2016;</p>
+  <p>Luật số 37/2024/QH15 ngày 27/6/2024 của Quốc hội sửa đổi, bổ sung một số điều của Luật Đấu giá tài sản, có hiệu lực kể từ ngày 01/01/2025;</p>
+  <p>Nghị định số 102/2024/NĐ-CP ngày 30/7/2024 của Chính phủ quy định chi tiết thi hành một số điều của Luật Đất Đai; Nghị định số 226/2025/NĐ-CP ngày 15/8/2025 của Chính phủ về sửa đổi, bổ sung một số điều của các Nghị định quy định chi tiết thi hành Luật Đất đai;</p>
+  <p>Hợp đồng dịch vụ đấu giá tài sản số {{ ce_slot('contract_ref_no', contract_no) }} ngày {{ ce_slot('contract_ref_date', contract_date) }} giữa {{ ce_slot('party_a_name', pa_name) }} và {{ ce_slot('party_b_name', pb_name) }} về việc đấu giá {{ ce_slot('asset_title', asset_title) }};</p>
+  <p class="no-indent">Công ty đấu giá hợp danh Kinh Đô (sau đây gọi tắt là Công ty) ban hành Quy chế cuộc đấu giá, bao gồm các điều khoản sau:</p>
+</div>
+
+<p class="sec-title">Những quy định chung</p>
+
+<div class="sec">
+  <h2>Điều 1. Phạm vi điều chỉnh, đối tượng áp dụng</h2>
+  <p class="clause-head"><strong>1. Phạm vi điều chỉnh:</strong> Quy chế đấu giá tài sản này (sau đây viết tắt là "Quy chế") quy định nguyên tắc, trình tự, thủ tục và các nội dung khác liên quan đến việc đấu giá tài sản là Quyền sử dụng đất tại {{ ce_slot('asset_title', asset_title) }} theo quy định của pháp luật về đấu giá tài sản và các văn bản pháp luật khác có liên quan.</p>
+  <p class="clause-head"><strong>2. Đối tượng áp dụng:</strong></p>
+  <p>a) Công ty Đấu giá hợp danh Kinh Đô (sau đây viết tắt là "Công ty"), đấu giá viên điều hành phiên đấu giá tài sản, nhân viên của Công ty.</p>
+  <p>b) Các tổ chức, cá nhân có liên quan đến việc đấu giá tài sản do Công ty thực hiện tại khoản 1 Điều này.</p>
+</div>
+
+{% include 'pages/documents/default/_auction_regulations_v1_rest.html' %}
+
+<div class="sec">
+  <h2>Điều 4. Hồ sơ mời tham gia đấu giá, hồ sơ tham gia đấu giá</h2>
+  <p class="clause-head"><strong>1. Hồ sơ mời tham gia đấu giá do Công ty ban hành, gồm:</strong></p>
+  <ul>
+    <li>- Thông báo đấu giá;</li>
+    <li>- Quy chế cuộc đấu giá;</li>
+    <li>- Phiếu đăng ký tham gia đấu giá;</li>
+    <li>- Đơn đăng ký xem hiện trạng tài sản đấu giá;</li>
+    <li>- Giấy xác nhận về việc xem hiện trạng tài sản đấu giá;</li>
+    <li>- Tài liệu liên quan đến tài sản đấu giá.</li>
+  </ul>
+  <p class="clause-head"><strong>2. Hồ sơ tham gia đấu giá khách hàng cần nộp lại (trong giờ hành chính) từ {{ ce_slot('dossier_period_from', reg.dossier_period_from or '08h00 ngày ……/……/2026') }} đến {{ ce_slot('dossier_period_to', reg.dossier_period_to or '17h00 ngày ……/……/2026') }} gồm:</strong></p>
+  <p>- Phiếu đăng ký tham gia đấu giá do Công ty Đấu giá Hợp danh Kinh Đô phát hành. Người tham gia đấu giá in phiếu đăng ký từ hệ thống của Công ty ký tên và nộp lại;</p>
+  <p>- Đơn đăng ký xem hiện trạng tài sản đấu giá (nếu có); Giấy xác nhận về việc xem hiện trạng tài sản đấu giá (nếu có);</p>
+  <p>- Bản sao Căn cước công dân/Hộ chiếu của người đăng ký tham gia đấu giá (Khách hàng phải mang bản chính đi để đối chiếu);</p>
+  <p>- Biên lai/Phiếu báo nợ/Sao kê giao dịch thành công/Giấy tờ thể hiện việc chuyển tiền đặt trước (nếu có);</p>
+  <p>- Đối với trường hợp ủy quyền cần cung cấp Văn bản uỷ quyền kèm bản photo thẻ CC/CCCD/Hộ chiếu (còn hạn sử dụng) của người uỷ quyền và người được uỷ quyền.</p>
+</div>
+
+<p class="sec-title">Những quy định cụ thể</p>
+
+<div class="sec">
+  <h2>Điều 5. Thông tin về tài sản đấu giá</h2>
+  <p class="no-indent">Tên tài sản đấu giá: {{ ce_slot('asset_title', asset_title) }}</p>
+  <p class="clause-head"><strong>1. Thông tin về quy hoạch:</strong> Theo {{ ce_slot('planning_decision', reg.planning_decision or 'Quyết định của Ủy ban nhân dân tỉnh ……') }}</p>
+  <p class="clause-head"><strong>2. Nguồn gốc của tài sản:</strong> Quyền sử dụng đất do {{ ce_slot('land_origin_ubnd', reg.land_origin_ubnd or pa_name) }}</p>
+</div>
+
+<div class="sec">
+  <h2>Điều 6. Giá khởi điểm, bước giá, tiền đặt trước, tiền mua hồ sơ mời tham gia đấu giá</h2>
+  <p class="table-caption">Bảng Giá khởi điểm và tiền đặt trước, tiền mua hồ sơ mời tham gia của các lô đất đấu giá</p>
+  {% if lots and lots|length > 0 %}
+  <table class="lots" data-ce-field="lots_table">
+    <thead>
+      <tr>
+        <th{% if show_map %} rowspan="2"{% endif %}>STT</th>
+        {% if show_map %}<th colspan="2">Vị trí</th>{% endif %}
+        <th{% if show_map %} rowspan="2"{% endif %}>Tên lô đất</th>
+        <th{% if show_map %} rowspan="2"{% endif %}>Diện tích (m²)</th>
+        <th{% if show_map %} rowspan="2"{% endif %}>Giá khởi điểm (đồng/m²)</th>
+        <th{% if show_map %} rowspan="2"{% endif %}>Tổng giá trị lô đất (đồng)</th>
+        <th{% if show_map %} rowspan="2"{% endif %}>Tiền mua hồ sơ (đồng)</th>
+        <th{% if show_map %} rowspan="2"{% endif %}>Tiền đặt trước (đồng)</th>
+        <th{% if show_map %} rowspan="2"{% endif %}>Ghi chú</th>
+      </tr>
+      {% if show_map %}<tr><th>Tờ</th><th>Thửa</th></tr>{% endif %}
+    </thead>
+    <tbody>
+      {% for lot in lots %}
+      {% set area = lot.area|float if lot.area else 0 %}
+      {% set start_total = lot.starting_price_vnd|float if lot.starting_price_vnd else 0 %}
+      {% set price_m2 = (start_total / area) if area > 0 and start_total > 0 else none %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        {% if show_map %}
+        {% set lk = lot.id|string if lot.id is defined and lot.id is not none else (lot.lot_code|string if lot.lot_code else loop.index|string) %}
+        <td>{{ ce_slot('lot_map_' ~ lk ~ '_sheet', lot.map_sheet or '—') }}</td>
+        <td>{{ ce_slot('lot_map_' ~ lk ~ '_parcel', lot.parcel_no or '—') }}</td>
+        {% endif %}
+        <td class="left">{{ lot.lot_code or lot.name or '—' }}</td>
+        <td class="num">{{ fmt0(lot.area) if lot.area else '—' }}</td>
+        <td class="num">{{ fmt0(price_m2) if price_m2 else '—' }}</td>
+        <td class="num">{{ fmt0(lot.starting_price_vnd) if lot.starting_price_vnd else '—' }}</td>
+        <td class="num">{{ fmt0(lot.dossier_fee_vnd) if lot.dossier_fee_vnd else '—' }}</td>
+        <td class="num">{{ fmt0(lot.deposit_vnd) if lot.deposit_vnd else '—' }}</td>
+        <td class="left">{{ lot.description or '' }}</td>
+      </tr>
+      {% endfor %}
+      <tr class="total-row">
+        <td colspan="{{ 4 if show_map else 2 }}"><strong>TỔNG</strong></td>
+        <td class="num">{{ fmt0(total_area.v) if total_area.v else '—' }}</td>
+        <td></td>
+        <td class="num">{{ fmt0(total_start.v) if total_start.v else '—' }}</td>
+        <td class="num">{{ fmt0(total_dossier.v) if total_dossier.v else '—' }}</td>
+        <td class="num">{{ fmt0(total_deposit.v) if total_deposit.v else '—' }}</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <p>Tổng giá khởi điểm của tài sản: <strong>{{ ce_slot('total_starting_price', fmt0(total_start.v) if total_start.v else '……') }} đồng</strong>
+  {% set words = v.total_starting_price_words or reg.total_starting_price_words or '' %}
+  {% if words %} (Bằng chữ: {{ ce_slot('total_starting_price_words', words) }} đồng){% endif %}.</p>
+  {% else %}
+  <p class="muted">Chưa có dữ liệu lô từ dự án.</p>
+  {% endif %}
+  <p>Giá khởi điểm trên chưa bao gồm các loại thuế, phí, lệ phí. Người mua được tài sản phải nộp tất cả các loại thuế, phí, lệ phí liên quan đến việc chuyển quyền sở hữu, sử dụng theo quy định của pháp luật.</p>
+</div>
+
+<div class="sec">
+  <h2>Điều 7. Hình thức, phương thức và cách thức đấu giá; bước giá</h2>
+  <p class="clause-head"><strong>1. Hình thức đấu giá:</strong> Đấu giá bằng hình thức bỏ phiếu trực tiếp tại phiên đấu giá (01 vòng).</p>
+  <p class="clause-head"><strong>2. Phương thức đấu giá:</strong> Phương thức trả giá lên.</p>
+  <p class="clause-head"><strong>3. Cách thức đấu giá:</strong> Đấu giá từng lô đất trong cùng một phiên; đấu giá trên 01m² đất; lấy kết quả vòng đấu thứ nhất làm cơ sở công nhận kết quả trúng đấu giá (theo quy định tại mẫu M5.1).</p>
+  <p class="clause-head"><strong>4. Bước giá, cách thức áp dụng bước giá:</strong></p>
+  <p>- Bước giá: Tối thiểu {{ ce_slot('bid_step_min', reg.bid_step_min or '……000') }} đồng/m²{% if reg.bid_step_min_words %} (Bằng chữ: {{ ce_slot('bid_step_min_words', reg.bid_step_min_words) }}){% endif %}. Không hạn chế bước giá tối đa.</p>
+  <p>- Cách thức áp dụng bước giá: {{ ce_slot('bid_step_application', reg.bid_step_application or '……') }}</p>
+</div>
+
+<div class="sec">
+  <h2>Điều 8. Kế hoạch tổ chức đấu giá</h2>
+  <p class="clause-head"><strong>1. Thời gian, địa điểm bán hồ sơ, tiếp nhận hồ sơ (trong giờ hành chính)</strong></p>
+  <p>Thời gian bán, tiếp nhận hồ sơ: Từ {{ ce_slot('dossier_period_from', reg.dossier_period_from or '……') }} đến {{ ce_slot('dossier_period_to', reg.dossier_period_to or '……') }}.</p>
+  <p>Khách hàng mua hồ sơ trực tiếp tại: (1) {{ ce_slot('party_a_name', pa_name) }}; (2) Văn phòng giao dịch {{ ce_slot('party_b_name', pb_name) }} hoặc online qua cổng khách hàng <strong>{{ portal_home_url or ('https://khachhang.daugiathongminh.vn/' ~ (co.company_code|lower if co.company_code else '……')) }}</strong></p>
+  {% if portal_qr_data_uri %}
+  <div class="portal-qr-single" aria-label="Mã QR cổng khách hàng">
+    <img src="{{ portal_qr_data_uri }}" alt="QR cổng khách hàng">
+    <p class="portal-qr-cap">Quét mã để vào cổng khách hàng (đăng ký, mua hồ sơ, nộp tiền đặt trước)</p>
+    <p class="portal-qr-url">{{ portal_home_url }}</p>
+  </div>
+  {% endif %}
+  <p>Khách hàng sau khi đăng ký phải nộp lại hồ sơ từ {{ ce_slot('dossier_resubmit_from', reg.dossier_resubmit_from or reg.dossier_period_from or '……') }} đến {{ ce_slot('dossier_resubmit_to', reg.dossier_resubmit_to or reg.dossier_period_to or '……') }} (giờ hành chính).</p>
+  <p class="clause-head"><strong>2. Thời gian, địa điểm xem tài sản</strong></p>
+  <p>Thời gian, địa điểm xem tài sản: Từ {{ ce_slot('asset_view_from', reg.asset_view_from or '……') }} đến {{ ce_slot('asset_view_to', reg.asset_view_to or '……') }} tại {{ ce_slot('asset_view_location', reg.asset_view_location or 'thực địa ……') }}.</p>
+  <p class="clause-head"><strong>4. Thời gian nộp tiền đặt trước:</strong> Từ {{ ce_slot('deposit_period_from', reg.deposit_period_from or '……') }} đến {{ ce_slot('deposit_period_to', reg.deposit_period_to or '……') }}.</p>
+  <p>Khách hàng có thể nộp tiền đặt trước trực tuyến qua cổng khách hàng (quét mã QR hoặc truy cập {{ portal_home_url or 'https://khachhang.daugiathongminh.vn/……' }}).</p>
+  <p>Khách hàng nên hoàn thiện thủ tục trước {{ ce_slot('deposit_cutoff_date', reg.deposit_cutoff_date or '17 giờ 00 phút ngày ……/……/2026') }}.</p>
+  <p class="clause-head"><strong>5. Thời gian, địa điểm tổ chức phiên đấu giá</strong></p>
+  <p>- Thời gian tổ chức phiên đấu giá: {{ ce_slot('auction_at', reg.auction_at or 'Vào … giờ … phút ngày ……/……/2026 (Thứ …)') }}</p>
+  <p>- Địa điểm dự kiến đấu: {{ ce_slot('auction_venue', auction_venue) }}</p>
+</div>
+
+{% include 'pages/documents/default/_auction_regulations_v1_articles_rest.html' %}
+
+<div class="sec">
+  <h2>Điều 26. Điều khoản thi hành</h2>
+  <p>1. Công ty Đấu giá hợp danh Kinh Đô có trách nhiệm niêm yết, thông báo công khai Quy chế phiên đấu giá.</p>
+  <p>2. Cán bộ, nhân viên Công ty, {{ ce_slot('party_a_name', pa_name) }}, người tham gia đấu giá và các cá nhân, tổ chức liên quan có trách nhiệm thực hiện Quy chế cuộc đấu giá này.</p>
+  <p>3. Mọi trường hợp phát sinh ngoài quy định tại Quy chế này được xử lý theo quy định của pháp luật hiện hành./.</p>
+  <p class="no-indent recipients-title"><strong>Nơi nhận:</strong></p>
+  <div class="recipients">
+    <p>- Cổng Đấu giá tài sản quốc gia;</p>
+    <p>- {{ ce_slot('party_a_name', pa_name) }};</p>
+    <p>- CQ Báo, Đài, cơ quan liên quan;</p>
+    <p>- Người tham gia đấu giá;</p>
+    <p>- Lưu: VP, HS./.</p>
+  </div>
+</div>
+
+<div class="sign-block">
+  <div class="org">CÔNG TY ĐẤU GIÁ HỢP DANH</div>
+  <div class="org">KINH ĐÔ</div>
+  <div class="sign-space"></div>
+</div>
+
+</div></div>
+</body>
+</html>
