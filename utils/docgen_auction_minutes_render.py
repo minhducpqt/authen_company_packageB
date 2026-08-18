@@ -13,6 +13,10 @@ from utils.templates import templates
 
 VN_TZ = ZoneInfo("Asia/Ho_Chi_Minh")
 
+DEFAULT_BIDDERS_NOTE = (
+    "Danh sách người tham gia đấu giá được đính kèm cùng biên bản này."
+)
+
 
 def _slug(s: str) -> str:
     s = (s or "bien-ban").strip()
@@ -66,6 +70,31 @@ def _fmt_session_clock(raw: Any) -> Tuple[str, str, str]:
     return str(dt.hour), f"{dt.minute:02d}", _fmt_date_vn(dt)
 
 
+def _normalize_guests(raw: Any) -> List[Dict[str, str]]:
+    out: List[Dict[str, str]] = []
+    if not isinstance(raw, list):
+        return out
+    for item in raw:
+        if isinstance(item, dict):
+            row = {
+                "full_name": str(item.get("full_name") or "").strip(),
+                "title": str(item.get("title") or "").strip(),
+                "workplace": str(item.get("workplace") or "").strip(),
+            }
+            if row["full_name"] or row["title"] or row["workplace"]:
+                out.append(row)
+        elif isinstance(item, str) and item.strip():
+            out.append({"full_name": item.strip(), "title": "", "workplace": ""})
+    return out
+
+
+def _company_name_from_ctx(ctx: Optional[Dict[str, Any]]) -> str:
+    if not isinstance(ctx, dict):
+        return ""
+    co = ctx.get("company") if isinstance(ctx.get("company"), dict) else {}
+    return str(co.get("name") or ctx.get("company_name") or "").strip()
+
+
 def merge_fields_for_render(
     fields: Optional[Dict[str, Any]],
     *,
@@ -103,17 +132,39 @@ def merge_fields_for_render(
             project.get("name") or project.get("project_code") or ""
         ).strip()
 
-    guests = out.get("guests")
-    if not isinstance(guests, list):
-        guests = []
-    out["guests"] = [str(g).strip() for g in guests if str(g).strip()]
+    if not (out.get("organizer") or "").strip():
+        cname = _company_name_from_ctx(ctx)
+        if cname:
+            out["organizer"] = cname
+
+    out["guests"] = _normalize_guests(out.get("guests"))
+
+    if not (out.get("bidders_note") or "").strip():
+        out["bidders_note"] = DEFAULT_BIDDERS_NOTE
+
+    if not (out.get("auctioneer_name") or "").strip() and (out.get("auctioneer") or "").strip():
+        out["auctioneer_name"] = str(out.get("auctioneer") or "").strip()
 
     return out
 
 
-def _lots_from_minutes(minutes: Dict[str, Any]) -> Tuple[List[Any], List[Any]]:
-    failed = minutes.get("failed_lots")
-    won = minutes.get("won_lots")
+def _progression_from_minutes(minutes: Dict[str, Any]) -> Dict[str, Any]:
+    prog = minutes.get("progression")
+    if isinstance(prog, dict) and prog:
+        return dict(prog)
+    return {
+        "failed_lots": list(minutes.get("failed_lots") or []),
+        "won_lots": list(minutes.get("won_lots") or []),
+        "eligible_lots": list((prog or {}).get("eligible_lots") or []),
+        "round_sections": [],
+        "summary": {},
+        "price_labels": {},
+    }
+
+
+def _lots_from_progression(prog: Dict[str, Any]) -> Tuple[List[Any], List[Any]]:
+    failed = prog.get("failed_lots")
+    won = prog.get("won_lots")
     return (
         list(failed) if isinstance(failed, list) else [],
         list(won) if isinstance(won, list) else [],
@@ -147,9 +198,11 @@ def render_auction_minutes_html(
 ) -> str:
     minutes = dict((fields or {}).get("minutes") or {})
     flat = merge_fields_for_render(fields, ctx=ctx)
-    failed_lots, won_lots = _lots_from_minutes(minutes)
+    progression = _progression_from_minutes(minutes)
+    failed_lots, won_lots = _lots_from_progression(progression)
+    eligible_lots = progression.get("eligible_lots") or []
+    price_labels = progression.get("price_labels") or {}
     project = (ctx or {}).get("project") if isinstance(ctx, dict) else {}
-    price_labels = (ctx or {}).get("price_labels") if isinstance(ctx, dict) else {}
 
     html = templates.get_template(template_path).render(
         request=request,
@@ -157,12 +210,14 @@ def render_auction_minutes_html(
         for_download=for_download,
         for_preview=for_preview,
         fields=flat,
+        progression=progression,
         failed_lots=failed_lots,
         won_lots=won_lots,
-        round_sections=[],
+        eligible_lots=eligible_lots,
+        round_sections=progression.get("round_sections") or [],
         session={},
         project=project or {},
-        price_labels=price_labels or {},
+        price_labels=price_labels,
         session_id=minutes.get("session_id"),
         project_id=(instance or {}).get("project_id"),
         error=None,
@@ -173,6 +228,7 @@ def render_auction_minutes_html(
 
 
 __all__ = [
+    "DEFAULT_BIDDERS_NOTE",
     "attachment_content_disposition",
     "download_filename",
     "html_to_pdf_bytes",

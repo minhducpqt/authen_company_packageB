@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% from "pages/forms/_components.html" import forms_styles, forms_page_header %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{{ forms_styles() }}
+{% set a = auctioneer %}
+{% set f = form if form else {} %}
+<style>
+  .dg-form { max-width:640px; }
+  .dg-field { margin-bottom:14px; }
+  .dg-field label { display:block; font-size:12px; font-weight:700; color:#475569; margin-bottom:5px; }
+  .dg-field input, .dg-field textarea { width:100%; padding:9px 11px; border:1px solid #cbd5e1; border-radius:10px; font-size:14px; font-family:inherit; }
+  .dg-field textarea { min-height:72px; resize:vertical; }
+  .dg-sec { margin:24px 0 12px; font-size:13px; font-weight:700; color:#334155; padding-bottom:8px; border-bottom:1px solid #e2e8f0; }
+  .dg-btn { display:inline-flex; align-items:center; gap:6px; padding:9px 16px; border-radius:10px; font-size:13px; font-weight:600; border:1px solid #cbd5e1; background:#fff; cursor:pointer; text-decoration:none; color:#334155; }
+  .dg-btn-primary { background:#4f46e5; border-color:#4f46e5; color:#fff; }
+  .dg-alert { padding:12px 14px; border-radius:10px; background:#fef2f2; color:#b91c1c; font-size:13px; margin-bottom:16px; }
+  .dg-hint { font-size:11px; color:#64748b; margin-top:4px; line-height:1.45; }
+  .dg-check { display:flex; align-items:flex-start; gap:8px; font-size:13px; color:#334155; }
+  .dg-check input { width:auto; margin-top:3px; }
+</style>
+<div class="fm-page dg-form">
+  {{ forms_page_header(
+    title,
+    breadcrumb_items=[
+      {"label": "Biểu mẫu", "href": "/bieu-mau"},
+      {"label": "Cấu hình", "href": "/bieu-mau/cau-hinh"},
+      {"label": "Đấu giá viên", "href": "/bieu-mau/cau-hinh/dau-gia-vien"},
+      {"label": "Thêm" if not a else "Sửa", "href": null},
+    ],
+  ) }}
+  {% if error %}<div class="dg-alert">{{ error }}</div>{% endif %}
+
+  <form method="post" action="{% if a %}/bieu-mau/cau-hinh/dau-gia-vien/{{ a.id }}{% else %}/bieu-mau/cau-hinh/dau-gia-vien/tao{% endif %}">
+    <div class="dg-sec">Thông tin đấu giá viên</div>
+    <div class="dg-field">
+      <label>Họ và tên *</label>
+      <input name="full_name" required value="{{ a.full_name if a else (f.full_name or '') }}" placeholder="VD: Nguyễn Văn A">
+    </div>
+    <div class="dg-field">
+      <label>Số chứng chỉ hành nghề đấu giá</label>
+      <input name="certificate_no" value="{{ a.certificate_no if a else (f.certificate_no or '') }}" placeholder="VD: 1234/DG-2020">
+    </div>
+    <div class="dg-field">
+      <label>Đơn vị công tác</label>
+      <input name="organization" value="{{ a.organization if a else (f.organization or '') }}" placeholder="VD: Công ty TNHH …">
+    </div>
+    <div class="dg-field">
+      <label>Điện thoại</label>
+      <input name="phone" value="{{ a.phone if a else (f.phone or '') }}" placeholder="VD: 0912 345 678">
+    </div>
+    <div class="dg-field">
+      <label>Email</label>
+      <input name="email" type="email" value="{{ a.email if a else (f.email or '') }}" placeholder="email@congty.vn">
+    </div>
+    <div class="dg-field">
+      <label>Ghi chú</label>
+      <textarea name="note" placeholder="Ghi chú nội bộ (không in ra biên bản)">{{ a.note if a else (f.note or '') }}</textarea>
+    </div>
+
+    <div class="dg-sec">Tuỳ chọn</div>
+    <div class="dg-field">
+      <label class="dg-check">
+        <input type="checkbox" name="is_master" value="1" {% if (a and a.is_master) or (f.is_master) %}checked{% endif %}>
+        <span>
+          <strong>Đấu giá viên mặc định (master)</strong><br>
+          <span class="dg-hint">Dùng làm mặc định khi lập biên bản và các biểu mẫu liên quan. Mỗi công ty chỉ có một master.</span>
+        </span>
+      </label>
+    </div>
+    <div class="dg-field">
+      <label>Thứ tự hiển thị</label>
+      <input name="sort_order" type="number" min="0" step="1" value="{{ a.sort_order if a else (f.sort_order or 0) }}">
+      <p class="dg-hint">Số nhỏ hơn hiển thị trước trong danh sách.</p>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
+      <button type="submit" class="dg-btn dg-btn-primary"><i class="ri-save-line"></i> Lưu</button>
+      <a href="/bieu-mau/cau-hinh/dau-gia-vien" class="dg-btn">Huỷ</a>
+    </div>
+  </form>
+
+  {% if a %}
+  <form method="post" action="/bieu-mau/cau-hinh/dau-gia-vien/{{ a.id }}/xoa" style="margin-top:16px" onsubmit="return confirm('Xoá đấu giá viên này?');">
+    <button type="submit" class="dg-btn" style="color:#b91c1c;border-color:#fecaca">Xoá</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

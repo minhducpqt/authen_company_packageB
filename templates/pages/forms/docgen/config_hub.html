@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "pages/forms/_components.html" import forms_styles, forms_page_header %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{{ forms_styles() }}
+<style>
+  .fm-cat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; }
+  .fm-cat-card { display:block; text-decoration:none; color:inherit; background:#fff; border:1px solid #e2e8f0; border-radius:14px; transition:box-shadow .15s,border-color .15s; }
+  .fm-cat-card:hover { border-color:#c7d2fe; box-shadow:0 4px 16px rgba(79,70,229,.08); }
+  .fm-cat-card-inner { display:flex; align-items:flex-start; gap:12px; padding:16px 18px; }
+  .fm-ico { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+  .fm-ico--indigo { background:#eef2ff; color:#4338ca; }
+  .fm-cat-card-title { margin:0 0 4px; font-size:15px; font-weight:700; color:#0f172a; }
+  .fm-cat-card-desc { margin:0; font-size:12px; color:#64748b; line-height:1.45; }
+  .fm-cat-card-chevron { margin-left:auto; color:#94a3b8; font-size:18px; flex-shrink:0; }
+</style>
+<div class="fm-page">
+  {{ forms_page_header(
+    "Cấu hình",
+    subtitle="Thiết lập dữ liệu mặc định dùng chung cho biểu mẫu và văn bản sinh tự động.",
+    breadcrumb_items=[
+      {"label": "Biểu mẫu", "href": "/bieu-mau"},
+      {"label": "Cấu hình", "href": null},
+    ],
+  ) }}
+
+  <div class="fm-cat-grid">
+    {% for c in config_items %}
+    <a href="{{ c.href }}" class="fm-cat-card">
+      <div class="fm-cat-card-inner">
+        <div class="fm-ico fm-ico--indigo"><i class="{{ c.icon }}"></i></div>
+        <div>
+          <h2 class="fm-cat-card-title">{{ c.name }}</h2>
+          <p class="fm-cat-card-desc">{{ c.description }}</p>
+        </div>
+        <i class="ri-arrow-right-s-line fm-cat-card-chevron"></i>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -24,6 +24,14 @@ FORM_CONFIG_ITEMS: List[Dict[str, Any]] = [
         "icon": "ri-map-pin-line",
         "href": "/bieu-mau/cau-hinh/dia-phuong",
     },
+    {
+        "id": "dau-gia-vien",
+        "slug": "dau-gia-vien",
+        "name": "Đấu giá viên",
+        "description": "Danh sách đấu giá viên của công ty — một người mặc định (master) dùng cho biên bản.",
+        "icon": "ri-user-star-line",
+        "href": "/bieu-mau/cau-hinh/dau-gia-vien",
+    },
 ]
 
 FORM_PHASES: List[Dict[str, Any]] = [

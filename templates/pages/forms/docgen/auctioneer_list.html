@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% from "pages/forms/_components.html" import forms_styles, forms_page_header %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{{ forms_styles() }}
+<style>
+  .dg-table { width:100%; border-collapse:collapse; font-size:14px; }
+  .dg-table th, .dg-table td { padding:12px 14px; border-bottom:1px solid #e2e8f0; text-align:left; vertical-align:top; }
+  .dg-table th { font-size:12px; text-transform:uppercase; color:#64748b; background:#f8fafc; }
+  .dg-toolbar { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+  .dg-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:10px; font-size:13px; font-weight:600; text-decoration:none; border:1px solid #cbd5e1; background:#fff; color:#334155; cursor:pointer; }
+  .dg-btn-primary { background:#4f46e5; border-color:#4f46e5; color:#fff; }
+  .dg-btn-sm { padding:5px 10px; font-size:12px; }
+  .dg-alert { padding:12px 14px; border-radius:10px; background:#fef2f2; color:#b91c1c; font-size:13px; margin-bottom:16px; }
+  .dg-badge { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; padding:3px 8px; border-radius:999px; background:#fef3c7; color:#b45309; }
+  .dg-muted { font-size:12px; color:#64748b; }
+</style>
+<div class="fm-page">
+  {{ forms_page_header(
+    "Cấu hình đấu giá viên",
+    subtitle="Quản lý danh sách đấu giá viên của công ty. Một người được đánh dấu mặc định (master) để gắn vào biên bản và các biểu mẫu khác.",
+    breadcrumb_items=[
+      {"label": "Biểu mẫu", "href": "/bieu-mau"},
+      {"label": "Cấu hình", "href": "/bieu-mau/cau-hinh"},
+      {"label": "Đấu giá viên", "href": null},
+    ],
+  ) }}
+
+  {% if error %}<div class="dg-alert">{{ error }}</div>{% endif %}
+
+  <div class="dg-toolbar">
+    <span class="dg-muted">{{ auctioneers|length }} đấu giá viên</span>
+    <a href="/bieu-mau/cau-hinh/dau-gia-vien/tao" class="dg-btn dg-btn-primary"><i class="ri-add-line"></i> Thêm đấu giá viên</a>
+  </div>
+
+  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden">
+    <table class="dg-table">
+      <thead>
+        <tr>
+          <th>Họ tên</th>
+          <th>Số chứng chỉ</th>
+          <th>Liên hệ</th>
+          <th>Đơn vị</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in auctioneers %}
+        <tr>
+          <td>
+            <strong>{{ a.full_name }}</strong>
+            {% if a.is_master %}
+              <span class="dg-badge" title="Đấu giá viên mặc định"><i class="ri-star-fill"></i> Mặc định</span>
+            {% endif %}
+          </td>
+          <td>{{ a.certificate_no or '—' }}</td>
+          <td class="dg-muted">
+            {% if a.phone %}{{ a.phone }}{% endif %}
+            {% if a.phone and a.email %} · {% endif %}
+            {% if a.email %}{{ a.email }}{% endif %}
+            {% if not a.phone and not a.email %}—{% endif %}
+          </td>
+          <td>{{ a.organization or '—' }}</td>
+          <td style="white-space:nowrap">
+            <a href="/bieu-mau/cau-hinh/dau-gia-vien/{{ a.id }}" class="dg-btn dg-btn-sm">Sửa</a>
+            {% if not a.is_master %}
+            <form method="post" action="/bieu-mau/cau-hinh/dau-gia-vien/{{ a.id }}/dat-mac-dinh" style="display:inline">
+              <button type="submit" class="dg-btn dg-btn-sm" title="Đặt làm đấu giá viên mặc định">Đặt mặc định</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:32px">Chưa có đấu giá viên. Nhấn «Thêm đấu giá viên» để bắt đầu.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

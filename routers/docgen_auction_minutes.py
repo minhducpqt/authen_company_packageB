@@ -3,23 +3,27 @@ from __future__ import annotations
 
 import json
 import os
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 import httpx
 from fastapi import APIRouter, Form, Query, Request
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
+from routers.auction_documents_print import build_session_progress_data
 from services.docgen_v1_client import (
     create_instance,
     finalize_instance,
     get_instance,
     get_render_context,
+    list_auctioneers,
     list_instances,
     reopen_instance,
     update_instance,
 )
 from utils.auth import fetch_me, get_access_token
 from utils.docgen_auction_minutes_render import (
+    DEFAULT_BIDDERS_NOTE,
     attachment_content_disposition,
     download_filename,
     html_to_pdf_bytes,
@@ -43,6 +47,133 @@ def _err_msg(exc: Exception) -> str:
     if isinstance(exc, httpx.HTTPStatusError):
         return str(exc)
     return "Không thể kết nối Service A"
+
+
+def _company_display_name(ctx: Optional[Dict[str, Any]], me: Optional[Dict[str, Any]] = None) -> str:
+    if isinstance(ctx, dict):
+        co = ctx.get("company") if isinstance(ctx.get("company"), dict) else {}
+        name = str(co.get("name") or "").strip()
+        if name:
+            return name
+    if me:
+        for key in ("company_name", "org_name", "company"):
+            val = str(me.get(key) or "").strip()
+            if val:
+                return val
+    return ""
+
+
+def _pick_master_auctioneer(rows: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    for row in rows or []:
+        if row.get("is_master"):
+            return row
+    return rows[0] if rows else None
+
+
+def _apply_minutes_defaults(
+    fields: Dict[str, Any],
+    *,
+    ctx: Optional[Dict[str, Any]],
+    me: Optional[Dict[str, Any]],
+    master_auctioneer: Optional[Dict[str, Any]],
+) -> tuple[Dict[str, Any], bool]:
+    out = dict(fields or {})
+    minutes = dict(out.get("minutes") or {})
+    changed = False
+
+    cname = _company_display_name(ctx, me)
+    if not (minutes.get("organizer") or "").strip() and cname:
+        minutes["organizer"] = cname
+        changed = True
+
+    if master_auctioneer:
+        mid = master_auctioneer.get("id")
+        if not minutes.get("auctioneer_id") and mid:
+            minutes["auctioneer_id"] = int(mid)
+            changed = True
+        if not (minutes.get("auctioneer_name") or "").strip():
+            minutes["auctioneer_name"] = str(master_auctioneer.get("full_name") or "").strip()
+            changed = True
+        if not (minutes.get("auctioneer_certificate_no") or "").strip():
+            minutes["auctioneer_certificate_no"] = str(
+                master_auctioneer.get("certificate_no") or ""
+            ).strip()
+            changed = True
+
+    if not (minutes.get("bidders_note") or "").strip():
+        minutes["bidders_note"] = DEFAULT_BIDDERS_NOTE
+        changed = True
+
+    if not isinstance(minutes.get("guests"), list):
+        minutes["guests"] = []
+        changed = True
+
+    if "progression" not in minutes or not isinstance(minutes.get("progression"), dict):
+        minutes["progression"] = {
+            "failed_lots": [],
+            "won_lots": [],
+            "eligible_lots": [],
+            "round_sections": [],
+            "summary": {},
+            "price_labels": {},
+            "synced_at": "",
+        }
+        changed = True
+
+    out["minutes"] = minutes
+    return out, changed
+
+
+def _merge_progression_into_minutes(
+    minutes: Dict[str, Any],
+    prog: Dict[str, Any],
+) -> Dict[str, Any]:
+    out = dict(minutes or {})
+    snap = {
+        "failed_lots": prog.get("failed_lots") or [],
+        "won_lots": prog.get("won_lots") or [],
+        "eligible_lots": prog.get("eligible_lots") or [],
+        "round_sections": prog.get("round_sections") or [],
+        "summary": prog.get("summary") or {},
+        "price_labels": prog.get("price_labels") or {},
+        "synced_at": datetime.now(timezone.utc).isoformat(),
+        "error": prog.get("error"),
+    }
+    out["progression"] = snap
+    out["failed_lots"] = snap["failed_lots"]
+    out["won_lots"] = snap["won_lots"]
+    return out
+
+
+async def _enrich_minutes_from_session(
+    token: Optional[str],
+    fields: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Bổ sung giá khởi điểm lô đủ điều kiện từ phiên khi chưa đồng bộ diễn biến."""
+    if not token:
+        return fields
+    out = dict(fields or {})
+    minutes = dict(out.get("minutes") or {})
+    session_id = minutes.get("session_id")
+    if not session_id:
+        return fields
+    prog = dict(minutes.get("progression") or {})
+    elots = prog.get("eligible_lots") or []
+    has_descriptions = bool(elots) and all(
+        isinstance(r, dict) and "lot_area_display" in r for r in elots
+    )
+    if has_descriptions:
+        return fields
+    try:
+        data = await build_session_progress_data(token, int(session_id))
+    except Exception:
+        return fields
+    prog["eligible_lots"] = data.get("eligible_lots") or []
+    if not prog.get("price_labels"):
+        prog["price_labels"] = data.get("price_labels") or {}
+    minutes["progression"] = prog
+    out["minutes"] = minutes
+    return out
 
 
 async def _fetch_project_sessions(token: Optional[str], project_id: int) -> List[Dict[str, Any]]:
@@ -114,6 +245,7 @@ async def _render_auction_minutes(
     inst = await get_instance(token, instance_id)
     ctx = await get_render_context(token, instance_id)
     fields = dict(fields_override if fields_override is not None else (inst.get("fields") or {}))
+    fields = await _enrich_minutes_from_session(token, fields)
     tpl = resolve_template(company_code or None, DocKind.AUCTION_MINUTES)
     html = render_auction_minutes_html(
         request,
@@ -170,7 +302,18 @@ async def auction_minutes_create(
     }
     try:
         inst = await create_instance(token, body)
+        me = await fetch_me(token)
+        ctx = await get_render_context(token, int(inst["id"]))
+        master_row = None
+        try:
+            auctioneers = await list_auctioneers(token)
+            master_row = _pick_master_auctioneer(auctioneers)
+        except Exception:
+            pass
         fields = dict(inst.get("fields") or {})
+        fields, _ = _apply_minutes_defaults(
+            fields, ctx=ctx, me=me, master_auctioneer=master_row
+        )
         fields = await _ensure_session_on_fields(
             token, project_id=project_id, fields=fields
         )
@@ -207,14 +350,26 @@ async def auction_minutes_editor(request: Request, instance_id: int):
     pid = int(inst.get("project_id") or 0)
     sessions = await _fetch_project_sessions(token, pid) if pid else []
     fields = dict(inst.get("fields") or {})
+    master_row = None
+    company_auctioneers: List[Dict[str, Any]] = []
+    try:
+        company_auctioneers = await list_auctioneers(token)
+        master_row = _pick_master_auctioneer(company_auctioneers)
+    except Exception:
+        pass
+
+    fields, changed = _apply_minutes_defaults(
+        fields, ctx=ctx, me=me, master_auctioneer=master_row
+    )
     minutes = dict(fields.get("minutes") or {})
     if not minutes.get("session_id") and pid:
         fields = await _ensure_session_on_fields(token, project_id=pid, fields=fields)
-        if fields != (inst.get("fields") or {}):
-            try:
-                inst = await update_instance(token, instance_id, {"fields": fields})
-            except Exception:
-                pass
+        changed = True
+    if changed:
+        try:
+            inst = await update_instance(token, instance_id, {"fields": fields})
+        except Exception:
+            pass
 
     project_forms_url = (
         f"/bieu-mau/theo-du-an?project_id={pid}#bien-ban-dau-gia"
@@ -234,7 +389,9 @@ async def auction_minutes_editor(request: Request, instance_id: int):
             "fields_json": fields_json,
             "ctx_json": ctx_for_editor(ctx),
             "auction_sessions": sessions,
+            "company_auctioneers": company_auctioneers,
             "preview_url": f"/bieu-mau/sau-phien/bien-ban-dau-gia/{instance_id}/preview",
+            "sync_progression_url": f"/bieu-mau/sau-phien/bien-ban-dau-gia/{instance_id}/dong-bo-dien-bien",
             "download_html_url": f"/bieu-mau/sau-phien/bien-ban-dau-gia/{instance_id}/tai-html",
             "download_pdf_url": f"/bieu-mau/sau-phien/bien-ban-dau-gia/{instance_id}/tai-pdf",
             "template_path": tpl,
@@ -296,6 +453,48 @@ async def auction_minutes_reopen(request: Request, instance_id: int):
     return RedirectResponse(
         f"/bieu-mau/sau-phien/bien-ban-dau-gia/{instance_id}",
         status_code=303,
+    )
+
+
+@router.post("/sau-phien/bien-ban-dau-gia/{instance_id}/dong-bo-dien-bien")
+async def auction_minutes_sync_progression(
+    request: Request,
+    instance_id: int,
+    fields_json: str = Form("{}"),
+):
+    token = await _token(request)
+    if not token:
+        return JSONResponse({"ok": False, "error": "Chưa đăng nhập."}, status_code=401)
+    try:
+        fields = json.loads(fields_json or "{}")
+    except json.JSONDecodeError:
+        fields = {}
+    minutes = dict((fields.get("minutes") or {}))
+    session_id = minutes.get("session_id")
+    if not session_id:
+        return JSONResponse(
+            {"ok": False, "error": "Chưa chọn phiên đấu giá để đồng bộ diễn biến."},
+            status_code=400,
+        )
+    try:
+        prog = await build_session_progress_data(token, int(session_id))
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": _err_msg(e)}, status_code=502)
+
+    minutes = _merge_progression_into_minutes(minutes, prog)
+    fields["minutes"] = minutes
+    try:
+        await update_instance(token, instance_id, {"fields": fields})
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": _err_msg(e)}, status_code=502)
+
+    err = prog.get("error")
+    return JSONResponse(
+        {
+            "ok": True,
+            "minutes": minutes,
+            "warning": (err.get("message") if isinstance(err, dict) else err) if err else None,
+        }
     )
 
 

@@ -32,6 +32,13 @@
   .ce-signed-preview { margin-top:6px; font-size:12px; line-height:1.45; padding:6px 8px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; color:#334155; }
   .ce-hint { font-size:10px; color:#94a3b8; margin-top:3px; }
   .ce-readonly-val { padding:8px 10px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; font-size:12px; }
+  .ce-guest-row { border:1px dashed #e2e8f0; border-radius:10px; padding:10px; margin-bottom:8px; position:relative; }
+  .ce-guest-row-hd { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; font-size:11px; font-weight:700; color:#64748b; }
+  .ce-guest-row .ce-field { margin-bottom:8px; }
+  .ce-guest-row .ce-field:last-child { margin-bottom:0; }
+  .ce-btn-ghost { background:#f8fafc; }
+  .ce-btn-sm { padding:5px 8px; font-size:11px; }
+  .ce-sync-note { font-size:11px; color:#64748b; margin:0 0 8px; line-height:1.45; }
 </style>
 <div class="fm-page">
   {{ forms_page_header(
@@ -103,20 +110,46 @@
           {% endif %}
         </div>
         <div class="ce-field"><label>Địa điểm</label><input id="f_venue" {% if is_final %}readonly{% endif %}></div>
-        <div class="ce-field"><label>Đơn vị tổ chức phiên</label><input id="f_organizer" {% if is_final %}readonly{% endif %}></div>
+        <div class="ce-field"><label>Đơn vị tổ chức phiên</label><input id="f_organizer" {% if is_final %}readonly{% endif %} placeholder="Tên công ty tổ chức đấu giá"></div>
 
         <div class="ce-sec">Tài sản đấu giá</div>
         <div class="ce-field"><label>Mô tả tài sản</label><input id="f_asset_description" {% if is_final %}readonly{% endif %}></div>
         <div class="ce-field"><label>Giá khởi điểm (ghi chú)</label><input id="f_starting_price_note" {% if is_final %}readonly{% endif %}></div>
 
         <div class="ce-sec">Thành phần tham dự</div>
-        <div class="ce-field"><label>Khách mời (mỗi dòng một người)</label><textarea id="f_guests_text" {% if is_final %}readonly{% endif %} rows="4"></textarea></div>
-        <div class="ce-field"><label>Người có tài sản đấu giá</label><textarea id="f_asset_owner" {% if is_final %}readonly{% endif %} rows="2"></textarea></div>
-        <div class="ce-field"><label>Đấu giá viên</label><textarea id="f_auctioneer" {% if is_final %}readonly{% endif %} rows="2"></textarea></div>
+        <div class="ce-field">
+          <label>Khách mời</label>
+          <div id="guestsHost"></div>
+          {% if not is_final %}
+          <button type="button" class="ce-btn ce-btn-ghost ce-btn-sm" id="btnAddGuest"><i class="ri-add-line"></i> Thêm khách mời</button>
+          {% endif %}
+        </div>
+        <div class="ce-field"><label>Người có tài sản đấu giá (Họ và tên, chức vụ)</label><textarea id="f_asset_owner" {% if is_final %}readonly{% endif %} rows="2"></textarea></div>
+        <div class="ce-field">
+          <label>Đấu giá viên</label>
+          {% if is_final %}
+          <div class="ce-readonly-val" id="auctioneerSelectDisplay">—</div>
+          {% else %}
+          <select id="f_auctioneer_id">
+            <option value="">— Chọn từ danh sách công ty —</option>
+            {% for a in company_auctioneers %}
+            <option value="{{ a.id }}">
+              {{ a.full_name }}{% if a.certificate_no %} · CC: {{ a.certificate_no }}{% endif %}{% if a.is_master %} ★{% endif %}
+            </option>
+            {% endfor %}
+            <option value="manual">— Nhập tay (không chọn danh sách) —</option>
+          </select>
+          {% if not company_auctioneers %}
+          <div class="ce-hint">Chưa cấu hình đấu giá viên — <a href="/bieu-mau/cau-hinh/dau-gia-vien">Thêm tại Cấu hình</a>.</div>
+          {% endif %}
+          {% endif %}
+        </div>
+        <div class="ce-field"><label>Họ và tên đấu giá viên</label><input id="f_auctioneer_name" {% if is_final %}readonly{% endif %}></div>
+        <div class="ce-field"><label>Số chứng chỉ hành nghề đấu giá</label><input id="f_auctioneer_certificate_no" {% if is_final %}readonly{% endif %}></div>
         <div class="ce-field"><label>Ghi chú người tham gia đấu giá</label><input id="f_bidders_note" {% if is_final %}readonly{% endif %}></div>
 
-        <div class="ce-sec">Diễn biến &amp; kết thúc</div>
-        <div class="ce-field"><label>Diễn biến phiên</label><textarea id="f_progression_text" {% if is_final %}readonly{% endif %} rows="5"></textarea></div>
+        <div class="ce-sec">Kết thúc phiên</div>
+        <p class="ce-sync-note">Diễn biến phiên (mục II.1) lấy từ dữ liệu vận hành phiên. Bấm <strong>Cập nhật diễn biến</strong> trên thanh preview để đồng bộ mới nhất.</p>
         <div class="ce-field">
           <label>Kết thúc phiên</label>
           {% if is_final %}
@@ -133,7 +166,6 @@
         <button type="submit" formaction="/bieu-mau/sau-phien/bien-ban-dau-gia/{{ instance.id }}/save" class="ce-btn"><i class="ri-save-line"></i> Lưu</button>
         {% endif %}
         <a href="{{ download_html_url }}" class="ce-btn" target="_blank" rel="noopener"><i class="ri-file-code-line"></i> Tải HTML</a>
-        <a href="{{ download_pdf_url }}" class="ce-btn" target="_blank" rel="noopener"><i class="ri-file-pdf-line"></i> Tải PDF</a>
         <a href="{{ project_forms_url }}" class="ce-btn">Theo dự án</a>
       </div>
       <input type="hidden" name="title" id="f_title" value="{{ instance.title or '' }}">
@@ -151,6 +183,11 @@
           <div class="ce-preview-toolbar">
             <button type="button" class="ce-btn ce-btn-icon" id="btnPreviewFullscreen" title="Toàn màn hình"><i class="ri-fullscreen-line"></i> Full</button>
             <button type="button" class="ce-btn ce-btn-icon" id="btnPreviewPrint" title="In"><i class="ri-printer-line"></i> In</button>
+            {% if not is_final %}
+            <button type="button" class="ce-btn ce-btn-icon ce-btn-warn" id="btnSyncProgression" title="Đồng bộ diễn biến từ phiên"><i class="ri-refresh-line"></i> Cập nhật diễn biến</button>
+            <button type="submit" formaction="/bieu-mau/sau-phien/bien-ban-dau-gia/{{ instance.id }}/save" class="ce-btn ce-btn-icon" title="Lưu biên bản"><i class="ri-save-line"></i> Lưu</button>
+            {% endif %}
+            <a href="{{ download_html_url }}" class="ce-btn ce-btn-icon" target="_blank" rel="noopener" title="Tải HTML"><i class="ri-file-code-line"></i> Tải HTML</a>
             <span class="ce-preview-toolbar-sep" aria-hidden="true"></span>
             {% if not is_final %}
             <button type="submit" formaction="/bieu-mau/sau-phien/bien-ban-dau-gia/{{ instance.id }}/finalize" class="ce-btn ce-btn-icon ce-btn-warn" title="Chốt văn bản"><i class="ri-lock-line"></i> Chốt</button>
@@ -168,10 +205,132 @@
 </div>
 <script>
 const PREVIEW_URL = {{ preview_url|tojson }};
+const SYNC_URL = {{ sync_progression_url|tojson }};
 const IS_FINAL = {{ 'true' if is_final else 'false' }};
 const CTX = {{ ctx_json|safe }};
 const INIT_FIELDS = {{ fields_json|safe }};
 const SESSIONS = {{ auction_sessions|tojson }};
+const AUCTIONEERS = {{ company_auctioneers|tojson }};
+const COMPANY_NAME = (CTX.company && CTX.company.name) ? String(CTX.company.name) : '';
+const DEFAULT_BIDDERS_NOTE = 'Danh sách người tham gia đấu giá được đính kèm cùng biên bản này.';
+
+function guestRowHtml(g, idx) {
+  const ro = IS_FINAL ? 'readonly' : '';
+  const name = (g && g.full_name) ? String(g.full_name).replace(/"/g, '&quot;') : '';
+  const title = (g && g.title) ? String(g.title).replace(/"/g, '&quot;') : '';
+  const workplace = (g && g.workplace) ? String(g.workplace).replace(/"/g, '&quot;') : '';
+  return `
+    <div class="ce-guest-row" data-guest-row="${idx}">
+      <div class="ce-guest-row-hd"><span>Khách mời #${idx + 1}</span>
+        ${IS_FINAL ? '' : '<button type="button" class="ce-btn ce-btn-sm ce-btn-ghost btn-remove-guest" title="Xoá"><i class="ri-delete-bin-line"></i></button>'}
+      </div>
+      <div class="ce-field"><label>Họ và tên</label><input class="g-full_name" value="${name}" ${ro} placeholder="Họ và tên"></div>
+      <div class="ce-field"><label>Chức vụ</label><input class="g-title" value="${title}" ${ro} placeholder="Chức vụ"></div>
+      <div class="ce-field"><label>Nơi công tác</label><input class="g-workplace" value="${workplace}" ${ro} placeholder="Nơi công tác"></div>
+    </div>`;
+}
+
+function renderGuests(guests) {
+  const host = document.getElementById('guestsHost');
+  if (!host) return;
+  const rows = Array.isArray(guests) && guests.length ? guests : [{ full_name: '', title: '', workplace: '' }];
+  host.innerHTML = rows.map((g, i) => guestRowHtml(g, i)).join('');
+  if (!IS_FINAL) bindGuestButtons();
+}
+
+function bindGuestButtons() {
+  document.querySelectorAll('.btn-remove-guest').forEach(btn => {
+    btn.onclick = () => {
+      const row = btn.closest('[data-guest-row]');
+      const host = document.getElementById('guestsHost');
+      if (host && host.querySelectorAll('[data-guest-row]').length <= 1) {
+        row.querySelectorAll('input').forEach(inp => { inp.value = ''; });
+      } else {
+        row?.remove();
+      }
+      reindexGuestRows();
+      schedulePreview();
+    };
+  });
+}
+
+function reindexGuestRows() {
+  document.querySelectorAll('#guestsHost [data-guest-row]').forEach((row, i) => {
+    row.dataset.guestRow = String(i);
+    const hd = row.querySelector('.ce-guest-row-hd span');
+    if (hd) hd.textContent = 'Khách mời #' + (i + 1);
+  });
+}
+
+function readGuestsFromDom() {
+  const out = [];
+  document.querySelectorAll('#guestsHost [data-guest-row]').forEach(row => {
+    const full_name = row.querySelector('.g-full_name')?.value?.trim() || '';
+    const title = row.querySelector('.g-title')?.value?.trim() || '';
+    const workplace = row.querySelector('.g-workplace')?.value?.trim() || '';
+    if (full_name || title || workplace) out.push({ full_name, title, workplace });
+  });
+  return out;
+}
+
+document.getElementById('btnAddGuest')?.addEventListener('click', () => {
+  const host = document.getElementById('guestsHost');
+  if (!host) return;
+  const idx = host.querySelectorAll('[data-guest-row]').length;
+  host.insertAdjacentHTML('beforeend', guestRowHtml({ full_name: '', title: '', workplace: '' }, idx));
+  bindGuestButtons();
+  schedulePreview();
+});
+
+function applyAuctioneerPick(idVal) {
+  const nameEl = document.getElementById('f_auctioneer_name');
+  const certEl = document.getElementById('f_auctioneer_certificate_no');
+  if (!nameEl || !certEl) return;
+  const hit = (AUCTIONEERS || []).find(a => String(a.id) === String(idVal));
+  if (!hit) return;
+  nameEl.value = String(hit.full_name || '').trim();
+  certEl.value = String(hit.certificate_no || '').trim();
+}
+
+function resolveAuctioneerSelect(minutes) {
+  const sel = document.getElementById('f_auctioneer_id');
+  if (!sel) return;
+  const m = minutes || {};
+  let pick = m.auctioneer_id != null && m.auctioneer_id !== '' ? String(m.auctioneer_id) : '';
+  if (pick && sel.querySelector(`option[value="${pick}"]`)) {
+    sel.value = pick;
+    return;
+  }
+  const name = (m.auctioneer_name || m.auctioneer || '').trim();
+  const cert = (m.auctioneer_certificate_no || '').trim();
+  let hit = (AUCTIONEERS || []).find(a =>
+    String(a.full_name || '').trim() === name &&
+    String(a.certificate_no || '').trim() === cert
+  );
+  if (!hit && name) {
+    hit = (AUCTIONEERS || []).find(a => String(a.full_name || '').trim() === name);
+  }
+  if (hit && sel.querySelector(`option[value="${String(hit.id)}"]`)) {
+    sel.value = String(hit.id);
+    return;
+  }
+  if (name || cert) sel.value = 'manual';
+  else {
+    const master = (AUCTIONEERS || []).find(a => a.is_master);
+    if (master && sel.querySelector(`option[value="${String(master.id)}"]`)) {
+      sel.value = String(master.id);
+      if (!(m.auctioneer_name || m.auctioneer)) applyAuctioneerPick(master.id);
+    } else {
+      sel.value = '';
+    }
+  }
+}
+
+document.getElementById('f_auctioneer_id')?.addEventListener('change', (ev) => {
+  const v = ev.target.value;
+  if (v && v !== 'manual') applyAuctioneerPick(v);
+  schedulePreview();
+});
 
 function parseIsoLocal(iso) {
   const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/);
@@ -225,17 +384,27 @@ function collectFields() {
   m.session_start_at = isoFromPicker(document.getElementById('f_session_start_picker')?.value || m.session_start_at || '');
   m.session_end_at = isoFromPicker(document.getElementById('f_session_end_picker')?.value || m.session_end_at || '');
   m.venue = document.getElementById('f_venue')?.value?.trim() || '';
-  m.organizer = document.getElementById('f_organizer')?.value?.trim() || '';
+  m.organizer = document.getElementById('f_organizer')?.value?.trim() || COMPANY_NAME || '';
   m.asset_description = document.getElementById('f_asset_description')?.value?.trim() || '';
   m.starting_price_note = document.getElementById('f_starting_price_note')?.value?.trim() || '';
-  const guestsRaw = document.getElementById('f_guests_text')?.value || '';
-  m.guests = guestsRaw.split('\n').map(s => s.trim()).filter(Boolean);
+  m.guests = readGuestsFromDom();
   m.asset_owner = document.getElementById('f_asset_owner')?.value?.trim() || '';
-  m.auctioneer = document.getElementById('f_auctioneer')?.value?.trim() || '';
-  m.bidders_note = document.getElementById('f_bidders_note')?.value?.trim() || '';
-  m.progression_text = document.getElementById('f_progression_text')?.value?.trim() || '';
-  if (!Array.isArray(m.failed_lots)) m.failed_lots = [];
-  if (!Array.isArray(m.won_lots)) m.won_lots = [];
+  const auctioneerSel = document.getElementById('f_auctioneer_id');
+  const auctioneerPick = auctioneerSel?.value || '';
+  if (auctioneerPick && auctioneerPick !== 'manual') {
+    m.auctioneer_id = parseInt(auctioneerPick, 10) || null;
+  } else {
+    m.auctioneer_id = null;
+  }
+  m.auctioneer_name = document.getElementById('f_auctioneer_name')?.value?.trim() || '';
+  m.auctioneer_certificate_no = document.getElementById('f_auctioneer_certificate_no')?.value?.trim() || '';
+  m.bidders_note = document.getElementById('f_bidders_note')?.value?.trim() || DEFAULT_BIDDERS_NOTE;
+  const prog = (m.progression && typeof m.progression === 'object') ? m.progression : {
+    failed_lots: [], won_lots: [], round_sections: [], summary: {}, price_labels: {}, synced_at: ''
+  };
+  m.progression = prog;
+  m.failed_lots = Array.isArray(prog.failed_lots) ? prog.failed_lots : [];
+  m.won_lots = Array.isArray(prog.won_lots) ? prog.won_lots : [];
   return { minutes: m };
 }
 
@@ -250,16 +419,29 @@ function hydrateFromFields() {
   set('f_party_a', m.party_a);
   set('f_party_b', m.party_b);
   set('f_venue', m.venue);
-  set('f_organizer', m.organizer);
+  set('f_organizer', m.organizer || COMPANY_NAME);
   set('f_asset_description', m.asset_description || CTX.project?.name || '');
   set('f_starting_price_note', m.starting_price_note);
   set('f_asset_owner', m.asset_owner);
-  set('f_auctioneer', m.auctioneer);
-  set('f_bidders_note', m.bidders_note || 'Danh sách người tham gia đấu giá theo sổ điểm danh phiên.');
-  set('f_progression_text', m.progression_text);
-  if (m.guests && m.guests.length) {
-    set('f_guests_text', m.guests.join('\n'));
+  resolveAuctioneerSelect(m);
+  set('f_auctioneer_name', m.auctioneer_name || m.auctioneer || '');
+  set('f_auctioneer_certificate_no', m.auctioneer_certificate_no || '');
+  if (IS_FINAL) {
+    const aid = m.auctioneer_id;
+    const hit = (AUCTIONEERS || []).find(a => String(a.id) === String(aid));
+    const disp = document.getElementById('auctioneerSelectDisplay');
+    if (disp) {
+      const nm = m.auctioneer_name || m.auctioneer || (hit && hit.full_name) || '';
+      const cert = m.auctioneer_certificate_no || (hit && hit.certificate_no) || '';
+      disp.textContent = nm ? (nm + (cert ? (' · CC: ' + cert) : '')) : '—';
+    }
   }
+  set('f_bidders_note', m.bidders_note || DEFAULT_BIDDERS_NOTE);
+  const guests = Array.isArray(m.guests) ? m.guests.map(g => {
+    if (typeof g === 'string') return { full_name: g, title: '', workplace: '' };
+    return g;
+  }) : [];
+  renderGuests(guests);
   const sessEl = document.getElementById('f_session_id');
   if (sessEl && m.session_id) sessEl.value = String(m.session_id);
   if (IS_FINAL) {
@@ -309,6 +491,34 @@ async function runPreview() {
 }
 
 document.getElementById('btnPreview')?.addEventListener('click', runPreview);
+document.getElementById('btnSyncProgression')?.addEventListener('click', async () => {
+  const sid = document.getElementById('f_session_id')?.value;
+  if (!sid) { alert('Chọn phiên đấu giá trước khi cập nhật diễn biến.'); return; }
+  syncHidden();
+  const fd = new FormData();
+  fd.set('fields_json', document.getElementById('fieldsJson').value);
+  const btn = document.getElementById('btnSyncProgression');
+  btn?.setAttribute('disabled', 'disabled');
+  try {
+    const r = await fetch(SYNC_URL, { method: 'POST', body: fd, credentials: 'same-origin' });
+    const data = await r.json();
+    if (!data.ok) {
+      alert(data.error || 'Không đồng bộ được diễn biến phiên.');
+      return;
+    }
+    if (data.minutes) {
+      INIT_FIELDS.minutes = data.minutes;
+    }
+    if (data.warning) {
+      console.warn('Sync warning:', data.warning);
+    }
+    await runPreview();
+  } catch (e) {
+    alert('Lỗi kết nối khi cập nhật diễn biến.');
+  } finally {
+    btn?.removeAttribute('disabled');
+  }
+});
 document.getElementById('btnPreviewPrint')?.addEventListener('click', () => {
   document.getElementById('previewFrame')?.contentWindow?.print();
 });
@@ -328,6 +538,9 @@ document.getElementById('btnPreviewFullscreen')?.addEventListener('click', () =>
 });
 
 document.getElementById('f_session_id')?.addEventListener('change', schedulePreview);
+document.getElementById('guestsHost')?.addEventListener('input', (ev) => {
+  if (ev.target.matches('input')) schedulePreview();
+});
 document.getElementById('ceForm')?.addEventListener('input', (ev) => {
   if (ev.target.matches('input, textarea, select')) schedulePreview();
 });

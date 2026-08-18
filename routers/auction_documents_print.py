@@ -879,6 +879,73 @@ def _extract_lot_snapshot(lot: Dict[str, Any]) -> Dict[str, Any]:
     return {}
 
 
+def _lot_area_sqm_value(lot: Dict[str, Any]) -> Optional[float]:
+    snap = _extract_lot_snapshot(lot)
+    area = lot.get("lot_area")
+    if area is None:
+        area = snap.get("area") or snap.get("area_sqm")
+    if area is None or not _to_str(area).strip():
+        return None
+    try:
+        return float(area)
+    except (TypeError, ValueError):
+        return None
+
+
+def _fmt_area_sqm_2dec(area: Optional[float]) -> str:
+    if area is None:
+        return "—"
+    return f"{area:.2f}"
+
+
+def _lot_description_for_print(lot: Dict[str, Any]) -> str:
+    snap = _extract_lot_snapshot(lot)
+    lot_code = _to_str(lot.get("lot_code") or snap.get("lot_code") or "").strip()
+    text = ""
+    for key in (
+        "lot_description",
+        "lot_name",
+        "description",
+        "name",
+    ):
+        for src in (lot, snap):
+            if not isinstance(src, dict):
+                continue
+            t = _to_str(src.get(key) or "").strip()
+            if t and t != lot_code:
+                text = t
+                break
+        if text:
+            break
+    if not text:
+        for src in (lot, snap):
+            if not isinstance(src, dict):
+                continue
+            t = _to_str(src.get("lot_name") or src.get("description") or "").strip()
+            if t:
+                text = t
+                break
+    extras: List[str] = []
+    map_no = _to_str(snap.get("map_no") or snap.get("map_sheet") or "").strip()
+    parcel_no = _to_str(snap.get("parcel_no") or "").strip()
+    if map_no or parcel_no:
+        extras.append(f"Tờ {map_no or '—'}, Thửa {parcel_no or '—'}")
+    area = lot.get("lot_area")
+    if area is None:
+        area = snap.get("area") or snap.get("area_sqm")
+    if area is not None and _to_str(area).strip():
+        try:
+            af = float(area)
+            area_s = f"{int(af)}" if af == int(af) else _to_str(area)
+        except Exception:
+            area_s = _to_str(area)
+        extras.append(f"DT {area_s} m²")
+    if extras:
+        suffix = " (" + "; ".join(extras) + ")"
+        text = (text + suffix) if text else "; ".join(extras)
+    return text
+
+
 def _build_winner_sign_rows(ui: Dict[str, Any], *, auction_mode: str) -> List[Dict[str, Any]]:
     rows: List[Dict[str, Any]] = []
     for lot in (ui or {}).get("lots") or []:
@@ -908,6 +975,8 @@ def _build_winner_sign_rows(ui: Dict[str, Any], *, auction_mode: str) -> List[Di
             {
                 "lot_id": lot.get("lot_id") or lot.get("id"),
                 "lot_code": lot_code,
+                "lot_description": _lot_description_for_print(lot),
+                "lot_area_display": _fmt_area_sqm_2dec(_lot_area_sqm_value(lot)),
                 "start_price_vnd": sp,
                 "start_price_display": _fmt_vnd_dot(sp),
                 "auction_mode": mode,
@@ -1806,31 +1875,12 @@ async def _fetch_round_rows_for_print(
     return round_no, rows, _round_stats(rows)
 
 
-@router.get(
-    "/auction/sessions/{session_id}/documents/session-progress/print",
-    response_class=HTMLResponse,
-)
-async def print_session_progress(
-    request: Request,
-    session_id: int = Path(..., ge=1),
-    title: Optional[str] = Query(None),
-    autoprint: int = Query(0, ge=0, le=1),
-    download: Optional[str] = Query(None),
-):
-    """In biên bản diễn biến toàn phiên: lô không thành, lô trúng, diễn biến từng vòng."""
+async def build_session_progress_data(
+    token: str,
+    session_id: int,
+) -> Dict[str, Any]:
+    """Dữ liệu diễn biến phiên (lô không thành, lô trúng, từng vòng) — dùng chung in & biên bản."""
     import asyncio
-
-    token = get_access_token(request)
-    if not token:
-        return templates.TemplateResponse(
-            "pages/error.html",
-            {
-                "request": request,
-                "title": "Chưa đăng nhập",
-                "message": "Vui lòng đăng nhập lại.",
-            },
-            status_code=401,
-        )
 
     error: Optional[Dict[str, Any]] = None
 
@@ -1942,6 +1992,7 @@ async def print_session_progress(
         r1_ui_lots_by_id=r1_ui_lots,
     )
     won_lots = _build_session_won_lots(session_results, r1_prices=r1_prices)
+    eligible_lots = _build_winner_sign_rows(ui_r1, auction_mode=auction_mode)
 
     round_pairs = await asyncio.gather(
         *[
@@ -1956,13 +2007,64 @@ async def print_session_progress(
     )
     round_sections: List[Dict[str, Any]] = []
     for rn, rows, stats in sorted(round_pairs, key=lambda x: x[0]):
-        round_sections.append(
+        round_sections.append({"round_no": rn, "rows": rows, "stats": stats})
+
+    return {
+        "session_id": session_id,
+        "auction_mode": auction_mode,
+        "price_labels": price_labels,
+        "failed_lots": failed_lots,
+        "won_lots": won_lots,
+        "eligible_lots": eligible_lots,
+        "round_sections": round_sections,
+        "round_count": len(round_sections),
+        "summary": {
+            "failed": len(failed_lots),
+            "won": len(won_lots),
+            "total_results": len(session_results),
+        },
+        "error": error,
+    }
+
+
+@router.get(
+    "/auction/sessions/{session_id}/documents/session-progress/print",
+    response_class=HTMLResponse,
+)
+async def print_session_progress(
+    request: Request,
+    session_id: int = Path(..., ge=1),
+    title: Optional[str] = Query(None),
+    autoprint: int = Query(0, ge=0, le=1),
+    download: Optional[str] = Query(None),
+):
+    """In biên bản diễn biến toàn phiên: lô không thành, lô trúng, diễn biến từng vòng."""
+    token = get_access_token(request)
+    if not token:
+        return templates.TemplateResponse(
+            "pages/error.html",
             {
-                "round_no": rn,
-                "rows": rows,
-                "stats": stats,
-            }
+                "request": request,
+                "title": "Chưa đăng nhập",
+                "message": "Vui lòng đăng nhập lại.",
+            },
+            status_code=401,
         )
+
+    prog = await build_session_progress_data(token, session_id)
+    error = prog.get("error")
+
+    st_s, sess = await _a_get_json(
+        f"/api/v1/auction-sessions/sessions/{session_id}", token, None, timeout=60.0
+    )
+    if st_s == 200 and isinstance(sess, dict):
+        sess_data = (sess.get("data") or sess) if isinstance(sess, dict) else {"id": session_id}
+    else:
+        sess_data = {"id": session_id}
+
+    project_name = sess_data.get("project_name") or sess_data.get("p_project_name") or ""
+    project_code = sess_data.get("project_code") or sess_data.get("p_project_code") or ""
+    auction_mode = prog.get("auction_mode") or "PER_LOT"
 
     session_out = {
         "id": sess_data.get("id") or session_id,
@@ -1992,17 +2094,13 @@ async def print_session_progress(
             "project_code": project_code,
             "auction_mode": auction_mode,
         },
-        "price_labels": price_labels,
+        "price_labels": prog.get("price_labels") or {},
         "auction_mode": auction_mode,
-        "failed_lots": failed_lots,
-        "won_lots": won_lots,
-        "round_sections": round_sections,
-        "round_count": len(round_sections),
-        "summary": {
-            "failed": len(failed_lots),
-            "won": len(won_lots),
-            "total_results": len(session_results),
-        },
+        "failed_lots": prog.get("failed_lots") or [],
+        "won_lots": prog.get("won_lots") or [],
+        "round_sections": prog.get("round_sections") or [],
+        "round_count": prog.get("round_count") or 0,
+        "summary": prog.get("summary") or {},
         "org_name": ORG_NAME,
         "autoprint": 0 if for_download else int(autoprint),
         "for_download": for_download,

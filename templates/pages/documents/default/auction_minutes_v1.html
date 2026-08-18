@@ -24,8 +24,19 @@
       body { background: #fff; }
       .sheet { box-shadow: none !important; border: none !important; margin: 0 !important; }
       .page { padding: 0; }
-      .sec, table, .sig-grid { page-break-inside: auto !important; break-inside: auto !important; }
+      .sec, table { page-break-inside: auto !important; break-inside: auto !important; }
       .sec-title { break-after: avoid; page-break-after: avoid; }
+      .doc-signature-block,
+      .doc-signature-block .sig-grid,
+      .doc-signature-block .sig-box {
+        page-break-inside: avoid !important;
+        break-inside: avoid-page !important;
+      }
+      .sp-embed table.sp-tbl td,
+      .sp-embed table.sp-tbl th,
+      .sp-embed .left, .sp-embed .num, .sp-embed .lot, .sp-embed .price,
+      .sp-embed .st-main, .sp-embed .st-sub, .sp-embed .detail-line,
+      table.lots td, table.lots th { color: #000 !important; }
     }
     body.doc-download .page { padding: 0; }
     .page { width: 100%; }
@@ -58,32 +69,172 @@
     }
     table.lots {
       width: 100%; border-collapse: collapse; font-size: 11pt; margin: 8px 0 10px;
+      table-layout: auto;
     }
     table.lots th, table.lots td {
       border: 1px solid #000; padding: 4px 6px; vertical-align: top;
+      color: #000;
     }
     table.lots th { background: #f0f0f0; font-weight: 700; text-align: center; }
+    table.lots .c-stt { width: 1%; white-space: nowrap; text-align: center; }
+    table.lots .c-lot { width: 1%; white-space: nowrap; text-align: center; font-weight: 700; }
+    table.lots .c-area {
+      width: 1%; white-space: nowrap; text-align: right;
+      font-variant-numeric: tabular-nums; font-weight: 700;
+    }
+    table.lots .c-price {
+      width: 1%; white-space: nowrap; text-align: right;
+      font-variant-numeric: tabular-nums; font-weight: 700;
+    }
+    .tbl-full { width: 100%; margin-left: 0; margin-right: 0; }
     .note-box {
       margin-top: 16px; font-size: 11pt; line-height: 1.4;
     }
     .note-box p { text-indent: 0; margin-bottom: 4px; }
+    .doc-signature-block {
+      margin-top: 14px;
+      page-break-inside: avoid;
+      break-inside: avoid-page;
+    }
     .sig-grid {
       display: grid; grid-template-columns: 1fr 1fr 1fr;
-      gap: 12px 8px; margin-top: 20px; text-align: center; font-size: 11pt;
+      gap: 14px 10px; margin-top: 16px; text-align: center; font-size: 11pt;
+      page-break-inside: avoid;
+      break-inside: avoid-page;
     }
-    .sig-box { min-height: 72px; padding-top: 8px; }
-    .sig-role { font-weight: 700; font-size: 10.5pt; line-height: 1.3; margin-bottom: 48px; }
+    .sig-box {
+      min-height: 34mm;
+      padding: 6px 4px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      page-break-inside: avoid;
+      break-inside: avoid-page;
+    }
+    .sig-role {
+      font-weight: 700; font-size: 10.5pt; line-height: 1.3;
+      margin-bottom: 0; flex-shrink: 0;
+    }
+    .sig-area {
+      flex: 1 1 auto;
+      min-height: 26mm;
+      margin-top: 4px;
+    }
     .sig-hint { font-style: italic; font-size: 10pt; }
     .err {
       margin: 8px 0; border: 1px solid #b91c1c; padding: 8px;
       background: #fef2f2; color: #991b1b; font-size: 11pt;
     }
+    .sp-placeholder {
+      font-style: italic; color: #555; min-height: 3em;
+    }
+    .sp-embed { margin: 6px 0 10px 0; font-size: 9.5pt; line-height: 1.15; width: 100%; }
+    .sp-embed .sp-sec { margin-top: 10px; }
+    .sp-embed .sp-sec-title {
+      font-weight: 700; font-size: 11pt; text-transform: uppercase;
+      margin: 0 0 4px; text-indent: 0;
+    }
+    .sp-embed .sp-sec-note { font-size: 9.5pt; font-style: italic; margin: 0 0 5px; text-indent: 0; color: #000; }
+    .sp-embed .sp-round { margin-top: 10px; }
+    .sp-embed .sp-round-title { font-weight: 700; font-size: 10.5pt; margin: 0 0 4px; text-indent: 0; }
+    .sp-embed .sp-stats {
+      display: flex; flex-wrap: wrap; gap: 5px 8px;
+      font-size: 9pt; margin-bottom: 4px; text-indent: 0;
+    }
+    .sp-embed .sp-stats span { border: 1px solid #000; padding: 2px 6px; background: #fff; color: #000; }
+    .sp-embed table.sp-tbl {
+      width: 100%; border-collapse: collapse; table-layout: auto;
+      font-size: 9.5pt; line-height: 1.15; margin-bottom: 6px;
+    }
+    .sp-embed table.sp-tbl-round { table-layout: auto; }
+    .sp-embed table.tbl-won { table-layout: fixed; }
+    .sp-embed table.sp-tbl th, .sp-embed table.sp-tbl td {
+      border: 1px solid #000; padding: 4px 3px; vertical-align: middle;
+      color: #000;
+    }
+    .sp-embed table.sp-tbl th {
+      background: #ececec; font-weight: 700; text-align: center; font-size: 8.5pt;
+      line-height: 1.1; vertical-align: middle; color: #000;
+    }
+    .sp-embed .num, .sp-embed .lot, .sp-embed .price, .sp-embed .left,
+    .sp-embed .st-main, .sp-embed .st-sub, .sp-embed .detail-line {
+      color: #000;
+    }
+    .sp-embed .num { text-align: center; font-variant-numeric: tabular-nums; font-weight: 700; }
+    .sp-embed .price {
+      text-align: right; font-variant-numeric: tabular-nums;
+      font-weight: 700; font-size: 8.5pt; white-space: nowrap;
+      padding-left: 5px; padding-right: 5px;
+    }
+    .sp-embed .left { text-align: left; word-break: break-word; font-size: 9pt; }
+    .sp-embed .lot {
+      text-align: center; font-weight: 800; white-space: nowrap;
+      width: 1%; padding-left: 5px; padding-right: 5px;
+    }
+    .sp-embed .empty-row td { text-align: center; font-style: italic; padding: 8px; color: #000; }
+    .sp-embed .sub { display: block; font-weight: 600; font-size: 7.5pt; margin-top: 1px; color: #000; }
+    .sp-embed .sp-err {
+      border: 1px solid #b91c1c; background: #fef2f2; color: #991b1b;
+      padding: 6px 8px; font-size: 10pt; margin-bottom: 6px;
+    }
+    .sp-embed .tbl-summary .c-stt { width: 1%; white-space: nowrap; }
+    .sp-embed .tbl-summary .c-lot { width: 1%; white-space: nowrap; }
+    .sp-embed .tbl-summary .c-price { width: 1%; white-space: nowrap; }
+    .sp-embed .tbl-summary .c-reason { width: auto; }
+    .sp-embed .tbl-won .c-stt { width: 4%; white-space: nowrap; }
+    .sp-embed .tbl-won .c-lot { width: 6%; white-space: nowrap; }
+    .sp-embed .tbl-won .c-name { width: 13%; }
+    .sp-embed .tbl-won td.c-name {
+      word-break: break-word; font-weight: 700; color: #000;
+      overflow-wrap: anywhere;
+    }
+    .sp-embed .tbl-won .c-cccd { width: 16%; }
+    .sp-embed .tbl-won td.c-cccd {
+      white-space: nowrap; font-variant-numeric: tabular-nums;
+      font-weight: 700; text-align: left; color: #000;
+      padding-left: 4px; padding-right: 4px;
+      overflow: visible;
+    }
+    .sp-embed .tbl-won .c-price { width: 11%; white-space: nowrap; }
+    .sp-embed .tbl-won .c-rnd { width: 5%; white-space: nowrap; }
+    .sp-embed .tbl-won .c-method { width: 9%; }
+    .sp-embed .c-stt { width: 1%; white-space: nowrap; }
+    .sp-embed .c-b { width: 5.1ch; min-width: 5.1ch; max-width: 5.4ch; }
+    .sp-embed .c-price-kd, .sp-embed .c-price-high { width: 1%; white-space: nowrap; }
+    .sp-embed .c-status { width: 1%; white-space: nowrap; min-width: 7.5%; }
+    .sp-embed .c-detail { width: auto; min-width: 12%; }
+    .sp-embed th.c-b { font-size: 8px; padding: 3px 0; }
+    .sp-embed td.vtop { vertical-align: top; padding-top: 5px; }
+    .sp-embed .st { text-align: center; line-height: 1.1; }
+    .sp-embed .st-main { font-weight: 800; font-size: 8.5pt; }
+    .sp-embed .st-sub {
+      margin-top: 2px; font-size: 7.5pt; font-weight: 600;
+      font-style: italic; line-height: 1.05;
+    }
+    .sp-embed .st.ok .st-main::before { content: "★ "; }
+    .sp-embed .st.next, .sp-embed .st.fail {
+      border: 1px solid #111; padding: 2px 1px; margin: 0;
+    }
+    .sp-embed .st.next { border-style: dashed; }
+    .sp-embed .st.fail { border-style: dotted; }
+    .sp-embed .st.next .st-sub { font-style: normal; font-weight: 700; }
+    .sp-embed .st.next .st-main::before { content: "→ "; }
+    .sp-embed .st.fail .st-main::before { content: "✕ "; }
+    .sp-embed .detail-line {
+      display: block; font-size: 8.5pt; line-height: 1.38;
+      word-break: break-word; white-space: normal;
+    }
+    table.starting-lots { margin: 4px 0 8px 0; width: 100%; font-size: 11pt; }
   </style>
 </head>
 <body class="{% if for_download %}doc-download{% else %}doc-preview{% endif %}">
   {% set f = fields or {} %}
   {% set pl = price_labels or {} %}
-  {% set lbl_u = pl.start_unit or 'VNĐ/lô' %}
+  {% set prog = progression or {} %}
+  {% set elots = eligible_lots if eligible_lots is defined and eligible_lots else (prog.eligible_lots if prog.eligible_lots is defined else []) %}
+  {% set pl_start = (prog.price_labels if prog.price_labels is defined else {}) or pl %}
+  {% set lbl_start_u = pl_start.start_unit or pl.start_unit or 'VNĐ/lô' %}
+  {% set lbl_start = pl_start.start or pl.start or 'Giá khởi điểm' %}
 
   <div class="sheet">
     <div class="page">
@@ -108,98 +259,117 @@
       <p class="no-indent">Hôm nay, vào hồi {{ f.session_time_h or '……' }} giờ {{ f.session_time_m or '……' }} phút ngày {{ f.session_date or '…/…/………' }}, tại {{ f.venue or '…………………………' }},</p>
       <p class="no-indent">{{ f.organizer or '………………………………………………………………………………' }} tổ chức phiên đấu giá tài sản.</p>
       <p class="no-indent">- Tài sản đấu giá: {{ f.asset_description or (project.name or project.project_code or '………………………………') }}.</p>
-      <p class="no-indent">- Giá khởi điểm của tài sản đấu giá: {{ f.starting_price_note or '………………………………' }}.</p>
+      <p class="no-indent">- Giá khởi điểm của tài sản đấu giá{% if elots|length > 0 %} ({{ lbl_start }}, đơn vị {{ lbl_start_u }}){% endif %}:</p>
+      {% if elots|length > 0 %}
+        <table class="lots starting-lots tbl-full">
+          <thead>
+            <tr>
+              <th class="c-stt">STT</th>
+              <th class="c-lot">Lô</th>
+              <th class="c-area">Diện tích (m²)</th>
+              <th class="c-price">{{ lbl_start }} ({{ lbl_start_u }})</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in elots %}
+              <tr>
+                <td class="c-stt">{{ row.stt }}</td>
+                <td class="c-lot">{{ row.lot_code }}</td>
+                <td class="c-area">{{ row.lot_area_display or '—' }}</td>
+                <td class="c-price">{{ row.start_price_display or '—' }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="no-indent" style="text-indent:28px">{{ f.starting_price_note or '………………………………' }}</p>
+      {% endif %}
 
       <div class="sec">
         <div class="sec-title">I. Thành phần tham dự</div>
         <div class="sub-title">1. Khách mời (Họ và tên, chức vụ, nơi công tác):</div>
-        {% for g in (f.guests or ['','']) %}
-          <div class="line-item">({{ loop.index }}) {{ g or '………………………………………………………………………………………………' }}</div>
-        {% endfor %}
+        {% set guest_rows = f.guests if f.guests and (f.guests|length) > 0 else [] %}
+        {% if guest_rows|length > 0 %}
+          {% for g in guest_rows %}
+            <div class="line-item">({{ loop.index }})
+              {% if g is mapping %}
+                {{ g.full_name or '………………………………' }}{% if g.title %}, {{ g.title }}{% endif %}{% if g.workplace %} — {{ g.workplace }}{% endif %}
+              {% else %}
+                {{ g or '………………………………………………………………………………………………' }}
+              {% endif %}
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="line-item">(1) ………………………………………………………………………………………………</div>
+        {% endif %}
         <div class="sub-title">2. Người có tài sản đấu giá (Họ và tên, chức vụ):</div>
         <div class="block-fill">{{ f.asset_owner or '' }}</div>
         <div class="sub-title">3. Đấu giá viên (Họ và tên, số Chứng chỉ hành nghề đấu giá):</div>
-        <div class="block-fill">{{ f.auctioneer or '' }}</div>
+        <div class="block-fill">
+          {%- if f.auctioneer_name -%}
+            {{ f.auctioneer_name }}{% if f.auctioneer_certificate_no %}, số Chứng chỉ hành nghề đấu giá {{ f.auctioneer_certificate_no }}{% endif %}
+          {%- elif f.auctioneer -%}
+            {{ f.auctioneer }}
+          {%- endif -%}
+        </div>
         <div class="sub-title">4. Người tham gia đấu giá:</div>
-        <p style="text-indent:28px;font-style:italic;font-size:12pt">{{ f.bidders_note or 'Danh sách người tham gia đấu giá theo sổ điểm danh phiên.' }}</p>
+        <p style="text-indent:28px;font-size:12pt">{{ f.bidders_note or 'Danh sách người tham gia đấu giá được đính kèm cùng biên bản này.' }}</p>
       </div>
 
       <div class="sec">
         <div class="sec-title">II. Diễn biến của phiên đấu giá</div>
         <div class="sub-title">1. Diễn biến của phiên đấu giá:</div>
-        <div class="block-fill" style="min-height:4em">{{ f.progression_text or '' }}</div>
-
-        <div class="sub-title">2. Kết quả đấu giá đối với từng tài sản đấu giá, cụ thể:</div>
-        <div class="sub-title">(1) Đối với tài sản đấu giá không thành:</div>
-        {% if failed_lots and failed_lots|length > 0 %}
-          <table class="lots">
-            <thead>
-              <tr>
-                <th style="width:8%">STT</th>
-                <th style="width:14%">Lô</th>
-                <th style="width:22%">Giá KD (vòng 1)</th>
-                <th>Lý do</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for r in failed_lots %}
-                <tr>
-                  <td style="text-align:center">{{ r.stt }}</td>
-                  <td style="text-align:center">{{ r.lot_code }}</td>
-                  <td style="text-align:right">{{ r.start_price_display or '—' }}</td>
-                  <td>{{ r.reason or 'Không đủ phiếu hợp lệ.' }}</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+        {% if prog and (prog.round_sections or prog.failed_lots or prog.won_lots) %}
+          {% with
+            failed_lots=prog.failed_lots or [],
+            won_lots=prog.won_lots or [],
+            round_sections=prog.round_sections or [],
+            summary=prog.summary or {},
+            price_labels=prog.price_labels or pl,
+            progression_error=prog.error
+          %}
+            {% include "pages/documents/default/_session_progress_embed.html" %}
+          {% endwith %}
         {% else %}
-          <div class="block-fill">Không có lô đấu không thành.</div>
-        {% endif %}
-
-        <div class="sub-title">(2) Đối với tài sản đấu giá thành:</div>
-        {% if won_lots and won_lots|length > 0 %}
-          {% for w in won_lots %}
-            <p class="no-indent" style="margin-top:8px;font-weight:700">Lô {{ w.lot_code }}:</p>
-            <p class="no-indent">* Người trúng đấu giá là:</p>
-            <p class="no-indent">- Họ và tên: {{ w.winner_name or '………………………………' }}</p>
-            <p class="no-indent">- Số Thẻ căn cước công dân/định danh cá nhân: {{ w.winner_cccd or '………………………………' }}</p>
-            <p class="no-indent">* Giá trúng đấu giá là: {{ w.winning_price_display or '……………………' }} {{ lbl_u }}.</p>
-            <p class="no-indent">* Giá khởi điểm (vòng 1): {{ w.start_price_display or '—' }} {{ lbl_u }}.</p>
-            {% if w.win_method_note %}
-              <p class="no-indent">* Hình thức xác định trúng: {{ w.win_method_note }} (vòng {{ w.winning_round_no or '—' }}).</p>
-            {% endif %}
-          {% endfor %}
-        {% else %}
-          <div class="block-fill">Chưa có lô trúng đấu giá.</div>
+          <div class="block-fill sp-placeholder" style="min-height:4em">Chưa đồng bộ diễn biến từ phiên. Bấm «Cập nhật diễn biến» trên thanh xem trước.</div>
         {% endif %}
       </div>
 
-      <p class="no-indent" style="margin-top:14px">Phiên đấu giá kết thúc vào lúc {{ f.end_time_h or '………' }} giờ {{ f.end_time_m or '……' }} ngày {{ f.end_date or '…/…/……' }}.</p>
-      <p class="no-indent">Các bên cùng thống nhất ký tên.</p>
+      <div class="doc-signature-block">
+        <p class="no-indent">Phiên đấu giá kết thúc vào lúc {{ f.end_time_h or '………' }} giờ {{ f.end_time_m or '……' }} ngày {{ f.end_date or '…/…/……' }}.</p>
+        <p class="no-indent">Các bên cùng thống nhất ký tên.</p>
 
-      <div class="sig-grid">
-        <div class="sig-box">
-          <div class="sig-role">Người trúng đấu giá<br/>(Ký, ghi rõ họ tên)</div>
-          <div class="sig-hint">&nbsp;</div>
-        </div>
-        <div class="sig-box">
-          <div class="sig-role">Đấu giá viên<br/>(Ký, ghi rõ họ tên)</div>
-        </div>
-        <div class="sig-box">
-          <div class="sig-role">Đại diện người tham gia đấu giá<br/>(Ký, ghi rõ họ tên)</div>
-        </div>
-        <div class="sig-box">
-          <div class="sig-role">Đại diện người có tài sản đấu giá<br/>(Ký, ghi rõ họ tên)</div>
-        </div>
-        <div class="sig-box">
-          <div class="sig-role">Người ghi biên bản<br/>(Ký, ghi rõ họ tên)</div>
+        <div class="sig-grid">
+          <div class="sig-box">
+            <div class="sig-role">Người trúng đấu giá<br/>(Ký, ghi rõ họ tên)</div>
+            <div class="sig-area"></div>
+          </div>
+          <div class="sig-box">
+            <div class="sig-role">Đấu giá viên<br/>(Ký, ghi rõ họ tên)</div>
+            <div class="sig-area"></div>
+          </div>
+          <div class="sig-box">
+            <div class="sig-role">Đại diện người tham gia đấu giá<br/>(Ký, ghi rõ họ tên)</div>
+            <div class="sig-area"></div>
+          </div>
+          <div class="sig-box">
+            <div class="sig-role">Đại diện người có tài sản đấu giá<br/>(Ký, ghi rõ họ tên)</div>
+            <div class="sig-area"></div>
+          </div>
+          <div class="sig-box">
+            <div class="sig-role">Người ghi biên bản<br/>(Ký, ghi rõ họ tên)</div>
+            <div class="sig-area"></div>
+          </div>
         </div>
       </div>
 
       <div class="note-box">
         <p><strong>Lưu ý:</strong></p>
         <p>* Biên bản đấu giá phải được đóng dấu giáp lai của tổ chức hành nghề đấu giá tài sản hoặc Hội đồng đấu giá tài sản.</p>
-        <p>* Danh sách tài sản, người tham gia, kết quả từng vòng (nếu có) được đóng dấu giáp lai hoặc dấu treo kèm theo biên bản.</p>
+        <p>* Danh sách tài sản đấu giá và giá khởi điểm của tài sản đấu giá; danh sách người tham gia đấu giá; danh sách người tham gia trả giá, kết quả trả giá từng vòng hoặc nhật ký của phiên đấu giá trực tuyến; danh sách tài sản đấu giá không thành; danh sách tài sản đấu giá thành (nếu có) được đóng dấu giáp lai hoặc dấu treo của tổ chức hành nghề đấu giá tài sản hoặc Hội đồng đấu giá tài sản.</p>
+        <p>* Trường hợp phiên đấu giá do Hội đồng đấu giá tài sản thực hiện thì biên bản đấu giá phải có chữ ký của Chủ tịch Hội đồng đấu giá tài sản.</p>
+        <p>* Trường hợp đại diện người có tài sản đấu giá hoặc đại diện người tham gia đấu giá không ký biên bản đấu giá tài sản thì đấu giá viên điều hành phiên đấu giá lập biên bản ghi nhận thực tế vụ việc. Biên bản ghi nhận thực tế vụ việc được đóng dấu xác nhận của tổ chức hành nghề đấu giá tài sản và lưu kèm biên bản đấu giá.</p>
+        <p>* Trường hợp đấu giá bằng hình thức trực tuyến thì biên bản đấu giá có thể không bao gồm đại diện người tham gia đấu giá, đại diện người có tài sản đấu giá tại phần ký biên bản đấu giá.</p>
       </div>
     </div>
   </div>

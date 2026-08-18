@@ -1,0 +1,178 @@
+{# Nội dung diễn biến phiên (không header dự án/phiên) — layout giống session_progress.html #}
+{% set pl = price_labels or {} %}
+{% set lbl_start_u = pl.start_unit or 'VNĐ/lô' %}
+{% set lbl_start = pl.start or 'Giá KD' %}
+{% set lbl_high = pl.highest or 'Giá cao nhất' %}
+{% set lbl_high_u = pl.highest_unit or 'VNĐ/lô' %}
+{% set failed = failed_lots if failed_lots is defined else [] %}
+{% set won = won_lots if won_lots is defined else [] %}
+{% set rounds = round_sections if round_sections is defined else [] %}
+
+<div class="sp-embed">
+  {% if progression_error %}
+    <div class="sp-err">{{ progression_error.message or progression_error }}</div>
+  {% endif %}
+
+  <div class="sp-sec">
+    <div class="sp-sec-title">I. Danh sách lô đấu không thành</div>
+    <div class="sp-sec-note">Lý do: không đủ số lượng phiếu hợp lệ để tiếp tục đấu giá.</div>
+    <table class="sp-tbl tbl-summary">
+      <thead>
+        <tr>
+          <th class="c-stt">STT</th>
+          <th class="c-lot">Lô</th>
+          <th class="c-price">{{ lbl_start }}<span class="sub">{{ lbl_start_u }} (vòng 1)</span></th>
+          <th class="c-price">Phiếu HL</th>
+          <th class="c-reason">Lý do</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if failed|length > 0 %}
+          {% for r in failed %}
+            <tr>
+              <td class="num">{{ r.stt }}</td>
+              <td class="lot">{{ r.lot_code }}</td>
+              <td class="price">{{ r.start_price_display or "—" }}</td>
+              <td class="num">{{ r.valid_count if r.valid_count is not none else "—" }}</td>
+              <td class="left">{{ r.reason or "Không đủ phiếu hợp lệ." }}</td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr class="empty-row"><td colspan="5">Không có lô đấu không thành.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sp-sec">
+    <div class="sp-sec-title">II. Danh sách lô đấu thành công</div>
+    <div class="sp-sec-note">Giá khởi điểm là giá khởi điểm vòng 1 của lô.</div>
+    <table class="sp-tbl tbl-won">
+      <colgroup>
+        <col class="c-stt"/>
+        <col class="c-lot"/>
+        <col class="c-name"/>
+        <col class="c-cccd"/>
+        <col class="c-price"/><col class="c-price"/>
+        <col class="c-method"/>
+        <col class="c-rnd"/>
+      </colgroup>
+      <thead>
+        <tr>
+          <th class="c-stt">STT</th>
+          <th class="c-lot">Lô</th>
+          <th class="c-name">Người trúng</th>
+          <th class="c-cccd">CCCD</th>
+          <th class="c-price">{{ lbl_start }}<span class="sub">{{ lbl_start_u }}</span></th>
+          <th class="c-price">Giá trúng</th>
+          <th class="c-method">Hình thức</th>
+          <th class="c-rnd">Vòng</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if won|length > 0 %}
+          {% for r in won %}
+            <tr>
+              <td class="num">{{ r.stt }}</td>
+              <td class="lot">{{ r.lot_code }}</td>
+              <td class="left c-name">{{ r.winner_name or "—" }}</td>
+              <td class="c-cccd">{{ r.winner_cccd or "—" }}</td>
+              <td class="price">{{ r.start_price_display or "—" }}</td>
+              <td class="price">{{ r.winning_price_display or "—" }}</td>
+              <td class="left">{{ r.win_method_note or "—" }}</td>
+              <td class="num">{{ r.winning_round_no or "—" }}</td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr class="empty-row"><td colspan="8">Chưa có lô trúng đấu giá.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sp-sec">
+    <div class="sp-sec-title">III. Diễn biến từng vòng đấu</div>
+    <div class="sp-sec-note">Chi tiết kiểm phiếu, giá và kết quả từng lô theo từng vòng.</div>
+    {% if rounds|length > 0 %}
+      {% for sec in rounds %}
+        {% set st = sec.stats or {} %}
+        {% set rows = sec.rows or [] %}
+        <div class="sp-round">
+          <div class="sp-round-title">Vòng {{ sec.round_no or "?" }}</div>
+          <div class="sp-stats">
+            <span>Tổng lô: <b>{{ st.total_lots or 0 }}</b></span>
+            <span>Trúng: <b>{{ st.won or 0 }}</b></span>
+            <span>V.trong: <b>{{ st.next or 0 }}</b></span>
+            <span>Chưa chốt: <b>{{ st.pending or 0 }}</b></span>
+            <span>K.thành: <b>{{ st.no_valid or 0 }}</b></span>
+          </div>
+          <table class="sp-tbl sp-tbl-round">
+            <colgroup>
+              <col class="c-stt"/>
+              <col class="c-lot"/>
+              <col class="c-b"/><col class="c-b"/><col class="c-b"/><col class="c-b"/>
+              <col class="c-price-kd"/><col class="c-price-high"/>
+              <col class="c-status"/><col class="c-detail"/>
+            </colgroup>
+            <thead>
+              <tr>
+                <th class="c-stt" rowspan="2">STT</th>
+                <th class="c-lot" rowspan="2">Lô</th>
+                <th colspan="4">Kiểm phiếu</th>
+                <th class="c-price-kd" rowspan="2">{{ lbl_start }}<span class="sub">{{ lbl_start_u }}</span></th>
+                <th class="c-price-high" rowspan="2">{{ lbl_high }}<span class="sub">{{ lbl_high_u }}</span></th>
+                <th class="c-status" rowspan="2">TT</th>
+                <th class="c-detail" rowspan="2">Chi tiết</th>
+              </tr>
+              <tr>
+                <th class="c-b">Phát</th>
+                <th class="c-b">Thu</th>
+                <th class="c-b">HL</th>
+                <th class="c-b">KHL</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if rows|length > 0 %}
+                {% for r in rows %}
+                  {% set sk = r.status_kind or 'pending' %}
+                  {% set dlines = r.detail_lines if r.detail_lines is defined and r.detail_lines else [] %}
+                  <tr>
+                    <td class="num">{{ r.stt }}</td>
+                    <td class="lot">{{ r.lot_code }}</td>
+                    <td class="num">{{ r.issued if r.issued is not none else "—" }}</td>
+                    <td class="num">{{ r.collected if r.collected is not none else "—" }}</td>
+                    <td class="num">{{ r.valid if r.valid is not none else "—" }}</td>
+                    <td class="num">{{ r.invalid if r.invalid is not none else "—" }}</td>
+                    <td class="price">{{ r.start_price_display or "—" }}</td>
+                    <td class="price">{{ r.highest_price_display or "—" }}</td>
+                    <td class="c-status">
+                      <div class="st {{ sk }}">
+                        <div class="st-main">{{ r.status_short or r.status_label }}</div>
+                        {% if r.status_note %}
+                          <div class="st-sub">{{ r.status_note }}</div>
+                        {% endif %}
+                      </div>
+                    </td>
+                    <td class="vtop c-detail">
+                      {% if dlines|length > 0 %}
+                        {% for line in dlines %}
+                          <span class="detail-line">{{ line }}</span>
+                        {% endfor %}
+                      {% else %}
+                        <span class="detail-line">{{ r.detail or "" }}</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr class="empty-row"><td colspan="10">Không có lô trong vòng này.</td></tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="sp-sec-note">Chưa có dữ liệu vòng đấu.</div>
+    {% endif %}
+  </div>
+</div>

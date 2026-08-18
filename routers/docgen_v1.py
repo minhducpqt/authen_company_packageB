@@ -10,19 +10,25 @@ from fastapi import APIRouter, Form, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from services.docgen_v1_client import (
+    create_auctioneer,
     create_instance,
     create_locality_profile,
+    delete_auctioneer,
     delete_locality_profile,
     fetch_communes,
     fetch_provinces,
     fetch_projects,
     finalize_instance,
+    get_auctioneer,
     get_instance,
     get_locality_profile,
     get_render_context,
+    list_auctioneers,
     list_instances,
     list_locality_profiles,
     reopen_instance,
+    set_master_auctioneer,
+    update_auctioneer,
     update_instance,
     update_locality_profile,
 )
@@ -251,6 +257,171 @@ async def locality_config_delete(request: Request, profile_id: int):
     except Exception:
         pass
     return RedirectResponse("/bieu-mau/cau-hinh/dia-phuong", status_code=303)
+
+
+# ---------------------------------------------------------------------------
+# Cấu hình — Đấu giá viên
+# ---------------------------------------------------------------------------
+
+@router.get("/cau-hinh/dau-gia-vien", response_class=HTMLResponse)
+async def auctioneer_config_list(request: Request):
+    token = await _token(request)
+    items = []
+    error = None
+    try:
+        items = await list_auctioneers(token)
+    except Exception as e:
+        error = _err_msg(e)
+    return templates.TemplateResponse(
+        "pages/forms/docgen/auctioneer_list.html",
+        {
+            "request": request,
+            "title": "Cấu hình đấu giá viên",
+            "auctioneers": items,
+            "error": error,
+        },
+    )
+
+
+@router.get("/cau-hinh/dau-gia-vien/tao", response_class=HTMLResponse)
+async def auctioneer_config_new(request: Request):
+    return templates.TemplateResponse(
+        "pages/forms/docgen/auctioneer_edit.html",
+        {
+            "request": request,
+            "title": "Thêm đấu giá viên",
+            "auctioneer": None,
+            "error": None,
+        },
+    )
+
+
+@router.get("/cau-hinh/dau-gia-vien/{auctioneer_id}", response_class=HTMLResponse)
+async def auctioneer_config_edit(request: Request, auctioneer_id: int):
+    token = await _token(request)
+    try:
+        row = await get_auctioneer(token, auctioneer_id)
+    except Exception as e:
+        return templates.TemplateResponse(
+            "pages/forms/docgen/auctioneer_list.html",
+            {
+                "request": request,
+                "title": "Cấu hình đấu giá viên",
+                "auctioneers": [],
+                "error": _err_msg(e),
+            },
+        )
+    return templates.TemplateResponse(
+        "pages/forms/docgen/auctioneer_edit.html",
+        {
+            "request": request,
+            "title": "Sửa đấu giá viên",
+            "auctioneer": row,
+            "error": None,
+        },
+    )
+
+
+@router.post("/cau-hinh/dau-gia-vien/tao", response_class=HTMLResponse)
+async def auctioneer_config_create_post(
+    request: Request,
+    full_name: str = Form(...),
+    certificate_no: str = Form(""),
+    phone: str = Form(""),
+    email: str = Form(""),
+    organization: str = Form(""),
+    note: str = Form(""),
+    is_master: Optional[str] = Form(None),
+    sort_order: int = Form(0),
+):
+    token = await _token(request)
+    body = {
+        "full_name": full_name.strip(),
+        "certificate_no": certificate_no.strip() or None,
+        "phone": phone.strip() or None,
+        "email": email.strip() or None,
+        "organization": organization.strip() or None,
+        "note": note.strip() or None,
+        "is_master": is_master == "1",
+        "sort_order": sort_order,
+    }
+    try:
+        row = await create_auctioneer(token, body)
+        return RedirectResponse(f"/bieu-mau/cau-hinh/dau-gia-vien/{row['id']}", status_code=303)
+    except Exception as e:
+        return templates.TemplateResponse(
+            "pages/forms/docgen/auctioneer_edit.html",
+            {
+                "request": request,
+                "title": "Thêm đấu giá viên",
+                "auctioneer": None,
+                "error": _err_msg(e),
+                "form": body,
+            },
+        )
+
+
+@router.post("/cau-hinh/dau-gia-vien/{auctioneer_id}", response_class=HTMLResponse)
+async def auctioneer_config_update_post(
+    request: Request,
+    auctioneer_id: int,
+    full_name: str = Form(...),
+    certificate_no: str = Form(""),
+    phone: str = Form(""),
+    email: str = Form(""),
+    organization: str = Form(""),
+    note: str = Form(""),
+    is_master: Optional[str] = Form(None),
+    sort_order: int = Form(0),
+):
+    token = await _token(request)
+    body = {
+        "full_name": full_name.strip(),
+        "certificate_no": certificate_no.strip() or None,
+        "phone": phone.strip() or None,
+        "email": email.strip() or None,
+        "organization": organization.strip() or None,
+        "note": note.strip() or None,
+        "is_master": is_master == "1",
+        "sort_order": sort_order,
+    }
+    try:
+        await update_auctioneer(token, auctioneer_id, body)
+        return RedirectResponse(f"/bieu-mau/cau-hinh/dau-gia-vien/{auctioneer_id}", status_code=303)
+    except Exception as e:
+        try:
+            row = await get_auctioneer(token, auctioneer_id)
+        except Exception:
+            row = {"id": auctioneer_id, **body}
+        return templates.TemplateResponse(
+            "pages/forms/docgen/auctioneer_edit.html",
+            {
+                "request": request,
+                "title": "Sửa đấu giá viên",
+                "auctioneer": row,
+                "error": _err_msg(e),
+            },
+        )
+
+
+@router.post("/cau-hinh/dau-gia-vien/{auctioneer_id}/dat-mac-dinh", response_class=HTMLResponse)
+async def auctioneer_config_set_master(request: Request, auctioneer_id: int):
+    token = await _token(request)
+    try:
+        await set_master_auctioneer(token, auctioneer_id)
+    except Exception:
+        pass
+    return RedirectResponse("/bieu-mau/cau-hinh/dau-gia-vien", status_code=303)
+
+
+@router.post("/cau-hinh/dau-gia-vien/{auctioneer_id}/xoa", response_class=HTMLResponse)
+async def auctioneer_config_delete(request: Request, auctioneer_id: int):
+    token = await _token(request)
+    try:
+        await delete_auctioneer(token, auctioneer_id)
+    except Exception:
+        pass
+    return RedirectResponse("/bieu-mau/cau-hinh/dau-gia-vien", status_code=303)
 
 
 @router.get("/api/communes", response_class=HTMLResponse)
@@ -596,7 +767,14 @@ async def contract_download_pdf(request: Request, instance_id: int):
 # Config hub shortcut
 @router.get("/cau-hinh", response_class=HTMLResponse)
 async def config_hub(request: Request):
-    return RedirectResponse("/bieu-mau/cau-hinh/dia-phuong", status_code=302)
+    return templates.TemplateResponse(
+        "pages/forms/docgen/config_hub.html",
+        {
+            "request": request,
+            "title": "Cấu hình biểu mẫu",
+            "config_items": list_config_items(),
+        },
+    )
 
 
 # ---------------------------------------------------------------------------

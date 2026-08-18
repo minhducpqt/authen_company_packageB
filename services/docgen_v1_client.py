@@ -65,6 +65,31 @@ async def delete_locality_profile(token: Optional[str], profile_id: int) -> None
     await _req("DELETE", f"/api/v1/docgen/locality-profiles/{profile_id}", token)
 
 
+async def list_auctioneers(token: Optional[str], q: Optional[str] = None) -> List[Dict[str, Any]]:
+    params = {"q": q} if q else None
+    return await _req("GET", "/api/v1/docgen/auctioneers", token, params=params)
+
+
+async def get_auctioneer(token: Optional[str], auctioneer_id: int) -> Dict[str, Any]:
+    return await _req("GET", f"/api/v1/docgen/auctioneers/{auctioneer_id}", token)
+
+
+async def create_auctioneer(token: Optional[str], body: Dict[str, Any]) -> Dict[str, Any]:
+    return await _req("POST", "/api/v1/docgen/auctioneers", token, json_body=body)
+
+
+async def update_auctioneer(token: Optional[str], auctioneer_id: int, body: Dict[str, Any]) -> Dict[str, Any]:
+    return await _req("PUT", f"/api/v1/docgen/auctioneers/{auctioneer_id}", token, json_body=body)
+
+
+async def set_master_auctioneer(token: Optional[str], auctioneer_id: int) -> Dict[str, Any]:
+    return await _req("POST", f"/api/v1/docgen/auctioneers/{auctioneer_id}/set-master", token)
+
+
+async def delete_auctioneer(token: Optional[str], auctioneer_id: int) -> None:
+    await _req("DELETE", f"/api/v1/docgen/auctioneers/{auctioneer_id}", token)
+
+
 async def get_context(token: Optional[str], project_id: int, ward_code: Optional[int] = None) -> Dict[str, Any]:
     params: Dict[str, Any] = {"project_id": project_id}
     if ward_code is not None:
