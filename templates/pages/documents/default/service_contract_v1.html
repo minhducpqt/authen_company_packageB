@@ -4,7 +4,11 @@
   <meta charset="utf-8">
   <title>Hợp đồng dịch vụ đấu giá</title>
   <style>
-    @page { size: A4; margin: 25mm 20mm 25mm 30mm; }
+    @page {
+      size: A4;
+      margin: 25mm 20mm 25mm 30mm;
+      {% include "pages/documents/default/_docgen_print_page_margin_boxes.inc.css.html" %}
+    }
     * { box-sizing: border-box; }
     html, body {
       margin: 0;
@@ -45,7 +49,6 @@
       .preview-meta { display: none !important; }
       .sec { page-break-inside: auto !important; break-inside: auto !important; }
     }
-    {% include "pages/documents/default/_docgen_print_page_number.inc.css.html" %}
     body.doc-download .page { padding: 0; }
     .hd { text-align: center; margin-bottom: 4px; }
     .hd .cn { font-weight: 700; text-transform: uppercase; font-size: 13pt; letter-spacing: 0.03em; }
@@ -354,6 +357,6 @@
 {% if not for_download %}
 <p class="preview-meta muted">Preview — nguồn: {{ ctx.meta.source if ctx and ctx.meta else 'live' }}</p>
 {% endif %}
-<div class="doc-print-page-no" aria-hidden="true"></div>
+{% include "pages/documents/default/_docgen_print_suppress_browser_header.inc.js.html" %}
 </body>
 </html>

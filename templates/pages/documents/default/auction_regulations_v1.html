@@ -4,7 +4,11 @@
   <meta charset="utf-8">
   <title>Quy chế cuộc đấu giá tài sản</title>
   <style>
-    @page { size: A4; margin: 25mm 20mm 25mm 30mm; }
+    @page {
+      size: A4;
+      margin: 25mm 20mm 25mm 30mm;
+      {% include "pages/documents/default/_docgen_print_page_margin_boxes.inc.css.html" %}
+    }
     * { box-sizing: border-box; }
     html, body {
       margin: 0; padding: 0;
@@ -26,7 +30,6 @@
       .page { padding: 0; min-height: 0 !important; height: auto !important; }
       .sec { page-break-inside: auto !important; break-inside: auto !important; }
     }
-    {% include "pages/documents/default/_docgen_print_page_number.inc.css.html" %}
     body.doc-download .page { padding: 0; }
 
     /* --- Tiêu đề quốc hiệu / đơn vị --- */
@@ -402,6 +405,6 @@
 </div>
 
 </div></div>
-<div class="doc-print-page-no" aria-hidden="true"></div>
+{% include "pages/documents/default/_docgen_print_suppress_browser_header.inc.js.html" %}
 </body>
 </html>
