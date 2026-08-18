@@ -1608,3 +1608,415 @@ async def print_round_results(
         )
 
     return templates.TemplateResponse(tpl, ctx)
+
+
+# =========================================================
+# PRINT: Biên bản diễn biến phiên đấu giá (A4 portrait)
+# =========================================================
+
+
+def _api_data_list(js: Any) -> List[Dict[str, Any]]:
+    if not isinstance(js, dict):
+        return []
+    data = js.get("data")
+    if isinstance(data, list):
+        return [x for x in data if isinstance(x, dict)]
+    return []
+
+
+def _lot_r1_start_price(lot: Dict[str, Any]) -> Any:
+    snap = _extract_lot_snapshot(lot)
+    return (
+        lot.get("init_starting_price_vnd")
+        or lot.get("start_price_vnd")
+        or snap.get("init_starting_price_vnd")
+        or snap.get("start_price_vnd")
+        or snap.get("starting_price_vnd")
+    )
+
+
+def _r1_start_prices_map(ui_r1: Dict[str, Any]) -> Dict[int, Any]:
+    out: Dict[int, Any] = {}
+    for lot in (ui_r1 or {}).get("lots") or []:
+        if not isinstance(lot, dict):
+            continue
+        try:
+            lid = int(lot.get("lot_id") or 0)
+        except Exception:
+            lid = 0
+        if lid > 0:
+            out[lid] = _lot_r1_start_price(lot)
+    return out
+
+
+def _r1_ui_lots_by_id(ui_r1: Dict[str, Any]) -> Dict[int, Dict[str, Any]]:
+    out: Dict[int, Dict[str, Any]] = {}
+    for lot in (ui_r1 or {}).get("lots") or []:
+        if not isinstance(lot, dict):
+            continue
+        try:
+            lid = int(lot.get("lot_id") or 0)
+        except Exception:
+            lid = 0
+        if lid > 0:
+            out[lid] = lot
+    return out
+
+
+def _round_stats(rows: List[Dict[str, Any]]) -> Dict[str, int]:
+    return {
+        "total_lots": len(rows),
+        "won": sum(1 for r in rows if r.get("result_type") == "WINNER"),
+        "next": sum(1 for r in rows if r.get("result_type") == "NEXT_ROUND"),
+        "pending": sum(1 for r in rows if r.get("result_type") == "PENDING"),
+        "no_valid": sum(1 for r in rows if r.get("result_type") == "NO_VALID"),
+    }
+
+
+def _sort_and_stt(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    rows.sort(
+        key=lambda r: (
+            _lot_natural_sort_key(_to_str(r.get("lot_code"))),
+            int(r.get("lot_id") or 0),
+        )
+    )
+    for i, r in enumerate(rows, start=1):
+        r["stt"] = i
+    return rows
+
+
+def _build_session_failed_lots(
+    session_results: List[Dict[str, Any]],
+    *,
+    r1_prices: Dict[int, Any],
+    r1_ballots: Dict[int, Dict[str, Any]],
+    r1_ui_lots_by_id: Dict[int, Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    for res in session_results or []:
+        if not isinstance(res, dict):
+            continue
+        st = _to_str(res.get("status") or "").strip().upper()
+        if st != "NO_WINNER":
+            continue
+        try:
+            lot_id = int(res.get("lot_id") or 0)
+        except Exception:
+            lot_id = 0
+        lot_code = _to_str(res.get("lot_code") or "").strip()
+
+        valid: Any = None
+        r1_lot = r1_ui_lots_by_id.get(lot_id) or {}
+        try:
+            rlid = int(r1_lot.get("id") or 0)
+        except Exception:
+            rlid = 0
+        ballot = r1_ballots.get(rlid) or {}
+        if ballot.get("is_recorded"):
+            valid = ballot.get("valid_count")
+
+        reason = "Không đủ số lượng phiếu hợp lệ để tiếp tục đấu giá."
+        if valid is not None:
+            try:
+                reason = f"Không đủ phiếu hợp lệ (số HL: {int(valid)})."
+            except Exception:
+                reason = f"Không đủ phiếu hợp lệ (số HL: {valid})."
+
+        sp = res.get("init_starting_price_vnd") or r1_prices.get(lot_id)
+        rows.append(
+            {
+                "lot_code": lot_code or (f"#{lot_id}" if lot_id else "—"),
+                "lot_id": lot_id,
+                "start_price_display": _fmt_vnd_dot(sp),
+                "valid_count": valid,
+                "reason": reason,
+            }
+        )
+    return _sort_and_stt(rows)
+
+
+def _build_session_won_lots(
+    session_results: List[Dict[str, Any]],
+    *,
+    r1_prices: Dict[int, Any],
+) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    for res in session_results or []:
+        if not isinstance(res, dict):
+            continue
+        st = _to_str(res.get("status") or "").strip().upper()
+        if st != "WON":
+            continue
+        try:
+            lot_id = int(res.get("lot_id") or 0)
+        except Exception:
+            lot_id = 0
+        lot_code = _to_str(res.get("lot_code") or "").strip()
+        sp = res.get("init_starting_price_vnd") or r1_prices.get(lot_id)
+        wp = res.get("winning_price_vnd")
+        rows.append(
+            {
+                "lot_code": lot_code or (f"#{lot_id}" if lot_id else "—"),
+                "lot_id": lot_id,
+                "winner_name": _to_str(res.get("winner_name") or "").strip(),
+                "winner_cccd": _to_str(res.get("winner_cccd") or "").strip(),
+                "start_price_display": _fmt_vnd_dot(sp),
+                "winning_price_display": _fmt_vnd_dot(wp),
+                "win_method_note": _win_method_note(res.get("win_method")),
+                "winning_round_no": res.get("winning_round_no"),
+            }
+        )
+    return _sort_and_stt(rows)
+
+
+async def _fetch_round_rows_for_print(
+    token: str,
+    session_id: int,
+    round_no: int,
+    *,
+    results_by_lot: Dict[int, Dict[str, Any]],
+) -> Tuple[int, List[Dict[str, Any]], Dict[str, int]]:
+    st_ui, ui = await _a_get_json(
+        f"/api/v1/auction-sessions/sessions/{session_id}/rounds/{round_no}/ui",
+        token,
+        None,
+        timeout=60.0,
+    )
+    if st_ui != 200 or not isinstance(ui, dict):
+        return round_no, [], _round_stats([])
+
+    round_lot_ids: List[int] = []
+    for lot in (ui.get("lots") or []):
+        if not isinstance(lot, dict):
+            continue
+        try:
+            rid = int(lot.get("id") or 0)
+        except Exception:
+            rid = 0
+        if rid > 0:
+            round_lot_ids.append(rid)
+
+    ballots_by_lot = await _fetch_ballots_for_lots(token, round_lot_ids)
+    rows = _build_round_result_rows(
+        ui,
+        results_by_lot=results_by_lot,
+        ballots_by_lot=ballots_by_lot,
+        round_no=round_no,
+    )
+    return round_no, rows, _round_stats(rows)
+
+
+@router.get(
+    "/auction/sessions/{session_id}/documents/session-progress/print",
+    response_class=HTMLResponse,
+)
+async def print_session_progress(
+    request: Request,
+    session_id: int = Path(..., ge=1),
+    title: Optional[str] = Query(None),
+    autoprint: int = Query(0, ge=0, le=1),
+    download: Optional[str] = Query(None),
+):
+    """In biên bản diễn biến toàn phiên: lô không thành, lô trúng, diễn biến từng vòng."""
+    import asyncio
+
+    token = get_access_token(request)
+    if not token:
+        return templates.TemplateResponse(
+            "pages/error.html",
+            {
+                "request": request,
+                "title": "Chưa đăng nhập",
+                "message": "Vui lòng đăng nhập lại.",
+            },
+            status_code=401,
+        )
+
+    error: Optional[Dict[str, Any]] = None
+
+    st_s, sess = await _a_get_json(
+        f"/api/v1/auction-sessions/sessions/{session_id}", token, None, timeout=60.0
+    )
+    if st_s != 200 or not isinstance(sess, dict):
+        error = {"message": f"Không tải được phiên đấu (status={st_s})", "body": sess}
+        sess_data: Dict[str, Any] = {"id": session_id}
+    else:
+        sess_data = (sess.get("data") or sess) if isinstance(sess, dict) else {"id": session_id}
+
+    project_name = sess_data.get("project_name") or sess_data.get("p_project_name") or ""
+    project_code = sess_data.get("project_code") or sess_data.get("p_project_code") or ""
+    project_id = sess_data.get("project_id")
+    auction_mode = "PER_LOT"
+
+    if project_id:
+        st_p, prj = await _a_get_json(
+            f"/api/v1/projects/{project_id}", token, None, timeout=30.0
+        )
+        if st_p == 200 and isinstance(prj, dict):
+            pdata = (prj.get("data") if isinstance(prj.get("data"), dict) else prj) or {}
+            if pdata.get("name"):
+                project_name = pdata.get("name") or project_name
+            if pdata.get("project_code"):
+                project_code = pdata.get("project_code") or project_code
+            if pdata.get("auction_mode") is not None and str(pdata.get("auction_mode")).strip():
+                auction_mode = _normalize_auction_mode(pdata.get("auction_mode"))
+
+    price_labels = _price_column_labels(auction_mode)
+
+    st_res, res_js = await _a_get_json(
+        f"/api/v1/auction-sessions/sessions/{session_id}/results",
+        token,
+        None,
+        timeout=60.0,
+    )
+    session_results = _api_data_list(res_js) if st_res == 200 else []
+    if st_res != 200 and not error:
+        error = {"message": f"Không tải được kết quả phiên (status={st_res})", "body": res_js}
+
+    results_by_lot: Dict[int, Dict[str, Any]] = {}
+    for row in session_results:
+        try:
+            lid = int(row.get("lot_id") or 0)
+        except Exception:
+            lid = 0
+        if lid > 0:
+            results_by_lot[lid] = row
+
+    st_rnd, rounds_js = await _a_get_json(
+        f"/api/v1/auction-sessions/sessions/{session_id}/rounds",
+        token,
+        None,
+        timeout=60.0,
+    )
+    rounds_meta = _api_data_list(rounds_js) if st_rnd == 200 else []
+    if st_rnd != 200 and not error:
+        error = error or {
+            "message": f"Không tải được danh sách vòng (status={st_rnd})",
+            "body": rounds_js,
+        }
+
+    round_nos: List[int] = []
+    for r in rounds_meta:
+        try:
+            rn = int(r.get("round_no") or 0)
+        except Exception:
+            rn = 0
+        if rn > 0:
+            round_nos.append(rn)
+    round_nos = sorted(set(round_nos))
+    if not round_nos:
+        round_nos = [1]
+
+    st_ui1, ui_r1 = await _a_get_json(
+        f"/api/v1/auction-sessions/sessions/{session_id}/rounds/1/ui",
+        token,
+        None,
+        timeout=60.0,
+    )
+    if st_ui1 != 200 or not isinstance(ui_r1, dict):
+        ui_r1 = {}
+        if not error:
+            error = error or {
+                "message": f"Không tải được dữ liệu vòng 1 (status={st_ui1})",
+                "body": ui_r1,
+            }
+
+    r1_prices = _r1_start_prices_map(ui_r1)
+    r1_ui_lots = _r1_ui_lots_by_id(ui_r1)
+    r1_round_lot_ids: List[int] = []
+    for lot in (ui_r1.get("lots") or []):
+        if not isinstance(lot, dict):
+            continue
+        try:
+            rid = int(lot.get("id") or 0)
+        except Exception:
+            rid = 0
+        if rid > 0:
+            r1_round_lot_ids.append(rid)
+    r1_ballots = await _fetch_ballots_for_lots(token, r1_round_lot_ids)
+
+    failed_lots = _build_session_failed_lots(
+        session_results,
+        r1_prices=r1_prices,
+        r1_ballots=r1_ballots,
+        r1_ui_lots_by_id=r1_ui_lots,
+    )
+    won_lots = _build_session_won_lots(session_results, r1_prices=r1_prices)
+
+    round_pairs = await asyncio.gather(
+        *[
+            _fetch_round_rows_for_print(
+                token,
+                session_id,
+                rn,
+                results_by_lot=results_by_lot,
+            )
+            for rn in round_nos
+        ]
+    )
+    round_sections: List[Dict[str, Any]] = []
+    for rn, rows, stats in sorted(round_pairs, key=lambda x: x[0]):
+        round_sections.append(
+            {
+                "round_no": rn,
+                "rows": rows,
+                "stats": stats,
+            }
+        )
+
+    session_out = {
+        "id": sess_data.get("id") or session_id,
+        "name": sess_data.get("name"),
+        "project_name": project_name,
+        "project_code": project_code,
+        "auction_date": sess_data.get("auction_date"),
+        "venue": sess_data.get("venue") or sess_data.get("location"),
+        "province": sess_data.get("province"),
+    }
+
+    me = await fetch_me(token)
+    cc = company_code_from_me(me) or _to_str(sess_data.get("company_code")).strip().lower()
+    tpl = resolve_template(cc, DocKind.SESSION_PROGRESS)
+    for_download = _to_str(download or "").strip().lower() == "html"
+    download_html_url = (
+        f"/auction/sessions/{session_id}/documents/session-progress/print?download=html"
+    )
+
+    ctx = {
+        "request": request,
+        "title": title or "Biên bản diễn biến phiên đấu giá",
+        "session_id": session_id,
+        "session": session_out,
+        "project": {
+            "name": project_name or project_code or "",
+            "project_code": project_code,
+            "auction_mode": auction_mode,
+        },
+        "price_labels": price_labels,
+        "auction_mode": auction_mode,
+        "failed_lots": failed_lots,
+        "won_lots": won_lots,
+        "round_sections": round_sections,
+        "round_count": len(round_sections),
+        "summary": {
+            "failed": len(failed_lots),
+            "won": len(won_lots),
+            "total_results": len(session_results),
+        },
+        "org_name": ORG_NAME,
+        "autoprint": 0 if for_download else int(autoprint),
+        "for_download": for_download,
+        "download_html_url": download_html_url,
+        "error": error,
+    }
+
+    if for_download:
+        html = templates.get_template(tpl).render(**ctx)
+        fname = f"dien-bien-phien-{session_id}.html"
+        return Response(
+            content=html.encode("utf-8"),
+            media_type="text/html; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="{fname}"'},
+        )
+
+    return templates.TemplateResponse(tpl, ctx)

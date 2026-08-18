@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>{{ title or "Biên bản diễn biến phiên đấu giá" }}</title>
+  <style>
+    @page{ size: A4 portrait; margin: 8mm 7mm 10mm 7mm; }
+    *{ box-sizing: border-box; }
+    html, body{
+      margin: 0; padding: 0; color: #111;
+      font-family: "Times New Roman", Times, serif;
+    }
+    .toolbar{
+      display: flex; gap: 8px; justify-content: flex-end; align-items: center;
+      padding: 10px; background: #f6f7f9; border-bottom: 1px solid #e5e7eb;
+    }
+    .btn{
+      border: 1px solid #111; background: #fff; padding: 6px 10px;
+      font-size: 12px; border-radius: 6px; cursor: pointer;
+      text-decoration: none; color: #111; display: inline-block;
+    }
+    @media print{
+      .toolbar{ display: none !important; }
+      .sheet{ width: auto; min-height: auto; margin: 0; box-shadow: none; border: none; }
+      .page{ padding: 0; }
+      .sec,
+      .round-block,
+      table{
+        page-break-inside: auto !important;
+        break-inside: auto !important;
+      }
+      .sec-title,
+      .round-title{
+        break-after: avoid;
+        page-break-after: avoid;
+      }
+      .round-block .stats{
+        break-after: avoid;
+        page-break-after: avoid;
+      }
+    }
+    @media screen{
+      body{ background: #e9edf3; }
+      .toolbar{
+        width: 210mm; margin: 10px auto 0;
+        border-radius: 10px 10px 0 0;
+      }
+      .sheet{
+        width: 210mm; min-height: 297mm; margin: 0 auto 24px;
+        background: #fff; box-shadow: 0 10px 28px rgba(0,0,0,.15);
+        border: 1px solid rgba(0,0,0,.1);
+      }
+      .page{ padding: 8mm 7mm; }
+    }
+    .page{ width: 100%; }
+
+    .doc-title{
+      text-align: center; font-weight: 800; font-size: 14.5px;
+      text-transform: uppercase; letter-spacing: .25px; margin: 0 0 4px;
+    }
+    .doc-sub{
+      text-align: center; font-size: 11px; font-style: italic;
+      color: #333; margin-bottom: 8px;
+    }
+    .meta{
+      display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px;
+      font-size: 11px; margin-bottom: 8px; line-height: 1.3;
+    }
+    .meta .k{ font-weight: 700; }
+    .meta .full{ grid-column: 1 / -1; }
+    .stats{
+      display: flex; flex-wrap: wrap; gap: 5px 8px;
+      font-size: 10px; margin-bottom: 10px;
+    }
+    .stats span{
+      border: 1px solid #111; padding: 2px 7px; background: #fff;
+    }
+    .stats b{ font-weight: 800; }
+
+    .sec{
+      margin-top: 12px;
+    }
+    .sec-title{
+      font-weight: 800; font-size: 12px;
+      text-transform: uppercase; margin: 0 0 4px;
+      border-bottom: 1.5px solid #111; padding-bottom: 3px;
+    }
+    .sec-note{
+      font-size: 10px; font-style: italic; color: #333;
+      margin: 0 0 6px; line-height: 1.35;
+    }
+    .round-block{
+      margin-top: 14px;
+    }
+    .round-title{
+      font-weight: 800; font-size: 11.5px;
+      margin: 0 0 5px; text-transform: uppercase;
+    }
+
+    table{
+      width: 100%; border-collapse: collapse; table-layout: fixed;
+      font-size: 9.5px; line-height: 1.15; margin-bottom: 4px;
+      page-break-inside: auto;
+      break-inside: auto;
+    }
+    thead{ display: table-header-group; }
+    .tbl-summary tbody tr,
+    .tbl-won tbody tr{
+      page-break-inside: avoid;
+      break-inside: avoid-page;
+    }
+    .round-block tbody tr{
+      page-break-inside: auto;
+      break-inside: auto;
+    }
+    th, td{ border: 1px solid #111; }
+    th{
+      text-align: center; font-weight: 800; font-size: 8.5px;
+      background: #ececec; padding: 4px 2px; line-height: 1.1;
+      vertical-align: middle;
+    }
+    th .sub{
+      display: block; font-weight: 600; font-size: 7.5px;
+      margin-top: 1px;
+    }
+    td{ padding: 4px 3px; vertical-align: middle; }
+    td.vtop{ vertical-align: top; padding-top: 5px; }
+    td.num{ text-align: center; font-variant-numeric: tabular-nums; font-weight: 700; }
+    td.lot{ text-align: center; font-weight: 800; }
+    td.price{
+      text-align: right; font-variant-numeric: tabular-nums;
+      font-weight: 700; font-size: 8.5px; white-space: nowrap;
+      padding-right: 4px;
+    }
+    td.left{ text-align: left; font-size: 9px; }
+
+    .tbl-summary .c-stt{ width: 5%; }
+    .tbl-summary .c-lot{ width: 10%; }
+    .tbl-summary .c-price{ width: 14%; }
+    .tbl-summary .c-reason{ width: auto; }
+
+    .tbl-won .c-stt{ width: 4%; }
+    .tbl-won .c-lot{ width: 7%; }
+    .tbl-won .c-name{ width: 18%; }
+    .tbl-won .c-cccd{ width: 14%; }
+    .tbl-won .c-price{ width: 12%; }
+    .tbl-won .c-rnd{ width: 7%; }
+    .tbl-won .c-method{ width: 10%; }
+
+    .c-stt{ width: 4%; }
+    .c-lot{ width: 6.5%; }
+    .c-b{ width: 5.1ch; min-width: 5.1ch; max-width: 5.4ch; }
+    .c-price{ width: 7.5%; }
+    .c-status{ width: 8.5%; }
+    .c-detail{ width: auto; }
+
+    td.num, th.c-b{
+      text-align: center; font-variant-numeric: tabular-nums;
+      font-weight: 700; font-size: 9px;
+      padding-left: 0; padding-right: 0;
+    }
+    th.c-b{ font-size: 8px; padding: 3px 0; }
+
+    .st{ text-align: center; line-height: 1.1; }
+    .st-main{ font-weight: 800; font-size: 8.5px; }
+    .st-sub{
+      margin-top: 2px; font-size: 7.5px; font-weight: 600;
+      font-style: italic; line-height: 1.05;
+    }
+    .st.ok .st-main::before{ content: "★ "; }
+    .st.pending .st-main{ font-weight: 700; }
+    .st.next, .st.fail{
+      border: 1px solid #111; padding: 2px 1px; margin: 0;
+    }
+    .st.next{ border-style: dashed; }
+    .st.fail{ border-style: dotted; }
+    .st.next .st-sub{ font-style: normal; font-weight: 700; }
+    .st.next .st-main::before{ content: "→ "; }
+    .st.fail .st-main::before{ content: "✕ "; }
+
+    .detail-line{
+      display: block; font-size: 8.5px; line-height: 1.38;
+      word-break: break-word; white-space: normal;
+    }
+    .empty-row td{
+      text-align: center; padding: 10px; font-style: italic; color: #444;
+    }
+    .foot{
+      margin-top: 8px; text-align: right;
+      font-size: 9px; color: #333; font-style: italic;
+    }
+    .err{
+      margin: 8px 0; border: 1px solid #111; padding: 8px;
+      font-size: 10px; background: #fff;
+    }
+  </style>
+</head>
+<body>
+  {% if not for_download %}
+  <div class="toolbar">
+    <button class="btn" type="button" onclick="window.print()">In / Lưu PDF</button>
+    <a class="btn" href="{{ download_html_url or ('/auction/sessions/' ~ (session_id or '') ~ '/documents/session-progress/print?download=html') }}">Tải HTML</a>
+    <button class="btn" type="button" onclick="window.close()">Đóng</button>
+  </div>
+  {% endif %}
+
+  {% set s = session or {} %}
+  {% set sm = summary or {} %}
+  {% set pl = price_labels or {} %}
+  {% set lbl_start_u = pl.start_unit or 'VNĐ/lô' %}
+  {% set lbl_start = pl.start or 'Giá KD' %}
+  {% set lbl_high = pl.highest or 'Giá cao nhất' %}
+  {% set lbl_high_u = pl.highest_unit or 'VNĐ/lô' %}
+  {% set failed = failed_lots if failed_lots is defined else [] %}
+  {% set won = won_lots if won_lots is defined else [] %}
+  {% set rounds = round_sections if round_sections is defined else [] %}
+
+  <div class="sheet">
+    <div class="page">
+      <div class="doc-title">BIÊN BẢN DIỄN BIẾN PHIÊN ĐẤU GIÁ</div>
+      <div class="doc-sub">Tổng hợp kết quả và diễn biến các vòng đấu trong phiên</div>
+
+      <div class="meta">
+        <div><span class="k">Phiên:</span> {{ s.name or ("#" ~ (session_id or s.id or "")) }}</div>
+        <div><span class="k">Số vòng:</span> {{ round_count or (rounds|length) or "—" }}</div>
+        <div class="full"><span class="k">Dự án:</span> {{ project.name or s.project_name or s.project_code or "" }}</div>
+        {% if s.auction_date %}
+          <div><span class="k">Ngày đấu:</span>
+            {% set _ad = (s.auction_date or '')|string %}
+            {% if _ad and (_ad|length) >= 10 and ('-' in _ad) %}
+              {{ _ad[8:10] }}/{{ _ad[5:7] }}/{{ _ad[0:4] }}
+            {% else %}
+              {{ _ad }}
+            {% endif %}
+          </div>
+        {% endif %}
+        {% if s.venue %}
+          <div class="full"><span class="k">Địa điểm:</span> {{ s.venue }}</div>
+        {% endif %}
+      </div>
+
+      <div class="stats">
+        <span>Tổng lô theo dõi: <b>{{ sm.total_results or 0 }}</b></span>
+        <span>Trúng: <b>{{ sm.won or 0 }}</b></span>
+        <span>Không thành: <b>{{ sm.failed or 0 }}</b></span>
+      </div>
+
+      {% if error %}
+        <div class="err">
+          <strong>Lỗi tải dữ liệu:</strong> {{ error.message or error.detail or error }}
+        </div>
+      {% endif %}
+
+      <div class="sec">
+        <div class="sec-title">I. Danh sách lô đấu không thành</div>
+        <div class="sec-note">Lý do: không đủ số lượng phiếu hợp lệ để tiếp tục đấu giá.</div>
+        <table class="tbl-summary">
+          <thead>
+            <tr>
+              <th class="c-stt">STT</th>
+              <th class="c-lot">Lô</th>
+              <th class="c-price">{{ lbl_start }}<span class="sub">{{ lbl_start_u }} (vòng 1)</span></th>
+              <th class="c-price">Phiếu HL</th>
+              <th class="c-reason">Lý do</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if failed|length > 0 %}
+              {% for r in failed %}
+                <tr>
+                  <td class="num">{{ r.stt }}</td>
+                  <td class="lot">{{ r.lot_code }}</td>
+                  <td class="price">{{ r.start_price_display or "—" }}</td>
+                  <td class="num">{{ r.valid_count if r.valid_count is not none else "—" }}</td>
+                  <td class="left">{{ r.reason or "Không đủ phiếu hợp lệ." }}</td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr class="empty-row"><td colspan="5">Không có lô đấu không thành.</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sec">
+        <div class="sec-title">II. Danh sách lô đấu thành công</div>
+        <div class="sec-note">Giá khởi điểm là giá khởi điểm vòng 1 của lô.</div>
+        <table class="tbl-won">
+          <thead>
+            <tr>
+              <th class="c-stt">STT</th>
+              <th class="c-lot">Lô</th>
+              <th class="c-name">Người trúng</th>
+              <th class="c-cccd">CCCD</th>
+              <th class="c-price">{{ lbl_start }}<span class="sub">{{ lbl_start_u }}</span></th>
+              <th class="c-price">Giá trúng</th>
+              <th class="c-method">Hình thức</th>
+              <th class="c-rnd">Vòng</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if won|length > 0 %}
+              {% for r in won %}
+                <tr>
+                  <td class="num">{{ r.stt }}</td>
+                  <td class="lot">{{ r.lot_code }}</td>
+                  <td class="left">{{ r.winner_name or "—" }}</td>
+                  <td class="left">{{ r.winner_cccd or "—" }}</td>
+                  <td class="price">{{ r.start_price_display or "—" }}</td>
+                  <td class="price">{{ r.winning_price_display or "—" }}</td>
+                  <td class="left">{{ r.win_method_note or "—" }}</td>
+                  <td class="num">{{ r.winning_round_no or "—" }}</td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr class="empty-row"><td colspan="8">Chưa có lô trúng đấu giá.</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sec">
+        <div class="sec-title">III. Diễn biến từng vòng đấu</div>
+        <div class="sec-note">Chi tiết kiểm phiếu, giá và kết quả từng lô theo từng vòng.</div>
+
+        {% if rounds|length > 0 %}
+          {% for sec in rounds %}
+            {% set st = sec.stats or {} %}
+            {% set rows = sec.rows or [] %}
+            <div class="round-block">
+              <div class="round-title">Vòng {{ sec.round_no or "?" }}</div>
+              <div class="stats">
+                <span>Tổng lô: <b>{{ st.total_lots or 0 }}</b></span>
+                <span>Trúng: <b>{{ st.won or 0 }}</b></span>
+                <span>V.trong: <b>{{ st.next or 0 }}</b></span>
+                <span>Chưa chốt: <b>{{ st.pending or 0 }}</b></span>
+                <span>K.thành: <b>{{ st.no_valid or 0 }}</b></span>
+              </div>
+              <table>
+                <colgroup>
+                  <col class="c-stt"/>
+                  <col class="c-lot"/>
+                  <col class="c-b"/><col class="c-b"/><col class="c-b"/><col class="c-b"/>
+                  <col class="c-price"/><col class="c-price"/>
+                  <col class="c-status"/><col class="c-detail"/>
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th class="c-stt" rowspan="2">STT</th>
+                    <th class="c-lot" rowspan="2">Lô</th>
+                    <th colspan="4">Kiểm phiếu</th>
+                    <th class="c-price" rowspan="2">{{ lbl_start }}<span class="sub">{{ lbl_start_u }}</span></th>
+                    <th class="c-price" rowspan="2">{{ lbl_high }}<span class="sub">{{ lbl_high_u }}</span></th>
+                    <th class="c-status" rowspan="2">TT</th>
+                    <th class="c-detail" rowspan="2">Chi tiết</th>
+                  </tr>
+                  <tr>
+                    <th class="c-b">Phát</th>
+                    <th class="c-b">Thu</th>
+                    <th class="c-b">HL</th>
+                    <th class="c-b">KHL</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% if rows|length > 0 %}
+                    {% for r in rows %}
+                      {% set sk = r.status_kind or 'pending' %}
+                      {% set dlines = r.detail_lines if r.detail_lines is defined and r.detail_lines else [] %}
+                      <tr>
+                        <td class="num">{{ r.stt }}</td>
+                        <td class="lot">{{ r.lot_code }}</td>
+                        <td class="num">{{ r.issued if r.issued is not none else "—" }}</td>
+                        <td class="num">{{ r.collected if r.collected is not none else "—" }}</td>
+                        <td class="num">{{ r.valid if r.valid is not none else "—" }}</td>
+                        <td class="num">{{ r.invalid if r.invalid is not none else "—" }}</td>
+                        <td class="price">{{ r.start_price_display or "—" }}</td>
+                        <td class="price">{{ r.highest_price_display or "—" }}</td>
+                        <td class="c-status">
+                          <div class="st {{ sk }}">
+                            <div class="st-main">{{ r.status_short or r.status_label }}</div>
+                            {% if r.status_note %}
+                              <div class="st-sub">{{ r.status_note }}</div>
+                            {% endif %}
+                          </div>
+                        </td>
+                        <td class="vtop c-detail">
+                          {% if dlines|length > 0 %}
+                            {% for line in dlines %}
+                              <span class="detail-line">{{ line }}</span>
+                            {% endfor %}
+                          {% else %}
+                            <span class="detail-line">{{ r.detail or "" }}</span>
+                          {% endif %}
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  {% else %}
+                    <tr class="empty-row"><td colspan="10">Không có lô trong vòng này.</td></tr>
+                  {% endif %}
+                </tbody>
+              </table>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="sec-note">Chưa có dữ liệu vòng đấu.</div>
+        {% endif %}
+      </div>
+
+      <div class="foot">Số liệu giá theo đơn vị {{ lbl_start_u }} — Biên bản phục vụ lưu hồ sơ phiên đấu giá.</div>
+    </div>
+  </div>
+
+  {% if autoprint and not for_download %}
+  <script>
+    window.addEventListener('load', function(){
+      try { window.focus(); } catch(e) {}
+      setTimeout(function(){ try { window.print(); } catch(e) {} }, 250);
+    });
+  </script>
+  {% endif %}
+</body>
+</html>

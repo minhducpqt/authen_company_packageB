@@ -892,6 +892,9 @@
           <button type="button" onclick="openWinnerSignList(); this.closest('.printMenu').style.display='none';">
             <i class="ri-quill-pen-line"></i> DS ký trúng
           </button>
+          <button type="button" onclick="openSessionProgressPrint(); this.closest('.printMenu').style.display='none';">
+            <i class="ri-file-text-line"></i> In diễn biến phiên
+          </button>
         </div>
       </div>
 
@@ -3627,6 +3630,12 @@ Modal: Print One Bid Sheet (choose one customer)
 
   function openWinnerSignList(){
   const url = `/auction/sessions/${SESSION_ID}/documents/attendance/winner-sign-list?autoprint=1`;
+  const w = window.open(url, "_blank", "noopener,noreferrer");
+  if(w){ try{ w.focus(); }catch(e){} }
+  }
+
+  function openSessionProgressPrint(){
+  const url = `/auction/sessions/${SESSION_ID}/documents/session-progress/print?autoprint=1`;
   const w = window.open(url, "_blank", "noopener,noreferrer");
   if(w){ try{ w.focus(); }catch(e){} }
   }
