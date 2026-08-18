@@ -8,6 +8,18 @@
 {% set failed = failed_lots if failed_lots is defined else [] %}
 {% set won = won_lots if won_lots is defined else [] %}
 {% set rounds = round_sections if round_sections is defined else [] %}
+{% set ns_lot = namespace(max_len=0) %}
+{% for r in won %}
+  {% set code = (r.lot_code or '')|string|trim %}
+  {% if code|length > ns_lot.max_len %}{% set ns_lot.max_len = code|length %}{% endif %}
+{% endfor %}
+{% if ns_lot.max_len > 12 %}
+  {% set won_lot_cols = 'won-lot-cols-l' %}
+{% elif ns_lot.max_len >= 8 %}
+  {% set won_lot_cols = 'won-lot-cols-m' %}
+{% else %}
+  {% set won_lot_cols = 'won-lot-cols-s' %}
+{% endif %}
 
 <div class="sp-embed">
   {% if progression_error %}
@@ -52,7 +64,7 @@
     {% else %}
     <div class="sp-sec-note">Giá khởi điểm là giá khởi điểm vòng 1 của lô; giá trúng theo {{ lbl_win_u }}.</div>
     {% endif %}
-    <table class="sp-tbl tbl-won">
+    <table class="sp-tbl tbl-won {{ won_lot_cols }}">
       <colgroup>
         <col class="c-stt"/>
         <col class="c-lot"/>
