@@ -249,17 +249,22 @@ body.doc-pro .sp-embed .tbl-summary .c-price { width: 14%; min-width: 11ch; }
 body.doc-pro .sp-embed .tbl-summary .c-reason { width: auto; }
 body.doc-pro .sp-embed .tbl-summary td.lot { white-space: nowrap; font-size: 8.5pt; }
 body.doc-pro .sp-embed .tbl-won .c-stt { width: 5%; min-width: 3.5ch; }
-body.doc-pro .sp-embed .tbl-won .c-lot { width: 9%; min-width: 8ch; max-width: 12ch; }
-body.doc-pro .sp-embed .tbl-won .c-name { width: 21ch; max-width: 23%; min-width: 18ch; }
+/* Lô + Người trúng chia phần còn lại của bảng (tổng không đổi); Lô ưu tiên đủ ký tự */
+body.doc-pro .sp-embed .tbl-won .c-lot { width: 1%; min-width: 0; max-width: none; }
+body.doc-pro .sp-embed .tbl-won .c-name { width: auto; min-width: 10ch; max-width: none; }
 body.doc-pro .sp-embed .tbl-won .c-cccd { width: 13ch; min-width: 13ch; max-width: 13ch; }
 body.doc-pro .sp-embed .tbl-won .c-price-kd,
 body.doc-pro .sp-embed .tbl-won .c-price-win { width: 11%; min-width: 10ch; }
 body.doc-pro .sp-embed .tbl-won .c-method { width: 8%; min-width: 8ch; }
 body.doc-pro .sp-embed .tbl-won .c-rnd { width: 4%; min-width: 2.5ch; }
-body.doc-pro .sp-embed .tbl-won td.lot { white-space: nowrap; font-size: 8.5pt; overflow: hidden; text-overflow: ellipsis; }
+body.doc-pro .sp-embed .tbl-won td.lot {
+  width: 1%; white-space: nowrap; font-size: 8.5pt;
+  overflow: visible; text-overflow: clip;
+}
 body.doc-pro .sp-embed .tbl-won td.c-name {
   font-weight: 600; font-size: 8.5pt; line-height: 1.25;
-  text-align: left; vertical-align: middle; padding: 4px 5px; white-space: normal;
+  text-align: left; vertical-align: middle; padding: 4px 5px;
+  min-width: 10ch; white-space: normal; word-break: break-word;
 }
 body.doc-pro .sp-embed .tbl-won td.c-cccd {
   white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 700;
