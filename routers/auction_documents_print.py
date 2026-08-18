@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional, List, Tuple
 
 import httpx
 from fastapi import APIRouter, Request, Path, Query
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 
 from utils.templates import templates
 from utils.auth import get_access_token, fetch_me
@@ -1145,3 +1145,466 @@ async def print_winner_sign_list(
             "error": error,
         },
     )
+
+
+# =========================================================
+# PRINT: Kết quả vòng đấu (A4 portrait)
+# =========================================================
+
+
+def _participant_snapshot(p: Dict[str, Any]) -> Dict[str, Any]:
+    snap = p.get("customer_snapshot")
+    if isinstance(snap, dict):
+        return snap
+    extras = p.get("extras") if isinstance(p.get("extras"), dict) else {}
+    if isinstance(extras.get("snapshot"), dict):
+        return extras["snapshot"]
+    return {}
+
+
+def _person_from_participant(p: Dict[str, Any]) -> Dict[str, Any]:
+    snap = _participant_snapshot(p)
+    return {
+        "customer_id": p.get("customer_id") or snap.get("customer_id"),
+        "stt": p.get("stt") or snap.get("stt"),
+        "full_name": _to_str(
+            snap.get("customer_full_name") or snap.get("full_name") or snap.get("name")
+        ).strip(),
+        "cccd": _to_str(snap.get("cccd") or "").strip(),
+        "phone": _to_str(snap.get("phone") or "").strip(),
+    }
+
+
+def _person_by_customer_id(participants: List[Dict[str, Any]]) -> Dict[int, Dict[str, Any]]:
+    out: Dict[int, Dict[str, Any]] = {}
+    for p in participants or []:
+        try:
+            cid = int(p.get("customer_id") or 0)
+        except Exception:
+            continue
+        if cid <= 0:
+            continue
+        out[cid] = _person_from_participant(p)
+    return out
+
+
+def _ballot_counts_for_print(
+    ballot: Dict[str, Any],
+    *,
+    participant_count: int = 0,
+) -> Tuple[Any, Any, Any, Any]:
+    """
+    Phát ra: luôn có (sinh từ phần mềm / số khách tham gia).
+    Thu / HL / KHL: chỉ khi đã ghi DB kiểm phiếu; không có → None (—).
+    """
+    issued: Any = None
+    if ballot:
+        issued = ballot.get("issued_count")
+        if issued is None:
+            issued = ballot.get("issued_live")
+    if issued is None and participant_count > 0:
+        issued = participant_count
+    elif issued is None and ballot:
+        live = ballot.get("issued_live")
+        if live is not None:
+            issued = live
+
+    if not ballot or not ballot.get("is_recorded"):
+        return issued, None, None, None
+
+    return (
+        issued,
+        ballot.get("collected_count"),
+        ballot.get("valid_count"),
+        ballot.get("invalid_count"),
+    )
+
+
+def _win_method_note(win_method: Any) -> str:
+    wm = _to_str(win_method or "").strip().upper()
+    if wm == "LOTTERY":
+        return "Bốc thăm"
+    if wm == "MANUAL":
+        return "Thủ công"
+    if wm == "HIGHEST":
+        return "Cao nhất"
+    return ""
+
+
+def _status_short_label(status_kind: str, status_label: str) -> str:
+    m = {
+        "ok": "Trúng",
+        "next": "V.trong",
+        "fail": "K.thành",
+        "pending": "Chưa chốt",
+    }
+    return m.get(status_kind, status_label)
+
+
+def _price_column_labels(auction_mode: str) -> Dict[str, str]:
+    unit = _auction_mode_unit_label(auction_mode)
+    if unit == "m2":
+        return {
+            "start": "Giá KD",
+            "start_unit": "VNĐ/m²",
+            "highest": "Giá cao nhất",
+            "highest_unit": "VNĐ/m²",
+            "unit_note": "VNĐ/m²",
+        }
+    return {
+        "start": "Giá KD",
+        "start_unit": "VNĐ/lô",
+        "highest": "Giá cao nhất",
+        "highest_unit": "VNĐ/lô",
+        "unit_note": "VNĐ/lô",
+    }
+
+
+def _result_status_label(
+    result_type: Any,
+    *,
+    round_no: int = 1,
+    valid_count: Any = None,
+    ballot_recorded: bool = False,
+) -> Tuple[str, str]:
+    rt = _to_str(result_type or "PENDING").strip().upper()
+    if rt == "WINNER":
+        return "Đã có người trúng", "ok"
+    if rt == "NEXT_ROUND":
+        return "Vào vòng trong", "next"
+    if rt == "NO_VALID":
+        return "Đấu không thành", "fail"
+    # Vòng 1: ≤1 phiếu HL (đã ghi kiểm phiếu) → coi là không thành
+    if int(round_no or 0) == 1 and ballot_recorded and valid_count is not None:
+        try:
+            if int(valid_count) <= 1:
+                return "Đấu không thành", "fail"
+        except Exception:
+            pass
+    return "Chưa chốt", "pending"
+
+
+async def _fetch_ballots_for_lots(
+    token: str,
+    round_lot_ids: List[int],
+) -> Dict[int, Dict[str, Any]]:
+    import asyncio
+
+    async def _one(rlid: int) -> Tuple[int, Dict[str, Any]]:
+        st, js = await _a_get_json(
+            f"/api/v1/auction-sessions/round-lots/{rlid}/ballot-counts",
+            token,
+            None,
+            timeout=30.0,
+        )
+        if st == 200 and isinstance(js, dict):
+            return rlid, js
+        return rlid, {}
+
+    if not round_lot_ids:
+        return {}
+    pairs = await asyncio.gather(*[_one(rid) for rid in round_lot_ids])
+    return {rid: data for rid, data in pairs}
+
+
+def _build_round_result_rows(
+    ui: Dict[str, Any],
+    *,
+    results_by_lot: Dict[int, Dict[str, Any]],
+    ballots_by_lot: Dict[int, Dict[str, Any]],
+    round_no: int = 1,
+) -> List[Dict[str, Any]]:
+    rn = max(1, int(round_no or 1))
+    rows: List[Dict[str, Any]] = []
+    for lot in (ui or {}).get("lots") or []:
+        if not isinstance(lot, dict):
+            continue
+        snap = _extract_lot_snapshot(lot)
+        lot_code = _to_str(lot.get("lot_code") or snap.get("lot_code") or "").strip()
+        try:
+            lot_id = int(lot.get("lot_id") or 0)
+        except Exception:
+            lot_id = 0
+        try:
+            round_lot_id = int(lot.get("id") or 0)
+        except Exception:
+            round_lot_id = 0
+
+        participants = lot.get("participants") or []
+        by_cid = _person_by_customer_id(participants)
+
+        ballot = ballots_by_lot.get(round_lot_id) or {}
+        ballot_recorded = bool(ballot.get("is_recorded"))
+        issued, collected, valid, invalid = _ballot_counts_for_print(
+            ballot,
+            participant_count=len(participants),
+        )
+
+        start_price = lot.get("start_price_vnd")
+        if start_price is None:
+            start_price = snap.get("start_price_vnd") or snap.get("starting_price_vnd")
+        highest = lot.get("highest_price_vnd")
+
+        rt = _to_str(lot.get("result_type") or "PENDING").upper()
+        status_label, status_kind = _result_status_label(
+            rt,
+            round_no=rn,
+            valid_count=valid,
+            ballot_recorded=ballot_recorded,
+        )
+        status_note = ""
+        if rt == "WINNER":
+            status_note = _win_method_note(lot.get("win_method"))
+
+        detail_lines: List[str] = []
+        winner_name = ""
+        winner_cccd = ""
+
+        res = results_by_lot.get(lot_id) if lot_id else None
+        if rt == "WINNER":
+            wcid = lot.get("winner_customer_id")
+            w_stt = ""
+            if res:
+                winner_name = _to_str(res.get("winner_name") or "").strip()
+                winner_cccd = _to_str(res.get("winner_cccd") or "").strip()
+            if wcid is not None:
+                try:
+                    p = by_cid.get(int(wcid)) or {}
+                    if not winner_name:
+                        winner_name = p.get("full_name") or ""
+                    if not winner_cccd:
+                        winner_cccd = p.get("cccd") or ""
+                    w_stt = p.get("stt") or ""
+                except Exception:
+                    pass
+            if winner_name:
+                line = f"• STT {w_stt} — {winner_name}" if w_stt != "" else f"• {winner_name}"
+                if winner_cccd:
+                    line += f" (CCCD: {winner_cccd})"
+                detail_lines.append(line)
+            wp = res.get("winning_price_vnd") if res else None
+            if wp is not None:
+                detail_lines.append(f"Giá trúng: {_fmt_vnd_dot(wp)}")
+        elif rt == "NEXT_ROUND":
+            nx = lot.get("next_participants") or []
+            status_note = f"Tổng {len(nx)} khách"
+            for np in nx:
+                try:
+                    cid = int(np.get("customer_id") or 0)
+                except Exception:
+                    cid = 0
+                p = by_cid.get(cid) or {}
+                stt = np.get("stt") if np.get("stt") is not None else p.get("stt")
+                name = p.get("full_name") or f"#{cid}"
+                cccd = p.get("cccd") or ""
+                line = f"• STT {stt} — {name}" if stt != "" and stt is not None else f"• {name}"
+                if cccd:
+                    line += f" (CCCD: {cccd})"
+                detail_lines.append(line)
+            if not nx:
+                detail_lines.append("(Chưa có danh sách vào vòng trong)")
+        elif rt == "NO_VALID":
+            detail_lines.append("Không đủ phiếu hợp lệ để tiếp tục đấu.")
+        elif rn == 1 and ballot_recorded and valid is not None and int(valid) <= 1:
+            detail_lines.append(f"Phiếu hợp lệ: {valid} — đấu không thành (vòng 1).")
+        else:
+            detail_lines.append(f"{len(participants)} người tham gia vòng này.")
+
+        rows.append(
+            {
+                "lot_code": lot_code or (f"#{lot_id}" if lot_id else "—"),
+                "lot_id": lot_id,
+                "round_lot_id": round_lot_id,
+                "issued": issued,
+                "collected": collected,
+                "valid": valid,
+                "invalid": invalid,
+                "start_price_display": _fmt_vnd_dot(start_price),
+                "highest_price_display": _fmt_vnd_dot(highest) if highest is not None else "",
+                "result_type": rt,
+                "status_label": status_label,
+                "status_short": _status_short_label(status_kind, status_label),
+                "status_kind": status_kind,
+                "status_note": status_note,
+                "detail_lines": detail_lines,
+                "detail": "\n".join(detail_lines),
+                "winner_name": winner_name,
+                "winner_cccd": winner_cccd,
+            }
+        )
+
+    rows.sort(
+        key=lambda r: (
+            _lot_natural_sort_key(_to_str(r.get("lot_code"))),
+            int(r.get("lot_id") or 0),
+        )
+    )
+    for i, r in enumerate(rows, start=1):
+        r["stt"] = i
+    return rows
+
+
+@router.get(
+    "/auction/sessions/{session_id}/rounds/{round_no}/results/print",
+    response_class=HTMLResponse,
+)
+async def print_round_results(
+    request: Request,
+    session_id: int = Path(..., ge=1),
+    round_no: int = Path(..., ge=1),
+    title: Optional[str] = Query(None),
+    autoprint: int = Query(0, ge=0, le=1),
+    download: Optional[str] = Query(None),
+):
+    """In bảng kết quả toàn vòng: kiểm phiếu, giá, trạng thái, người trúng / vào vòng trong."""
+    token = get_access_token(request)
+    if not token:
+        return templates.TemplateResponse(
+            "pages/error.html",
+            {
+                "request": request,
+                "title": "Chưa đăng nhập",
+                "message": "Vui lòng đăng nhập lại.",
+            },
+            status_code=401,
+        )
+
+    error: Optional[Dict[str, Any]] = None
+
+    st_s, sess = await _a_get_json(
+        f"/api/v1/auction-sessions/sessions/{session_id}", token, None, timeout=60.0
+    )
+    if st_s != 200 or not isinstance(sess, dict):
+        error = {"message": f"Không tải được phiên đấu (status={st_s})", "body": sess}
+        sess_data: Dict[str, Any] = {"id": session_id}
+    else:
+        sess_data = (sess.get("data") or sess) if isinstance(sess, dict) else {"id": session_id}
+
+    project_name = sess_data.get("project_name") or sess_data.get("p_project_name") or ""
+    project_code = sess_data.get("project_code") or sess_data.get("p_project_code") or ""
+    project_id = sess_data.get("project_id")
+    auction_mode = "PER_LOT"
+
+    if project_id:
+        st_p, prj = await _a_get_json(
+            f"/api/v1/projects/{project_id}", token, None, timeout=30.0
+        )
+        if st_p == 200 and isinstance(prj, dict):
+            pdata = (prj.get("data") if isinstance(prj.get("data"), dict) else prj) or {}
+            if pdata.get("name"):
+                project_name = pdata.get("name") or project_name
+            if pdata.get("project_code"):
+                project_code = pdata.get("project_code") or project_code
+            if pdata.get("auction_mode") is not None and str(pdata.get("auction_mode")).strip():
+                auction_mode = _normalize_auction_mode(pdata.get("auction_mode"))
+
+    price_labels = _price_column_labels(auction_mode)
+
+    st_ui, ui = await _a_get_json(
+        f"/api/v1/auction-sessions/sessions/{session_id}/rounds/{round_no}/ui",
+        token,
+        None,
+        timeout=60.0,
+    )
+    if st_ui != 200 or not isinstance(ui, dict):
+        error = error or {
+            "message": f"Không tải được dữ liệu vòng {round_no} (status={st_ui})",
+            "body": ui,
+        }
+        ui = {}
+
+    st_res, res_js = await _a_get_json(
+        f"/api/v1/auction-sessions/sessions/{session_id}/results",
+        token,
+        None,
+        timeout=60.0,
+    )
+    results_by_lot: Dict[int, Dict[str, Any]] = {}
+    if st_res == 200 and isinstance(res_js, dict):
+        for row in (res_js.get("data") or []):
+            if not isinstance(row, dict):
+                continue
+            try:
+                lid = int(row.get("lot_id") or 0)
+            except Exception:
+                continue
+            if lid > 0:
+                results_by_lot[lid] = row
+    elif not error:
+        error = {"message": f"Không tải được kết quả phiên (status={st_res})", "body": res_js}
+
+    round_lot_ids: List[int] = []
+    for lot in (ui.get("lots") or []):
+        if not isinstance(lot, dict):
+            continue
+        try:
+            rid = int(lot.get("id") or 0)
+        except Exception:
+            rid = 0
+        if rid > 0:
+            round_lot_ids.append(rid)
+
+    ballots_by_lot = await _fetch_ballots_for_lots(token, round_lot_ids)
+    rows = _build_round_result_rows(
+        ui,
+        results_by_lot=results_by_lot,
+        ballots_by_lot=ballots_by_lot,
+        round_no=round_no,
+    )
+
+    session_out = {
+        "id": sess_data.get("id") or session_id,
+        "name": sess_data.get("name"),
+        "project_name": project_name,
+        "project_code": project_code,
+        "auction_date": sess_data.get("auction_date"),
+        "venue": sess_data.get("venue") or sess_data.get("location"),
+        "province": sess_data.get("province"),
+    }
+
+    me = await fetch_me(token)
+    cc = company_code_from_me(me) or _to_str(sess_data.get("company_code")).strip().lower()
+    tpl = resolve_template(cc, DocKind.ROUND_RESULTS)
+    for_download = _to_str(download or "").strip().lower() == "html"
+    download_html_url = (
+        f"/auction/sessions/{session_id}/rounds/{round_no}/results/print?download=html"
+    )
+
+    ctx = {
+        "request": request,
+        "title": title or f"Kết quả vòng {round_no}",
+        "session_id": session_id,
+        "round_no": round_no,
+        "session": session_out,
+        "project": {
+            "name": project_name or project_code or "",
+            "project_code": project_code,
+            "auction_mode": auction_mode,
+        },
+        "price_labels": price_labels,
+        "auction_mode": auction_mode,
+        "rows": rows,
+        "stats": {
+            "total_lots": len(rows),
+            "won": sum(1 for r in rows if r.get("result_type") == "WINNER"),
+            "next": sum(1 for r in rows if r.get("result_type") == "NEXT_ROUND"),
+            "pending": sum(1 for r in rows if r.get("result_type") == "PENDING"),
+            "no_valid": sum(1 for r in rows if r.get("result_type") == "NO_VALID"),
+        },
+        "org_name": ORG_NAME,
+        "autoprint": 0 if for_download else int(autoprint),
+        "for_download": for_download,
+        "download_html_url": download_html_url,
+        "error": error,
+    }
+
+    if for_download:
+        html = templates.get_template(tpl).render(**ctx)
+        fname = f"ket-qua-vong-{round_no}-phien-{session_id}.html"
+        return Response(
+            content=html.encode("utf-8"),
+            media_type="text/html; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="{fname}"'},
+        )
+
+    return templates.TemplateResponse(tpl, ctx)

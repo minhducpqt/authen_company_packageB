@@ -875,7 +875,7 @@
       <a class="btn ghost" href="/auction/sessions"><i class="ri-arrow-left-line"></i> Quay lại</a>
       <div class="printDrop">
         <button class="btn" type="button" onclick="togglePrintMenu(this)">
-          <i class="ri-printer-line"></i> In điểm danh
+          <i class="ri-printer-line"></i> In Cho Phiên
           <i class="ri-arrow-down-s-line" style="opacity:.7;"></i>
         </button>
 
@@ -976,15 +976,26 @@
     <b>Danh sách lô — Round #{{ round_no }}</b>
     <div class="search">
       <input id="q" placeholder="Tìm theo mã lô / mô tả..." oninput="renderLots()"/>
-      <button class="miniBtn ghost" type="button" onclick="printAllBidTickets()">
-        <i class="ri-printer-line"></i> In toàn bộ phiếu trả giá
-      </button>
-      <button class="miniBtn primary" type="button" onclick="printRoundWinners()">
-        <i class="ri-printer-line"></i> In phiếu trúng (vòng)
-      </button>
-      <button class="miniBtn ghost" type="button" onclick="printRoundClearbagLabels()" title="In nhãn túi clearbag (vòng hiện tại)" style="padding:4px 8px;font-size:11px;">
-        <i class="ri-price-tag-3-line"></i> In nhãn
-      </button>
+      <div class="printDrop">
+        <button class="miniBtn primary" type="button" onclick="togglePrintMenu(this)">
+          <i class="ri-printer-line"></i> In cho vòng {{ round_no or 1 }}
+          <i class="ri-arrow-down-s-line" style="opacity:.7;"></i>
+        </button>
+        <div class="printMenu" style="min-width:260px;">
+          <button type="button" onclick="printAllBidTickets(); this.closest('.printMenu').style.display='none';">
+            <i class="ri-file-list-3-line"></i> In toàn bộ phiếu trả giá (vòng {{ round_no or 1 }})
+          </button>
+          <button type="button" onclick="printRoundWinners(); this.closest('.printMenu').style.display='none';">
+            <i class="ri-trophy-line"></i> In phiếu trúng (vòng {{ round_no or 1 }})
+          </button>
+          <button type="button" onclick="printRoundClearbagLabels(); this.closest('.printMenu').style.display='none';">
+            <i class="ri-price-tag-3-line"></i> In nhãn (vòng {{ round_no or 1 }})
+          </button>
+          <button type="button" onclick="printRoundResults(); this.closest('.printMenu').style.display='none';">
+            <i class="ri-table-line"></i> In kết quả (vòng {{ round_no or 1 }})
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2305,6 +2316,15 @@ Modal: Print One Bid Sheet (choose one customer)
   return;
   }
   window.open(`/auction-sessions/lot-clearbag-labels/print/rounds/${roundId}?autoprint=1`, '_blank');
+  }
+
+  function printRoundResults(){
+  const rn = Number(ROUND_NO || 0);
+  if(!SESSION_ID || rn <= 0){
+  toast("Thiếu session_id/round_no để in kết quả vòng.");
+  return;
+  }
+  window.open(`/auction/sessions/${SESSION_ID}/rounds/${rn}/results/print?autoprint=1`, '_blank');
   }
 
 
