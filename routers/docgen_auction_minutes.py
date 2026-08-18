@@ -295,7 +295,7 @@ async def auction_minutes_create(
         pass
 
     body = {
-        "template_key": "auction_minutes_v1",
+        "template_key": "auction_minutes_v2_pro",
         "phase_slug": "sau-phien",
         "category_slug": "bien-ban-dau-gia",
         "project_id": project_id,

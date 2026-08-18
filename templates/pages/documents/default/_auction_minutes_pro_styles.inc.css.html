@@ -1,0 +1,378 @@
+{# Layout chuyên nghiệp — Biên bản đấu giá (TP-ĐGTS-18) #}
+@page {
+  size: A4;
+  margin: 20mm 16mm 20mm 26mm;
+  {% include "pages/documents/default/_docgen_print_page_margin_boxes.inc.css.html" %}
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  font-family: "Times New Roman", Times, serif;
+  font-size: 13pt; line-height: 1.42; color: #111;
+  -webkit-font-smoothing: antialiased;
+}
+@media screen {
+  body.doc-pro.doc-preview { background: #52525b; }
+  body.doc-pro.doc-preview .sheet {
+    width: 210mm; min-height: 297mm; margin: 20px auto 28px;
+    background: #fff;
+    box-shadow: 0 12px 40px rgba(0,0,0,.28), 0 0 0 1px rgba(0,0,0,.06);
+  }
+  body.doc-pro.doc-preview .page { padding: 20mm 16mm 20mm 26mm; min-height: 297mm; }
+}
+@media print {
+  body.doc-pro { background: #fff; }
+  body.doc-pro .sheet { box-shadow: none !important; border: none !important; margin: 0 !important; }
+  body.doc-pro .page { padding: 0; }
+  body.doc-pro .sec, body.doc-pro table { page-break-inside: auto !important; break-inside: auto !important; }
+  body.doc-pro .sec-title { break-after: avoid; page-break-after: avoid; }
+  body.doc-pro .doc-signature-block,
+  body.doc-pro .doc-signature-block .sig-grid,
+  body.doc-pro .doc-signature-block .sig-box {
+    page-break-inside: avoid !important; break-inside: avoid-page !important;
+  }
+  body.doc-pro .sp-embed table.sp-tbl td,
+  body.doc-pro .sp-embed table.sp-tbl th,
+  body.doc-pro table.lots td, body.doc-pro table.lots th { color: #000 !important; }
+}
+body.doc-pro.doc-download .page { padding: 0; }
+body.doc-pro .page { width: 100%; position: relative; }
+
+/* —— Header —— */
+body.doc-pro .doc-header {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  margin-bottom: 10px;
+}
+body.doc-pro .doc-header-motto { text-align: center; }
+body.doc-pro .doc-header-motto .cn {
+  font-weight: 700; text-transform: uppercase; font-size: 12pt; letter-spacing: 0.02em;
+}
+body.doc-pro .doc-header-motto .motto {
+  font-weight: 700; font-size: 12pt; margin-top: 3px;
+}
+body.doc-pro .doc-header-motto .rule-double {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  margin: 7px auto 0; width: 52mm;
+}
+body.doc-pro .doc-header-motto .rule-double span {
+  display: block; height: 0; border-bottom: 1px solid #111; width: 100%;
+}
+body.doc-pro .doc-header-motto .rule-double span:last-child { border-bottom-width: 2px; }
+
+body.doc-pro .doc-header-meta {
+  position: absolute; top: 0; right: 0;
+  text-align: right; max-width: 42%;
+}
+body.doc-pro .form-code {
+  font-size: 10.5pt; font-style: italic; line-height: 1.35;
+  padding: 4px 0 0;
+}
+body.doc-pro .form-code .form-ref {
+  display: block; font-size: 9pt; font-style: normal; color: #333; margin-top: 2px;
+}
+
+/* —— Title —— */
+body.doc-pro h1.doc-title {
+  text-align: center; font-size: 15pt; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  margin: 14px 0 16px; padding-bottom: 8px;
+  border-bottom: 2px solid #111;
+}
+
+/* —— Typography blocks —— */
+body.doc-pro p {
+  margin: 0 0 7px; text-align: justify; text-indent: 28px;
+}
+body.doc-pro p.no-indent { text-indent: 0; }
+body.doc-pro .doc-preamble p { margin-bottom: 6px; }
+body.doc-pro .doc-preamble p:last-child { margin-bottom: 0; }
+
+body.doc-pro .session-lead {
+  margin: 10px 0 6px; font-weight: 400; text-indent: 0;
+}
+body.doc-pro .fact-list {
+  list-style: none; margin: 0 0 10px; padding: 0 0 0 28px;
+}
+body.doc-pro .fact-list li {
+  position: relative; margin: 0 0 5px; padding-left: 14px;
+  text-align: justify; text-indent: 0;
+}
+body.doc-pro .fact-list li::before {
+  content: "–"; position: absolute; left: 0; font-weight: 700;
+}
+
+/* —— Sections —— */
+body.doc-pro .sec {
+  margin-top: 16px; padding-top: 2px;
+  border-top: 1px solid #ddd;
+}
+body.doc-pro .sec:first-of-type { border-top: none; padding-top: 0; }
+body.doc-pro .sec-title {
+  font-weight: 700; font-size: 13pt; margin: 0 0 8px; text-indent: 0;
+  padding: 6px 0 6px 12px;
+  border-left: 4px solid #111;
+  background: linear-gradient(90deg, #f4f4f4 0%, transparent 100%);
+}
+body.doc-pro .sub-title {
+  font-weight: 700; margin: 10px 0 5px; text-indent: 28px; font-size: 12.5pt;
+}
+body.doc-pro .guest-list {
+  list-style: none; margin: 0 0 8px; padding: 0 0 0 28px;
+}
+body.doc-pro .guest-list li {
+  margin: 0 0 4px; text-indent: 0; line-height: 1.38;
+}
+body.doc-pro .guest-list .idx {
+  font-weight: 700; margin-right: 4px;
+}
+body.doc-pro .field-value {
+  margin: 2px 0 8px 28px; padding: 4px 0 6px;
+  border-bottom: 1px solid #444;
+  white-space: pre-wrap; word-break: break-word; min-height: 1.3em;
+}
+body.doc-pro .field-value:empty::after {
+  content: "………………………………………………………………………………………………";
+  color: #666; font-size: 12pt;
+}
+body.doc-pro .field-value.is-placeholder {
+  border-bottom-style: dotted; color: #555; font-style: italic;
+}
+
+/* —— Tables (giá khởi điểm) —— */
+body.doc-pro table.lots {
+  width: 100%; border-collapse: collapse; font-size: 11pt;
+  margin: 6px 0 12px; table-layout: fixed;
+  box-shadow: 0 0 0 1px #111;
+}
+body.doc-pro table.lots th, body.doc-pro table.lots td {
+  border: 1px solid #333; padding: 5px 7px; vertical-align: middle; color: #000;
+}
+body.doc-pro table.lots th {
+  background: #ececec; font-weight: 700; text-align: center;
+  font-size: 10.5pt; letter-spacing: 0.01em;
+}
+body.doc-pro table.lots tbody tr:nth-child(even) td { background: #fafafa; }
+body.doc-pro table.lots .c-stt {
+  width: 5ch; min-width: 5ch; max-width: 5ch;
+  white-space: nowrap; text-align: center;
+}
+body.doc-pro table.lots td.c-stt {
+  text-align: center; font-variant-numeric: tabular-nums; font-weight: 700;
+}
+body.doc-pro table.lots .c-lot {
+  width: 15ch; min-width: 15ch; max-width: 15ch;
+  white-space: nowrap; text-align: center; font-weight: 700;
+}
+body.doc-pro table.lots td.c-lot { overflow: hidden; text-overflow: ellipsis; }
+body.doc-pro table.lots .c-area {
+  width: 16%; min-width: 16ch; max-width: 20%;
+  text-align: center;
+}
+body.doc-pro table.lots th.c-area {
+  white-space: normal; line-height: 1.2; font-size: 10pt;
+  padding: 4px 5px; vertical-align: middle;
+}
+body.doc-pro table.lots td.c-area {
+  white-space: nowrap; text-align: right;
+  font-variant-numeric: tabular-nums; font-weight: 700;
+}
+body.doc-pro table.lots .c-price {
+  width: 46%; min-width: 24ch; white-space: nowrap; text-align: right;
+  font-variant-numeric: tabular-nums; font-weight: 700;
+  padding-left: 8px; padding-right: 8px;
+}
+body.doc-pro .tbl-full { width: 100%; margin-left: 0; margin-right: 0; }
+
+/* —— Diễn biến phiên (embed) —— */
+body.doc-pro .sp-embed {
+  margin: 4px 0 8px; font-size: 9.5pt; line-height: 1.18; width: 100%;
+}
+body.doc-pro .sp-embed .sp-sec { margin-top: 12px; }
+body.doc-pro .sp-embed .sp-sec-title {
+  font-weight: 700; font-size: 11pt; text-transform: uppercase;
+  letter-spacing: 0.03em; margin: 0 0 4px; text-indent: 0;
+  padding-bottom: 3px; border-bottom: 1px solid #bbb;
+}
+body.doc-pro .sp-embed .sp-sec-note {
+  font-size: 9pt; font-style: italic; margin: 0 0 6px; text-indent: 0; color: #222;
+}
+body.doc-pro .sp-embed .sp-round { margin-top: 10px; }
+body.doc-pro .sp-embed .sp-round-title {
+  font-weight: 700; font-size: 10.5pt; margin: 0 0 4px; text-indent: 0;
+  display: inline-block; padding: 2px 8px; background: #f0f0f0; border: 1px solid #ccc;
+}
+body.doc-pro .sp-embed .sp-stats {
+  display: flex; flex-wrap: wrap; gap: 4px 6px;
+  font-size: 8.5pt; margin: 5px 0 5px; text-indent: 0;
+}
+body.doc-pro .sp-embed .sp-stats span {
+  border: 1px solid #555; padding: 2px 7px; background: #fff; border-radius: 2px;
+}
+body.doc-pro .sp-embed table.sp-tbl {
+  width: 100%; border-collapse: collapse; table-layout: fixed;
+  font-size: 9.5pt; line-height: 1.15; margin-bottom: 6px;
+}
+body.doc-pro .sp-embed table.sp-tbl th, body.doc-pro .sp-embed table.sp-tbl td {
+  border: 1px solid #333; padding: 4px 3px; vertical-align: middle;
+  color: #000; word-break: break-word; overflow-wrap: anywhere;
+}
+body.doc-pro .sp-embed table.sp-tbl th {
+  background: #e2e2e2; font-weight: 700; text-align: center; font-size: 8.5pt;
+  line-height: 1.1; vertical-align: middle;
+}
+body.doc-pro .sp-embed .num {
+  text-align: center; font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap;
+}
+body.doc-pro .sp-embed .price {
+  text-align: right; font-variant-numeric: tabular-nums; font-weight: 700;
+  font-size: 8.5pt; white-space: nowrap; padding-left: 4px; padding-right: 4px;
+}
+body.doc-pro .sp-embed .left { text-align: left; word-break: break-word; font-size: 9pt; }
+body.doc-pro .sp-embed td.lot {
+  text-align: center; font-weight: 800; padding-left: 3px; padding-right: 3px;
+}
+body.doc-pro .sp-embed .empty-row td {
+  text-align: center; font-style: italic; padding: 8px; color: #444; background: #fafafa;
+}
+body.doc-pro .sp-embed .sub {
+  display: block; font-weight: 600; font-size: 7.5pt; margin-top: 1px; color: #333;
+}
+body.doc-pro .sp-embed .sp-err {
+  border: 1px solid #b91c1c; background: #fef2f2; color: #991b1b;
+  padding: 6px 8px; font-size: 10pt; margin-bottom: 6px;
+}
+body.doc-pro .sp-embed .tbl-summary .c-stt { width: 5%; min-width: 3.5ch; }
+body.doc-pro .sp-embed .tbl-summary .c-lot { width: 12%; min-width: 9ch; }
+body.doc-pro .sp-embed .tbl-summary .c-price { width: 14%; min-width: 11ch; }
+body.doc-pro .sp-embed .tbl-summary .c-reason { width: auto; }
+body.doc-pro .sp-embed .tbl-summary td.lot { white-space: nowrap; font-size: 8.5pt; }
+body.doc-pro .sp-embed .tbl-won .c-stt { width: 5%; min-width: 3.5ch; }
+body.doc-pro .sp-embed .tbl-won .c-lot { width: 9%; min-width: 8ch; max-width: 12ch; }
+body.doc-pro .sp-embed .tbl-won .c-name { width: 21ch; max-width: 23%; min-width: 18ch; }
+body.doc-pro .sp-embed .tbl-won .c-cccd { width: 13ch; min-width: 13ch; max-width: 13ch; }
+body.doc-pro .sp-embed .tbl-won .c-price-kd,
+body.doc-pro .sp-embed .tbl-won .c-price-win { width: 11%; min-width: 10ch; }
+body.doc-pro .sp-embed .tbl-won .c-method { width: 8%; min-width: 8ch; }
+body.doc-pro .sp-embed .tbl-won .c-rnd { width: 4%; min-width: 2.5ch; }
+body.doc-pro .sp-embed .tbl-won td.lot { white-space: nowrap; font-size: 8.5pt; overflow: hidden; text-overflow: ellipsis; }
+body.doc-pro .sp-embed .tbl-won td.c-name {
+  font-weight: 600; font-size: 8.5pt; line-height: 1.25;
+  text-align: left; vertical-align: middle; padding: 4px 5px; white-space: normal;
+}
+body.doc-pro .sp-embed .tbl-won td.c-cccd {
+  white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 700;
+  text-align: center; font-size: 8.5pt; padding: 4px 3px; letter-spacing: 0.03em;
+}
+body.doc-pro .sp-embed .tbl-won td.c-method {
+  text-align: center; font-weight: 700; font-size: 8pt;
+  white-space: normal; line-height: 1.2; padding: 4px 2px;
+}
+body.doc-pro .sp-embed .sp-tbl-round .c-stt { width: 4%; min-width: 3ch; }
+body.doc-pro .sp-embed .sp-tbl-round .c-lot { width: 8%; min-width: 7ch; }
+body.doc-pro .sp-embed .sp-tbl-round .c-b { width: 4.2%; min-width: 3.5ch; }
+body.doc-pro .sp-embed .sp-tbl-round .c-price-kd,
+body.doc-pro .sp-embed .sp-tbl-round .c-price-high { width: 11%; min-width: 10.5ch; }
+body.doc-pro .sp-embed .sp-tbl-round .c-status { width: 9%; min-width: 8%; }
+body.doc-pro .sp-embed .sp-tbl-round .c-detail { width: auto; min-width: 14%; }
+body.doc-pro .sp-embed .sp-tbl-round td {
+  white-space: normal; vertical-align: top; font-size: 8.5pt; line-height: 1.25;
+}
+body.doc-pro .sp-embed .sp-tbl-round td.num,
+body.doc-pro .sp-embed .sp-tbl-round td.lot { vertical-align: middle; text-align: center; }
+body.doc-pro .sp-embed .sp-tbl-round td.lot { font-weight: 800; word-break: break-word; white-space: normal; }
+body.doc-pro .sp-embed .sp-tbl-round td.price {
+  white-space: nowrap; vertical-align: middle; font-size: 8pt;
+}
+body.doc-pro .sp-embed .sp-tbl-round th.c-b { font-size: 8px; padding: 3px 1px; }
+body.doc-pro .sp-embed td.vtop { vertical-align: top; padding-top: 5px; }
+body.doc-pro .sp-embed .st { text-align: center; line-height: 1.1; }
+body.doc-pro .sp-embed .st-main { font-weight: 800; font-size: 8.5pt; }
+body.doc-pro .sp-embed .st-sub {
+  margin-top: 2px; font-size: 7.5pt; font-weight: 600; font-style: italic; line-height: 1.05;
+}
+body.doc-pro .sp-embed .st.ok .st-main::before { content: "★ "; }
+body.doc-pro .sp-embed .st.next, body.doc-pro .sp-embed .st.fail {
+  border: 1px solid #111; padding: 2px 1px; margin: 0;
+}
+body.doc-pro .sp-embed .st.next { border-style: dashed; }
+body.doc-pro .sp-embed .st.fail { border-style: dotted; }
+body.doc-pro .sp-embed .st.next .st-sub { font-style: normal; font-weight: 700; }
+body.doc-pro .sp-embed .st.next .st-main::before { content: "→ "; }
+body.doc-pro .sp-embed .st.fail .st-main::before { content: "✕ "; }
+body.doc-pro .sp-embed .detail-line {
+  display: block; font-size: 8.5pt; line-height: 1.38;
+  word-break: break-word; white-space: normal;
+}
+
+/* —— Chữ ký —— */
+body.doc-pro .doc-signature-block {
+  margin-top: 18px; page-break-inside: avoid; break-inside: avoid-page;
+}
+body.doc-pro .doc-signature-block .closing-lines p { margin-bottom: 5px; }
+body.doc-pro .sig-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px 12px; margin-top: 14px; text-align: center; font-size: 11pt;
+  page-break-inside: avoid; break-inside: avoid-page;
+}
+body.doc-pro .sig-box {
+  min-height: 36mm; padding: 4px 6px 0;
+  display: flex; flex-direction: column; align-items: stretch;
+  page-break-inside: avoid; break-inside: avoid-page;
+}
+body.doc-pro .sig-role {
+  font-weight: 700; font-size: 10.5pt; line-height: 1.32; margin-bottom: 0; flex-shrink: 0;
+}
+body.doc-pro .sig-area {
+  flex: 1 1 auto; min-height: 24mm; margin-top: 6px;
+  display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
+}
+body.doc-pro .sig-area::after {
+  content: ""; display: block; width: 72%; height: 0;
+  border-bottom: 1px dotted #333; margin-bottom: 2px;
+}
+body.doc-pro .sig-hint { font-style: italic; font-size: 9.5pt; color: #444; margin-top: 4px; }
+
+/* —— Lưu ý & phụ lục —— */
+body.doc-pro .note-panel {
+  margin-top: 18px; font-size: 10.5pt; line-height: 1.42;
+  padding: 10px 12px 10px 14px;
+  border: 1px solid #bbb; border-left: 4px solid #666;
+  background: #f8f8f8;
+  page-break-inside: avoid; break-inside: avoid-page;
+}
+body.doc-pro .note-panel .note-heading {
+  font-weight: 700; margin: 0 0 6px; text-indent: 0; font-size: 11pt;
+}
+body.doc-pro .note-panel p { text-indent: 0; margin: 0 0 4px; }
+body.doc-pro .note-panel p::before { content: "* "; font-weight: 700; }
+
+body.doc-pro .appendix-panel {
+  margin-top: 16px; font-size: 10.5pt; line-height: 1.42;
+  padding: 12px 14px; border: 1px dashed #999; background: #fcfcfc;
+  page-break-inside: avoid; break-inside: avoid-page;
+}
+body.doc-pro .appendix-panel .appendix-title {
+  font-weight: 700; font-size: 11.5pt; margin: 0 0 8px; text-indent: 0;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+body.doc-pro .appendix-panel p { text-indent: 0; margin: 0 0 6px; }
+body.doc-pro .appendix-panel .abbr-grid {
+  display: grid; grid-template-columns: 9ch 1fr;
+  gap: 3px 12px; margin-top: 4px;
+}
+body.doc-pro .appendix-panel .abbr-grid span:nth-child(odd) {
+  font-weight: 700; white-space: nowrap; color: #111;
+}
+body.doc-pro .appendix-panel .abbr-grid span:nth-child(even) { color: #333; }
+
+body.doc-pro .err {
+  margin: 8px 0; border: 1px solid #b91c1c; padding: 8px 10px;
+  background: #fef2f2; color: #991b1b; font-size: 11pt;
+}
+body.doc-pro .sp-placeholder {
+  font-style: italic; color: #555; min-height: 3em;
+  border: 1px dashed #aaa; padding: 10px 12px; background: #fafafa;
+  margin: 4px 0 8px 28px; text-indent: 0;
+}

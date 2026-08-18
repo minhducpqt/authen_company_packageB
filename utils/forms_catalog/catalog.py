@@ -105,7 +105,7 @@ _FORM_ITEMS: Dict[str, List[Dict[str, Any]]] = {
             "enabled": True,
             "status": "active",
             "doc_kind": DocKind.AUCTION_MINUTES,
-            "template_key": "auction_minutes_v1",
+            "template_key": "auction_minutes_v2_pro",
         },
     ],
 }
@@ -139,7 +139,7 @@ _PROJECT_DOC_TYPES: Dict[str, Dict[str, Any]] = {
         "description": "Biên bản đấu giá tài sản theo mẫu TP-ĐGTS-18.",
         "icon": "ri-file-text-line",
         "doc_kind": DocKind.AUCTION_MINUTES,
-        "template_key": "auction_minutes_v1",
+        "template_key": "auction_minutes_v2_pro",
     },
 }
 
