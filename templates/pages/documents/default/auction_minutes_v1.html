@@ -186,13 +186,18 @@
     .sp-embed .tbl-summary .c-price { width: 1%; white-space: nowrap; }
     .sp-embed .tbl-summary .c-reason { width: auto; }
     .sp-embed .tbl-won .c-stt { width: 4%; white-space: nowrap; }
-    .sp-embed .tbl-won .c-lot { width: 6%; white-space: nowrap; }
-    .sp-embed .tbl-won .c-name { width: 13%; }
+    .sp-embed .tbl-won .c-lot { width: 10ch; min-width: 10ch; max-width: 10ch; }
+    .sp-embed .tbl-won td.lot {
+      white-space: nowrap; font-weight: 800; color: #000;
+      font-size: 8.5pt; padding-left: 3px; padding-right: 3px;
+      overflow: visible;
+    }
+    .sp-embed .tbl-won .c-name { width: auto; min-width: 11%; }
     .sp-embed .tbl-won td.c-name {
       word-break: break-word; font-weight: 700; color: #000;
       overflow-wrap: anywhere;
     }
-    .sp-embed .tbl-won .c-cccd { width: 16%; }
+    .sp-embed .tbl-won .c-cccd { width: 12.5ch; min-width: 12.5ch; max-width: 13ch; }
     .sp-embed .tbl-won td.c-cccd {
       white-space: nowrap; font-variant-numeric: tabular-nums;
       font-weight: 700; text-align: left; color: #000;
@@ -229,6 +234,19 @@
       word-break: break-word; white-space: normal;
     }
     table.starting-lots { margin: 4px 0 8px 0; width: 100%; font-size: 11pt; }
+    .appendix-box {
+      margin-top: 18px; font-size: 11pt; line-height: 1.45;
+      page-break-inside: avoid; break-inside: avoid-page;
+    }
+    .appendix-box .appendix-title {
+      font-weight: 700; font-size: 12pt; margin: 0 0 8px; text-indent: 0;
+    }
+    .appendix-box p { text-indent: 0; margin: 0 0 4px; }
+    .appendix-box .abbr-grid {
+      display: grid; grid-template-columns: 8ch 1fr;
+      gap: 2px 10px; margin-top: 6px;
+    }
+    .appendix-box .abbr-grid span:nth-child(odd) { font-weight: 700; white-space: nowrap; }
   </style>
 </head>
 <body class="{% if for_download %}doc-download{% else %}doc-preview{% endif %}">
@@ -322,7 +340,6 @@
 
       <div class="sec">
         <div class="sec-title">II. Diễn biến của phiên đấu giá</div>
-        <div class="sub-title">1. Diễn biến của phiên đấu giá:</div>
         {% if prog and (prog.round_sections or prog.failed_lots or prog.won_lots) %}
           {% with
             failed_lots=prog.failed_lots or [],
@@ -374,6 +391,25 @@
         <p>* Trường hợp phiên đấu giá do Hội đồng đấu giá tài sản thực hiện thì biên bản đấu giá phải có chữ ký của Chủ tịch Hội đồng đấu giá tài sản.</p>
         <p>* Trường hợp đại diện người có tài sản đấu giá hoặc đại diện người tham gia đấu giá không ký biên bản đấu giá tài sản thì đấu giá viên điều hành phiên đấu giá lập biên bản ghi nhận thực tế vụ việc. Biên bản ghi nhận thực tế vụ việc được đóng dấu xác nhận của tổ chức hành nghề đấu giá tài sản và lưu kèm biên bản đấu giá.</p>
         <p>* Trường hợp đấu giá bằng hình thức trực tuyến thì biên bản đấu giá có thể không bao gồm đại diện người tham gia đấu giá, đại diện người có tài sản đấu giá tại phần ký biên bản đấu giá.</p>
+      </div>
+
+      <div class="appendix-box">
+        <div class="appendix-title">Phụ lục — Chú giải viết tắt</div>
+        <p class="no-indent">Các ký hiệu, viết tắt trong phần diễn biến phiên đấu giá (mục II):</p>
+        <div class="abbr-grid">
+          <span>HL</span><span>Hợp lệ (phiếu hợp lệ)</span>
+          <span>KHL</span><span>Không hợp lệ (phiếu không hợp lệ)</span>
+          <span>Phát</span><span>Số phiếu phát ra</span>
+          <span>Thu</span><span>Số phiếu thu về</span>
+          <span>Giá KD</span><span>Giá khởi điểm</span>
+          <span>TT</span><span>Tình trạng / trạng thái lô trong vòng</span>
+          <span>Trúng</span><span>Lô đã có người trúng đấu giá</span>
+          <span>V.trong</span><span>Vòng trong (lô chuyển sang vòng tiếp theo)</span>
+          <span>Chưa chốt</span><span>Lô chưa xác định kết quả trong vòng</span>
+          <span>K.thành</span><span>Không thành (đấu giá không thành)</span>
+          <span>CCCD</span><span>Căn cước công dân / số định danh cá nhân</span>
+          <span>STT</span><span>Số thứ tự</span>
+        </div>
       </div>
     </div>
   </div>

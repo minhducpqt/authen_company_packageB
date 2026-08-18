@@ -14,7 +14,7 @@
   {% endif %}
 
   <div class="sp-sec">
-    <div class="sp-sec-title">I. Danh sách lô đấu không thành</div>
+    <div class="sp-sec-title">1. Danh sách lô đấu không thành</div>
     <div class="sp-sec-note">Lý do: không đủ số lượng phiếu hợp lệ để tiếp tục đấu giá.</div>
     <table class="sp-tbl tbl-summary">
       <thead>
@@ -45,7 +45,7 @@
   </div>
 
   <div class="sp-sec">
-    <div class="sp-sec-title">II. Danh sách lô đấu thành công</div>
+    <div class="sp-sec-title">2. Danh sách lô đấu thành công</div>
     <div class="sp-sec-note">Giá khởi điểm là giá khởi điểm vòng 1 của lô.</div>
     <table class="sp-tbl tbl-won">
       <colgroup>
@@ -74,7 +74,7 @@
           {% for r in won %}
             <tr>
               <td class="num">{{ r.stt }}</td>
-              <td class="lot">{{ r.lot_code }}</td>
+              <td class="lot" title="{{ r.lot_code or '' }}">{{ r.lot_code }}</td>
               <td class="left c-name">{{ r.winner_name or "—" }}</td>
               <td class="c-cccd">{{ r.winner_cccd or "—" }}</td>
               <td class="price">{{ r.start_price_display or "—" }}</td>
@@ -91,7 +91,7 @@
   </div>
 
   <div class="sp-sec">
-    <div class="sp-sec-title">III. Diễn biến từng vòng đấu</div>
+    <div class="sp-sec-title">3. Diễn biến từng vòng đấu</div>
     <div class="sp-sec-note">Chi tiết kiểm phiếu, giá và kết quả từng lô theo từng vòng.</div>
     {% if rounds|length > 0 %}
       {% for sec in rounds %}
