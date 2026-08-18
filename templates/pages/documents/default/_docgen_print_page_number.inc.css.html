@@ -1,0 +1,20 @@
+    /* Số trang khi in — góc phải dưới */
+    @media print {
+      .doc-print-page-no {
+        position: fixed;
+        bottom: 12mm;
+        right: 20mm;
+        font-family: "Times New Roman", Times, serif;
+        font-size: 11pt;
+        line-height: 1;
+        color: #000;
+        pointer-events: none;
+        z-index: 9999;
+      }
+      .doc-print-page-no::after {
+        content: counter(page);
+      }
+    }
+    @media screen {
+      .doc-print-page-no { display: none !important; }
+    }

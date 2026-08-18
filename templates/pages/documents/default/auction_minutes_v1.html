@@ -38,6 +38,10 @@
       .sp-embed .st-main, .sp-embed .st-sub, .sp-embed .detail-line,
       table.lots td, table.lots th { color: #000 !important; }
     }
+    {% include "pages/documents/default/_docgen_print_page_number.inc.css.html" %}
+    @media print {
+      .doc-print-page-no { right: 18mm; }
+    }
     body.doc-download .page { padding: 0; }
     .page { width: 100%; }
     .hd { text-align: center; margin-bottom: 6px; }
@@ -373,5 +377,6 @@
       </div>
     </div>
   </div>
+  <div class="doc-print-page-no" aria-hidden="true"></div>
 </body>
 </html>
