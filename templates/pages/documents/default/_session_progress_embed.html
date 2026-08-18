@@ -2,6 +2,7 @@
 {% set pl = price_labels or {} %}
 {% set lbl_start_u = pl.start_unit or 'VNĐ/lô' %}
 {% set lbl_start = pl.start or 'Giá KD' %}
+{% set lbl_win_u = pl.win_unit or lbl_start_u %}
 {% set lbl_high = pl.highest or 'Giá cao nhất' %}
 {% set lbl_high_u = pl.highest_unit or 'VNĐ/lô' %}
 {% set failed = failed_lots if failed_lots is defined else [] %}
@@ -46,14 +47,19 @@
 
   <div class="sp-sec">
     <div class="sp-sec-title">2. Danh sách lô đấu thành công</div>
-    <div class="sp-sec-note">Giá khởi điểm là giá khởi điểm vòng 1 của lô.</div>
+    {% if 'm²' in lbl_start_u %}
+    <div class="sp-sec-note">Giá khởi điểm là giá vòng 1; giá trúng theo {{ lbl_win_u }} (theo cấu hình dự án).</div>
+    {% else %}
+    <div class="sp-sec-note">Giá khởi điểm là giá khởi điểm vòng 1 của lô; giá trúng theo {{ lbl_win_u }}.</div>
+    {% endif %}
     <table class="sp-tbl tbl-won">
       <colgroup>
         <col class="c-stt"/>
         <col class="c-lot"/>
         <col class="c-name"/>
         <col class="c-cccd"/>
-        <col class="c-price"/><col class="c-price"/>
+        <col class="c-price-kd"/>
+        <col class="c-price-win"/>
         <col class="c-method"/>
         <col class="c-rnd"/>
       </colgroup>
@@ -63,8 +69,8 @@
           <th class="c-lot">Lô</th>
           <th class="c-name">Người trúng</th>
           <th class="c-cccd">CCCD</th>
-          <th class="c-price">{{ lbl_start }}<span class="sub">{{ lbl_start_u }}</span></th>
-          <th class="c-price">Giá trúng</th>
+          <th class="c-price c-price-kd">{{ lbl_start }}<span class="sub">{{ lbl_start_u }}</span></th>
+          <th class="c-price c-price-win">Giá trúng<span class="sub">{{ lbl_win_u }}</span></th>
           <th class="c-method">Hình thức</th>
           <th class="c-rnd">Vòng</th>
         </tr>
@@ -77,10 +83,10 @@
               <td class="lot" title="{{ r.lot_code or '' }}">{{ r.lot_code }}</td>
               <td class="left c-name">{{ r.winner_name or "—" }}</td>
               <td class="c-cccd">{{ r.winner_cccd or "—" }}</td>
-              <td class="price">{{ r.start_price_display or "—" }}</td>
-              <td class="price">{{ r.winning_price_display or "—" }}</td>
-              <td class="left">{{ r.win_method_note or "—" }}</td>
-              <td class="num">{{ r.winning_round_no or "—" }}</td>
+              <td class="price c-price-kd">{{ r.start_price_display or "—" }}</td>
+              <td class="price c-price-win">{{ r.winning_price_display or "—" }}</td>
+              <td class="c-method">{{ r.win_method_note or "—" }}</td>
+              <td class="num c-rnd">{{ r.winning_round_no or "—" }}</td>
             </tr>
           {% endfor %}
         {% else %}

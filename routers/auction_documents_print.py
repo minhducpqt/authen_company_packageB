@@ -1371,6 +1371,7 @@ def _price_column_labels(auction_mode: str) -> Dict[str, str]:
             "start_unit": "VNĐ/m²",
             "highest": "Giá cao nhất",
             "highest_unit": "VNĐ/m²",
+            "win_unit": "VNĐ/m²",
             "unit_note": "VNĐ/m²",
         }
     return {
@@ -1378,6 +1379,7 @@ def _price_column_labels(auction_mode: str) -> Dict[str, str]:
         "start_unit": "VNĐ/lô",
         "highest": "Giá cao nhất",
         "highest_unit": "VNĐ/lô",
+        "win_unit": "VNĐ/lô",
         "unit_note": "VNĐ/lô",
     }
 
