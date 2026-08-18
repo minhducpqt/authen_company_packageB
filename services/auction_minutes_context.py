@@ -162,7 +162,7 @@ async def fetch_auction_minutes_context(
         f"/api/v1/auction-sessions/sessions/{session_id}/rounds/1/ui", token
     )
     ui_r1 = ui_r1_js if isinstance(ui_r1_js, dict) and st_ui1 == 200 else {}
-    r1_prices = _r1_start_prices_map(ui_r1)
+    r1_prices = _r1_start_prices_map(ui_r1, auction_mode=auction_mode)
     r1_ui_lots = _r1_ui_lots_by_id(ui_r1)
     r1_ids: List[int] = []
     for lot in ui_r1.get("lots") or []:
@@ -179,8 +179,14 @@ async def fetch_auction_minutes_context(
         r1_prices=r1_prices,
         r1_ballots=r1_ballots,
         r1_ui_lots_by_id=r1_ui_lots,
+        auction_mode=auction_mode,
     )
-    won_lots = _build_session_won_lots(session_results, r1_prices=r1_prices)
+    won_lots = _build_session_won_lots(
+        session_results,
+        r1_prices=r1_prices,
+        r1_ui_lots_by_id=r1_ui_lots,
+        auction_mode=auction_mode,
+    )
 
     round_pairs = await asyncio.gather(
         *[

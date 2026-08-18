@@ -892,6 +892,59 @@ def _lot_area_sqm_value(lot: Dict[str, Any]) -> Optional[float]:
         return None
 
 
+def _to_float_price(v: Any) -> Optional[float]:
+    if v is None or v == "":
+        return None
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def _lot_bid_price_unit(lot: Dict[str, Any], *, fallback: str = "PER_LOT") -> str:
+    snap = _extract_lot_snapshot(lot)
+    raw = (
+        lot.get("bid_price_unit")
+        or lot.get("auction_mode")
+        or snap.get("bid_price_unit")
+        or snap.get("auction_mode")
+        or fallback
+    )
+    return _normalize_auction_mode(raw)
+
+
+def _start_price_for_display(
+    *,
+    auction_mode: str,
+    start_price_vnd: Any = None,
+    init_starting_price_vnd: Any = None,
+    area_m2: Any = None,
+) -> Any:
+    """
+    Giá khởi điểm hiển thị trên biên bản/in.
+    PER_SQM: đ/m² (start_price_vnd phiên hoặc init / diện tích).
+    PER_LOT: giá cả lô.
+    """
+    mode = _normalize_auction_mode(auction_mode)
+    sp = start_price_vnd
+    init = init_starting_price_vnd
+
+    if mode == "PER_SQM":
+        if sp is not None and _to_str(sp).strip() != "":
+            return sp
+        init_val = _to_float_price(init)
+        area = _to_float_price(area_m2)
+        if init_val is not None and area is not None and area > 0:
+            return int(round(init_val / area))
+        return init
+
+    if init is not None and _to_str(init).strip() != "":
+        return init
+    if sp is not None and _to_str(sp).strip() != "":
+        return sp
+    return None
+
+
 def _fmt_area_sqm_2dec(area: Optional[float]) -> str:
     if area is None:
         return "—"
@@ -958,17 +1011,17 @@ def _build_winner_sign_rows(ui: Dict[str, Any], *, auction_mode: str) -> List[Di
         if not lot_code and lot.get("lot_id") is not None:
             lot_code = f"#{lot.get('lot_id')}"
 
-        sp = lot.get("start_price_vnd")
-        if sp is None:
-            sp = snap.get("start_price_vnd")
-        if sp is None:
-            sp = snap.get("starting_price_vnd")
+        mode = _lot_bid_price_unit(lot, fallback=auction_mode)
 
-        mode = _normalize_auction_mode(
-            lot.get("auction_mode")
-            or snap.get("auction_mode")
-            or snap.get("bid_price_unit")
-            or auction_mode
+        sp = _start_price_for_display(
+            auction_mode=mode,
+            start_price_vnd=lot.get("start_price_vnd") or snap.get("start_price_vnd"),
+            init_starting_price_vnd=(
+                lot.get("init_starting_price_vnd")
+                or snap.get("init_starting_price_vnd")
+                or snap.get("starting_price_vnd")
+            ),
+            area_m2=_lot_area_sqm_value(lot),
         )
 
         rows.append(
@@ -1409,9 +1462,16 @@ def _build_round_result_rows(
             participant_count=len(participants),
         )
 
-        start_price = lot.get("start_price_vnd")
-        if start_price is None:
-            start_price = snap.get("start_price_vnd") or snap.get("starting_price_vnd")
+        start_price = _start_price_for_display(
+            auction_mode=_lot_bid_price_unit(lot),
+            start_price_vnd=lot.get("start_price_vnd"),
+            init_starting_price_vnd=(
+                lot.get("init_starting_price_vnd")
+                or snap.get("init_starting_price_vnd")
+                or snap.get("starting_price_vnd")
+            ),
+            area_m2=_lot_area_sqm_value(lot),
+        )
         highest = lot.get("highest_price_vnd")
 
         rt = _to_str(lot.get("result_type") or "PENDING").upper()
@@ -1693,18 +1753,21 @@ def _api_data_list(js: Any) -> List[Dict[str, Any]]:
     return []
 
 
-def _lot_r1_start_price(lot: Dict[str, Any]) -> Any:
+def _lot_r1_start_price(lot: Dict[str, Any], *, auction_mode: str = "PER_LOT") -> Any:
     snap = _extract_lot_snapshot(lot)
-    return (
-        lot.get("init_starting_price_vnd")
-        or lot.get("start_price_vnd")
-        or snap.get("init_starting_price_vnd")
-        or snap.get("start_price_vnd")
-        or snap.get("starting_price_vnd")
+    return _start_price_for_display(
+        auction_mode=_lot_bid_price_unit(lot, fallback=auction_mode),
+        start_price_vnd=lot.get("start_price_vnd") or snap.get("start_price_vnd"),
+        init_starting_price_vnd=(
+            lot.get("init_starting_price_vnd")
+            or snap.get("init_starting_price_vnd")
+            or snap.get("starting_price_vnd")
+        ),
+        area_m2=_lot_area_sqm_value(lot),
     )
 
 
-def _r1_start_prices_map(ui_r1: Dict[str, Any]) -> Dict[int, Any]:
+def _r1_start_prices_map(ui_r1: Dict[str, Any], *, auction_mode: str = "PER_LOT") -> Dict[int, Any]:
     out: Dict[int, Any] = {}
     for lot in (ui_r1 or {}).get("lots") or []:
         if not isinstance(lot, dict):
@@ -1714,8 +1777,32 @@ def _r1_start_prices_map(ui_r1: Dict[str, Any]) -> Dict[int, Any]:
         except Exception:
             lid = 0
         if lid > 0:
-            out[lid] = _lot_r1_start_price(lot)
+            out[lid] = _lot_r1_start_price(lot, auction_mode=auction_mode)
     return out
+
+
+def _session_result_start_price(
+    res: Dict[str, Any],
+    *,
+    r1_prices: Dict[int, Any],
+    r1_ui_lots_by_id: Dict[int, Dict[str, Any]],
+    auction_mode: str,
+) -> Any:
+    try:
+        lot_id = int(res.get("lot_id") or 0)
+    except Exception:
+        lot_id = 0
+    if lot_id > 0 and r1_prices.get(lot_id) is not None:
+        return r1_prices.get(lot_id)
+
+    r1_lot = r1_ui_lots_by_id.get(lot_id) or {}
+    mode = _normalize_auction_mode(res.get("bid_price_unit") or auction_mode)
+    area = _lot_area_sqm_value(r1_lot) if r1_lot else None
+    return _start_price_for_display(
+        auction_mode=mode,
+        init_starting_price_vnd=res.get("init_starting_price_vnd"),
+        area_m2=area,
+    )
 
 
 def _r1_ui_lots_by_id(ui_r1: Dict[str, Any]) -> Dict[int, Dict[str, Any]]:
@@ -1760,6 +1847,7 @@ def _build_session_failed_lots(
     r1_prices: Dict[int, Any],
     r1_ballots: Dict[int, Dict[str, Any]],
     r1_ui_lots_by_id: Dict[int, Dict[str, Any]],
+    auction_mode: str = "PER_LOT",
 ) -> List[Dict[str, Any]]:
     rows: List[Dict[str, Any]] = []
     for res in session_results or []:
@@ -1791,7 +1879,12 @@ def _build_session_failed_lots(
             except Exception:
                 reason = f"Không đủ phiếu hợp lệ (số HL: {valid})."
 
-        sp = res.get("init_starting_price_vnd") or r1_prices.get(lot_id)
+        sp = _session_result_start_price(
+            res,
+            r1_prices=r1_prices,
+            r1_ui_lots_by_id=r1_ui_lots_by_id,
+            auction_mode=auction_mode,
+        )
         rows.append(
             {
                 "lot_code": lot_code or (f"#{lot_id}" if lot_id else "—"),
@@ -1808,6 +1901,8 @@ def _build_session_won_lots(
     session_results: List[Dict[str, Any]],
     *,
     r1_prices: Dict[int, Any],
+    r1_ui_lots_by_id: Dict[int, Dict[str, Any]],
+    auction_mode: str = "PER_LOT",
 ) -> List[Dict[str, Any]]:
     rows: List[Dict[str, Any]] = []
     for res in session_results or []:
@@ -1821,7 +1916,12 @@ def _build_session_won_lots(
         except Exception:
             lot_id = 0
         lot_code = _to_str(res.get("lot_code") or "").strip()
-        sp = res.get("init_starting_price_vnd") or r1_prices.get(lot_id)
+        sp = _session_result_start_price(
+            res,
+            r1_prices=r1_prices,
+            r1_ui_lots_by_id=r1_ui_lots_by_id,
+            auction_mode=auction_mode,
+        )
         wp = res.get("winning_price_vnd")
         rows.append(
             {
@@ -1971,7 +2071,7 @@ async def build_session_progress_data(
                 "body": ui_r1,
             }
 
-    r1_prices = _r1_start_prices_map(ui_r1)
+    r1_prices = _r1_start_prices_map(ui_r1, auction_mode=auction_mode)
     r1_ui_lots = _r1_ui_lots_by_id(ui_r1)
     r1_round_lot_ids: List[int] = []
     for lot in (ui_r1.get("lots") or []):
@@ -1990,8 +2090,14 @@ async def build_session_progress_data(
         r1_prices=r1_prices,
         r1_ballots=r1_ballots,
         r1_ui_lots_by_id=r1_ui_lots,
+        auction_mode=auction_mode,
     )
-    won_lots = _build_session_won_lots(session_results, r1_prices=r1_prices)
+    won_lots = _build_session_won_lots(
+        session_results,
+        r1_prices=r1_prices,
+        r1_ui_lots_by_id=r1_ui_lots,
+        auction_mode=auction_mode,
+    )
     eligible_lots = _build_winner_sign_rows(ui_r1, auction_mode=auction_mode)
 
     round_pairs = await asyncio.gather(
