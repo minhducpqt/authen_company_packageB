@@ -26,6 +26,10 @@ _LAND_ARTICLE_DEFAULTS = {
     "legal_dossier_ref": "Quyết định số ……",
 }
 
+_AUCTION_FORM_DEFAULT = (
+    "Đấu giá bằng hình thức bỏ phiếu trực tiếp tại phiên đấu giá (01 vòng)"
+)
+
 _PAYMENT_TERMS_TAIL = (
     "kể từ ngày bên A đã nhận được kết quả đấu giá, "
     "hóa đơn GTGT và biên bản thanh lý Hợp đồng."
@@ -157,6 +161,11 @@ def merge_fields_for_render(
     for key, default in _LAND_ARTICLE_DEFAULTS.items():
         if not (contract.get(key) or "").strip():
             contract[key] = default
+    if not (contract.get("auction_form") or "").strip():
+        contract["auction_form"] = _AUCTION_FORM_DEFAULT
+    auction = fields.setdefault("auction", {})
+    if isinstance(auction, dict) and not (auction.get("form") or "").strip():
+        auction["form"] = contract["auction_form"]
     normalize_service_fees(fields)
     doc_no = contract.get("document_no") or inst.get("document_no")
     if doc_no:

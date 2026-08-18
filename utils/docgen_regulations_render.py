@@ -11,6 +11,7 @@ from starlette.requests import Request
 from utils.bid_ticket_qr import qr_png_data_uri
 from utils.customer_portal_urls import customer_portal_link_set
 from utils.docgen_contract_render import (
+    _AUCTION_FORM_DEFAULT,
     _vi_read_int,
     apply_lot_table,
     ctx_for_editor,
@@ -42,6 +43,11 @@ VI_WEEKDAYS = (
     "Thứ bảy",
 )
 _PLANNING_PLACEHOLDER = "Quyết định của Ủy ban nhân dân tỉnh ……"
+_AUCTION_CONDUCT_DEFAULT = (
+    "Đấu giá từng lô đất trong cùng một phiên; đấu giá trên 01m² đất; "
+    "lấy kết quả vòng đấu thứ nhất làm cơ sở công nhận kết quả trúng đấu giá "
+    "(theo quy định tại mẫu M5.1)."
+)
 
 
 def _slug(s: str) -> str:
@@ -222,6 +228,8 @@ def merge_fields_for_render(
 
     _set_if_empty(reg, "ballot_minutes", "20")
     _set_if_empty(reg, "ballot_minutes_words", "hai mươi")
+    _set_if_empty(reg, "auction_form", _AUCTION_FORM_DEFAULT)
+    _set_if_empty(reg, "auction_conduct", _AUCTION_CONDUCT_DEFAULT)
 
     planning = (reg.get("planning_decision") or "").strip()
     if not planning or planning == _PLANNING_PLACEHOLDER:

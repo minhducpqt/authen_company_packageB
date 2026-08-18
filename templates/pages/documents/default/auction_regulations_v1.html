@@ -351,9 +351,9 @@
 
 <div class="sec">
   <h2>Điều 7. Hình thức, phương thức và cách thức đấu giá; bước giá</h2>
-  <p class="clause-head"><strong>1. Hình thức đấu giá:</strong> Đấu giá bằng hình thức bỏ phiếu trực tiếp tại phiên đấu giá (01 vòng).</p>
+  <p class="clause-head"><strong>1. Hình thức đấu giá:</strong> {{ ce_slot('auction_form', reg.auction_form or 'Đấu giá bằng hình thức bỏ phiếu trực tiếp tại phiên đấu giá (01 vòng)') }}.</p>
   <p class="clause-head"><strong>2. Phương thức đấu giá:</strong> Phương thức trả giá lên.</p>
-  <p class="clause-head"><strong>3. Cách thức đấu giá:</strong> Đấu giá từng lô đất trong cùng một phiên; đấu giá trên 01m² đất; lấy kết quả vòng đấu thứ nhất làm cơ sở công nhận kết quả trúng đấu giá (theo quy định tại mẫu M5.1).</p>
+  <p class="clause-head"><strong>3. Cách thức đấu giá:</strong> {{ ce_slot('auction_conduct', reg.auction_conduct or 'Đấu giá từng lô đất trong cùng một phiên; đấu giá trên 01m² đất; lấy kết quả vòng đấu thứ nhất làm cơ sở công nhận kết quả trúng đấu giá (theo quy định tại mẫu M5.1).') }}</p>
   <p class="clause-head"><strong>4. Bước giá, cách thức áp dụng bước giá:</strong></p>
   <p>- Bước giá: Tối thiểu {{ ce_slot('bid_step_min', reg.bid_step_min or '……000') }} đồng/m²{% if reg.bid_step_min_words %} (Bằng chữ: {{ ce_slot('bid_step_min_words', reg.bid_step_min_words) }}){% endif %}. Không hạn chế bước giá tối đa.</p>
   <p>- Cách thức áp dụng bước giá: {{ ce_slot('bid_step_application', reg.bid_step_application or '……') }}</p>

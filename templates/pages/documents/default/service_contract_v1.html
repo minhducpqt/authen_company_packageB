@@ -331,7 +331,7 @@
   <ul class="clause-list">
     <li>1. Thời hạn tổ chức đấu giá: Trong thời hạn {{ ce_slot('auction_days', auction.deadline_days or contract.auction_deadline_days or 30) }} ({{ 'ba mươi' if (auction.deadline_days or contract.auction_deadline_days or 30)|int == 30 else '……' }}) ngày kể từ ngày ký hợp đồng.</li>
     <li>2. Địa điểm tổ chức đấu giá: {{ ce_slot('auction_venue', v.auction_venue or defs.auction_venue or signed_place) }}</li>
-    <li>3. Hình thức đấu giá: {{ auction.form or contract.auction_form or 'Đấu giá bằng hình thức bỏ phiếu trực tiếp tại phiên đấu giá (01 vòng)' }}</li>
+    <li>3. Hình thức đấu giá: {{ ce_slot('auction_form', contract.auction_form or auction.form or 'Đấu giá bằng hình thức bỏ phiếu trực tiếp tại phiên đấu giá (01 vòng)') }}</li>
     <li>4. Phương thức đấu giá: {{ auction.method or contract.auction_method or 'Phương thức trả giá lên' }}</li>
   </ul>
   {% include 'pages/documents/default/_service_contract_v1_art3_tail.html' %}

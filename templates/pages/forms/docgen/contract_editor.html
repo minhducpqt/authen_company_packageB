@@ -190,6 +190,10 @@
         <div class="ce-field" data-ov="auction_venue"><label>Địa điểm tổ chức đấu giá</label></div>
         <div class="ce-field" data-ov="dossier_reception_place"><label>Tiếp nhận hồ sơ</label></div>
         <div class="ce-field"><label>Thời hạn tổ chức (ngày)</label><input id="f_auction_days" data-ce-field="auction_days" type="number" value="30" {% if is_final %}readonly{% endif %}></div>
+        <div class="ce-field">
+          <label>Hình thức đấu giá (Điều 3.3)</label>
+          <input id="f_auction_form" data-ce-field="auction_form" {% if is_final %}readonly{% endif %} placeholder="Đấu giá bằng hình thức bỏ phiếu trực tiếp tại phiên đấu giá (01 vòng)">
+        </div>
         <div class="ce-field"><label>Bước giá</label><input id="f_bid_step" data-ce-field="bid_step" {% if is_final %}readonly{% endif %} placeholder="100.000 đồng/m²"></div>
 
         <div class="ce-sec">TK nhận tiền đặt trước <span class="ce-tag">Từ dự án</span></div>
@@ -381,6 +385,7 @@ const FIELD_LABELS = {
   land_delivery_form: 'Hình thức giao đất',
   land_use_term: 'Thời hạn sử dụng đất',
   legal_dossier_ref: 'Hồ sơ pháp lý của tài sản',
+  auction_form: 'Hình thức đấu giá (Điều 3.3)',
   max_auction_cost_vnd: 'Chi phí đấu giá tài sản tối đa (TB, hành chính…)',
   partial_fail_formula: 'Công thức giá DV (một phần không thành)',
   max_fail_cost_vnd: 'Chi phí đấu giá tối đa (không thành)',
@@ -392,6 +397,9 @@ const LAND_ARTICLE_DEFAULTS = {
   land_use_term: 'Lâu dài',
   legal_dossier_ref: 'Quyết định số ……',
 };
+
+const AUCTION_FORM_DEFAULT =
+  'Đấu giá bằng hình thức bỏ phiếu trực tiếp tại phiên đấu giá (01 vòng)';
 
 const DEFAULT_PAYMENT_DAYS = 20;
 const PAYMENT_TERMS_TAIL = 'kể từ ngày bên A đã nhận được kết quả đấu giá, hóa đơn GTGT và biên bản thanh lý Hợp đồng.';
@@ -1006,10 +1014,12 @@ function collectFields() {
       land_delivery_form: document.getElementById('f_land_delivery_form')?.value?.trim() || LAND_ARTICLE_DEFAULTS.land_delivery_form,
       land_use_term: document.getElementById('f_land_use_term')?.value?.trim() || LAND_ARTICLE_DEFAULTS.land_use_term,
       legal_dossier_ref: document.getElementById('f_legal_dossier_ref')?.value?.trim() || LAND_ARTICLE_DEFAULTS.legal_dossier_ref,
+      auction_form: document.getElementById('f_auction_form')?.value?.trim() || AUCTION_FORM_DEFAULT,
     },
     auction: {
       ...(prev.auction || {}),
       deadline_days: parseInt(document.getElementById('f_auction_days')?.value || '30', 10) || 30,
+      form: document.getElementById('f_auction_form')?.value?.trim() || AUCTION_FORM_DEFAULT,
     },
     service_fees: {
       ...(prev.service_fees || {}),
@@ -1098,6 +1108,8 @@ function hydrateFromFields() {
   document.getElementById('f_copies').value = c.copies || 6;
   document.getElementById('f_pb_auth').value = c.party_b_authorization || '';
   document.getElementById('f_auction_days').value = a.deadline_days || 30;
+  document.getElementById('f_auction_form').value =
+    c.auction_form || a.form || AUCTION_FORM_DEFAULT;
   document.getElementById('f_bid_step').value = c.bid_step || '';
   document.getElementById('f_land_use_purpose').value = c.land_use_purpose || LAND_ARTICLE_DEFAULTS.land_use_purpose;
   document.getElementById('f_land_delivery_form').value = c.land_delivery_form || LAND_ARTICLE_DEFAULTS.land_delivery_form;

@@ -188,6 +188,10 @@
         <div class="ce-field"><label>Quy hoạch (QĐ tỉnh)</label><input id="f_planning_decision" data-ce-field="planning_decision" {% if is_final %}readonly{% endif %} placeholder="Quyết định của UBND tỉnh ……"></div>
         <div class="ce-field"><label>Nguồn gốc — UBND xã</label><input id="f_land_origin_ubnd" data-ce-field="land_origin_ubnd" {% if is_final %}readonly{% endif %} placeholder="UBND xã ……"></div>
 
+        <div class="ce-sec">Điều 7 — Hình thức &amp; cách thức đấu giá</div>
+        <div class="ce-field"><label>Hình thức đấu giá (mục 1)</label><input id="f_auction_form" data-ce-field="auction_form" {% if is_final %}readonly{% endif %} placeholder="Đấu giá bằng hình thức bỏ phiếu trực tiếp tại phiên đấu giá (01 vòng)"></div>
+        <div class="ce-field"><label>Cách thức đấu giá (mục 3)</label><textarea id="f_auction_conduct" data-ce-field="auction_conduct" rows="3" {% if is_final %}readonly{% endif %} placeholder="Đấu giá từng lô đất trong cùng một phiên; …"></textarea></div>
+
         <div class="ce-sec">Bước giá &amp; phiên đấu giá</div>
         <div class="ce-field"><label>Bước giá tối thiểu (đ/m²)</label><input id="f_bid_step_min" data-ce-field="bid_step_min" {% if is_final %}readonly{% endif %} placeholder="100.000"></div>
         <div class="ce-field"><label>Bước giá (bằng chữ)</label><input id="f_bid_step_min_words" data-ce-field="bid_step_min_words" {% if is_final %}readonly{% endif %} placeholder="một trăm nghìn"></div>
@@ -367,6 +371,8 @@ const FIELD_LABELS = {
   contract_ref_date: 'Ngày ký HĐ',
   planning_decision: 'Quy hoạch (QĐ tỉnh)',
   land_origin_ubnd: 'Nguồn gốc UBND xã',
+  auction_form: 'Hình thức đấu giá (Điều 7.1)',
+  auction_conduct: 'Cách thức đấu giá (Điều 7.3)',
   bid_step_min: 'Bước giá tối thiểu',
   bid_step_application: 'Cách thức áp dụng bước giá',
   ballot_minutes: 'Thời gian bỏ phiếu',
@@ -385,6 +391,11 @@ const LAND_ARTICLE_DEFAULTS = {
 
 const DEFAULT_PAYMENT_DAYS = 20;
 const PAYMENT_TERMS_TAIL = 'kể từ ngày bên A đã nhận được kết quả đấu giá, hóa đơn GTGT và biên bản thanh lý Hợp đồng.';
+
+const AUCTION_FORM_DEFAULT =
+  'Đấu giá bằng hình thức bỏ phiếu trực tiếp tại phiên đấu giá (01 vòng)';
+const AUCTION_CONDUCT_DEFAULT =
+  'Đấu giá từng lô đất trong cùng một phiên; đấu giá trên 01m² đất; lấy kết quả vòng đấu thứ nhất làm cơ sở công nhận kết quả trúng đấu giá (theo quy định tại mẫu M5.1).';
 
 function viReadInt(n) {
   n = Math.floor(Number(n));
@@ -1089,6 +1100,8 @@ function collectFields() {
   });
   reg.planning_decision = document.getElementById('f_planning_decision')?.value?.trim() || '';
   reg.land_origin_ubnd = document.getElementById('f_land_origin_ubnd')?.value?.trim() || '';
+  reg.auction_form = document.getElementById('f_auction_form')?.value?.trim() || AUCTION_FORM_DEFAULT;
+  reg.auction_conduct = document.getElementById('f_auction_conduct')?.value?.trim() || AUCTION_CONDUCT_DEFAULT;
   reg.bid_step_min = document.getElementById('f_bid_step_min')?.value?.trim() || '';
   reg.bid_step_min_words = document.getElementById('f_bid_step_min_words')?.value?.trim() || '';
   reg.bid_step_application = document.getElementById('f_bid_step_application')?.value?.trim() || '';
@@ -1158,6 +1171,10 @@ function hydrateFromFields() {
   set('f_contract_ref_no', r.contract_ref_no);
   set('f_planning_decision', r.planning_decision);
   set('f_land_origin_ubnd', r.land_origin_ubnd);
+  const auctionFormEl = document.getElementById('f_auction_form');
+  if (auctionFormEl) auctionFormEl.value = r.auction_form || AUCTION_FORM_DEFAULT;
+  const auctionConductEl = document.getElementById('f_auction_conduct');
+  if (auctionConductEl) auctionConductEl.value = r.auction_conduct || AUCTION_CONDUCT_DEFAULT;
   set('f_bid_step_min', r.bid_step_min);
   set('f_bid_step_min_words', r.bid_step_min_words);
   set('f_bid_step_application', r.bid_step_application);
