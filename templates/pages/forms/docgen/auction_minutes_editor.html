@@ -1,0 +1,340 @@
+{% extends "base.html" %}
+{% from "pages/forms/_components.html" import forms_styles, forms_page_header, forms_status_badge %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{{ forms_styles() }}
+<style>
+  .ce-studio { display:grid; grid-template-columns:minmax(340px,440px) minmax(0,1fr); gap:14px; align-items:start; }
+  @media (max-width:1100px){ .ce-studio{ grid-template-columns:1fr; } }
+  .ce-panel { background:#fff; border:1px solid #e2e8f0; border-radius:14px; overflow:hidden; box-shadow:0 1px 2px rgba(15,23,42,.04); }
+  .ce-left { position:sticky; top:10px; max-height:calc(100vh - 80px); overflow:auto; }
+  .ce-ph { padding:12px 16px; border-bottom:1px solid #e2e8f0; background:#f8fafc; }
+  .ce-ph .t { font-size:14px; font-weight:700; color:#0f172a; }
+  .ce-ph .s { font-size:12px; color:#64748b; margin-top:4px; }
+  .ce-body { padding:14px 16px 18px; }
+  .ce-field { margin-bottom:12px; }
+  .ce-field label { display:block; font-size:11px; font-weight:700; color:#475569; margin-bottom:4px; }
+  .ce-field input, .ce-field textarea, .ce-field select { width:100%; padding:8px 10px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; box-sizing:border-box; font-family:inherit; }
+  .ce-field textarea { min-height:72px; resize:vertical; }
+  .ce-sec { margin:18px 0 8px; font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:#64748b; }
+  .ce-actions { display:flex; flex-wrap:wrap; gap:8px; padding:12px 16px; border-top:1px solid #e2e8f0; background:#fafbfc; }
+  .ce-btn { display:inline-flex; align-items:center; gap:5px; padding:8px 12px; border-radius:9px; font-size:12px; font-weight:700; border:1px solid #cbd5e1; background:#fff; cursor:pointer; text-decoration:none; color:#334155; }
+  .ce-btn-primary { background:#4f46e5; border-color:#4f46e5; color:#fff; }
+  .ce-btn-warn { background:#f59e0b; border-color:#f59e0b; color:#fff; }
+  .ce-preview-wrap { background:#64748b; padding:16px; overflow:auto; min-height:780px; }
+  .ce-iframe { width:100%; min-height:900px; border:0; background:transparent; display:block; }
+  .ce-preview-panel.is-reloading .ce-iframe { visibility:hidden; }
+  .ce-ph-row { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .ce-preview-toolbar { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+  .ce-preview-toolbar-sep { width:1px; height:22px; background:#cbd5e1; margin:0 2px; }
+  .ce-btn-icon { padding:6px 10px; font-size:11px; }
+  .ce-datetime, .ce-date { width:100%; padding:8px 10px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; font-family:inherit; }
+  .ce-signed-preview { margin-top:6px; font-size:12px; line-height:1.45; padding:6px 8px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; color:#334155; }
+  .ce-hint { font-size:10px; color:#94a3b8; margin-top:3px; }
+  .ce-readonly-val { padding:8px 10px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; font-size:12px; }
+</style>
+<div class="fm-page">
+  {{ forms_page_header(
+    instance.title or "Biên bản đấu giá",
+    subtitle=(instance.project_code ~ " · " ~ (instance.project_name or "")) if instance.project_code else "",
+    breadcrumb_items=[
+      {"label": "Biểu mẫu", "href": "/bieu-mau"},
+      {"label": "Theo dự án", "href": project_forms_url},
+      {"label": item.name, "href": null},
+      {"label": instance.title or ("#" ~ instance.id), "href": null},
+    ],
+  ) }}
+  {% if is_final %}<span class="fm-badge fm-badge--ready">Đã chốt</span>{% else %}<span class="fm-badge fm-badge--soon">Nháp — có thể sửa và lưu lại</span>{% endif %}
+
+  <form id="ceForm" class="ce-studio" method="post">
+    <div class="ce-panel ce-left">
+      <div class="ce-ph">
+        <div class="t">Biên bản TP-ĐGTS-18</div>
+        <div class="s">Điền bên trái — preview bên phải tự cập nhật. Ban đầu là mẫu rỗng.</div>
+      </div>
+      <div class="ce-body">
+        <div class="ce-sec">Phiên đấu giá</div>
+        <div class="ce-field">
+          <label>Biên bản thuộc phiên</label>
+          {% if is_final %}
+          <div class="ce-readonly-val" id="sessionSelectDisplay">—</div>
+          {% else %}
+          <select id="f_session_id">
+            <option value="">— Chọn phiên —</option>
+            {% for s in auction_sessions %}
+              {% set sid = s.id %}
+              {% set ad = (s.auction_date or '')|string %}
+              <option value="{{ sid }}">
+                {{ s.name or ('Phiên #' ~ sid) }}
+                {% if ad and ad|length >= 10 and ('-' in ad) %}
+                  · {{ ad[8:10] }}/{{ ad[5:7] }}/{{ ad[0:4] }}
+                {% endif %}
+              </option>
+            {% endfor %}
+          </select>
+          {% if not auction_sessions %}
+          <div class="ce-hint">Dự án chưa có phiên — vẫn có thể soạn biên bản và chọn phiên sau.</div>
+          {% endif %}
+          {% endif %}
+        </div>
+
+        <div class="ce-sec">Căn cứ hợp đồng</div>
+        <div class="ce-field"><label>Số hợp đồng</label><input id="f_contract_no" {% if is_final %}readonly{% endif %} placeholder="……"></div>
+        <div class="ce-field">
+          <label>Ngày hợp đồng</label>
+          {% if is_final %}
+          <div class="ce-readonly-val" id="f_contract_date_display">—</div>
+          {% else %}
+          <input type="date" id="f_contract_date_picker" class="ce-date">
+          <div id="f_contract_date_preview" class="ce-signed-preview">— chọn ngày —</div>
+          {% endif %}
+        </div>
+        <div class="ce-field"><label>Bên A</label><input id="f_party_a" {% if is_final %}readonly{% endif %}></div>
+        <div class="ce-field"><label>Bên B</label><input id="f_party_b" {% if is_final %}readonly{% endif %}></div>
+
+        <div class="ce-sec">Thời gian &amp; địa điểm phiên</div>
+        <div class="ce-field">
+          <label>Bắt đầu phiên</label>
+          {% if is_final %}
+          <div class="ce-readonly-val" id="f_session_start_display">—</div>
+          {% else %}
+          <input type="datetime-local" id="f_session_start_picker" class="ce-datetime">
+          <div id="f_session_start_preview" class="ce-signed-preview">— chọn ngày giờ —</div>
+          {% endif %}
+        </div>
+        <div class="ce-field"><label>Địa điểm</label><input id="f_venue" {% if is_final %}readonly{% endif %}></div>
+        <div class="ce-field"><label>Đơn vị tổ chức phiên</label><input id="f_organizer" {% if is_final %}readonly{% endif %}></div>
+
+        <div class="ce-sec">Tài sản đấu giá</div>
+        <div class="ce-field"><label>Mô tả tài sản</label><input id="f_asset_description" {% if is_final %}readonly{% endif %}></div>
+        <div class="ce-field"><label>Giá khởi điểm (ghi chú)</label><input id="f_starting_price_note" {% if is_final %}readonly{% endif %}></div>
+
+        <div class="ce-sec">Thành phần tham dự</div>
+        <div class="ce-field"><label>Khách mời (mỗi dòng một người)</label><textarea id="f_guests_text" {% if is_final %}readonly{% endif %} rows="4"></textarea></div>
+        <div class="ce-field"><label>Người có tài sản đấu giá</label><textarea id="f_asset_owner" {% if is_final %}readonly{% endif %} rows="2"></textarea></div>
+        <div class="ce-field"><label>Đấu giá viên</label><textarea id="f_auctioneer" {% if is_final %}readonly{% endif %} rows="2"></textarea></div>
+        <div class="ce-field"><label>Ghi chú người tham gia đấu giá</label><input id="f_bidders_note" {% if is_final %}readonly{% endif %}></div>
+
+        <div class="ce-sec">Diễn biến &amp; kết thúc</div>
+        <div class="ce-field"><label>Diễn biến phiên</label><textarea id="f_progression_text" {% if is_final %}readonly{% endif %} rows="5"></textarea></div>
+        <div class="ce-field">
+          <label>Kết thúc phiên</label>
+          {% if is_final %}
+          <div class="ce-readonly-val" id="f_session_end_display">—</div>
+          {% else %}
+          <input type="datetime-local" id="f_session_end_picker" class="ce-datetime">
+          <div id="f_session_end_preview" class="ce-signed-preview">— chọn ngày giờ —</div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="ce-actions">
+        <button type="button" class="ce-btn ce-btn-primary" id="btnPreview"><i class="ri-eye-line"></i> Xem trước</button>
+        {% if not is_final %}
+        <button type="submit" formaction="/bieu-mau/sau-phien/bien-ban-dau-gia/{{ instance.id }}/save" class="ce-btn"><i class="ri-save-line"></i> Lưu</button>
+        {% endif %}
+        <a href="{{ download_html_url }}" class="ce-btn" target="_blank" rel="noopener"><i class="ri-file-code-line"></i> Tải HTML</a>
+        <a href="{{ download_pdf_url }}" class="ce-btn" target="_blank" rel="noopener"><i class="ri-file-pdf-line"></i> Tải PDF</a>
+        <a href="{{ project_forms_url }}" class="ce-btn">Theo dự án</a>
+      </div>
+      <input type="hidden" name="title" id="f_title" value="{{ instance.title or '' }}">
+      <input type="hidden" name="document_no" id="f_document_no" value="{{ instance.document_no or '' }}">
+      <input type="hidden" name="fields_json" id="fieldsJson">
+    </div>
+
+    <div class="ce-panel ce-preview-panel" id="previewPanel">
+      <div class="ce-ph">
+        <div class="ce-ph-row" style="width:100%">
+          <div>
+            <div class="t">Xem trước</div>
+            <div class="s">Mẫu TP-ĐGTS-18 — Thông tư 19/2024/TT-BTP</div>
+          </div>
+          <div class="ce-preview-toolbar">
+            <button type="button" class="ce-btn ce-btn-icon" id="btnPreviewFullscreen" title="Toàn màn hình"><i class="ri-fullscreen-line"></i> Full</button>
+            <button type="button" class="ce-btn ce-btn-icon" id="btnPreviewPrint" title="In"><i class="ri-printer-line"></i> In</button>
+            <span class="ce-preview-toolbar-sep" aria-hidden="true"></span>
+            {% if not is_final %}
+            <button type="submit" formaction="/bieu-mau/sau-phien/bien-ban-dau-gia/{{ instance.id }}/finalize" class="ce-btn ce-btn-icon ce-btn-warn" title="Chốt văn bản"><i class="ri-lock-line"></i> Chốt</button>
+            {% else %}
+            <button type="submit" formaction="/bieu-mau/sau-phien/bien-ban-dau-gia/{{ instance.id }}/reopen" class="ce-btn ce-btn-icon ce-btn-warn" title="Mở khóa"><i class="ri-lock-unlock-line"></i> Mở chốt</button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="ce-preview-wrap">
+        <iframe id="previewFrame" name="previewFrame" class="ce-iframe" title="Preview biên bản"></iframe>
+      </div>
+    </div>
+  </form>
+</div>
+<script>
+const PREVIEW_URL = {{ preview_url|tojson }};
+const IS_FINAL = {{ 'true' if is_final else 'false' }};
+const CTX = {{ ctx_json|safe }};
+const INIT_FIELDS = {{ fields_json|safe }};
+const SESSIONS = {{ auction_sessions|tojson }};
+
+function parseIsoLocal(iso) {
+  const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/);
+  if (!m) return null;
+  return { year: +m[1], month: +m[2], day: +m[3], hour: m[4] ? +m[4] : 0, minute: m[5] || '00' };
+}
+
+function formatSessionVi(isoLocal) {
+  const p = parseIsoLocal(isoLocal);
+  if (!p) return '';
+  return `${p.hour} giờ ${p.minute} phút ngày ${String(p.day).padStart(2,'0')}/${String(p.month).padStart(2,'0')}/${p.year}`;
+}
+
+function formatDateVi(isoLocal) {
+  const p = parseIsoLocal(isoLocal);
+  if (!p) return '';
+  return `${String(p.day).padStart(2,'0')}/${String(p.month).padStart(2,'0')}/${p.year}`;
+}
+
+function isoFromPicker(val) {
+  if (!val) return '';
+  return val.length >= 16 ? val.slice(0, 16) : val;
+}
+
+function updateDtPreview(pickerId, previewId, formatter) {
+  const picker = document.getElementById(pickerId);
+  const preview = document.getElementById(previewId);
+  if (!picker || !preview) return;
+  const iso = isoFromPicker(picker.value);
+  preview.textContent = iso ? formatter(iso) : (pickerId.includes('date') ? '— chọn ngày —' : '— chọn ngày giờ —');
+  schedulePreview();
+}
+
+function hydrateDt(pickerId, previewId, storedIso, formatter) {
+  const picker = document.getElementById(pickerId);
+  const preview = document.getElementById(previewId);
+  if (!picker || !storedIso) return;
+  picker.value = storedIso.length >= 16 ? storedIso.slice(0, 16) : storedIso.slice(0, 10);
+  if (preview) preview.textContent = formatter(storedIso) || '—';
+}
+
+function collectFields() {
+  const prev = INIT_FIELDS || {};
+  const m = { ...(prev.minutes || {}) };
+  m.session_id = document.getElementById('f_session_id')?.value ? parseInt(document.getElementById('f_session_id').value, 10) : null;
+  m.form_code = m.form_code || 'TP-ĐGTS-18';
+  m.contract_no = document.getElementById('f_contract_no')?.value?.trim() || '';
+  m.contract_date = document.getElementById('f_contract_date_picker')?.value || m.contract_date || '';
+  m.party_a = document.getElementById('f_party_a')?.value?.trim() || '';
+  m.party_b = document.getElementById('f_party_b')?.value?.trim() || '';
+  m.session_start_at = isoFromPicker(document.getElementById('f_session_start_picker')?.value || m.session_start_at || '');
+  m.session_end_at = isoFromPicker(document.getElementById('f_session_end_picker')?.value || m.session_end_at || '');
+  m.venue = document.getElementById('f_venue')?.value?.trim() || '';
+  m.organizer = document.getElementById('f_organizer')?.value?.trim() || '';
+  m.asset_description = document.getElementById('f_asset_description')?.value?.trim() || '';
+  m.starting_price_note = document.getElementById('f_starting_price_note')?.value?.trim() || '';
+  const guestsRaw = document.getElementById('f_guests_text')?.value || '';
+  m.guests = guestsRaw.split('\n').map(s => s.trim()).filter(Boolean);
+  m.asset_owner = document.getElementById('f_asset_owner')?.value?.trim() || '';
+  m.auctioneer = document.getElementById('f_auctioneer')?.value?.trim() || '';
+  m.bidders_note = document.getElementById('f_bidders_note')?.value?.trim() || '';
+  m.progression_text = document.getElementById('f_progression_text')?.value?.trim() || '';
+  if (!Array.isArray(m.failed_lots)) m.failed_lots = [];
+  if (!Array.isArray(m.won_lots)) m.won_lots = [];
+  return { minutes: m };
+}
+
+function syncHidden() {
+  document.getElementById('fieldsJson').value = JSON.stringify(collectFields());
+}
+
+function hydrateFromFields() {
+  const m = (INIT_FIELDS.minutes || {});
+  const set = (id, val) => { const el = document.getElementById(id); if (el && val != null && val !== '') el.value = val; };
+  set('f_contract_no', m.contract_no);
+  set('f_party_a', m.party_a);
+  set('f_party_b', m.party_b);
+  set('f_venue', m.venue);
+  set('f_organizer', m.organizer);
+  set('f_asset_description', m.asset_description || CTX.project?.name || '');
+  set('f_starting_price_note', m.starting_price_note);
+  set('f_asset_owner', m.asset_owner);
+  set('f_auctioneer', m.auctioneer);
+  set('f_bidders_note', m.bidders_note || 'Danh sách người tham gia đấu giá theo sổ điểm danh phiên.');
+  set('f_progression_text', m.progression_text);
+  if (m.guests && m.guests.length) {
+    set('f_guests_text', m.guests.join('\n'));
+  }
+  const sessEl = document.getElementById('f_session_id');
+  if (sessEl && m.session_id) sessEl.value = String(m.session_id);
+  if (IS_FINAL) {
+    const sess = SESSIONS.find(s => String(s.id) === String(m.session_id));
+    const disp = document.getElementById('sessionSelectDisplay');
+    if (disp) disp.textContent = sess ? (sess.name || ('Phiên #' + sess.id)) : (m.session_id ? ('Phiên #' + m.session_id) : '—');
+    const cd = document.getElementById('f_contract_date_display');
+    if (cd) cd.textContent = formatDateVi(m.contract_date) || '—';
+    const ss = document.getElementById('f_session_start_display');
+    if (ss) ss.textContent = formatSessionVi(m.session_start_at) || '—';
+    const se = document.getElementById('f_session_end_display');
+    if (se) se.textContent = formatSessionVi(m.session_end_at) || '—';
+  } else {
+    hydrateDt('f_contract_date_picker', 'f_contract_date_preview', m.contract_date, formatDateVi);
+    hydrateDt('f_session_start_picker', 'f_session_start_preview', m.session_start_at, formatSessionVi);
+    hydrateDt('f_session_end_picker', 'f_session_end_preview', m.session_end_at, formatSessionVi);
+  }
+}
+
+let previewTimer = null;
+let previewSeq = 0;
+
+function schedulePreview() {
+  if (IS_FINAL) return;
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(runPreview, 600);
+}
+
+async function runPreview() {
+  const seq = ++previewSeq;
+  syncHidden();
+  const fd = new FormData();
+  fd.set('fields_json', document.getElementById('fieldsJson').value);
+  const panel = document.getElementById('previewPanel');
+  try {
+    const r = await fetch(PREVIEW_URL, { method: 'POST', body: fd, credentials: 'same-origin' });
+    if (seq !== previewSeq) return;
+    const html = await r.text();
+    const frame = document.getElementById('previewFrame');
+    panel?.classList.add('is-reloading');
+    frame.onload = () => panel?.classList.remove('is-reloading');
+    frame.srcdoc = html;
+    setTimeout(() => panel?.classList.remove('is-reloading'), 200);
+  } catch (_) {
+    panel?.classList.remove('is-reloading');
+  }
+}
+
+document.getElementById('btnPreview')?.addEventListener('click', runPreview);
+document.getElementById('btnPreviewPrint')?.addEventListener('click', () => {
+  document.getElementById('previewFrame')?.contentWindow?.print();
+});
+document.getElementById('btnPreviewFullscreen')?.addEventListener('click', () => {
+  const panel = document.getElementById('previewPanel');
+  if (!document.fullscreenElement) panel?.requestFullscreen?.().catch(() => {});
+  else document.exitFullscreen?.();
+});
+
+['f_contract_date_picker', 'f_session_start_picker', 'f_session_end_picker'].forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const previewId = id.replace('_picker', '_preview');
+  const fmt = id.includes('contract_date') ? formatDateVi : formatSessionVi;
+  el.addEventListener('input', () => updateDtPreview(id, previewId, fmt));
+  el.addEventListener('change', () => updateDtPreview(id, previewId, fmt));
+});
+
+document.getElementById('f_session_id')?.addEventListener('change', schedulePreview);
+document.getElementById('ceForm')?.addEventListener('input', (ev) => {
+  if (ev.target.matches('input, textarea, select')) schedulePreview();
+});
+document.getElementById('ceForm')?.addEventListener('submit', () => syncHidden());
+
+hydrateFromFields();
+syncHidden();
+if (!IS_FINAL) schedulePreview();
+</script>
+{% endblock %}

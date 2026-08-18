@@ -67,7 +67,7 @@
     <section class="pf-workflow" aria-labelledby="pf-workflow-title">
       <h2 class="pf-workflow-hd" id="pf-workflow-title">Luồng giấy tờ dự án</h2>
       {% for step in workflow_steps %}
-      <article class="pf-docgen" aria-labelledby="pf-step-{{ step.slug }}">
+      <article class="pf-docgen" id="{{ step.slug }}" aria-labelledby="pf-step-{{ step.slug }}">
         <div class="pf-docgen-hd">
           <h3 class="pf-docgen-title" id="pf-step-{{ step.slug }}">
             <i class="{{ step.icon }}" aria-hidden="true"></i>
@@ -149,6 +149,7 @@
     </section>
     {% endif %}
     {% endfor %}
+
   {% endif %}
 </div>
 <script>

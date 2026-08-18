@@ -44,6 +44,7 @@ class DocKind:
     WINNER_SIGN_LIST = "winner_sign_list"
     ROUND_RESULTS = "round_results"
     SESSION_PROGRESS = "session_progress"
+    AUCTION_MINUTES = "auction_minutes"
     SERVICE_CONTRACT = "service_contract"
     AUCTION_REGULATIONS = "auction_regulations"
 
@@ -63,6 +64,7 @@ TEMPLATE_FILES: Dict[str, str] = {
     DocKind.WINNER_SIGN_LIST: "winner_sign_list.html",
     DocKind.ROUND_RESULTS: "round_results.html",
     DocKind.SESSION_PROGRESS: "session_progress.html",
+    DocKind.AUCTION_MINUTES: "auction_minutes_v1.html",
     DocKind.SERVICE_CONTRACT: "service_contract_v1.html",
     DocKind.AUCTION_REGULATIONS: "auction_regulations_v1.html",
 }

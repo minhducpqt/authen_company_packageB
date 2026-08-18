@@ -86,7 +86,20 @@ _FORM_ITEMS: Dict[str, List[Dict[str, Any]]] = {
             "doc_kind": DocKind.BID_SHEET,
         },
     ],
-    "post_session": [],
+    "post_session": [
+        {
+            "id": "bien-ban-dau-gia",
+            "slug": "bien-ban-dau-gia",
+            "name": "Biên bản đấu giá",
+            "description": "Biên bản đấu giá tài sản theo mẫu TP-ĐGTS-18 (Thông tư 19/2024/TT-BTP).",
+            "icon": "ri-file-text-line",
+            "href": "/bieu-mau/sau-phien",
+            "enabled": True,
+            "status": "active",
+            "doc_kind": DocKind.AUCTION_MINUTES,
+            "template_key": "auction_minutes_v1",
+        },
+    ],
 }
 
 # Quy chế: sinh từ HĐ đã chốt, quản lý tại «Theo dự án» — không hiện trong hub Trước phiên.
@@ -94,6 +107,7 @@ _FORM_ITEMS: Dict[str, List[Dict[str, Any]]] = {
 _PROJECT_WORKFLOW: List[tuple[str, str]] = [
     ("truoc-phien", "hop-dong"),
     ("truoc-phien", "quy-che"),
+    ("sau-phien", "bien-ban-dau-gia"),
 ]
 
 _WORKFLOW_INSTANCE_KEYS = frozenset(_PROJECT_WORKFLOW)
@@ -108,6 +122,16 @@ _PROJECT_DOC_TYPES: Dict[str, Dict[str, Any]] = {
         "icon": "ri-book-2-line",
         "doc_kind": DocKind.AUCTION_REGULATIONS,
         "template_key": "auction_regulations_v1",
+    },
+    "bien-ban-dau-gia": {
+        "id": "bien-ban-dau-gia",
+        "slug": "bien-ban-dau-gia",
+        "phase_id": "post_session",
+        "name": "Biên bản đấu giá",
+        "description": "Biên bản đấu giá tài sản theo mẫu TP-ĐGTS-18.",
+        "icon": "ri-file-text-line",
+        "doc_kind": DocKind.AUCTION_MINUTES,
+        "template_key": "auction_minutes_v1",
     },
 }
 
@@ -243,7 +267,7 @@ def get_project_forms_hub() -> Dict[str, Any]:
     return {
         "id": "theo-du-an",
         "name": "Các biểu mẫu theo dự án",
-        "description": "Tra cứu biểu mẫu theo dự án: luồng hợp đồng → quy chế và các giấy tờ khác theo giai đoạn phiên.",
+        "description": "Tra cứu biểu mẫu theo dự án: luồng hợp đồng → quy chế → biên bản và các giấy tờ khác theo giai đoạn phiên.",
         "icon": "ri-folder-chart-line",
         "color": "indigo",
         "href": "/bieu-mau/theo-du-an",
@@ -288,14 +312,18 @@ def project_docgen_actions(
     *,
     project_id: Optional[int] = None,
 ) -> Dict[str, Any]:
-    """Trạng thái HĐ / quy chế của dự án cho màn «Theo dự án»."""
+    """Trạng thái HĐ / quy chế / biên bản của dự án cho màn «Theo dự án»."""
     contract: Optional[Dict[str, Any]] = None
     regulations: Optional[Dict[str, Any]] = None
+    minutes: Optional[Dict[str, Any]] = None
     for inst in instances or []:
-        if (inst.get("phase_slug"), inst.get("category_slug")) == ("truoc-phien", "hop-dong"):
+        key = (inst.get("phase_slug"), inst.get("category_slug"))
+        if key == ("truoc-phien", "hop-dong"):
             contract = inst
-        elif (inst.get("phase_slug"), inst.get("category_slug")) == ("truoc-phien", "quy-che"):
+        elif key == ("truoc-phien", "quy-che"):
             regulations = inst
+        elif key == ("sau-phien", "bien-ban-dau-gia"):
+            minutes = inst
     contract_final = bool(contract and contract.get("status") == "FINAL")
     pid = int(project_id) if project_id else None
     spawn_href = (
@@ -308,16 +336,25 @@ def project_docgen_actions(
         if pid and not contract
         else None
     )
+    create_minutes_href = (
+        f"/bieu-mau/sau-phien/bien-ban-dau-gia/tao?project_id={pid}"
+        if pid and not minutes
+        else None
+    )
     return {
         "contract": contract,
         "contract_id": contract.get("id") if contract else None,
         "contract_final": contract_final,
         "regulations": regulations,
         "regulations_id": regulations.get("id") if regulations else None,
+        "minutes": minutes,
+        "minutes_id": minutes.get("id") if minutes else None,
         "can_spawn_regulations": contract_final and not regulations,
         "spawn_regulations_href": spawn_href,
         "can_create_contract": bool(pid and not contract),
         "create_contract_href": create_contract_href,
+        "can_create_minutes": bool(pid and not minutes),
+        "create_minutes_href": create_minutes_href,
     }
 
 
@@ -416,6 +453,38 @@ def project_workflow_steps(
             }
         )
 
+    meta = _workflow_doc_meta("sau-phien", "bien-ban-dau-gia")
+    minutes = actions.get("minutes")
+    if minutes:
+        row = dict(minutes)
+        row["type_label"] = resolve_instance_type_label("sau-phien", "bien-ban-dau-gia")
+        row["open_href"] = resolve_instance_href(row)
+        steps.append(
+            {
+                **meta,
+                "slug": "bien-ban-dau-gia",
+                "instance": row,
+                "status": "ready",
+                "desc": "Biên bản đấu giá TP-ĐGTS-18 — gắn với một phiên của dự án.",
+                "primary_href": row["open_href"],
+                "primary_label": "Mở biên bản",
+                "primary_icon": "ri-file-text-line",
+            }
+        )
+    else:
+        steps.append(
+            {
+                **meta,
+                "slug": "bien-ban-dau-gia",
+                "instance": None,
+                "status": "missing",
+                "desc": "Tạo biên bản đấu giá theo mẫu TP-ĐGTS-18 (một biên bản / dự án).",
+                "primary_href": actions.get("create_minutes_href"),
+                "primary_label": "Tạo biên bản",
+                "primary_icon": "ri-add-line",
+            }
+        )
+
     return steps
 
 
@@ -427,6 +496,8 @@ def resolve_instance_href(inst: Dict[str, Any]) -> str:
         return f"/bieu-mau/truoc-phien/hop-dong/{iid}"
     if phase_slug == "truoc-phien" and category_slug == "quy-che" and iid:
         return f"/bieu-mau/truoc-phien/quy-che/{iid}"
+    if phase_slug == "sau-phien" and category_slug == "bien-ban-dau-gia" and iid:
+        return f"/bieu-mau/sau-phien/bien-ban-dau-gia/{iid}"
     item = get_form_item_by_phase_slug(phase_slug, category_slug)
     if item and item.get("href"):
         return str(item["href"])
