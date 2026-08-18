@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "pages/forms/_components.html" import forms_styles, forms_page_header, forms_status_badge %}
+{% from "pages/forms/_components.html" import forms_styles, forms_page_header, forms_status_badge, forms_dialog_shell, forms_dialog_script %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
 {{ forms_styles() }}
@@ -203,6 +203,8 @@
     </div>
   </form>
 </div>
+{{ forms_dialog_shell() }}
+{{ forms_dialog_script() }}
 <script>
 const PREVIEW_URL = {{ preview_url|tojson }};
 const SYNC_URL = {{ sync_progression_url|tojson }};
@@ -493,7 +495,27 @@ async function runPreview() {
 document.getElementById('btnPreview')?.addEventListener('click', runPreview);
 document.getElementById('btnSyncProgression')?.addEventListener('click', async () => {
   const sid = document.getElementById('f_session_id')?.value;
-  if (!sid) { alert('Chọn phiên đấu giá trước khi cập nhật diễn biến.'); return; }
+  if (!sid) {
+    await FmDialog.alert({
+      title: 'Chưa chọn phiên',
+      message: 'Chọn phiên đấu giá trước khi cập nhật diễn biến.',
+      variant: 'info',
+    });
+    return;
+  }
+  const sess = SESSIONS.find(s => String(s.id) === String(sid));
+  const sessLabel = sess
+    ? (sess.name || ('Phiên #' + sess.id))
+    : ('Phiên #' + sid);
+  const ok = await FmDialog.confirm({
+    title: 'Cập nhật diễn biến đấu giá',
+    message: 'Đồng bộ dữ liệu diễn biến mới nhất từ phiên «' + sessLabel + '» vào biên bản?',
+    sub: 'Nội dung mục II.1 (lô không thành, lô trúng, từng vòng) và bảng giá khởi điểm sẽ được cập nhật. Các trường khác bạn đã nhập vẫn giữ nguyên.',
+    variant: 'warn',
+    okText: 'Cập nhật',
+    cancelText: 'Huỷ',
+  });
+  if (!ok) return;
   syncHidden();
   const fd = new FormData();
   fd.set('fields_json', document.getElementById('fieldsJson').value);
@@ -503,18 +525,30 @@ document.getElementById('btnSyncProgression')?.addEventListener('click', async (
     const r = await fetch(SYNC_URL, { method: 'POST', body: fd, credentials: 'same-origin' });
     const data = await r.json();
     if (!data.ok) {
-      alert(data.error || 'Không đồng bộ được diễn biến phiên.');
+      await FmDialog.alert({
+        title: 'Không đồng bộ được',
+        message: data.error || 'Không đồng bộ được diễn biến phiên.',
+        variant: 'danger',
+      });
       return;
     }
     if (data.minutes) {
       INIT_FIELDS.minutes = data.minutes;
     }
     if (data.warning) {
-      console.warn('Sync warning:', data.warning);
+      await FmDialog.alert({
+        title: 'Đã cập nhật (có cảnh báo)',
+        message: data.warning,
+        variant: 'warn',
+      });
     }
     await runPreview();
   } catch (e) {
-    alert('Lỗi kết nối khi cập nhật diễn biến.');
+    await FmDialog.alert({
+      title: 'Lỗi kết nối',
+      message: 'Không thể kết nối máy chủ khi cập nhật diễn biến. Thử lại sau.',
+      variant: 'danger',
+    });
   } finally {
     btn?.removeAttribute('disabled');
   }
