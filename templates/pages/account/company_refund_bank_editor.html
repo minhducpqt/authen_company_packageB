@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}{{ title or "Sửa STK hoàn tiền" }}{% endblock %}
+{% block content %}
+<style>
+  .rbe-wrap { max-width: 720px; margin: 0 auto; padding-bottom: 32px; }
+  .rbe-back { font-size: 13px; color: #4f46e5; font-weight: 600; text-decoration: none; }
+  .rbe-h1 { font-size: 22px; font-weight: 800; color: #0f172a; margin: 12px 0 6px; }
+  .rbe-sub { font-size: 14px; color: #64748b; line-height: 1.5; margin-bottom: 20px; }
+  .rbe-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px 20px; }
+  .rbe-alert { padding: 10px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 14px; }
+  .rbe-alert.ok { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+  .rbe-alert.err { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+  .rbe-label { font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 6px; display: block; }
+  .rbe-select { width: 100%; height: 40px; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0 12px; font-size: 14px; }
+  .rbe-hint { font-size: 12px; color: #64748b; margin-top: 8px; line-height: 1.45; }
+  .rbe-actions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  .rbe-btn { height: 38px; padding: 0 16px; border-radius: 10px; font-size: 13px; font-weight: 600; border: 1px solid #cbd5e1; background: #fff; color: #334155; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; }
+  .rbe-btn.primary { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+  .rbe-current { margin-top: 12px; padding: 10px 12px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 13px; }
+</style>
+
+<div class="rbe-wrap">
+  <a href="/account/company/{{ company_code }}" class="rbe-back">&larr; Quay lại công ty {{ company_code|upper }}</a>
+  <h1 class="rbe-h1">Admin được sửa STK hoàn tiền</h1>
+  <p class="rbe-sub">
+    Mỗi công ty chỉ <strong>một</strong> tài khoản <code>COMPANY_ADMIN</code> được phép sửa và lưu số tài khoản hoàn tiền của khách.
+    Mỗi lần lưu bắt buộc xác thực OTP (Telegram) giống luồng đăng nhập.
+  </p>
+
+  {% if msg == 'saved' %}
+  <div class="rbe-alert ok">Đã lưu cấu hình.</div>
+  {% endif %}
+  {% if err %}
+  <div class="rbe-alert err">Lưu thất bại. Vui lòng thử lại.</div>
+  {% endif %}
+  {% if load_err %}
+  <div class="rbe-alert err">{{ load_err }}</div>
+  {% endif %}
+
+  <div class="rbe-card">
+    {% if cfg.editor %}
+    <div class="rbe-current">
+      Đang chỉ định: <strong>{{ cfg.editor.username }}</strong>
+      {% if not cfg.editor.is_active %}<span style="color:#b91c1c"> (đã vô hiệu)</span>{% endif %}
+    </div>
+    {% else %}
+    <div class="rbe-current">Chưa chỉ định admin — không ai sửa được STK hoàn tiền (trừ SUPER_ADMIN).</div>
+    {% endif %}
+
+    <form method="post" action="/account/company/{{ company_code }}/refund-bank-editor" class="mt-4">
+      <label class="rbe-label" for="user_id">Chọn admin công ty</label>
+      <select name="user_id" id="user_id" class="rbe-select">
+        <option value="">— Bỏ chỉ định —</option>
+        {% for u in users %}
+        <option value="{{ u.id }}" {% if cfg.editor and cfg.editor.user_id == u.id %}selected{% endif %}>
+          {{ u.username }} (ID {{ u.id }})
+        </option>
+        {% endfor %}
+      </select>
+      <p class="rbe-hint">
+        Chỉ liệt kê tài khoản <code>COMPANY_ADMIN</code> đang active.
+        Cấu hình OTP nhận mã: <a href="/account/company/{{ company_code }}/otp">OTP đăng nhập</a>
+        (recipient <code>*</code> cũng nhận OTP sửa STK).
+      </p>
+      <div class="rbe-actions">
+        <button type="submit" class="rbe-btn primary">Lưu chỉ định</button>
+        <a href="/account/company/{{ company_code }}" class="rbe-btn">Hủy</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

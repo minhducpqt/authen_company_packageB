@@ -43,6 +43,17 @@ async def _api_put_json(
     )
 
 
+async def _api_post_json(
+    client: httpx.AsyncClient, path: str, token: str, payload: Dict[str, Any] | None = None
+):
+    return await client.post(
+        f"{API_BASE_URL}{path}",
+        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+        json=payload or {},
+        timeout=20.0,
+    )
+
+
 # ======================================
 # LIST PAGE (khung HTML) + DATA (JSON)
 # ======================================
@@ -93,6 +104,41 @@ async def customers_data(
         return JSONResponse({"error": "server", "msg": r.text[:300]}, status_code=502)
 
     return JSONResponse(r.json(), status_code=200)
+
+
+@router.get("/customers/refund-bank-edit/permission", response_class=JSONResponse)
+async def customer_refund_bank_permission(request: Request):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    async with httpx.AsyncClient() as client:
+        r = await _api_get(client, "/api/v1/customers/refund-bank-edit/permission", token)
+    if r.status_code == 401:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    try:
+        body = r.json()
+    except Exception:
+        body = {"detail": r.text[:400]}
+    return JSONResponse(body, status_code=r.status_code)
+
+
+@router.get("/customers/banks-catalog", response_class=JSONResponse)
+async def customer_banks_catalog(request: Request):
+    """Danh mục ngân hàng cho form sửa STK hoàn tiền."""
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    async with httpx.AsyncClient() as client:
+        r = await client.get(
+            f"{API_BASE_URL}/api/v1/catalogs/banks",
+            params=[("page", 1), ("size", 500), ("status", "true")],
+            timeout=20.0,
+        )
+    try:
+        body = r.json()
+    except Exception:
+        body = {"data": []}
+    return JSONResponse(body, status_code=r.status_code)
 
 
 # ==========================
@@ -201,6 +247,58 @@ async def customer_detail_save(
         return JSONResponse(body, status_code=r.status_code)
 
     return JSONResponse(r.json(), status_code=200)
+
+
+@router.post("/customers/{customer_id}/refund-bank/otp/request", response_class=JSONResponse)
+async def customer_refund_bank_otp_request(
+    request: Request,
+    customer_id: int = Path(..., ge=1),
+):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    try:
+        payload = await request.json()
+    except Exception:
+        payload = {}
+    async with httpx.AsyncClient() as client:
+        r = await _api_post_json(
+            client,
+            f"/api/v1/customers/{customer_id}/refund-bank/otp/request",
+            token,
+            payload if isinstance(payload, dict) else {},
+        )
+    try:
+        body = r.json()
+    except Exception:
+        body = {"detail": r.text[:400]}
+    return JSONResponse(body, status_code=r.status_code)
+
+
+@router.put("/customers/{customer_id}/refund-bank", response_class=JSONResponse)
+async def customer_refund_bank_save(
+    request: Request,
+    customer_id: int = Path(..., ge=1),
+):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    try:
+        payload = await request.json()
+    except Exception:
+        payload = {}
+    async with httpx.AsyncClient() as client:
+        r = await _api_put_json(
+            client,
+            f"/api/v1/customers/{customer_id}/refund-bank",
+            token,
+            payload if isinstance(payload, dict) else {},
+        )
+    try:
+        body = r.json()
+    except Exception:
+        body = {"detail": r.text[:400]}
+    return JSONResponse(body, status_code=r.status_code)
 
 
 @router.get("/customers/{customer_id}/transactions", response_class=JSONResponse)

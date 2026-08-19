@@ -189,6 +189,55 @@
   }
   .cd-btn-save:hover { background: #4338ca; }
   .cd-btn-save:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  /* Bank picker (giống Service C — đăng ký STK hoàn tiền) */
+  .cd-bank-dropdown { position: relative; }
+  .cd-bank-logo {
+    width: 28px; height: 28px; object-fit: contain;
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; flex-shrink: 0;
+  }
+  .cd-bank-chosen {
+    width: 100%; min-height: 38px; border: 1px solid #cbd5e1; border-radius: 10px;
+    padding: 6px 10px; background: #fff; color: #0f172a; font-size: 14px;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    cursor: pointer; text-align: left;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .cd-bank-chosen:hover { border-color: #94a3b8; }
+  .cd-bank-chosen:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12); }
+  .cd-bank-chosen.error { border-color: #f43f5e; box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.12); }
+  .cd-bank-chosen-left { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
+  .cd-bank-chosen-text { font-weight: 600; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cd-bank-chosen-text.placeholder { color: #94a3b8; font-weight: 500; }
+  .cd-bank-chev { color: #64748b; flex-shrink: 0; font-size: 18px; line-height: 1; }
+  .cd-bank-pop {
+    position: absolute; z-index: 50; left: 0; right: 0; top: calc(100% + 4px);
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14); overflow: hidden;
+  }
+  .cd-bank-pop-head { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; background: #f8fafc; }
+  .cd-bank-search {
+    width: 100%; height: 36px; border: 1px solid #cbd5e1; border-radius: 10px;
+    padding: 0 10px 0 34px; font-size: 13px; color: #0f172a; background: #fff;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M21 21l-4.3-4.3' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round'/%3E%3Ccircle cx='11' cy='11' r='7' stroke='%2394a3b8' stroke-width='2'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: 10px center;
+  }
+  .cd-bank-search:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12); }
+  .cd-bank-list { max-height: 280px; overflow: auto; padding: 4px 0; margin: 0; list-style: none; }
+  .cd-bank-item {
+    display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer;
+  }
+  .cd-bank-item:hover, .cd-bank-item.active { background: #f1f5f9; }
+  .cd-bank-item .name { font-size: 13px; font-weight: 600; color: #0f172a; line-height: 1.25; }
+  .cd-bank-item .sub {
+    font-size: 11px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .cd-bank-item .grow { flex: 1; min-width: 0; }
+  .cd-kv-item.is-editing { background: #fff; border-color: #e2e8f0; }
+  .cd-kv-item.is-editing .cd-input { margin-top: 0; }
+
+  @keyframes cd-spin { to { transform: rotate(360deg); } }
+  .cd-spin { animation: cd-spin 0.8s linear infinite; }
 </style>
 
 <!-- Toast -->
@@ -275,44 +324,93 @@
       </div>
 
       <!-- Bank -->
-      <div class="cd-section">
+      <div class="cd-section" id="bankSection">
         <div class="flex items-center justify-between gap-2 mb-2">
           <div>
             <div class="cd-h">Tài khoản hoàn tiền</div>
-            <div class="cd-sub">Chỉ xem, không chỉnh sửa</div>
+            <div class="cd-sub" id="bankSubText">Chỉ xem, không chỉnh sửa</div>
           </div>
+          <button type="button" id="btnBankEdit" class="cd-btn-primary hidden">Sửa STK</button>
         </div>
 
+        <div id="bankView">
         {% if ns.bank %}
-        <div class="cd-kv">
+        <div class="cd-kv" id="bankViewGrid">
           <div class="cd-kv-item">
             <div class="cd-label">Ngân hàng</div>
-            <div class="cd-kv-val">{{ ns.bank.bank_name or ns.bank.bank_code or '—' }}</div>
+            <div class="cd-kv-val" id="bv_bank_name">{{ ns.bank.bank_name or ns.bank.bank_code or '—' }}</div>
           </div>
           <div class="cd-kv-item">
             <div class="cd-label">Mã NH</div>
-            <div class="cd-kv-val mono">{{ ns.bank.bank_code or '—' }}</div>
+            <div class="cd-kv-val mono" id="bv_bank_code">{{ ns.bank.bank_code or '—' }}</div>
           </div>
           <div class="cd-kv-item">
             <div class="cd-label">Số tài khoản</div>
-            <div class="cd-kv-val mono">{{ ns.bank.account_number or '—' }}</div>
+            <div class="cd-kv-val mono" id="bv_account_number">{{ ns.bank.account_number or '—' }}</div>
           </div>
           <div class="cd-kv-item">
             <div class="cd-label">Tên chủ TK</div>
-            <div class="cd-kv-val">{{ ns.bank.account_name or '—' }}</div>
+            <div class="cd-kv-val" id="bv_account_name">{{ ns.bank.account_name or '—' }}</div>
           </div>
           {% if ns.bank.branch_name %}
           <div class="cd-kv-item md:col-span-2">
             <div class="cd-label">Chi nhánh</div>
-            <div class="cd-kv-val">{{ ns.bank.branch_name }}</div>
+            <div class="cd-kv-val" id="bv_branch_name">{{ ns.bank.branch_name }}</div>
+          </div>
+          {% else %}
+          <div class="cd-kv-item md:col-span-2 hidden" id="bv_branch_wrap">
+            <div class="cd-label">Chi nhánh</div>
+            <div class="cd-kv-val" id="bv_branch_name">—</div>
           </div>
           {% endif %}
         </div>
         {% else %}
-        <div class="text-sm text-slate-500 py-3 px-3 rounded-lg border border-dashed border-slate-300 bg-slate-50">
+        <div class="text-sm text-slate-500 py-3 px-3 rounded-lg border border-dashed border-slate-300 bg-slate-50" id="bankEmptyView">
           Chưa có thông tin tài khoản hoàn tiền.
         </div>
         {% endif %}
+        </div>
+
+        <form id="bankEditForm" class="hidden mt-1" onsubmit="return false;">
+          <div class="cd-kv">
+            <div class="cd-kv-item md:col-span-2 is-editing">
+              <div class="cd-label">Ngân hàng *</div>
+              <input type="hidden" id="bank_code" value="">
+              <div class="cd-bank-dropdown">
+                <button type="button" id="bank_chosen" class="cd-bank-chosen" aria-haspopup="listbox" aria-expanded="false">
+                  <span class="cd-bank-chosen-left">
+                    <img id="bank_chosen_logo" class="cd-bank-logo" alt="" style="display:none">
+                    <span id="bank_chosen_text" class="cd-bank-chosen-text placeholder">Chọn ngân hàng…</span>
+                  </span>
+                  <i class="ri-arrow-down-s-line cd-bank-chev" aria-hidden="true"></i>
+                </button>
+                <div id="bank_dropdown" class="cd-bank-pop" style="display:none">
+                  <div class="cd-bank-pop-head">
+                    <input id="bank_filter" class="cd-bank-search" type="text" placeholder="Tìm tên hoặc mã ngân hàng…" aria-label="Tìm ngân hàng">
+                  </div>
+                  <ul id="bank_list" role="listbox" class="cd-bank-list" aria-label="Danh sách ngân hàng"></ul>
+                </div>
+              </div>
+              <p id="err_bank_code" class="mt-0.5 text-xs text-rose-600 hidden"></p>
+            </div>
+            <div class="cd-kv-item is-editing">
+              <div class="cd-label">Số tài khoản *</div>
+              <input id="bank_account_number" class="cd-input font-mono" placeholder="0123456789" inputmode="numeric" autocomplete="off">
+            </div>
+            <div class="cd-kv-item is-editing">
+              <div class="cd-label">Tên chủ TK * <span class="font-normal text-slate-400">(IN HOA KHÔNG DẤU)</span></div>
+              <input id="bank_account_name" class="cd-input" placeholder="NGUYEN VAN A" autocapitalize="characters" spellcheck="false" autocomplete="off">
+            </div>
+            <div class="cd-kv-item md:col-span-2 is-editing">
+              <div class="cd-label">Chi nhánh</div>
+              <input id="bank_branch_name" class="cd-input" placeholder="Tùy chọn">
+            </div>
+          </div>
+          <div class="flex gap-2 pt-3">
+            <button type="button" id="btnBankSave" class="cd-btn-primary">Lưu (cần OTP)</button>
+            <button type="button" id="btnBankCancel" class="cd-btn-ghost">Hủy</button>
+          </div>
+        </form>
       </div>
     </div>
 
@@ -385,6 +483,35 @@
 
         <div id="winList" class="cd-win-scroll space-y-0"></div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- OTP Modal — xác thực trước khi lưu STK hoàn tiền -->
+<div id="otpMask" class="hidden fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-[2px]"></div>
+<div id="otpLoading" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="cd-confirm-panel max-w-sm" role="status" aria-live="polite" aria-busy="true">
+    <div class="py-10 px-6 text-center">
+      <i class="ri-loader-4-line cd-spin text-4xl text-indigo-600" aria-hidden="true"></i>
+      <p class="mt-4 text-sm font-semibold text-slate-800">Đang gửi OTP…</p>
+      <p class="mt-1 text-xs text-slate-500">Vui lòng đợi trong giây lát.</p>
+    </div>
+  </div>
+</div>
+<div id="otpModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="cd-confirm-panel" role="dialog" aria-modal="true">
+    <div class="cd-confirm-head">
+      <h3><i class="ri-shield-keyhole-line"></i> Xác thực OTP</h3>
+      <p class="cd-confirm-sub" id="otpPurposeLabel">Mã OTP đã gửi tới Telegram quản trị viên.</p>
+    </div>
+    <div class="cd-confirm-body" style="background:#fff">
+      <div class="cd-label">Mã OTP</div>
+      <input id="otpCodeInput" class="cd-input text-center text-lg tracking-widest font-mono" maxlength="8" placeholder="000000" autocomplete="one-time-code">
+      <p id="otpErr" class="mt-2 text-xs text-rose-600 hidden"></p>
+    </div>
+    <div class="cd-confirm-foot">
+      <button type="button" id="btnOtpCancel" class="cd-btn-ghost">Hủy</button>
+      <button type="button" id="btnOtpConfirm" class="cd-btn-save"><i class="ri-check-line"></i> Xác nhận lưu</button>
     </div>
   </div>
 </div>
@@ -946,6 +1073,479 @@
   });
 
   loadAuctionWins();
+
+  // ===== Refund bank edit (OTP) =====
+  const bankInitial = {
+    bank_code: {{ (ns.bank.bank_code if ns.bank else '')|tojson }},
+    bank_name: {{ (ns.bank.bank_name if ns.bank else '')|tojson }},
+    account_number: {{ (ns.bank.account_number if ns.bank else '')|tojson }},
+    account_name: {{ (ns.bank.account_name if ns.bank else '')|tojson }},
+    branch_name: {{ (ns.bank.branch_name if ns.bank else '')|tojson }},
+  };
+  let refundBankPerm = { can_edit: false };
+  let otpChallengeId = null;
+  let pendingBankPayload = null;
+
+  const btnBankEdit = el('btnBankEdit');
+  const bankEditForm = el('bankEditForm');
+  const bankView = el('bankView');
+  const bankSubText = el('bankSubText');
+
+  function bankFormValues() {
+    const code = (el('bank_code')?.value || '').trim().toUpperCase();
+    return {
+      bank_code: code,
+      account_number: (el('bank_account_number')?.value || '').replace(/\D/g, ''),
+      account_name: toUpperNoAccentFinal(el('bank_account_name')?.value || ''),
+      branch_name: (el('bank_branch_name')?.value || '').trim(),
+    };
+  }
+
+  function fillBankForm(data) {
+    if (el('bank_account_number')) el('bank_account_number').value = data.account_number || '';
+    if (el('bank_account_name')) el('bank_account_name').value = data.account_name || '';
+    if (el('bank_branch_name')) el('bank_branch_name').value = data.branch_name || '';
+    syncBankPickerFromCode(data.bank_code || '', data.bank_name || '');
+  }
+
+  // --- Bank picker (theo Service C register/bank) ---
+  let BANKS = [];
+  let selectedBank = null;
+
+  const $bankCode = () => el('bank_code');
+  const $bankChosen = () => el('bank_chosen');
+  const $bankChosenText = () => el('bank_chosen_text');
+  const $bankChosenLogo = () => el('bank_chosen_logo');
+  const $bankDropdown = () => el('bank_dropdown');
+  const $bankFilter = () => el('bank_filter');
+  const $bankList = () => el('bank_list');
+
+  function fold(s) {
+    return (s || '').toString().normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+  }
+  function toUpperNoAccentRealtime(s) {
+    return (s || '').toString().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/đ/gi, 'd').toUpperCase();
+  }
+  function toUpperNoAccentFinal(s) {
+    return (s || '').toString()
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .replace(/đ/gi, 'd')
+      .toUpperCase()
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function normalizeBankRow(x) {
+    return {
+      id: x.id,
+      code: x.code,
+      name: x.name,
+      short_name: x.short_name || x.shortName || '',
+      logo: x.logo,
+    };
+  }
+
+  async function fetchBanksIfNeeded() {
+    if (BANKS.length) return;
+    const r = await fetch('/customers/banks-catalog', { credentials: 'same-origin' });
+    if (!r.ok) throw new Error(`Banks API ${r.status}`);
+    const data = await r.json();
+    BANKS = (data.data || data.items || []).map(normalizeBankRow);
+  }
+
+  function scoreBank(b, q) {
+    if (!q) return 9999;
+    const qf = fold(q);
+    const sn = fold(b.short_name);
+    const cd = fold(b.code);
+    const nm = fold(b.name);
+    if (sn && sn.startsWith(qf)) return 0;
+    if (sn && sn.includes(qf)) return 1;
+    if (cd && cd.startsWith(qf)) return 2;
+    if (cd && cd.includes(qf)) return 3;
+    if (nm && nm.startsWith(qf)) return 4;
+    if (nm && nm.includes(qf)) return 5;
+    return 9999;
+  }
+
+  function sortAndFilterBanks(q) {
+    if (!q) return BANKS.slice().sort((a, b) => (a.id ?? 1e9) - (b.id ?? 1e9));
+    return BANKS.map(b => ({ b, s: scoreBank(b, q) }))
+      .filter(x => x.s < 9999)
+      .sort((a, b) => a.s - b.s || (a.b.id ?? 1e9) - (b.b.id ?? 1e9))
+      .map(x => x.b);
+  }
+
+  function renderBankList(items) {
+    const list = $bankList();
+    if (!list) return;
+    list.innerHTML = '';
+    if (!items.length) {
+      list.innerHTML = '<li class="cd-bank-item" style="color:#64748b;cursor:default">Không tìm thấy ngân hàng</li>';
+      return;
+    }
+    items.forEach(b => {
+      const li = document.createElement('li');
+      li.className = 'cd-bank-item';
+      li.setAttribute('role', 'option');
+      li.innerHTML = `
+        <img src="${b.logo || ''}" class="cd-bank-logo" alt="" onerror="this.style.display='none'">
+        <div class="grow">
+          <div class="name">${(b.short_name || b.name || b.code) || ''}</div>
+          <div class="sub">${b.name || ''}${b.code ? ' · ' + b.code : ''}</div>
+        </div>`;
+      li.addEventListener('click', () => chooseBank(b));
+      list.appendChild(li);
+    });
+  }
+
+  function setBankChosenError(yes) {
+    $bankChosen()?.classList.toggle('error', !!yes);
+    const err = el('err_bank_code');
+    if (err) {
+      err.textContent = yes ? 'Vui lòng chọn ngân hàng trong danh sách.' : '';
+      err.classList.toggle('hidden', !yes);
+    }
+  }
+
+  function clearBankPicker() {
+    selectedBank = null;
+    if ($bankCode()) $bankCode().value = '';
+    const tx = $bankChosenText();
+    if (tx) {
+      tx.textContent = 'Chọn ngân hàng…';
+      tx.classList.add('placeholder');
+    }
+    const logo = $bankChosenLogo();
+    if (logo) logo.style.display = 'none';
+    setBankChosenError(false);
+  }
+
+  function chooseBank(b) {
+    selectedBank = b;
+    if ($bankCode()) $bankCode().value = (b.code || '').toUpperCase();
+    const label = `${(b.short_name || b.name || b.code) || ''}${b.code ? ` — ${b.code}` : ''}`;
+    const tx = $bankChosenText();
+    if (tx) {
+      tx.textContent = label;
+      tx.classList.remove('placeholder');
+    }
+    const logo = $bankChosenLogo();
+    if (logo) {
+      if (b.logo) {
+        logo.src = b.logo;
+        logo.style.display = 'block';
+      } else {
+        logo.style.display = 'none';
+      }
+    }
+    setBankChosenError(false);
+    closeBankDropdown();
+  }
+
+  function syncBankPickerFromCode(code, nameFallback) {
+    const c = (code || '').trim().toUpperCase();
+    if (!c) {
+      clearBankPicker();
+      return;
+    }
+    const b = BANKS.find(x => (x.code || '').toUpperCase() === c);
+    if (b) {
+      chooseBank(b);
+      return;
+    }
+    selectedBank = { code: c, name: nameFallback, short_name: nameFallback };
+    if ($bankCode()) $bankCode().value = c;
+    const tx = $bankChosenText();
+    if (tx) {
+      tx.textContent = (nameFallback || c) + (nameFallback && nameFallback !== c ? ` — ${c}` : '');
+      tx.classList.remove('placeholder');
+    }
+    if ($bankChosenLogo()) $bankChosenLogo().style.display = 'none';
+  }
+
+  function openBankDropdown() {
+    const dd = $bankDropdown();
+    if (!dd) return;
+    dd.style.display = 'block';
+    $bankChosen()?.setAttribute('aria-expanded', 'true');
+    renderBankList(sortAndFilterBanks(''));
+    setTimeout(() => $bankFilter()?.focus(), 0);
+  }
+
+  function closeBankDropdown() {
+    const dd = $bankDropdown();
+    if (dd) dd.style.display = 'none';
+    $bankChosen()?.setAttribute('aria-expanded', 'false');
+    if ($bankFilter()) $bankFilter().value = '';
+  }
+
+  $bankChosen()?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    if ($bankDropdown()?.style.display === 'block') {
+      closeBankDropdown();
+      return;
+    }
+    try {
+      await fetchBanksIfNeeded();
+      openBankDropdown();
+    } catch (_) {
+      toast('Không tải được danh mục ngân hàng.', 'error');
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    const dd = $bankDropdown();
+    const btn = $bankChosen();
+    if (!dd || !btn) return;
+    if (!dd.contains(e.target) && !btn.contains(e.target)) closeBankDropdown();
+  });
+
+  $bankFilter()?.addEventListener('input', (e) => {
+    renderBankList(sortAndFilterBanks(e.target.value));
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeBankDropdown();
+  });
+
+  el('bank_account_name')?.addEventListener('input', (e) => {
+    const beforeLen = e.target.value.length;
+    const caret = e.target.selectionStart;
+    const fixed = toUpperNoAccentRealtime(e.target.value);
+    e.target.value = fixed;
+    const delta = fixed.length - beforeLen;
+    const newPos = Math.max(0, Math.min(fixed.length, (caret ?? fixed.length) + delta));
+    e.target.selectionStart = e.target.selectionEnd = newPos;
+  });
+
+  el('bank_account_name')?.addEventListener('blur', (e) => {
+    e.target.value = toUpperNoAccentFinal(e.target.value);
+  });
+
+  el('bank_account_number')?.addEventListener('input', (e) => {
+    e.target.value = (e.target.value || '').replace(/\D/g, '').slice(0, 20);
+  });
+
+  function updateBankView(data) {
+    const set = (id, val) => { const n = el(id); if (n) n.textContent = val || '—'; };
+    set('bv_bank_code', data.bank_code);
+    set('bv_bank_name', data.bank_name || data.bank_code);
+    set('bv_account_number', data.account_number);
+    set('bv_account_name', data.account_name);
+    set('bv_branch_name', data.branch_name);
+    const wrap = el('bv_branch_wrap');
+    if (wrap && data.branch_name) {
+      wrap.classList.remove('hidden');
+    }
+    const empty = el('bankEmptyView');
+    if (empty) empty.classList.add('hidden');
+    let grid = el('bankViewGrid');
+    if (!grid && bankView) {
+      bankView.innerHTML = `
+        <div class="cd-kv" id="bankViewGrid">
+          <div class="cd-kv-item"><div class="cd-label">Ngân hàng</div><div class="cd-kv-val" id="bv_bank_name">—</div></div>
+          <div class="cd-kv-item"><div class="cd-label">Mã NH</div><div class="cd-kv-val mono" id="bv_bank_code">—</div></div>
+          <div class="cd-kv-item"><div class="cd-label">Số tài khoản</div><div class="cd-kv-val mono" id="bv_account_number">—</div></div>
+          <div class="cd-kv-item"><div class="cd-label">Tên chủ TK</div><div class="cd-kv-val" id="bv_account_name">—</div></div>
+          <div class="cd-kv-item md:col-span-2" id="bv_branch_wrap"><div class="cd-label">Chi nhánh</div><div class="cd-kv-val" id="bv_branch_name">—</div></div>
+        </div>`;
+    }
+    set('bv_bank_code', data.bank_code);
+    set('bv_bank_name', data.bank_name || data.bank_code);
+    set('bv_account_number', data.account_number);
+    set('bv_account_name', data.account_name);
+    set('bv_branch_name', data.branch_name);
+  }
+
+  async function loadRefundBankPermission() {
+    try {
+      const r = await fetch('/customers/refund-bank-edit/permission', { credentials: 'same-origin' });
+      if (!r.ok) return;
+      refundBankPerm = await r.json();
+      if (refundBankPerm.can_edit && btnBankEdit) {
+        btnBankEdit.classList.remove('hidden');
+        if (bankSubText) {
+          bankSubText.textContent = refundBankPerm.is_super_admin
+            ? 'Super admin — sửa STK cần OTP'
+            : 'Bạn được phép sửa STK hoàn tiền (cần OTP khi lưu)';
+        }
+      } else if (bankSubText && refundBankPerm.editor_configured) {
+        bankSubText.textContent = 'Chỉ admin được chỉ định mới sửa được STK hoàn tiền.';
+      }
+    } catch (_) {}
+  }
+
+  function closeOtpModal() {
+    el('otpMask')?.classList.add('hidden');
+    el('otpLoading')?.classList.add('hidden');
+    el('otpModal')?.classList.add('hidden');
+    otpChallengeId = null;
+    pendingBankPayload = null;
+    const inp = el('otpCodeInput');
+    if (inp) inp.value = '';
+    const err = el('otpErr');
+    if (err) { err.textContent = ''; err.classList.add('hidden'); }
+  }
+
+  const btnBankSaveEl = el('btnBankSave');
+  const btnBankSaveDefaultHtml = btnBankSaveEl?.innerHTML || 'Lưu (cần OTP)';
+
+  function setBankOtpRequestLoading(on) {
+    if (btnBankSaveEl) {
+      btnBankSaveEl.disabled = on;
+      btnBankSaveEl.innerHTML = on
+        ? '<i class="ri-loader-4-line cd-spin"></i> Đang gửi OTP…'
+        : btnBankSaveDefaultHtml;
+    }
+    el('btnBankCancel')?.toggleAttribute('disabled', on);
+    if (on) {
+      el('otpMask')?.classList.remove('hidden');
+      el('otpLoading')?.classList.remove('hidden');
+      el('otpModal')?.classList.add('hidden');
+    } else {
+      el('otpLoading')?.classList.add('hidden');
+      if (el('otpModal')?.classList.contains('hidden')) {
+        el('otpMask')?.classList.add('hidden');
+      }
+    }
+  }
+
+  function openOtpModal(label) {
+    el('otpLoading')?.classList.add('hidden');
+    el('otpPurposeLabel').textContent = label || 'Mã OTP đã gửi tới Telegram quản trị viên.';
+    el('otpMask')?.classList.remove('hidden');
+    el('otpModal')?.classList.remove('hidden');
+    el('otpCodeInput')?.focus();
+  }
+
+  btnBankEdit?.addEventListener('click', async () => {
+    try {
+      await fetchBanksIfNeeded();
+    } catch (_) {
+      toast('Không tải được danh mục ngân hàng.', 'error');
+      return;
+    }
+    fillBankForm(bankInitial);
+    closeBankDropdown();
+    bankView?.classList.add('hidden');
+    bankEditForm?.classList.remove('hidden');
+    btnBankEdit.classList.add('hidden');
+    if (bankSubText) bankSubText.textContent = 'Chỉnh sửa tài khoản hoàn tiền — chọn ngân hàng từ danh sách';
+  });
+
+  el('btnBankCancel')?.addEventListener('click', () => {
+    closeBankDropdown();
+    bankEditForm?.classList.add('hidden');
+    bankView?.classList.remove('hidden');
+    btnBankEdit?.classList.remove('hidden');
+    if (bankSubText) {
+      bankSubText.textContent = refundBankPerm.is_super_admin
+        ? 'Super admin — sửa STK cần OTP'
+        : (refundBankPerm.can_edit
+          ? 'Bạn được phép sửa STK hoàn tiền (cần OTP khi lưu)'
+          : 'Chỉ xem, không chỉnh sửa');
+    }
+  });
+
+  el('btnBankSave')?.addEventListener('click', async () => {
+    const v = bankFormValues();
+    if (!v.bank_code || !selectedBank) {
+      setBankChosenError(true);
+      toast('Vui lòng chọn ngân hàng trong danh sách.', 'error');
+      return;
+    }
+    if (v.account_number.length < 6) {
+      toast('Số tài khoản phải có ít nhất 6 chữ số.', 'error');
+      return;
+    }
+    if (v.account_name.length < 3) {
+      toast('Tên chủ TK phải IN HOA, không dấu (tối thiểu 3 ký tự).', 'error');
+      return;
+    }
+    pendingBankPayload = v;
+    setBankOtpRequestLoading(true);
+    try {
+      const r = await fetch(`/customers/${customerId}/refund-bank/otp/request`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(v),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        setBankOtpRequestLoading(false);
+        toast(data.detail || data.error || 'Không gửi được OTP.', 'error');
+        return;
+      }
+      otpChallengeId = data.challenge_id;
+      setBankOtpRequestLoading(false);
+      openOtpModal(data.purpose_label || 'Sửa tài khoản hoàn tiền khách hàng');
+    } catch (_) {
+      setBankOtpRequestLoading(false);
+      toast('Lỗi mạng khi gửi OTP.', 'error');
+    }
+  });
+
+  el('btnOtpCancel')?.addEventListener('click', closeOtpModal);
+  el('otpMask')?.addEventListener('click', closeOtpModal);
+
+  el('btnOtpConfirm')?.addEventListener('click', async () => {
+    const otp = (el('otpCodeInput')?.value || '').trim();
+    if (!otp || !otpChallengeId || !pendingBankPayload) return;
+    const errEl = el('otpErr');
+    el('btnOtpConfirm').disabled = true;
+    try {
+      const body = {
+        ...pendingBankPayload,
+        branch_name: pendingBankPayload.branch_name || null,
+        challenge_id: otpChallengeId,
+        otp_code: otp,
+      };
+      const r = await fetch(`/customers/${customerId}/refund-bank`, {
+        method: 'PUT',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        let msg = 'OTP không đúng hoặc đã hết hạn.';
+        if (typeof data.detail === 'string') msg = data.detail;
+        else if (data.detail && data.detail.error === 'INVALID_OTP') {
+          msg = 'Mã OTP không đúng' + (data.detail.attempts_left != null ? ` (còn ${data.detail.attempts_left} lần)` : '');
+        }
+        if (errEl) { errEl.textContent = msg; errEl.classList.remove('hidden'); }
+        return;
+      }
+      Object.assign(bankInitial, {
+        bank_code: data.bank_code,
+        bank_name: data.bank_name || (selectedBank && (selectedBank.short_name || selectedBank.name)) || data.bank_code,
+        account_number: data.account_number,
+        account_name: data.account_name,
+        branch_name: data.branch_name,
+      });
+      updateBankView(bankInitial);
+      bankEditForm?.classList.add('hidden');
+      bankView?.classList.remove('hidden');
+      btnBankEdit?.classList.remove('hidden');
+      closeBankDropdown();
+      if (bankSubText) {
+        bankSubText.textContent = refundBankPerm.is_super_admin
+          ? 'Super admin — sửa STK cần OTP'
+          : 'Bạn được phép sửa STK hoàn tiền (cần OTP khi lưu)';
+      }
+      closeOtpModal();
+      toast('Đã lưu tài khoản hoàn tiền.', 'success');
+    } catch (_) {
+      toast('Lỗi mạng.', 'error');
+    } finally {
+      el('btnOtpConfirm').disabled = false;
+    }
+  });
+
+  loadRefundBankPermission();
 })();
 </script>
 
