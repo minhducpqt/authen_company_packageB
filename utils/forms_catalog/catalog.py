@@ -80,13 +80,24 @@ _FORM_ITEMS: Dict[str, List[Dict[str, Any]]] = {
             "doc_kind": DocKind.SERVICE_CONTRACT,
             "template_key": "service_contract_v1",
         },
+        {
+            "id": "don-dang-ky",
+            "slug": "don-dang-ky",
+            "name": "Mẫu đơn đăng ký",
+            "description": "Đơn đăng ký tham gia đấu giá — preview mẫu thực tế, dữ liệu mẫu có thể chỉnh.",
+            "icon": "ri-file-user-line",
+            "href": "/bieu-mau/truoc-phien/don-dang-ky",
+            "enabled": True,
+            "status": "active",
+            "doc_kind": DocKind.REGISTRATION_NORMAL,
+        },
     ],
     "in_session": [
         {
             "id": "phieu-tra-gia",
             "slug": "phieu-tra-gia",
             "name": "Phiếu trả giá",
-            "description": "Mẫu in phiếu trả giá (demo / đào tạo / in thử). Production: menu 5.2.",
+            "description": "Mẫu in phiếu trả giá — template production, dữ liệu mẫu sẵn, chỉnh trường động trong studio.",
             "icon": "ri-file-list-3-line",
             "href": "/bieu-mau/trong-phien/phieu-tra-gia",
             "enabled": True,
@@ -156,6 +167,52 @@ BID_SHEET_VARIANTS: List[Dict[str, Any]] = [
         "doc_kind": DocKind.BID_SHEET,
     },
 ]
+
+REGISTRATION_VARIANTS: List[Dict[str, Any]] = [
+    {
+        "id": "dau-thuong",
+        "slug": "dau-thuong",
+        "name": "Đơn đăng ký — Đấu thường",
+        "description": "Mẫu registration_normal — đúng template in production đấu thường.",
+        "icon": "ri-file-user-line",
+        "href": "/bieu-mau/truoc-phien/don-dang-ky/dau-thuong",
+        "enabled": True,
+        "doc_kind": DocKind.REGISTRATION_NORMAL,
+        "registration_mode": "NORMAL",
+    },
+    {
+        "id": "dau-nhom",
+        "slug": "dau-nhom",
+        "name": "Đơn đăng ký — Đấu nhóm",
+        "description": "Mẫu registration_group — bảng nhóm lô trong phiên.",
+        "icon": "ri-group-line",
+        "href": "/bieu-mau/truoc-phien/don-dang-ky/dau-nhom",
+        "enabled": True,
+        "doc_kind": DocKind.REGISTRATION_GROUP,
+        "registration_mode": "GROUP_AUCTION",
+        "lot_policy": "IN_SESSION_R1",
+    },
+    {
+        "id": "dau-nhom-truoc-phien",
+        "slug": "dau-nhom-truoc-phien",
+        "name": "Đơn đăng ký — Đấu nhóm (trước phiên)",
+        "description": "Mẫu registration_group_pre_session — chọn lô trước phiên.",
+        "icon": "ri-calendar-schedule-line",
+        "href": "/bieu-mau/truoc-phien/don-dang-ky/dau-nhom-truoc-phien",
+        "enabled": True,
+        "doc_kind": DocKind.REGISTRATION_GROUP_PRE_SESSION,
+        "registration_mode": "GROUP_AUCTION",
+        "lot_policy": "PRE_SESSION",
+    },
+]
+
+
+def get_registration_variant(slug_or_id: str) -> Optional[Dict[str, Any]]:
+    key = (slug_or_id or "").strip()
+    for v in REGISTRATION_VARIANTS:
+        if v.get("slug") == key or v.get("id") == key:
+            return dict(v)
+    return None
 
 
 def get_phase(phase_id: str) -> Optional[Dict[str, Any]]:

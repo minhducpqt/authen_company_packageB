@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+{% from "pages/forms/_components.html" import forms_styles, forms_breadcrumb, template_source_badge %}
+{% block title %}{{ title or "Mẫu đơn đăng ký" }}{% endblock %}
+{% block content %}
+{{ forms_styles() }}
+<style>
+  .bs-studio{
+    display:grid;
+    grid-template-columns: minmax(300px, 420px) minmax(0, 1fr);
+    gap:14px;
+    align-items:start;
+  }
+  @media (max-width: 1100px){
+    .bs-studio{ grid-template-columns: 1fr; }
+  }
+  .bs-panel{
+    background:#fff; border:1px solid #e2e8f0; border-radius:16px;
+    box-shadow:0 8px 24px rgba(15,23,42,.05); overflow:hidden;
+  }
+  .bs-left{ position:sticky; top:10px; max-height:calc(100vh - 96px); overflow:auto; }
+  .bs-ph{
+    padding:12px 14px; border-bottom:1px solid #e2e8f0;
+    background:linear-gradient(180deg,#f8fafc,#fff);
+  }
+  .bs-ph .t{ font-size:13px; font-weight:800; color:#0f172a; }
+  .bs-ph .s{ font-size:11.5px; color:#64748b; margin-top:3px; line-height:1.4; }
+  .bs-pb{ padding:12px 14px 16px; }
+  .bs-sec{ margin-bottom:14px; padding-bottom:12px; border-bottom:1px dashed #e2e8f0; }
+  .bs-sec:last-of-type{ border-bottom:0; }
+  .bs-sec h3{
+    margin:0 0 8px; font-size:11px; font-weight:800; letter-spacing:.04em;
+    text-transform:uppercase; color:#334155;
+  }
+  .bs-field{ margin-bottom:8px; }
+  .bs-field label{ display:block; font-size:11.5px; font-weight:700; margin-bottom:4px; color:#0f172a; }
+  .bs-field input, .bs-field select, .bs-field textarea{
+    width:100%; border:1px solid #cbd5e1; border-radius:10px; padding:8px 10px;
+    font-size:13px; outline:none; background:#fff; color:#0f172a;
+  }
+  .bs-field textarea{ min-height:72px; resize:vertical; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:11.5px; }
+  .bs-field input:focus, .bs-field textarea:focus{
+    border-color:#93c5fd; box-shadow:0 0 0 3px rgba(59,130,246,.12);
+  }
+  .bs-g2{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .bs-hint{
+    font-size:11px; color:#1e40af; background:#eff6ff; border:1px solid #bfdbfe;
+    border-radius:10px; padding:8px 10px; line-height:1.4; margin-bottom:12px;
+  }
+  .bs-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .bs-btn{
+    appearance:none; border:1px solid #cbd5e1; background:#fff; border-radius:10px;
+    padding:8px 12px; font-size:12.5px; font-weight:700; cursor:pointer; color:#0f172a;
+  }
+  .bs-btn.primary{ background:#0f172a; color:#fff; border-color:#0f172a; }
+  .bs-btn:disabled{ opacity:.5; cursor:wait; }
+  .bs-right-body{ background:#e2e8f0; min-height:70vh; padding:10px; }
+  .bs-iframe-wrap{
+    background:#fff; border-radius:8px; overflow:hidden;
+    box-shadow:0 2px 12px rgba(0,0,0,.12);
+    min-height: calc(100vh - 160px);
+  }
+  .bs-iframe-wrap iframe{
+    width:100%; height: calc(100vh - 160px); min-height:720px; border:0; display:block;
+    background:#e5e7eb;
+  }
+  .bs-hidden{ display:none !important; }
+</style>
+
+<div class="fm-page" style="max-width:1400px;">
+{{ forms_breadcrumb([
+  {"label": "Biểu mẫu", "href": "/bieu-mau"},
+  {"label": phase.name, "href": phase.href},
+  {"label": "Mẫu đơn đăng ký", "href": "/bieu-mau/truoc-phien/don-dang-ky"},
+  {"label": variant.name, "href": null},
+]) }}
+<div class="mb-4">
+  <h1 class="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+    <i class="{{ variant.icon or 'ri-file-user-line' }} text-sky-600"></i> {{ variant.name }}
+  </h1>
+  <p class="mt-1 text-sm text-slate-500">
+    Preview dùng <b>đúng template in production</b> (theo công ty nếu có override).
+    Dữ liệu mặc định là mẫu — chỉnh các trường bên trái để xem kết quả ngay.
+  </p>
+  {{ template_source_badge(template_info, company_code) }}
+</div>
+
+<div class="bs-studio">
+  <div class="bs-panel bs-left">
+    <div class="bs-ph">
+      <div class="t">Dữ liệu động</div>
+      <div class="s">Các trường map vào payload <code>ComposeDocResponse</code> render template thật.</div>
+    </div>
+    <form id="regForm" class="bs-pb" onsubmit="return false;">
+      <div class="bs-hint">
+        QR trên preview là demo, không dùng cho vận hành. Chỉnh trường → preview tự cập nhật.
+      </div>
+
+      <div class="bs-sec">
+        <h3>Công ty</h3>
+        <div class="bs-field">
+          <label for="company_name">Tên công ty đấu giá</label>
+          <input name="company_name" id="company_name" value="{{ defaults.company_name }}"/>
+        </div>
+      </div>
+
+      <div class="bs-sec">
+        <h3>Khách hàng</h3>
+        <div class="bs-field">
+          <label for="customer_full_name">Họ và tên</label>
+          <input name="customer_full_name" id="customer_full_name" value="{{ defaults.customer_full_name }}"/>
+        </div>
+        <div class="bs-g2">
+          <div class="bs-field">
+            <label for="cccd">CCCD</label>
+            <input name="cccd" id="cccd" value="{{ defaults.cccd }}"/>
+          </div>
+          <div class="bs-field">
+            <label for="dob">Ngày sinh (YYYY-MM-DD)</label>
+            <input name="dob" id="dob" value="{{ defaults.dob }}"/>
+          </div>
+        </div>
+        <div class="bs-g2">
+          <div class="bs-field">
+            <label for="phone">SĐT</label>
+            <input name="phone" id="phone" value="{{ defaults.phone }}"/>
+          </div>
+          <div class="bs-field">
+            <label for="email">Email</label>
+            <input name="email" id="email" value="{{ defaults.email }}"/>
+          </div>
+        </div>
+        <div class="bs-field">
+          <label for="address">Địa chỉ</label>
+          <textarea name="address" id="address">{{ defaults.address }}</textarea>
+        </div>
+      </div>
+
+      <div class="bs-sec">
+        <h3>Dự án</h3>
+        <div class="bs-g2">
+          <div class="bs-field">
+            <label for="project_code">Mã dự án</label>
+            <input name="project_code" id="project_code" value="{{ defaults.project_code }}"/>
+          </div>
+          <div class="bs-field">
+            <label for="project_name">Tên dự án</label>
+            <input name="project_name" id="project_name" value="{{ defaults.project_name }}"/>
+          </div>
+        </div>
+        <div class="bs-field">
+          <label for="project_description">Mô tả / tên hiển thị trên đơn</label>
+          <input name="project_description" id="project_description" value="{{ defaults.project_description }}"/>
+        </div>
+        <div class="bs-field">
+          <label for="project_location">Địa điểm</label>
+          <input name="project_location" id="project_location" value="{{ defaults.project_location }}"/>
+        </div>
+      </div>
+
+      <div class="bs-sec">
+        <h3>Tài khoản hoàn cọc</h3>
+        <div class="bs-g2">
+          <div class="bs-field">
+            <label for="refund_bank_code">Mã NH</label>
+            <input name="refund_bank_code" id="refund_bank_code" value="{{ defaults.refund_bank_code }}"/>
+          </div>
+          <div class="bs-field">
+            <label for="refund_bank_name">Tên ngân hàng</label>
+            <input name="refund_bank_name" id="refund_bank_name" value="{{ defaults.refund_bank_name }}"/>
+          </div>
+        </div>
+        <div class="bs-g2">
+          <div class="bs-field">
+            <label for="refund_account_number">Số TK</label>
+            <input name="refund_account_number" id="refund_account_number" value="{{ defaults.refund_account_number }}"/>
+          </div>
+          <div class="bs-field">
+            <label for="refund_account_name">Tên chủ TK</label>
+            <input name="refund_account_name" id="refund_account_name" value="{{ defaults.refund_account_name }}"/>
+          </div>
+        </div>
+      </div>
+
+      <div class="bs-sec {% if is_group %}bs-hidden{% endif %}" id="secLots">
+        <h3>Danh sách lô (JSON)</h3>
+        <div class="bs-field">
+          <label for="lots_json">lots — mảng JSON</label>
+          <textarea name="lots_json" id="lots_json">{{ defaults.lots_json }}</textarea>
+        </div>
+      </div>
+
+      <div class="bs-sec {% if not is_group %}bs-hidden{% endif %}" id="secGroups">
+        <h3>Nhóm lô đấu nhóm (JSON)</h3>
+        <div class="bs-field">
+          <label for="deposit_groups_json">deposit_groups — mảng JSON</label>
+          <textarea name="deposit_groups_json" id="deposit_groups_json">{{ defaults.deposit_groups_json }}</textarea>
+        </div>
+      </div>
+
+      <div class="bs-actions">
+        <button type="button" class="bs-btn primary" id="btnApply" onclick="applyPreview()">
+          <i class="ri-eye-line"></i> Cập nhật preview
+        </button>
+        <button type="button" class="bs-btn" onclick="printPreview()">
+          <i class="ri-printer-line"></i> In
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div class="bs-panel">
+    <div class="bs-ph">
+      <div class="t">Biểu mẫu apply</div>
+      <div class="s">Iframe render template đơn đăng ký production — cùng file in vận hành.</div>
+    </div>
+    <div class="bs-right-body">
+      <div class="bs-iframe-wrap">
+        <iframe id="previewFrame" name="previewFrame" title="Preview đơn đăng ký"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+const PREVIEW_URL = {{ preview_url|tojson }};
+let debounceTimer = null;
+let applying = false;
+
+function formBody(){
+  return new FormData(document.getElementById('regForm'));
+}
+
+async function applyPreview(){
+  if(applying) return;
+  applying = true;
+  const btn = document.getElementById('btnApply');
+  if(btn) btn.disabled = true;
+  try{
+    const r = await fetch(PREVIEW_URL, {
+      method: 'POST',
+      body: formBody(),
+      credentials: 'same-origin',
+    });
+    const html = await r.text();
+    const frame = document.getElementById('previewFrame');
+    if(frame){
+      const doc = frame.contentDocument || frame.contentWindow.document;
+      doc.open();
+      doc.write(html);
+      doc.close();
+    }
+  }catch(e){
+    alert(String(e));
+  }finally{
+    applying = false;
+    if(btn) btn.disabled = false;
+  }
+}
+
+function scheduleApply(){
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(applyPreview, 400);
+}
+
+function printPreview(){
+  const frame = document.getElementById('previewFrame');
+  if(frame && frame.contentWindow){
+    frame.contentWindow.focus();
+    frame.contentWindow.print();
+  }
+}
+
+document.querySelectorAll('#regForm input, #regForm textarea').forEach(el=>{
+  el.addEventListener('input', scheduleApply);
+  el.addEventListener('change', scheduleApply);
+});
+
+applyPreview();
+</script>
+{% endblock %}
