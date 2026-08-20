@@ -167,6 +167,22 @@
       margin-top:10px;border:1px solid var(--bd);border-radius:18px;background:#fff;
       box-shadow:0 2px 10px rgba(2,6,23,.04);overflow:hidden;
       }
+      /* Danh sách lô: luôn kéo dài tới cuối viewport (kể cả 1 row) để menu in không bị cắt */
+      .lotsCard{
+      display:flex;
+      flex-direction:column;
+      overflow:visible;
+      min-height:calc(100vh - 280px);
+      }
+      .lotsTableWrap{
+      flex:1 1 auto;
+      min-height:calc(100vh - 340px);
+      max-height:calc(100vh - 340px);
+      overflow:auto;
+      -webkit-overflow-scrolling:touch;
+      }
+      .lotsTableWrap tbody td{overflow:visible;}
+      .lotsTableWrap .printMenu{z-index:200;}
       .card-h{
       padding:12px 14px;border-bottom:1px solid var(--bd2);
       background:rgba(248,250,252,1);
@@ -978,7 +994,7 @@
   </div>
 </div>
 
-<div class="card">
+<div class="card lotsCard">
   <div class="card-h">
     <b>Danh sách lô — Round #{{ round_no }}</b>
     <div class="search">
@@ -1014,7 +1030,7 @@
     </div>
   </div>
 
-  <div style="max-height: calc(100vh - 340px); overflow:auto;">
+  <div class="lotsTableWrap">
     <table>
       <thead>
         <tr>
