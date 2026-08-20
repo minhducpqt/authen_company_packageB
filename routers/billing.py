@@ -234,6 +234,7 @@ async def billing_admin_company_detail_page(
         },
     )
 
+
 @router.get("/billing/admin/companies/{company_code}/contract", response_class=HTMLResponse)
 async def billing_admin_company_contract_page(
     request: Request,
@@ -246,13 +247,9 @@ async def billing_admin_company_contract_page(
     if guard:
         return guard
 
-    return templates.TemplateResponse(
-        "pages/billing/admin_company_contract.html",
-        {
-            "request": request,
-            "title": f"Billing — Cấu hình phí {company_code} (SUPER)",
-            "company_code": company_code,
-        },
+    return RedirectResponse(
+        url=f"/account/company/{company_code}/billing-fees",
+        status_code=303,
     )
 
 @router.get("/billing/admin/invoices/view/{invoice_id}", response_class=HTMLResponse)
@@ -586,7 +583,7 @@ async def billing_admin_companies_data(
 async def billing_admin_contracts_page(
     request: Request,
     company_code: Optional[str] = Query(None),
-    active_only: bool = Query(False),
+    active_only: bool = Query(True),
 ):
     guard = _super_guard_page(request, "%2Fbilling%2Fadmin%2Fcontracts")
     if guard:
@@ -598,7 +595,7 @@ async def billing_admin_contracts_page(
             "request": request,
             "title": "Billing — Hợp đồng (SUPER)",
             "init_company_code": company_code or "",
-            "init_active_only": bool(active_only),
+            "init_active_only": active_only,
         },
     )
 
@@ -607,18 +604,16 @@ async def billing_admin_contracts_page(
 async def billing_admin_contracts_data(
     request: Request,
     company_code: Optional[str] = Query(None),
-    active_only: bool = Query(False),
+    active_only: bool = Query(True),
 ):
     guard = _super_guard_json(request)
     if guard:
         return guard
 
     token = get_access_token(request)
-    params: List[Tuple[str, str | int]] = []
+    params: List[Tuple[str, str | int]] = [("active_only", 1 if active_only else 0)]
     if company_code:
         params.append(("company_code", company_code))
-    if active_only:
-        params.append(("active_only", 1))
 
     async with httpx.AsyncClient() as client:
         r = await _api_get(client, "/api/v1/billing/contracts", token, params)
@@ -764,6 +759,29 @@ async def billing_admin_company_status_data(
     return JSONResponse(r.json(), status_code=200)
 
 
+
+@router.get("/billing/admin/companies/{company_code}/contracts/history/data", response_class=JSONResponse)
+async def billing_admin_company_contracts_history_data(
+    request: Request,
+    company_code: str = Path(...),
+):
+    guard = _super_guard_json(request)
+    if guard:
+        return guard
+
+    token = get_access_token(request)
+    async with httpx.AsyncClient() as client:
+        r = await _api_get(
+            client,
+            f"/api/v1/billing/admin/companies/{company_code}/contracts/history",
+            token,
+        )
+
+    if r.status_code != 200:
+        return _map_error(r)
+    return JSONResponse(r.json(), status_code=200)
+
+
 @router.get("/billing/admin/companies/{company_code}/contract/current/data", response_class=JSONResponse)
 async def billing_admin_company_contract_current_data(
     request: Request,
@@ -797,6 +815,16 @@ async def billing_admin_company_contract_current_update(
     guard = _super_guard_json(request)
     if guard:
         return guard
+
+    confirm_text = (payload.get("confirm_text") or "").strip()
+    if confirm_text != "tôi xác nhận":
+        return JSONResponse(
+            {
+                "error": "confirm_required",
+                "msg": 'Vui lòng nhập đúng cụm "tôi xác nhận" để lưu cấu hình phí',
+            },
+            status_code=400,
+        )
 
     token = get_access_token(request)
 

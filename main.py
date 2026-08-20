@@ -17,6 +17,7 @@ from routers.account import router as account_router
 from routers.otp_admin import router as otp_admin_router
 from routers.telegram_notify_admin import router as telegram_notify_admin_router
 from routers.company_auction_defaults import router as company_auction_defaults_router
+from routers.company_billing_fees import router as company_billing_fees_router
 from routers.company_refund_bank_editor import router as company_refund_bank_editor_router
 from routers.projects import router as projects_router
 from routers.project_payment_accounts import router as ppa_router
@@ -112,6 +113,7 @@ app.include_router(account_router)
 app.include_router(otp_admin_router)
 app.include_router(telegram_notify_admin_router)
 app.include_router(company_auction_defaults_router)
+app.include_router(company_billing_fees_router)
 app.include_router(company_refund_bank_editor_router)
 app.include_router(projects_router)
 

@@ -1,19 +1,20 @@
 {% extends "base.html" %}
+{% block title %}Cấu hình chi phí — {{ company_code|upper }}{% endblock %}
 {% block content %}
-<div class="space-y-5">
+<div class="space-y-5 max-w-5xl mx-auto">
 
   <div class="flex items-start justify-between gap-4">
     <div class="min-w-0">
-      <a href="/billing/admin/companies" class="text-sm text-slate-500 hover:underline">← Quay lại danh sách</a>
-      <h1 class="text-xl font-semibold text-slate-800 mt-1">
-        Cấu hình phí Billing — <span class="text-indigo-700">{{ company_code }}</span>
+      <a href="/account/company/{{ company_code }}" class="text-sm text-indigo-600 hover:text-indigo-700 font-medium">&larr; Quay lại công ty {{ company_code|upper }}</a>
+      <h1 class="text-xl font-semibold text-slate-800 mt-2">
+        Cấu hình chi phí — <span class="text-indigo-700">{{ company_code|upper }}</span>
       </h1>
-      <p class="text-sm text-slate-500">Cấu hình phí rất ít khi thay đổi. Khi lưu, hệ thống sẽ tạo dòng cấu hình mới và giữ lịch sử dòng cũ.</p>
+      <p class="text-sm text-slate-500 mt-1">Phí triển khai, phí nền tảng và phí vận hành theo phiên. Khi lưu, hệ thống tạo bản ghi mới và giữ lịch sử các bản cũ.</p>
     </div>
     <div class="flex items-center gap-2 shrink-0">
       <a href="/billing/admin/companies/view/{{ company_code }}"
          class="px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm">
-        Xem chi tiết công ty
+        Công nợ billing
       </a>
       <button id="btnRefresh"
               class="px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm">
@@ -39,7 +40,7 @@
         </div>
         <button id="btnOpenEdit"
                 class="px-3 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 text-sm">
-          <i class="ri-edit-line mr-1"></i> Chỉnh sửa cấu hình
+          <i class="ri-edit-line mr-1"></i> <span id="btnOpenEditText">Chỉnh sửa cấu hình</span>
         </button>
       </div>
 
@@ -119,7 +120,7 @@
 </div>
 
 <!-- Edit modal -->
-<div id="editModal" class="hidden fixed inset-0 z-[110]">
+<div id="editModal" class="hidden fixed inset-0 z-[1000]">
   <div class="absolute inset-0 bg-black/40"></div>
   <div class="absolute inset-0 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden">
@@ -169,6 +170,9 @@
         </div>
 
         <div id="formErr" class="hidden text-sm text-rose-600"></div>
+        <div class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+          Khi bấm <strong>Lưu cấu hình</strong>, hệ thống sẽ yêu cầu nhập <strong>tôi xác nhận</strong> trước khi ghi nhận thay đổi.
+        </div>
       </div>
 
       <div class="px-6 py-4 border-t border-slate-100 flex justify-end gap-2">
@@ -180,7 +184,7 @@
 </div>
 
 <!-- Typed confirm modal -->
-<div id="typedConfirmModal" class="hidden fixed inset-0 z-[120]">
+<div id="typedConfirmModal" class="hidden fixed inset-0 z-[1010]">
   <div class="absolute inset-0 bg-black/40"></div>
   <div class="absolute inset-0 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
@@ -199,7 +203,7 @@
       </div>
       <div class="px-6 py-4 border-t border-slate-100 flex justify-end gap-2">
         <button id="btnCancelConfirm" class="px-4 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50">Hủy</button>
-        <button id="btnDoSave" class="px-4 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700">Xác nhận lưu</button>
+        <button id="btnDoSave" class="px-4 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled>Xác nhận lưu</button>
       </div>
     </div>
   </div>
@@ -252,7 +256,10 @@
 
     $("existsHint").textContent = exists
       ? `Đang dùng config active ID #${d.id || "—"}`
-      : "Công ty chưa có config active. Hệ thống đang hiển thị bộ giá trị mặc định để bạn có thể lưu lần đầu.";
+      : "Chưa có cấu hình phí. Hệ thống đang hiển thị bộ giá trị mặc định — bấm Lưu cấu hình phí lần đầu để kích hoạt.";
+
+    const btnTxt = $("btnOpenEditText");
+    if (btnTxt) btnTxt.textContent = exists ? "Chỉnh sửa cấu hình" : "Lưu cấu hình phí lần đầu";
 
     $("vBillingStart").textContent = onlyDate(d.billing_start_at) || "—";
     $("vRevenuePercent").textContent = `${pct(d.revenue_percent)} / phiên`;
@@ -309,8 +316,21 @@
     $("confirmText").value = "";
     $("confirmErr").classList.add("hidden");
     $("confirmErr").textContent = "";
+    syncConfirmSaveButton();
     $("typedConfirmModal").classList.remove("hidden");
     setTimeout(()=>$("confirmText").focus(), 30);
+  }
+
+  function syncConfirmSaveButton(){
+    const txt = ($("confirmText").value || "").trim();
+    const ok = txt === "tôi xác nhận";
+    $("btnDoSave").disabled = !ok;
+    $("confirmErr").classList.toggle("hidden", ok || !txt);
+    if (!ok && txt) {
+      $("confirmErr").textContent = "Bạn phải nhập đúng: tôi xác nhận";
+    } else if (!txt) {
+      $("confirmErr").textContent = "";
+    }
   }
 
   function closeTypedConfirm(){
@@ -363,7 +383,7 @@
     try{
       await fetchJSON(`/billing/admin/companies/${encodeURIComponent(companyCode)}/contract/current/update`, {
         method: "PUT",
-        body: JSON.stringify(pendingPayload || {})
+        body: JSON.stringify(Object.assign({}, pendingPayload || {}, { confirm_text: txt }))
       });
       closeTypedConfirm();
       pendingPayload = null;
@@ -418,6 +438,13 @@
     $("editModal").classList.remove("hidden");
   });
   $("btnDoSave").addEventListener("click", doSave);
+  $("confirmText").addEventListener("input", syncConfirmSaveButton);
+  $("confirmText").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !$("btnDoSave").disabled) {
+      e.preventDefault();
+      doSave();
+    }
+  });
   $("typedConfirmModal").addEventListener("click", (e)=>{
     if(e.target && e.target.id === "typedConfirmModal"){
       closeTypedConfirm();
