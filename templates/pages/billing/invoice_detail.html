@@ -134,6 +134,37 @@
   </div>
 </div>
 
+<!-- MODAL: Project fee description -->
+<div id="projFeeModal" class="hidden fixed inset-0 z-[120]">
+  <div class="absolute inset-0 bg-black/40" id="projFeeMask"></div>
+  <div class="absolute inset-0 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div class="text-lg font-semibold text-slate-800">Mô tả phí dự án</div>
+        <button id="projFeeClose" type="button" class="text-slate-500 hover:text-slate-700">
+          <i class="ri-close-line text-xl"></i>
+        </button>
+      </div>
+      <div class="px-6 py-5">
+        <div id="projFeeText" class="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap"></div>
+        <div id="projFeeCopied" class="hidden mt-3 text-xs text-emerald-600">
+          <i class="ri-check-line"></i> Đã copy vào clipboard
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t border-slate-100 flex justify-end gap-2">
+        <button id="projFeeCopy" type="button"
+                class="px-4 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm">
+          <i class="ri-file-copy-line mr-1"></i> Copy
+        </button>
+        <button id="projFeeOk" type="button"
+                class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 text-sm">
+          Đóng
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
   const invoiceId = {{ invoice_id }};
   const pad2 = (n) => String(n).padStart(2, '0');
@@ -176,6 +207,76 @@
   }
 
   function setLoading(id, on) { document.getElementById(id)?.classList.toggle('hidden', !on); }
+
+  function escapeHtml(s) {
+    return String(s || '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  }
+
+  function projectFeeDescription(projectName) {
+    const name = String(projectName || '').trim() || '—';
+    return `Phí sử dụng dịch vụ phần mềm cho dự án: ${name}`;
+  }
+
+  let currentProjectFeeText = '';
+
+  function openProjectFeeModal(projectName) {
+    currentProjectFeeText = projectFeeDescription(projectName);
+    document.getElementById('projFeeText').textContent = currentProjectFeeText;
+    document.getElementById('projFeeCopied')?.classList.add('hidden');
+    document.getElementById('projFeeModal')?.classList.remove('hidden');
+  }
+
+  function closeProjectFeeModal() {
+    document.getElementById('projFeeModal')?.classList.add('hidden');
+  }
+
+  async function copyProjectFeeText() {
+    const text = currentProjectFeeText || '';
+    if (!text) return;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      document.getElementById('projFeeCopied')?.classList.remove('hidden');
+    } catch (e) {
+      console.error(e);
+      alert('Không copy được. Vui lòng chọn và copy thủ công.');
+    }
+  }
+
+  function renderProjectCell(r) {
+    const code = escapeHtml(r.project_code || '');
+    const name = String(r.project_name || r.project_code || '').trim();
+    const encodedName = encodeURIComponent(name);
+    return `
+      <div class="flex items-start gap-1.5">
+        <div>
+          <div class="font-medium text-slate-800">${code}</div>
+          <div class="text-xs text-slate-500">ID: ${r.project_id}</div>
+        </div>
+        <button type="button"
+                class="proj-fee-btn mt-0.5 inline-flex items-center justify-center w-6 h-6 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"
+                title="Xem mô tả phí dự án"
+                data-project-name="${encodedName}">
+          <i class="ri-information-line text-base"></i>
+        </button>
+      </div>
+    `;
+  }
 
   async function fetchJSON(url) {
     const r = await fetch(url, { headers: { "Accept": "application/json" }});
@@ -228,10 +329,7 @@
         for (const r of rowsP) {
           tbP.insertAdjacentHTML('beforeend', `
             <tr class="hover:bg-slate-50">
-              <td class="px-4 py-2">
-                <div class="font-medium text-slate-800">${r.project_code || ''}</div>
-                <div class="text-xs text-slate-500">ID: ${r.project_id}</div>
-              </td>
+              <td class="px-4 py-2">${renderProjectCell(r)}</td>
               <td class="px-4 py-2">${r.auction_at ? fmtDateTime(r.auction_at) : '—'}</td>
               <td class="px-4 py-2 text-right">${money(r.total_dossier_amount)}</td>
               <td class="px-4 py-2 text-right">${money(r.total_price_gap_amount)}</td>
@@ -274,6 +372,16 @@
   }
 
   document.getElementById('btnRefresh')?.addEventListener('click', loadAll);
+  document.getElementById('projFeeClose')?.addEventListener('click', closeProjectFeeModal);
+  document.getElementById('projFeeOk')?.addEventListener('click', closeProjectFeeModal);
+  document.getElementById('projFeeMask')?.addEventListener('click', closeProjectFeeModal);
+  document.getElementById('projFeeCopy')?.addEventListener('click', copyProjectFeeText);
+  document.getElementById('tbProjects')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.proj-fee-btn');
+    if (!btn) return;
+    const raw = btn.getAttribute('data-project-name') || '';
+    openProjectFeeModal(decodeURIComponent(raw));
+  });
   loadAll();
 </script>
 {% endblock %}
