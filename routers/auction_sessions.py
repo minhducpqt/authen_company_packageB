@@ -498,6 +498,43 @@ async def api_round_ui(
     return JSONResponse(js, status_code=_proxy_status(st))
 
 
+@router.get("/auction/sessions/api/sessions/{session_id}/rounds/{round_no}/bid-ticket-config")
+async def api_get_round_bid_ticket_config(
+    request: Request,
+    session_id: int = Path(..., ge=1),
+    round_no: int = Path(..., ge=1),
+):
+    token = get_access_token(request)
+    if not token:
+        return _unauth_json()
+
+    st, js = await _get_json(
+        f"/api/v1/auction-sessions/sessions/{session_id}/rounds/{round_no}/bid-ticket-config",
+        token,
+        None,
+    )
+    return JSONResponse(js, status_code=_proxy_status(st))
+
+
+@router.put("/auction/sessions/api/sessions/{session_id}/rounds/{round_no}/bid-ticket-config")
+async def api_put_round_bid_ticket_config(
+    request: Request,
+    session_id: int = Path(..., ge=1),
+    round_no: int = Path(..., ge=1),
+    payload: Dict[str, Any] = Body(...),
+):
+    token = get_access_token(request)
+    if not token:
+        return _unauth_json()
+
+    st, js = await _put_json(
+        f"/api/v1/auction-sessions/sessions/{session_id}/rounds/{round_no}/bid-ticket-config",
+        token,
+        payload,
+    )
+    return JSONResponse(js, status_code=_proxy_status(st))
+
+
 @router.post("/auction/sessions/api/round-lots/{round_lot_id}/lock")
 async def api_lock_round_lot(
     request: Request,

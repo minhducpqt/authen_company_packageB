@@ -691,14 +691,9 @@
   {% set stt_code = t.stt_padded or (t.stt or '') %}
   {% set show_price_step = (t.show_price_step if (t.show_price_step is not none) else true) %}
 
-  {# Chỉ hiện vòng khi in từ phiên (có session_id) và dự án nhiều vòng #}
-  {% set is_multi_round = (t.is_multi_round if (t.is_multi_round is not none) else false) %}
-  {% set show_round = (
-    t.session_id is not none
-    and is_multi_round
-    and t.round_no is not none
-    and t.round_no != ''
-  ) %}
+  {# Nhãn vòng: resolve từ API (show_round + round_label_text) #}
+  {% set show_round = (t.show_round if (t.show_round is not none) else false) %}
+  {% set round_label_text = (t.round_label_text or '') %}
 
   {% set lot_code_display = t.lot_display or t.lot_code or '' %}
   {% set is_blank_ticket = (t.ticket_mode or '') == 'BLANK_TICKET' %}
@@ -766,8 +761,8 @@
         <div class="gov">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
         <div class="motto">Độc lập – Tự do – Hạnh phúc</div>
         <div class="divider">-----------------o0o-----------------</div>
-        {% if show_round %}
-          <h1 class="doc-title">PHIẾU TRẢ GIÁ (VÒNG {{ t.round_no }})</h1>
+        {% if show_round and round_label_text %}
+          <h1 class="doc-title">PHIẾU TRẢ GIÁ ({{ round_label_text }})</h1>
         {% else %}
           <h1 class="doc-title">PHIẾU TRẢ GIÁ</h1>
         {% endif %}

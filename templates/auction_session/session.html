@@ -174,6 +174,10 @@
       }
       .card-h b{font-size:13px;color:var(--ink);}
       .search{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+      .bidTicketCfgBtn{
+      width:34px;height:34px;padding:0;
+      display:inline-flex;align-items:center;justify-content:center;
+      }
       .search input{
       height:34px;border-radius:12px;border:1px solid var(--bd);
       padding:0 10px;font-size:13px;outline:none;min-width:240px;
@@ -999,6 +1003,14 @@
           </button>
         </div>
       </div>
+      <button
+        class="miniBtn ghost bidTicketCfgBtn"
+        type="button"
+        title="Cấu hình tiêu đề phiếu trả giá"
+        onclick="openBidTicketTitleConfig()"
+      >
+        <i class="ri-settings-3-line"></i>
+      </button>
     </div>
   </div>
 
@@ -1394,6 +1406,61 @@ Modal: Print One Bid Sheet (choose one customer)
 
     <div class="dlg-f">
       <span class="hint">Chọn 1 khách → hệ thống mở tab in đúng 1 phiếu.</span>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Cấu hình tiêu đề phiếu trả giá -->
+<div id="bidTicketCfgBackdrop" class="dlg-backdrop" onclick="bidTicketCfgClose(event)">
+  <div class="dlg" style="max-width:520px;" onclick="event.stopPropagation()">
+    <div class="dlg-h">
+      <b><i class="ri-settings-3-line"></i> Tiêu đề phiếu trả giá</b>
+      <button class="dlg-x" type="button" onclick="bidTicketCfgClose()"><i class="ri-close-line"></i></button>
+    </div>
+
+    <div class="dlg-b">
+      <p class="hint" style="margin:0 0 12px;">
+        Cấu hình phần nhãn trong ngoặc của tiêu đề <b>PHIẾU TRẢ GIÁ</b> khi in vòng {{ round_no or 1 }}.
+      </p>
+
+      <label class="inline-flex items-center gap-2 text-sm cursor-pointer select-none" style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <input
+          id="bidTicketCfgShowLabel"
+          type="checkbox"
+          class="h-4 w-4"
+          onchange="bidTicketCfgSyncPreview()"
+        >
+        <span>Ghi nhãn vòng trên phiếu</span>
+      </label>
+
+      <div id="bidTicketCfgTextWrap">
+        <label class="block text-xs font-medium text-slate-600 mb-1" for="bidTicketCfgLabelText">Text hiển thị</label>
+        <input
+          id="bidTicketCfgLabelText"
+          type="text"
+          maxlength="80"
+          class="w-full"
+          style="width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:10px;font-size:13px;"
+          placeholder="VÒNG {{ round_no or 1 }}"
+          oninput="bidTicketCfgSyncPreview()"
+        >
+      </div>
+
+      <div style="margin-top:14px;padding:12px 14px;border-radius:12px;background:rgba(248,250,252,.95);border:1px solid var(--bd2);">
+        <div class="hint" style="margin-bottom:6px;">Xem trước</div>
+        <div id="bidTicketCfgPreview" style="font-size:16px;font-weight:900;text-align:center;">PHIẾU TRẢ GIÁ</div>
+      </div>
+
+      <div id="bidTicketCfgMsg" class="hint" style="display:none;margin-top:10px;color:#b91c1c;"></div>
+    </div>
+
+    <div class="dlg-f">
+      <button class="btn ghost" type="button" onclick="bidTicketCfgClose()">
+        <i class="ri-close-line"></i> Huỷ
+      </button>
+      <button class="btn primary" type="button" id="bidTicketCfgSaveBtn" onclick="saveBidTicketTitleConfig()">
+        <i class="ri-save-3-line"></i> Lưu
+      </button>
     </div>
   </div>
 </div>
@@ -2310,6 +2377,112 @@ Modal: Print One Bid Sheet (choose one customer)
   return;
   }
   window.open(`/auction-sessions/bid-sheets/print/rounds/${roundId}?sort_mode=STT_LOT`, '_blank');
+  }
+
+  // =========================
+  // Bid ticket title config (round label on print)
+  // =========================
+  let bidTicketCfgDefaultText = `VÒNG ${Number(ROUND_NO || 1)}`;
+
+  function bidTicketCfgClose(ev){
+  if(ev && ev.target && ev.target.id !== 'bidTicketCfgBackdrop') return;
+  document.getElementById('bidTicketCfgBackdrop').style.display = 'none';
+  }
+
+  function bidTicketCfgSyncPreview(){
+  const show = !!document.getElementById('bidTicketCfgShowLabel').checked;
+  const textWrap = document.getElementById('bidTicketCfgTextWrap');
+  const textEl = document.getElementById('bidTicketCfgLabelText');
+  const preview = document.getElementById('bidTicketCfgPreview');
+
+  if(textWrap) textWrap.style.opacity = show ? '1' : '.45';
+  if(textEl) textEl.disabled = !show;
+
+  const label = (textEl && textEl.value.trim()) ? textEl.value.trim() : bidTicketCfgDefaultText;
+  if(preview){
+  preview.textContent = show ? `PHIẾU TRẢ GIÁ (${label})` : 'PHIẾU TRẢ GIÁ';
+  }
+  }
+
+  async function openBidTicketTitleConfig(){
+  const rn = Number(ROUND_NO || 0);
+  if(!SESSION_ID || rn <= 0){
+  toast('Thiếu session_id/round_no để cấu hình tiêu đề phiếu.');
+  return;
+  }
+
+  const msgEl = document.getElementById('bidTicketCfgMsg');
+  if(msgEl){ msgEl.style.display = 'none'; msgEl.textContent = ''; }
+
+  document.getElementById('bidTicketCfgBackdrop').style.display = 'flex';
+
+  try{
+  const r = await fetch(`/auction/sessions/api/sessions/${SESSION_ID}/rounds/${rn}/bid-ticket-config`);
+  const js = await r.json().catch(()=> ({}));
+  if(!r.ok){
+  const err = safeText(js.detail || js.error || ('HTTP ' + r.status));
+  toast('Không tải được cấu hình: ' + err);
+  bidTicketCfgClose();
+  return;
+  }
+
+  const data = js.data || {};
+  bidTicketCfgDefaultText = data.default_round_label_text || `VÒNG ${rn}`;
+
+  const showEl = document.getElementById('bidTicketCfgShowLabel');
+  const textEl = document.getElementById('bidTicketCfgLabelText');
+  if(showEl) showEl.checked = !!data.show_round_label;
+  if(textEl) textEl.value = data.form_round_label_text || data.round_label_text || bidTicketCfgDefaultText;
+
+  bidTicketCfgSyncPreview();
+  }catch(e){
+  toast('Lỗi mạng khi tải cấu hình tiêu đề phiếu.');
+  bidTicketCfgClose();
+  }
+  }
+
+  async function saveBidTicketTitleConfig(){
+  const rn = Number(ROUND_NO || 0);
+  if(!SESSION_ID || rn <= 0) return;
+
+  const showEl = document.getElementById('bidTicketCfgShowLabel');
+  const textEl = document.getElementById('bidTicketCfgLabelText');
+  const saveBtn = document.getElementById('bidTicketCfgSaveBtn');
+  const msgEl = document.getElementById('bidTicketCfgMsg');
+
+  const payload = {
+  show_round_label: !!(showEl && showEl.checked),
+  round_label_text: (textEl && textEl.value.trim()) ? textEl.value.trim() : null,
+  };
+
+  if(saveBtn){ saveBtn.disabled = true; }
+
+  try{
+  const r = await fetch(`/auction/sessions/api/sessions/${SESSION_ID}/rounds/${rn}/bid-ticket-config`, {
+  method: 'PUT',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(payload),
+  });
+  const js = await r.json().catch(()=> ({}));
+
+  if(!r.ok){
+  const err = safeText(js.detail || js.error || ('HTTP ' + r.status));
+  if(msgEl){
+  msgEl.textContent = err;
+  msgEl.style.display = 'block';
+  }else{
+  toast('Lưu thất bại: ' + err);
+  }
+  return;
+  }
+
+  toast('Đã lưu cấu hình tiêu đề phiếu trả giá.');
+  bidTicketCfgClose();
+  }catch(e){
+  toast('Lỗi mạng khi lưu cấu hình.');
+  }finally{
+  if(saveBtn){ saveBtn.disabled = false; }
+  }
   }
 
   function printRoundClearbagLabels(){
