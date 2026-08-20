@@ -29,6 +29,9 @@
   .ce-preview-toolbar-sep { width:1px; height:22px; background:#cbd5e1; margin:0 2px; }
   .ce-btn-icon { padding:6px 10px; font-size:11px; }
   .ce-datetime, .ce-date { width:100%; padding:8px 10px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; font-family:inherit; }
+  .ce-datetime-row { display:flex; align-items:center; gap:8px; }
+  .ce-datetime-row .ce-datetime { flex:1; min-width:0; }
+  .ce-btn-now { flex-shrink:0; padding:8px 12px; font-size:12px; font-weight:700; }
   .ce-signed-preview { margin-top:6px; font-size:12px; line-height:1.45; padding:6px 8px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; color:#334155; }
   .ce-hint { font-size:10px; color:#94a3b8; margin-top:3px; }
   .ce-readonly-val { padding:8px 10px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; font-size:12px; }
@@ -170,7 +173,10 @@
           {% if is_final %}
           <div class="ce-readonly-val" id="f_session_end_display">—</div>
           {% else %}
-          <input type="datetime-local" id="f_session_end_picker" class="ce-datetime">
+          <div class="ce-datetime-row">
+            <input type="datetime-local" id="f_session_end_picker" class="ce-datetime">
+            <button type="button" class="ce-btn ce-btn-ghost ce-btn-now" id="btnSessionEndNow" title="Chọn thời gian hiện tại">Now</button>
+          </div>
           <div id="f_session_end_preview" class="ce-signed-preview">— chọn ngày giờ —</div>
           {% endif %}
         </div>
@@ -379,6 +385,23 @@ function updateDtPreview(pickerId, previewId, formatter) {
   const iso = isoFromPicker(picker.value);
   preview.textContent = iso ? formatter(iso) : (pickerId.includes('date') ? '— chọn ngày —' : '— chọn ngày giờ —');
   schedulePreview();
+}
+
+function datetimeLocalNowValue() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const mo = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  const h = String(now.getHours()).padStart(2, '0');
+  const mi = String(now.getMinutes()).padStart(2, '0');
+  return `${y}-${mo}-${d}T${h}:${mi}`;
+}
+
+function setPickerNow(pickerId, previewId, formatter) {
+  const picker = document.getElementById(pickerId);
+  if (!picker) return;
+  picker.value = datetimeLocalNowValue();
+  updateDtPreview(pickerId, previewId, formatter);
 }
 
 function hydrateDt(pickerId, previewId, storedIso, formatter) {
@@ -606,6 +629,10 @@ document.getElementById('btnPreviewFullscreen')?.addEventListener('click', () =>
   const fmt = id.includes('contract_date') ? formatDateVi : formatSessionVi;
   el.addEventListener('input', () => updateDtPreview(id, previewId, fmt));
   el.addEventListener('change', () => updateDtPreview(id, previewId, fmt));
+});
+
+document.getElementById('btnSessionEndNow')?.addEventListener('click', () => {
+  setPickerNow('f_session_end_picker', 'f_session_end_preview', formatSessionVi);
 });
 
 document.getElementById('f_session_id')?.addEventListener('change', schedulePreview);
