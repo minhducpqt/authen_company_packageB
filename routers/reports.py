@@ -193,6 +193,8 @@ async def _proxy_xlsx(
     token: str,
     params: Dict[str, Any],
     filename: str,
+    *,
+    xlsx_format: str = "xlsx",
 ) -> Response:
     """
     Gọi Service A trả về file XLSX, rồi stream lại cho browser.
@@ -201,7 +203,7 @@ async def _proxy_xlsx(
     url = f"{SERVICE_A_BASE_URL}{path}"
     headers = {"Authorization": f"Bearer {token}"}
     params = dict(params or {})
-    params["format"] = "xlsx"  # ép đúng format để A trả file
+    params["format"] = xlsx_format
 
     _log(f"→ GET XLSX {url} params={params}")
     async with httpx.AsyncClient(timeout=120.0) as c:
@@ -1429,6 +1431,31 @@ async def v2_customers_lots_ineligible_export(
         token,
         {"limit": limit2},
         filename,
+    )
+
+
+@router.get("/reports/v2/projects/{project_id}/customers-lots/ineligible/export-notify")
+async def v2_customers_lots_ineligible_export_notify(
+    request: Request,
+    project_id: int = Path(..., ge=1),
+    limit: Optional[int] = Query(None),
+):
+    """
+    Excel thông báo khách — 1 dòng / khách, kèm thông điệp SMS.
+    """
+    token = get_access_token(request)
+    if not token:
+        return _unauth()
+
+    limit2 = _clamp_int(limit, default=DEFAULT_LIMIT_REPORTS_V2, min_value=1, max_value=MAX_LIMIT_REPORTS_V2)
+
+    filename = f"thong_bao_kh_khong_du_dk_p{project_id}.xlsx"
+    return await _proxy_xlsx(
+        f"/api/v2/reports/projects/{project_id}/customers-lots/ineligible",
+        token,
+        {"limit": limit2},
+        filename,
+        xlsx_format="notify_xlsx",
     )
 
 
