@@ -38,47 +38,59 @@ html, body {
 body.doc-pro.doc-download .page { padding: 0; }
 body.doc-pro .page { width: 100%; position: relative; }
 
-/* —— Header —— */
+/* —— Header (theo mẫu TP-ĐGTS-18 / PDF) —— */
 body.doc-pro .doc-header {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
-body.doc-pro .doc-header-motto { text-align: center; }
-body.doc-pro .doc-header-motto .cn {
-  font-weight: 700; text-transform: uppercase; font-size: 12pt; letter-spacing: 0.02em;
-}
-body.doc-pro .doc-header-motto .motto {
-  font-weight: 700; font-size: 12pt; margin-top: 3px;
-}
-body.doc-pro .doc-header-motto .rule-double {
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-  margin: 7px auto 0; width: 52mm;
-}
-body.doc-pro .doc-header-motto .rule-double span {
-  display: block; height: 0; border-bottom: 1px solid #111; width: 100%;
-}
-body.doc-pro .doc-header-motto .rule-double span:last-child { border-bottom-width: 2px; }
-
-body.doc-pro .doc-header-meta {
-  position: absolute; top: 0; right: 0;
-  text-align: right; max-width: 42%;
+body.doc-pro .form-code-block {
+  margin: 0 0 14px;
+  padding: 0 6mm 0 5mm;
+  max-width: 78%;
+  line-height: 1.35;
 }
 body.doc-pro .form-code {
-  font-size: 10.5pt; font-style: italic; line-height: 1.35;
-  padding: 4px 0 0;
+  font-size: 11pt;
+  font-style: italic;
+  font-weight: 400;
 }
-body.doc-pro .form-code .form-ref {
-  display: block; font-size: 9pt; font-style: normal; color: #333; margin-top: 2px;
+body.doc-pro .form-code-block .form-ref {
+  font-size: 10pt;
+  font-style: italic;
+  color: #222;
+  margin-top: 2px;
+}
+body.doc-pro .doc-header-motto {
+  text-align: center;
+  margin-bottom: 10px;
+}
+body.doc-pro .doc-header-motto .cn {
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 12pt;
+  letter-spacing: 0.02em;
+}
+body.doc-pro .doc-header-motto .motto {
+  font-weight: 700;
+  font-size: 12pt;
+  margin-top: 4px;
 }
 
 /* —— Title —— */
 body.doc-pro h1.doc-title {
-  text-align: center; font-size: 15pt; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.06em;
-  margin: 14px 0 16px; padding-bottom: 8px;
-  border-bottom: 2px solid #111;
+  text-align: center;
+  font-size: 15pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 8px 0 6px;
+  padding: 0;
+  border: none;
+}
+body.doc-pro .doc-no-line {
+  text-align: center;
+  font-size: 13pt;
+  margin: 0 0 14px;
+  text-indent: 0;
 }
 
 /* —— Typography blocks —— */
@@ -183,6 +195,23 @@ body.doc-pro table.lots .c-price {
   font-variant-numeric: tabular-nums; font-weight: 700;
   padding-left: 8px; padding-right: 8px;
 }
+body.doc-pro table.lots.asset-lots {
+  font-size: 9pt; table-layout: auto;
+}
+body.doc-pro table.lots.asset-lots th,
+body.doc-pro table.lots.asset-lots td {
+  padding: 3px 4px; line-height: 1.25; font-size: 9pt;
+}
+body.doc-pro table.lots.asset-lots td.num { text-align: right; font-variant-numeric: tabular-nums; }
+body.doc-pro table.lots.asset-lots td.left { text-align: left; }
+body.doc-pro table.lots.asset-lots td.c-map { text-align: center; white-space: nowrap; }
+body.doc-pro table.lots.asset-lots td.c-lot-name { text-align: center; font-weight: 700; }
+body.doc-pro table.lots.asset-lots tr.total-row td { font-weight: 700; background: #ececec; }
+body.doc-pro .table-caption {
+  text-align: center; font-weight: 700; margin: 8px 0 6px; text-indent: 0;
+}
+body.doc-pro p.clause-head { text-indent: 0; font-weight: 700; margin-top: 8px; }
+body.doc-pro .legal-block p { margin-bottom: 5px; }
 body.doc-pro .tbl-full { width: 100%; margin-left: 0; margin-right: 0; }
 
 /* —— Diễn biến phiên (embed) —— */
@@ -194,6 +223,9 @@ body.doc-pro .sp-embed .sp-sec-title {
   font-weight: 700; font-size: 11pt; text-transform: uppercase;
   letter-spacing: 0.03em; margin: 0 0 4px; text-indent: 0;
   padding-bottom: 3px; border-bottom: 1px solid #bbb;
+}
+body.doc-pro .sp-embed .sp-sub-title {
+  font-weight: 700; font-size: 10pt; margin: 10px 0 4px; text-indent: 0;
 }
 body.doc-pro .sp-embed .sp-sec-note {
   font-size: 9pt; font-style: italic; margin: 0 0 6px; text-indent: 0; color: #222;
@@ -329,6 +361,9 @@ body.doc-pro .sig-grid {
   display: grid; grid-template-columns: 1fr 1fr 1fr;
   gap: 16px 12px; margin-top: 14px; text-align: center; font-size: 11pt;
   page-break-inside: avoid; break-inside: avoid-page;
+}
+body.doc-pro .sig-grid.sig-grid-6 {
+  grid-template-columns: 1fr 1fr 1fr;
 }
 body.doc-pro .sig-box {
   min-height: 36mm; padding: 4px 6px 0;

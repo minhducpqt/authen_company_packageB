@@ -86,6 +86,20 @@ def _apply_minutes_defaults(
         minutes["organizer"] = cname
         changed = True
 
+    if isinstance(ctx, dict):
+        defs = ctx.get("defaults") if isinstance(ctx.get("defaults"), dict) else {}
+        if not (minutes.get("party_a") or "").strip() and (defs.get("party_a_name") or "").strip():
+            minutes["party_a"] = str(defs["party_a_name"]).strip()
+            changed = True
+        if not (minutes.get("party_b") or "").strip() and (defs.get("party_b_name") or "").strip():
+            minutes["party_b"] = str(defs["party_b_name"]).strip()
+            changed = True
+        if not (minutes.get("organizer_address") or "").strip():
+            co = ctx.get("company") if isinstance(ctx.get("company"), dict) else {}
+            if (co.get("address") or "").strip():
+                minutes["organizer_address"] = str(co["address"]).strip()
+                changed = True
+
     if master_auctioneer:
         mid = master_auctioneer.get("id")
         if not minutes.get("auctioneer_id") and mid:
@@ -111,6 +125,8 @@ def _apply_minutes_defaults(
     if "progression" not in minutes or not isinstance(minutes.get("progression"), dict):
         minutes["progression"] = {
             "failed_lots": [],
+            "failed_lots_pre_session": [],
+            "failed_lots_in_session": [],
             "won_lots": [],
             "eligible_lots": [],
             "round_sections": [],
@@ -131,6 +147,8 @@ def _merge_progression_into_minutes(
     out = dict(minutes or {})
     snap = {
         "failed_lots": prog.get("failed_lots") or [],
+        "failed_lots_pre_session": prog.get("failed_lots_pre_session") or [],
+        "failed_lots_in_session": prog.get("failed_lots_in_session") or [],
         "won_lots": prog.get("won_lots") or [],
         "eligible_lots": prog.get("eligible_lots") or [],
         "round_sections": prog.get("round_sections") or [],
@@ -149,31 +167,8 @@ async def _enrich_minutes_from_session(
     token: Optional[str],
     fields: Dict[str, Any],
 ) -> Dict[str, Any]:
-    """Bổ sung giá khởi điểm lô đủ điều kiện từ phiên khi chưa đồng bộ diễn biến."""
-    if not token:
-        return fields
-    out = dict(fields or {})
-    minutes = dict(out.get("minutes") or {})
-    session_id = minutes.get("session_id")
-    if not session_id:
-        return fields
-    prog = dict(minutes.get("progression") or {})
-    elots = prog.get("eligible_lots") or []
-    has_descriptions = bool(elots) and all(
-        isinstance(r, dict) and "lot_area_display" in r for r in elots
-    )
-    if has_descriptions:
-        return fields
-    try:
-        data = await build_session_progress_data(token, int(session_id))
-    except Exception:
-        return fields
-    prog["eligible_lots"] = data.get("eligible_lots") or []
-    if not prog.get("price_labels"):
-        prog["price_labels"] = data.get("price_labels") or {}
-    minutes["progression"] = prog
-    out["minutes"] = minutes
-    return out
+    """Giữ progression sync; bảng tài sản lấy từ toàn bộ lô dự án (ctx.lots)."""
+    return fields
 
 
 async def _fetch_project_sessions(token: Optional[str], project_id: int) -> List[Dict[str, Any]]:

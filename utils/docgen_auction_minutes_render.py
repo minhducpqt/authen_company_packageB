@@ -8,7 +8,8 @@ from zoneinfo import ZoneInfo
 
 from starlette.requests import Request
 
-from utils.docgen_contract_render import html_to_pdf_bytes, inject_preview_bridge
+from utils.docgen_contract_render import apply_lot_table, html_to_pdf_bytes, inject_preview_bridge
+from utils.docgen_regulations_render import _amount_words_vnd
 from utils.templates import templates
 
 VN_TZ = ZoneInfo("Asia/Ho_Chi_Minh")
@@ -148,12 +149,51 @@ def merge_fields_for_render(
     return out
 
 
+def _merge_minutes_values(
+    flat: Dict[str, Any],
+    ctx: Optional[Dict[str, Any]],
+) -> Dict[str, Any]:
+    """Gộp defaults từ context (party_a, party_b...) cho template."""
+    values = dict((ctx or {}).get("defaults") or {})
+    if isinstance(ctx, dict):
+        co = ctx.get("company") if isinstance(ctx.get("company"), dict) else {}
+        if co.get("name") and not values.get("party_b_name"):
+            values["party_b_name"] = co.get("name")
+    for key, val in (flat or {}).items():
+        if val is not None and str(val).strip():
+            values[key] = val
+    return values
+
+
+def _prepare_project_lots(
+    fields: Optional[Dict[str, Any]],
+    ctx: Optional[Dict[str, Any]],
+) -> tuple[List[Dict[str, Any]], bool, Dict[str, float]]:
+    lots, show_map = apply_lot_table(fields or {}, (ctx or {}).get("lots") or [])
+    total_area = sum(float(l.get("area") or 0) for l in lots)
+    total_start = sum(float(l.get("starting_price_vnd") or 0) for l in lots)
+    total_deposit = sum(float(l.get("deposit_vnd") or 0) for l in lots)
+    totals = {
+        "area": total_area,
+        "starting_price_vnd": total_start,
+        "deposit_vnd": total_deposit,
+    }
+    return lots, show_map, totals
+
+
 def _progression_from_minutes(minutes: Dict[str, Any]) -> Dict[str, Any]:
     prog = minutes.get("progression")
     if isinstance(prog, dict) and prog:
-        return dict(prog)
+        out = dict(prog)
+        if not out.get("failed_lots_pre_session") and not out.get("failed_lots_in_session"):
+            legacy = list(out.get("failed_lots") or minutes.get("failed_lots") or [])
+            if legacy:
+                out.setdefault("failed_lots_in_session", legacy)
+        return out
     return {
         "failed_lots": list(minutes.get("failed_lots") or []),
+        "failed_lots_pre_session": list((prog or {}).get("failed_lots_pre_session") or []),
+        "failed_lots_in_session": list((prog or {}).get("failed_lots_in_session") or []),
         "won_lots": list(minutes.get("won_lots") or []),
         "eligible_lots": list((prog or {}).get("eligible_lots") or []),
         "round_sections": [],
@@ -200,21 +240,37 @@ def render_auction_minutes_html(
     flat = merge_fields_for_render(fields, ctx=ctx)
     progression = _progression_from_minutes(minutes)
     failed_lots, won_lots = _lots_from_progression(progression)
-    eligible_lots = progression.get("eligible_lots") or []
     price_labels = progression.get("price_labels") or {}
     project = (ctx or {}).get("project") if isinstance(ctx, dict) else {}
+    company = (ctx or {}).get("company") if isinstance(ctx, dict) else {}
+    defaults = (ctx or {}).get("defaults") if isinstance(ctx, dict) else {}
+    ward = (ctx or {}).get("ward") if isinstance(ctx, dict) else {}
+    project_lots, show_map_parcel, lot_totals = _prepare_project_lots(fields, ctx)
+    values = _merge_minutes_values(flat, ctx)
+    if lot_totals.get("starting_price_vnd", 0) > 0:
+        values.setdefault(
+            "total_starting_price_words",
+            _amount_words_vnd(lot_totals["starting_price_vnd"]),
+        )
 
     html = templates.get_template(template_path).render(
         request=request,
         title=(instance or {}).get("title") or "Biên bản đấu giá",
+        document_no=(instance or {}).get("document_no") or "",
         for_download=for_download,
         for_preview=for_preview,
         fields=flat,
+        values=values,
+        defaults=defaults or {},
+        company=company or {},
+        ward=ward or {},
         progression=progression,
         failed_lots=failed_lots,
         won_lots=won_lots,
-        eligible_lots=eligible_lots,
         round_sections=progression.get("round_sections") or [],
+        project_lots=project_lots,
+        show_map_parcel=show_map_parcel,
+        lot_totals=lot_totals,
         session={},
         project=project or {},
         price_labels=price_labels,

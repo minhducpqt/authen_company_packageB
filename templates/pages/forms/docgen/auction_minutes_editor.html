@@ -113,8 +113,22 @@
         <div class="ce-field"><label>Đơn vị tổ chức phiên</label><input id="f_organizer" {% if is_final %}readonly{% endif %} placeholder="Tên công ty tổ chức đấu giá"></div>
 
         <div class="ce-sec">Tài sản đấu giá</div>
-        <div class="ce-field"><label>Mô tả tài sản</label><input id="f_asset_description" {% if is_final %}readonly{% endif %}></div>
-        <div class="ce-field"><label>Giá khởi điểm (ghi chú)</label><input id="f_starting_price_note" {% if is_final %}readonly{% endif %}></div>
+        <div class="ce-field"><label>Mô tả tài sản (mục 1)</label><input id="f_asset_description" {% if is_final %}readonly{% endif %}></div>
+        <div class="ce-field"><label>Ghi chú đợt (vd. đợt 1)</label><input id="f_asset_batch_note" {% if is_final %}readonly{% endif %} placeholder="đợt 1"></div>
+        <div class="ce-field"><label>Thông tin quy hoạch (mục 1.a)</label><textarea id="f_planning_decision" {% if is_final %}readonly{% endif %} rows="2"></textarea></div>
+        <div class="ce-field"><label>Nguồn gốc tài sản (mục 1.b)</label><textarea id="f_land_origin" {% if is_final %}readonly{% endif %} rows="2"></textarea></div>
+        <div class="ce-field"><label>Giá khởi điểm (ghi chú khi chưa có bảng lô)</label><input id="f_starting_price_note" {% if is_final %}readonly{% endif %}></div>
+        <p class="ce-sync-note">Bảng lô đất (mục 2) lấy <strong>toàn bộ lô trong dự án</strong> — tờ/thửa địa chính theo cấu hình Quy chế/Hợp đồng (lot_table).</p>
+
+        <div class="ce-sec">Căn cứ Quy chế &amp; Thông báo</div>
+        <div class="ce-field"><label>Số Quy chế (QCĐG)</label><input id="f_regulations_ref_no" {% if is_final %}readonly{% endif %} placeholder="11/2026/QCĐG-KĐ"></div>
+        <div class="ce-field"><label>Ngày Quy chế</label><input id="f_regulations_ref_date" {% if is_final %}readonly{% endif %} placeholder="22/4/2026"></div>
+        <div class="ce-field"><label>Số Thông báo (TBĐG)</label><input id="f_notice_ref_no" {% if is_final %}readonly{% endif %} placeholder="11/2026/TBĐG-KĐ"></div>
+        <div class="ce-field"><label>Ngày Thông báo</label><input id="f_notice_ref_date" {% if is_final %}readonly{% endif %} placeholder="23/4/2026"></div>
+
+        <div class="ce-sec">Bước giá (mục 3)</div>
+        <div class="ce-field"><label>Bước giá</label><input id="f_bid_step_min" {% if is_final %}readonly{% endif %} placeholder="100.000 đồng/m²"></div>
+        <div class="ce-field"><label>Cách thức áp dụng bước giá</label><textarea id="f_bid_step_application" {% if is_final %}readonly{% endif %} rows="2"></textarea></div>
 
         <div class="ce-sec">Thành phần tham dự</div>
         <div class="ce-field">
@@ -146,6 +160,7 @@
         </div>
         <div class="ce-field"><label>Họ và tên đấu giá viên</label><input id="f_auctioneer_name" {% if is_final %}readonly{% endif %}></div>
         <div class="ce-field"><label>Số chứng chỉ hành nghề đấu giá</label><input id="f_auctioneer_certificate_no" {% if is_final %}readonly{% endif %}></div>
+        <div class="ce-field"><label>Thư ký phiên</label><input id="f_secretary_name" {% if is_final %}readonly{% endif %}></div>
         <div class="ce-field"><label>Ghi chú người tham gia đấu giá</label><input id="f_bidders_note" {% if is_final %}readonly{% endif %}></div>
 
         <div class="ce-sec">Kết thúc phiên</div>
@@ -388,6 +403,16 @@ function collectFields() {
   m.venue = document.getElementById('f_venue')?.value?.trim() || '';
   m.organizer = document.getElementById('f_organizer')?.value?.trim() || COMPANY_NAME || '';
   m.asset_description = document.getElementById('f_asset_description')?.value?.trim() || '';
+  m.asset_batch_note = document.getElementById('f_asset_batch_note')?.value?.trim() || '';
+  m.planning_decision = document.getElementById('f_planning_decision')?.value?.trim() || '';
+  m.land_origin = document.getElementById('f_land_origin')?.value?.trim() || '';
+  m.regulations_ref_no = document.getElementById('f_regulations_ref_no')?.value?.trim() || '';
+  m.regulations_ref_date = document.getElementById('f_regulations_ref_date')?.value?.trim() || '';
+  m.notice_ref_no = document.getElementById('f_notice_ref_no')?.value?.trim() || '';
+  m.notice_ref_date = document.getElementById('f_notice_ref_date')?.value?.trim() || '';
+  m.bid_step_min = document.getElementById('f_bid_step_min')?.value?.trim() || '';
+  m.bid_step_application = document.getElementById('f_bid_step_application')?.value?.trim() || '';
+  m.secretary_name = document.getElementById('f_secretary_name')?.value?.trim() || '';
   m.starting_price_note = document.getElementById('f_starting_price_note')?.value?.trim() || '';
   m.guests = readGuestsFromDom();
   m.asset_owner = document.getElementById('f_asset_owner')?.value?.trim() || '';
@@ -407,7 +432,9 @@ function collectFields() {
   m.progression = prog;
   m.failed_lots = Array.isArray(prog.failed_lots) ? prog.failed_lots : [];
   m.won_lots = Array.isArray(prog.won_lots) ? prog.won_lots : [];
-  return { minutes: m };
+  const out = { minutes: m };
+  if (prev.lot_table) out.lot_table = prev.lot_table;
+  return out;
 }
 
 function syncHidden() {
@@ -423,6 +450,16 @@ function hydrateFromFields() {
   set('f_venue', m.venue);
   set('f_organizer', m.organizer || COMPANY_NAME);
   set('f_asset_description', m.asset_description || CTX.project?.name || '');
+  set('f_asset_batch_note', m.asset_batch_note);
+  set('f_planning_decision', m.planning_decision);
+  set('f_land_origin', m.land_origin);
+  set('f_regulations_ref_no', m.regulations_ref_no);
+  set('f_regulations_ref_date', m.regulations_ref_date);
+  set('f_notice_ref_no', m.notice_ref_no);
+  set('f_notice_ref_date', m.notice_ref_date);
+  set('f_bid_step_min', m.bid_step_min);
+  set('f_bid_step_application', m.bid_step_application);
+  set('f_secretary_name', m.secretary_name);
   set('f_starting_price_note', m.starting_price_note);
   set('f_asset_owner', m.asset_owner);
   resolveAuctioneerSelect(m);
@@ -510,7 +547,7 @@ document.getElementById('btnSyncProgression')?.addEventListener('click', async (
   const ok = await FmDialog.confirm({
     title: 'Cập nhật diễn biến đấu giá',
     message: 'Đồng bộ dữ liệu diễn biến mới nhất từ phiên «' + sessLabel + '» vào biên bản?',
-    sub: 'Nội dung mục II.1 (lô không thành, lô trúng, từng vòng) và bảng giá khởi điểm sẽ được cập nhật. Các trường khác bạn đã nhập vẫn giữ nguyên.',
+    sub: 'Nội dung Phần II (lô không thành, lô trúng, từng vòng) sẽ được cập nhật. Bảng tài sản lấy từ toàn bộ lô dự án. Các trường khác bạn đã nhập vẫn giữ nguyên.',
     variant: 'warn',
     okText: 'Cập nhật',
     cancelText: 'Huỷ',

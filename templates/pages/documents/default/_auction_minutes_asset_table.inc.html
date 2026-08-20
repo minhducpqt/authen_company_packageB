@@ -1,0 +1,73 @@
+{# Bảng tài sản đấu giá — toàn bộ lô dự án; TỔNG: diện tích + giá KĐ + tiền đặt trước #}
+{% macro fmt0(n) -%}
+{%- if n is none or n == '' -%}—{%- else -%}{{ "{:,.0f}".format(n|float).replace(",", ".") }}{%- endif -%}
+{%- endmacro %}
+
+{% macro fmtArea(n) -%}
+{%- if n is none or n == '' -%}—{%- else -%}{{ "{:.2f}".format(n|float) }}{%- endif -%}
+{%- endmacro %}
+
+{% set lots = project_lots if project_lots is defined else [] %}
+{% set show_map = show_map_parcel if show_map_parcel is defined else false %}
+{% set total_area = namespace(v=0) %}
+{% set total_start = namespace(v=0) %}
+{% set total_deposit = namespace(v=0) %}
+{% for lot in lots %}
+  {% if lot.area %}{% set total_area.v = total_area.v + (lot.area|float) %}{% endif %}
+  {% if lot.starting_price_vnd %}{% set total_start.v = total_start.v + (lot.starting_price_vnd|float) %}{% endif %}
+  {% if lot.deposit_vnd %}{% set total_deposit.v = total_deposit.v + (lot.deposit_vnd|float) %}{% endif %}
+{% endfor %}
+
+{% if lots|length > 0 %}
+  <p class="table-caption no-indent">Bảng Giá khởi điểm và tiền đặt trước, tiền mua hồ sơ mời tham gia của các lô đất đấu giá</p>
+  <table class="lots asset-lots tbl-full">
+    <thead>
+      <tr>
+        <th{% if show_map %} rowspan="2"{% endif %}>STT</th>
+        {% if show_map %}<th colspan="2">Vị trí</th>{% endif %}
+        <th{% if show_map %} rowspan="2"{% endif %}>Tên lô đất</th>
+        <th{% if show_map %} rowspan="2"{% endif %}>Diện tích<br/>(m²)</th>
+        <th{% if show_map %} rowspan="2"{% endif %}>Giá khởi điểm<br/>(đồng/m²)</th>
+        <th{% if show_map %} rowspan="2"{% endif %}>Tổng giá trị lô đất theo giá khởi điểm<br/>(đồng)</th>
+        <th{% if show_map %} rowspan="2"{% endif %}>Tiền mua hồ sơ<br/>(đồng)</th>
+        <th{% if show_map %} rowspan="2"{% endif %}>Tiền đặt trước<br/>(đồng)</th>
+        <th{% if show_map %} rowspan="2"{% endif %}>Ghi chú</th>
+      </tr>
+      {% if show_map %}<tr><th>Tờ</th><th>Thửa địa chính</th></tr>{% endif %}
+    </thead>
+    <tbody>
+      {% for lot in lots %}
+      {% set area = lot.area|float if lot.area else 0 %}
+      {% set start_total = lot.starting_price_vnd|float if lot.starting_price_vnd else 0 %}
+      {% set price_m2 = (start_total / area) if area > 0 and start_total > 0 else none %}
+      <tr>
+        <td class="c-stt">{{ loop.index }}</td>
+        {% if show_map %}
+        {% set lk = lot.id|string if lot.id is defined and lot.id is not none else (lot.lot_code|string if lot.lot_code else loop.index|string) %}
+        <td class="c-map">{{ lot.map_sheet or '—' }}</td>
+        <td class="c-map">{{ lot.parcel_no or '—' }}</td>
+        {% endif %}
+        <td class="c-lot-name">{{ lot.lot_code or lot.name or '—' }}</td>
+        <td class="c-area num">{{ fmtArea(lot.area) if lot.area is not none and lot.area != '' else '—' }}</td>
+        <td class="c-num num">{{ fmt0(price_m2) if price_m2 else '—' }}</td>
+        <td class="c-num num">{{ fmt0(lot.starting_price_vnd) if lot.starting_price_vnd else '—' }}</td>
+        <td class="c-num num">{{ fmt0(lot.dossier_fee_vnd) if lot.dossier_fee_vnd else '—' }}</td>
+        <td class="c-num num">{{ fmt0(lot.deposit_vnd) if lot.deposit_vnd else '—' }}</td>
+        <td class="c-note left">{{ lot.description or '' }}</td>
+      </tr>
+      {% endfor %}
+      <tr class="total-row">
+        <td colspan="{{ 4 if show_map else 2 }}"><strong>TỔNG</strong></td>
+        <td class="c-area num"><strong>{{ fmtArea(total_area.v) if total_area.v else '—' }}</strong></td>
+        <td class="c-num"></td>
+        <td class="c-num num"><strong>{{ fmt0(total_start.v) if total_start.v else '—' }}</strong></td>
+        <td class="c-num"></td>
+        <td class="c-num num"><strong>{{ fmt0(total_deposit.v) if total_deposit.v else '—' }}</strong></td>
+        <td class="c-note"></td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="no-indent">Giá khởi điểm trên chưa bao gồm các loại thuế, phí, lệ phí. Người mua được tài sản phải nộp tất cả các loại thuế, phí, lệ phí liên quan đến việc chuyển quyền sở hữu, sử dụng theo quy định của pháp luật.</p>
+{% elif f.starting_price_note %}
+  <div class="field-value is-placeholder">{{ f.starting_price_note }}</div>
+{% endif %}

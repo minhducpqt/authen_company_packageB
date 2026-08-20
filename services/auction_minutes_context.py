@@ -174,13 +174,25 @@ async def fetch_auction_minutes_context(
             r1_ids.append(rid)
     r1_ballots = await _fetch_ballots_for_lots(token, r1_ids)
 
-    failed_lots = _build_session_failed_lots(
+    ineligible_rows: List[Dict[str, Any]] = []
+    if pid:
+        try:
+            from routers.auction_documents_print import _fetch_project_lots_ineligible
+
+            ineligible_rows = await _fetch_project_lots_ineligible(token, pid)
+        except Exception:
+            ineligible_rows = []
+
+    failed_lots_pre, failed_lots_in = _build_session_failed_lots(
         session_results,
+        ui_r1=ui_r1,
         r1_prices=r1_prices,
         r1_ballots=r1_ballots,
         r1_ui_lots_by_id=r1_ui_lots,
+        ineligible_rows=ineligible_rows,
         auction_mode=auction_mode,
     )
+    failed_lots = failed_lots_pre + failed_lots_in
     won_lots = _build_session_won_lots(
         session_results,
         r1_prices=r1_prices,
@@ -268,6 +280,8 @@ async def fetch_auction_minutes_context(
         "price_labels": _price_column_labels(auction_mode),
         "fields": default_fields,
         "failed_lots": failed_lots,
+        "failed_lots_pre_session": failed_lots_pre,
+        "failed_lots_in_session": failed_lots_in,
         "won_lots": won_lots,
         "round_sections": round_sections,
         "company_name": company_name,

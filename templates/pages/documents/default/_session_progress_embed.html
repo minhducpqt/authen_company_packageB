@@ -5,7 +5,12 @@
 {% set lbl_win_u = pl.win_unit or lbl_start_u %}
 {% set lbl_high = pl.highest or 'Giá cao nhất' %}
 {% set lbl_high_u = pl.highest_unit or 'VNĐ/lô' %}
-{% set failed = failed_lots if failed_lots is defined else [] %}
+{% set failed_pre = failed_lots_pre_session if failed_lots_pre_session is defined else [] %}
+{% set failed_in = failed_lots_in_session if failed_lots_in_session is defined else [] %}
+{% set failed_legacy = failed_lots if failed_lots is defined else [] %}
+{% if not failed_pre and not failed_in and failed_legacy|length > 0 %}
+  {% set failed_in = failed_legacy %}
+{% endif %}
 {% set won = won_lots if won_lots is defined else [] %}
 {% set rounds = round_sections if round_sections is defined else [] %}
 {% set ns_lot = namespace(max_len=0) %}
@@ -28,20 +33,51 @@
 
   <div class="sp-sec">
     <div class="sp-sec-title">1. Danh sách lô đấu không thành</div>
-    <div class="sp-sec-note">Lý do: không đủ số lượng phiếu hợp lệ để tiếp tục đấu giá.</div>
+
+    <div class="sp-sub-title">1.1. Danh sách lô không đủ điều kiện tổ chức đấu giá từ trước phiên</div>
+    <div class="sp-sec-note">Lý do: không đủ ≥ 2 khách hàng hợp lệ đăng ký đấu giá trước khi mở phiên.</div>
+    <table class="sp-tbl tbl-summary">
+      <thead>
+        <tr>
+          <th class="c-stt">STT</th>
+          <th class="c-lot">Lô</th>
+          <th class="c-price">{{ lbl_start }}<span class="sub">{{ lbl_start_u }}</span></th>
+          <th class="c-count">KH hợp lệ</th>
+          <th class="c-reason">Lý do</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if failed_pre|length > 0 %}
+          {% for r in failed_pre %}
+            <tr>
+              <td class="num">{{ r.stt }}</td>
+              <td class="lot">{{ r.lot_code }}</td>
+              <td class="price">{{ r.start_price_display or "—" }}</td>
+              <td class="num">{{ r.eligible_customer_count if r.eligible_customer_count is not none else "—" }}</td>
+              <td class="left">{{ r.reason or "Không đủ khách hàng hợp lệ đăng ký đấu giá." }}</td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr class="empty-row"><td colspan="5">Không có lô thuộc nhóm này.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+
+    <div class="sp-sub-title">1.2. Danh sách lô không đủ điều kiện đấu giá trong phiên</div>
+    <div class="sp-sec-note">Lý do: số khách hàng trả giá và diễn biến trong phiên không đủ điều kiện (ví dụ ≤ 1 phiếu hợp lệ ở vòng 1).</div>
     <table class="sp-tbl tbl-summary">
       <thead>
         <tr>
           <th class="c-stt">STT</th>
           <th class="c-lot">Lô</th>
           <th class="c-price">{{ lbl_start }}<span class="sub">{{ lbl_start_u }} (vòng 1)</span></th>
-          <th class="c-price">Phiếu HL</th>
+          <th class="c-count">Phiếu HL</th>
           <th class="c-reason">Lý do</th>
         </tr>
       </thead>
       <tbody>
-        {% if failed|length > 0 %}
-          {% for r in failed %}
+        {% if failed_in|length > 0 %}
+          {% for r in failed_in %}
             <tr>
               <td class="num">{{ r.stt }}</td>
               <td class="lot">{{ r.lot_code }}</td>
@@ -51,7 +87,7 @@
             </tr>
           {% endfor %}
         {% else %}
-          <tr class="empty-row"><td colspan="5">Không có lô đấu không thành.</td></tr>
+          <tr class="empty-row"><td colspan="5">Không có lô thuộc nhóm này.</td></tr>
         {% endif %}
       </tbody>
     </table>

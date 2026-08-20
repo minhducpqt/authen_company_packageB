@@ -1,0 +1,30 @@
+{# Căn cứ pháp lý — mẫu TP-ĐGTS-18 (theo BBDG_HX.pdf) #}
+{% set f = f if f is defined else {} %}
+{% set v = values if values is defined else {} %}
+{% set co = company if company is defined else {} %}
+{% set defs = defaults if defaults is defined else {} %}
+{% set pa = f.party_a or v.party_a_name or defs.party_a_name or '………………………………' %}
+{% set pb = f.party_b or v.party_b_name or defs.party_b_name or co.name or '………………………………' %}
+{% set asset_line = f.asset_description or v.asset_title or (project.name if project is defined else '') or '………………………………' %}
+{% set contract_no = f.contract_no or v.contract_ref_no or '…………………' %}
+{% set contract_date = f.contract_date or v.contract_ref_date or '…/…/……' %}
+{% set reg_no = f.regulations_ref_no or v.regulations_ref_no or '……/……/QCĐG-KĐ' %}
+{% set reg_date = f.regulations_ref_date or v.regulations_ref_date or '…/…/……' %}
+{% set notice_no = f.notice_ref_no or v.notice_ref_no or '……/……/TBĐG-KĐ' %}
+{% set notice_date = f.notice_ref_date or v.notice_ref_date or '…/…/……' %}
+
+<section class="doc-preamble legal-block">
+  <p>Căn cứ Luật Tổ chức Chính quyền địa phương ngày 16/6/2025;</p>
+  <p>Căn cứ Luật Đất đai ngày 18 tháng 01 năm 2024;</p>
+  <p>Căn cứ Luật Đấu giá tài sản ngày 17 tháng 11 năm 2016;</p>
+  <p>Căn cứ Luật số 37/2024/QH15 sửa đổi, bổ sung một số điều của Luật Đấu giá tài sản ngày 27 tháng 6 năm 2024;</p>
+  <p>Căn cứ Nghị quyết số 254/2025/QH15 ngày 11/12/2025 của Quốc hội quy định một số cơ chế, chính sách tháo gỡ khó khăn, vướng mắc trong tổ chức thi hành Luật Đất đai;</p>
+  <p>Căn cứ Nghị quyết số 66.11/2026.NQ-CP ngày 06/01/2026 của Chính phủ quy định xử lý khó khăn, vướng mắc về đấu giá quyền sử dụng đất trong trường hợp giao đất ở theo quy định của Luật đất đai;</p>
+  <p>Căn cứ các Nghị định của Chính phủ: Số 102/2024/NĐ-CP ngày 30/7/2024 quy định chi tiết một số điều của Luật Đất đai; số 103/2024/NĐ-CP ngày 30/7/2024 quy định về tiền sử dụng đất, tiền thuê đất; số 71/2024/NĐ-CP ngày 27/06/2024 quy định về giá đất; số 226/2025/NĐ-CP ngày 15/8/2025 sửa đổi, bổ sung một số điều của các nghị định quy định chi tiết thi hành Luật Đất đai; số 172/2024/NĐ-CP ngày 30/07/2024 quy định chi tiết một số điều và biện pháp thi hành Luật Đấu giá tài sản; số 126/2020/NĐ-CP ngày 19/10/2020 quy định chi tiết một số điều của Luật Quản lý thuế; số 151/2025/NĐ-CP ngày 12/06/2025 quy định về phân định thẩm quyền của chính quyền địa phương 02 cấp, phân quyền, phân cấp trong lĩnh vực đất đai; số 49/2026/NĐ-CP ngày 31/01/2026 quy định chi tiết và hướng dẫn một số điều của Nghị quyết số 254/2025/QH15 của Quốc hội quy định một số cơ chế, chính sách tháo gỡ khó khăn, vướng mắc trong tổ chức thi hành Luật Đất đai;</p>
+  <p>Căn cứ Quyết định số 1311/QĐ-BTP ngày 22/4/2025 của Bộ Tư pháp quy định về khung giá dịch vụ đấu giá tài sản mà pháp luật quy định phải bán thông qua đấu giá;</p>
+  <p>Căn cứ Thông tư số 03/2025/TT-BTC ngày 22 tháng 01 năm 2025 hướng dẫn về chế độ tài chính trong hoạt động đấu giá tài sản; quy định việc thu, chi, quản lý và sử dụng tiền bán hồ sơ mời tham gia đấu giá, tiền đặt trước của người tham gia đấu giá không được nhận lại theo quy định của pháp luật về đấu giá tài sản;</p>
+  <p>Căn cứ Thông tư số 19/2024/TT-BTP ngày 31 tháng 12 năm 2024 của Bộ trưởng Bộ Tư pháp về việc quy định chi tiết và hướng dẫn thi hành một số điều của Luật Đấu giá tài sản số 01/2016/QH14 được sửa đổi, bổ sung một số điều theo Luật số 37/2024/QH15;</p>
+  <p>Căn cứ Quy chế cuộc đấu giá tài sản số: {{ reg_no }} ngày {{ reg_date }} của {{ pb }};</p>
+  <p>Căn cứ Thông báo đấu giá tài sản số: {{ notice_no }} ngày {{ notice_date }} của {{ pb }};</p>
+  <p>Thực hiện Hợp đồng dịch vụ đấu giá tài sản số {{ contract_no }} ngày {{ contract_date }} giữa {{ pa }} và {{ pb }} về việc đấu giá {{ asset_line }};</p>
+</section>

@@ -9,83 +9,97 @@
 </head>
 <body class="doc-pro {% if for_download %}doc-download{% else %}doc-preview{% endif %}">
   {% set f = fields or {} %}
+  {% set v = values or {} %}
   {% set pl = price_labels or {} %}
   {% set prog = progression or {} %}
-  {% set elots = eligible_lots if eligible_lots is defined and eligible_lots else (prog.eligible_lots if prog.eligible_lots is defined else []) %}
   {% set pl_start = (prog.price_labels if prog.price_labels is defined else {}) or pl %}
-  {% set lbl_start_u = pl_start.start_unit or pl.start_unit or 'VNĐ/lô' %}
-  {% set lbl_start = pl_start.start or pl.start or 'Giá khởi điểm' %}
+  {% set co = company or {} %}
+  {% set defs = defaults or {} %}
+  {% set wn = ward.name if ward and ward.name else '' %}
+  {% set asset_title = f.asset_description or v.asset_title or (project.name if project is defined else '') or '………………………………' %}
+  {% set asset_batch = f.asset_batch_note or v.asset_batch_note or '' %}
+  {% set total_start = lot_totals.starting_price_vnd if lot_totals is defined else 0 %}
+  {% set total_words = f.total_starting_price_words or v.total_starting_price_words or '' %}
 
   <div class="sheet">
     <div class="page">
       <header class="doc-header">
-        <div class="doc-header-meta">
-          <div class="form-code">
-            {{ f.form_code or 'TP-ĐGTS-18' }}
-            <span class="form-ref">(Ban hành kèm theo Thông tư số 19/2024/TT-BTP)</span>
-          </div>
+        <div class="form-code-block">
+          <div class="form-code">{{ f.form_code or 'TP-ĐGTS-18' }}</div>
+          <div class="form-ref">(Ban hành kèm theo Thông tư số 19/2024/TT-BTP)</div>
         </div>
         <div class="doc-header-motto">
           <div class="cn">Cộng hòa xã hội chủ nghĩa Việt Nam</div>
           <div class="motto">Độc lập – Tự do – Hạnh phúc</div>
-          <div class="rule-double" aria-hidden="true"><span></span><span></span></div>
         </div>
       </header>
 
       <h1 class="doc-title">Biên bản đấu giá</h1>
+      <p class="doc-no-line no-indent">Số: {% if document_no %}<strong>{{ document_no }}</strong>{% else %}………………………………{% endif %}</p>
 
       {% if error %}
         <div class="err">{{ error }}</div>
       {% endif %}
 
-      <section class="doc-preamble">
-        <p>Căn cứ quy định của Luật Đấu giá tài sản ngày 17 tháng 11 năm 2016; Luật sửa đổi, bổ sung một số điều của Luật Đấu giá tài sản ngày 27 tháng 6 năm 2024;</p>
-        <p>Thực hiện Hợp đồng dịch vụ đấu giá tài sản số {{ f.contract_no or '…………………' }} ngày {{ f.contract_date or '…/…/……' }} giữa {{ f.party_a or '………………………………' }} và {{ f.party_b or '………………………………' }}.</p>
-      </section>
+      {% include "pages/documents/default/_auction_minutes_v2_legal.inc.html" %}
 
-      <p class="session-lead no-indent">Hôm nay, vào hồi {{ f.session_time_h or '……' }} giờ {{ f.session_time_m or '……' }} phút ngày {{ f.session_date or '…/…/………' }}, tại {{ f.venue or '…………………………' }},</p>
-      <p class="no-indent">{{ f.organizer or '………………………………………………………………………………' }} tổ chức phiên đấu giá tài sản.</p>
+      <p class="session-lead no-indent">Hôm nay, vào hồi {{ f.session_time_h or '……' }} giờ {{ f.session_time_m or '……' }} phút, ngày {{ f.session_date or '…/…/………' }}, tại {{ f.venue or '…………………………' }},</p>
+      <p class="no-indent">{{ f.organizer or co.name or '………………………………………………………………………………' }} tổ chức phiên đấu giá tài sản là:</p>
 
-      <ul class="fact-list">
-        <li>Tài sản đấu giá: {{ f.asset_description or (project.name or project.project_code or '………………………………') }}.</li>
-        <li>Giá khởi điểm của tài sản đấu giá{% if elots|length > 0 %} ({{ lbl_start }}, đơn vị {{ lbl_start_u }}){% endif %}:</li>
-      </ul>
+      <p class="no-indent clause-head"><strong>1. Tên tài sản đấu giá:</strong> {{ asset_title }}{% if asset_batch %} ({{ asset_batch }}){% endif %}</p>
+      <p class="no-indent clause-head"><strong>a) Thông tin về quy hoạch:</strong></p>
+      <p>{{ f.planning_decision or v.planning_decision or 'Theo các Quyết định của UBND tỉnh ……' }}</p>
+      <p class="no-indent clause-head"><strong>b) Nguồn gốc của tài sản:</strong> {{ f.land_origin or v.land_origin or ('Quyền sử dụng đất do ' ~ (f.party_a or v.party_a_name or defs.party_a_name or '………………………………') ~ ' đưa ra đấu giá.') }}</p>
 
-      {% if elots|length > 0 %}
-        <table class="lots starting-lots tbl-full">
-          <colgroup>
-            <col class="c-stt"/>
-            <col class="c-lot"/>
-            <col class="c-area"/>
-            <col class="c-price"/>
-          </colgroup>
-          <thead>
-            <tr>
-              <th class="c-stt">STT</th>
-              <th class="c-lot">Lô</th>
-              <th class="c-area">Diện tích (m²)</th>
-              <th class="c-price">{{ lbl_start }} ({{ lbl_start_u }})</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for row in elots %}
-              <tr>
-                <td class="c-stt">{{ row.stt }}</td>
-                <td class="c-lot">{{ row.lot_code }}</td>
-                <td class="c-area">{{ row.lot_area_display or '—' }}</td>
-                <td class="c-price">{{ row.start_price_display or '—' }}</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      {% else %}
-        <div class="field-value is-placeholder">{{ f.starting_price_note or '' }}</div>
-      {% endif %}
+      <p class="no-indent clause-head"><strong>2. Tổng giá khởi điểm của tài sản đấu giá:</strong>
+        {% if total_start and total_start > 0 %}
+          {{ "{:,.0f}".format(total_start|float).replace(",", ".") }} đồng
+          {% if total_words %} (Bằng chữ: {{ total_words }} đồng){% endif %}
+        {% else %}
+          {{ f.starting_price_note or '………………………………' }}
+        {% endif %}
+      </p>
+
+      {% include "pages/documents/default/_auction_minutes_asset_table.inc.html" %}
+
+      <p class="no-indent clause-head"><strong>3. Bước giá, cách thức áp dụng bước giá:</strong></p>
+      <p class="no-indent">- Bước giá: {{ f.bid_step_min or v.bid_step_min or '…………………' }}{% if f.bid_step_min_words or v.bid_step_min_words %} (Bằng chữ: {{ f.bid_step_min_words or v.bid_step_min_words }}){% endif %}.</p>
+      <p class="no-indent">- Cách thức áp dụng bước giá: {{ f.bid_step_application or v.bid_step_application or 'Giá trả hợp lệ = Giá khởi điểm + n x bước giá. Trong đó: n là số tự nhiên (n = 0, 1, 2, 3,...).' }}</p>
 
       <section class="sec sec-participants">
-        <div class="sec-title">I. Thành phần tham dự</div>
+        <div class="sec-title">Phần I — Thành phần tham dự</div>
 
-        <div class="sub-title">1. Khách mời (Họ và tên, chức vụ, nơi công tác):</div>
+        <div class="sub-title">I. Người có tài sản đấu giá:</div>
+        <div class="field-value">{{ f.asset_owner or f.party_a or v.party_a_name or defs.party_a_name or '' }}</div>
+        {% if f.asset_owner_address or v.party_a_address or defs.party_a_address %}
+          <p class="no-indent">Địa chỉ: {{ f.asset_owner_address or v.party_a_address or defs.party_a_address }}</p>
+        {% endif %}
+        {% if f.asset_owner_rep or v.party_a_representative_name %}
+          <p class="no-indent">Đại diện của người có tài sản: {{ f.asset_owner_rep_department or v.party_a_representative_department or '' }}</p>
+          <p class="no-indent">Đại diện: {{ f.asset_owner_rep or v.party_a_representative_name or '' }}{% if f.asset_owner_rep_title or v.party_a_representative_title %}, Chức vụ: {{ f.asset_owner_rep_title or v.party_a_representative_title }}{% endif %}</p>
+        {% endif %}
+
+        <div class="sub-title">II. Tổ chức đấu giá tài sản</div>
+        <p class="no-indent">1. Tên cơ quan: {{ f.organizer or co.name or '………………………………' }}</p>
+        {% if co.address or f.organizer_address %}
+          <p class="no-indent">2. Địa chỉ trụ sở: {{ f.organizer_address or co.address or '………………………………' }}</p>
+        {% endif %}
+        {% if f.organizer_office_address %}
+          <p class="no-indent">3. Địa chỉ văn phòng giao dịch: {{ f.organizer_office_address }}</p>
+        {% endif %}
+        <p class="no-indent">4. Đấu giá viên:</p>
+        <div class="field-value">
+          {%- if f.auctioneer_name -%}
+            {{ f.auctioneer_name }}{% if f.auctioneer_certificate_no %}, chứng chỉ hành nghề số: {{ f.auctioneer_certificate_no }}{% endif %}
+          {%- elif f.auctioneer -%}
+            {{ f.auctioneer }}
+          {%- endif -%}
+        </div>
+        {% if f.secretary_name %}
+          <p class="no-indent">5. Thư ký: {{ f.secretary_name }}</p>
+        {% endif %}
+
+        <div class="sub-title">III. Thành phần tham dự giám sát cuộc đấu giá</div>
         {% set guest_rows = f.guests if f.guests and (f.guests|length) > 0 else [] %}
         {% if guest_rows|length > 0 %}
           <ol class="guest-list">
@@ -106,27 +120,17 @@
           </ol>
         {% endif %}
 
-        <div class="sub-title">2. Người có tài sản đấu giá (Họ và tên, chức vụ):</div>
-        <div class="field-value">{{ f.asset_owner or '' }}</div>
-
-        <div class="sub-title">3. Đấu giá viên (Họ và tên, số Chứng chỉ hành nghề đấu giá):</div>
-        <div class="field-value">
-          {%- if f.auctioneer_name -%}
-            {{ f.auctioneer_name }}{% if f.auctioneer_certificate_no %}, số Chứng chỉ hành nghề đấu giá {{ f.auctioneer_certificate_no }}{% endif %}
-          {%- elif f.auctioneer -%}
-            {{ f.auctioneer }}
-          {%- endif -%}
-        </div>
-
-        <div class="sub-title">4. Người tham gia đấu giá:</div>
+        <div class="sub-title">IV. Người tham gia đấu giá:</div>
         <p style="text-indent:28px;font-size:12pt;margin-top:2px">{{ f.bidders_note or 'Danh sách người tham gia đấu giá được đính kèm cùng biên bản này.' }}</p>
       </section>
 
       <section class="sec sec-progression">
-        <div class="sec-title">II. Diễn biến của phiên đấu giá</div>
-        {% if prog and (prog.round_sections or prog.failed_lots or prog.won_lots) %}
+        <div class="sec-title">Phần II — Diễn biến của phiên đấu giá</div>
+        {% if prog and (prog.round_sections or prog.failed_lots or prog.failed_lots_pre_session or prog.failed_lots_in_session or prog.won_lots) %}
           {% with
             failed_lots=prog.failed_lots or [],
+            failed_lots_pre_session=prog.failed_lots_pre_session or [],
+            failed_lots_in_session=prog.failed_lots_in_session or [],
             won_lots=prog.won_lots or [],
             round_sections=prog.round_sections or [],
             summary=prog.summary or {},
@@ -140,15 +144,25 @@
         {% endif %}
       </section>
 
+      <section class="sec sec-results">
+        <div class="sec-title">Phần III — Công bố kết quả đấu giá</div>
+        <p class="no-indent">Sau khi kết thúc thời gian trả giá; Đấu giá viên, người điều hành cuộc đấu giá tài sản tiến hành thông báo kết quả và công bố người trúng đấu giá theo diễn biến tại Phần II và danh sách người trúng đấu giá kèm theo biên bản này.</p>
+        <p class="no-indent">Người trúng đấu giá cam kết thực hiện nghiêm chỉnh Quy chế cuộc đấu giá và các quy định của pháp luật về đấu giá tài sản.</p>
+      </section>
+
       <div class="doc-signature-block">
         <div class="closing-lines">
-          <p class="no-indent">Phiên đấu giá kết thúc vào lúc {{ f.end_time_h or '………' }} giờ {{ f.end_time_m or '……' }} ngày {{ f.end_date or '…/…/……' }}.</p>
-          <p class="no-indent">Các bên cùng thống nhất ký tên.</p>
+          <p class="no-indent">{{ f.copies_note or 'Biên bản này được lập thành 04 (bốn) bản chính có giá trị pháp lý như nhau.' }}</p>
+          <p class="no-indent">Phiên đấu giá kết thúc vào lúc {{ f.end_time_h or '………' }} giờ {{ f.end_time_m or '……' }} ngày {{ f.end_date or '…/…/……' }}. Các bên cùng thống nhất ký tên.</p>
         </div>
 
-        <div class="sig-grid">
+        <div class="sig-grid sig-grid-6">
           <div class="sig-box">
             <div class="sig-role">Người trúng đấu giá<br/>(Ký, ghi rõ họ tên)</div>
+            <div class="sig-area"></div>
+          </div>
+          <div class="sig-box">
+            <div class="sig-role">Đại diện người có tài sản đấu giá<br/>(Ký, ghi rõ họ tên)</div>
             <div class="sig-area"></div>
           </div>
           <div class="sig-box">
@@ -160,7 +174,7 @@
             <div class="sig-area"></div>
           </div>
           <div class="sig-box">
-            <div class="sig-role">Đại diện người có tài sản đấu giá<br/>(Ký, ghi rõ họ tên)</div>
+            <div class="sig-role">Đại diện các bên giám sát cuộc đấu giá<br/>(Ký, ghi rõ họ tên)</div>
             <div class="sig-area"></div>
           </div>
           <div class="sig-box">
@@ -181,7 +195,7 @@
 
       <aside class="appendix-panel">
         <div class="appendix-title">Phụ lục — Chú giải viết tắt</div>
-        <p class="no-indent">Các ký hiệu, viết tắt trong phần diễn biến phiên đấu giá (mục II):</p>
+        <p class="no-indent">Các ký hiệu, viết tắt trong phần diễn biến phiên đấu giá (Phần II):</p>
         <div class="abbr-grid">
           <span>HL</span><span>Hợp lệ (phiếu hợp lệ)</span>
           <span>KHL</span><span>Không hợp lệ (phiếu không hợp lệ)</span>

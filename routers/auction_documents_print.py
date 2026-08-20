@@ -1431,6 +1431,65 @@ async def _fetch_ballots_for_lots(
     return {rid: data for rid, data in pairs}
 
 
+def _stt_sort_key(v: Any) -> tuple:
+    try:
+        return (0, int(v))
+    except Exception:
+        return (1, _to_str(v))
+
+
+def _next_round_detail_lines(
+    next_participants: List[Any],
+    by_cid: Dict[int, Dict[str, Any]],
+    *,
+    max_full: int = 10,
+) -> List[str]:
+    """Chi tiết lô NEXT_ROUND: ≤max_full khách → đủ thông tin; >max_full → chỉ liệt kê STT."""
+    nx = list(next_participants or [])
+    if not nx:
+        return ["(Chưa có danh sách vào vòng trong)"]
+
+    if len(nx) <= max_full:
+        lines: List[str] = []
+        for np in nx:
+            try:
+                cid = int(np.get("customer_id") or 0)
+            except Exception:
+                cid = 0
+            p = by_cid.get(cid) or {}
+            stt = np.get("stt") if np.get("stt") is not None else p.get("stt")
+            name = p.get("full_name") or f"#{cid}"
+            cccd = p.get("cccd") or ""
+            line = f"• STT {stt} — {name}" if stt != "" and stt is not None else f"• {name}"
+            if cccd:
+                line += f" (CCCD: {cccd})"
+            lines.append(line)
+        return lines
+
+    stt_values: List[Any] = []
+    for np in nx:
+        try:
+            cid = int(np.get("customer_id") or 0)
+        except Exception:
+            cid = 0
+        p = by_cid.get(cid) or {}
+        stt = np.get("stt") if np.get("stt") is not None else p.get("stt")
+        if stt is not None and str(stt).strip() != "":
+            stt_values.append(stt)
+
+    stt_values.sort(key=_stt_sort_key)
+    if stt_values:
+        stt_display = " | ".join(str(s) for s in stt_values)
+        return [
+            f"Các STT vào vòng trong: {stt_display}",
+            "Kèm theo DS điểm danh đính kèm văn bản này.",
+        ]
+    return [
+        f"Tổng {len(nx)} khách vào vòng trong.",
+        "Kèm theo DS điểm danh đính kèm văn bản này.",
+    ]
+
+
 def _build_round_result_rows(
     ui: Dict[str, Any],
     *,
@@ -1519,21 +1578,7 @@ def _build_round_result_rows(
         elif rt == "NEXT_ROUND":
             nx = lot.get("next_participants") or []
             status_note = f"Tổng {len(nx)} khách"
-            for np in nx:
-                try:
-                    cid = int(np.get("customer_id") or 0)
-                except Exception:
-                    cid = 0
-                p = by_cid.get(cid) or {}
-                stt = np.get("stt") if np.get("stt") is not None else p.get("stt")
-                name = p.get("full_name") or f"#{cid}"
-                cccd = p.get("cccd") or ""
-                line = f"• STT {stt} — {name}" if stt != "" and stt is not None else f"• {name}"
-                if cccd:
-                    line += f" (CCCD: {cccd})"
-                detail_lines.append(line)
-            if not nx:
-                detail_lines.append("(Chưa có danh sách vào vòng trong)")
+            detail_lines = _next_round_detail_lines(nx, by_cid)
         elif rt == "NO_VALID":
             detail_lines.append("Không đủ phiếu hợp lệ để tiếp tục đấu.")
         elif rn == 1 and ballot_recorded and valid is not None and int(valid) <= 1:
@@ -1843,15 +1888,73 @@ def _sort_and_stt(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return rows
 
 
-def _build_session_failed_lots(
+def _pre_session_fail_reason(eligible_count: Any, ineligible_reason: Any) -> str:
+    code = _to_str(ineligible_reason or "").strip().upper()
+    try:
+        n = int(eligible_count)
+    except Exception:
+        n = None
+    if code == "NO_CUSTOMER" or n == 0:
+        return "Không có khách hàng hợp lệ đăng ký đấu giá (cần ≥ 2)."
+    if code == "ONLY_ONE_ELIGIBLE" or n == 1:
+        return "Không đủ khách hàng hợp lệ đăng ký đấu giá (cần ≥ 2, hiện có: 1)."
+    if n is not None and n < 2:
+        return f"Không đủ khách hàng hợp lệ đăng ký đấu giá (cần ≥ 2, hiện có: {n})."
+    return "Không đủ khách hàng hợp lệ đăng ký đấu giá (cần ≥ 2)."
+
+
+def _build_pre_session_failed_lots(
+    ineligible_rows: List[Dict[str, Any]],
+    *,
+    r1_ui_lots_by_id: Dict[int, Dict[str, Any]],
+    auction_mode: str = "PER_LOT",
+) -> List[Dict[str, Any]]:
+    """Lô không đủ điều kiện tổ chức đấu giá từ trước phiên (< 2 KH hợp lệ đăng ký)."""
+    r1_ids = set(r1_ui_lots_by_id.keys())
+    rows: List[Dict[str, Any]] = []
+    for row in ineligible_rows or []:
+        if not isinstance(row, dict):
+            continue
+        try:
+            lot_id = int(row.get("lot_id") or 0)
+        except Exception:
+            lot_id = 0
+        if lot_id <= 0 or lot_id in r1_ids:
+            continue
+        lot_code = _to_str(row.get("lot_code") or "").strip()
+        eligible_count = row.get("eligible_customer_count")
+        sp = _start_price_for_display(
+            auction_mode=auction_mode,
+            init_starting_price_vnd=row.get("starting_price_vnd"),
+            area_m2=row.get("area_m2"),
+        )
+        rows.append(
+            {
+                "lot_code": lot_code or (f"#{lot_id}" if lot_id else "—"),
+                "lot_id": lot_id,
+                "start_price_display": _fmt_vnd_dot(sp),
+                "eligible_customer_count": eligible_count,
+                "valid_count": None,
+                "reason": _pre_session_fail_reason(
+                    eligible_count, row.get("ineligible_reason")
+                ),
+                "fail_kind": "PRE_SESSION",
+            }
+        )
+    return _sort_and_stt(rows)
+
+
+def _build_in_session_failed_lots(
     session_results: List[Dict[str, Any]],
     *,
+    ui_r1: Dict[str, Any],
     r1_prices: Dict[int, Any],
     r1_ballots: Dict[int, Dict[str, Any]],
     r1_ui_lots_by_id: Dict[int, Dict[str, Any]],
     auction_mode: str = "PER_LOT",
 ) -> List[Dict[str, Any]]:
-    rows: List[Dict[str, Any]] = []
+    """Lô không đủ điều kiện đấu giá trong phiên (≤1 phiếu HL vòng 1, NO_VALID…)."""
+    no_winner_ids: set[int] = set()
     for res in session_results or []:
         if not isinstance(res, dict):
             continue
@@ -1862,31 +1965,58 @@ def _build_session_failed_lots(
             lot_id = int(res.get("lot_id") or 0)
         except Exception:
             lot_id = 0
-        lot_code = _to_str(res.get("lot_code") or "").strip()
+        if lot_id > 0:
+            no_winner_ids.add(lot_id)
 
-        valid: Any = None
-        r1_lot = r1_ui_lots_by_id.get(lot_id) or {}
+    seen: set[int] = set()
+    rows: List[Dict[str, Any]] = []
+
+    for lot in (ui_r1 or {}).get("lots") or []:
+        if not isinstance(lot, dict):
+            continue
         try:
-            rlid = int(r1_lot.get("id") or 0)
+            lot_id = int(lot.get("lot_id") or 0)
         except Exception:
-            rlid = 0
-        ballot = r1_ballots.get(rlid) or {}
-        if ballot.get("is_recorded"):
-            valid = ballot.get("valid_count")
+            lot_id = 0
+        if lot_id <= 0 or lot_id in seen:
+            continue
+
+        rt = _to_str(lot.get("result_type") or "PENDING").strip().upper()
+        if rt in ("WINNER", "NEXT_ROUND"):
+            continue
+
+        try:
+            round_lot_id = int(lot.get("id") or 0)
+        except Exception:
+            round_lot_id = 0
+        ballot = r1_ballots.get(round_lot_id) or {}
+        ballot_recorded = bool(ballot.get("is_recorded"))
+        valid: Any = ballot.get("valid_count") if ballot_recorded else None
+
+        is_failed = rt == "NO_VALID" or lot_id in no_winner_ids
+        if not is_failed and ballot_recorded and valid is not None:
+            try:
+                is_failed = int(valid) <= 1
+            except Exception:
+                pass
+        if not is_failed:
+            continue
+
+        seen.add(lot_id)
+        lot_code = _to_str(lot.get("lot_code") or "").strip()
+        sp = r1_prices.get(lot_id)
+        if sp is None:
+            sp = _lot_r1_start_price(lot, auction_mode=auction_mode)
 
         reason = "Không đủ số lượng phiếu hợp lệ để tiếp tục đấu giá."
         if valid is not None:
             try:
-                reason = f"Không đủ phiếu hợp lệ (số HL: {int(valid)})."
+                reason = f"Không đủ phiếu hợp lệ trong phiên (số HL: {int(valid)})."
             except Exception:
-                reason = f"Không đủ phiếu hợp lệ (số HL: {valid})."
+                reason = f"Không đủ phiếu hợp lệ trong phiên (số HL: {valid})."
+        elif rt == "NO_VALID":
+            reason = "Không đủ phiếu hợp lệ trong phiên (vòng đấu)."
 
-        sp = _session_result_start_price(
-            res,
-            r1_prices=r1_prices,
-            r1_ui_lots_by_id=r1_ui_lots_by_id,
-            auction_mode=auction_mode,
-        )
         rows.append(
             {
                 "lot_code": lot_code or (f"#{lot_id}" if lot_id else "—"),
@@ -1894,9 +2024,105 @@ def _build_session_failed_lots(
                 "start_price_display": _fmt_vnd_dot(sp),
                 "valid_count": valid,
                 "reason": reason,
+                "fail_kind": "IN_SESSION",
             }
         )
+
+    for res in session_results or []:
+        if not isinstance(res, dict):
+            continue
+        st = _to_str(res.get("status") or "").strip().upper()
+        if st != "NO_WINNER":
+            continue
+        try:
+            lot_id = int(res.get("lot_id") or 0)
+        except Exception:
+            lot_id = 0
+        if lot_id <= 0 or lot_id in seen:
+            continue
+        lot_code = _to_str(res.get("lot_code") or "").strip()
+        r1_lot = r1_ui_lots_by_id.get(lot_id) or {}
+        try:
+            rlid = int(r1_lot.get("id") or 0)
+        except Exception:
+            rlid = 0
+        ballot = r1_ballots.get(rlid) or {}
+        valid = ballot.get("valid_count") if ballot.get("is_recorded") else None
+        sp = _session_result_start_price(
+            res,
+            r1_prices=r1_prices,
+            r1_ui_lots_by_id=r1_ui_lots_by_id,
+            auction_mode=auction_mode,
+        )
+        reason = "Không đủ số lượng phiếu hợp lệ để tiếp tục đấu giá."
+        if valid is not None:
+            try:
+                reason = f"Không đủ phiếu hợp lệ trong phiên (số HL: {int(valid)})."
+            except Exception:
+                reason = f"Không đủ phiếu hợp lệ trong phiên (số HL: {valid})."
+        rows.append(
+            {
+                "lot_code": lot_code or (f"#{lot_id}" if lot_id else "—"),
+                "lot_id": lot_id,
+                "start_price_display": _fmt_vnd_dot(sp),
+                "valid_count": valid,
+                "reason": reason,
+                "fail_kind": "IN_SESSION",
+            }
+        )
+
     return _sort_and_stt(rows)
+
+
+def _build_session_failed_lots(
+    session_results: List[Dict[str, Any]],
+    *,
+    ui_r1: Optional[Dict[str, Any]] = None,
+    r1_prices: Optional[Dict[int, Any]] = None,
+    r1_ballots: Optional[Dict[int, Dict[str, Any]]] = None,
+    r1_ui_lots_by_id: Optional[Dict[int, Dict[str, Any]]] = None,
+    ineligible_rows: Optional[List[Dict[str, Any]]] = None,
+    auction_mode: str = "PER_LOT",
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """Tách lô không thành: trước phiên vs trong phiên."""
+    ui = ui_r1 or {}
+    prices = r1_prices or {}
+    ballots = r1_ballots or {}
+    r1_map = r1_ui_lots_by_id or {}
+    pre = _build_pre_session_failed_lots(
+        ineligible_rows or [],
+        r1_ui_lots_by_id=r1_map,
+        auction_mode=auction_mode,
+    )
+    in_sess = _build_in_session_failed_lots(
+        session_results,
+        ui_r1=ui,
+        r1_prices=prices,
+        r1_ballots=ballots,
+        r1_ui_lots_by_id=r1_map,
+        auction_mode=auction_mode,
+    )
+    return pre, in_sess
+
+
+async def _fetch_project_lots_ineligible(
+    token: str,
+    project_id: int,
+) -> List[Dict[str, Any]]:
+    if not token or not project_id:
+        return []
+    st, js = await _a_get_json(
+        f"/api/v2/reports/projects/{project_id}/lots/ineligible",
+        token,
+        {"limit": 10000},
+        timeout=60.0,
+    )
+    if st != 200 or not isinstance(js, dict):
+        return []
+    items = js.get("items")
+    if not isinstance(items, list):
+        return []
+    return [x for x in items if isinstance(x, dict)]
 
 
 def _build_session_won_lots(
@@ -2087,13 +2313,23 @@ async def build_session_progress_data(
             r1_round_lot_ids.append(rid)
     r1_ballots = await _fetch_ballots_for_lots(token, r1_round_lot_ids)
 
-    failed_lots = _build_session_failed_lots(
+    ineligible_rows: List[Dict[str, Any]] = []
+    if project_id:
+        try:
+            ineligible_rows = await _fetch_project_lots_ineligible(token, int(project_id))
+        except Exception:
+            ineligible_rows = []
+
+    failed_lots_pre, failed_lots_in = _build_session_failed_lots(
         session_results,
+        ui_r1=ui_r1,
         r1_prices=r1_prices,
         r1_ballots=r1_ballots,
         r1_ui_lots_by_id=r1_ui_lots,
+        ineligible_rows=ineligible_rows,
         auction_mode=auction_mode,
     )
+    failed_lots = failed_lots_pre + failed_lots_in
     won_lots = _build_session_won_lots(
         session_results,
         r1_prices=r1_prices,
@@ -2122,12 +2358,16 @@ async def build_session_progress_data(
         "auction_mode": auction_mode,
         "price_labels": price_labels,
         "failed_lots": failed_lots,
+        "failed_lots_pre_session": failed_lots_pre,
+        "failed_lots_in_session": failed_lots_in,
         "won_lots": won_lots,
         "eligible_lots": eligible_lots,
         "round_sections": round_sections,
         "round_count": len(round_sections),
         "summary": {
             "failed": len(failed_lots),
+            "failed_pre_session": len(failed_lots_pre),
+            "failed_in_session": len(failed_lots_in),
             "won": len(won_lots),
             "total_results": len(session_results),
         },
@@ -2205,6 +2445,8 @@ async def print_session_progress(
         "price_labels": prog.get("price_labels") or {},
         "auction_mode": auction_mode,
         "failed_lots": prog.get("failed_lots") or [],
+        "failed_lots_pre_session": prog.get("failed_lots_pre_session") or [],
+        "failed_lots_in_session": prog.get("failed_lots_in_session") or [],
         "won_lots": prog.get("won_lots") or [],
         "round_sections": prog.get("round_sections") or [],
         "round_count": prog.get("round_count") or 0,
