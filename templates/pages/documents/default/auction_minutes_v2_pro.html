@@ -80,14 +80,10 @@
         {% endif %}
 
         <div class="sub-title">II. Tổ chức đấu giá tài sản</div>
-        <p class="no-indent">1. Tên cơ quan: {{ f.organizer or co.name or '………………………………' }}</p>
-        {% if co.address or f.organizer_address %}
-          <p class="no-indent">2. Địa chỉ trụ sở: {{ f.organizer_address or co.address or '………………………………' }}</p>
-        {% endif %}
         {% if f.organizer_office_address %}
-          <p class="no-indent">3. Địa chỉ văn phòng giao dịch: {{ f.organizer_office_address }}</p>
+          <p class="no-indent">1. Địa chỉ văn phòng giao dịch: {{ f.organizer_office_address }}</p>
         {% endif %}
-        <p class="no-indent">4. Đấu giá viên:</p>
+        <p class="no-indent">{% if f.organizer_office_address %}2{% else %}1{% endif %}. Đấu giá viên:</p>
         <div class="field-value">
           {%- if f.auctioneer_name -%}
             {{ f.auctioneer_name }}{% if f.auctioneer_certificate_no %}, chứng chỉ hành nghề số: {{ f.auctioneer_certificate_no }}{% endif %}
@@ -96,7 +92,7 @@
           {%- endif -%}
         </div>
         {% if f.secretary_name %}
-          <p class="no-indent">5. Thư ký: {{ f.secretary_name }}</p>
+          <p class="no-indent">{% if f.organizer_office_address %}3{% else %}2{% endif %}. Thư ký: {{ f.secretary_name }}</p>
         {% endif %}
 
         <div class="sub-title">III. Thành phần tham dự giám sát cuộc đấu giá</div>
@@ -183,15 +179,6 @@
           </div>
         </div>
       </div>
-
-      <aside class="note-panel">
-        <p class="note-heading">Lưu ý</p>
-        <p>Biên bản đấu giá phải được đóng dấu giáp lai của tổ chức hành nghề đấu giá tài sản hoặc Hội đồng đấu giá tài sản.</p>
-        <p>Danh sách tài sản đấu giá và giá khởi điểm của tài sản đấu giá; danh sách người tham gia đấu giá; danh sách người tham gia trả giá, kết quả trả giá từng vòng hoặc nhật ký của phiên đấu giá trực tuyến; danh sách tài sản đấu giá không thành; danh sách tài sản đấu giá thành (nếu có) được đóng dấu giáp lai hoặc dấu treo của tổ chức hành nghề đấu giá tài sản hoặc Hội đồng đấu giá tài sản.</p>
-        <p>Trường hợp phiên đấu giá do Hội đồng đấu giá tài sản thực hiện thì biên bản đấu giá phải có chữ ký của Chủ tịch Hội đồng đấu giá tài sản.</p>
-        <p>Trường hợp đại diện người có tài sản đấu giá hoặc đại diện người tham gia đấu giá không ký biên bản đấu giá tài sản thì đấu giá viên điều hành phiên đấu giá lập biên bản ghi nhận thực tế vụ việc. Biên bản ghi nhận thực tế vụ việc được đóng dấu xác nhận của tổ chức hành nghề đấu giá tài sản và lưu kèm biên bản đấu giá.</p>
-        <p>Trường hợp đấu giá bằng hình thức trực tuyến thì biên bản đấu giá có thể không bao gồm đại diện người tham gia đấu giá, đại diện người có tài sản đấu giá tại phần ký biên bản đấu giá.</p>
-      </aside>
 
       <aside class="appendix-panel">
         <div class="appendix-title">Phụ lục — Chú giải viết tắt</div>
