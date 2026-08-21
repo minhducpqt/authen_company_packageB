@@ -1,0 +1,321 @@
+{% extends "base.html" %}
+{% block title %}Lợi nhuận{% endblock %}
+
+{% block content %}
+{% include "reports/_detail_styles.html" %}
+{% set r = report or {} %}
+{% set summary = r.get('summary') or {} %}
+{% set monthly = r.get('monthly') or [] %}
+{% set projects = r.get('projects') or [] %}
+
+<div class="rd-wrap">
+  <div class="rd-head rd-theme-emerald">
+    <div class="rd-title">
+      <div>
+        <h1>
+          <span class="rd-h1-icon rd-icon-emerald"><i class="ri-funds-fill"></i></span>
+          Lợi nhuận
+        </h1>
+        <p>Dashboard doanh thu đấu giá — biểu đồ theo tháng phiên đấu; tổng = tiền thu về từ mọi dự án đấu trong tháng.</p>
+      </div>
+    </div>
+
+    <form method="get" class="rd-controls flex-wrap gap-3">
+      <div class="rd-sel">
+        <label>Từ tháng</label>
+        <input type="month" name="from_month" value="{{ from_month or '' }}" class="border rounded px-2 py-1">
+      </div>
+      <div class="rd-sel">
+        <label>Đến tháng</label>
+        <input type="month" name="to_month" value="{{ to_month or '' }}" class="border rounded px-2 py-1">
+      </div>
+      <button type="submit" class="rd-btn rd-btn-primary"><i class="ri-filter-3-line"></i> Áp dụng</button>
+    </form>
+  </div>
+
+  {% if error %}
+  <div class="mt-4 p-4 rounded-lg border border-red-200 bg-red-50 text-red-800 text-sm">
+    Không tải được báo cáo (HTTP {{ error.status }}).
+  </div>
+  {% endif %}
+
+  {% if report %}
+  <div class="rd-summary rd-theme-emerald mt-4">
+    <div class="rd-stat-grid">
+      <div class="rd-stat">
+        <div class="rd-stat-lbl">Tổng doanh thu hiện tại</div>
+        <div class="rd-stat-val font-bold" data-amount="{{ summary.get('totalRevenue') or 0 }}"></div>
+      </div>
+      <div class="rd-stat">
+        <div class="rd-stat-lbl">Đã chốt</div>
+        <div class="rd-stat-val text-emerald-700" data-amount="{{ summary.get('finalizedRevenue') or 0 }}"></div>
+      </div>
+      <div class="rd-stat">
+        <div class="rd-stat-lbl">Chưa chốt <span class="text-xs font-normal">(có thể thay đổi)</span></div>
+        <div class="rd-stat-val text-orange-600" data-amount="{{ summary.get('unfinalizedRevenue') or 0 }}"></div>
+      </div>
+      <div class="rd-stat">
+        <div class="rd-stat-lbl">Số dự án</div>
+        <div class="rd-stat-val">{{ summary.get('projectCount') or 0 }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rd-panel mt-4 p-4 border border-slate-200 rounded-xl bg-white">
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+      <div class="text-sm font-semibold text-slate-800">Biểu đồ doanh thu theo tháng</div>
+      <div class="flex gap-4 text-xs">
+        <span><span class="inline-block w-3 h-3 rounded-sm bg-emerald-500 align-middle mr-1"></span>Đã chốt</span>
+        <span><span class="inline-block w-3 h-3 rounded-sm bg-orange-400 align-middle mr-1"></span>Chưa chốt</span>
+      </div>
+    </div>
+    {% if monthly|length == 0 %}
+    <p class="text-sm text-slate-500 py-8 text-center">Không có dữ liệu doanh thu trong khoảng thời gian này.</p>
+    {% else %}
+    <div class="relative h-80 max-w-full">
+      <canvas id="revenueChart"></canvas>
+    </div>
+    <p class="text-xs text-slate-500 mt-2">Mỗi cột = tổng doanh thu công ty từ các dự án có phiên đấu trong tháng đó (đã chốt + chưa chốt).</p>
+    {% endif %}
+  </div>
+
+  <div class="rd-panel mt-4 p-4 border border-slate-200 rounded-xl bg-white">
+    <div class="flex flex-wrap gap-3 items-end justify-between mb-3">
+      <div class="text-sm font-semibold text-slate-800">Chi tiết doanh thu theo dự án</div>
+      <form method="get" class="flex flex-wrap gap-2 items-end text-sm">
+        <input type="hidden" name="from_month" value="{{ from_month or '' }}">
+        <input type="hidden" name="to_month" value="{{ to_month or '' }}">
+        <label class="block">Tìm kiếm
+          <input type="search" name="search" value="{{ search or '' }}" placeholder="Mã / tên dự án" class="mt-1 border rounded px-2 py-1">
+        </label>
+        <label class="block">Trạng thái
+          <select name="status" class="mt-1 border rounded px-2 py-1">
+            {% for val, lbl in [('ALL','Tất cả'),('FINALIZED','Đã chốt'),('UNFINALIZED','Chưa chốt'),('OVERDUE','Quá hạn chưa chốt'),('INCOMPLETE','Thiếu dữ liệu')] %}
+            <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ lbl }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <button type="submit" class="rd-btn">Lọc bảng</button>
+      </form>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-50 text-slate-600">
+          <tr>
+            <th class="px-2 py-2 text-left">Mã dự án</th>
+            <th class="px-2 py-2 text-left">Ngày phiên / dự kiến</th>
+            <th class="px-2 py-2 text-left">Trạng thái</th>
+            <th class="px-2 py-2 text-right">Lô (T/✓/✗)</th>
+            <th class="px-2 py-2 text-right">Phí DV cơ sở</th>
+            <th class="px-2 py-2 text-right">1% CL</th>
+            <th class="px-2 py-2 text-right">Tổng phí DV</th>
+            <th class="px-2 py-2 text-right">Hồ sơ</th>
+            <th class="px-2 py-2 text-right">Chi phí HĐ</th>
+            <th class="px-2 py-2 text-right">Tổng DT</th>
+            <th class="px-2 py-2"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in projects %}
+          {% set lots = p.get('lots') or {} %}
+          {% set svc = p.get('service') or {} %}
+          {% set badge = p.get('statusBadge') or '' %}
+          <tr class="border-t border-slate-100 hover:bg-slate-50">
+            <td class="px-2 py-2 font-medium whitespace-nowrap">
+              <span>{{ p.get('projectCode') }}</span>
+              {% if p.get('projectName') %}
+              <button type="button"
+                class="profit-proj-info ml-1 align-middle"
+                title="{{ p.get('projectName') }}"
+                aria-label="Tên dự án: {{ p.get('projectName') }}"
+                data-project-name="{{ p.get('projectName') }}">
+                <i class="ri-information-line"></i>
+              </button>
+              {% endif %}
+            </td>
+            <td class="px-2 py-2 text-xs">
+              {% if p.get('auctionDate') %}Phiên: {{ p.get('auctionDate')[:10] }}{% elif p.get('expectedAuctionDate') %}Dự kiến: {{ p.get('expectedAuctionDate')[:10] }}{% else %}—{% endif %}
+            </td>
+            <td class="px-2 py-2">
+              <span class="text-xs font-semibold px-2 py-0.5 rounded-full
+                {% if badge == 'ĐÃ CHỐT' %}bg-emerald-100 text-emerald-800
+                {% elif badge == 'QUÁ HẠN CHƯA CHỐT' %}bg-red-100 text-red-800
+                {% elif badge == 'THIẾU DỮ LIỆU' %}bg-slate-200 text-slate-700
+                {% else %}bg-orange-100 text-orange-800{% endif %}">{{ badge }}</span>
+            </td>
+            <td class="px-2 py-2 text-right tabular-nums">{{ lots.get('total') }}/{{ lots.get('success') }}/{{ lots.get('failed') }}</td>
+            <td class="px-2 py-2 text-right" data-amount="{{ svc.get('allocatedBaseFee') or 0 }}"></td>
+            <td class="px-2 py-2 text-right" data-amount="{{ svc.get('differenceFee') or 0 }}"></td>
+            <td class="px-2 py-2 text-right" data-amount="{{ svc.get('payable') or 0 }}"></td>
+            <td class="px-2 py-2 text-right" data-amount="{{ (p.get('documents') or {}).get('revenue') or 0 }}"></td>
+            <td class="px-2 py-2 text-right" data-amount="{{ (p.get('expenses') or {}).get('reimbursement') or 0 }}"></td>
+            <td class="px-2 py-2 text-right font-semibold" data-amount="{{ (p.get('revenue') or {}).get('total') or 0 }}"></td>
+            <td class="px-2 py-2">
+              <a href="/profit/project?project={{ p.get('projectCode') }}" class="text-emerald-700 text-xs font-semibold">Chi tiết</a>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="11" class="px-2 py-6 text-center text-slate-500">Không có dự án trong khoảng thời gian / bộ lọc.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<style>
+  .profit-proj-info {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.1rem;
+    height: 1.1rem;
+    padding: 0;
+    border: 0;
+    border-radius: 9999px;
+    background: transparent;
+    color: #64748b;
+    cursor: help;
+    vertical-align: middle;
+    line-height: 1;
+  }
+  .profit-proj-info:hover,
+  .profit-proj-info.is-open {
+    color: #059669;
+    background: #ecfdf5;
+  }
+  .profit-proj-info i {
+    font-size: 0.95rem;
+    pointer-events: none;
+  }
+</style>
+
+<div id="profitProjectNamePopover" hidden
+  class="fixed z-50 max-w-xs rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-lg">
+  <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">Tên dự án</div>
+  <div id="profitProjectNamePopoverText" class="leading-snug"></div>
+</div>
+
+<script>
+(function(){
+  document.querySelectorAll('[data-amount]').forEach(el => {
+    const v = parseInt(el.getAttribute('data-amount') || '0', 10);
+    el.textContent = (v || 0).toLocaleString('vi-VN') + ' đ';
+  });
+
+  const popover = document.getElementById('profitProjectNamePopover');
+  const popoverText = document.getElementById('profitProjectNamePopoverText');
+  let openBtn = null;
+
+  function closePopover() {
+    if (!popover) return;
+    popover.hidden = true;
+    openBtn?.classList.remove('is-open');
+    openBtn = null;
+  }
+
+  function openPopover(btn) {
+    if (!popover || !popoverText) return;
+    closePopover();
+    openBtn = btn;
+    btn.classList.add('is-open');
+    popoverText.textContent = btn.getAttribute('data-project-name') || '';
+    popover.hidden = false;
+    const rect = btn.getBoundingClientRect();
+    const margin = 8;
+    let left = rect.left + rect.width / 2 - popover.offsetWidth / 2;
+    let top = rect.bottom + margin;
+    left = Math.max(margin, Math.min(left, window.innerWidth - popover.offsetWidth - margin));
+    if (top + popover.offsetHeight > window.innerHeight - margin) {
+      top = rect.top - popover.offsetHeight - margin;
+    }
+    popover.style.left = `${left}px`;
+    popover.style.top = `${top}px`;
+  }
+
+  document.querySelectorAll('.profit-proj-info').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (openBtn === btn && popover && !popover.hidden) closePopover();
+      else openPopover(btn);
+    });
+  });
+
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('.profit-proj-info') || e.target.closest('#profitProjectNamePopover')) return;
+    closePopover();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closePopover();
+  });
+  window.addEventListener('resize', closePopover);
+  window.addEventListener('scroll', closePopover, true);
+
+  const monthly = {{ monthly|tojson }};
+  if (!monthly.length || typeof Chart === 'undefined') return;
+
+  const labels = monthly.map(m => {
+    const [y, mo] = (m.month || '').split('-');
+    return mo && y ? `${mo}/${y}` : m.month;
+  });
+  const finalized = monthly.map(m => m.finalizedRevenue || 0);
+  const unfinalized = monthly.map(m => m.unfinalizedRevenue || 0);
+
+  const fmtFull = (v) => (v || 0).toLocaleString('vi-VN') + ' ₫';
+  const fmtCompact = (v) => {
+    const n = v || 0;
+    if (n >= 1e9) return (n/1e9).toFixed(1).replace(/\.0$/, '') + ' tỷ';
+    if (n >= 1e6) return Math.round(n/1e6) + ' triệu';
+    return fmtFull(n);
+  };
+
+  new Chart(document.getElementById('revenueChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Đã chốt', data: finalized, backgroundColor: '#10b981', stack: 'rev' },
+        { label: 'Chưa chốt', data: unfinalized, backgroundColor: '#fb923c', stack: 'rev' },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            afterTitle: (items) => {
+              const i = items[0]?.dataIndex ?? 0;
+              const m = monthly[i] || {};
+              return [
+                `Tổng doanh thu: ${fmtFull(m.totalRevenue)}`,
+                '',
+                `Đã chốt: ${fmtFull(m.finalizedRevenue)}`,
+                `Chưa chốt: ${fmtFull(m.unfinalizedRevenue)}`,
+                '',
+                `${m.projectCount || 0} dự án`,
+                `${m.finalizedProjectCount || 0} đã chốt · ${m.unfinalizedProjectCount || 0} chưa chốt`,
+                '',
+                'Doanh thu chưa chốt có thể thay đổi.',
+              ].join('\n');
+            },
+            label: (ctx) => `${ctx.dataset.label}: ${fmtFull(ctx.raw)}`,
+          },
+        },
+      },
+      scales: {
+        x: { stacked: true },
+        y: {
+          stacked: true,
+          ticks: { callback: (v) => fmtCompact(v) },
+        },
+      },
+    },
+  });
+})();
+</script>
+{% endblock %}

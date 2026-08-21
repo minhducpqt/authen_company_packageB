@@ -23,6 +23,7 @@ RBAC_ALLOW_PREFIXES = (
 # ===== ADMIN-ONLY PATHS (DENY LIST) =====
 ADMIN_ONLY_PREFIXES = (
     "/reports",
+    "/profit",
     "/transactions/summary",
     "/projects/payment-accounts",
     "/announcements",

@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}Chi tiết lợi nhuận dự án{% endblock %}
+{% from 'macros/project_auction_type.html' import project_option_attrs %}
+
+{% block content %}
+{% include "reports/_detail_styles.html" %}
+{% set s = summary or {} %}
+{% set lots = s.get('lots') or {} %}
+{% set sp = s.get('startingPrice') or {} %}
+{% set svc = s.get('service') or {} %}
+{% set docs = s.get('documents') or {} %}
+{% set exp = s.get('expenses') or {} %}
+{% set dep = s.get('deposit') or {} %}
+{% set rev = s.get('revenue') or {} %}
+{% set warnings = s.get('warnings') or [] %}
+
+<div class="rd-wrap">
+  <div class="rd-head rd-theme-emerald">
+    <div class="rd-title">
+      <div>
+        <h1>
+          <span class="rd-h1-icon rd-icon-emerald"><i class="ri-funds-fill"></i></span>
+          Chi tiết lợi nhuận
+        </h1>
+        <p>Thống kê doanh thu đấu giá QSDĐ theo dự án — tiền đặt trước không tính vào doanh thu.</p>
+      </div>
+      <div class="rd-pill"><span class="rd-dot"></span> Lợi nhuận</div>
+    </div>
+
+    <div class="rd-controls">
+      <form id="filtersForm" method="get" class="flex-1 min-w-0">
+        <div class="rd-sel min-w-0" data-project-type-field>
+          <label>Dự án</label>
+          <select id="projectSelectLocal" name="project">
+            <option value="">— Chọn dự án —</option>
+            {% for p in projects or [] %}
+              {% set code = p.project_code or p.code %}
+              <option value="{{ code }}" {{ project_option_attrs(p) }} {% if code == project %}selected{% endif %}>
+                {{ code }} — {{ p.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      </form>
+      {% if project_id %}
+      <button type="button" id="btnRecalc" class="rd-btn rd-btn-primary">
+        <i class="ri-refresh-line"></i> Tính lại
+      </button>
+      {% endif %}
+      <a class="rd-btn" href="/profit"><i class="ri-arrow-left-line"></i> Lợi nhuận</a>
+    </div>
+  </div>
+
+  {% if error %}
+  <div class="rd-panel mt-4 border border-red-200 bg-red-50 text-red-800 p-4 rounded-lg text-sm">
+    Lỗi tải dữ liệu (HTTP {{ error.status }}).
+  </div>
+  {% endif %}
+
+  {% if project and project_id %}
+  <div class="rd-summary rd-theme-emerald mt-4">
+    <div class="rd-summary-title">
+      Dự án <strong>{{ project }}</strong>
+      {% if s.get('calcStatus') %}
+        <span class="ml-2 text-xs font-bold px-2 py-0.5 rounded-full bg-white/80">{{ s.get('calcStatus') }}</span>
+      {% endif %}
+    </div>
+
+    <div class="rd-stat-grid mt-3">
+      <div class="rd-stat"><div class="rd-stat-lbl">Tổng số lô</div><div class="rd-stat-val">{{ lots.get('total') or 0 }}</div></div>
+      <div class="rd-stat"><div class="rd-stat-lbl">Đấu thành</div><div class="rd-stat-val text-emerald-700">{{ lots.get('success') or 0 }}</div></div>
+      <div class="rd-stat"><div class="rd-stat-lbl">Không thành</div><div class="rd-stat-val">{{ lots.get('failed') or 0 }}</div></div>
+      <div class="rd-stat"><div class="rd-stat-lbl">Tỷ lệ đấu thành (theo GKP)</div><div class="rd-stat-val">{{ '%.2f'|format((sp.get('successRatio') or 0) * 100) }}%</div></div>
+    </div>
+
+    <div class="rd-stat-grid mt-2">
+      <div class="rd-stat"><div class="rd-stat-lbl">Tổng giá khởi điểm</div><div class="rd-stat-val" data-amount="{{ sp.get('total') or 0 }}"></div></div>
+      <div class="rd-stat"><div class="rd-stat-lbl">GKP phần đấu thành</div><div class="rd-stat-val" data-amount="{{ sp.get('successful') or 0 }}"></div></div>
+      <div class="rd-stat"><div class="rd-stat-lbl">Khung phí cơ sở (tối đa)</div><div class="rd-stat-val" data-amount="{{ svc.get('legalBaseFeeLimit') or 0 }}"></div></div>
+      <div class="rd-stat"><div class="rd-stat-lbl">Phí cơ sở hợp đồng</div><div class="rd-stat-val" data-amount="{{ svc.get('contractBaseFee') or 0 }}"></div></div>
+    </div>
+
+    <div class="rd-stat-grid mt-2">
+      <div class="rd-stat"><div class="rd-stat-lbl">Phí cơ sở được phân bổ</div><div class="rd-stat-val" data-amount="{{ svc.get('allocatedBaseFee') or 0 }}"></div></div>
+      <div class="rd-stat"><div class="rd-stat-lbl">1% chênh lệch</div><div class="rd-stat-val" data-amount="{{ svc.get('differenceFee') or 0 }}"></div></div>
+      <div class="rd-stat"><div class="rd-stat-lbl">Tổng phí dịch vụ (payable)</div><div class="rd-stat-val font-bold text-emerald-800" data-amount="{{ svc.get('payable') or 0 }}"></div></div>
+      <div class="rd-stat"><div class="rd-stat-lbl">Tiền hồ sơ thực thu</div><div class="rd-stat-val" data-amount="{{ docs.get('revenue') or 0 }}"></div></div>
+    </div>
+
+    <div class="rd-stat-grid mt-2">
+      <div class="rd-stat"><div class="rd-stat-lbl">Chi phí được thanh toán</div><div class="rd-stat-val" data-amount="{{ exp.get('reimbursement') or 0 }}"></div></div>
+      <div class="rd-stat"><div class="rd-stat-lbl">Doanh thu khác</div><div class="rd-stat-val" data-amount="{{ exp.get('otherRevenue') or 0 }}"></div></div>
+      <div class="rd-stat"><div class="rd-stat-lbl">Tổng doanh thu</div><div class="rd-stat-val font-bold text-emerald-900" data-amount="{{ rev.get('total') or 0 }}"></div></div>
+    </div>
+  </div>
+
+  <div class="rd-panel mt-4 p-4 border border-slate-200 rounded-xl bg-slate-50">
+    <div class="text-sm font-semibold text-slate-700 mb-2">Cấu hình thủ công</div>
+    <form id="configForm" class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+      <label class="block">Phí cơ sở hợp đồng (VND)
+        <input type="number" name="contract_base_fee" class="mt-1 w-full border rounded px-2 py-1"
+          value="{{ svc.get('contractBaseFee') if svc.get('contractBaseFee') is not none else '' }}"
+          placeholder="Mặc định: {{ (svc.get('legalBaseFeeLimit') or 0)|int }}"
+          min="0" step="1000">
+      </label>
+      <label class="block">Chi phí được thanh toán (VND)
+        <input type="number" name="expense_reimbursement" class="mt-1 w-full border rounded px-2 py-1" value="{{ exp.get('reimbursement') or 0 }}" min="0" step="1000">
+      </label>
+      <label class="block">Doanh thu khác (VND)
+        <input type="number" name="other_revenue" class="mt-1 w-full border rounded px-2 py-1" value="{{ exp.get('otherRevenue') or 0 }}" min="0" step="1000">
+      </label>
+      <div class="md:col-span-3">
+        <button type="submit" class="rd-btn rd-btn-primary"><i class="ri-save-line"></i> Lưu &amp; tính lại</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="rd-panel mt-4 p-4 border border-amber-200 rounded-xl bg-amber-50/60">
+    <div class="text-sm font-semibold text-amber-900 mb-2">Dòng tiền đặt trước (không tính vào doanh thu)</div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+      <div>Đã thu: <span data-amount="{{ dep.get('collected') or 0 }}"></span></div>
+      <div>Đã hoàn: <span data-amount="{{ dep.get('refunded') or 0 }}"></span></div>
+      <div>Chuyển nhượng: <span data-amount="{{ dep.get('transferred') or 0 }}"></span></div>
+      <div>Tịch thu: <span data-amount="{{ dep.get('forfeited') or 0 }}"></span></div>
+    </div>
+  </div>
+
+  {% if warnings|length > 0 %}
+  <div class="rd-panel mt-4 p-4 border border-yellow-300 rounded-xl bg-yellow-50 text-sm">
+    <div class="font-semibold mb-2">Cảnh báo</div>
+    <ul class="list-disc pl-5 space-y-1">
+      {% for w in warnings %}<li>{{ w }}</li>{% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% elif project and not project_id %}
+  <div class="rd-panel mt-4 p-4 text-sm text-red-700">Không tìm thấy project_id cho mã {{ project }}.</div>
+  {% endif %}
+</div>
+
+<script>
+(function(){
+  const pid = {{ project_id|tojson if project_id else 'null' }};
+  document.querySelectorAll('[data-amount]').forEach(n => {
+    const v = parseInt(n.getAttribute('data-amount') || '0', 10);
+    n.textContent = (v || 0).toLocaleString('vi-VN') + ' đ';
+  });
+
+  document.getElementById('projectSelectLocal')?.addEventListener('change', () => {
+    document.getElementById('filtersForm')?.submit();
+  });
+
+  async function postJson(url, body){
+    const r = await fetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    return { status: r.status };
+  }
+  async function patchJson(url, body){
+    const r = await fetch(url, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    return { status: r.status };
+  }
+
+  document.getElementById('btnRecalc')?.addEventListener('click', async () => {
+    if(!pid) return;
+    const { status } = await postJson('/profit/project/recalculate', { project_id: pid });
+    if(status >= 200 && status < 300) location.reload();
+    else alert('Tính lại thất bại');
+  });
+
+  document.getElementById('configForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if(!pid) return;
+    const fd = new FormData(e.target);
+    const body = { project_id: pid, recalculate: true };
+    for (const [k,v] of fd.entries()) {
+      if(v !== '') body[k] = Number(v);
+    }
+    const { status } = await patchJson('/profit/project/config', body);
+    if(status >= 200 && status < 300) location.reload();
+    else alert('Lưu cấu hình thất bại');
+  });
+})();
+</script>
+{% endblock %}
