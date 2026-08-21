@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional
 
 import httpx
 from fastapi import APIRouter, Query, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
 from utils.auth import get_access_token
 from utils.templates import templates
@@ -205,3 +205,36 @@ async def profit_project_config_proxy(request: Request):
         payload,
     )
     return JSONResponse(js, status_code=st)
+
+
+@router.get("/profit/project/export.xlsx")
+async def profit_project_export_xlsx_proxy(
+    request: Request,
+    project_id: int = Query(..., ge=1),
+):
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(url="/login?next=%2Fprofit%2Fproject", status_code=303)
+
+    url = f"{SERVICE_A_BASE_URL}/api/v1/projects/{project_id}/revenue/export.xlsx"
+    headers = {"Authorization": f"Bearer {token}"}
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        r = await client.get(url, headers=headers)
+
+    if r.status_code != 200:
+        try:
+            detail = r.json()
+        except Exception:
+            detail = {"detail": (r.text or "")[:500]}
+        return JSONResponse(detail, status_code=r.status_code)
+
+    filename = f"bao_cao_chi_phi_p{project_id}.xlsx"
+    cd = r.headers.get("content-disposition") or r.headers.get("Content-Disposition") or ""
+    if "filename=" in cd:
+        filename = cd.split("filename=")[-1].strip().strip('"')
+
+    return Response(
+        content=r.content,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

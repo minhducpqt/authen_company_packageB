@@ -43,7 +43,12 @@
         </div>
       </form>
       {% if project_id %}
-      <button type="button" id="btnRecalc" class="rd-btn rd-btn-primary">
+      <a class="rd-btn rd-btn-primary"
+         href="/profit/project/export.xlsx?project_id={{ project_id }}"
+         title="Tải báo cáo tổng hợp chi phí để chốt dự án">
+        <i class="ri-file-excel-2-line"></i> Tải XLSX
+      </a>
+      <button type="button" id="btnRecalc" class="rd-btn">
         <i class="ri-refresh-line"></i> Tính lại
       </button>
       {% endif %}
