@@ -1,6 +1,7 @@
 # routers/profit.py — Module Lợi nhuận (tách biệt khỏi Báo cáo dự án)
 from __future__ import annotations
 
+import logging
 import os
 from typing import Any, Dict, Optional
 
@@ -12,6 +13,7 @@ from utils.auth import get_access_token
 from utils.templates import templates
 
 router = APIRouter(tags=["profit"])
+logger = logging.getLogger(__name__)
 
 SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 
@@ -37,9 +39,17 @@ async def _post_json(path: str, token: str, payload: Dict[str, Any] | None = Non
     async with httpx.AsyncClient(timeout=60.0) as c:
         r = await c.post(url, headers=headers, json=payload or {})
         try:
-            return r.status_code, r.json()
+            body = r.json()
         except Exception:
-            return r.status_code, {"detail": (r.text or "")[:500]}
+            body = {"detail": (r.text or "")[:500]}
+        if r.status_code >= 400:
+            logger.warning(
+                "Service A POST %s -> HTTP %s body=%s",
+                path,
+                r.status_code,
+                body,
+            )
+        return r.status_code, body
 
 
 async def _patch_json(path: str, token: str, payload: Dict[str, Any]) -> tuple[int, Any]:
@@ -166,6 +176,13 @@ async def profit_project_recalculate_proxy(request: Request):
         token,
         {k: v for k, v in body.items() if k != "project_id"},
     )
+    if st >= 400:
+        logger.warning(
+            "profit recalculate upstream error project_id=%s status=%s detail=%s",
+            project_id,
+            st,
+            js,
+        )
     return JSONResponse(js, status_code=st)
 
 
