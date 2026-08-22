@@ -137,20 +137,76 @@
       line-height:1.15;
     }
 
-    /* Góc phải: mã lô — giữ ý đồ kiểm phiếu nhanh */
+    /* Góc phải: phân loại lô + mã lô + mã phiếu */
     .lot-flag{
       position:absolute;
       top:0;
       right:0;
       z-index:2;
-      min-width:46mm;
-      max-width:54mm;
+      min-width:40mm;
+      max-width:50mm;
       border:1.2pt solid var(--border-strong);
       border-radius:var(--radius);
       background:var(--surface);
-      padding:2.5mm 3mm 2.8mm;
+      padding:1.4mm 2mm 1.5mm;
       text-align:center;
       box-sizing:border-box;
+    }
+
+    .lot-flag--compact{
+      padding:1.1mm 1.8mm 1.2mm;
+      min-width:36mm;
+      max-width:46mm;
+    }
+
+    .lot-flag .flag-stack{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:0.35mm;
+      line-height:1;
+    }
+
+    .lot-flag .flag-pl-block{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:0;
+      width:100%;
+      border:1.4pt solid rgba(0,0,0,0.62);
+      border-radius:1.4mm;
+      background:#fff;
+      padding:0.5mm 1.5mm 0.7mm;
+      box-sizing:border-box;
+    }
+
+    .lot-flag .flag-pl-hint{
+      display:block;
+      font-size:5.8pt;
+      font-weight:600;
+      letter-spacing:0.04mm;
+      color:rgba(0,0,0,0.48);
+      line-height:1;
+      margin:0;
+      text-transform:none;
+    }
+
+    .lot-flag .flag-pl-num{
+      display:block;
+      font-size:26pt;
+      font-weight:900;
+      letter-spacing:0.05mm;
+      line-height:0.92;
+      color:#000;
+      margin:0;
+      padding:0;
+    }
+
+    .lot-flag .flag-pl-num--missing{
+      font-size:18pt;
+      color:rgba(0,0,0,0.38);
+      line-height:1;
     }
 
     .lot-flag .flag-lot{
@@ -205,13 +261,28 @@
     }
 
     .lot-flag .flag-code{
-      font-size:8.8pt;
+      font-size:7.6pt;
       font-weight:700;
-      letter-spacing:0.06mm;
+      letter-spacing:0.04mm;
       color:var(--muted);
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
+      line-height:1.05;
+      margin-top:0.1mm;
+    }
+
+    .lot-flag .flag-lot-code{
+      display:block;
+      font-size:10pt;
+      font-weight:800;
+      line-height:1.05;
+      letter-spacing:0.05mm;
+      color:rgba(0,0,0,0.82);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width:100%;
     }
 
     /* ── ASSET STRIP ── */
@@ -704,7 +775,7 @@
 
     <!-- HEADER -->
     <header class="sheet-header">
-      <aside class="lot-flag" aria-label="{% if show_group_flag %}Nhóm đặt trước{% elif is_blank_ticket %}Phiếu trả giá{% else %}Mã lô{% endif %}">
+      <aside class="lot-flag{% if not show_group_flag and not is_blank_ticket %} lot-flag--compact{% endif %}" aria-label="{% if show_group_flag %}Nhóm đặt trước{% elif is_blank_ticket %}Phiếu trả giá{% else %}Phân loại lô{% endif %}">
         {% if show_group_flag %}
         <span class="flag-lot flag-lot--group">
           <span class="flag-group-label">Nhóm</span>
@@ -717,10 +788,17 @@
           Phiếu {{ t.ticket_seq or '?' }}/{{ t.ticket_total or qty_lots }}
         </span>
         {% else %}
-        <span
-          class="flag-lot"
-          style="font-size:{{ lot_flag_fs }}; padding:{{ lot_flag_pad }}; letter-spacing:{{ lot_flag_ls }};"
-        >{{ lot_code_display }}</span>
+        <div class="flag-stack">
+          <div class="flag-pl-block">
+            <span class="flag-pl-hint">Phân loại</span>
+            {% if t.lot_stt is not none and t.lot_stt != '' %}
+            <span class="flag-pl-num">{{ t.lot_stt }}</span>
+            {% else %}
+            <span class="flag-pl-num flag-pl-num--missing">—</span>
+            {% endif %}
+          </div>
+          <span class="flag-lot-code">{{ t.lot_code or lot_code_display }}</span>
+        </div>
         {% endif %}
         <span class="flag-code">{{ stt_code }}-C{{ t.customer_id }}-S{{ qty_lots }}{% if t.session_id %}-P{{ t.session_id }}{% endif %}</span>
       </aside>

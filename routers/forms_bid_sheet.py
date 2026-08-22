@@ -99,6 +99,7 @@ def build_normal_ticket_from_form(data: Dict[str, Any], *, qr_data_uri: str) -> 
 
     lot_code = str(data.get("lot_code") or "").strip()
     lot_display = str(data.get("lot_display") or "").strip() or lot_code
+    lot_stt = _int_or_none(data.get("lot_stt"))
 
     return {
         "ticket_mode": "NORMAL",
@@ -106,6 +107,7 @@ def build_normal_ticket_from_form(data: Dict[str, Any], *, qr_data_uri: str) -> 
         "company_name": str(data.get("company_name") or "").strip(),
         "lot_code": lot_code,
         "lot_display": lot_display,
+        "lot_stt": lot_stt,
         "area_m2": area,
         "customer_full_name": str(data.get("customer_full_name") or "").strip(),
         "customer_id": customer_id,
@@ -134,6 +136,7 @@ DEFAULT_NORMAL_FORM: Dict[str, str] = {
     "project_name": "Khu đô thị mẫu XYZ",
     "lot_code": "A-01",
     "lot_display": "A-01",
+    "lot_stt": "14",
     "area_m2": "120.50",
     "auction_mode": "PER_LOT",
     "starting_price_vnd": "15000000",
@@ -206,6 +209,7 @@ async def bid_sheet_normal_preview(
     project_name: str = Form(""),
     lot_code: str = Form(""),
     lot_display: str = Form(""),
+    lot_stt: str = Form(""),
     area_m2: str = Form(""),
     auction_mode: str = Form("PER_LOT"),
     starting_price_vnd: str = Form(""),
@@ -233,6 +237,7 @@ async def bid_sheet_normal_preview(
         "project_name": project_name,
         "lot_code": lot_code,
         "lot_display": lot_display,
+        "lot_stt": lot_stt,
         "area_m2": area_m2,
         "auction_mode": auction_mode,
         "starting_price_vnd": starting_price_vnd,
@@ -271,6 +276,7 @@ async def bid_sheet_normal_preview_legacy(
     project_name: str = Form(""),
     lot_code: str = Form(""),
     lot_display: str = Form(""),
+    lot_stt: str = Form(""),
     area_m2: str = Form(""),
     auction_mode: str = Form("PER_LOT"),
     starting_price_vnd: str = Form(""),
@@ -295,6 +301,7 @@ async def bid_sheet_normal_preview_legacy(
         project_name=project_name,
         lot_code=lot_code,
         lot_display=lot_display,
+        lot_stt=lot_stt,
         area_m2=area_m2,
         auction_mode=auction_mode,
         starting_price_vnd=starting_price_vnd,
