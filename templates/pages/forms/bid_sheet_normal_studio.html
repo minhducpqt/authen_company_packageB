@@ -91,9 +91,16 @@
       <div class="s">Các trường map 1–1 với mẫu <code>bid_sheet</code> đấu thường (không blank / group).</div>
     </div>
     <form id="bsForm" class="bs-pb" onsubmit="return false;">
-      <div class="bs-hint">
-        Bật “Hiện VÒNG” = set session + multi-round (đúng rule template:
-        <code>session_id + is_multi_round + round_no</code>).
+      <div class="bs-sec">
+        <h3>Tiêu đề phiếu</h3>
+        <div class="bs-field">
+          <label for="doc_title">doc_title · Tiêu đề in trên phiếu</label>
+          <input name="doc_title" id="doc_title" value="{{ defaults.doc_title }}" placeholder="PHIẾU TRẢ GIÁ (VÒNG 1)"/>
+        </div>
+        <div class="bs-hint" style="margin-bottom:0;">
+          Chỉ dùng cho <b>preview studio</b> — không ảnh hưởng in phiên thật.
+          Gõ ví dụ <code>PHIẾU TRẢ GIÁ (VÒNG 1)</code>, <code>PHIẾU TRẢ GIÁ (VÒNG 2)</code>.
+        </div>
       </div>
 
       <div class="bs-sec">
@@ -159,34 +166,6 @@
           <select name="bid_step_rule" id="bid_step_rule">
             <option value="LOT_DEFAULT" selected>LOT_DEFAULT (theo bước lô)</option>
             <option value="ANY_ABOVE_START">ANY_ABOVE_START (không áp dụng)</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="bs-sec">
-        <h3>Vòng (in từ phiên)</h3>
-        <div class="bs-field">
-          <label for="show_round">Hiện tiêu đề “PHIẾU TRẢ GIÁ (VÒNG n)”</label>
-          <select name="show_round" id="show_round">
-            <option value="0" selected>Không</option>
-            <option value="1">Có</option>
-          </select>
-        </div>
-        <div class="bs-g2">
-          <div class="bs-field">
-            <label for="session_id">session_id</label>
-            <input name="session_id" id="session_id" value="{{ defaults.session_id }}" placeholder="bắt buộc nếu hiện vòng"/>
-          </div>
-          <div class="bs-field">
-            <label for="round_no">round_no</label>
-            <input name="round_no" id="round_no" value="{{ defaults.round_no }}"/>
-          </div>
-        </div>
-        <div class="bs-field">
-          <label for="is_multi_round">is_multi_round</label>
-          <select name="is_multi_round" id="is_multi_round">
-            <option value="0" selected>false</option>
-            <option value="1">true</option>
           </select>
         </div>
       </div>
@@ -304,17 +283,6 @@ function printPreview(){
 document.querySelectorAll('#bsForm input, #bsForm select, #bsForm textarea').forEach(el=>{
   el.addEventListener('input', scheduleApply);
   el.addEventListener('change', scheduleApply);
-});
-
-// Sync: bật hiện vòng → gợi ý multi-round
-document.getElementById('show_round').addEventListener('change', ()=>{
-  const on = document.getElementById('show_round').value === '1';
-  if(on){
-    document.getElementById('is_multi_round').value = '1';
-    if(!document.getElementById('session_id').value.trim()){
-      document.getElementById('session_id').value = '1';
-    }
-  }
 });
 
 applyPreview();

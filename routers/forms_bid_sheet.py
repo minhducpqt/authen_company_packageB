@@ -1,7 +1,9 @@
 # routers/forms_bid_sheet.py — Studio preview phiếu trả giá (add-on, không đụng /bid-tickets production)
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+import re
+from html import escape
+from typing import Any, Dict, Optional, Tuple
 
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse
@@ -67,21 +69,40 @@ def _pad_stt(stt: Optional[str]) -> str:
     return s
 
 
+def _parse_studio_doc_title(doc_title: str) -> Tuple[bool, Optional[str], bool]:
+    """
+    Studio-only: map ô tiêu đề → field template production đã có (show_round, round_label_text).
+    Trả về needs_html_patch=True khi tiêu đề tuỳ biến hoàn toàn (patch HTML preview, không đụng template in).
+    """
+    title = (doc_title or "").strip() or "PHIẾU TRẢ GIÁ"
+    if title.upper() == "PHIẾU TRẢ GIÁ":
+        return False, None, False
+    m = re.match(r"^PHIẾU TRẢ GIÁ\s*\((.+)\)\s*$", title, re.IGNORECASE)
+    if m:
+        label = m.group(1).strip()
+        return bool(label), (label or None), False
+    return False, None, True
+
+
+def _patch_studio_doc_title_html(html: str, doc_title: str) -> str:
+    """Studio-only: thay nội dung h1 sau render, không sửa template in production."""
+    safe = escape((doc_title or "").strip() or "PHIẾU TRẢ GIÁ")
+    return re.sub(
+        r'(<h1 class="doc-title">)(.*?)(</h1>)',
+        rf"\1{safe}\3",
+        html,
+        count=1,
+        flags=re.DOTALL,
+    )
+
+
 def build_normal_ticket_from_form(data: Dict[str, Any], *, qr_data_uri: str) -> Dict[str, Any]:
     customer_id = _int_or_none(data.get("customer_id")) or 0
     stt_raw = str(data.get("stt") or "").strip()
     stt_padded = _pad_stt(stt_raw)
 
-    session_id = _int_or_none(data.get("session_id"))
-    is_multi_round = _bool_form(data.get("is_multi_round"), False)
-    if _bool_form(data.get("show_round"), False):
-        is_multi_round = True
-        if session_id is None:
-            session_id = 1
-
-    round_no = _int_or_none(data.get("round_no"))
-    if is_multi_round and round_no is None:
-        round_no = 1
+    doc_title = str(data.get("doc_title") or "").strip() or "PHIẾU TRẢ GIÁ"
+    show_round, round_label_text, _ = _parse_studio_doc_title(doc_title)
 
     show_price_step = _bool_form(data.get("show_price_step"), True)
     bid_step_rule = (data.get("bid_step_rule") or "LOT_DEFAULT").strip().upper()
@@ -123,10 +144,8 @@ def build_normal_ticket_from_form(data: Dict[str, Any], *, qr_data_uri: str) -> 
         "auction_mode": auction_mode,
         "bid_price_unit": auction_mode,
         "customer_lot_count": customer_lot_count,
-        "session_id": session_id,
-        "round_id": 1,
-        "round_no": round_no,
-        "is_multi_round": is_multi_round,
+        "show_round": show_round,
+        "round_label_text": round_label_text or "",
         "qr_data_uri": qr_data_uri or None,
     }
 
@@ -143,10 +162,7 @@ DEFAULT_NORMAL_FORM: Dict[str, str] = {
     "bid_step_vnd": "100000",
     "bid_step_rule": "LOT_DEFAULT",
     "show_price_step": "1",
-    "show_round": "0",
-    "is_multi_round": "0",
-    "session_id": "",
-    "round_no": "1",
+    "doc_title": "PHIẾU TRẢ GIÁ",
     "customer_full_name": "Nguyễn Văn A",
     "customer_id": "1001",
     "stt": "12",
@@ -216,10 +232,7 @@ async def bid_sheet_normal_preview(
     bid_step_vnd: str = Form(""),
     bid_step_rule: str = Form("LOT_DEFAULT"),
     show_price_step: str = Form("1"),
-    show_round: str = Form("0"),
-    is_multi_round: str = Form("0"),
-    session_id: str = Form(""),
-    round_no: str = Form("1"),
+    doc_title: str = Form("PHIẾU TRẢ GIÁ"),
     customer_full_name: str = Form(""),
     customer_id: str = Form(""),
     stt: str = Form(""),
@@ -244,10 +257,7 @@ async def bid_sheet_normal_preview(
         "bid_step_vnd": bid_step_vnd,
         "bid_step_rule": bid_step_rule,
         "show_price_step": show_price_step,
-        "show_round": show_round,
-        "is_multi_round": is_multi_round,
-        "session_id": session_id,
-        "round_no": round_no,
+        "doc_title": doc_title,
         "customer_full_name": customer_full_name,
         "customer_id": customer_id,
         "stt": stt,
@@ -259,14 +269,16 @@ async def bid_sheet_normal_preview(
     qr = qr_png_data_uri(_DEMO_QR_PAYLOAD, box_size=6) or ""
     ticket = build_normal_ticket_from_form(form_data, qr_data_uri=qr)
 
-    return templates.TemplateResponse(
-        tpl,
-        {
-            "request": request,
-            "tickets": [ticket],
-            "auto_print": False,
-        },
-    )
+    ctx = {
+        "request": request,
+        "tickets": [ticket],
+        "auto_print": False,
+    }
+    html = templates.get_template(tpl).render(ctx)
+    _, _, needs_patch = _parse_studio_doc_title(doc_title)
+    if needs_patch:
+        html = _patch_studio_doc_title_html(html, doc_title)
+    return HTMLResponse(html)
 
 
 @router.post("/phieu-tra-gia/dau-thuong/preview", response_class=HTMLResponse, include_in_schema=False)
@@ -283,10 +295,7 @@ async def bid_sheet_normal_preview_legacy(
     bid_step_vnd: str = Form(""),
     bid_step_rule: str = Form("LOT_DEFAULT"),
     show_price_step: str = Form("1"),
-    show_round: str = Form("0"),
-    is_multi_round: str = Form("0"),
-    session_id: str = Form(""),
-    round_no: str = Form("1"),
+    doc_title: str = Form("PHIẾU TRẢ GIÁ"),
     customer_full_name: str = Form(""),
     customer_id: str = Form(""),
     stt: str = Form(""),
@@ -308,10 +317,7 @@ async def bid_sheet_normal_preview_legacy(
         bid_step_vnd=bid_step_vnd,
         bid_step_rule=bid_step_rule,
         show_price_step=show_price_step,
-        show_round=show_round,
-        is_multi_round=is_multi_round,
-        session_id=session_id,
-        round_no=round_no,
+        doc_title=doc_title,
         customer_full_name=customer_full_name,
         customer_id=customer_id,
         stt=stt,
