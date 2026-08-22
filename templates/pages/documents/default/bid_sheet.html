@@ -682,31 +682,48 @@
 
     .signature-block{
       justify-self:end;
+      align-self:stretch;
       width:100%;
       max-width:72mm;
+      height:100%;
+      max-height:100%;
       text-align:center;
       font-size:12.6pt;
       line-height:1.32;
       display:flex;
       flex-direction:column;
       align-items:center;
+      box-sizing:border-box;
     }
 
     .sig-meta{
       display:flex;
       flex-direction:column;
-      gap:0.6mm;
+      gap:0.15mm;
+      line-height:1.18;
+      flex:0 0 auto;
+    }
+
+    .sig-meta .sig-date{
+      line-height:1.15;
     }
 
     .signature-block .sig-title{
       font-weight:800;
       margin-top:0;
+      line-height:1.15;
+    }
+
+    .sig-meta .note{
+      font-size:11pt;
+      line-height:1.12;
     }
 
     .sig-pad{
       width:88%;
-      min-height:16mm;
-      margin-top:0.8mm;
+      flex:1 1 auto;
+      min-height:22mm;
+      margin-top:0.35mm;
     }
   </style>
 </head>
