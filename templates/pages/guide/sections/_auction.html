@@ -32,8 +32,9 @@
   </ol>
 </section>
 
-<section id="menu-5-2">
-  <h2><i class="ri-file-text-line text-indigo-600"></i> 5.2 Phiếu trả giá</h2>
+{# Ẩn khỏi sổ tay — menu cũ 5.2 Phiếu trả giá (route /bid-tickets vẫn giữ) #}
+<section id="menu-5-2-legacy" hidden aria-hidden="true">
+  <h2><i class="ri-file-text-line text-indigo-600"></i> 5.2 Phiếu trả giá (legacy)</h2>
   <div class="guide-meta">
     <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: 5.2 Phiếu trả giá</span>
     <span class="guide-badge amber">COMPANY_ADMIN</span>
@@ -60,10 +61,10 @@
   </div>
 </section>
 
-<section id="menu-5-3">
-  <h2><i class="ri-auction-line text-indigo-600"></i> 5.3 Vận hành phiên</h2>
+<section id="menu-5-2">
+  <h2><i class="ri-auction-line text-indigo-600"></i> 5.2 Vận hành phiên</h2>
   <div class="guide-meta">
-    <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: 5.3 Vận hành phiên</span>
+    <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: 5.2 Vận hành phiên</span>
     <span class="guide-badge">ADMIN · ACCOUNTANT · STAFF</span>
   </div>
 
@@ -83,7 +84,7 @@
 
   <h3>Quy trình vận hành đầy đủ</h3>
   <ol class="guide-steps">
-    <li>Vào <strong>5.3 Vận hành phiên</strong> → chọn dự án ACTIVE.</li>
+    <li>Vào <strong>5.2 Vận hành phiên</strong> → chọn dự án ACTIVE.</li>
     <li><strong>Tạo phiên mới</strong> — chọn các lô eligible cần đấu.</li>
     <li><strong>Bắt đầu phiên</strong> — chuyển DRAFT → OPEN.</li>
     <li>Với <strong>vòng hiện tại (round)</strong>:
@@ -121,14 +122,14 @@
 
   <div class="guide-note guide-warn">
     Chỉ xóa phiên/vòng khi <strong>chưa ghi nhận kết quả</strong> cho bất kỳ lô nào.
-    Sau khi CLOSED — chuyển sang 5.4 để xác nhận và chỉnh kết quả nếu cần.
+    Sau khi CLOSED — chuyển sang 5.3 để xác nhận và chỉnh kết quả nếu cần.
   </div>
 </section>
 
-<section id="menu-5-4">
-  <h2><i class="ri-award-line text-indigo-600"></i> 5.4 Kết quả trúng đấu giá</h2>
+<section id="menu-5-3">
+  <h2><i class="ri-award-line text-indigo-600"></i> 5.3 Kết quả trúng đấu giá</h2>
   <div class="guide-meta">
-    <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: 5.4 Kết quả trúng đấu giá</span>
+    <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: 5.3 Kết quả trúng đấu giá</span>
     <span class="guide-badge">ADMIN · ACCOUNTANT · STAFF</span>
   </div>
 
@@ -148,17 +149,17 @@
   <h3>Các bước sau phiên</h3>
   <ol class="guide-steps">
     <li>Chọn dự án đã CLOSED phiên.</li>
-    <li>Đối chiếu kết quả phiên 5.3 với biên bản giấy.</li>
+    <li>Đối chiếu kết quả phiên 5.2 với biên bản giấy.</li>
     <li>Sửa lô sai (nếu có) → Lưu.</li>
     <li>Export Excel làm cơ sở hồ sơ và hoàn tiền.</li>
     <li>Bật Present mode nếu công bố công khai tại hội trường.</li>
   </ol>
 </section>
 
-<section id="menu-5-5">
-  <h2><i class="ri-refund-2-line text-indigo-600"></i> 5.5 Hoàn tiền đặt trước</h2>
+<section id="menu-5-4">
+  <h2><i class="ri-refund-2-line text-indigo-600"></i> 5.4 Hoàn tiền đặt trước</h2>
   <div class="guide-meta">
-    <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: 5.5 Hoàn tiền đặt trước</span>
+    <span class="guide-badge indigo"><i class="ri-menu-line"></i> Menu: 5.4 Hoàn tiền đặt trước</span>
     <span class="guide-badge">COMPANY_ADMIN · ACCOUNTANT</span>
   </div>
 
@@ -177,14 +178,14 @@
   <h3>Điều kiện hoàn tiền</h3>
   <ul>
     <li>Khách đã <strong>PAID</strong> cọc lô</li>
-    <li><strong>Không trúng</strong> lô đó (theo kết quả 5.4)</li>
+    <li><strong>Không trúng</strong> lô đó (theo kết quả 5.3)</li>
     <li>Có <strong>tài khoản hoàn tiền</strong> trên hồ sơ khách (4.1)</li>
   </ul>
 
   <h3>Quy trình kế toán</h3>
   <ol class="guide-steps">
-    <li>Hoàn tất cập nhật kết quả tại 5.4.</li>
-    <li>Vào 5.5 → chọn dự án.</li>
+    <li>Hoàn tất cập nhật kết quả tại 5.3.</li>
+    <li>Vào 5.4 → chọn dự án.</li>
     <li>Bấm <strong>Rebuild snapshot</strong> để hệ thống tính lại danh sách hoàn.</li>
     <li>Rà soát tab Danh sách — lọc eligible, kiểm tra trust score (LOW/MEDIUM/HIGH).</li>
     <li><strong>Download XLSX</strong> — file chuyển khoản ngân hàng.</li>
