@@ -125,7 +125,7 @@
             <th class="text-left px-4 py-2 whitespace-nowrap">Ngày đấu giá</th>
             <th class="text-right px-4 py-2 whitespace-nowrap">Tiền hồ sơ</th>
             <th class="text-right px-4 py-2 whitespace-nowrap">Chênh lệch</th>
-            <th class="text-right px-4 py-2 whitespace-nowrap">Giá DV đấu giá</th>
+            <th class="text-right px-4 py-2 whitespace-nowrap col-auction-fee">Giá DV đấu giá</th>
             <th class="text-right px-4 py-2 whitespace-nowrap">Cơ sở tính phí</th>
             <th class="text-right px-4 py-2 whitespace-nowrap">Phí chưa VAT</th>
             <th class="text-right px-4 py-2 whitespace-nowrap">VAT</th>
@@ -133,6 +133,7 @@
           </tr>
         </thead>
         <tbody id="tbProjects" class="divide-y divide-slate-100"></tbody>
+        <tfoot id="tbProjectsFoot" class="hidden bg-slate-50 font-semibold text-slate-800 border-t border-slate-200"></tfoot>
       </table>
     </div>
     <div id="emptyP" class="p-6 text-center text-slate-500 hidden">Không có dòng dự án.</div>
@@ -311,15 +312,44 @@
       .replaceAll("'", '&#039;');
   }
 
-  function projectFeeDescription(projectName) {
+  function projectFeeDescription(projectName, row) {
     const name = String(projectName || '').trim() || '—';
-    return `Phí sử dụng dịch vụ phần mềm cho dự án: ${name}`;
+    const lines = [`Phí sử dụng dịch vụ phần mềm cho dự án: ${name}`];
+    if (row && row.include_auction_service_fee_used) {
+      lines.push(`Tiền bán hồ sơ: ${money(row.total_dossier_amount)}`);
+      lines.push(`Chênh lệch trúng: ${money(row.total_price_gap_amount)}`);
+      lines.push(`Giá dịch vụ đấu giá: ${money(row.auction_service_fee_amount || 0)}`);
+      lines.push(`Cơ sở tính phí: ${money(row.base_value)}`);
+      lines.push(`Phí chưa VAT: ${money(row.final_fee)}`);
+    }
+    return lines.join('\n');
+  }
+
+  function auctionFeeCell(r) {
+    if (!r.include_auction_service_fee_used) {
+      return '<span class="text-slate-400" title="Snapshot trước D133 hoặc policy OFF">—</span>';
+    }
+    return money(r.auction_service_fee_amount || 0);
+  }
+
+  function shouldShowAuctionFeeColumn(rows) {
+    return rows.some(r => r.include_auction_service_fee_used);
+  }
+
+  function invoiceProjectRowVisible(r) {
+    return Number(r?.final_fee || 0) > 0 || Boolean(r?.include_auction_service_fee_used);
+  }
+
+  function toggleAuctionFeeColumn(show) {
+    document.querySelectorAll('.col-auction-fee').forEach(el => {
+      el.classList.toggle('hidden', !show);
+    });
   }
 
   let currentProjectFeeText = '';
 
-  function openProjectFeeModal(projectName) {
-    currentProjectFeeText = projectFeeDescription(projectName);
+  function openProjectFeeModal(projectName, row) {
+    currentProjectFeeText = projectFeeDescription(projectName, row);
     document.getElementById('projFeeText').textContent = currentProjectFeeText;
     document.getElementById('projFeeCopied')?.classList.add('hidden');
     document.getElementById('projFeeModal')?.classList.remove('hidden');
@@ -356,6 +386,14 @@
     const code = escapeHtml(r.project_code || '');
     const name = String(r.project_name || r.project_code || '').trim();
     const encodedName = encodeURIComponent(name);
+    const encodedRow = encodeURIComponent(JSON.stringify({
+      include_auction_service_fee_used: Boolean(r.include_auction_service_fee_used),
+      total_dossier_amount: r.total_dossier_amount,
+      total_price_gap_amount: r.total_price_gap_amount,
+      auction_service_fee_amount: r.auction_service_fee_amount,
+      base_value: r.base_value,
+      final_fee: r.final_fee,
+    }));
     return `
       <div class="flex items-start gap-1.5">
         <div>
@@ -365,7 +403,8 @@
         <button type="button"
                 class="proj-fee-btn mt-0.5 inline-flex items-center justify-center w-6 h-6 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"
                 title="Xem mô tả phí dự án"
-                data-project-name="${encodedName}">
+                data-project-name="${encodedName}"
+                data-project-row="${encodedRow}">
           <i class="ri-information-line text-base"></i>
         </button>
       </div>
@@ -469,29 +508,48 @@
 
       // projects
       const projects = await fetchJSON(`/billing/invoices/${invoiceId}/projects/data?company_code=${encodeURIComponent(companyCode)}`);
-      const rowsP = (projects?.data || []).filter(r => Number(r?.final_fee || 0) > 0);
+      const allRows = projects?.data || [];
+      const rowsP = allRows.filter(invoiceProjectRowVisible);
+      const showAuctionCol = shouldShowAuctionFeeColumn(allRows);
+      toggleAuctionFeeColumn(showAuctionCol);
       const tbP = document.getElementById('tbProjects');
+      const tbFoot = document.getElementById('tbProjectsFoot');
       const emptyP = document.getElementById('emptyP');
       tbP.innerHTML = '';
+      tbFoot.innerHTML = '';
+      tbFoot.classList.add('hidden');
 
       if (!rowsP.length) {
         emptyP.classList.remove('hidden');
       } else {
         emptyP.classList.add('hidden');
+        let sumAuction = 0;
         for (const r of rowsP) {
+          if (r.include_auction_service_fee_used) {
+            sumAuction += Number(r.auction_service_fee_amount || 0);
+          }
           tbP.insertAdjacentHTML('beforeend', `
             <tr class="hover:bg-slate-50">
               <td class="px-4 py-2">${renderProjectCell(r)}</td>
               <td class="px-4 py-2 whitespace-nowrap">${r.auction_at ? fmtDateTime(r.auction_at) : '—'}</td>
               <td class="px-4 py-2 text-right whitespace-nowrap">${money(r.total_dossier_amount)}</td>
               <td class="px-4 py-2 text-right whitespace-nowrap">${money(r.total_price_gap_amount)}</td>
-              <td class="px-4 py-2 text-right whitespace-nowrap">${money(r.auction_service_fee_amount || 0)}</td>
+              <td class="px-4 py-2 text-right whitespace-nowrap col-auction-fee">${auctionFeeCell(r)}</td>
               <td class="px-4 py-2 text-right whitespace-nowrap">${money(r.base_value)}</td>
               <td class="px-4 py-2 text-right font-semibold whitespace-nowrap">${money(r.final_fee)}</td>
               <td class="px-4 py-2 text-right whitespace-nowrap">${money(r.vat_amount)}</td>
               <td class="px-4 py-2 text-right font-semibold text-indigo-700 whitespace-nowrap">${money(finalFeeWithVat(r))}</td>
             </tr>
           `);
+        }
+        if (showAuctionCol && sumAuction > 0) {
+          tbFoot.classList.remove('hidden');
+          tbFoot.innerHTML = `
+            <tr>
+              <td class="px-4 py-2" colspan="4">Tổng giá dịch vụ đấu giá (đã đưa vào cơ sở tính phí)</td>
+              <td class="px-4 py-2 text-right col-auction-fee">${money(sumAuction)}</td>
+              <td class="px-4 py-2" colspan="4"></td>
+            </tr>`;
         }
       }
 
@@ -563,7 +621,12 @@
     const btn = e.target.closest('.proj-fee-btn');
     if (!btn) return;
     const raw = btn.getAttribute('data-project-name') || '';
-    openProjectFeeModal(decodeURIComponent(raw));
+    let row = null;
+    try {
+      const rowRaw = btn.getAttribute('data-project-row') || '';
+      if (rowRaw) row = JSON.parse(decodeURIComponent(rowRaw));
+    } catch (_) { /* ignore */ }
+    openProjectFeeModal(decodeURIComponent(raw), row);
   });
 
   // Modal handlers

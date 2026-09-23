@@ -103,10 +103,9 @@
     <div class="text-sm font-semibold text-slate-700 mb-2">Cấu hình thủ công</div>
     <form id="configForm" class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
       <label class="block">Phí cơ sở hợp đồng (VND)
-        <input type="number" name="contract_base_fee" class="mt-1 w-full border rounded px-2 py-1"
-          value="{{ svc.get('contractBaseFee') if svc.get('contractBaseFee') is not none else '' }}"
-          placeholder="Mặc định: {{ (svc.get('legalBaseFeeLimit') or 0)|int }}"
-          min="0" step="1000">
+        <div class="mt-1 w-full border border-slate-200 rounded px-2 py-1 bg-slate-100 text-slate-800 tabular-nums"
+             data-amount="{{ svc.get('contractBaseFee') if svc.get('contractBaseFee') is not none else (svc.get('legalBaseFeeLimit') or 0) }}"></div>
+        <span class="block text-xs text-slate-500 mt-1">Theo quy định pháp luật — chỉ xem, không chỉnh sửa.</span>
       </label>
       <label class="block">Chi phí được thanh toán (VND)
         <input type="number" name="expense_reimbursement" class="mt-1 w-full border rounded px-2 py-1" value="{{ exp.get('reimbursement') or 0 }}" min="0" step="1000">
