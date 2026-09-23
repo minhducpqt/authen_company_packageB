@@ -84,25 +84,25 @@
     <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
       <div>
         <div class="font-semibold text-slate-800">Chi tiết theo dự án</div>
-        <div class="text-xs text-slate-500 mt-0.5">Phí phát sinh theo từng dự án đấu giá trong tháng.</div>
+        <div class="text-xs text-slate-500 mt-0.5">Phí phát sinh theo từng dự án đấu giá trong tháng. <span class="text-slate-400">Tiền phí đấu thành = phí cơ sở phân bổ (Lợi nhuận); Tổng cơ sở = hồ sơ + 1% chênh + phí đấu thành.</span></div>
       </div>
       <div id="loading1" class="text-xs text-slate-500 hidden">
         <i class="ri-loader-2-line animate-spin mr-1"></i> Đang tải...
       </div>
     </div>
     <div class="overflow-x-auto">
-      <table class="min-w-full text-sm">
+      <table class="min-w-[1320px] w-full text-sm billing-proj-table">
         <thead class="bg-slate-50 text-slate-600">
           <tr>
-            <th class="text-left px-4 py-2">Dự án</th>
-            <th class="text-left px-4 py-2">Ngày đấu giá</th>
-            <th class="text-right px-4 py-2">Tiền hồ sơ</th>
-            <th class="text-right px-4 py-2">Chênh lệch</th>
-            <th class="text-right px-4 py-2 col-auction-fee">Phí cơ sở phân bổ</th>
-            <th class="text-right px-4 py-2">Cơ sở tính phí</th>
-            <th class="text-right px-4 py-2">Phí chưa VAT</th>
-            <th class="text-right px-4 py-2">VAT</th>
-            <th class="text-right px-4 py-2">Phí có VAT</th>
+            <th class="text-left px-3 py-2 whitespace-nowrap">Dự án</th>
+            <th class="text-left px-3 py-2 whitespace-nowrap">Ngày đấu giá</th>
+            <th class="text-right px-3 py-2 whitespace-nowrap">Tiền hồ sơ</th>
+            <th class="text-right px-3 py-2 whitespace-nowrap" title="Tổng chênh lệch trúng (đ); 1% vào cơ sở">Chênh lệch trúng</th>
+            <th class="text-right px-3 py-2 whitespace-nowrap col-auction-fee" title="Phí cơ sở phân bổ — khớp Lợi nhuận">Tiền phí đấu thành</th>
+            <th class="text-right px-3 py-2 whitespace-nowrap" title="Hồ sơ + 1% chênh + tiền phí đấu thành">Tổng cơ sở × % PM</th>
+            <th class="text-right px-3 py-2 whitespace-nowrap">Phí PM chưa VAT</th>
+            <th class="text-right px-3 py-2 whitespace-nowrap">VAT</th>
+            <th class="text-right px-3 py-2 whitespace-nowrap">Phí PM có VAT</th>
           </tr>
         </thead>
         <tbody id="tbProjects" class="divide-y divide-slate-100"></tbody>
@@ -189,8 +189,12 @@
 
   const money = (v) => {
     const n = Math.round(Number(v || 0));
-    return n.toLocaleString('vi-VN') + ' đ';
+    return n.toLocaleString('vi-VN') + '\u00a0đ';
   };
+
+  function moneyCell(v) {
+    return `<span class="tabular-nums whitespace-nowrap">${money(v)}</span>`;
+  }
 
   function totalWithVat(row) {
     const v = Number(row?.total_fee_with_vat || 0);
@@ -225,8 +229,8 @@
     if (row && row.include_auction_service_fee_used) {
       lines.push(`Tiền bán hồ sơ: ${money(row.total_dossier_amount)}`);
       lines.push(`Chênh lệch trúng: ${money(row.total_price_gap_amount)}`);
-      lines.push(`Phí cơ sở phân bổ: ${money(row.auction_service_fee_amount || 0)}`);
-      lines.push(`Cơ sở tính phí: ${money(row.base_value)}`);
+      lines.push(`Tiền phí đấu thành: ${money(row.auction_service_fee_amount || 0)}`);
+      lines.push(`Tổng cơ sở × % PM: ${money(row.base_value)}`);
       lines.push(`Phí chưa VAT: ${money(row.final_fee)}`);
     }
     return lines.join('\n');
@@ -236,21 +240,11 @@
     if (!r.include_auction_service_fee_used) {
       return '<span class="text-slate-400" title="Snapshot trước D133 hoặc policy OFF">—</span>';
     }
-    return money(r.auction_service_fee_amount || 0);
-  }
-
-  function shouldShowAuctionFeeColumn(rows) {
-    return rows.some(r => r.include_auction_service_fee_used);
+    return moneyCell(r.auction_service_fee_amount || 0);
   }
 
   function invoiceProjectRowVisible(r) {
     return Number(r?.final_fee || 0) > 0 || Boolean(r?.include_auction_service_fee_used);
-  }
-
-  function toggleAuctionFeeColumn(show) {
-    document.querySelectorAll('.col-auction-fee').forEach(el => {
-      el.classList.toggle('hidden', !show);
-    });
   }
 
   let currentProjectFeeText = '';
@@ -359,8 +353,6 @@
       const projects = await fetchJSON(`/billing/invoices/${invoiceId}/projects/data`);
       const allRows = projects?.data || [];
       const rowsP = allRows.filter(invoiceProjectRowVisible);
-      const showAuctionCol = shouldShowAuctionFeeColumn(allRows);
-      toggleAuctionFeeColumn(showAuctionCol);
       const tbP = document.getElementById('tbProjects');
       const tbFoot = document.getElementById('tbProjectsFoot');
       const emptyP = document.getElementById('emptyP');
@@ -381,23 +373,23 @@
             <tr class="hover:bg-slate-50">
               <td class="px-4 py-2">${renderProjectCell(r)}</td>
               <td class="px-4 py-2">${r.auction_at ? fmtDateTime(r.auction_at) : '—'}</td>
-              <td class="px-4 py-2 text-right">${money(r.total_dossier_amount)}</td>
-              <td class="px-4 py-2 text-right">${money(r.total_price_gap_amount)}</td>
-              <td class="px-4 py-2 text-right col-auction-fee">${auctionFeeCell(r)}</td>
-              <td class="px-4 py-2 text-right">${money(r.base_value)}</td>
-              <td class="px-4 py-2 text-right font-semibold">${money(r.final_fee)}</td>
-              <td class="px-4 py-2 text-right">${money(r.vat_amount)}</td>
-              <td class="px-4 py-2 text-right font-semibold text-indigo-700">${money(finalFeeWithVat(r))}</td>
+              <td class="px-3 py-2 text-right">${moneyCell(r.total_dossier_amount)}</td>
+              <td class="px-3 py-2 text-right">${moneyCell(r.total_price_gap_amount)}</td>
+              <td class="px-3 py-2 text-right col-auction-fee">${auctionFeeCell(r)}</td>
+              <td class="px-3 py-2 text-right">${moneyCell(r.base_value)}</td>
+              <td class="px-3 py-2 text-right font-semibold">${moneyCell(r.final_fee)}</td>
+              <td class="px-3 py-2 text-right">${moneyCell(r.vat_amount)}</td>
+              <td class="px-3 py-2 text-right font-semibold text-indigo-700">${moneyCell(finalFeeWithVat(r))}</td>
             </tr>
           `);
         }
-        if (showAuctionCol && sumAuction > 0) {
+        if (sumAuction > 0) {
           tbFoot.classList.remove('hidden');
           tbFoot.innerHTML = `
             <tr>
-              <td class="px-4 py-2" colspan="4">Tổng phí cơ sở phân bổ (trong cơ sở tính phí)</td>
-              <td class="px-4 py-2 text-right col-auction-fee">${money(sumAuction)}</td>
-              <td class="px-4 py-2" colspan="4"></td>
+              <td class="px-3 py-2" colspan="4">Tổng tiền phí đấu thành (trong tổng cơ sở)</td>
+              <td class="px-3 py-2 text-right col-auction-fee">${moneyCell(sumAuction)}</td>
+              <td class="px-3 py-2" colspan="4"></td>
             </tr>`;
         }
       }
