@@ -125,7 +125,8 @@
             <th class="text-left px-4 py-2 whitespace-nowrap">Ngày đấu giá</th>
             <th class="text-right px-4 py-2 whitespace-nowrap">Tiền hồ sơ</th>
             <th class="text-right px-4 py-2 whitespace-nowrap">Chênh lệch</th>
-            <th class="text-right px-4 py-2 whitespace-nowrap">Base</th>
+            <th class="text-right px-4 py-2 whitespace-nowrap">Giá DV đấu giá</th>
+            <th class="text-right px-4 py-2 whitespace-nowrap">Cơ sở tính phí</th>
             <th class="text-right px-4 py-2 whitespace-nowrap">Phí chưa VAT</th>
             <th class="text-right px-4 py-2 whitespace-nowrap">VAT</th>
             <th class="text-right px-4 py-2 whitespace-nowrap">Phí có VAT</th>
@@ -484,6 +485,7 @@
               <td class="px-4 py-2 whitespace-nowrap">${r.auction_at ? fmtDateTime(r.auction_at) : '—'}</td>
               <td class="px-4 py-2 text-right whitespace-nowrap">${money(r.total_dossier_amount)}</td>
               <td class="px-4 py-2 text-right whitespace-nowrap">${money(r.total_price_gap_amount)}</td>
+              <td class="px-4 py-2 text-right whitespace-nowrap">${money(r.auction_service_fee_amount || 0)}</td>
               <td class="px-4 py-2 text-right whitespace-nowrap">${money(r.base_value)}</td>
               <td class="px-4 py-2 text-right font-semibold whitespace-nowrap">${money(r.final_fee)}</td>
               <td class="px-4 py-2 text-right whitespace-nowrap">${money(r.vat_amount)}</td>
