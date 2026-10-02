@@ -2,94 +2,305 @@
 {% block title %}Giá hồ sơ develop — {{ company_code|upper }}{% endblock %}
 {% block content %}
 
-<a href="/account/company/{{ company_code }}" class="text-sm text-indigo-600 hover:text-indigo-700">&larr; Quay lại công ty {{ company_code }}</a>
+<style>
+  .dpm-wrap{max-width:720px;margin:0 auto;padding-bottom:40px}
+  .dpm-back{font-size:13px;color:#4f46e5;font-weight:600;text-decoration:none}
+  .dpm-back:hover{color:#4338ca}
+  .dpm-head{margin:12px 0 20px}
+  .dpm-title{font-size:22px;font-weight:800;color:#0f172a;margin:0;line-height:1.25}
+  .dpm-sub{font-size:14px;color:#64748b;margin-top:8px;line-height:1.5}
+  .dpm-banner{padding:12px 14px;border-radius:12px;font-size:13px;line-height:1.45;margin-bottom:16px}
+  .dpm-banner.dev{background:#fffbeb;border:1px solid #fcd34d;color:#92400e}
+  .dpm-banner.ok{background:#ecfdf5;border:1px solid #a7f3d0;color:#047857}
+  .dpm-banner.err{background:#fef2f2;border:1px solid #fecaca;color:#b91c1c}
+  .dpm-card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(15,23,42,.04)}
+  .dpm-card-hd{padding:16px 18px;border-bottom:1px solid #f1f5f9}
+  .dpm-card-hd-t{font-size:15px;font-weight:800;color:#0f172a}
+  .dpm-card-hd-s{font-size:12px;color:#64748b;margin-top:4px}
+  .dpm-card-bd{padding:18px}
+  .dpm-modes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media (max-width:560px){.dpm-modes{grid-template-columns:1fr}}
+  .dpm-mode{
+    position:relative;text-align:left;padding:14px 14px 14px 42px;border:2px solid #e2e8f0;border-radius:14px;
+    background:#f8fafc;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s
+  }
+  .dpm-mode:hover{border-color:#cbd5e1;background:#fff}
+  .dpm-mode.active{border-color:#4f46e5;background:#eef2ff;box-shadow:0 0 0 1px rgba(79,70,229,.15)}
+  .dpm-mode input{position:absolute;opacity:0;pointer-events:none}
+  .dpm-mode-dot{
+    position:absolute;left:14px;top:16px;width:18px;height:18px;border-radius:999px;border:2px solid #94a3b8;background:#fff
+  }
+  .dpm-mode.active .dpm-mode-dot{border-color:#4f46e5;box-shadow:inset 0 0 0 4px #4f46e5}
+  .dpm-mode-t{font-size:14px;font-weight:800;color:#0f172a}
+  .dpm-mode-d{font-size:12px;color:#64748b;margin-top:4px;line-height:1.4}
+  .dpm-project{margin-top:16px;padding:14px;border-radius:12px;border:1px dashed #fcd34d;background:#fffbeb}
+  .dpm-project.hidden{display:none}
+  .dpm-label{display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:6px}
+  .dpm-select{width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:10px 12px;font-size:14px;background:#fff}
+  .dpm-select:focus{outline:none;border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.15)}
+  .dpm-notes{margin-top:16px;font-size:12px;color:#64748b;line-height:1.5;padding:12px 14px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0}
+  .dpm-notes ul{margin:8px 0 0;padding-left:18px}
+  .dpm-foot{padding:14px 18px;border-top:1px solid #f1f5f9;display:flex;justify-content:flex-end;gap:10px;background:#fafafa}
+  .dpm-btn{padding:10px 16px;border-radius:10px;font-size:14px;font-weight:700;border:1px solid transparent;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+  .dpm-btn-sec{background:#fff;border-color:#cbd5e1;color:#334155}
+  .dpm-btn-sec:hover{background:#f8fafc}
+  .dpm-btn-pri{background:#4f46e5;color:#fff}
+  .dpm-btn-pri:hover{background:#4338ca}
 
-<div class="mt-4 mb-6">
-  <h2 class="text-xl font-semibold text-slate-800">Chế độ giá mua hồ sơ (đấu lô) — {{ company_code|upper }}</h2>
-  <p class="text-slate-500 text-sm mt-1">
-    <b>Production</b> — giá theo bảng chung. <b>Develop</b> — giá test (2k / 3k / 4k ₫) cho <b>một</b> dự án <b>đấu lô (NORMAL)</b> duy nhất.
-    Không ảnh hưởng đấu nhóm hay trigger cơ sở dữ liệu.
-  </p>
+  #dpmModal{position:fixed;inset:0;z-index:60;display:none}
+  #dpmModal.show{display:block}
+  #dpmModal .m-backdrop{position:absolute;inset:0;background:rgba(15,23,42,.45)}
+  #dpmModal .m-card{
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    width:min(480px,calc(100vw - 32px));background:#fff;border-radius:16px;
+    box-shadow:0 25px 60px rgba(2,6,23,.25);border:1px solid rgba(15,23,42,.08);overflow:hidden
+  }
+  #dpmModal .m-hd{padding:16px 18px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:10px}
+  #dpmModal .m-hd-ico{width:36px;height:36px;border-radius:10px;background:#fef3c7;color:#b45309;display:flex;align-items:center;justify-content:center;font-size:18px}
+  #dpmModal .m-hd-t{font-size:16px;font-weight:800;color:#0f172a}
+  #dpmModal .m-bd{padding:16px 18px;font-size:14px;color:#334155;line-height:1.5}
+  #dpmModal .m-summary{margin-top:10px;padding:10px 12px;background:#f8fafc;border-radius:10px;font-size:13px;color:#475569}
+  #dpmModal .m-field{margin-top:14px}
+  #dpmModal .m-input{width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:10px 12px;font-size:14px}
+  #dpmModal .m-input:focus{outline:none;border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+  #dpmModal .m-hint{font-size:12px;margin-top:6px;color:#64748b}
+  #dpmModal .m-hint.bad{color:#b91c1c}
+  #dpmModal .m-hint.ok{color:#16a34a}
+  #dpmModal .m-ft{padding:12px 18px;border-top:1px solid #f1f5f9;display:flex;justify-content:flex-end;gap:10px;background:#fafafa}
+</style>
+
+<div class="dpm-wrap">
+  <a href="/account/company/{{ company_code }}" class="dpm-back">&larr; Quay lại công ty {{ company_code|upper }}</a>
+
+  <div class="dpm-head">
+    <h1 class="dpm-title">Chế độ giá mua hồ sơ (đấu lô)</h1>
+    <p class="dpm-sub">
+      Chỉ áp dụng dự án <strong>đấu lô (NORMAL)</strong>. Production dùng bảng giá chung;
+      Develop dùng giá test <strong>2k / 3k / 4k ₫</strong> cho <strong>một</strong> dự án được chọn.
+    </p>
+  </div>
+
+  {% if cfg.mode == 'develop' and cfg.project_code %}
+  <div class="dpm-banner dev">
+    <strong>Đang DEVELOP</strong> — dự án <code class="font-mono font-bold">{{ cfg.project_code }}</code>
+    {% if cfg.develop_active %} (giá test khi tạo đơn mua hồ sơ).{% else %} — kiểm tra dự án (phải NORMAL).{% endif %}
+  </div>
+  {% elif (cfg.mode or 'production') == 'production' %}
+  <div class="dpm-banner ok">Đang <strong>PRODUCTION</strong> — bảng giá hồ sơ chung cho mọi dự án đấu lô.</div>
+  {% endif %}
+
+  {% if msg == 'saved' %}
+  <div class="dpm-banner ok">Đã lưu cấu hình.</div>
+  {% endif %}
+  {% if err == 'save_failed' %}
+  <div class="dpm-banner err">Lưu thất bại.{% if err_detail %} {{ err_detail }}{% endif %}</div>
+  {% endif %}
+  {% if load_err %}
+  <div class="dpm-banner err">{{ load_err }}</div>
+  {% endif %}
+
+  <div class="dpm-card">
+    <div class="dpm-card-hd">
+      <div class="dpm-card-hd-t">Cấu hình</div>
+      <div class="dpm-card-hd-s">Thay đổi chỉ có hiệu lực sau khi xác nhận khi bấm Lưu.</div>
+    </div>
+
+    <form method="post" action="/account/company/{{ company_code }}/dossier-pricing-mode" id="dpmForm">
+      <input type="hidden" name="mode" id="modeHidden" value="{{ cfg.mode or 'production' }}">
+      <input type="hidden" name="confirm_phrase" id="confirmHidden" value="">
+      <input type="hidden" name="project_code" id="projectHidden" value="{{ cfg.project_code or '' }}">
+
+      <div class="dpm-card-bd">
+        <div class="dpm-modes" role="radiogroup" aria-label="Chế độ giá">
+          <label class="dpm-mode {% if (cfg.mode or 'production') == 'production' %}active{% endif %}" data-mode="production">
+            <input type="radio" name="mode_ui" value="production" {% if (cfg.mode or 'production') == 'production' %}checked{% endif %}>
+            <span class="dpm-mode-dot" aria-hidden="true"></span>
+            <div class="dpm-mode-t">Production</div>
+            <div class="dpm-mode-d">Giá theo bảng chung <code>dossier_types</code>.</div>
+          </label>
+          <label class="dpm-mode {% if cfg.mode == 'develop' %}active{% endif %}" data-mode="develop">
+            <input type="radio" name="mode_ui" value="develop" {% if cfg.mode == 'develop' %}checked{% endif %}>
+            <span class="dpm-mode-dot" aria-hidden="true"></span>
+            <div class="dpm-mode-t">Develop</div>
+            <div class="dpm-mode-d">Giá test 2.000 / 3.000 / 4.000 ₫ (một dự án).</div>
+          </label>
+        </div>
+
+        <div id="projectBlock" class="dpm-project {% if cfg.mode != 'develop' %}hidden{% endif %}">
+          <label class="dpm-label" for="projectSelect">Dự án áp dụng develop (tối đa 1)</label>
+          <select id="projectSelect" class="dpm-select">
+            <option value="">— Chọn dự án đấu lô —</option>
+            {% for p in (cfg.eligible_projects or []) %}
+            <option value="{{ p.project_code }}" {% if cfg.project_code == p.project_code %}selected{% endif %}>
+              {{ p.project_code }}{% if p.name %} — {{ p.name }}{% endif %} ({{ p.status }})
+            </option>
+            {% endfor %}
+          </select>
+          {% if not cfg.eligible_projects or cfg.eligible_projects|length == 0 %}
+          <p class="text-xs text-amber-800 mt-2">Chưa có dự án NORMAL. Tạo dự án đấu lô trước khi bật develop.</p>
+          {% endif %}
+        </div>
+
+        <div class="dpm-notes">
+          <strong class="text-slate-700">Lưu ý</strong>
+          <ul>
+            <li>Chỉ đơn <strong>mua hồ sơ (APPLICATION)</strong> trên dự án develop bị ép giá test.</li>
+            <li>Các dự án khác và <strong>đấu nhóm</strong> không đổi.</li>
+            <li>Không sửa trigger hay bảng giá global.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="dpm-foot">
+        <a href="/account/company/{{ company_code }}" class="dpm-btn dpm-btn-sec">Hủy</a>
+        <button type="button" class="dpm-btn dpm-btn-pri" id="btnSave">Lưu cấu hình</button>
+      </div>
+    </form>
+  </div>
 </div>
 
-{% if cfg.mode == 'develop' and cfg.project_code %}
-  <div class="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-300 text-amber-900 text-sm">
-    <b>Đang DEVELOP:</b> dự án <span class="font-mono font-bold">{{ cfg.project_code }}</span>
-    {% if cfg.develop_active %} — áp dụng giá test khi tạo đơn mua hồ sơ.{% else %} — kiểm tra lại dự án (phải NORMAL).{% endif %}
+<div id="dpmModal" aria-hidden="true">
+  <div class="m-backdrop" id="dpmModalBackdrop"></div>
+  <div class="m-card" role="dialog" aria-modal="true">
+    <div class="m-hd">
+      <div class="m-hd-ico"><i class="ri-error-warning-line"></i></div>
+      <div class="m-hd-t">Xác nhận thay đổi</div>
+    </div>
+    <div class="m-bd">
+      <p id="dpmModalDesc">Bạn sắp cập nhật chế độ giá mua hồ sơ. Thao tác này ảnh hưởng thanh toán thử trên dự án develop.</p>
+      <div class="m-summary" id="dpmModalSummary">—</div>
+      <div class="m-field">
+        <label class="dpm-label" for="dpmConfirmInput">Gõ <strong>{{ cfg.confirm_phrase_required or 'tôi xác nhận' }}</strong> để tiếp tục</label>
+        <input type="text" id="dpmConfirmInput" class="m-input" autocomplete="off" placeholder="tôi xác nhận">
+        <div id="dpmConfirmHint" class="m-hint">Nhập đúng cụm xác nhận để nút Lưu được bật.</div>
+      </div>
+    </div>
+    <div class="m-ft">
+      <button type="button" class="dpm-btn dpm-btn-sec" id="dpmModalCancel">Hủy</button>
+      <button type="button" class="dpm-btn dpm-btn-pri" id="dpmModalOk" disabled>Lưu</button>
+    </div>
   </div>
-{% endif %}
-
-{% if msg == 'saved' %}
-  <div class="mb-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm">Đã lưu cấu hình.</div>
-{% endif %}
-{% if err == 'save_failed' %}
-  <div class="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-sm">
-    Lưu thất bại.{% if err_detail %} {{ err_detail }}{% endif %}
-  </div>
-{% endif %}
-{% if load_err %}
-  <div class="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">{{ load_err }}</div>
-{% endif %}
-
-<div class="max-w-2xl card">
-  <form method="post" action="/account/company/{{ company_code }}/dossier-pricing-mode" class="space-y-5" id="dpmForm">
-    <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/80">
-      <label class="label">Chế độ</label>
-      <select name="mode" id="modeSelect" class="input mt-1" required>
-        <option value="production" {% if (cfg.mode or 'production') == 'production' %}selected{% endif %}>Production — bảng giá chung</option>
-        <option value="develop" {% if cfg.mode == 'develop' %}selected{% endif %}>Develop — giá test 2k/3k/4k</option>
-      </select>
-    </div>
-
-    <div id="projectBlock" class="p-4 rounded-xl border border-amber-100 bg-amber-50/50 {% if cfg.mode != 'develop' %}hidden{% endif %}">
-      <label class="label text-amber-900">Dự án áp dụng develop (tối đa 1, chỉ đấu lô NORMAL)</label>
-      <select name="project_code" id="projectSelect" class="input mt-1">
-        <option value="">— Chọn dự án —</option>
-        {% for p in (cfg.eligible_projects or []) %}
-        <option value="{{ p.project_code }}" {% if cfg.project_code == p.project_code %}selected{% endif %}>
-          {{ p.project_code }}{% if p.name %} — {{ p.name }}{% endif %} ({{ p.status }})
-        </option>
-        {% endfor %}
-      </select>
-      {% if not cfg.eligible_projects or cfg.eligible_projects|length == 0 %}
-      <p class="text-xs text-amber-800 mt-2">Chưa có dự án NORMAL nào. Tạo dự án đấu lô trước khi bật develop.</p>
-      {% endif %}
-    </div>
-
-    <div class="p-4 rounded-xl border border-rose-100 bg-rose-50/40">
-      <label class="label text-rose-900">Xác nhận thay đổi</label>
-      <p class="text-xs text-slate-600 mb-2">Gõ chính xác: <b>{{ cfg.confirm_phrase_required or 'tôi xác nhận' }}</b></p>
-      <input type="text" name="confirm_phrase" class="input" autocomplete="off" required placeholder="tôi xác nhận" />
-    </div>
-
-    <div class="text-xs text-slate-500 border border-slate-200 rounded-lg p-3 bg-white">
-      <div class="font-semibold text-slate-700 mb-1">Lưu ý</div>
-      <ul class="list-disc pl-4 space-y-1">
-        <li>Chỉ đơn <b>mua hồ sơ (APPLICATION)</b> trên dự án được chọn bị ép giá test.</li>
-        <li>Dự án khác cùng công ty vẫn production.</li>
-        <li>Map giá test theo <code>dossier_type_id</code> LAND (1→2k, 2→3k, 3→4k) như cấu hình KIDO cũ.</li>
-      </ul>
-    </div>
-
-    <div class="flex gap-2 justify-end">
-      <a href="/account/company/{{ company_code }}" class="btn-secondary">Hủy</a>
-      <button type="submit" class="btn-primary">Lưu</button>
-    </div>
-  </form>
 </div>
 
 <script>
 (function(){
-  const mode = document.getElementById('modeSelect');
-  const block = document.getElementById('projectBlock');
-  const proj = document.getElementById('projectSelect');
-  function sync(){
-    const dev = mode && mode.value === 'develop';
-    if(block) block.classList.toggle('hidden', !dev);
-    if(proj) proj.required = !!dev;
+  const CONFIRM_PHRASE = {{ (cfg.confirm_phrase_required or 'tôi xác nhận')|tojson }};
+  const form = document.getElementById('dpmForm');
+  const modeHidden = document.getElementById('modeHidden');
+  const projectHidden = document.getElementById('projectHidden');
+  const confirmHidden = document.getElementById('confirmHidden');
+  const projectSelect = document.getElementById('projectSelect');
+  const projectBlock = document.getElementById('projectBlock');
+  const modeLabels = document.querySelectorAll('.dpm-mode');
+
+  function currentMode(){
+    const r = document.querySelector('input[name="mode_ui"]:checked');
+    return r ? r.value : 'production';
   }
-  mode?.addEventListener('change', sync);
-  sync();
+
+  function syncModeUi(){
+    const m = currentMode();
+    modeHidden.value = m;
+    modeLabels.forEach(lab => {
+      lab.classList.toggle('active', lab.dataset.mode === m);
+    });
+    projectBlock.classList.toggle('hidden', m !== 'develop');
+  }
+
+  modeLabels.forEach(lab => {
+    lab.addEventListener('click', () => {
+      const inp = lab.querySelector('input[type="radio"]');
+      if (inp) inp.checked = true;
+      syncModeUi();
+    });
+  });
+
+  projectSelect?.addEventListener('change', () => {
+    projectHidden.value = projectSelect.value || '';
+  });
+  syncModeUi();
+  if (projectSelect) projectHidden.value = projectSelect.value || '';
+
+  const modal = document.getElementById('dpmModal');
+  const modalOk = document.getElementById('dpmModalOk');
+  const modalCancel = document.getElementById('dpmModalCancel');
+  const modalBackdrop = document.getElementById('dpmModalBackdrop');
+  const confirmInput = document.getElementById('dpmConfirmInput');
+  const confirmHint = document.getElementById('dpmConfirmHint');
+  const modalSummary = document.getElementById('dpmModalSummary');
+
+  function openModal(){
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+  function closeModal(){
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden', 'true');
+    confirmInput.value = '';
+    validateConfirm();
+  }
+
+  function validateConfirm(){
+    const v = (confirmInput.value || '').trim().toLowerCase();
+    const ok = v === String(CONFIRM_PHRASE).trim().toLowerCase();
+    modalOk.disabled = !ok;
+    if (!v) {
+      confirmHint.textContent = 'Nhập đúng cụm xác nhận để nút Lưu được bật.';
+      confirmHint.classList.remove('ok', 'bad');
+    } else if (!ok) {
+      confirmHint.textContent = 'Chưa khớp. Gõ chính xác: ' + CONFIRM_PHRASE;
+      confirmHint.classList.add('bad');
+      confirmHint.classList.remove('ok');
+    } else {
+      confirmHint.textContent = 'Hợp lệ ✓';
+      confirmHint.classList.add('ok');
+      confirmHint.classList.remove('bad');
+    }
+    return ok;
+  }
+
+  confirmInput.addEventListener('input', validateConfirm);
+
+  document.getElementById('btnSave')?.addEventListener('click', () => {
+    syncModeUi();
+    const m = currentMode();
+    const pc = (projectSelect?.value || '').trim();
+    projectHidden.value = pc;
+
+    if (m === 'develop' && !pc) {
+      alert('Vui lòng chọn dự án đấu lô (NORMAL) khi bật Develop.');
+      projectSelect?.focus();
+      return;
+    }
+
+    const summary = m === 'develop'
+      ? 'Chế độ: DEVELOP\nDự án: ' + pc + '\nCác dự án khác: production.'
+      : 'Chế độ: PRODUCTION\nMọi dự án đấu lô dùng bảng giá chung.';
+    modalSummary.textContent = summary;
+
+    openModal();
+    setTimeout(() => confirmInput.focus(), 50);
+  });
+
+  modalOk.addEventListener('click', () => {
+    if (!validateConfirm()) return;
+    const m = currentMode();
+    confirmHidden.value = confirmInput.value.trim();
+    projectHidden.value = m === 'develop' ? (projectSelect?.value || '').trim() : '';
+    modeHidden.value = m;
+    form.submit();
+  });
+  modalCancel.addEventListener('click', closeModal);
+  modalBackdrop.addEventListener('click', closeModal);
+
+  document.addEventListener('keydown', (e) => {
+    if (!modal.classList.contains('show')) return;
+    if (e.key === 'Escape') { e.preventDefault(); closeModal(); }
+    if (e.key === 'Enter' && !modalOk.disabled) {
+      e.preventDefault();
+      modalOk.click();
+    }
+  });
 })();
 </script>
 
