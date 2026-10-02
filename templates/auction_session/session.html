@@ -1487,6 +1487,8 @@ Modal: Print One Bid Sheet (choose one customer)
   // =========================
   const SESSION_ID = Number({{ session_id|int }});
   let ROUND_NO = Number({{ round_no|int }});
+  const OPERATOR_USERNAME = {{ (operator_username or '')|tojson }};
+  const LOCK_TTL_SECONDS = 300;
 
   let UI = {{ ui|tojson }};
   let SESSION = {{ session|tojson }};
@@ -1498,6 +1500,7 @@ Modal: Print One Bid Sheet (choose one customer)
 
   // modal state
   let currentLot = null;            // round_lot object
+  let lockHeldByMeRoundLotId = null; // round_lot id if POST /lock succeeded this session
   let currentParticipants = [];
   let dualIn = [];
   let dualNext = [];
@@ -2579,9 +2582,95 @@ Modal: Print One Bid Sheet (choose one customer)
   // =========================
   // Modal open / close
   // =========================
-  function closeModal(ev){
+  function roundLotLockMeta(lot){
+  const lock = (lot && lot.extras && lot.extras.lock) ? lot.extras.lock : null;
+  if(!lock || !lock.by) return null;
+  return lock;
+  }
+
+  function isRoundLotLockActive(lock){
+  if(!lock) return false;
+  const ttl = Number(lock.ttl_seconds || 0);
+  const atRaw = lock.at;
+  if(!ttl || !atRaw) return false;
+  const atMs = new Date(atRaw).getTime();
+  if(!Number.isFinite(atMs)) return false;
+  return (atMs + ttl * 1000) > Date.now();
+  }
+
+  function isLockOwnedByOperator(lot){
+  const lock = roundLotLockMeta(lot);
+  if(!lock || !OPERATOR_USERNAME) return false;
+  return String(lock.by).toLowerCase() === String(OPERATOR_USERNAME).toLowerCase();
+  }
+
+  function shouldReleaseRoundLotLock(lot){
+  if(!lot) return false;
+  const rid = Number(lot.id || 0);
+  if(!rid) return false;
+  if(lockHeldByMeRoundLotId === rid) return true;
+  const lock = roundLotLockMeta(lot);
+  return isRoundLotLockActive(lock) && isLockOwnedByOperator(lot);
+  }
+
+  function patchUiLotExtras(roundLotId, extras){
+  const lots = (UI && UI.lots) ? UI.lots : [];
+  const lot = lots.find(x => Number(x.id) === Number(roundLotId));
+  if(!lot) return;
+  lot.extras = extras || {};
+  }
+
+  function clearLockOnUiLot(roundLotId){
+  const lots = (UI && UI.lots) ? UI.lots : [];
+  const lot = lots.find(x => Number(x.id) === Number(roundLotId));
+  if(!lot) return;
+  if(lot.extras && typeof lot.extras === 'object'){
+  delete lot.extras.lock;
+  }
+  }
+
+  async function releaseRoundLotLock(lot){
+  const rid = lot ? Number(lot.id || 0) : 0;
+  if(!rid || !shouldReleaseRoundLotLock(lot)){
+  if(rid && lockHeldByMeRoundLotId === rid) lockHeldByMeRoundLotId = null;
+  return;
+  }
+  try{
+  const r = await fetch(`/auction/sessions/api/round-lots/${rid}/unlock`, {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: '{}'
+  });
+  if(r.ok){
+  clearLockOnUiLot(rid);
+  if(currentLot && Number(currentLot.id) === rid && currentLot.extras){
+  delete currentLot.extras.lock;
+  }
+  }
+  }catch(_e){ /* best-effort */ }
+  if(lockHeldByMeRoundLotId === rid) lockHeldByMeRoundLotId = null;
+  }
+
+  function releaseRoundLotLockBeacon(lot){
+  const rid = lot ? Number(lot.id || 0) : 0;
+  if(!rid || !shouldReleaseRoundLotLock(lot)) return;
+  const url = `/auction/sessions/api/round-lots/${rid}/unlock`;
+  try{
+  const body = new Blob(['{}'], {type: 'application/json'});
+  if(navigator.sendBeacon && navigator.sendBeacon(url, body)){
+  lockHeldByMeRoundLotId = null;
+  return;
+  }
+  fetch(url, {method: 'POST', keepalive: true, headers: {'Content-Type': 'application/json'}, body: '{}'}).catch(()=>{});
+  }catch(_e){ /* ignore */ }
+  lockHeldByMeRoundLotId = null;
+  }
+
+  async function closeModal(ev){
   if(ev && ev.target && ev.target.id !== 'backdrop') return;
+  const lot = currentLot;
   document.getElementById('backdrop').style.display = 'none';
+  await releaseRoundLotLock(lot);
   currentLot = null;
   currentParticipants = [];
   dualIn = [];
@@ -3018,7 +3107,7 @@ Modal: Print One Bid Sheet (choose one customer)
   const r = await fetch(`/auction/sessions/api/round-lots/${roundLotId}/lock`,{
   method:"POST",
   headers: {"Content-Type":"application/json"},
-  body: JSON.stringify({ttl_seconds: 900})
+  body: JSON.stringify({ttl_seconds: LOCK_TTL_SECONDS})
   });
   const js = await r.json().catch(()=> ({}));
 
@@ -3027,11 +3116,20 @@ Modal: Print One Bid Sheet (choose one customer)
 
   if(r.ok){
   const data = js?.data || js;
+  if(data && Number(data.id) === Number(roundLotId)){
+  if(data.extras) patchUiLotExtras(roundLotId, data.extras);
+  }
   if(currentLot && data && Number(data.id) === Number(currentLot.id)){
   if(data.updated_at) currentLot.updated_at = data.updated_at;
   if(data.extras) currentLot.extras = data.extras;
   }
+  lockHeldByMeRoundLotId = Number(roundLotId);
+  renderModalLotInfo();
   return true;
+  }
+
+  if(Number(lockHeldByMeRoundLotId) === Number(roundLotId)){
+  lockHeldByMeRoundLotId = null;
   }
 
   const msg = safeText(js.detail || js.error || '');
@@ -3697,6 +3795,9 @@ Modal: Print One Bid Sheet (choose one customer)
   (function boot(){
   renderRoundNav();
   refreshAll();
+  window.addEventListener('pagehide', function(){
+  if(currentLot) releaseRoundLotLockBeacon(currentLot);
+  });
   })();
   function togglePrintMenu(btn){
   const menu = btn.nextElementSibling;

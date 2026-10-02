@@ -10,7 +10,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from urllib.parse import quote
 
 from utils.templates import templates
-from utils.auth import get_access_token
+from utils.auth import account_menu_info, get_access_token
 
 router = APIRouter(tags=["auction_sessions"])
 
@@ -22,6 +22,10 @@ SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 # =========================================================
 def _log(msg: str):
     print(f"[AUCTION_SESS_B] {msg}")
+
+
+def _operator_username(request: Request) -> str:
+    return (account_menu_info(request).get("username") or "").strip()
 
 
 _SENSITIVE_KEYS = {
@@ -293,7 +297,12 @@ async def auction_session_detail_page(
         code = st_s if st_s in (401, 403, 404) else 502
         return templates.TemplateResponse(
             "auction_session/session.html",
-            {"request": request, "title": "Phiên đấu", "error": {"status": st_s, "body": sess}},
+            {
+                "request": request,
+                "title": "Phiên đấu",
+                "operator_username": _operator_username(request),
+                "error": {"status": st_s, "body": sess},
+            },
             status_code=code,
         )
 
@@ -342,6 +351,7 @@ async def auction_session_detail_page(
                     "round_no": 1,
                     "rounds": [],
                     "ui": {"ok": False, "lots": []},
+                    "operator_username": _operator_username(request),
                     "error": {"status": st_start, "body": js_start},
                 },
                 status_code=502 if st_start not in (401, 403, 404) else st_start,
@@ -375,6 +385,7 @@ async def auction_session_detail_page(
         "rounds": rounds_data,
         "ui": ui,
         "error": error,
+        "operator_username": _operator_username(request),
     }
     return templates.TemplateResponse("auction_session/session.html", ctx)
 
@@ -542,7 +553,7 @@ async def api_lock_round_lot(
     payload: Dict[str, Any] = Body(...),
 ):
     """
-    payload: { ttl_seconds: 900 }
+    payload: { ttl_seconds: 300 }
     """
     token = get_access_token(request)
     if not token:
