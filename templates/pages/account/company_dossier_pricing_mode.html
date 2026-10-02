@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Giá hồ sơ develop — {{ company_code|upper }}{% endblock %}
+{% block content %}
+
+<a href="/account/company/{{ company_code }}" class="text-sm text-indigo-600 hover:text-indigo-700">&larr; Quay lại công ty {{ company_code }}</a>
+
+<div class="mt-4 mb-6">
+  <h2 class="text-xl font-semibold text-slate-800">Chế độ giá mua hồ sơ (đấu lô) — {{ company_code|upper }}</h2>
+  <p class="text-slate-500 text-sm mt-1">
+    <b>Production</b> — giá theo bảng chung. <b>Develop</b> — giá test (2k / 3k / 4k ₫) cho <b>một</b> dự án <b>đấu lô (NORMAL)</b> duy nhất.
+    Không ảnh hưởng đấu nhóm hay trigger cơ sở dữ liệu.
+  </p>
+</div>
+
+{% if cfg.mode == 'develop' and cfg.project_code %}
+  <div class="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-300 text-amber-900 text-sm">
+    <b>Đang DEVELOP:</b> dự án <span class="font-mono font-bold">{{ cfg.project_code }}</span>
+    {% if cfg.develop_active %} — áp dụng giá test khi tạo đơn mua hồ sơ.{% else %} — kiểm tra lại dự án (phải NORMAL).{% endif %}
+  </div>
+{% endif %}
+
+{% if msg == 'saved' %}
+  <div class="mb-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm">Đã lưu cấu hình.</div>
+{% endif %}
+{% if err == 'save_failed' %}
+  <div class="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-sm">
+    Lưu thất bại.{% if err_detail %} {{ err_detail }}{% endif %}
+  </div>
+{% endif %}
+{% if load_err %}
+  <div class="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">{{ load_err }}</div>
+{% endif %}
+
+<div class="max-w-2xl card">
+  <form method="post" action="/account/company/{{ company_code }}/dossier-pricing-mode" class="space-y-5" id="dpmForm">
+    <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/80">
+      <label class="label">Chế độ</label>
+      <select name="mode" id="modeSelect" class="input mt-1" required>
+        <option value="production" {% if (cfg.mode or 'production') == 'production' %}selected{% endif %}>Production — bảng giá chung</option>
+        <option value="develop" {% if cfg.mode == 'develop' %}selected{% endif %}>Develop — giá test 2k/3k/4k</option>
+      </select>
+    </div>
+
+    <div id="projectBlock" class="p-4 rounded-xl border border-amber-100 bg-amber-50/50 {% if cfg.mode != 'develop' %}hidden{% endif %}">
+      <label class="label text-amber-900">Dự án áp dụng develop (tối đa 1, chỉ đấu lô NORMAL)</label>
+      <select name="project_code" id="projectSelect" class="input mt-1">
+        <option value="">— Chọn dự án —</option>
+        {% for p in (cfg.eligible_projects or []) %}
+        <option value="{{ p.project_code }}" {% if cfg.project_code == p.project_code %}selected{% endif %}>
+          {{ p.project_code }}{% if p.name %} — {{ p.name }}{% endif %} ({{ p.status }})
+        </option>
+        {% endfor %}
+      </select>
+      {% if not cfg.eligible_projects or cfg.eligible_projects|length == 0 %}
+      <p class="text-xs text-amber-800 mt-2">Chưa có dự án NORMAL nào. Tạo dự án đấu lô trước khi bật develop.</p>
+      {% endif %}
+    </div>
+
+    <div class="p-4 rounded-xl border border-rose-100 bg-rose-50/40">
+      <label class="label text-rose-900">Xác nhận thay đổi</label>
+      <p class="text-xs text-slate-600 mb-2">Gõ chính xác: <b>{{ cfg.confirm_phrase_required or 'tôi xác nhận' }}</b></p>
+      <input type="text" name="confirm_phrase" class="input" autocomplete="off" required placeholder="tôi xác nhận" />
+    </div>
+
+    <div class="text-xs text-slate-500 border border-slate-200 rounded-lg p-3 bg-white">
+      <div class="font-semibold text-slate-700 mb-1">Lưu ý</div>
+      <ul class="list-disc pl-4 space-y-1">
+        <li>Chỉ đơn <b>mua hồ sơ (APPLICATION)</b> trên dự án được chọn bị ép giá test.</li>
+        <li>Dự án khác cùng công ty vẫn production.</li>
+        <li>Map giá test theo <code>dossier_type_id</code> LAND (1→2k, 2→3k, 3→4k) như cấu hình KIDO cũ.</li>
+      </ul>
+    </div>
+
+    <div class="flex gap-2 justify-end">
+      <a href="/account/company/{{ company_code }}" class="btn-secondary">Hủy</a>
+      <button type="submit" class="btn-primary">Lưu</button>
+    </div>
+  </form>
+</div>
+
+<script>
+(function(){
+  const mode = document.getElementById('modeSelect');
+  const block = document.getElementById('projectBlock');
+  const proj = document.getElementById('projectSelect');
+  function sync(){
+    const dev = mode && mode.value === 'develop';
+    if(block) block.classList.toggle('hidden', !dev);
+    if(proj) proj.required = !!dev;
+  }
+  mode?.addEventListener('change', sync);
+  sync();
+})();
+</script>
+
+{% endblock %}
