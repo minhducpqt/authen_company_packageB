@@ -1,5 +1,153 @@
 {% extends "base.html" %}
+{% block head_extra %}
+<link rel="stylesheet" href="/static/css/super_admin.css">
+{% endblock %}
 {% block content %}
+
+{# ===== SUPER_ADMIN ===== #}
+{% if role == "SUPER_ADMIN" %}
+<div class="sa-wrap">
+  <div class="sa-hero">
+    <div>
+      <span class="sa-hero-badge"><i class="ri-shield-star-line"></i> Super Admin</span>
+      <div class="sa-head" style="margin-bottom:0;margin-top:12px">
+        <h1 class="sa-title">Quản trị công ty</h1>
+        <p class="sa-sub">Tạo công ty, bật/tắt truy cập và mở trang cấu hình hệ thống theo từng tenant.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="sa-profile">
+    <div class="sa-profile-item">
+      <div class="sa-profile-label">Tài khoản</div>
+      <div class="sa-profile-value mono">{{ profile.username }}</div>
+    </div>
+    <div class="sa-profile-item">
+      <div class="sa-profile-label">Vai trò</div>
+      <div class="sa-profile-value">{{ role }}</div>
+    </div>
+    <div class="sa-profile-item">
+      <div class="sa-profile-label">Phạm vi</div>
+      <div class="sa-profile-value">Toàn hệ thống</div>
+    </div>
+  </div>
+
+  {% if load_err %}
+    <div class="sa-alert sa-alert--err">{{ load_err }}</div>
+  {% endif %}
+
+  <div class="sa-card">
+    <div class="sa-card-hd">
+      <div>
+        <h2 class="sa-card-hd-t">Thêm công ty mới</h2>
+        <p class="sa-card-hd-s">Mã công ty dùng làm tiền tố username và phân vùng dữ liệu.</p>
+      </div>
+    </div>
+    <div class="sa-card-bd">
+      <form action="/account/super/company/create" method="post" class="sa-form-inline">
+        <div class="sa-field" style="max-width:180px">
+          <label class="sa-label" for="saNewCode">Mã công ty</label>
+          <input id="saNewCode" name="company_code" placeholder="vd: kido" class="input" required autocomplete="off">
+        </div>
+        <div class="sa-field" style="flex:2;min-width:200px">
+          <label class="sa-label" for="saNewName">Tên hiển thị</label>
+          <input id="saNewName" name="name" placeholder="Tên công ty" class="input" required>
+        </div>
+        <button class="sa-btn sa-btn--primary" type="submit"><i class="ri-add-line"></i> Thêm công ty</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="sa-section">
+    <div class="sa-toolbar">
+      <div class="sa-section-tt" style="margin:0">Danh sách công ty</div>
+      {% if super_companies and super_companies|length > 0 %}
+      <div class="sa-search">
+        <i class="ri-search-line"></i>
+        <input type="search" id="saCompanyFilter" placeholder="Lọc theo mã hoặc tên…" autocomplete="off">
+      </div>
+      {% endif %}
+    </div>
+
+    {% if super_companies and super_companies|length > 0 %}
+      <div class="sa-table-wrap">
+        <table class="sa-table" id="saCompaniesTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Mã</th>
+              <th>Tên công ty</th>
+              <th>Trạng thái</th>
+              <th>Hành động</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in super_companies %}
+            <tr class="sa-company-row" data-filter="{{ (c.company_code ~ ' ' ~ (c.name or ''))|lower }}">
+              <td class="text-slate-500">{{ c.id }}</td>
+              <td class="mono">
+                <a class="link" href="/account/company/{{ c.company_code }}">{{ c.company_code }}</a>
+              </td>
+              <td>{{ c.name }}</td>
+              <td>
+                {% if c.is_active %}
+                  <span class="sa-badge sa-badge--ok"><span class="sa-badge-dot"></span> Active</span>
+                {% else %}
+                  <span class="sa-badge sa-badge--off"><span class="sa-badge-dot"></span> Disabled</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="sa-actions">
+                  <a class="sa-btn sa-btn--primary sa-btn--sm" href="/account/company/{{ c.company_code }}">
+                    <i class="ri-settings-3-line"></i> Quản trị
+                  </a>
+                  {% if c.is_active %}
+                    <form action="/account/super/company/disable" method="post"
+                          class="js-confirm-form"
+                          data-confirm-title="Xác nhận"
+                          data-confirm-message="Tắt công ty {{ c.company_code }} ?">
+                      <input type="hidden" name="company_code" value="{{ c.company_code }}">
+                      <button class="sa-btn sa-btn--danger sa-btn--sm" type="submit">Tắt</button>
+                    </form>
+                  {% else %}
+                    <form action="/account/super/company/enable" method="post"
+                          class="js-confirm-form"
+                          data-confirm-title="Xác nhận"
+                          data-confirm-message="Bật công ty {{ c.company_code }} ?">
+                      <input type="hidden" name="company_code" value="{{ c.company_code }}">
+                      <button class="sa-btn sa-btn--secondary sa-btn--sm" type="submit">Bật</button>
+                    </form>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="sa-empty">
+        <i class="ri-building-line"></i>
+        Chưa có công ty nào. Thêm công ty đầu tiên ở form phía trên.
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+(function(){
+  const inp = document.getElementById('saCompanyFilter');
+  if (!inp) return;
+  inp.addEventListener('input', function(){
+    const q = (inp.value || '').trim().toLowerCase();
+    document.querySelectorAll('.sa-company-row').forEach(function(row){
+      const hay = row.getAttribute('data-filter') || '';
+      row.style.display = (!q || hay.indexOf(q) >= 0) ? '' : 'none';
+    });
+  });
+})();
+</script>
+{% else %}
 
 <div class="mb-6">
   <h2 class="text-lg font-semibold text-slate-700 mb-2">Tài khoản</h2>
@@ -13,78 +161,6 @@
 {% if load_err %}
   <div class="p-3 rounded bg-red-50 text-red-700 text-sm mb-6">{{ load_err }}</div>
 {% endif %}
-
-{# ===== SUPER_ADMIN: danh sách công ty + nút Chi tiết ===== #}
-{% if role == "SUPER_ADMIN" %}
-  <div class="mb-8">
-    <h2 class="text-lg font-semibold text-slate-700 mb-3">Danh sách công ty</h2>
-
-    <form action="/account/super/company/create" method="post" class="flex flex-wrap gap-2 mb-4 items-end">
-      <input name="company_code" placeholder="Company code" class="input" required>
-      <input name="name" placeholder="Tên công ty" class="input" required>
-      <button class="btn-primary" type="submit">Thêm công ty</button>
-    </form>
-
-    {% if super_companies and super_companies|length > 0 %}
-      <div class="overflow-x-auto border rounded">
-        <table class="min-w-full text-sm">
-          <thead class="bg-slate-100">
-            <tr>
-              <th class="px-3 py-2 text-left">ID</th>
-              <th class="px-3 py-2 text-left">Code</th>
-              <th class="px-3 py-2 text-left">Tên</th>
-              <th class="px-3 py-2 text-left">Trạng thái</th>
-              <th class="px-3 py-2 text-left">Hành động</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for c in super_companies %}
-            <tr class="border-t">
-              <td class="px-3 py-2">{{ c.id }}</td>
-
-              {# Click vào code cũng sang trang chi tiết #}
-              <td class="px-3 py-2 font-mono">
-                <a class="text-indigo-600 hover:underline" href="/account/company/{{ c.company_code }}">{{ c.company_code }}</a>
-              </td>
-
-              <td class="px-3 py-2">{{ c.name }}</td>
-
-              <td class="px-3 py-2">
-                {% if c.is_active %}<span class="text-green-600">Active</span>
-                {% else %}<span class="text-slate-500">Disabled</span>{% endif %}
-              </td>
-
-              <td class="px-3 py-2 flex items-center gap-2">
-                {# Nút CHI TIẾT / QUẢN TRỊ #}
-                <a class="btn-primary" href="/account/company/{{ c.company_code }}">Chi tiết</a>
-
-                {% if c.is_active %}
-                  <form action="/account/super/company/disable" method="post"
-                        class="js-confirm-form"
-                        data-confirm-title="Xác nhận"
-                        data-confirm-message="Tắt công ty {{ c.company_code }} ?">
-                    <input type="hidden" name="company_code" value="{{ c.company_code }}">
-                    <button class="btn-secondary" type="submit">Disable</button>
-                  </form>
-                {% else %}
-                  <form action="/account/super/company/enable" method="post"
-                        class="js-confirm-form"
-                        data-confirm-title="Xác nhận"
-                        data-confirm-message="Bật công ty {{ c.company_code }} ?">
-                    <input type="hidden" name="company_code" value="{{ c.company_code }}">
-                    <button class="btn-primary" type="submit">Enable</button>
-                  </form>
-                {% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    {% else %}
-      <div class="text-slate-500 text-sm">Chưa có công ty nào.</div>
-    {% endif %}
-  </div>
 {% endif %}
 
 {# ===== COMPANY_ADMIN: quản lý user công ty mình ===== #}

@@ -1,15 +1,18 @@
 {% extends "base.html" %}
 {% block title %}Cấu hình chi phí — {{ company_code|upper }}{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="/static/css/super_admin.css">
+{% endblock %}
 {% block content %}
-<div class="space-y-5 max-w-5xl mx-auto">
+<div class="space-y-5 sa-wrap">
 
   <div class="flex items-start justify-between gap-4">
     <div class="min-w-0">
-      <a href="/account/company/{{ company_code }}" class="text-sm text-indigo-600 hover:text-indigo-700 font-medium">&larr; Quay lại công ty {{ company_code|upper }}</a>
-      <h1 class="text-xl font-semibold text-slate-800 mt-2">
-        Cấu hình chi phí — <span class="text-indigo-700">{{ company_code|upper }}</span>
-      </h1>
-      <p class="text-sm text-slate-500 mt-1">Phí triển khai, phí nền tảng và phí vận hành theo phiên. Khi lưu, hệ thống tạo bản ghi mới và giữ lịch sử các bản cũ.</p>
+      <a href="/account/company/{{ company_code }}" class="sa-back">&larr; Quay lại công ty {{ company_code|upper }}</a>
+      <div class="sa-head" style="margin-bottom:0">
+        <h1 class="sa-title">Cấu hình chi phí — {{ company_code|upper }}</h1>
+        <p class="sa-sub">Phí triển khai, phí nền tảng và phí vận hành theo phiên. Khi lưu, hệ thống tạo bản ghi mới và giữ lịch sử các bản cũ.</p>
+      </div>
     </div>
     <div class="flex items-center gap-2 shrink-0">
       <a href="/billing/admin/companies/view/{{ company_code }}"

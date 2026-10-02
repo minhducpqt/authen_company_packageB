@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Cấu hình email — {{ company_code|upper }}{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="/static/css/super_admin.css">
+{% endblock %}
 {% block content %}
 <style>
 :root{
@@ -16,7 +19,7 @@
 .badge.off{background:rgba(100,116,139,.12);color:#334155;border:1px solid rgba(100,116,139,.3)}
 .badge.info{background:rgba(37,99,235,.12);color:#1d4ed8;border:1px solid rgba(37,99,235,.28)}
 .badge.warn{background:rgba(245,158,11,.12);color:#92400e;border:1px solid rgba(245,158,11,.30)}
-.btn{display:inline-flex;align-items:center;padding:8px 12px;border-radius:10px;border:1px solid var(--b);background:#0f172a;color:#fff;cursor:pointer}
+.btn{display:inline-flex;align-items:center;padding:8px 12px;border-radius:10px;border:1px solid var(--b);background:#4f46e5;color:#fff;cursor:pointer}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .btn-ghost{background:#fff;color:#0f172a}
 .input{width:100%;border:1px solid var(--b);border-radius:10px;padding:8px 10px}
@@ -35,9 +38,12 @@
 .close-x{background:transparent;border:none;font-size:20px;line-height:1;cursor:pointer;color:#475569}
 </style>
 
-<div class="page-wrap">
-  <a href="/account/company/{{ company_code }}" class="text-sm text-indigo-600">&larr; Quay lại chi tiết công ty</a>
-  <h1 class="h1">Cấu hình email — <b>{{ company_code|upper }}</b></h1>
+<div class="page-wrap sa-page">
+  <a href="/account/company/{{ company_code }}" class="sa-back">&larr; Quay lại công ty {{ company_code|upper }}</a>
+  <div class="sa-head">
+    <h1 class="sa-title">Cấu hình email</h1>
+    <p class="sa-sub">SMTP / relay và mailer gửi thông báo cho khách hàng — <strong>{{ company_code|upper }}</strong></p>
+  </div>
 
   <div class="card" style="margin-bottom:14px">
     <h3 style="margin:0 0 10px;font-weight:800">Danh sách cấu hình</h3>

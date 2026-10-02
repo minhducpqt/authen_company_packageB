@@ -1,78 +1,91 @@
 {% extends "base.html" %}
 {% block title %}Cấu hình đấu giá — {{ company_code|upper }}{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="/static/css/super_admin.css">
+{% endblock %}
 {% block content %}
 
-<a href="/account/company/{{ company_code }}" class="text-sm text-indigo-600 hover:text-indigo-700">&larr; Quay lại công ty {{ company_code }}</a>
+<div class="sa-wrap sa-wrap--narrow">
+  <a href="/account/company/{{ company_code }}" class="sa-back">&larr; Quay lại công ty {{ company_code|upper }}</a>
 
-<div class="mt-4 mb-6">
-  <h2 class="text-xl font-semibold text-slate-800">Mặc định cấu hình đấu giá — {{ company_code|upper }}</h2>
-  <p class="text-slate-500 text-sm mt-1">
-    Áp dụng khi <b>tạo mới</b> hoặc <b>import</b> dự án nếu file không chỉ định.
-    Admin công ty vẫn có thể đổi trên từng dự án.
-  </p>
-</div>
+  <div class="sa-head">
+    <h1 class="sa-title">Mặc định cấu hình đấu giá</h1>
+    <p class="sa-sub">
+      Áp dụng khi <strong>tạo mới</strong> hoặc <strong>import</strong> dự án nếu file không chỉ định.
+      Admin công ty vẫn có thể đổi trên từng dự án.
+    </p>
+  </div>
 
-{% if msg == 'saved' %}
-  <div class="mb-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm">Đã lưu cấu hình.</div>
-{% endif %}
-{% if err == 'save_failed' %}
-  <div class="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-sm">Lưu thất bại. Vui lòng thử lại.</div>
-{% endif %}
-{% if load_err %}
-  <div class="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">{{ load_err }}</div>
-{% endif %}
+  {% if msg == 'saved' %}
+    <div class="sa-alert sa-alert--ok">Đã lưu cấu hình.</div>
+  {% endif %}
+  {% if err == 'save_failed' %}
+    <div class="sa-alert sa-alert--err">Lưu thất bại. Vui lòng thử lại.</div>
+  {% endif %}
+  {% if load_err %}
+    <div class="sa-alert sa-alert--warn">{{ load_err }}</div>
+  {% endif %}
 
-<div class="max-w-2xl card">
-  <form method="post" action="/account/company/{{ company_code }}/auction-defaults" class="space-y-5">
-    <div class="p-4 rounded-xl border border-indigo-100 bg-indigo-50/40">
-      <label class="label text-indigo-900">Hình thức đấu mặc định</label>
-      <select name="registration_mode" class="input mt-1" required>
-        {% for code, label in registration_mode_labels.items() %}
-        <option value="{{ code }}" {% if (cfg.registration_mode or 'NORMAL') == code %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-      </select>
-      <p class="text-xs text-slate-600 mt-2">
-        {% if cfg.is_configured %}
-          <span class="text-emerald-700 font-medium">Đã cấu hình:</span>
-        {% else %}
-          <span class="text-slate-500">Chưa cấu hình — mặc định hệ thống:</span>
-        {% endif %}
-        <span class="font-semibold">{{ cfg.registration_mode_label or cfg.registration_mode }}</span>
-      </p>
+  <div class="sa-card">
+    <div class="sa-card-hd">
+      <div>
+        <h2 class="sa-card-hd-t">Giá trị mặc định</h2>
+        <p class="sa-card-hd-s">Lưu một lần — dùng cho mọi dự án mới của {{ company_code|upper }} khi chưa ghi đè.</p>
+      </div>
     </div>
+    <div class="sa-card-bd">
+      <form method="post" action="/account/company/{{ company_code }}/auction-defaults">
+        <div class="sa-form-panel sa-form-panel--accent">
+          <label class="label text-indigo-900">Hình thức đấu mặc định</label>
+          <select name="registration_mode" class="input mt-2" required>
+            {% for code, label in registration_mode_labels.items() %}
+            <option value="{{ code }}" {% if (cfg.registration_mode or 'NORMAL') == code %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <p class="text-xs text-slate-600 mt-2">
+            {% if cfg.is_configured %}
+              <span class="text-emerald-700 font-medium">Đã cấu hình:</span>
+            {% else %}
+              <span class="text-slate-500">Chưa cấu hình — mặc định hệ thống:</span>
+            {% endif %}
+            <span class="font-semibold">{{ cfg.registration_mode_label or cfg.registration_mode }}</span>
+          </p>
+        </div>
 
-    <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/80">
-      <label class="label">Cách tính giá đấu mặc định</label>
-      <select name="auction_mode" class="input mt-1" required>
-        {% for code, label in auction_mode_labels.items() %}
-        <option value="{{ code }}" {% if (cfg.auction_mode or 'PER_LOT') == code %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-      </select>
-      <p class="text-xs text-slate-600 mt-2">
-        {% if cfg.is_auction_mode_configured %}
-          <span class="text-emerald-700 font-medium">Đã cấu hình:</span>
-        {% else %}
-          <span class="text-slate-500">Chưa cấu hình — mặc định hệ thống:</span>
-        {% endif %}
-        <span class="font-semibold">{{ cfg.auction_mode_label or cfg.auction_mode or 'Theo cả lô' }}</span>
-      </p>
-    </div>
+        <div class="sa-form-panel">
+          <label class="label">Cách tính giá đấu mặc định</label>
+          <select name="auction_mode" class="input mt-2" required>
+            {% for code, label in auction_mode_labels.items() %}
+            <option value="{{ code }}" {% if (cfg.auction_mode or 'PER_LOT') == code %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <p class="text-xs text-slate-600 mt-2">
+            {% if cfg.is_auction_mode_configured %}
+              <span class="text-emerald-700 font-medium">Đã cấu hình:</span>
+            {% else %}
+              <span class="text-slate-500">Chưa cấu hình — mặc định hệ thống:</span>
+            {% endif %}
+            <span class="font-semibold">{{ cfg.auction_mode_label or cfg.auction_mode or 'Theo cả lô' }}</span>
+          </p>
+        </div>
 
-    <div class="text-xs text-slate-500 border border-slate-200 rounded-lg p-3 bg-white">
-      <div class="font-semibold text-slate-700 mb-1">Ghi chú</div>
-      <ul class="list-disc pl-4 space-y-1">
-        <li><b>Đấu lô</b> — khách chọn lô cụ thể khi đặt cọc.</li>
-        <li><b>Đấu nhóm</b> — khách mua hồ sơ / cọc theo nhóm mức cọc.</li>
-        <li><b>Theo cả lô</b> — giá khởi điểm và trả giá theo từng lô.</li>
-        <li><b>Theo m²</b> — giá tính theo diện tích (m²).</li>
-      </ul>
-    </div>
+        <div class="sa-notes">
+          <strong class="text-slate-700">Ghi chú</strong>
+          <ul>
+            <li><strong>Đấu lô</strong> — khách chọn lô cụ thể khi đặt cọc.</li>
+            <li><strong>Đấu nhóm</strong> — khách mua hồ sơ / cọc theo nhóm mức cọc.</li>
+            <li><strong>Theo cả lô</strong> — giá khởi điểm và trả giá theo từng lô.</li>
+            <li><strong>Theo m²</strong> — giá tính theo diện tích (m²).</li>
+          </ul>
+        </div>
 
-    <div class="flex gap-2 justify-end">
-      <a href="/account/company/{{ company_code }}" class="btn-secondary">Hủy</a>
-      <button type="submit" class="btn-primary">Lưu cấu hình</button>
+        <div class="sa-foot-actions">
+          <a href="/account/company/{{ company_code }}" class="sa-btn sa-btn--secondary">Hủy</a>
+          <button type="submit" class="sa-btn sa-btn--primary"><i class="ri-save-line"></i> Lưu cấu hình</button>
+        </div>
+      </form>
     </div>
-  </form>
+  </div>
 </div>
 
 {% endblock %}

@@ -1,33 +1,8 @@
 {% extends "base.html" %}
+{% block head_extra %}
+<link rel="stylesheet" href="/static/css/super_admin.css">
+{% endblock %}
 {% block content %}
-<style>
-  .co-wrap{max-width:1100px;margin:0 auto;padding-bottom:32px}
-  .co-back{font-size:13px;color:#4f46e5;font-weight:600;text-decoration:none}
-  .co-head{margin:12px 0 20px}
-  .co-title{font-size:22px;font-weight:800;color:#0f172a;margin:0}
-  .co-meta{font-size:14px;color:#64748b;margin-top:4px}
-  .co-status{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;margin-left:8px;vertical-align:middle}
-  .co-status.on{background:#ecfdf5;color:#047857;border:1px solid #a7f3d0}
-  .co-status.off{background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0}
-  .co-section{margin-top:24px}
-  .co-section-tt{font-size:13px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
-  .co-hub{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-  @media (max-width:720px){.co-hub{grid-template-columns:1fr}}
-  .co-card{display:flex;flex-direction:column;gap:8px;padding:16px 18px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;text-decoration:none;color:inherit;transition:border-color .15s,box-shadow .15s;min-height:118px}
-  .co-card:hover{border-color:#94a3b8;box-shadow:0 8px 24px rgba(15,23,42,.06)}
-  .co-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-  .co-card-ico{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-  .co-card-ico.tg{background:#eff6ff;color:#2563eb}
-  .co-card-ico.otp{background:#f1f5f9;color:#334155}
-  .co-card-ico.mail{background:#eef2ff;color:#4f46e5}
-  .co-card-ico.auction{background:#f0fdfa;color:#0d9488}
-  .co-card-ico.billing{background:#fff7ed;color:#ea580c}
-  .co-card-ttl{font-size:15px;font-weight:800;color:#0f172a;margin:0}
-  .co-card-desc{font-size:12px;color:#64748b;line-height:1.45;flex:1}
-  .co-card-link{font-size:12px;font-weight:700;color:#4f46e5;margin-top:auto}
-  .co-users-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px 18px}
-  .co-user-form{display:flex;flex-wrap:wrap;align-items:end;gap:8px}
-</style>
 
 <div class="co-wrap">
   <a href="/account" class="co-back">&larr; Danh sách công ty</a>
@@ -49,7 +24,7 @@
   </div>
 
   {% if load_err %}
-    <div class="p-3 rounded-lg bg-red-50 text-red-700 text-sm mb-4">{{ load_err }}</div>
+    <div class="sa-alert sa-alert--err">{{ load_err }}</div>
   {% endif %}
 
   <div class="co-section">
@@ -141,7 +116,7 @@
       </select>
     </label>
 
-    <button class="btn-primary" type="submit">Thêm tài khoản</button>
+    <button class="sa-btn sa-btn--primary" type="submit"><i class="ri-user-add-line"></i> Thêm tài khoản</button>
 
     {# ✅ Hint: chỉ nhập suffix, hệ thống tự prefix company_code #}
     <div class="w-full">
@@ -154,64 +129,61 @@
     </div>
 
 {% if users and users|length > 0 %}
-  <div class="overflow-x-auto border border-slate-200 rounded-xl bg-white">
-    <table class="min-w-full text-sm">
-      <thead class="bg-slate-50 text-slate-600">
+  <div class="sa-table-wrap">
+    <table class="sa-table" id="usersTbody">
+      <thead>
         <tr>
-          <th class="px-3 py-2 text-left font-medium">ID</th>
-          <th class="px-3 py-2 text-left font-medium">Username</th>
-          <th class="px-3 py-2 text-left font-medium">Role</th>
-          <th class="px-3 py-2 text-left font-medium">Trạng thái</th>
-          <th class="px-3 py-2 text-left font-medium">Hành động</th>
+          <th>ID</th>
+          <th>Username</th>
+          <th>Role</th>
+          <th>Trạng thái</th>
+          <th>Hành động</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-slate-100" id="usersTbody">
+      <tbody>
         {% for u in users %}
-        <tr class="hover:bg-slate-50">
-          <td class="px-3 py-2">{{ u.id }}</td>
-          <td class="px-3 py-2 font-mono text-slate-800 js-username">{{ u.username }}</td>
-          <td class="px-3 py-2">{{ u.role }}</td>
-          <td class="px-3 py-2">
+        <tr>
+          <td class="text-slate-500">{{ u.id }}</td>
+          <td class="mono js-username">{{ u.username }}</td>
+          <td>{{ u.role }}</td>
+          <td>
             {% if u.is_active %}
-              <span class="inline-flex items-center text-green-700">
-                <span class="h-2 w-2 rounded-full bg-green-500 mr-1"></span> Active
-              </span>
+              <span class="sa-badge sa-badge--ok"><span class="sa-badge-dot"></span> Active</span>
             {% else %}
-              <span class="inline-flex items-center text-slate-500">
-                <span class="h-2 w-2 rounded-full bg-slate-400 mr-1"></span> Disabled
-              </span>
+              <span class="sa-badge sa-badge--off"><span class="sa-badge-dot"></span> Disabled</span>
             {% endif %}
           </td>
-          <td class="px-3 py-2">
+          <td>
+            <div class="sa-actions">
             {% if u.is_active %}
-              <form action="/account/admin/user/toggle" method="post" class="inline js-confirm-form"
+              <form action="/account/admin/user/toggle" method="post" class="js-confirm-form"
                     data-confirm-title="Xác nhận"
                     data-confirm-message="Disable user {{ u.username }} ?">
                 <input type="hidden" name="user_id" value="{{ u.id }}">
                 <input type="hidden" name="action" value="disable">
                 <input type="hidden" name="next" value="/account/company/{{ company_code }}">
-                <button class="btn-secondary" type="submit">Disable</button>
+                <button class="sa-btn sa-btn--danger sa-btn--sm" type="submit">Tắt</button>
               </form>
             {% else %}
-              <form action="/account/admin/user/toggle" method="post" class="inline js-confirm-form"
+              <form action="/account/admin/user/toggle" method="post" class="js-confirm-form"
                     data-confirm-title="Xác nhận"
                     data-confirm-message="Enable user {{ u.username }} ?">
                 <input type="hidden" name="user_id" value="{{ u.id }}">
                 <input type="hidden" name="action" value="enable">
                 <input type="hidden" name="next" value="/account/company/{{ company_code }}">
-                <button class="btn-primary" type="submit">Enable</button>
+                <button class="sa-btn sa-btn--secondary sa-btn--sm" type="submit">Bật</button>
               </form>
             {% endif %}
 
-            {# ✅ Set password: bỏ input inline, dùng popup; endpoint giữ nguyên #}
             <form action="/account/admin/user/set-password" method="post"
-                  class="inline ml-2 js-setpass-form"
+                  class="js-setpass-form"
                   data-username="{{ u.username }}">
               <input type="hidden" name="user_id" value="{{ u.id }}">
               <input type="hidden" name="next" value="/account/company/{{ company_code }}">
               <input type="hidden" name="new_password" value="">
-              <button class="btn-primary" type="submit">Set password</button>
+              <button class="sa-btn sa-btn--primary sa-btn--sm" type="submit"><i class="ri-key-2-line"></i> Mật khẩu</button>
             </form>
+            </div>
           </td>
         </tr>
         {% endfor %}
@@ -219,7 +191,7 @@
     </table>
   </div>
 {% else %}
-  <div class="text-slate-500 text-sm py-2">Chưa có tài khoản nào cho công ty này.</div>
+  <div class="sa-empty"><i class="ri-user-line"></i>Chưa có tài khoản nào cho công ty này.</div>
 {% endif %}
   </div>
 </div>
