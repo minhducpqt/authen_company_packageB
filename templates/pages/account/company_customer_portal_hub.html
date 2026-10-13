@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Cổng hub khách hàng — {{ company_code|upper }}{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="/static/css/super_admin.css">
+{% endblock %}
+{% block content %}
+
+<div class="sa-wrap sa-wrap--narrow">
+  <a href="/account/company/{{ company_code }}" class="sa-back">&larr; Quay lại công ty {{ company_code|upper }}</a>
+
+  <div class="sa-head">
+    <h1 class="sa-title">Hiển thị trên cổng hub</h1>
+    <p class="sa-sub">
+      Chỉ ảnh hưởng trang gốc <a href="{{ hub_home }}" target="_blank" rel="noopener" class="text-indigo-600 font-semibold">khachhang.daugiathongminh.vn</a>
+      (danh sách công ty và dự án chung). Link riêng <code>/{{ company_code|lower }}</code> của khách vẫn truy cập bình thường.
+    </p>
+  </div>
+
+  {% if load_err %}
+  <div class="sa-alert sa-alert--err">{{ load_err }}</div>
+  {% endif %}
+  {% if msg == 'saved' %}
+  <div class="sa-alert sa-alert--ok">Đã lưu cấu hình.</div>
+  {% endif %}
+  {% if err == 'save_failed' %}
+  <div class="sa-alert sa-alert--err">Lưu thất bại. Vui lòng thử lại.</div>
+  {% endif %}
+
+  <div class="sa-card" style="padding:18px 20px">
+    <form method="post" action="/account/company/{{ company_code }}/customer-portal-hub">
+      <label class="flex items-start gap-3 cursor-pointer select-none" style="display:flex;align-items:flex-start;gap:12px;">
+        <input type="checkbox" name="listed_on_hub" value="1"
+               {% if cfg.listed_on_hub %}checked{% endif %}
+               style="width:18px;height:18px;margin-top:3px;">
+        <span>
+          <strong class="text-slate-800">Hiển thị công ty trên hub chung</strong>
+          <span class="block text-sm text-slate-500 mt-1">
+            Bật: công ty (và dự án còn hạn) có thể xuất hiện trên trang chủ hub nếu đã có hồ sơ
+            <code>customer_portal_companies</code> đang ACTIVE.
+            Tắt: ẩn khỏi hub; không ảnh hưởng cổng theo link trực tiếp.
+          </span>
+        </span>
+      </label>
+
+      <div class="sa-foot-actions" style="margin-top:18px">
+        <a href="/account/company/{{ company_code }}" class="sa-btn sa-btn--secondary">Hủy</a>
+        <button type="submit" class="sa-btn sa-btn--primary"><i class="ri-save-line"></i> Lưu</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
