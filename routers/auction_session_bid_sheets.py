@@ -217,6 +217,70 @@ async def print_bid_sheets_for_round(
 
 
 # =========================================================
+# PRINT: phiếu trả giá trắng in sẵn (vòng 2..10, khách vòng 1)
+# =========================================================
+@router.get("/print/sessions/{session_id}/preprint-blank", response_class=HTMLResponse)
+async def print_preprint_blank_bid_sheets(
+    request: Request,
+    session_id: int = Path(..., ge=1),
+    target_round_no: int = Query(..., ge=2, le=10),
+    sort_mode: str = Query("STT_LOT", description="STT_LOT (default) | LOT_STT"),
+):
+    next_path = (
+        f"/auction-sessions/bid-sheets/print/sessions/{int(session_id)}"
+        f"/preprint-blank?target_round_no={int(target_round_no)}"
+    )
+    me, token_or_redirect = await _ensure_me_or_redirect(request, next_path)
+    if isinstance(token_or_redirect, RedirectResponse):
+        return token_or_redirect
+    token = token_or_redirect
+
+    headers = {"Authorization": f"Bearer {token}"}
+
+    try:
+        async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=90.0) as client:
+            st, js = await _get_json(
+                client,
+                f"/api/v1/report/auction-sessions/sessions/{int(session_id)}/bid-sheets/preprint-blank",
+                headers,
+                params={
+                    "target_round_no": int(target_round_no),
+                    "sort_mode": (sort_mode or "STT_LOT").upper(),
+                },
+            )
+        if st != 200 or not isinstance(js, dict):
+            return _err_html(f"Không lấy được dữ liệu phiếu in sẵn (HTTP {st}).", 500)
+        tickets = js.get("data") or []
+        meta = js.get("meta") or {}
+    except Exception as e:
+        return _err_html(str(e), 500)
+
+    if not tickets:
+        return _not_found_html(
+            "Không có khách đủ điều kiện vòng 1 để in phiếu trắng (đấu lô)."
+        )
+
+    print_ctx = {
+        "mode": "AUCTION_SESSION_PREPRINT_BLANK",
+        "session_id": int(session_id),
+        "target_round_no": int(target_round_no),
+        "sort_mode": (sort_mode or "").upper(),
+        **(meta or {}),
+    }
+    tickets = await _attach_session_qr(token, tickets, print_ctx)
+
+    return templates.TemplateResponse(
+        _bid_sheet_template(me),
+        {
+            "request": request,
+            "me": me,
+            "tickets": tickets,
+            "print_ctx": print_ctx,
+        },
+    )
+
+
+# =========================================================
 # PRINT: theo SESSION (tất cả vòng/lô trong phiên)
 # =========================================================
 @router.get("/print/sessions/{session_id}", response_class=HTMLResponse)

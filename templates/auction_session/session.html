@@ -915,6 +915,9 @@
           <button type="button" onclick="openSessionProgressPrint(); this.closest('.printMenu').style.display='none';">
             <i class="ri-file-text-line"></i> In diễn biến phiên
           </button>
+          <button type="button" id="btnPreprintBlankBidSheets" onclick="openPreprintBlankBidSheetsModal(); this.closest('.printMenu').style.display='none';">
+            <i class="ri-file-copy-line"></i> In phiếu trả giá trắng (vòng 2–10)
+          </button>
         </div>
       </div>
 
@@ -1422,6 +1425,32 @@ Modal: Print One Bid Sheet (choose one customer)
 
     <div class="dlg-f">
       <span class="hint">Chọn 1 khách → hệ thống mở tab in đúng 1 phiếu.</span>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: In phiếu trả giá trắng in sẵn -->
+<div id="preprintBlankBackdrop" class="dlg-backdrop" onclick="preprintBlankClose(event)">
+  <div class="dlg" style="max-width:440px;" onclick="event.stopPropagation()">
+    <div class="dlg-h">
+      <b><i class="ri-file-copy-line"></i> In phiếu trả giá trắng</b>
+      <button class="dlg-x" type="button" onclick="preprintBlankClose()"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="dlg-b">
+      <p class="hint" style="margin:0 0 12px;line-height:1.45;">
+        In sẵn trước phiên cho khách <strong>đủ điều kiện vòng 1</strong> trên từng lô.
+        Giá khởi điểm vòng chọn để trống; mã phiếu <strong>S{n}</strong> giữ như vòng 1 (số lô khách tham gia).
+      </p>
+      <label class="block text-xs font-medium text-slate-600 mb-1" for="preprintBlankRoundSelect">Chọn vòng in sẵn</label>
+      <select id="preprintBlankRoundSelect" style="width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:10px;font-size:14px;">
+        {% for rn in range(2, 11) %}
+        <option value="{{ rn }}">Vòng {{ rn }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="dlg-f">
+      <button class="btn ghost" type="button" onclick="preprintBlankClose()"><i class="ri-close-line"></i> Huỷ</button>
+      <button class="btn primary" type="button" onclick="confirmPreprintBlankBidSheets()"><i class="ri-printer-line"></i> In</button>
     </div>
   </div>
 </div>
@@ -3929,6 +3958,45 @@ Modal: Print One Bid Sheet (choose one customer)
   const w = window.open(url, "_blank", "noopener,noreferrer");
   if(w){ try{ w.focus(); }catch(e){} }
   }
+
+  function syncPreprintBlankMenuVisibility(){
+    const btn = document.getElementById('btnPreprintBlankBidSheets');
+    if(!btn) return;
+    btn.style.display = isGroupAuctionSession() ? 'none' : '';
+  }
+
+  function openPreprintBlankBidSheetsModal(){
+    if(isGroupAuctionSession()){
+      toast('Tiện ích chỉ áp dụng đấu lô (NORMAL).');
+      return;
+    }
+    if(!SESSION_ID){
+      toast('Thiếu session_id.');
+      return;
+    }
+    const bd = document.getElementById('preprintBlankBackdrop');
+    if(bd) bd.style.display = 'flex';
+  }
+
+  function preprintBlankClose(ev){
+    if(ev && ev.target && ev.target.id !== 'preprintBlankBackdrop') return;
+    const bd = document.getElementById('preprintBlankBackdrop');
+    if(bd) bd.style.display = 'none';
+  }
+
+  function confirmPreprintBlankBidSheets(){
+    const sel = document.getElementById('preprintBlankRoundSelect');
+    const rn = sel ? parseInt(sel.value, 10) : 0;
+    if(!SESSION_ID || !rn || rn < 2 || rn > 10){
+      toast('Chọn vòng từ 2 đến 10.');
+      return;
+    }
+    preprintBlankClose();
+    const url = `/auction-sessions/bid-sheets/print/sessions/${SESSION_ID}/preprint-blank?target_round_no=${rn}&sort_mode=STT_LOT`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  syncPreprintBlankMenuVisibility();
 
 
 

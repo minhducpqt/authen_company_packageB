@@ -736,7 +736,8 @@
   {% set price_unit = unit_label %}
   {% set bid_unit = unit_label %}
 
-  {# Sxxx = số lô của khách (ưu tiên customer_lot_count từ API) #}
+  {% set is_preprint_blank = (t.preprint_blank_round or false) %}
+  {# Sxxx = số lô của khách (ưu tiên customer_lot_count từ API; in sẵn vẫn dùng số vòng 1) #}
   {% set qty_lots = (t.customer_lot_count if (t.customer_lot_count is not none) else (tickets
     | selectattr('round_id', 'equalto', t.round_id)
     | selectattr('customer_id', 'equalto', t.customer_id)
@@ -961,7 +962,9 @@
             <tr>
               <td class="info-label">Giá KĐ ({{ price_unit }})</td><td class="info-sep">:</td>
               <td class="info-value bold">
-                {% if t.starting_price_vnd is not none and t.starting_price_vnd != '' %}
+                {% if is_preprint_blank %}
+                  <span class="dotline">&nbsp;</span>
+                {% elif t.starting_price_vnd is not none and t.starting_price_vnd != '' %}
                   {{ "{:,.0f}".format(t.starting_price_vnd|float) }}
                 {% else %}
                   0
@@ -1034,6 +1037,8 @@
         <span class="bold" style="color:var(--ink);">Ghi chú:</span>
         {% if is_blank_ticket %}
         Phiếu đấu nhóm — khách tự điền <span class="bold">mã lô</span> và <span class="bold">giá trả</span>;
+        {% elif is_preprint_blank %}
+        Phiếu in sẵn trước phiên — tự điền <span class="bold">giá khởi điểm</span> và <span class="bold">giá trả</span> khi vòng diễn ra;
         {% endif %}
         Phiếu hợp lệ do {{ t.company_name or 'Đơn vị tổ chức đấu giá' }} phát hành;
         phiếu không rách, nát; điền đầy đủ thông tin.
