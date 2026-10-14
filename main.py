@@ -47,6 +47,7 @@ from routers.auction_session_lot_clearbag_labels import router as auction_sessio
 from routers.auction_session_winner_prints import router as auction_session_winner_prints_router
 from routers.auction_documents_print import router as auction_documents_print_router
 from fastapi_account_manager.middlewares.rbac_guard import rbac_guard_middleware
+from fastapi_account_manager.middlewares.billing_nav_guard import billing_nav_guard_middleware
 from routers.invoice_exports import router as invoice_exports_router
 from routers.billing import router as billing_router
 
@@ -105,6 +106,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.middleware("http")(auth_guard_middleware)
 
 app.middleware("http")(rbac_guard_middleware)  # ✅ chạy sau auth_guard
+app.middleware("http")(billing_nav_guard_middleware)  # UI billing-only when LOCKED
 
 
 # Đăng ký routers

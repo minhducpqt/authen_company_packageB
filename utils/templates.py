@@ -15,6 +15,24 @@ templates.env.globals["ACCESS_COOKIE_NAME"] = ACCESS_COOKIE_NAME
 templates.env.globals["is_logged_in"] = is_logged_in
 templates.env.globals["account_menu_info"] = account_menu_info
 
+
+def billing_nav_locked(request) -> bool:
+    try:
+        return bool(getattr(request.state, "billing_nav_locked", False))
+    except Exception:
+        return False
+
+
+def billing_lock_detail(request):
+    try:
+        return getattr(request.state, "billing_lock_detail", None)
+    except Exception:
+        return None
+
+
+templates.env.globals["billing_nav_locked"] = billing_nav_locked
+templates.env.globals["billing_lock_detail"] = billing_lock_detail
+
 from datetime import datetime
 
 def datetimeformat(value, fmt="%d/%m/%Y %H:%M:%S"):

@@ -352,6 +352,19 @@
         transition:.18s ease;
       }
 
+      .billing-nav-lock-banner{
+      margin:0 0 14px;
+      padding:12px 16px;
+      border-radius:14px;
+      border:1px solid rgba(244,63,94,.35);
+      background:linear-gradient(180deg, rgba(255,241,242,.95), rgba(255,228,230,.85));
+      color:#881337;
+      font-size:13px;
+      line-height:1.5;
+      }
+      .billing-nav-lock-banner b{font-weight:800;color:#9f1239;}
+      .billing-nav-lock-banner a{color:#be123c;font-weight:700;text-decoration:underline;}
+
       body.sidebar-open .sidebar-mobile-backdrop{
         opacity:1;
         pointer-events:auto;
@@ -383,6 +396,8 @@
   {% set is_staff = (user_role == 'STAFF') %}
   {% set is_viewer = (user_role == 'VIEWER') %}
   {% set is_accountant = (user_role == 'ACCOUNTANT') %}
+  {% set nav_locked = billing_nav_locked(request) %}
+  {% set lock_detail = billing_lock_detail(request) %}
 
   <!-- ===== Header ===== -->
   <div class="app-topbar text-white">
@@ -407,7 +422,7 @@
         {% endif %}
       </div>
 
-      <a href="/reports" class="app-brand-center">
+      <a href="{% if nav_locked %}/billing{% else %}/reports{% endif %}" class="app-brand-center">
         <span class="app-brand-badge">
           <i class="ri-auction-line text-base"></i>
         </span>
@@ -533,9 +548,28 @@
       <ul class="p-2">
 
         {# =========================================================
+           MENU: Billing LOCKED — chỉ Billing (+ Tài khoản / Sổ tay bên dưới)
+           ========================================================= #}
+        {% if nav_locked %}
+
+        <li class="side-title mt-0">Thanh toán phí nền tảng</li>
+        <li>
+          <a class="side-link {% if request.url.path == '/billing' %}active{% endif %}"
+             href="/billing">
+            <i class="ri-bill-line"></i> 3.3 Billing
+          </a>
+        </li>
+        <li>
+          <a class="side-link {% if request.url.path.startswith('/billing/invoices') %}active{% endif %}"
+             href="/billing/invoices">
+            <i class="ri-file-list-2-line"></i> Danh sách hóa đơn
+          </a>
+        </li>
+
+        {# =========================================================
            MENU: SUPER (NEW) — Quản lý Billing của các công ty
            ========================================================= #}
-        {% if is_super %}
+        {% elif is_super %}
 
         <li class="side-title mt-0">Billing (SUPER)</li>
 
@@ -966,12 +1000,14 @@
 
         {# ===== Trợ giúp (mọi role — trang tĩnh) ===== #}
         <li class="side-title mt-4">Trợ giúp</li>
+        {% if not nav_locked %}
         <li>
           <a class="side-link {% if request.url.path.startswith('/bieu-mau') %}active{% endif %}"
              href="/bieu-mau">
             <i class="ri-file-paper-2-line"></i> Biểu mẫu
           </a>
         </li>
+        {% endif %}
         <li>
           <a class="side-link {% if request.url.path.startswith('/huong-dan') %}active{% endif %}"
              href="/huong-dan">
@@ -984,6 +1020,22 @@
     {% endif %}
 
     <main class="app-main flex-1">
+      {% if nav_locked %}
+      <div class="billing-nav-lock-banner" role="alert">
+        <b>Công ty đang bị khóa do quá hạn thanh toán phí phần mềm</b>
+        (trạng thái billing: {{ (lock_detail.billing_status if lock_detail else 'LOCKED') or 'LOCKED' }}).
+        Vui lòng xem công nợ và hóa đơn tại mục <a href="/billing">Billing</a>.
+        {% if lock_detail and lock_detail.get('next_due_date') %}
+        Hạn thanh toán (đã quá hạn): <b>{{ lock_detail.next_due_date }}</b>.
+        {% endif %}
+        {% if lock_detail and lock_detail.get('current_outstanding') is not none %}
+        Công nợ (đã chốt): <b>{{ lock_detail.current_outstanding }}</b> VND.
+        {% endif %}
+        <span style="display:block;margin-top:6px;font-size:12px;color:#9f1239;">
+          Các giao dịch mua hồ sơ / đặt cọc / phiên đấu đang vận hành trên hệ thống <b>không bị dừng</b> — chỉ giới hạn menu quản trị web cho đến khi thanh toán phí.
+        </span>
+      </div>
+      {% endif %}
       {% block content %}{% endblock %}
     </main>
   </div>
