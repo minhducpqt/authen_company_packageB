@@ -292,6 +292,18 @@
       .cmodal-h b{font-size:14px;color:var(--ink);font-weight:1100;}
       .cmodal-b{padding:14px 16px;color:var(--ink);font-size:13px;line-height:1.45;}
       .cmodal-b .sub{margin-top:6px;color:var(--muted);font-size:12px;line-height:1.35;}
+      .deposit-gate-warn{
+      margin-top:10px;
+      padding:12px 14px;
+      border-radius:12px;
+      border:1px solid rgba(245,158,11,.45);
+      background:linear-gradient(180deg, rgba(254,243,199,.55), rgba(255,251,235,.9));
+      color:#78350f;
+      font-size:13px;
+      line-height:1.5;
+      }
+      .deposit-gate-warn b{color:#92400e;font-weight:1100;}
+      .deposit-gate-warn .dl{margin-top:8px;font-size:12px;color:#a16207;}
       .cmodal-f{
       display:flex;justify-content:flex-end;gap:10px;padding:14px 16px;
       border-top:1px solid var(--bd2);background:rgba(248,250,252,.7);
@@ -586,6 +598,7 @@
                               {% for p in projects %}
                                 {% set code = (p.get('project_code') or p.get('code') or '') %}
                                 <option value="{{ code }}" {{ project_option_attrs(p) }} data-project-id="{{ p.get('id') or p.get('project_id') }}"
+                                data-deposit-deadline-at="{{ p.get('deposit_deadline_at') or '' }}"
                                 {% if (project or '')|upper == code|upper %}selected{% endif %}>
                                   {{ code }} — {{ p.get('name') or p.get('project_name') or 'Dự án' }}
                                 </option>
@@ -900,6 +913,7 @@
                     {% set pid = p.get('id') or p.get('project_id') %}
                     {% set code = p.get('project_code') or p.get('code') %}
                     <option value="{{ pid }}" {{ project_option_attrs(p) }} data-project-code="{{ code }}"
+                    data-deposit-deadline-at="{{ p.get('deposit_deadline_at') or '' }}"
                     {% if project_obj and (project_obj.get('id')==pid or project_obj.get('project_id')==pid) %}selected{% endif %}>
                       {{ code }} — {{ p.get('name') or p.get('project_name') or 'Dự án' }}
                     </option>
@@ -1127,13 +1141,18 @@
           if(titleEl) titleEl.textContent = title;
           if(msgEl) msgEl.textContent = message;
 
+          const subHtml = (opts && opts.subHtml) ? String(opts.subHtml) : '';
           if(subEl){
-          if(sub){
+          if(subHtml){
+          subEl.style.display = 'block';
+          subEl.innerHTML = subHtml;
+          }else if(sub){
           subEl.style.display = 'block';
           subEl.textContent = sub;
           }else{
           subEl.style.display = 'none';
           subEl.textContent = '';
+          subEl.innerHTML = '';
           }
           }
 
@@ -1247,6 +1266,7 @@
           title='Xác nhận',
           message='Bạn có chắc chắn?',
           sub='',
+          subHtml='',
           tone='warn',
           okText='Xác nhận',
           cancelText='Huỷ',
@@ -1254,7 +1274,7 @@
           } = {}){
           return new Promise((resolve)=>{
           _openCModal({
-          title, message, sub, tone, okText, cancelText,
+          title, message, sub, subHtml, tone, okText, cancelText,
           mode:'confirm',
           requireText:true,
           requiredPhrase
@@ -1489,15 +1509,48 @@
           }
           }
 
-          function openCreateSession(){
+          let _earlyCreateAckProjectId = null;
+
+          function _syncCsProjectFromTopSel(){
+          const topSel = document.getElementById('projectSel');
+          const cs = document.getElementById('csProject');
+          const code = topSel ? (topSel.value || '').trim() : '';
+          if(code && cs){
+          for(const o of cs.options){
+          if((o.getAttribute('data-project-code')||'').toUpperCase() === code.toUpperCase()){
+          cs.value = o.value;
+          break;
+          }
+          }
+          }
+          return cs;
+          }
+
+          function _selectedCreateProjectId(){
+          const cs = document.getElementById('csProject');
+          const fromCs = Number(cs?.value || 0);
+          if(fromCs) return fromCs;
+          const topSel = document.getElementById('projectSel');
+          const opt = topSel && topSel.selectedIndex >= 0 ? topSel.options[topSel.selectedIndex] : null;
+          return Number(opt?.getAttribute('data-project-id') || 0);
+          }
+
+          function _selectedCreateProjectDeadlineRaw(){
+          const cs = _syncCsProjectFromTopSel();
+          let raw = _projectDepositDeadlineRawFromSelect(cs);
+          if(raw) return raw;
+          const topSel = document.getElementById('projectSel');
+          const opt = topSel && topSel.selectedIndex >= 0 ? topSel.options[topSel.selectedIndex] : null;
+          return (opt?.getAttribute('data-deposit-deadline-at') || '').trim();
+          }
+
+          function _showCreateSessionModal(){
           const backdrop = document.getElementById('createBackdrop');
           if(!backdrop) return;
           backdrop.style.display='flex';
 
-          // bind once (no impact to other logic)
           _bindRoundConfigOnce();
 
-          // default: nhiều vòng + không giới hạn (giống hành vi cũ)
           const rMulti = document.getElementById('csRoundMulti');
           const rSingle = document.getElementById('csRoundSingle');
           if(rMulti) rMulti.checked = true;
@@ -1513,7 +1566,6 @@
 
           _csSetLimitUI(true, false);
 
-          // ✅ Requirement #2: Prefill name ONLY with project code (no date)
           const n = document.getElementById('csName');
           if(n && !n.value){
           const sel = document.getElementById('projectSel');
@@ -1522,7 +1574,6 @@
           n.value = code ? (code + " – ") : "";
           }
 
-          // Prefill auction date = today if empty (safe)
           const ad = document.getElementById('csAuctionDate');
           if(ad && !ad.value){
           const d = new Date();
@@ -1532,26 +1583,71 @@
           ad.value = `${yyyy}-${mm}-${dd}`;
           }
 
-          // Sync modal project with current top select if possible (by code)
-          const topSel = document.getElementById('projectSel');
-          const code = topSel ? (topSel.value || '').trim() : '';
-          if(code){
-          const cs = document.getElementById('csProject');
-          if(cs){
-          for(const o of cs.options){
-          if((o.getAttribute('data-project-code')||'').toUpperCase() === code.toUpperCase()){
-          cs.value = o.value;
-          break;
+          _syncCsProjectFromTopSel();
           }
+
+          async function openCreateSession(){
+          _syncCsProjectFromTopSel();
+          const gatePid = _selectedCreateProjectId();
+          const deadlineRaw = _selectedCreateProjectDeadlineRaw();
+          _earlyCreateAckProjectId = null;
+
+          if(gatePid && _isBeforeDepositDeadline(deadlineRaw)){
+          const ok = await _confirmEarlyCreateSession(deadlineRaw);
+          if(!ok) return;
+          _earlyCreateAckProjectId = gatePid;
           }
-          }
-          }
+
+          _showCreateSessionModal();
           }
 
           function closeCreateSession(ev){
           if(ev && ev.target && ev.target.id !== 'createBackdrop') return;
           const backdrop = document.getElementById('createBackdrop');
           if(backdrop) backdrop.style.display='none';
+          }
+
+          function _projectDepositDeadlineRawFromSelect(cs){
+          const opt = cs && cs.options && cs.selectedIndex >= 0 ? cs.options[cs.selectedIndex] : null;
+          return (opt?.getAttribute('data-deposit-deadline-at') || '').trim();
+          }
+
+          function _isBeforeDepositDeadline(isoRaw){
+          if(!isoRaw) return false;
+          const dl = new Date(isoRaw);
+          if(Number.isNaN(dl.getTime())) return false;
+          return Date.now() <= dl.getTime();
+          }
+
+          function _fmtDepositDeadlineVN(isoRaw){
+          if(!isoRaw) return '—';
+          try{
+          const d = new Date(isoRaw);
+          if(Number.isNaN(d.getTime())) return isoRaw;
+          return d.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour12: false });
+          }catch(_){
+          return isoRaw;
+          }
+          }
+
+          async function _confirmEarlyCreateSession(deadlineRaw){
+          const dlText = _fmtDepositDeadlineVN(deadlineRaw);
+          const warnHtml =
+          '<div class="deposit-gate-warn" role="alert">'
+          + '<b>Nên tạo phiên sau khi đã kết thúc thời hạn nộp tiền đặt trước</b> để danh sách khách/lô và cọc được đầy đủ trước khi vận hành.'
+          + '<div class="dl">Hạn nộp tiền đặt trước (dự kiến): <b>' + dlText + '</b></div>'
+          + '<div class="dl">Nếu vẫn tạo phiên <b>ngay bây giờ</b>, hệ thống coi như <b>chốt danh sách tại thời điểm hiện tại</b> — '
+          + 'các hồ sơ/cọc phát sinh sau đó <b>sẽ không được tính</b> vào phiên.</div>'
+          + '</div>';
+          return confirmTypedX({
+          title: "Chưa hết hạn nộp tiền đặt trước",
+          message: "Dự án vẫn đang trong thời hạn mua bán hồ sơ và nộp tiền đặt trước.",
+          subHtml: warnHtml,
+          tone: "warn",
+          okText: "Vẫn tạo ngay",
+          cancelText: "Huỷ",
+          requiredPhrase: "tôi xác nhận"
+          });
           }
 
           async function submitCreateSession(){
@@ -1624,6 +1720,18 @@
           max_round_no: (maxRoundNo === null ? null : Number(maxRoundNo))
           };
 
+          const deadlineRaw = _projectDepositDeadlineRawFromSelect(cs);
+          if(_isBeforeDepositDeadline(deadlineRaw)){
+          if(_earlyCreateAckProjectId === projectId){
+          payload.create_before_deposit_deadline_confirm = "tôi xác nhận";
+          }else{
+          const proceed = await _confirmEarlyCreateSession(deadlineRaw);
+          if(!proceed) return;
+          payload.create_before_deposit_deadline_confirm = "tôi xác nhận";
+          _earlyCreateAckProjectId = projectId;
+          }
+          }
+
           const btns = Array.from(document.querySelectorAll('#createBackdrop .btn'));
           btns.forEach(b => b.disabled = true);
 
@@ -1648,8 +1756,29 @@
           try{ js = await r.json(); }catch(_){ js = null; }
 
           if(!r.ok){
+          const detail = (js && typeof js === 'object') ? js.detail : null;
+          const errCode = (detail && typeof detail === 'object') ? detail.error : null;
+          if(r.status === 409 && errCode === 'DEPOSIT_DEADLINE_NOT_PASSED'){
+          const dlFromApi = (detail && detail.deposit_deadline_at) ? String(detail.deposit_deadline_at) : deadlineRaw;
+          const proceed = await _confirmEarlyCreateSession(dlFromApi);
+          if(!proceed) return;
+          payload.create_before_deposit_deadline_confirm = "tôi xác nhận";
+          const r2 = await fetch("/auction/sessions/api/sessions", {
+          method:"POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify(payload)
+          });
+          let js2 = null;
+          try{ js2 = await r2.json(); }catch(_){ js2 = null; }
+          if(!r2.ok){
+          await alertX({ title: "Tạo phiên thất bại", message: "Tạo phiên lỗi: " + errText(js2, r2.status), tone: "danger" });
+          return;
+          }
+          js = js2;
+          }else{
           await alertX({ title: "Tạo phiên thất bại", message: "Tạo phiên lỗi: " + errText(js, r.status), tone: "danger" });
           return;
+          }
           }
 
           // Service A trả: { ok: true, data: {...} }
