@@ -1,0 +1,16 @@
+---
+description: Never change this project's production Postgres, including through SSH
+alwaysApply: true
+---
+
+# Production Postgres is read-only for Cursor
+
+Production is the auction VPS `103.126.161.215`. Its Postgres is reached from this Mac only through the SSH tunnel `127.0.0.1:15433` (database `postgres`, schema `v20`). Port `127.0.0.1:5432` on this Mac is the local database and is not production.
+
+Cursor must not change production data, schema, roles, grants, or Postgres configuration.
+
+- The only production login is `cursor_readonly`, and only inside a `READ ONLY` transaction, and only when the user asked to read production. `SELECT` only.
+- SSH, root, `sudo -u postgres`, a superuser, a password from chat, cron, scripts, or env is not a write path. Do not run `psql`, `make ensure`, or SQL on the VPS.
+- Do not insert, update, delete, migrate, grant, restart, or repair production. Preparing a script locally is allowed. Applying it to production is not, even when the user asks Cursor to run it. Show the SQL and stop so a person can run it.
+- Do not open the tunnel except to serve a read the user asked for. If the tunnel or the read fails, report that and stop.
+- Do not print passwords, keys, or connection strings.
