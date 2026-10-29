@@ -29,7 +29,7 @@
       padding:32px;gap:18px;overflow:hidden;
     }
     .header{
-      height:90px;flex:0 0 90px;
+      min-height:90px;flex:0 0 auto;
       display:grid;grid-template-columns:minmax(0,1fr) auto;
       align-items:center;gap:24px;
     }
@@ -37,12 +37,12 @@
     .logo{height:64px;width:auto;max-width:180px;object-fit:contain;flex:0 0 auto;display:block}
     .names{min-width:0}
     .company{
-      color:var(--muted);font-size:16px;font-weight:650;line-height:1.2;
+      color:var(--muted);font-size:15px;font-weight:650;line-height:1.2;letter-spacing:.04em;
       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
     }
     .project{
-      margin-top:2px;font-size:28px;font-weight:750;line-height:1.15;letter-spacing:.01em;
-      display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+      margin-top:3px;font-size:28px;font-weight:750;line-height:1.15;letter-spacing:.01em;
+      display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
     }
     .round-side{text-align:right;flex:0 0 auto}
     .on-air{
@@ -55,39 +55,98 @@
     .rule{height:1px;background:var(--line);flex:0 0 1px}
     .countdown{
       height:164px;flex:0 0 164px;
-      background:var(--panel);
-      display:grid;grid-template-columns:auto minmax(0,1fr);
-      align-items:center;gap:28px;padding:0 28px;
+      display:grid;grid-template-columns:minmax(0,32%) minmax(0,1fr) minmax(128px,15%);
+      align-items:center;gap:0;
+      padding:12px 18px 12px 16px;
+      background:linear-gradient(180deg,#12283c 0%,#0C1C2E 100%);
+      border:1px solid rgba(67,217,230,.55);
+      border-radius:18px;
+      overflow:hidden;
     }
-    .clock{
-      color:var(--clock);font-weight:750;font-size:112px;line-height:.9;
+    .clock-side{
+      min-width:0;height:100%;
+      display:flex;flex-direction:column;justify-content:center;gap:6px;
+      padding-right:16px;
+      border-right:1px solid rgba(180,197,216,.28);
+    }
+    .plates,.plate-labels{
+      display:grid;grid-template-columns:minmax(0,1fr) 36px minmax(0,1fr);
+      align-items:center;justify-items:center;
+    }
+    .digit-plate{
+      width:100%;height:112px;
+      display:flex;align-items:center;justify-content:center;
+      background:#07111d;
+      border:1px solid rgba(67,217,230,.38);
+      border-radius:12px;
+      color:#F4F8FC;
+      font-size:110px;font-weight:750;line-height:1;
       font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;
-      letter-spacing:.02em;white-space:nowrap;
+      letter-spacing:.01em;white-space:nowrap;
     }
-    .countdown.warn .clock,.countdown.warn .state,.countdown.warn .time-bar > span{color:var(--alert)}
-    .countdown.warn .time-bar > span{background:var(--alert)}
-    .count-copy{min-width:0;display:flex;flex-direction:column;gap:10px}
-    .count-title{font-size:22px;font-weight:750;letter-spacing:.08em}
-    .state{font-size:28px;font-weight:750;color:var(--clock);line-height:1.1}
-    .time-bar{height:6px;background:rgba(180,197,216,.28);border-radius:99px;overflow:hidden}
-    .time-bar > span{display:block;height:100%;width:100%;background:var(--clock)}
-    .set-label{color:var(--muted);font-size:16px;font-weight:600}
+    .colon{
+      color:#F4F8FC;font-size:64px;font-weight:750;line-height:1;
+      font-variant-numeric:tabular-nums;
+    }
+    .digit-label{
+      color:var(--muted);font-size:13px;font-weight:750;letter-spacing:.16em;line-height:1;
+    }
+    .count-copy{
+      min-width:0;height:100%;
+      display:flex;flex-direction:column;justify-content:center;gap:8px;
+      padding:0 28px;
+    }
+    .count-title{font-size:22px;font-weight:750;letter-spacing:.08em;white-space:nowrap}
+    .state-row{display:flex;align-items:center;gap:10px;min-width:0}
+    .state-dot{width:10px;height:10px;border-radius:50%;background:var(--cyan);flex:0 0 auto}
+    .state{font-size:26px;font-weight:750;line-height:1.1;white-space:nowrap}
+    .set-label{color:var(--muted);font-size:16px;font-weight:650}
+    .time-bar{height:11px;background:#163044;border-radius:99px;overflow:hidden}
+    .time-bar > span{display:block;height:100%;width:100%;background:var(--cyan);border-radius:99px}
+    .ring-wrap{position:relative;width:136px;height:136px;margin:0 auto}
+    .ring{width:100%;height:100%;display:block}
+    .ring-track,.ring-value{fill:none;stroke-width:9}
+    .ring-track{stroke:#16324a}
+    .ring-value{
+      stroke:var(--cyan);stroke-linecap:round;
+      stroke-dasharray:100;stroke-dashoffset:0;
+      transform:rotate(-90deg);transform-origin:60px 60px;
+    }
+    .ring-pct{
+      position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+      color:#F4F8FC;font-size:28px;font-weight:750;line-height:1;
+      font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;
+    }
+    .countdown.is-mid .ring-value,.countdown.is-mid .time-bar > span{stroke:#FFD166;background:#FFD166}
+    .countdown.is-mid .state-dot{background:#FFD166}
+    .countdown.is-warn .digit-plate,.countdown.is-warn .colon,.countdown.is-warn .ring-pct,.countdown.is-warn .state{color:#FFD166}
+    .countdown.is-warn .ring-value,.countdown.is-warn .time-bar > span{stroke:#FFD166;background:#FFD166}
+    .countdown.is-warn .state-dot{background:#FFD166}
+    .countdown.is-done .digit-plate,.countdown.is-done .colon,.countdown.is-done .ring-pct,.countdown.is-done .state{color:var(--alert)}
+    .countdown.is-done .state{font-size:22px;letter-spacing:.03em}
+    .countdown.is-done .ring-value,.countdown.is-done .time-bar > span{stroke:var(--alert);background:var(--alert)}
+    .countdown.is-done .state-dot{background:var(--alert)}
+    .countdown.is-hold .state-dot{background:#7f93a8}
     .board-wrap{flex:1 1 auto;min-height:0;position:relative;overflow:hidden}
     .page{position:absolute;inset:0;opacity:0}
     .page.show{opacity:1}
     .page.fade{transition:opacity 250ms linear}
-    .cols{height:100%;display:grid;gap:16px}
-    .col{background:var(--panel);min-width:0;display:flex;flex-direction:column;height:100%;overflow:hidden}
+    .cols{height:100%;display:grid;gap:12px}
+    .col{
+      background:#0e2236;min-width:0;display:flex;flex-direction:column;height:100%;overflow:hidden;
+      border:1px solid rgba(180,197,216,.28);border-radius:6px;
+    }
     .col-head{
       height:36px;flex:0 0 36px;
       display:flex;align-items:center;justify-content:space-between;gap:8px;
-      padding:0 12px;color:var(--muted);font-size:13px;font-weight:750;letter-spacing:.06em;
-      border-bottom:1px solid rgba(67,217,230,.4);
+      padding:0 14px;color:var(--muted);font-size:13px;font-weight:750;letter-spacing:.06em;
+      background:#1a3d56;border-bottom:1px solid rgba(180,197,216,.22);
     }
     .col-body{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
     .lot-row{
       display:flex;align-items:center;justify-content:space-between;gap:12px;
-      padding:0 12px;min-width:0;border-bottom:1px solid rgba(180,197,216,.12);
+      padding:0 14px;min-width:0;border-bottom:1px solid rgba(180,197,216,.14);
+      background:#0e2236;
     }
     .lot-row.alt{background:var(--alt)}
     .lot-code,.lot-price{flex:0 0 auto}
@@ -118,7 +177,10 @@
     .foot-btn,.ctl button,.ctl input{
       background:#081321;border:1px solid rgba(180,197,216,.35);border-radius:8px;
     }
-    .foot-btn{height:32px;padding:0 12px;font-size:14px;font-weight:700;color:var(--ink)}
+    .foot-btn{
+      height:32px;padding:0 12px;font-size:14px;font-weight:700;color:var(--ink);
+      background:transparent;border-color:rgba(180,197,216,.4);border-radius:8px;
+    }
     .foot-btn:hover,.ctl button:hover{border-color:var(--cyan)}
     .overlay{
       position:fixed;inset:0;z-index:30;display:none;
@@ -148,18 +210,27 @@
     }
     @media (max-height:860px){
       .stage{padding:20px 24px;gap:12px}
-      .header{height:78px;flex-basis:78px}
+      .header{min-height:78px}
       .logo{height:52px}
       .project{font-size:22px}
       .round{font-size:34px}
-      .countdown{height:136px;flex-basis:136px;padding:0 20px}
-      .clock{font-size:84px}
-      .count-title{font-size:16px}
-      .state{font-size:22px}
+      .countdown{height:136px;flex-basis:136px;padding:8px 12px}
+      .digit-plate{height:78px;font-size:72px}
+      .colon{font-size:42px}
+      .digit-label{font-size:11px;letter-spacing:.12em}
+      .count-copy{padding:0 16px;gap:5px}
+      .count-title{font-size:15px;letter-spacing:.05em}
+      .state{font-size:18px}
+      .countdown.is-done .state{font-size:16px}
+      .set-label{font-size:13px}
+      .time-bar{height:8px}
+      .ring-wrap{width:86px;height:86px}
+      .ring-pct{font-size:18px}
       .footer{height:36px;flex-basis:36px}
     }
     @media (prefers-reduced-motion:reduce){
       .page.fade{transition:none}
+      .ring-value{transition:none}
     }
   </style>
 </head>
@@ -180,12 +251,33 @@
     </header>
     <div class="rule"></div>
     <section class="countdown" id="countdown">
-      <div class="clock" id="clock">10:00</div>
+      <div class="clock-side">
+        <div class="plates">
+          <div class="digit-plate" id="minDigits">10</div>
+          <div class="colon" aria-hidden="true">:</div>
+          <div class="digit-plate" id="secDigits">00</div>
+        </div>
+        <div class="plate-labels">
+          <div class="digit-label">PHÚT</div>
+          <div></div>
+          <div class="digit-label">GIÂY</div>
+        </div>
+      </div>
       <div class="count-copy">
         <div class="count-title">THỜI GIAN GHI PHIẾU TRẢ GIÁ</div>
-        <div class="state" id="clockState">Chưa bắt đầu</div>
+        <div class="state-row">
+          <span class="state-dot" id="stateDot"></span>
+          <div class="state" id="clockState">Chưa bắt đầu</div>
+        </div>
+        <div class="set-label" id="setLabel">Thời lượng: 10 phút</div>
         <div class="time-bar" id="timeBar"><span id="timeFill"></span></div>
-        <div class="set-label" id="setLabel">Thời lượng đã đặt: 10 phút</div>
+      </div>
+      <div class="ring-wrap">
+        <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
+          <circle class="ring-track" cx="60" cy="60" r="50"></circle>
+          <circle class="ring-value" id="ringValue" cx="60" cy="60" r="50" pathLength="100"></circle>
+        </svg>
+        <div class="ring-pct" id="ringPct">100%</div>
       </div>
     </section>
     <section class="board-wrap" id="boardWrap">
@@ -263,11 +355,14 @@
       && new URLSearchParams(location.search).get("preview") === "300";
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    const clockEl = document.getElementById("clock");
+    const minDigitsEl = document.getElementById("minDigits");
+    const secDigitsEl = document.getElementById("secDigits");
     const stateEl = document.getElementById("clockState");
     const countdownEl = document.getElementById("countdown");
     const timeFill = document.getElementById("timeFill");
     const setLabel = document.getElementById("setLabel");
+    const ringValue = document.getElementById("ringValue");
+    const ringPct = document.getElementById("ringPct");
     const minutesEl = document.getElementById("minutes");
     const pageSecondsEl = document.getElementById("pageSeconds");
     const boardWrap = document.getElementById("boardWrap");
@@ -320,18 +415,11 @@
       if(mode === "idle") return durationMs;
       return Math.max(0, remainingMs);
     }
-    function formatClock(ms){
-      const sec = ms <= 0 ? 0 : Math.ceil(ms / 1000 - 1e-9);
-      const minutes = Math.floor(sec / 60);
-      const seconds = sec % 60;
-      const digits = Math.max(2, String(Math.floor(durationMs / 60000)).length);
-      return pad(minutes, digits) + ":" + pad(seconds, 2);
-    }
     function stateText(){
       if(mode === "running") return "Đang đếm ngược";
       if(mode === "paused") return "Tạm dừng";
       if(mode === "stopped") return "Đã dừng";
-      if(mode === "done") return "ĐÃ HẾT THỜI GIAN";
+      if(mode === "done") return "HẾT THỜI GIAN GHI PHIẾU";
       return "Chưa bắt đầu";
     }
     function paintClock(){
@@ -343,13 +431,22 @@
       }
       const ms = clockMs();
       const sec = ms <= 0 ? 0 : Math.ceil(ms / 1000 - 1e-9);
-      clockEl.textContent = formatClock(ms);
+      const minutes = Math.floor(sec / 60);
+      minDigitsEl.textContent = minutes >= 100 ? String(minutes) : pad(minutes, 2);
+      secDigitsEl.textContent = pad(sec % 60, 2);
       stateEl.textContent = stateText();
-      const warn = mode === "done" || (mode !== "idle" && sec < 60);
-      countdownEl.classList.toggle("warn", warn);
       const ratio = durationMs > 0 ? Math.max(0, Math.min(1, ms / durationMs)) : 0;
-      timeFill.style.width = (ratio * 100) + "%";
-      setLabel.textContent = "Thời lượng đã đặt: " + setMinutes + " phút";
+      const pct = Math.round(ratio * 100);
+      countdownEl.classList.remove("is-mid", "is-warn", "is-done", "is-hold");
+      if(mode === "done") countdownEl.classList.add("is-done");
+      else if(mode !== "idle" && sec < 60) countdownEl.classList.add("is-warn");
+      else if(mode !== "idle" && sec < 180) countdownEl.classList.add("is-mid");
+      if(mode === "idle" || mode === "paused" || mode === "stopped") countdownEl.classList.add("is-hold");
+      timeFill.style.width = pct + "%";
+      ringValue.style.strokeDashoffset = String(100 - pct);
+      ringValue.style.opacity = pct <= 0 ? "0" : "1";
+      ringPct.textContent = pct + "%";
+      setLabel.textContent = "Thời lượng: " + setMinutes + " phút";
       const pauseBtn = document.getElementById("btnPause");
       pauseBtn.textContent = (mode === "paused" || mode === "stopped") && remainingMs > 0 ? "Tiếp tục" : "Tạm dừng";
     }
@@ -867,8 +964,43 @@
       if(!pagePaused) pageStarted = performance.now() - pageMs * 0.4;
       markPresets();
       if(shot === "panel") setPanel(true);
-      if(shot === "warn") window.__hall.setRemaining(42);
+      if(shot === "run"){
+        setMinutes = 30;
+        minutesEl.value = "30";
+        durationMs = 30 * 60000;
+        remainingMs = (29 * 60 + 6) * 1000;
+        endsAt = Date.now() + remainingMs;
+        mode = "running";
+        paintClock();
+      }
+      if(shot === "warn"){
+        setMinutes = 10;
+        minutesEl.value = "10";
+        durationMs = 10 * 60000;
+        remainingMs = 45 * 1000;
+        endsAt = Date.now() + remainingMs;
+        mode = "running";
+        paintClock();
+      }
+      if(shot === "pause"){
+        setMinutes = 30;
+        minutesEl.value = "30";
+        durationMs = 30 * 60000;
+        remainingMs = (18 * 60 + 40) * 1000;
+        endsAt = null;
+        mode = "paused";
+        paintClock();
+      }
       if(shot === "done") window.__hall.finish();
+      if(shot === "digits"){
+        setMinutes = 180;
+        minutesEl.value = "180";
+        durationMs = 180 * 60000;
+        remainingMs = 125 * 60000;
+        endsAt = Date.now() + remainingMs;
+        mode = "running";
+        paintClock();
+      }
       const ids = window.__hall.pagesOfIds();
       const overflow = [...document.querySelectorAll(".lot-row")].filter(el => el.scrollWidth > el.clientWidth + 1).length;
       const info = window.__hall.snapshot();
@@ -878,7 +1010,10 @@
         board: info.board, viewport: info.viewport, overflow,
         scroll: document.documentElement.scrollHeight - document.documentElement.clientHeight,
         unique: new Set(ids).size,
-        sorted: ids.every((id, i) => i === 0 || id > ids[i - 1])
+        sorted: ids.every((id, i) => i === 0 || id > ids[i - 1]),
+        clock: minDigitsEl.textContent + ":" + secDigitsEl.textContent,
+        state: stateEl.textContent,
+        pct: ringPct.textContent
       });
     }
     if(!PREVIEW) pollTimer = window.setInterval(loadBoard, 15000);
