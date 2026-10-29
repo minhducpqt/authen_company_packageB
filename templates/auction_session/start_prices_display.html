@@ -218,10 +218,17 @@
     .ctl button.go{background:var(--cyan);color:#081321;border-color:transparent}
     .ctl button.stop{color:var(--alert);border-color:rgba(255,100,116,.7)}
     .field{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:15px;font-weight:650}
-    .ctl input{
-      width:92px;height:46px;text-align:center;font-size:20px;font-weight:750;color:var(--ink);
+    .ctl input,.ctl select{
+      height:46px;text-align:center;font-size:20px;font-weight:750;color:var(--ink);
       font-variant-numeric:tabular-nums;
+      background:#081321;border:1px solid rgba(180,197,216,.35);border-radius:8px;
     }
+    .ctl input{width:92px}
+    .ctl select{
+      min-width:132px;padding:0 12px;text-align:left;font-size:16px;cursor:pointer;
+    }
+    .stepper{display:inline-flex;align-items:center;gap:6px}
+    .stepper button{width:46px;padding:0;font-size:22px;line-height:1}
     @media (max-height:860px){
       .stage{padding:20px 24px;gap:12px}
       .header{min-height:60px}
@@ -335,7 +342,11 @@
     <div class="drawer ctl" id="drawer" role="dialog" aria-label="Điều khiển trình chiếu">
       <h2>ĐỒNG HỒ</h2>
       <label class="field">Số phút
-        <input id="minutes" type="number" min="1" max="240" value="10" inputmode="numeric">
+        <span class="stepper">
+          <button type="button" id="btnMinDown" aria-label="Giảm 5 phút">−</button>
+          <input id="minutes" type="number" min="1" max="240" value="10" inputmode="numeric">
+          <button type="button" id="btnMinUp" aria-label="Tăng 5 phút">+</button>
+        </span>
       </label>
       <div class="ctl-row" id="presets">
         <button type="button" data-min="10">10 phút</button>
@@ -352,6 +363,11 @@
       </div>
 
       <h2>DANH SÁCH</h2>
+      <label class="field">Giá khởi điểm
+        <select id="roundPick" aria-label="Vòng giá khởi điểm">
+          <option value="1">Vòng 1</option>
+        </select>
+      </label>
       <div class="ctl-row">
         <button type="button" id="btnAuto">Tạm dừng</button>
         <button type="button" id="btnPrev">Trang trước</button>
@@ -380,7 +396,7 @@
   <script>
     const SESSION_ID = {{ session_id|tojson }};
     const ROUND_NO = {{ (round_no if round_no else None)|tojson }};
-    const API = `/auction/sessions/api/start-prices-board/sessions/${SESSION_ID}` + (ROUND_NO ? `?round_no=${ROUND_NO}` : "");
+    const API = `/auction/sessions/api/start-prices-board/sessions/${SESSION_ID}`;
     const STORE_KEY = `hall-start-price:${SESSION_ID}:${ROUND_NO || "latest"}`;
     const PREVIEW = (location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.hostname === "")
       && new URLSearchParams(location.search).get("preview") === "300";
@@ -395,6 +411,7 @@
     const ringValue = document.getElementById("ringValue");
     const ringPct = document.getElementById("ringPct");
     const minutesEl = document.getElementById("minutes");
+    const roundPick = document.getElementById("roundPick");
     const pageSecondsEl = document.getElementById("pageSeconds");
     const boardWrap = document.getElementById("boardWrap");
     const layerA = document.getElementById("layerA");
@@ -424,6 +441,8 @@
     let online = false;
     let polling = false;
     let pollTimer = 0;
+    let priceRound = 1;
+    let boardQueued = false;
 
     function pad(n, width){ return String(n).padStart(width, "0"); }
     function clamp(n, lo, hi){ return Math.min(hi, Math.max(lo, n)); }
@@ -570,7 +589,7 @@
       }
       markPresets();
     });
-    minutesEl.addEventListener("change", () => {
+    function applyMinutes(){
       setMinutes = chosenMinutes();
       minutesEl.value = String(setMinutes);
       if(mode === "idle"){
@@ -580,7 +599,14 @@
         paintClock();
       }
       markPresets();
-    });
+    }
+    function stepMinutes(delta){
+      minutesEl.value = String(clamp(chosenMinutes() + delta, 1, 240));
+      applyMinutes();
+    }
+    minutesEl.addEventListener("change", applyMinutes);
+    document.getElementById("btnMinDown").addEventListener("click", () => stepMinutes(-5));
+    document.getElementById("btnMinUp").addEventListener("click", () => stepMinutes(5));
     document.getElementById("btnStart").addEventListener("click", () => {
       if(mode === "running") return;
       if((mode === "paused" || mode === "stopped") && remainingMs > 0){
@@ -826,10 +852,27 @@
         lots: sample
       };
     }
+    function fillRounds(maxRound){
+      const max = Math.max(1, Math.floor(Number(maxRound) || 1), priceRound);
+      const wanted = [];
+      for(let n = 1; n <= max; n++) wanted.push(String(n));
+      const existing = [...roundPick.options].map(opt => opt.value);
+      if(existing.join(",") !== wanted.join(",")){
+        roundPick.replaceChildren();
+        wanted.forEach(value => {
+          const opt = document.createElement("option");
+          opt.value = value;
+          opt.textContent = "Vòng " + value;
+          roundPick.append(opt);
+        });
+      }
+      roundPick.value = String(priceRound);
+    }
     function applyPayload(data){
       document.getElementById("companyName").textContent = data.company_name || "";
       document.getElementById("projectName").textContent = data.project_name || "";
-      const roundNo = Number(data.round_no || ROUND_NO || 0);
+      fillRounds(data.max_round_no || data.round_no || 1);
+      const roundNo = Number(data.round_no || priceRound || 0);
       document.getElementById("roundLabel").textContent = roundNo ? "VÒNG " + pad(roundNo, 2) : "VÒNG —";
       const logo = document.getElementById("logo");
       const url = data.company_logo_url || "";
@@ -847,20 +890,25 @@
     async function loadBoard(){
       if(PREVIEW){
         const fixture = document.getElementById("hallFixture");
-        if(fixture && fixture.textContent.trim()){
-          applyPayload(JSON.parse(fixture.textContent));
-        }else{
-          applyPayload(previewPayload());
-        }
+        const data = fixture && fixture.textContent.trim()
+          ? JSON.parse(fixture.textContent)
+          : previewPayload();
+        data.round_no = priceRound;
+        applyPayload(data);
         showOnline();
         return;
       }
-      if(polling) return;
+      if(polling){
+        boardQueued = true;
+        return;
+      }
       polling = true;
+      const requested = priceRound;
       try{
-        const res = await fetch(API, {credentials:"same-origin", cache:"no-store"});
+        const res = await fetch(`${API}?round_no=${requested}`, {credentials:"same-origin", cache:"no-store"});
         let data = {};
         try{ data = await res.json(); }catch(e){ data = {}; }
+        if(requested !== priceRound) return;
         if(!res.ok){
           showOffline();
           if(!lots.length){
@@ -871,12 +919,26 @@
         applyPayload(data);
         showOnline();
       }catch(e){
-        showOffline();
+        if(requested === priceRound) showOffline();
       }finally{
         polling = false;
+        if(boardQueued){
+          boardQueued = false;
+          loadBoard();
+        }
       }
     }
 
+    roundPick.addEventListener("change", () => {
+      const next = clamp(Math.floor(Number(roundPick.value)) || 1, 1, 240);
+      roundPick.value = String(priceRound);
+      if(next === priceRound) return;
+      priceRound = next;
+      roundPick.value = String(priceRound);
+      pageIndex = 0;
+      lastSig = "";
+      loadBoard();
+    });
     document.getElementById("btnAuto").addEventListener("click", () => {
       if(!autoPage || pagePaused){
         autoPage = true;
