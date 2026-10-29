@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Nội dung CK đặt cọc — {{ company_code|upper }}{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="/static/css/super_admin.css">
+{% endblock %}
+{% block content %}
+
+<style>
+  .dst-wrap{max-width:720px;margin:0 auto;padding-bottom:40px}
+  .dst-back{font-size:13px;color:#4f46e5;font-weight:600;text-decoration:none}
+  .dst-back:hover{color:#4338ca}
+  .dst-head{margin:12px 0 20px}
+  .dst-title{font-size:22px;font-weight:800;color:#0f172a;margin:0;line-height:1.25}
+  .dst-sub{font-size:14px;color:#64748b;margin-top:8px;line-height:1.5}
+  .dst-banner{padding:12px 14px;border-radius:12px;font-size:13px;line-height:1.45;margin-bottom:16px}
+  .dst-banner.ok{background:#ecfdf5;border:1px solid #a7f3d0;color:#047857}
+  .dst-banner.err{background:#fef2f2;border:1px solid #fecaca;color:#b91c1c}
+  .dst-card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden}
+  .dst-card-hd{padding:16px 18px;border-bottom:1px solid #f1f5f9}
+  .dst-card-hd-t{font-size:15px;font-weight:800;color:#0f172a}
+  .dst-card-hd-s{font-size:12px;color:#64748b;margin-top:4px}
+  .dst-card-bd{padding:18px}
+  .dst-modes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media (max-width:560px){.dst-modes{grid-template-columns:1fr}}
+  .dst-mode{
+    position:relative;text-align:left;padding:14px 14px 14px 42px;border:2px solid #e2e8f0;border-radius:14px;
+    background:#f8fafc;cursor:pointer
+  }
+  .dst-mode.active{border-color:#4f46e5;background:#eef2ff}
+  .dst-mode input{position:absolute;opacity:0;pointer-events:none}
+  .dst-mode-dot{
+    position:absolute;left:14px;top:16px;width:18px;height:18px;border-radius:999px;border:2px solid #94a3b8;background:#fff
+  }
+  .dst-mode.active .dst-mode-dot{border-color:#4f46e5;box-shadow:inset 0 0 0 4px #4f46e5}
+  .dst-mode-t{font-size:14px;font-weight:800;color:#0f172a}
+  .dst-mode-d{font-size:12px;color:#64748b;margin-top:4px;line-height:1.4}
+  .dst-ex{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#0f172a}
+  .dst-notes{margin-top:16px;font-size:12px;color:#64748b;line-height:1.5;padding:12px 14px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0}
+  .dst-notes ul{margin:8px 0 0;padding-left:18px}
+  .dst-field{margin-top:16px}
+  .dst-label{display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:6px}
+  .dst-input{width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:10px 12px;font-size:14px}
+  .dst-foot{padding:14px 18px;border-top:1px solid #f1f5f9;display:flex;justify-content:flex-end;gap:10px;background:#fafafa}
+  .dst-btn{padding:10px 16px;border-radius:10px;font-size:14px;font-weight:700;border:1px solid transparent;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+  .dst-btn-sec{background:#fff;border-color:#cbd5e1;color:#334155}
+  .dst-btn-pri{background:#4f46e5;color:#fff}
+</style>
+
+<div class="dst-wrap">
+  <a href="/account/company/{{ company_code }}" class="dst-back">&larr; Quay lại công ty {{ company_code|upper }}</a>
+
+  <div class="dst-head">
+    <h1 class="dst-title">Nội dung chuyển khoản đặt cọc</h1>
+    <p class="dst-sub">
+      Chỉ super admin đặt cho công ty <strong>{{ company_code|upper }}</strong>.
+      Áp dụng lần sinh QR tiếp theo. Đơn mua hồ sơ và cách đối soát theo mã đơn không đổi.
+    </p>
+  </div>
+
+  {% if (cfg.mode or 'with_lot') == 'omit_lot' %}
+  <div class="dst-banner ok">Đang <strong>bỏ mã lô</strong>. QR cọc có dạng mã đơn và CCCD.</div>
+  {% else %}
+  <div class="dst-banner ok">Đang <strong>giữ mã lô</strong>. QR cọc đấu thường vẫn gắn mã lô đã bỏ ký tự đặc biệt.</div>
+  {% endif %}
+
+  {% if msg == 'saved' %}
+  <div class="dst-banner ok">Đã lưu cấu hình.</div>
+  {% endif %}
+  {% if err == 'save_failed' %}
+  <div class="dst-banner err">Lưu thất bại.{% if err_detail %} {{ err_detail }}{% endif %}</div>
+  {% endif %}
+  {% if load_err %}
+  <div class="dst-banner err">{{ load_err }}</div>
+  {% endif %}
+
+  <div class="dst-card">
+    <div class="dst-card-hd">
+      <div class="dst-card-hd-t">Cách ghép nội dung QR</div>
+      <div class="dst-card-hd-s">Công ty không có màn hình này.</div>
+    </div>
+
+    <form method="post" action="/account/company/{{ company_code }}/deposit-statement">
+      <div class="dst-card-bd">
+        <div class="dst-modes">
+          <label class="dst-mode {% if (cfg.mode or 'with_lot') == 'with_lot' %}active{% endif %}">
+            <input type="radio" name="mode" value="with_lot" {% if (cfg.mode or 'with_lot') == 'with_lot' %}checked{% endif %}>
+            <span class="dst-mode-dot" aria-hidden="true"></span>
+            <div class="dst-mode-t">Giữ mã lô</div>
+            <div class="dst-mode-d">Như hiện tại. <span class="dst-ex">P… CCCD CL315</span></div>
+          </label>
+          <label class="dst-mode {% if cfg.mode == 'omit_lot' %}active{% endif %}">
+            <input type="radio" name="mode" value="omit_lot" {% if cfg.mode == 'omit_lot' %}checked{% endif %}>
+            <span class="dst-mode-dot" aria-hidden="true"></span>
+            <div class="dst-mode-t">Bỏ mã lô</div>
+            <div class="dst-mode-d">Dừng ở CCCD. <span class="dst-ex">P… CCCD</span></div>
+          </label>
+        </div>
+
+        <div class="dst-notes">
+          <strong class="text-slate-700">Phạm vi</strong>
+          <ul>
+            <li>Chỉ câu chuyển khoản lúc tạo QR đặt cọc.</li>
+            <li>Mã lô vẫn là mã gốc sau khi bỏ ký tự đặc biệt, viết hoa, tối đa 8 ký tự cuối.</li>
+            <li>Đấu nhóm vốn không gắn mã lô. Mã đơn <span class="dst-ex">P…</span> vẫn suy ra lô trên đơn.</li>
+          </ul>
+        </div>
+
+        <div class="dst-field">
+          <label class="dst-label" for="confirmPhrase">Gõ <strong>tôi xác nhận</strong> để lưu</label>
+          <input id="confirmPhrase" class="dst-input" name="confirm_phrase" autocomplete="off" required>
+        </div>
+      </div>
+
+      <div class="dst-foot">
+        <a href="/account/company/{{ company_code }}" class="dst-btn dst-btn-sec">Hủy</a>
+        <button type="submit" class="dst-btn dst-btn-pri">Lưu cấu hình</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll(".dst-mode").forEach((el) => {
+    el.addEventListener("click", () => {
+      document.querySelectorAll(".dst-mode").forEach((x) => x.classList.remove("active"));
+      el.classList.add("active");
+    });
+  });
+</script>
+{% endblock %}
