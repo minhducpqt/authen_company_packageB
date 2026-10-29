@@ -927,7 +927,7 @@
           </button>
           {% if (session.registration_mode or 'NORMAL') != 'GROUP_AUCTION' %}
           <button type="button" id="btnBackupXlsx"
-            {% if (request.cookies.get('user_role') or '') != 'SUPER_ADMIN' %}disabled title="Chỉ Super Admin được tải"{% endif %}
+            {% if (request.cookies.get('user_role') or '')|upper not in ['SUPER_ADMIN', 'COMPANY_ADMIN'] %}disabled title="Chỉ Admin được tải"{% endif %}
             onclick="downloadBackupXlsx()">
             <i class="ri-file-excel-2-line"></i> Tải Excel dự phòng
           </button>

@@ -25,7 +25,7 @@ async def download_session_backup_xlsx(
     if not token:
         return JSONResponse({"error": "unauthorized"}, status_code=401)
     role = (request.cookies.get("user_role") or "").strip().upper()
-    if role != "SUPER_ADMIN":
+    if role not in ("SUPER_ADMIN", "COMPANY_ADMIN"):
         return JSONResponse({"detail": "Forbidden"}, status_code=403)
 
     url = f"{SERVICE_A_BASE_URL}/api/v1/auction-sessions/sessions/{int(session_id)}/backup-xlsx"
