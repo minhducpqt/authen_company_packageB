@@ -845,6 +845,13 @@
       .printMenu button:hover{
       background:rgba(14,165,233,.08);
       }
+      .printMenu button:disabled{
+      opacity:.45;
+      cursor:not-allowed;
+      }
+      .printMenu button:disabled:hover{
+      background:#fff;
+      }
 
     </style>
 
@@ -918,6 +925,13 @@
           <button type="button" id="btnPreprintBlankBidSheets" onclick="openPreprintBlankBidSheetsModal(); this.closest('.printMenu').style.display='none';">
             <i class="ri-file-copy-line"></i> In phiếu trả giá trắng (vòng 2–10)
           </button>
+          {% if (session.registration_mode or 'NORMAL') != 'GROUP_AUCTION' %}
+          <button type="button" id="btnBackupXlsx"
+            {% if (request.cookies.get('user_role') or '') != 'SUPER_ADMIN' %}disabled title="Chỉ Super Admin được tải"{% endif %}
+            onclick="downloadBackupXlsx()">
+            <i class="ri-file-excel-2-line"></i> Tải Excel dự phòng
+          </button>
+          {% endif %}
         </div>
       </div>
 
@@ -3951,6 +3965,38 @@ Modal: Print One Bid Sheet (choose one customer)
   const url = `/auction/sessions/${SESSION_ID}/documents/attendance/winner-sign-list?autoprint=1`;
   const w = window.open(url, "_blank", "noopener,noreferrer");
   if(w){ try{ w.focus(); }catch(e){} }
+  }
+
+  async function downloadBackupXlsx(){
+  const menu = document.querySelector(".printMenu");
+  if(menu) menu.style.display = "none";
+  try{
+    const res = await fetch(`/auction/sessions/${SESSION_ID}/backup-xlsx`, {credentials:"same-origin"});
+    if(!res.ok){
+      let msg = "Không tải được Excel dự phòng";
+      try{
+        const js = await res.json();
+        msg = js.detail || js.error || msg;
+      }catch(e){}
+      alert(msg);
+      return;
+    }
+    const blob = await res.blob();
+    const dispo = res.headers.get("Content-Disposition") || "";
+    let name = `phien-${SESSION_ID}-du-phong.xlsx`;
+    const matched = /filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i.exec(dispo);
+    if(matched) name = decodeURIComponent((matched[1] || matched[2] || "").trim());
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }catch(e){
+    alert("Không tải được Excel dự phòng");
+  }
   }
 
   function openSessionProgressPrint(){
