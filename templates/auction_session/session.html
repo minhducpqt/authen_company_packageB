@@ -940,11 +940,20 @@
         </div>
       </div>
 
-      <a class="btn"
-      href="/auction/sessions/{{ session_id }}/display?round_no={{ (round_no or 1) }}"
-      target="_blank" rel="noopener">
-      <i class="ri-slideshow-3-line"></i> Trình chiếu
-    </a>
+      <div class="printDrop">
+        <button class="btn" type="button" onclick="togglePrintMenu(this)">
+          <i class="ri-slideshow-3-line"></i> Trình chiếu
+          <i class="ri-arrow-down-s-line" style="opacity:.7;"></i>
+        </button>
+        <div class="printMenu">
+          <button type="button" onclick="window.open('/auction/sessions/{{ session_id }}/display?round_no={{ (round_no or 1) }}','_blank','noopener'); this.closest('.printMenu').style.display='none';">
+            <i class="ri-slideshow-3-line"></i> Trình chiếu kiểm kết quả
+          </button>
+          <button type="button" onclick="window.open('/auction/sessions/{{ session_id }}/start-prices-display?round_no={{ (round_no or 1) }}','_blank','noopener'); this.closest('.printMenu').style.display='none';">
+            <i class="ri-timer-line"></i> Trình chiếu giá khởi điểm
+          </button>
+        </div>
+      </div>
 
 
     {% if not is_open %}

@@ -70,6 +70,7 @@ from routers.auction_results import router as auction_results_router
 from routers import deposit_refunds
 from routers.auction_prints import router as auction_prints_router
 from routers import auction_session_display
+from routers.auction_session_start_prices_display import router as auction_session_start_prices_display_router
 
 #Mobile
 from routers.mobile.wire import mount_routers as mount_mobile_routers
@@ -165,6 +166,7 @@ app.include_router(auction_session_bid_sheets_router)
 app.include_router(auction_session_lot_clearbag_labels_router)
 app.include_router(auction_session_winner_prints_router)
 app.include_router(auction_session_display.router)
+app.include_router(auction_session_start_prices_display_router)
 app.include_router(auction_documents_print_router)  # <-- NEW (attendance, future docs)
 
 

@@ -1,0 +1,888 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>{{ title or "Trình chiếu giá khởi điểm" }}</title>
+  <style>
+    :root{
+      --bg:#081321;
+      --panel:#102238;
+      --alt:#132A42;
+      --ink:#F4F8FC;
+      --muted:#B4C5D8;
+      --cyan:#43D9E6;
+      --clock:#FFD166;
+      --alert:#FF6474;
+      --line:rgba(180,197,216,.22);
+      --font:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--ink)}
+    body{font-family:var(--font)}
+    button,input{font-family:inherit;color:inherit}
+    button{cursor:pointer}
+    button:focus-visible,input:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+    .stage{
+      height:100vh;height:100dvh;
+      display:flex;flex-direction:column;
+      padding:32px;gap:18px;overflow:hidden;
+    }
+    .header{
+      height:90px;flex:0 0 90px;
+      display:grid;grid-template-columns:minmax(0,1fr) auto;
+      align-items:center;gap:24px;
+    }
+    .brand{display:flex;align-items:center;gap:16px;min-width:0}
+    .logo{height:64px;width:auto;max-width:180px;object-fit:contain;flex:0 0 auto;display:block}
+    .names{min-width:0}
+    .company{
+      color:var(--muted);font-size:16px;font-weight:650;line-height:1.2;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    .project{
+      margin-top:2px;font-size:28px;font-weight:750;line-height:1.15;letter-spacing:.01em;
+      display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+    }
+    .round-side{text-align:right;flex:0 0 auto}
+    .on-air{
+      color:var(--muted);font-size:13px;font-weight:700;letter-spacing:.16em;
+    }
+    .round{
+      margin-top:4px;color:var(--cyan);font-size:44px;font-weight:750;
+      letter-spacing:.04em;line-height:.95;white-space:nowrap;
+    }
+    .rule{height:1px;background:var(--line);flex:0 0 1px}
+    .countdown{
+      height:164px;flex:0 0 164px;
+      background:var(--panel);
+      display:grid;grid-template-columns:auto minmax(0,1fr);
+      align-items:center;gap:28px;padding:0 28px;
+    }
+    .clock{
+      color:var(--clock);font-weight:750;font-size:112px;line-height:.9;
+      font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;
+      letter-spacing:.02em;white-space:nowrap;
+    }
+    .countdown.warn .clock,.countdown.warn .state,.countdown.warn .time-bar > span{color:var(--alert)}
+    .countdown.warn .time-bar > span{background:var(--alert)}
+    .count-copy{min-width:0;display:flex;flex-direction:column;gap:10px}
+    .count-title{font-size:22px;font-weight:750;letter-spacing:.08em}
+    .state{font-size:28px;font-weight:750;color:var(--clock);line-height:1.1}
+    .time-bar{height:6px;background:rgba(180,197,216,.28);border-radius:99px;overflow:hidden}
+    .time-bar > span{display:block;height:100%;width:100%;background:var(--clock)}
+    .set-label{color:var(--muted);font-size:16px;font-weight:600}
+    .board-wrap{flex:1 1 auto;min-height:0;position:relative;overflow:hidden}
+    .page{position:absolute;inset:0;opacity:0}
+    .page.show{opacity:1}
+    .page.fade{transition:opacity 250ms linear}
+    .cols{height:100%;display:grid;gap:16px}
+    .col{background:var(--panel);min-width:0;display:flex;flex-direction:column;height:100%;overflow:hidden}
+    .col-head{
+      height:36px;flex:0 0 36px;
+      display:flex;align-items:center;justify-content:space-between;gap:8px;
+      padding:0 12px;color:var(--muted);font-size:13px;font-weight:750;letter-spacing:.06em;
+      border-bottom:1px solid rgba(67,217,230,.4);
+    }
+    .col-body{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+    .lot-row{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      padding:0 12px;min-width:0;border-bottom:1px solid rgba(180,197,216,.12);
+    }
+    .lot-row.alt{background:var(--alt)}
+    .lot-code,.lot-price{flex:0 0 auto}
+    .lot-code{color:var(--cyan);font-weight:650;white-space:nowrap;line-height:1.05}
+    .lot-price{
+      color:var(--ink);font-weight:750;white-space:nowrap;line-height:1.05;margin-left:auto;
+      font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;
+    }
+    .empty{
+      height:100%;display:flex;align-items:center;justify-content:center;
+      color:var(--muted);font-size:28px;font-weight:700;
+    }
+    .footer{
+      height:40px;flex:0 0 40px;
+      display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+      align-items:center;gap:16px;color:var(--muted);font-size:15px;font-weight:650;
+    }
+    .foot-left,.foot-right{display:flex;align-items:center;gap:10px;min-width:0}
+    .foot-right{justify-content:flex-end}
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:0 0 auto}
+    .dot.ok{background:var(--cyan)}
+    .dot.bad{background:var(--alert)}
+    .conn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .foot-mid{display:flex;align-items:center;gap:12px}
+    .page-label{letter-spacing:.04em;white-space:nowrap}
+    .page-bar{width:148px;height:5px;background:rgba(180,197,216,.28);border-radius:99px;overflow:hidden}
+    .page-bar > span{display:block;height:100%;width:0;background:var(--cyan)}
+    .foot-btn,.ctl button,.ctl input{
+      background:#081321;border:1px solid rgba(180,197,216,.35);border-radius:8px;
+    }
+    .foot-btn{height:32px;padding:0 12px;font-size:14px;font-weight:700;color:var(--ink)}
+    .foot-btn:hover,.ctl button:hover{border-color:var(--cyan)}
+    .overlay{
+      position:fixed;inset:0;z-index:30;display:none;
+      justify-content:flex-end;background:rgba(8,19,33,.28);
+    }
+    .overlay.open{display:flex}
+    .drawer{
+      width:min(460px,100%);height:100%;background:#102238;
+      border-left:1px solid var(--line);padding:22px 22px 28px;overflow:auto;
+    }
+    .drawer h2{
+      margin:18px 0 10px;font-size:13px;letter-spacing:.12em;color:var(--muted);font-weight:750;
+    }
+    .drawer h2:first-child{margin-top:0}
+    .ctl{display:flex;flex-direction:column;gap:10px}
+    .ctl-row{display:flex;flex-wrap:wrap;gap:8px}
+    .clock-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+    .clock-actions button{width:100%}
+    .ctl button{min-height:46px;padding:0 14px;font-size:16px;font-weight:700}
+    .ctl button.active{border-color:var(--cyan);color:var(--cyan)}
+    .ctl button.go{background:var(--cyan);color:#081321;border-color:transparent}
+    .ctl button.stop{color:var(--alert);border-color:rgba(255,100,116,.7)}
+    .field{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:15px;font-weight:650}
+    .ctl input{
+      width:92px;height:46px;text-align:center;font-size:20px;font-weight:750;color:var(--ink);
+      font-variant-numeric:tabular-nums;
+    }
+    @media (max-height:860px){
+      .stage{padding:20px 24px;gap:12px}
+      .header{height:78px;flex-basis:78px}
+      .logo{height:52px}
+      .project{font-size:22px}
+      .round{font-size:34px}
+      .countdown{height:136px;flex-basis:136px;padding:0 20px}
+      .clock{font-size:84px}
+      .count-title{font-size:16px}
+      .state{font-size:22px}
+      .footer{height:36px;flex-basis:36px}
+    }
+    @media (prefers-reduced-motion:reduce){
+      .page.fade{transition:none}
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <header class="header">
+      <div class="brand">
+        <img id="logo" class="logo" alt="" hidden>
+        <div class="names">
+          <div class="company" id="companyName"></div>
+          <div class="project" id="projectName"></div>
+        </div>
+      </div>
+      <div class="round-side">
+        <div class="on-air">ĐANG TRÌNH CHIẾU</div>
+        <div class="round" id="roundLabel">VÒNG —</div>
+      </div>
+    </header>
+    <div class="rule"></div>
+    <section class="countdown" id="countdown">
+      <div class="clock" id="clock">10:00</div>
+      <div class="count-copy">
+        <div class="count-title">THỜI GIAN GHI PHIẾU TRẢ GIÁ</div>
+        <div class="state" id="clockState">Chưa bắt đầu</div>
+        <div class="time-bar" id="timeBar"><span id="timeFill"></span></div>
+        <div class="set-label" id="setLabel">Thời lượng đã đặt: 10 phút</div>
+      </div>
+    </section>
+    <section class="board-wrap" id="boardWrap">
+      <div class="page show" id="layerA"></div>
+      <div class="page" id="layerB"></div>
+    </section>
+    <footer class="footer">
+      <div class="foot-left">
+        <span class="dot" id="connDot"></span>
+        <span class="conn" id="connText">Đang kết nối</span>
+      </div>
+      <div class="foot-mid">
+        <span class="page-label" id="pageLabel">TRANG 01 / 01 · 0 LÔ</span>
+        <div class="page-bar" aria-hidden="true"><span id="pageFill"></span></div>
+      </div>
+      <div class="foot-right">
+        <button class="foot-btn" type="button" id="btnControls">Điều khiển</button>
+        <button class="foot-btn" type="button" id="btnFull">Toàn màn hình</button>
+      </div>
+    </footer>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="drawer ctl" id="drawer" role="dialog" aria-label="Điều khiển trình chiếu">
+      <h2>ĐỒNG HỒ</h2>
+      <label class="field">Số phút
+        <input id="minutes" type="number" min="1" max="240" value="10" inputmode="numeric">
+      </label>
+      <div class="ctl-row" id="presets">
+        <button type="button" data-min="10">10 phút</button>
+        <button type="button" data-min="15">15 phút</button>
+        <button type="button" data-min="20">20 phút</button>
+        <button type="button" data-min="30">30 phút</button>
+      </div>
+      <div class="ctl-row clock-actions">
+        <button class="go" type="button" id="btnStart">Bắt đầu</button>
+        <button type="button" id="btnPause">Tạm dừng</button>
+        <button class="stop" type="button" id="btnStop">Dừng</button>
+        <button type="button" id="btnRestart">Làm lại</button>
+        <button type="button" id="btnReset">Đặt lại</button>
+      </div>
+
+      <h2>DANH SÁCH</h2>
+      <div class="ctl-row">
+        <button type="button" id="btnAuto">Tạm dừng</button>
+        <button type="button" id="btnPrev">Trang trước</button>
+        <button type="button" id="btnNext">Trang sau</button>
+      </div>
+      <label class="field">Thời gian mỗi trang (giây)
+        <input id="pageSeconds" type="number" min="3" max="180" value="10" inputmode="numeric">
+      </label>
+      <div class="ctl-row" id="densities">
+        <button type="button" data-density="easy">Dễ đọc</button>
+        <button type="button" data-density="standard">Tiêu chuẩn</button>
+        <button type="button" data-density="dense">Nhiều lô</button>
+      </div>
+      <div class="ctl-row">
+        <button type="button" id="btnReload">Làm mới dữ liệu</button>
+      </div>
+
+      <h2>HIỂN THỊ</h2>
+      <div class="ctl-row">
+        <button type="button" id="btnFull2">Toàn màn hình</button>
+        <button type="button" id="btnClose">Đóng điều khiển</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SESSION_ID = {{ session_id|tojson }};
+    const ROUND_NO = {{ (round_no if round_no else None)|tojson }};
+    const API = `/auction/sessions/api/start-prices-board/sessions/${SESSION_ID}` + (ROUND_NO ? `?round_no=${ROUND_NO}` : "");
+    const STORE_KEY = `hall-start-price:${SESSION_ID}:${ROUND_NO || "latest"}`;
+    const PREVIEW = (location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.hostname === "")
+      && new URLSearchParams(location.search).get("preview") === "300";
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const clockEl = document.getElementById("clock");
+    const stateEl = document.getElementById("clockState");
+    const countdownEl = document.getElementById("countdown");
+    const timeFill = document.getElementById("timeFill");
+    const setLabel = document.getElementById("setLabel");
+    const minutesEl = document.getElementById("minutes");
+    const pageSecondsEl = document.getElementById("pageSeconds");
+    const boardWrap = document.getElementById("boardWrap");
+    const layerA = document.getElementById("layerA");
+    const layerB = document.getElementById("layerB");
+    const pageLabel = document.getElementById("pageLabel");
+    const pageFill = document.getElementById("pageFill");
+    const connDot = document.getElementById("connDot");
+    const connText = document.getElementById("connText");
+    const overlay = document.getElementById("overlay");
+    const measureCtx = document.createElement("canvas").getContext("2d");
+
+    let lots = [];
+    let lastSig = "";
+    let cols = 4, rows = 8, fontPx = 32, rowH = 48, perPage = 32, pageCount = 1, pageIndex = 0;
+    let front = layerA, back = layerB, fading = false, fadeGen = 0;
+    let autoPage = true, pagePaused = false, pageMs = 10000, pageStarted = performance.now();
+    let frozenPageMs = 0;
+    let density = "standard";
+    let mode = "idle";
+    let setMinutes = 10;
+    let durationMs = 10 * 60 * 1000;
+    let remainingMs = durationMs;
+    let endsAt = null;
+    let loadedAt = null;
+    let online = false;
+    let polling = false;
+    let pollTimer = 0;
+
+    function pad(n, width){ return String(n).padStart(width, "0"); }
+    function clamp(n, lo, hi){ return Math.min(hi, Math.max(lo, n)); }
+    function chosenMinutes(){
+      const n = Math.floor(Number(minutesEl.value));
+      if(!Number.isFinite(n)) return setMinutes || 10;
+      return clamp(n, 1, 240);
+    }
+    function chosenPageSeconds(){
+      const n = Math.floor(Number(pageSecondsEl.value));
+      if(!Number.isFinite(n)) return 10;
+      return clamp(n, 3, 180);
+    }
+    function priceText(lot){
+      const value = lot && lot.start_price_vnd;
+      if(value === null || value === undefined || value === "" || Number(value) <= 0) return "Chưa xác định";
+      return Number(value).toLocaleString("vi-VN");
+    }
+    function clockMs(){
+      if(mode === "running" && endsAt) return Math.max(0, endsAt - Date.now());
+      if(mode === "done") return 0;
+      if(mode === "idle") return durationMs;
+      return Math.max(0, remainingMs);
+    }
+    function formatClock(ms){
+      const sec = ms <= 0 ? 0 : Math.ceil(ms / 1000 - 1e-9);
+      const minutes = Math.floor(sec / 60);
+      const seconds = sec % 60;
+      const digits = Math.max(2, String(Math.floor(durationMs / 60000)).length);
+      return pad(minutes, digits) + ":" + pad(seconds, 2);
+    }
+    function stateText(){
+      if(mode === "running") return "Đang đếm ngược";
+      if(mode === "paused") return "Tạm dừng";
+      if(mode === "stopped") return "Đã dừng";
+      if(mode === "done") return "ĐÃ HẾT THỜI GIAN";
+      return "Chưa bắt đầu";
+    }
+    function paintClock(){
+      if(mode === "running" && endsAt && Date.now() >= endsAt){
+        mode = "done";
+        endsAt = null;
+        remainingMs = 0;
+        persist();
+      }
+      const ms = clockMs();
+      const sec = ms <= 0 ? 0 : Math.ceil(ms / 1000 - 1e-9);
+      clockEl.textContent = formatClock(ms);
+      stateEl.textContent = stateText();
+      const warn = mode === "done" || (mode !== "idle" && sec < 60);
+      countdownEl.classList.toggle("warn", warn);
+      const ratio = durationMs > 0 ? Math.max(0, Math.min(1, ms / durationMs)) : 0;
+      timeFill.style.width = (ratio * 100) + "%";
+      setLabel.textContent = "Thời lượng đã đặt: " + setMinutes + " phút";
+      const pauseBtn = document.getElementById("btnPause");
+      pauseBtn.textContent = (mode === "paused" || mode === "stopped") && remainingMs > 0 ? "Tiếp tục" : "Tạm dừng";
+    }
+    function persist(){
+      try{
+        localStorage.setItem(STORE_KEY, JSON.stringify({
+          setMinutes, durationMs, remainingMs, endsAt, mode,
+          pageSeconds: chosenPageSeconds(), density, autoPage, pagePaused, pageIndex
+        }));
+      }catch(e){}
+    }
+    function restore(){
+      try{
+        const raw = localStorage.getItem(STORE_KEY);
+        if(!raw) return;
+        const data = JSON.parse(raw);
+        if(data.setMinutes){
+          setMinutes = clamp(Math.floor(Number(data.setMinutes)) || 10, 1, 240);
+          minutesEl.value = String(setMinutes);
+        }
+        if(data.pageSeconds) pageSecondsEl.value = String(clamp(Math.floor(Number(data.pageSeconds)) || 10, 3, 180));
+        if(data.density === "easy" || data.density === "standard" || data.density === "dense") density = data.density;
+        if(typeof data.autoPage === "boolean") autoPage = data.autoPage;
+        if(typeof data.pagePaused === "boolean") pagePaused = data.pagePaused;
+        if(Number.isFinite(Number(data.pageIndex))) pageIndex = Math.max(0, Math.floor(Number(data.pageIndex)));
+        durationMs = Math.max(1000, Number(data.durationMs) || setMinutes * 60000);
+        mode = data.mode || "idle";
+        if(mode === "running"){
+          endsAt = Number(data.endsAt) || 0;
+          if(!endsAt || endsAt <= Date.now()){
+            mode = "done";
+            endsAt = null;
+            remainingMs = 0;
+          }
+        }else if(mode === "paused" || mode === "stopped"){
+          remainingMs = Math.max(0, Number(data.remainingMs) || 0);
+          endsAt = null;
+          if(remainingMs <= 0) mode = "done";
+        }else if(mode === "done"){
+          remainingMs = 0;
+          endsAt = null;
+        }else{
+          mode = "idle";
+          endsAt = null;
+          remainingMs = durationMs;
+        }
+      }catch(e){}
+      pageMs = chosenPageSeconds() * 1000;
+    }
+    function markPresets(){
+      const mins = chosenMinutes();
+      document.querySelectorAll("[data-min]").forEach(btn => {
+        btn.classList.toggle("active", Number(btn.dataset.min) === mins);
+      });
+      document.querySelectorAll("[data-density]").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.density === density);
+      });
+      document.getElementById("btnAuto").textContent = autoPage && !pagePaused ? "Tạm dừng" : "Tự chuyển";
+    }
+    function beginRunning(ms){
+      durationMs = ms;
+      remainingMs = ms;
+      endsAt = Date.now() + ms;
+      mode = "running";
+      persist();
+      paintClock();
+    }
+    function hold(nextMode){
+      if(mode === "running" && endsAt) remainingMs = Math.max(0, endsAt - Date.now());
+      endsAt = null;
+      if(remainingMs <= 0) mode = "done";
+      else mode = nextMode;
+      persist();
+      paintClock();
+    }
+
+    document.getElementById("presets").addEventListener("click", event => {
+      const btn = event.target.closest("[data-min]");
+      if(!btn) return;
+      minutesEl.value = btn.dataset.min;
+      setMinutes = chosenMinutes();
+      if(mode === "idle"){
+        durationMs = setMinutes * 60000;
+        remainingMs = durationMs;
+        persist();
+        paintClock();
+      }
+      markPresets();
+    });
+    minutesEl.addEventListener("change", () => {
+      setMinutes = chosenMinutes();
+      minutesEl.value = String(setMinutes);
+      if(mode === "idle"){
+        durationMs = setMinutes * 60000;
+        remainingMs = durationMs;
+        persist();
+        paintClock();
+      }
+      markPresets();
+    });
+    document.getElementById("btnStart").addEventListener("click", () => {
+      if(mode === "running") return;
+      if((mode === "paused" || mode === "stopped") && remainingMs > 0){
+        endsAt = Date.now() + remainingMs;
+        mode = "running";
+        persist();
+        paintClock();
+        return;
+      }
+      setMinutes = chosenMinutes();
+      minutesEl.value = String(setMinutes);
+      beginRunning(setMinutes * 60000);
+    });
+    document.getElementById("btnPause").addEventListener("click", () => {
+      if(mode === "running") hold("paused");
+      else if((mode === "paused" || mode === "stopped") && remainingMs > 0){
+        endsAt = Date.now() + remainingMs;
+        mode = "running";
+        persist();
+        paintClock();
+      }
+    });
+    document.getElementById("btnStop").addEventListener("click", () => {
+      if(mode === "idle" || mode === "done") return;
+      hold("stopped");
+    });
+    document.getElementById("btnRestart").addEventListener("click", () => {
+      setMinutes = chosenMinutes();
+      minutesEl.value = String(setMinutes);
+      beginRunning(setMinutes * 60000);
+    });
+    document.getElementById("btnReset").addEventListener("click", () => {
+      setMinutes = chosenMinutes();
+      minutesEl.value = String(setMinutes);
+      durationMs = setMinutes * 60000;
+      remainingMs = durationMs;
+      endsAt = null;
+      mode = "idle";
+      persist();
+      paintClock();
+    });
+
+    function textWidth(text, size, weight){
+      measureCtx.font = weight + " " + size + "px " + getComputedStyle(document.body).fontFamily;
+      return measureCtx.measureText(text || "").width;
+    }
+    function targetLayout(width, height){
+      const short = width < 1500 || height < 560;
+      if(density === "easy") return short ? {cols:2, rows:5, font:34} : {cols:3, rows:6, font:34};
+      if(density === "dense") return short ? {cols:4, rows:8, font:26} : {cols:5, rows:10, font:28};
+      return short ? {cols:3, rows:7, font:30} : {cols:4, rows:8, font:32};
+    }
+    function fits(colCount, size){
+      if(!lots.length) return true;
+      const gap = 16, pad = 28, between = 16;
+      const colW = (boardWrap.clientWidth - gap * (colCount - 1)) / colCount;
+      const inner = colW - pad;
+      let codeW = 0, priceW = 0;
+      for(const lot of lots){
+        codeW = Math.max(codeW, textWidth(lot.lot_code || "—", size, "650"));
+        priceW = Math.max(priceW, textWidth(priceText(lot), size, "750"));
+      }
+      return codeW + priceW + between <= inner;
+    }
+    function computeLayout(){
+      const width = boardWrap.clientWidth;
+      const height = boardWrap.clientHeight;
+      const target = targetLayout(width, height);
+      const headH = 36;
+      const minFont = density === "dense" ? 24 : 26;
+      if(width < 80 || height < 80){
+        return {cols: cols || target.cols, rows: rows || target.rows, font: fontPx || target.font, rowH: Math.max(rowH || 48, 40)};
+      }
+      let colCount = Math.max(1, target.cols);
+      let size = target.font;
+      let guard = 0;
+      while(!fits(colCount, size) && guard < 40){
+        guard += 1;
+        if(size > minFont) size -= 1;
+        else if(colCount > 1){ colCount -= 1; size = target.font; }
+        else break;
+      }
+      const minRow = size + 16;
+      let rowCount = target.rows;
+      while(rowCount > 1 && headH + rowCount * minRow > height) rowCount -= 1;
+      const usable = Math.max(minRow, height - headH);
+      rowCount = Math.max(1, Math.min(rowCount, Math.floor(usable / minRow)));
+      const heightEach = Math.floor((height - headH) / rowCount);
+      return {cols: colCount, rows: rowCount, font: size, rowH: heightEach};
+    }
+    function applyLayout(){
+      const next = computeLayout();
+      const changed = next.cols !== cols || next.rows !== rows || next.font !== fontPx || next.rowH !== rowH;
+      cols = next.cols; rows = next.rows; fontPx = next.font; rowH = next.rowH;
+      perPage = Math.max(1, cols * rows);
+      pageCount = Math.max(1, Math.ceil(lots.length / perPage) || 1);
+      pageIndex = Math.min(pageIndex, pageCount - 1);
+      return changed;
+    }
+    function buildPage(page){
+      const wrap = document.createElement("div");
+      wrap.className = "cols";
+      wrap.style.gridTemplateColumns = "repeat(" + cols + ", minmax(0, 1fr))";
+      if(!lots.length){
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "Vòng này chưa có lô";
+        return empty;
+      }
+      const start = page * perPage;
+      const slice = lots.slice(start, start + perPage);
+      for(let c = 0; c < cols; c++){
+        const col = document.createElement("div");
+        col.className = "col";
+        const head = document.createElement("div");
+        head.className = "col-head";
+        const left = document.createElement("span");
+        left.textContent = "MÃ LÔ";
+        const right = document.createElement("span");
+        right.textContent = "GIÁ KHỞI ĐIỂM · VNĐ";
+        head.append(left, right);
+        const body = document.createElement("div");
+        body.className = "col-body";
+        for(let r = 0; r < rows; r++){
+          const lot = slice[c * rows + r] || null;
+          const row = document.createElement("div");
+          row.className = "lot-row" + (r % 2 ? " alt" : "");
+          row.style.height = rowH + "px";
+          row.style.flex = "0 0 " + rowH + "px";
+          if(lot){
+            const code = document.createElement("div");
+            code.className = "lot-code";
+            code.style.fontSize = fontPx + "px";
+            code.textContent = lot.lot_code || "—";
+            const price = document.createElement("div");
+            price.className = "lot-price";
+            price.style.fontSize = fontPx + "px";
+            price.textContent = priceText(lot);
+            row.append(code, price);
+          }
+          body.append(row);
+        }
+        col.append(head, body);
+        wrap.append(col);
+      }
+      return wrap;
+    }
+    function goTo(page, animate, keepTimer){
+      if(!pageCount) pageCount = 1;
+      const next = ((page % pageCount) + pageCount) % pageCount;
+      const gen = ++fadeGen;
+      if(animate && (fading || pageCount < 2 || reducedMotion)) animate = false;
+      pageIndex = next;
+      if(!keepTimer){
+        pageStarted = performance.now();
+        frozenPageMs = 0;
+      }
+      const node = buildPage(next);
+      if(!animate){
+        front.replaceChildren(node);
+        front.classList.add("show");
+        back.classList.remove("show");
+        front.dataset.ready = "1";
+        updateFooter();
+        persist();
+        return;
+      }
+      const incoming = back;
+      const outgoing = front;
+      incoming.replaceChildren(node);
+      incoming.classList.toggle("fade", !reducedMotion);
+      outgoing.classList.toggle("fade", !reducedMotion);
+      fading = true;
+      requestAnimationFrame(() => {
+        if(gen !== fadeGen) return;
+        incoming.classList.add("show");
+        outgoing.classList.remove("show");
+      });
+      front = incoming;
+      back = outgoing;
+      front.dataset.ready = "1";
+      window.setTimeout(() => { if(gen === fadeGen) fading = false; }, 280);
+      updateFooter();
+      persist();
+    }
+    function renderBoard(keepTimer){
+      const before = pageIndex;
+      applyLayout();
+      goTo(pageIndex, false, keepTimer && pageIndex === before);
+    }
+    function updateFooter(){
+      const pageNo = lots.length ? pageIndex + 1 : 1;
+      const pages = lots.length ? pageCount : 1;
+      pageLabel.textContent = "TRANG " + pad(pageNo, 2) + " / " + pad(pages, 2) + " · " + lots.length + " LÔ";
+    }
+    function setLots(nextLots){
+      const sorted = (nextLots || []).slice().sort((a, b) => Number(a.lot_id) - Number(b.lot_id));
+      const sig = sorted.map(lot => lot.lot_id + ":" + lot.lot_code + ":" + lot.start_price_vnd).join("|");
+      if(sig === lastSig && front.dataset.ready === "1") return;
+      const keepPage = lastSig !== "";
+      lastSig = sig;
+      lots = sorted;
+      renderBoard(keepPage);
+    }
+    function stamp(){
+      return new Date().toLocaleTimeString("vi-VN", {
+        hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:false, timeZone:"Asia/Ho_Chi_Minh"
+      });
+    }
+    function showOnline(){
+      online = true;
+      loadedAt = stamp();
+      connDot.className = "dot ok";
+      connText.textContent = "Cập nhật lúc " + loadedAt;
+    }
+    function showOffline(){
+      online = false;
+      connDot.className = "dot bad";
+      connText.textContent = loadedAt
+        ? "Mất kết nối · Đang hiển thị dữ liệu lúc " + loadedAt
+        : "Mất kết nối";
+    }
+    function previewPayload(){
+      const sample = [];
+      for(let i = 300; i >= 1; i--){
+        let code = "CL" + ((i % 8) + 1) + "-" + pad(i, 3);
+        if(i % 20 === 0) code = "KHU-DONG-NAM-" + pad(i, 3);
+        let price = 1250000000 + (i % 50) * 15000000;
+        if(i % 37 === 0) price = null;
+        sample.push({lot_id: i, lot_code: code, start_price_vnd: price});
+      }
+      return {
+        company_name: "CÔNG TY CỔ PHẦN ĐẦU TƯ ĐỊA ỐC KINH ĐÔ MINH ĐỨC",
+        project_name: "DỰ ÁN KHU DÂN CƯ KINH ĐÔ 69 — PHÂN KHU CL3, CÁC LÔ ĐẤT Ở ĐẤU GIÁ QUYỀN SỬ DỤNG ĐẤT",
+        round_no: ROUND_NO || 2,
+        company_logo_url: "",
+        lots: sample
+      };
+    }
+    function applyPayload(data){
+      document.getElementById("companyName").textContent = data.company_name || "";
+      document.getElementById("projectName").textContent = data.project_name || "";
+      const roundNo = Number(data.round_no || ROUND_NO || 0);
+      document.getElementById("roundLabel").textContent = roundNo ? "VÒNG " + pad(roundNo, 2) : "VÒNG —";
+      const logo = document.getElementById("logo");
+      const url = data.company_logo_url || "";
+      if(!url){
+        logo.hidden = true;
+        logo.removeAttribute("src");
+      }else{
+        logo.onload = () => { logo.hidden = false; };
+        logo.onerror = () => { logo.hidden = true; logo.removeAttribute("src"); };
+        logo.alt = data.company_name || "";
+        logo.src = url;
+      }
+      setLots(data.lots || []);
+    }
+    async function loadBoard(){
+      if(PREVIEW){
+        applyPayload(previewPayload());
+        showOnline();
+        return;
+      }
+      if(polling) return;
+      polling = true;
+      try{
+        const res = await fetch(API, {credentials:"same-origin", cache:"no-store"});
+        let data = {};
+        try{ data = await res.json(); }catch(e){ data = {}; }
+        if(!res.ok){
+          showOffline();
+          if(!lots.length){
+            document.getElementById("projectName").textContent = data.detail || "Không tải được danh sách";
+          }
+          return;
+        }
+        applyPayload(data);
+        showOnline();
+      }catch(e){
+        showOffline();
+      }finally{
+        polling = false;
+      }
+    }
+
+    document.getElementById("btnAuto").addEventListener("click", () => {
+      if(!autoPage || pagePaused){
+        autoPage = true;
+        pagePaused = false;
+        pageStarted = performance.now() - frozenPageMs;
+      }else{
+        pagePaused = true;
+        frozenPageMs = Math.max(0, performance.now() - pageStarted);
+      }
+      markPresets();
+      persist();
+    });
+    document.getElementById("btnPrev").addEventListener("click", () => { if(pageCount > 1) goTo(pageIndex - 1, true, false); });
+    document.getElementById("btnNext").addEventListener("click", () => { if(pageCount > 1) goTo(pageIndex + 1, true, false); });
+    pageSecondsEl.addEventListener("change", () => {
+      pageSecondsEl.value = String(chosenPageSeconds());
+      pageMs = chosenPageSeconds() * 1000;
+      pageStarted = performance.now();
+      persist();
+    });
+    document.getElementById("densities").addEventListener("click", event => {
+      const btn = event.target.closest("[data-density]");
+      if(!btn) return;
+      density = btn.dataset.density;
+      markPresets();
+      renderBoard(false);
+      persist();
+    });
+    document.getElementById("btnReload").addEventListener("click", () => { lastSig = ""; loadBoard(); });
+
+    function setPanel(open){
+      overlay.classList.toggle("open", open);
+    }
+    document.getElementById("btnControls").addEventListener("click", () => setPanel(!overlay.classList.contains("open")));
+    document.getElementById("btnClose").addEventListener("click", () => setPanel(false));
+    overlay.addEventListener("click", event => { if(event.target === overlay) setPanel(false); });
+    document.addEventListener("keydown", event => { if(event.key === "Escape") setPanel(false); });
+    async function toggleFull(){
+      if(!document.fullscreenElement){
+        try{ await document.documentElement.requestFullscreen(); }catch(e){}
+      }else{
+        try{ await document.exitFullscreen(); }catch(e){}
+      }
+    }
+    document.getElementById("btnFull").addEventListener("click", toggleFull);
+    document.getElementById("btnFull2").addEventListener("click", toggleFull);
+    document.addEventListener("fullscreenchange", () => {
+      const label = document.fullscreenElement ? "Thoát toàn màn hình" : "Toàn màn hình";
+      document.getElementById("btnFull").textContent = label;
+      document.getElementById("btnFull2").textContent = label;
+    });
+
+    function tickPage(now){
+      if(pageCount < 2 || !autoPage){
+        pageFill.style.width = pageCount < 2 ? "100%" : "0%";
+        return;
+      }
+      if(pagePaused){
+        pageFill.style.width = Math.min(100, frozenPageMs / pageMs * 100) + "%";
+        return;
+      }
+      if(fading) return;
+      const elapsed = now - pageStarted;
+      if(elapsed >= pageMs) goTo(pageIndex + 1, true, false);
+      else pageFill.style.width = (elapsed / pageMs * 100) + "%";
+    }
+    function frame(now){
+      paintClock();
+      tickPage(now);
+      requestAnimationFrame(frame);
+    }
+    let layoutQueued = false;
+    function queueLayout(){
+      if(layoutQueued) return;
+      layoutQueued = true;
+      requestAnimationFrame(() => {
+        layoutQueued = false;
+        if(!front.dataset.ready) return;
+        renderBoard(true);
+      });
+    }
+    if(typeof ResizeObserver !== "undefined"){
+      new ResizeObserver(queueLayout).observe(boardWrap);
+    }else{
+      window.addEventListener("resize", queueLayout);
+    }
+
+    function pagesOfIds(){
+      const seen = [];
+      for(let p = 0; p < pageCount; p++){
+        const start = p * perPage;
+        const slice = lots.slice(start, start + perPage);
+        for(let i = 0; i < slice.length; i++) seen.push(slice[i].lot_id);
+      }
+      return seen;
+    }
+    window.__hall = {
+      snapshot(){
+        return {
+          cols, rows, perPage, pageCount, pageIndex, fontPx, rowH, mode,
+          lotCount: lots.length,
+          board: {w: boardWrap.clientWidth, h: boardWrap.clientHeight},
+          viewport: {w: window.innerWidth, h: window.innerHeight},
+          scroll: document.documentElement.scrollHeight - document.documentElement.clientHeight
+        };
+      },
+      pagesOfIds,
+      setRemaining(seconds){
+        const ms = Math.max(0, seconds * 1000);
+        durationMs = Math.max(durationMs, ms);
+        remainingMs = ms;
+        endsAt = Date.now() + ms;
+        mode = ms > 0 ? "running" : "done";
+        paintClock();
+      },
+      finish(){
+        endsAt = Date.now() - 5;
+        mode = "running";
+        paintClock();
+      }
+    };
+
+    restore();
+    markPresets();
+    paintClock();
+    loadBoard();
+    if(PREVIEW){
+      const shot = new URLSearchParams(location.search).get("shot") || "";
+      pagePaused = shot === "warn" || shot === "done";
+      if(!pagePaused) pageStarted = performance.now() - pageMs * 0.4;
+      markPresets();
+      if(shot === "panel") setPanel(true);
+      if(shot === "warn") window.__hall.setRemaining(42);
+      if(shot === "done") window.__hall.finish();
+      const ids = window.__hall.pagesOfIds();
+      const overflow = [...document.querySelectorAll(".lot-row")].filter(el => el.scrollWidth > el.clientWidth + 1).length;
+      const info = window.__hall.snapshot();
+      document.documentElement.dataset.hall = JSON.stringify({
+        cols: info.cols, rows: info.rows, perPage: info.perPage, pageCount: info.pageCount,
+        fontPx: info.fontPx, lotCount: info.lotCount, mode: info.mode,
+        board: info.board, viewport: info.viewport, overflow,
+        scroll: document.documentElement.scrollHeight - document.documentElement.clientHeight,
+        unique: new Set(ids).size,
+        sorted: ids.every((id, i) => i === 0 || id > ids[i - 1])
+      });
+    }
+    if(!PREVIEW) pollTimer = window.setInterval(loadBoard, 15000);
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>
