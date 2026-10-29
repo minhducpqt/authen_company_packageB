@@ -182,6 +182,13 @@
     .page-stack{display:flex;flex-direction:column;align-items:center;gap:6px}
     .page-nav .foot-btn{width:28px;height:28px;cursor:pointer}
     .page-nav .foot-btn:disabled{opacity:.35;cursor:default;border-color:rgba(180,197,216,.4)}
+    .page-nav .auto-toggle{
+      width:auto;height:28px;padding:0 10px;gap:6px;cursor:pointer;
+      font-size:12px;font-weight:750;letter-spacing:.08em;
+    }
+    .page-nav .auto-toggle .auto-state{color:var(--cyan)}
+    .page-nav .auto-toggle.is-off{color:var(--muted)}
+    .page-nav .auto-toggle.is-off .auto-state{color:var(--muted)}
     .page-label{letter-spacing:.06em;white-space:nowrap;font-size:14px}
     .page-bar{width:168px;height:6px;background:#163044;border-radius:99px;overflow:hidden}
     .page-bar > span{display:block;height:100%;width:0;background:var(--cyan)}
@@ -324,6 +331,9 @@
           <button class="foot-btn icon" type="button" id="btnPageNext" title="Trang sau" aria-label="Trang sau" disabled>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
           </button>
+          <button class="foot-btn auto-toggle is-on" type="button" id="btnPageAuto" aria-pressed="true" title="Tắt tự chuyển trang">
+            Auto <span class="auto-state" id="autoState">ON</span>
+          </button>
         </div>
       </div>
       <div class="foot-right">
@@ -369,7 +379,7 @@
         </select>
       </label>
       <div class="ctl-row">
-        <button type="button" id="btnAuto">Tạm dừng</button>
+        <button type="button" id="btnAuto">Auto ON</button>
         <button type="button" id="btnPrev">Trang trước</button>
         <button type="button" id="btnNext">Trang sau</button>
       </div>
@@ -523,7 +533,7 @@
         if(data.pageSeconds) pageSecondsEl.value = String(clamp(Math.floor(Number(data.pageSeconds)) || 10, 3, 180));
         if(data.density === "easy" || data.density === "standard" || data.density === "dense") density = data.density;
         if(typeof data.autoPage === "boolean") autoPage = data.autoPage;
-        if(typeof data.pagePaused === "boolean") pagePaused = data.pagePaused;
+        pagePaused = false;
         if(Number.isFinite(Number(data.pageIndex))) pageIndex = Math.max(0, Math.floor(Number(data.pageIndex)));
         durationMs = Math.max(1000, Number(data.durationMs) || setMinutes * 60000);
         mode = data.mode || "idle";
@@ -557,7 +567,27 @@
       document.querySelectorAll("[data-density]").forEach(btn => {
         btn.classList.toggle("active", btn.dataset.density === density);
       });
-      document.getElementById("btnAuto").textContent = autoPage && !pagePaused ? "Tạm dừng" : "Tự chuyển";
+      updateAutoUi();
+    }
+    function updateAutoUi(){
+      const on = autoPage && !pagePaused;
+      const btn = document.getElementById("btnPageAuto");
+      btn.classList.toggle("is-on", on);
+      btn.classList.toggle("is-off", !on);
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+      btn.title = on ? "Tắt tự chuyển trang" : "Bật tự chuyển trang";
+      document.getElementById("autoState").textContent = on ? "ON" : "OFF";
+      const drawerBtn = document.getElementById("btnAuto");
+      drawerBtn.textContent = on ? "Auto ON" : "Auto OFF";
+      drawerBtn.classList.toggle("active", on);
+    }
+    function setAutoPage(on){
+      autoPage = !!on;
+      pagePaused = false;
+      frozenPageMs = 0;
+      if(autoPage) pageStarted = performance.now();
+      updateAutoUi();
+      persist();
     }
     function beginRunning(ms){
       durationMs = ms;
@@ -766,6 +796,7 @@
       }
       const node = buildPage(next);
       if(!animate){
+        fading = false;
         front.replaceChildren(node);
         front.classList.add("show");
         back.classList.remove("show");
@@ -939,18 +970,8 @@
       lastSig = "";
       loadBoard();
     });
-    document.getElementById("btnAuto").addEventListener("click", () => {
-      if(!autoPage || pagePaused){
-        autoPage = true;
-        pagePaused = false;
-        pageStarted = performance.now() - frozenPageMs;
-      }else{
-        pagePaused = true;
-        frozenPageMs = Math.max(0, performance.now() - pageStarted);
-      }
-      markPresets();
-      persist();
-    });
+    document.getElementById("btnAuto").addEventListener("click", () => setAutoPage(!(autoPage && !pagePaused)));
+    document.getElementById("btnPageAuto").addEventListener("click", () => setAutoPage(!(autoPage && !pagePaused)));
     document.getElementById("btnPrev").addEventListener("click", () => stepPage(-1));
     document.getElementById("btnNext").addEventListener("click", () => stepPage(1));
     btnPagePrev.addEventListener("click", () => stepPage(-1));
