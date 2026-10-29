@@ -852,6 +852,8 @@
       .printMenu button:disabled:hover{
       background:#fff;
       }
+      @keyframes backupSpin{to{transform:rotate(360deg);}}
+      .backup-spin{display:inline-block;animation:backupSpin .8s linear infinite;}
 
     </style>
 
@@ -3967,9 +3969,20 @@ Modal: Print One Bid Sheet (choose one customer)
   if(w){ try{ w.focus(); }catch(e){} }
   }
 
+  let backupXlsxLoading = false;
   async function downloadBackupXlsx(){
+  if(backupXlsxLoading) return;
+  const btn = document.getElementById("btnBackupXlsx");
+  const trigger = document.querySelector(".printDrop > button");
+  const triggerHtml = trigger ? trigger.innerHTML : "";
+  backupXlsxLoading = true;
   const menu = document.querySelector(".printMenu");
   if(menu) menu.style.display = "none";
+  if(btn) btn.disabled = true;
+  if(trigger){
+    trigger.disabled = true;
+    trigger.innerHTML = '<i class="ri-loader-4-line backup-spin"></i> Đang tải Excel...';
+  }
   try{
     const res = await fetch(`/auction/sessions/${SESSION_ID}/backup-xlsx`, {credentials:"same-origin"});
     if(!res.ok){
@@ -3996,6 +4009,13 @@ Modal: Print One Bid Sheet (choose one customer)
     URL.revokeObjectURL(url);
   }catch(e){
     alert("Không tải được Excel dự phòng");
+  }finally{
+    backupXlsxLoading = false;
+    if(trigger){
+      trigger.disabled = false;
+      trigger.innerHTML = triggerHtml;
+    }
+    if(btn) btn.disabled = false;
   }
   }
 
