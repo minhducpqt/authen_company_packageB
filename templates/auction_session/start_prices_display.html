@@ -177,7 +177,11 @@
     .dot.ok{background:#3DDC84}
     .dot.bad{background:var(--alert)}
     .conn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .foot-mid{display:flex;flex-direction:column;align-items:center;gap:6px}
+    .foot-mid{display:flex;justify-content:center}
+    .page-nav{display:flex;align-items:center;gap:10px}
+    .page-stack{display:flex;flex-direction:column;align-items:center;gap:6px}
+    .page-nav .foot-btn{width:28px;height:28px;cursor:pointer}
+    .page-nav .foot-btn:disabled{opacity:.35;cursor:default;border-color:rgba(180,197,216,.4)}
     .page-label{letter-spacing:.06em;white-space:nowrap;font-size:14px}
     .page-bar{width:168px;height:6px;background:#163044;border-radius:99px;overflow:hidden}
     .page-bar > span{display:block;height:100%;width:0;background:var(--cyan)}
@@ -302,8 +306,18 @@
         <span class="conn" id="connText">Đang kết nối</span>
       </div>
       <div class="foot-mid">
-        <span class="page-label" id="pageLabel">TRANG 01 / 01 · 0 LÔ</span>
-        <div class="page-bar" aria-hidden="true"><span id="pageFill"></span></div>
+        <div class="page-nav">
+          <button class="foot-btn icon" type="button" id="btnPagePrev" title="Trang trước" aria-label="Trang trước" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M15 5 8 12l7 7"/></svg>
+          </button>
+          <div class="page-stack">
+            <span class="page-label" id="pageLabel">TRANG 01 / 01 · 0 LÔ</span>
+            <div class="page-bar" aria-hidden="true"><span id="pageFill"></span></div>
+          </div>
+          <button class="foot-btn icon" type="button" id="btnPageNext" title="Trang sau" aria-label="Trang sau" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
       </div>
       <div class="foot-right">
         <button class="foot-btn" type="button" id="btnControls">
@@ -387,6 +401,8 @@
     const layerB = document.getElementById("layerB");
     const pageLabel = document.getElementById("pageLabel");
     const pageFill = document.getElementById("pageFill");
+    const btnPagePrev = document.getElementById("btnPagePrev");
+    const btnPageNext = document.getElementById("btnPageNext");
     const connDot = document.getElementById("connDot");
     const connText = document.getElementById("connText");
     const overlay = document.getElementById("overlay");
@@ -759,6 +775,12 @@
       const pageNo = lots.length ? pageIndex + 1 : 1;
       const pages = lots.length ? pageCount : 1;
       pageLabel.textContent = "TRANG " + pad(pageNo, 2) + " / " + pad(pages, 2) + " · " + lots.length + " LÔ";
+      const onePage = pages < 2;
+      btnPagePrev.disabled = onePage;
+      btnPageNext.disabled = onePage;
+    }
+    function stepPage(delta){
+      if(pageCount > 1) goTo(pageIndex + delta, true, false);
     }
     function setLots(nextLots){
       const sorted = (nextLots || []).slice().sort((a, b) => Number(a.lot_id) - Number(b.lot_id));
@@ -867,8 +889,10 @@
       markPresets();
       persist();
     });
-    document.getElementById("btnPrev").addEventListener("click", () => { if(pageCount > 1) goTo(pageIndex - 1, true, false); });
-    document.getElementById("btnNext").addEventListener("click", () => { if(pageCount > 1) goTo(pageIndex + 1, true, false); });
+    document.getElementById("btnPrev").addEventListener("click", () => stepPage(-1));
+    document.getElementById("btnNext").addEventListener("click", () => stepPage(1));
+    btnPagePrev.addEventListener("click", () => stepPage(-1));
+    btnPageNext.addEventListener("click", () => stepPage(1));
     pageSecondsEl.addEventListener("change", () => {
       pageSecondsEl.value = String(chosenPageSeconds());
       pageMs = chosenPageSeconds() * 1000;
