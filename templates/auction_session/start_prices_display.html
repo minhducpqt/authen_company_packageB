@@ -26,86 +26,93 @@
     .stage{
       height:100vh;height:100dvh;
       display:flex;flex-direction:column;
-      padding:32px;gap:18px;overflow:hidden;
+      padding:28px 32px 22px;gap:16px;overflow:hidden;
     }
     .header{
-      min-height:90px;flex:0 0 auto;
+      min-height:68px;flex:0 0 auto;
       display:grid;grid-template-columns:minmax(0,1fr) auto;
       align-items:center;gap:24px;
     }
-    .brand{display:flex;align-items:center;gap:16px;min-width:0}
-    .logo{height:64px;width:auto;max-width:180px;object-fit:contain;flex:0 0 auto;display:block}
+    .brand{display:flex;align-items:center;gap:14px;min-width:0}
+    .logo{height:54px;width:auto;max-width:160px;object-fit:contain;flex:0 0 auto;display:block}
     .names{min-width:0}
     .company{
-      color:var(--muted);font-size:15px;font-weight:650;line-height:1.2;letter-spacing:.04em;
+      color:#9eb2c6;font-size:13px;font-weight:700;line-height:1.2;letter-spacing:.16em;
+      text-transform:uppercase;
       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
     }
     .project{
-      margin-top:3px;font-size:28px;font-weight:750;line-height:1.15;letter-spacing:.01em;
+      margin-top:2px;font-size:32px;font-weight:800;line-height:1.12;letter-spacing:.02em;
       display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
     }
     .round-side{text-align:right;flex:0 0 auto}
     .on-air{
-      color:var(--muted);font-size:13px;font-weight:700;letter-spacing:.16em;
+      color:#8ea4b8;font-size:12px;font-weight:700;letter-spacing:.18em;
     }
     .round{
-      margin-top:4px;color:var(--cyan);font-size:44px;font-weight:750;
+      margin-top:2px;color:var(--cyan);font-size:42px;font-weight:800;
       letter-spacing:.04em;line-height:.95;white-space:nowrap;
     }
-    .rule{height:1px;background:var(--line);flex:0 0 1px}
+    .rule{display:none}
     .countdown{
       height:164px;flex:0 0 164px;
-      display:grid;grid-template-columns:minmax(0,32%) minmax(0,1fr) minmax(128px,15%);
-      align-items:center;gap:0;
-      padding:12px 18px 12px 16px;
-      background:linear-gradient(180deg,#12283c 0%,#0C1C2E 100%);
-      border:1px solid rgba(67,217,230,.55);
-      border-radius:18px;
+      display:grid;grid-template-columns:auto minmax(0,1fr) auto;
+      align-items:center;
+      padding:12px 22px 12px 16px;
+      background:linear-gradient(180deg,#14324a 0%,#0c1e31 48%,#0a1928 100%);
+      border:1px solid rgba(67,217,230,.7);
+      border-radius:16px;
       overflow:hidden;
     }
     .clock-side{
-      min-width:0;height:100%;
+      height:100%;
       display:flex;flex-direction:column;justify-content:center;gap:6px;
-      padding-right:16px;
-      border-right:1px solid rgba(180,197,216,.28);
+      padding-right:18px;margin-right:8px;
+      border-right:1px solid rgba(67,217,230,.28);
     }
     .plates,.plate-labels{
-      display:grid;grid-template-columns:minmax(0,1fr) 36px minmax(0,1fr);
-      align-items:center;justify-items:center;
+      display:grid;grid-template-columns:auto 20px auto;
+      align-items:center;justify-items:center;column-gap:8px;
     }
     .digit-plate{
-      width:100%;height:112px;
+      box-sizing:content-box;
+      width:max-content;min-width:2.2ch;height:104px;padding:0 16px;
       display:flex;align-items:center;justify-content:center;
-      background:#07111d;
-      border:1px solid rgba(67,217,230,.38);
+      background:#070d16;
+      border:1px solid rgba(67,217,230,.45);
       border-radius:12px;
       color:#F4F8FC;
-      font-size:110px;font-weight:750;line-height:1;
+      font-size:100px;font-weight:800;line-height:1;
       font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;
-      letter-spacing:.01em;white-space:nowrap;
+      white-space:nowrap;
     }
     .colon{
-      color:#F4F8FC;font-size:64px;font-weight:750;line-height:1;
+      color:#F4F8FC;font-size:58px;font-weight:800;line-height:1;
       font-variant-numeric:tabular-nums;
     }
     .digit-label{
-      color:var(--muted);font-size:13px;font-weight:750;letter-spacing:.16em;line-height:1;
+      color:#8ea4b8;font-size:12px;font-weight:700;letter-spacing:.18em;line-height:1;
     }
     .count-copy{
       min-width:0;height:100%;
-      display:flex;flex-direction:column;justify-content:center;gap:8px;
-      padding:0 28px;
+      display:flex;flex-direction:column;justify-content:center;gap:7px;
+      padding:0 28px 0 18px;
     }
-    .count-title{font-size:22px;font-weight:750;letter-spacing:.08em;white-space:nowrap}
-    .state-row{display:flex;align-items:center;gap:10px;min-width:0}
+    .count-title{font-size:22px;font-weight:800;letter-spacing:.06em;white-space:nowrap}
+    .state-row{display:flex;align-items:center;gap:8px;min-width:0}
     .state-dot{width:10px;height:10px;border-radius:50%;background:var(--cyan);flex:0 0 auto}
-    .state{font-size:26px;font-weight:750;line-height:1.1;white-space:nowrap}
-    .set-label{color:var(--muted);font-size:16px;font-weight:650}
-    .time-bar{height:11px;background:#163044;border-radius:99px;overflow:hidden}
-    .time-bar > span{display:block;height:100%;width:100%;background:var(--cyan);border-radius:99px}
-    .ring-wrap{position:relative;width:136px;height:136px;margin:0 auto}
+    .state{font-size:20px;font-weight:750;line-height:1.1;white-space:nowrap}
+    .countdown.is-live .state{color:var(--cyan)}
+    .set-label{color:#9eb2c6;font-size:16px;font-weight:650}
+    .time-bar{height:12px;background:#163044;border-radius:99px;overflow:hidden}
+    .time-bar > span{
+      display:block;height:100%;width:100%;border-radius:99px;
+      background:linear-gradient(90deg,#1ec4e0,#67e8f9);
+      box-shadow:0 0 12px rgba(67,217,230,.55);
+    }
+    .ring-wrap{position:relative;width:146px;height:146px;margin:0 4px 0 8px}
     .ring{width:100%;height:100%;display:block}
-    .ring-track,.ring-value{fill:none;stroke-width:9}
+    .ring-track,.ring-value{fill:none;stroke-width:11}
     .ring-track{stroke:#16324a}
     .ring-value{
       stroke:var(--cyan);stroke-linecap:round;
@@ -114,7 +121,7 @@
     }
     .ring-pct{
       position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-      color:#F4F8FC;font-size:28px;font-weight:750;line-height:1;
+      color:#F4F8FC;font-size:32px;font-weight:800;line-height:1;
       font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;
     }
     .countdown.is-mid .ring-value,.countdown.is-mid .time-bar > span{stroke:#FFD166;background:#FFD166}
@@ -137,10 +144,10 @@
       border:1px solid rgba(180,197,216,.28);border-radius:6px;
     }
     .col-head{
-      height:36px;flex:0 0 36px;
+      height:34px;flex:0 0 34px;
       display:flex;align-items:center;justify-content:space-between;gap:8px;
-      padding:0 14px;color:var(--muted);font-size:13px;font-weight:750;letter-spacing:.06em;
-      background:#1a3d56;border-bottom:1px solid rgba(180,197,216,.22);
+      padding:0 14px;color:#9eb2c6;font-size:12px;font-weight:750;letter-spacing:.08em;
+      background:#17344c;border-bottom:1px solid rgba(180,197,216,.18);
     }
     .col-body{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
     .lot-row{
@@ -167,20 +174,23 @@
     .foot-left,.foot-right{display:flex;align-items:center;gap:10px;min-width:0}
     .foot-right{justify-content:flex-end}
     .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:0 0 auto}
-    .dot.ok{background:var(--cyan)}
+    .dot.ok{background:#3DDC84}
     .dot.bad{background:var(--alert)}
     .conn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .foot-mid{display:flex;align-items:center;gap:12px}
-    .page-label{letter-spacing:.04em;white-space:nowrap}
-    .page-bar{width:148px;height:5px;background:rgba(180,197,216,.28);border-radius:99px;overflow:hidden}
+    .foot-mid{display:flex;flex-direction:column;align-items:center;gap:6px}
+    .page-label{letter-spacing:.06em;white-space:nowrap;font-size:14px}
+    .page-bar{width:168px;height:6px;background:#163044;border-radius:99px;overflow:hidden}
     .page-bar > span{display:block;height:100%;width:0;background:var(--cyan)}
     .foot-btn,.ctl button,.ctl input{
       background:#081321;border:1px solid rgba(180,197,216,.35);border-radius:8px;
     }
     .foot-btn{
-      height:32px;padding:0 12px;font-size:14px;font-weight:700;color:var(--ink);
+      height:34px;padding:0 12px;font-size:14px;font-weight:700;color:var(--ink);
       background:transparent;border-color:rgba(180,197,216,.4);border-radius:8px;
+      display:inline-flex;align-items:center;gap:8px;
     }
+    .foot-btn svg{width:16px;height:16px;display:block}
+    .foot-btn.icon{width:36px;padding:0;justify-content:center}
     .foot-btn:hover,.ctl button:hover{border-color:var(--cyan)}
     .overlay{
       position:fixed;inset:0;z-index:30;display:none;
@@ -210,22 +220,24 @@
     }
     @media (max-height:860px){
       .stage{padding:20px 24px;gap:12px}
-      .header{min-height:78px}
-      .logo{height:52px}
+      .header{min-height:60px}
+      .logo{height:42px}
+      .company{font-size:11px}
       .project{font-size:22px}
-      .round{font-size:34px}
+      .round{font-size:32px}
       .countdown{height:136px;flex-basis:136px;padding:8px 12px}
-      .digit-plate{height:78px;font-size:72px}
-      .colon{font-size:42px}
-      .digit-label{font-size:11px;letter-spacing:.12em}
-      .count-copy{padding:0 16px;gap:5px}
-      .count-title{font-size:15px;letter-spacing:.05em}
-      .state{font-size:18px}
-      .countdown.is-done .state{font-size:16px}
+      .digit-plate{height:78px;font-size:72px;padding:0 8px}
+      .colon{font-size:40px}
+      .digit-label{font-size:10px;letter-spacing:.12em}
+      .count-copy{padding:0 12px;gap:4px}
+      .count-title{font-size:15px;letter-spacing:.04em}
+      .state{font-size:16px}
+      .countdown.is-done .state{font-size:14px}
       .set-label{font-size:13px}
       .time-bar{height:8px}
-      .ring-wrap{width:86px;height:86px}
-      .ring-pct{font-size:18px}
+      .ring-wrap{width:96px;height:96px}
+      .ring-track,.ring-value{stroke-width:9}
+      .ring-pct{font-size:20px}
       .footer{height:36px;flex-basis:36px}
     }
     @media (prefers-reduced-motion:reduce){
@@ -294,8 +306,13 @@
         <div class="page-bar" aria-hidden="true"><span id="pageFill"></span></div>
       </div>
       <div class="foot-right">
-        <button class="foot-btn" type="button" id="btnControls">Điều khiển</button>
-        <button class="foot-btn" type="button" id="btnFull">Toàn màn hình</button>
+        <button class="foot-btn" type="button" id="btnControls">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6"/></svg>
+          Điều khiển
+        </button>
+        <button class="foot-btn icon" type="button" id="btnFull" title="Toàn màn hình" aria-label="Toàn màn hình">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 4H4v4M16 4h4v4M4 16v4h4M20 16v4h-4"/></svg>
+        </button>
       </div>
     </footer>
   </div>
@@ -437,7 +454,8 @@
       stateEl.textContent = stateText();
       const ratio = durationMs > 0 ? Math.max(0, Math.min(1, ms / durationMs)) : 0;
       const pct = Math.round(ratio * 100);
-      countdownEl.classList.remove("is-mid", "is-warn", "is-done", "is-hold");
+      countdownEl.classList.remove("is-mid", "is-warn", "is-done", "is-hold", "is-live");
+      if(mode === "running") countdownEl.classList.add("is-live");
       if(mode === "done") countdownEl.classList.add("is-done");
       else if(mode !== "idle" && sec < 60) countdownEl.classList.add("is-warn");
       else if(mode !== "idle" && sec < 180) countdownEl.classList.add("is-mid");
@@ -615,7 +633,7 @@
       const width = boardWrap.clientWidth;
       const height = boardWrap.clientHeight;
       const target = targetLayout(width, height);
-      const headH = 36;
+      const headH = 34;
       const minFont = density === "dense" ? 24 : 26;
       if(width < 80 || height < 80){
         return {cols: cols || target.cols, rows: rows || target.rows, font: fontPx || target.font, rowH: Math.max(rowH || 48, 40)};
@@ -806,7 +824,12 @@
     }
     async function loadBoard(){
       if(PREVIEW){
-        applyPayload(previewPayload());
+        const fixture = document.getElementById("hallFixture");
+        if(fixture && fixture.textContent.trim()){
+          applyPayload(JSON.parse(fixture.textContent));
+        }else{
+          applyPayload(previewPayload());
+        }
         showOnline();
         return;
       }
@@ -880,7 +903,8 @@
     document.getElementById("btnFull2").addEventListener("click", toggleFull);
     document.addEventListener("fullscreenchange", () => {
       const label = document.fullscreenElement ? "Thoát toàn màn hình" : "Toàn màn hình";
-      document.getElementById("btnFull").textContent = label;
+      document.getElementById("btnFull").title = label;
+      document.getElementById("btnFull").setAttribute("aria-label", label);
       document.getElementById("btnFull2").textContent = label;
     });
 
@@ -955,6 +979,7 @@
     };
 
     restore();
+    if(PREVIEW) pageIndex = 0;
     markPresets();
     paintClock();
     loadBoard();
@@ -965,10 +990,10 @@
       markPresets();
       if(shot === "panel") setPanel(true);
       if(shot === "run"){
-        setMinutes = 30;
-        minutesEl.value = "30";
-        durationMs = 30 * 60000;
-        remainingMs = (29 * 60 + 6) * 1000;
+        setMinutes = 20;
+        minutesEl.value = "20";
+        durationMs = 20 * 60000;
+        remainingMs = (19 * 60 + 45) * 1000;
         endsAt = Date.now() + remainingMs;
         mode = "running";
         paintClock();
