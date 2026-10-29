@@ -46,3 +46,31 @@ async def download_session_backup_xlsx(
         media_type=_XLSX,
         headers={"Content-Disposition": disposition},
     )
+
+
+@router.get("/auction/sessions/{session_id}/start-prices-xlsx")
+async def download_session_start_prices_xlsx(
+    request: Request,
+    session_id: int = Path(..., ge=1),
+):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    url = f"{SERVICE_A_BASE_URL}/api/v1/auction-sessions/sessions/{int(session_id)}/start-prices-xlsx"
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            upstream = await client.get(url, headers={"Authorization": f"Bearer {token}"})
+    except Exception as exc:
+        return JSONResponse({"detail": str(exc)}, status_code=502)
+    if upstream.status_code != 200:
+        try:
+            body = upstream.json()
+        except Exception:
+            body = {"detail": (upstream.text or "")[:300]}
+        return JSONResponse(body, status_code=upstream.status_code)
+    disposition = upstream.headers.get("content-disposition") or "attachment"
+    return Response(
+        content=upstream.content,
+        media_type=_XLSX,
+        headers={"Content-Disposition": disposition},
+    )

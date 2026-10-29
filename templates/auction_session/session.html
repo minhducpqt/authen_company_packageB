@@ -823,7 +823,7 @@
       box-shadow:0 12px 30px rgba(2,6,23,.18);
       padding:6px;
       display:none;
-      min-width:200px;
+      min-width:280px;
       z-index:100;
       }
 
@@ -934,6 +934,9 @@
             <i class="ri-file-excel-2-line"></i> Tải Excel dự phòng
           </button>
           {% endif %}
+          <button type="button" id="btnStartPricesXlsx" onclick="downloadStartPricesXlsx()">
+            <i class="ri-table-line"></i> Tải danh sách lô và giá khởi điểm
+          </button>
         </div>
       </div>
 
@@ -4009,6 +4012,55 @@ Modal: Print One Bid Sheet (choose one customer)
     URL.revokeObjectURL(url);
   }catch(e){
     alert("Không tải được Excel dự phòng");
+  }finally{
+    backupXlsxLoading = false;
+    if(trigger){
+      trigger.disabled = false;
+      trigger.innerHTML = triggerHtml;
+    }
+    if(btn) btn.disabled = false;
+  }
+  }
+
+  async function downloadStartPricesXlsx(){
+  if(backupXlsxLoading) return;
+  const btn = document.getElementById("btnStartPricesXlsx");
+  const trigger = document.querySelector(".printDrop > button");
+  const triggerHtml = trigger ? trigger.innerHTML : "";
+  backupXlsxLoading = true;
+  const menu = document.querySelector(".printMenu");
+  if(menu) menu.style.display = "none";
+  if(btn) btn.disabled = true;
+  if(trigger){
+    trigger.disabled = true;
+    trigger.innerHTML = '<i class="ri-loader-4-line backup-spin"></i> Đang tải bảng giá...';
+  }
+  try{
+    const res = await fetch(`/auction/sessions/${SESSION_ID}/start-prices-xlsx`, {credentials:"same-origin"});
+    if(!res.ok){
+      let msg = "Không tải được danh sách giá khởi điểm";
+      try{
+        const js = await res.json();
+        msg = js.detail || js.error || msg;
+      }catch(e){}
+      alert(msg);
+      return;
+    }
+    const blob = await res.blob();
+    const dispo = res.headers.get("Content-Disposition") || "";
+    let name = `phien-${SESSION_ID}-gia-khoi-diem.xlsx`;
+    const matched = /filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i.exec(dispo);
+    if(matched) name = decodeURIComponent((matched[1] || matched[2] || "").trim());
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }catch(e){
+    alert("Không tải được danh sách giá khởi điểm");
   }finally{
     backupXlsxLoading = false;
     if(trigger){
