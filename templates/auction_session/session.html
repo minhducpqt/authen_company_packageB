@@ -661,6 +661,16 @@
       }
       .iconbtn.primary{background:rgba(14,165,233,.08);border-color:rgba(14,165,233,.25);color:#075985;}
       .iconbtn.danger{background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.25);color:#991b1b;}
+      .roster-quiet{
+      margin-top:8px;background:transparent;border:0;padding:0;
+      color:#94a3b8;font-size:12px;font-weight:600;text-decoration:underline;
+      cursor:pointer;
+      }
+      .roster-quiet:hover{color:#64748b;}
+      .roster-warn{
+      border:1px solid #f59e0b;background:#fff7ed;color:#9a3412;
+      border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.45;font-weight:700;
+      }
 
       .arrows{ display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px; }
       .arrows .iconbtn{width:60px;justify-content:center;}
@@ -1104,6 +1114,9 @@ Modal: Decide Lot
             <span class="pill" id="mStatusPill">—</span>
           </div>
           <div class="box-b" id="mLotInfo"></div>
+          <div class="box-b" style="padding-top:0;">
+            <button class="roster-quiet" type="button" onclick="askEditRoster()">Sửa danh sách hoặc giá khởi điểm của vòng này</button>
+          </div>
         </div>
 
         <!-- Kiểm phiếu — riêng API, autosave +/−, không đụng chốt KQ/lock -->
@@ -1430,6 +1443,61 @@ Custom Dialog (Confirm/Error)
 </div>
 
 <div id="toast" class="toast"></div>
+
+<div id="rosterBackdrop" class="backdrop" style="display:none;" onclick="closeRosterEditor(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="mh">
+      <div>
+        <b>Sửa danh sách và giá khởi điểm</b>
+        <div class="mmeta" id="rosterMeta"></div>
+      </div>
+      <button class="xbtn" type="button" onclick="closeRosterEditor()"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="mb">
+      <div class="roster-warn">
+        Thao tác nguy hiểm. Chỉ dùng khi đã chốt sai danh sách khách hoặc sai giá khởi điểm của vòng đấu này.
+        Gỡ một khách sẽ gỡ khách đó khỏi vòng này và mọi vòng sau của cùng lô.
+        Thêm khách chỉ thêm vào vòng đang mở.
+        Giá khởi điểm chỉ đổi ở đúng vòng này, đúng lô này. Giá các vòng khác, kết quả lô và số phiếu đã ghi giữ nguyên.
+      </div>
+      <div class="field" style="margin-top:12px;">
+        <label><b>Giá khởi điểm vòng này</b></label>
+        <input id="rosterStartPrice" inputmode="numeric" autocomplete="off"
+          placeholder="Nhập giá khởi điểm"
+          style="height:40px;font-weight:700;width:100%;"
+          oninput="onMoneyInput('rosterStartPrice')"/>
+        <div class="hint" id="rosterPriceHint" style="margin-top:6px;"></div>
+      </div>
+      <div class="dual" style="margin-top:12px;">
+        <div class="plist">
+          <div class="ph">
+            <b id="rosterLeftTitle">Đã cọc, chưa ở vòng này</b>
+            <input id="rosterFilterLeft" placeholder="lọc..." oninput="renderRosterLists()"/>
+          </div>
+          <div class="pb" id="rosterListLeft"></div>
+        </div>
+        <div class="arrows">
+          <button class="iconbtn" type="button" onclick="moveAllRosterToRight()" title="Đưa hết sang phải"><i class="ri-arrow-right-double-line"></i></button>
+          <button class="iconbtn" type="button" onclick="moveAllRosterToLeft()" title="Đưa hết sang trái"><i class="ri-arrow-left-double-line"></i></button>
+        </div>
+        <div class="plist">
+          <div class="ph">
+            <b id="rosterRightTitle">Đang ở vòng này</b>
+            <input id="rosterFilterRight" placeholder="lọc..." oninput="renderRosterLists()"/>
+          </div>
+          <div class="pb" id="rosterListRight"></div>
+        </div>
+      </div>
+    </div>
+    <div class="foot">
+      <div class="hint">Bên phải là danh sách khách của vòng đang mở. Giá khởi điểm chỉ áp dụng cho vòng này.</div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn ghost" type="button" onclick="closeRosterEditor()">Đóng</button>
+        <button class="btn" type="button" id="btnSaveRoster" onclick="saveRoster()">Lưu thay đổi</button>
+      </div>
+    </div>
+  </div>
+</div>
 <!-- =========================================================
 Modal: Print One Bid Sheet (choose one customer)
 ========================================================== -->
@@ -4124,6 +4192,260 @@ Modal: Print One Bid Sheet (choose one customer)
   }
 
   syncPreprintBlankMenuVisibility();
+
+  let rosterLeft = [];
+  let rosterRight = [];
+  let rosterSaving = false;
+  let rosterOriginalIds = [];
+  let rosterPriceOriginal = 0;
+  let rosterResultType = 'PENDING';
+  let rosterHighestPrice = null;
+
+  function rosterPerson(p){
+    return {
+      customer_id: Number(p.customer_id || 0),
+      stt: Number(p.stt || 0),
+      name: safeText(p.name || ''),
+      phone: safeText(p.phone || ''),
+      cccd: safeText(p.cccd || ''),
+      email: safeText(p.email || '')
+    };
+  }
+
+  function confirmRosterPhrase(title, warnHtml, okText){
+    const html = `
+      <div class="cWarn"><div>${warnHtml}</div></div>
+      <div class="field" style="margin-top:12px;">
+        <label><b>Nhập xác nhận</b></label>
+        <input id="confirmRosterPhraseInput" autocomplete="off"
+          placeholder="Nhập: tôi xác nhận"
+          style="height:40px;font-weight:600;" />
+        <div class="muted" style="margin-top:4px;">
+          Bạn phải nhập đúng <b>“tôi xác nhận”</b> để tiếp tục.
+        </div>
+      </div>`;
+    const pending = showDialog({
+      mode: 'confirm',
+      title,
+      message: html,
+      html: true,
+      okText: okText || 'Xác nhận',
+      cancelText: 'Huỷ'
+    });
+    const inputEl = document.getElementById('confirmRosterPhraseInput');
+    const okBtn = document.getElementById('dlgOk');
+    if(inputEl && okBtn){
+      okBtn.disabled = true;
+      const sync = () => { okBtn.disabled = !isConfirmTextOk(inputEl.value); };
+      inputEl.addEventListener('input', sync);
+      inputEl.addEventListener('keydown', (ev) => {
+        if(ev.key === 'Enter' && isConfirmTextOk(inputEl.value)) dlgOk();
+      });
+      inputEl.focus();
+    }
+    return pending.then((ok) => {
+      if(!ok) return false;
+      const typed = document.getElementById('confirmRosterPhraseInput');
+      return !!(typed && isConfirmTextOk(typed.value));
+    });
+  }
+
+  async function askEditRoster(){
+    if(!currentLot){
+      toast('Hãy mở xử lý một lô trước.');
+      return;
+    }
+    const ok = await confirmRosterPhrase(
+      'Thao tác nguy hiểm',
+      'Đây là thao tác nguy hiểm. Chỉ sử dụng khi bạn đã chốt sai danh sách khách hoặc sai giá khởi điểm của vòng đấu này.<br><br>Gỡ một khách sẽ bỏ họ khỏi vòng này và các vòng sau của cùng lô. Thêm khách chỉ thêm vào vòng đang mở. Sửa giá khởi điểm chỉ đổi đúng vòng này, đúng lô này.',
+      'Tôi hiểu, mở sửa'
+    );
+    if(!ok) return;
+    await openRosterEditor();
+  }
+
+  async function openRosterEditor(){
+    if(!currentLot) return;
+    const r = await fetch(`/auction/sessions/api/round-lots/${Number(currentLot.id)}/roster`);
+    const js = await r.json().catch(() => ({}));
+    if(!r.ok){
+      toast(js.detail || ('Không mở được danh sách. HTTP ' + r.status));
+      return;
+    }
+    const pool = (js.pool || []).map(rosterPerson).filter(p => p.customer_id > 0);
+    const current = (js.current || []).map(rosterPerson).filter(p => p.customer_id > 0);
+    const onRight = new Set(current.map(p => p.customer_id));
+    const byId = new Map();
+    for(const p of pool) byId.set(p.customer_id, p);
+    for(const p of current) if(!byId.has(p.customer_id)) byId.set(p.customer_id, p);
+    rosterRight = current.map(p => byId.get(p.customer_id) || p);
+    rosterLeft = [];
+    for(const p of byId.values()){
+      if(!onRight.has(p.customer_id)) rosterLeft.push(p);
+    }
+    const meta = document.getElementById('rosterMeta');
+    if(meta){
+      meta.textContent = `Vòng ${js.round_no || ROUND_NO} · lô ${js.lot_code || ''}`;
+    }
+    rosterOriginalIds = rosterRight.map(p => p.customer_id);
+    rosterPriceOriginal = Number(js.start_price_vnd || 0);
+    rosterResultType = safeText(js.result_type || 'PENDING');
+    rosterHighestPrice = (js.highest_price_vnd == null) ? null : Number(js.highest_price_vnd);
+    const priceInput = document.getElementById('rosterStartPrice');
+    if(priceInput){
+      priceInput.value = formatMoneyDigits(String(Math.max(0, Math.round(Number(rosterPriceOriginal) || 0))));
+    }
+    const priceHint = document.getElementById('rosterPriceHint');
+    if(priceHint){
+      const unit = safeText(js.bid_price_unit || '').toUpperCase() === 'PER_SQM' ? 'Đơn giá theo m².' : 'Giá của cả lô.';
+      let note = unit + ' Hệ thống không tự tính lại từ giá từng khách. Nhập đúng số tiền của vòng này.';
+      if(rosterResultType && rosterResultType !== 'PENDING'){
+        const high = rosterHighestPrice == null ? 'chưa ghi' : fmtMoney(rosterHighestPrice);
+        note += ` Lô đã có kết quả ${rosterResultType}. Giá cao nhất đã chốt (${high}) giữ nguyên.`;
+      }
+      priceHint.textContent = note;
+    }
+    const fl = document.getElementById('rosterFilterLeft');
+    const fr = document.getElementById('rosterFilterRight');
+    if(fl) fl.value = '';
+    if(fr) fr.value = '';
+    renderRosterLists();
+    document.getElementById('rosterBackdrop').style.display = 'flex';
+  }
+
+  function closeRosterEditor(ev){
+    if(ev && ev.target && ev.target.id !== 'rosterBackdrop') return;
+    const bd = document.getElementById('rosterBackdrop');
+    if(bd) bd.style.display = 'none';
+  }
+
+  function renderRosterLists(){
+    const leftTitle = document.getElementById('rosterLeftTitle');
+    const rightTitle = document.getElementById('rosterRightTitle');
+    if(leftTitle) leftTitle.textContent = `Đã cọc, chưa ở vòng này (${rosterLeft.length})`;
+    if(rightTitle) rightTitle.textContent = `Đang ở vòng này (${rosterRight.length})`;
+    paintRosterColumn('rosterListLeft', rosterLeft, 'rosterFilterLeft', true);
+    paintRosterColumn('rosterListRight', rosterRight, 'rosterFilterRight', false);
+  }
+
+  function paintRosterColumn(hostId, people, filterId, toRight){
+    const host = document.getElementById(hostId);
+    if(!host) return;
+    const q = vnFold((document.getElementById(filterId).value || '').trim());
+    host.innerHTML = '';
+    for(const p of people){
+      const hay = vnFold(`${safeText(p.name)} ${safeText(p.cccd)} ${safeText(p.phone)} ${safeText(p.email)}`);
+      if(q && !hay.includes(q)) continue;
+      const sttPrefix = fmtStt(p.stt);
+      const nameLine = `${sttPrefix ? (escapeHtml(sttPrefix) + ' — ') : ''}${escapeHtml(p.name || ('#' + p.customer_id))}`;
+      const div = document.createElement('div');
+      div.className = 'pitem2';
+      div.innerHTML = `
+        <div>
+          <b>${nameLine}</b>
+          <div class="pm">CCCD: <span class="mono">${escapeHtml(p.cccd)}</span> • SĐT: <span class="mono">${escapeHtml(p.phone)}</span></div>
+        </div>
+        <div class="pact">
+          <button class="iconbtn" type="button" onclick="moveRosterOne(${p.customer_id}, ${toRight ? 'true' : 'false'})">
+            ${toRight ? 'Sang phải' : 'Sang trái'}
+          </button>
+        </div>`;
+      host.appendChild(div);
+    }
+  }
+
+  function moveRosterOne(customerId, toRight){
+    customerId = Number(customerId);
+    const from = toRight ? rosterLeft : rosterRight;
+    const to = toRight ? rosterRight : rosterLeft;
+    const idx = from.findIndex(x => x.customer_id === customerId);
+    if(idx < 0) return;
+    to.push(from[idx]);
+    from.splice(idx, 1);
+    renderRosterLists();
+  }
+
+  function moveAllRosterToRight(){
+    rosterRight = rosterRight.concat(rosterLeft);
+    rosterLeft = [];
+    renderRosterLists();
+  }
+
+  function moveAllRosterToLeft(){
+    rosterLeft = rosterLeft.concat(rosterRight);
+    rosterRight = [];
+    renderRosterLists();
+  }
+
+  function rosterIdsSame(a, b){
+    if(a.length !== b.length) return false;
+    const left = a.map(Number).slice().sort((x, y) => x - y);
+    const right = b.map(Number).slice().sort((x, y) => x - y);
+    return left.every((id, i) => id === right[i]);
+  }
+
+  async function saveRoster(){
+    if(!currentLot || rosterSaving) return;
+    const price = parseMoneyInput('rosterStartPrice');
+    if(price === null){
+      toast('Nhập giá khởi điểm của vòng này.');
+      return;
+    }
+    const listChanged = !rosterIdsSame(rosterRight.map(p => p.customer_id), rosterOriginalIds);
+    const priceChanged = Number(price) !== Number(rosterPriceOriginal);
+    if(!listChanged && !priceChanged){
+      toast('Chưa có thay đổi để lưu.');
+      return;
+    }
+    const lines = [];
+    if(listChanged){
+      lines.push('Danh sách khách của vòng này sẽ được lưu. Gỡ khách sẽ bỏ họ khỏi vòng này và các vòng sau của cùng lô.');
+    }
+    if(priceChanged){
+      lines.push(`Giá khởi điểm vòng này đổi từ ${fmtMoney(rosterPriceOriginal)} thành ${fmtMoney(price)}. Chỉ đúng vòng này, đúng lô này. Giá các vòng khác giữ nguyên.`);
+    }
+    if(rosterResultType && rosterResultType !== 'PENDING'){
+      lines.push('Lô này đã có kết quả. Giá cao nhất đã chốt không bị viết lại.');
+    }
+    const ok = await confirmRosterPhrase(
+      'Xác nhận lưu thay đổi',
+      lines.join('<br><br>'),
+      'Lưu thay đổi'
+    );
+    if(!ok) return;
+    rosterSaving = true;
+    const btn = document.getElementById('btnSaveRoster');
+    if(btn) btn.disabled = true;
+    try{
+      const r = await fetch(`/auction/sessions/api/round-lots/${Number(currentLot.id)}/roster`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customer_ids: rosterRight.map(p => p.customer_id),
+          start_price_vnd: price
+        })
+      });
+      const js = await r.json().catch(() => ({}));
+      if(!r.ok){
+        const detail = typeof js.detail === 'string' ? js.detail : 'Không lưu được danh sách';
+        toast(detail);
+        return;
+      }
+      const later = (js.later_rounds || []).filter(n => Number(n) !== Number(js.round_no));
+      const extra = later.length ? ` Đã xét các vòng ${later.join(', ')}.` : '';
+      const priceNote = js.start_price_changed ? ` Giá khởi điểm ${fmtMoney(js.start_price_vnd)}.` : '';
+      toast(`Đã lưu. Thêm ${js.added || 0}, gỡ ${js.removed || 0}.${priceNote}${extra}`);
+      closeRosterEditor();
+      const lotId = Number(currentLot.id);
+      await refreshAll();
+      if(document.getElementById('backdrop').style.display === 'flex'){
+        await openLotModal(lotId);
+      }
+    } finally {
+      rosterSaving = false;
+      if(btn) btn.disabled = false;
+    }
+  }
 
 
 

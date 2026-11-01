@@ -576,6 +576,39 @@ async def api_unlock_round_lot(
     return JSONResponse(js, status_code=_proxy_status(st))
 
 
+@router.get("/auction/sessions/api/round-lots/{round_lot_id}/roster")
+async def api_get_round_lot_roster(
+    request: Request,
+    round_lot_id: int = Path(..., ge=1),
+):
+    token = get_access_token(request)
+    if not token:
+        return _unauth_json()
+    st, js = await _get_json(
+        f"/api/v1/auction-sessions/round-lots/{round_lot_id}/roster",
+        token,
+        None,
+    )
+    return JSONResponse(js, status_code=_proxy_status(st))
+
+
+@router.put("/auction/sessions/api/round-lots/{round_lot_id}/roster")
+async def api_put_round_lot_roster(
+    request: Request,
+    round_lot_id: int = Path(..., ge=1),
+    payload: Dict[str, Any] = Body(...),
+):
+    token = get_access_token(request)
+    if not token:
+        return _unauth_json()
+    st, js = await _put_json(
+        f"/api/v1/auction-sessions/round-lots/{round_lot_id}/roster",
+        token,
+        payload,
+    )
+    return JSONResponse(js, status_code=_proxy_status(st))
+
+
 @router.post("/auction/sessions/api/round-lots/{round_lot_id}/decide")
 async def api_decide_round_lot(
     request: Request,
