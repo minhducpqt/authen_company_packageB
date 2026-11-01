@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>{{ title or "Ghi biên bản kết quả trúng" }}</title>
+  <style>
+    :root{
+      --bg:#eef1f4;
+      --ink:#122033;
+      --muted:#5d6b7c;
+      --line:#d5dde6;
+      --card:#ffffff;
+      --accent:#0f3d66;
+      --font:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+      --mono:ui-monospace,"Cascadia Mono","Segoe UI Mono",Consolas,monospace;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--ink)}
+    body{font-family:var(--font)}
+    button,input{font-family:inherit;color:inherit}
+    button{cursor:pointer}
+    button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+    .page{
+      height:100vh;height:100dvh;
+      display:flex;flex-direction:column;
+      padding:18px 22px 12px;gap:12px;
+    }
+    .top{
+      display:flex;align-items:flex-end;justify-content:space-between;gap:18px;
+    }
+    .company{
+      color:var(--accent);letter-spacing:.16em;font-size:12px;font-weight:750;text-transform:uppercase;
+    }
+    .company:empty{display:none}
+    h1{margin:4px 0 0;font-size:28px;font-weight:750;letter-spacing:.02em}
+    .project{margin-top:2px;color:var(--muted);font-size:16px;font-weight:650}
+    .meta{text-align:right;color:var(--muted);font-size:13px;font-weight:700}
+    .meta b{color:var(--ink);font-size:22px;font-weight:750}
+    .dot{display:inline-block;width:8px;height:8px;border-radius:99px;background:#16a34a;margin-right:6px}
+    .dot.warn{background:#d97706}
+    .tools{display:flex;gap:10px;align-items:center}
+    .tools input{
+      height:42px;min-width:260px;padding:0 12px;border:1px solid var(--line);border-radius:8px;
+      background:#fff;font-size:16px;font-weight:650;
+    }
+    .list{flex:1 1 auto;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:10px;padding-right:4px}
+    .row{
+      display:grid;
+      grid-template-columns:minmax(120px,160px) minmax(180px,1.1fr) minmax(280px,1.3fr) minmax(320px,1.5fr);
+      gap:16px;align-items:center;
+      background:var(--card);border:1px solid var(--line);border-radius:10px;
+      padding:14px 16px;
+    }
+    .kicker{color:var(--muted);font-size:11px;font-weight:750;letter-spacing:.14em}
+    .lot{margin-top:2px;font-size:28px;font-weight:750;letter-spacing:.04em;color:var(--accent)}
+    .who{margin-top:2px;font-size:24px;font-weight:750;line-height:1.2}
+    .numline{display:flex;align-items:flex-end;gap:8px;min-width:0}
+    .groups{display:flex;align-items:flex-end;gap:0;min-width:0;user-select:all}
+    .grp{display:flex;flex-direction:column;align-items:center;min-width:3ch}
+    .grp b{
+      font-family:var(--mono);font-size:34px;font-weight:700;letter-spacing:.04em;line-height:1;
+      font-variant-numeric:tabular-nums;
+    }
+    .grp small{
+      margin-top:4px;color:var(--muted);font-size:11px;font-weight:750;letter-spacing:.04em;font-family:var(--font);
+    }
+    .sep{
+      font-family:var(--mono);font-size:34px;font-weight:700;line-height:1;color:#8aa0b5;padding:0 2px 0 1px;
+    }
+    .price .sep{align-self:flex-start}
+    .copy{
+      flex:0 0 auto;height:36px;padding:0 10px;border-radius:8px;
+      border:1px solid var(--line);background:#f8fafc;font-size:13px;font-weight:750;color:var(--accent);
+    }
+    .copy:hover{border-color:var(--accent)}
+    .empty{margin:auto;text-align:center;color:var(--muted);font-size:20px;font-weight:700}
+    .toast{
+      position:fixed;left:50%;bottom:22px;transform:translateX(-50%);
+      background:#122033;color:#fff;border-radius:8px;padding:8px 14px;
+      font-size:14px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .15s linear;
+    }
+    .toast.show{opacity:1}
+    @media (max-width:1100px){
+      .row{grid-template-columns:1fr 1fr}
+      .tools input{min-width:0;width:100%}
+      .top{flex-direction:column;align-items:stretch}
+      .meta{text-align:left}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="top">
+      <div>
+        <div class="company">{{ company_name }}</div>
+        <h1>Ghi biên bản</h1>
+        <div class="project">{{ project_name or project or "Chưa chọn dự án" }}</div>
+      </div>
+      <div class="meta">
+        <b id="wonCount">0</b> lô trúng
+        <div><span class="dot" id="dot"></span><span id="liveText">Đang tải</span></div>
+      </div>
+    </header>
+    <div class="tools">
+      <input id="find" type="search" placeholder="Tìm mã lô hoặc tên khách" autocomplete="off">
+    </div>
+    <section class="list" id="list"></section>
+  </div>
+  <div class="toast" id="toast"></div>
+<script>
+  const PROJECT_ID = {{ project_id or "null" }};
+  const POLL_MS = 5000;
+  const PRICE_LABELS = ["đồng", "nghìn", "triệu", "tỷ", "nghìn tỷ", "triệu tỷ"];
+  const list = document.getElementById("list");
+  const find = document.getElementById("find");
+  const toast = document.getElementById("toast");
+  let rows = [];
+  let polling = false;
+  let toastTimer = 0;
+
+  function digits(v){ return String(v ?? "").replace(/\D/g, ""); }
+  function esc(s){
+    return String(s ?? "")
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;");
+  }
+  function groupsOf(raw, fromRight){
+    const d = digits(raw);
+    if(!d) return [];
+    const parts = [];
+    if(fromRight){
+      const trimmed = d.replace(/^0+(?=\d)/, "");
+      for(let i = trimmed.length; i > 0; i -= 3){
+        parts.unshift(trimmed.slice(Math.max(0, i - 3), i));
+      }
+    }else{
+      for(let i = 0; i < d.length; i += 3) parts.push(d.slice(i, i + 3));
+    }
+    return parts;
+  }
+  function joined(parts){ return parts.join("."); }
+  function groupsHtml(parts, labels){
+    if(!parts.length) return "<span class='grp'><b>—</b></span>";
+    return parts.map((part, i) => {
+      const label = labels ? `<small>${esc(labels[parts.length - 1 - i] || "")}</small>` : "";
+      const sep = i < parts.length - 1 ? "<span class='sep'>.</span>" : "";
+      return `<span class="grp"><b>${esc(part)}</b>${label}</span>${sep}`;
+    }).join("");
+  }
+  function query(){ return find.value.trim().toLowerCase(); }
+  function visibleRows(){
+    const q = query();
+    if(!q) return rows;
+    return rows.filter(r => {
+      const code = String(r.lot_code || "").toLowerCase();
+      const name = String(r.winner_name || "").toLowerCase();
+      return code.indexOf(q) >= 0 || name.indexOf(q) >= 0;
+    });
+  }
+  function render(){
+    const top = list.scrollTop;
+    const shown = visibleRows();
+    document.getElementById("wonCount").textContent = String(rows.length);
+    if(!PROJECT_ID){
+      list.innerHTML = '<div class="empty">Chưa chọn dự án.</div>';
+      return;
+    }
+    if(!shown.length){
+      list.innerHTML = '<div class="empty">' + (rows.length ? "Không có lô khớp." : "Chưa có kết quả trúng.") + "</div>";
+      return;
+    }
+    list.innerHTML = shown.map(r => {
+      const cccd = groupsOf(r.winner_cccd, false);
+      const price = groupsOf(r.winning_price_vnd, true);
+      const cccdText = cccd.length ? joined(cccd) : "";
+      const priceText = price.length ? joined(price) : "";
+      return `
+      <article class="row">
+        <div>
+          <div class="kicker">MÃ LÔ</div>
+          <div class="lot">${esc(r.lot_code || "—")}</div>
+        </div>
+        <div>
+          <div class="kicker">TÊN KHÁCH</div>
+          <div class="who">${esc(r.winner_name || "—")}</div>
+        </div>
+        <div>
+          <div class="kicker">CCCD</div>
+          <div class="numline">
+            <div class="groups">${groupsHtml(cccd, null)}</div>
+            ${cccdText ? `<button class="copy" type="button" data-copy="${esc(cccdText)}" data-toast="Đã chép CCCD">Chép</button>` : ""}
+          </div>
+        </div>
+        <div class="price">
+          <div class="kicker">GIÁ TRÚNG</div>
+          <div class="numline">
+            <div class="groups">${groupsHtml(price, PRICE_LABELS)}</div>
+            ${priceText ? `<button class="copy" type="button" data-copy="${esc(priceText)}" data-toast="Đã chép giá">Chép</button>` : ""}
+          </div>
+        </div>
+      </article>`;
+    }).join("");
+    list.scrollTop = top;
+  }
+  function showToast(text){
+    toast.textContent = text;
+    toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove("show"), 1200);
+  }
+  async function copyText(text){
+    try{
+      await navigator.clipboard.writeText(text);
+    }catch(e){
+      const area = document.createElement("textarea");
+      area.value = text;
+      document.body.appendChild(area);
+      area.select();
+      document.execCommand("copy");
+      area.remove();
+    }
+  }
+  async function loadAll(){
+    if(!PROJECT_ID || polling) return;
+    polling = true;
+    const dot = document.getElementById("dot");
+    const live = document.getElementById("liveText");
+    try{
+      const all = [];
+      let page = 1;
+      let total = 0;
+      do{
+        const url = `/auction/results/api/projects/${PROJECT_ID}/lots?page=${page}&size=500&result_status=WON`;
+        const res = await fetch(url, { headers: { "Accept":"application/json" } });
+        const js = await res.json().catch(() => ({}));
+        if(!res.ok) throw new Error("http");
+        const chunk = Array.isArray(js.data) ? js.data : [];
+        total = Number(js.total || chunk.length || 0);
+        all.push.apply(all, chunk);
+        page += 1;
+        if(!chunk.length) break;
+      }while(all.length < total && page < 20);
+      all.sort((a, b) => Number(a.lot_id || 0) - Number(b.lot_id || 0));
+      const next = all.filter(r => String(r.result_status || "").toUpperCase() === "WON" || r.winner_name);
+      const sign = listRows => JSON.stringify(listRows.map(r => [r.lot_id, r.lot_code, r.winner_name, r.winning_price_vnd, digits(r.winner_cccd)]));
+      const same = sign(next) === sign(rows);
+      rows = next;
+      if(!same) render();
+      dot.className = "dot";
+      const d = new Date();
+      const p = n => String(n).padStart(2,"0");
+      live.textContent = "Cập nhật " + `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+    }catch(e){
+      dot.className = "dot warn";
+      live.textContent = rows.length ? "Mất kết nối · đang giữ danh sách vừa tải" : "Mất kết nối";
+    }finally{
+      polling = false;
+    }
+  }
+
+  find.addEventListener("input", render);
+  list.addEventListener("click", async event => {
+    const btn = event.target.closest("[data-copy]");
+    if(!btn) return;
+    await copyText(btn.getAttribute("data-copy") || "");
+    showToast(btn.getAttribute("data-toast") || "Đã chép");
+  });
+
+  render();
+  loadAll();
+  setInterval(loadAll, POLL_MS);
+</script>
+</body>
+</html>

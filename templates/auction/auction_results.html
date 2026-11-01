@@ -79,6 +79,14 @@
       >
         <i class="ri-slideshow-2-line"></i> Present
       </button>
+      <button
+        type="button"
+        id="btnScribe"
+        class="h-10 px-4 rounded-xl border border-slate-900 text-slate-900 text-sm font-medium bg-white hover:bg-slate-50 inline-flex items-center gap-2"
+        title="Màn cho người ghi mã lô, tên, CCCD và giá trúng vào biên bản"
+      >
+        <i class="ri-article-line"></i> Ghi biên bản
+      </button>
     {% endif %}
 
     {# ✅ Export #}
@@ -379,6 +387,20 @@
       return;
     }
     window.open(url, "_blank", "noopener,noreferrer");
+  });
+
+  document.getElementById('btnScribe')?.addEventListener('click', ()=>{
+    const url = buildPresentUrl();
+    if(!url){
+      toast("Vui lòng chọn dự án trước");
+      return;
+    }
+    const scribe = new URL(url);
+    scribe.pathname = "/auction/results/scribe";
+    scribe.searchParams.delete("q");
+    scribe.searchParams.delete("result_status");
+    scribe.searchParams.delete("size");
+    window.open(scribe.toString(), "_blank", "noopener,noreferrer");
   });
 </script>
 {% endblock %}

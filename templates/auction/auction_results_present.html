@@ -6,12 +6,12 @@
   <title>{{ title or "Trình chiếu kết quả trúng đấu giá" }}</title>
   <style>
     :root{
-      --bg:#071018;
-      --ink:#f6f1e6;
-      --muted:#b7c0cc;
-      --gold:#e7c27a;
-      --line:rgba(231,194,122,.28);
-      --card:#101a28;
+      --bg:#07111c;
+      --ink:#f7f4ec;
+      --muted:#a9b7c8;
+      --gold:#d7b56a;
+      --gold-dim:rgba(215,181,106,.28);
+      --card:#0d1b2c;
       --font:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
     }
     *{box-sizing:border-box}
@@ -23,150 +23,291 @@
     .stage{
       height:100vh;height:100dvh;
       display:flex;flex-direction:column;
-      padding:22px 28px 14px;gap:14px;
+      padding:22px 36px 16px;
+      gap:16px;
       background:
-        radial-gradient(900px 420px at 50% -10%, rgba(231,194,122,.16), transparent 60%),
-        linear-gradient(180deg, #0c1826, var(--bg) 42%);
+        radial-gradient(1100px 420px at 50% -8%, rgba(215,181,106,.14), transparent 62%),
+        linear-gradient(180deg, #0c1a2b 0%, var(--bg) 38%);
+    }
+    .frame{
+      flex:1 1 auto;min-height:0;
+      display:flex;flex-direction:column;gap:16px;
+      border:1px solid var(--gold-dim);
+      box-shadow:inset 0 0 0 5px var(--bg), inset 0 0 0 6px rgba(215,181,106,.18);
+      padding:18px 22px 16px;
     }
     .header{
-      display:flex;align-items:flex-end;justify-content:space-between;gap:20px;
-      min-height:64px;
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      align-items:center;
+      gap:28px;
+      padding-bottom:12px;
+      border-bottom:1px solid var(--gold-dim);
+      position:relative;
     }
-    .kicker{
-      color:var(--gold);letter-spacing:.28em;font-size:13px;font-weight:800;
+    .header:after{
+      content:"";
+      position:absolute;left:0;right:0;bottom:-5px;height:1px;
+      background:rgba(215,181,106,.45);
     }
+    .titles{display:flex;align-items:baseline;gap:18px;min-width:0}
     h1{
-      margin:4px 0 0;font-size:clamp(26px, 3vw, 40px);font-weight:800;letter-spacing:.04em;
+      margin:0;
+      font-size:clamp(26px, 2.6vw, 40px);
+      font-weight:750;
+      letter-spacing:.06em;
+      line-height:1;
+      white-space:nowrap;
     }
-    .project{
-      margin-top:4px;color:var(--muted);font-size:16px;font-weight:650;
-      max-width:70vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    .code{
+      color:var(--gold);
+      font-size:clamp(22px, 2.2vw, 34px);
+      font-weight:750;
+      letter-spacing:.14em;
+      line-height:1;
+      white-space:nowrap;
     }
-    .live{
-      text-align:right;color:var(--muted);font-size:13px;font-weight:700;
+    .plaque{
+      min-width:148px;
+      text-align:right;
+      padding-left:22px;
+      border-left:1px solid var(--gold-dim);
     }
-    .live b{color:var(--ink);font-weight:800}
-    .dot{
-      display:inline-block;width:8px;height:8px;border-radius:99px;margin-right:6px;
-      background:#34d399;box-shadow:0 0 10px rgba(52,211,153,.7);
+    .plaque b{
+      display:block;
+      font-size:clamp(36px, 4vw, 58px);
+      font-weight:750;
+      line-height:.9;
+      letter-spacing:.02em;
+      font-variant-numeric:tabular-nums;
+      color:var(--gold);
     }
-    .dot.warn{background:#fbbf24;box-shadow:none}
-    .dot.bad{background:#fb7185;box-shadow:none}
+    .plaque span{
+      display:block;margin-top:6px;
+      color:var(--muted);font-size:12px;font-weight:750;letter-spacing:.2em;
+    }
     .board{
       flex:1 1 auto;min-height:0;
-      display:grid;gap:14px;
+      display:grid;gap:12px;
     }
     .card{
       min-width:0;min-height:0;
-      border:1px solid var(--line);
-      border-radius:18px;
-      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.18));
-      padding:16px 18px 14px;
-      display:flex;flex-direction:column;justify-content:space-between;
-      box-shadow:0 16px 40px rgba(0,0,0,.28);
+      display:flex;flex-direction:column;
+      background:linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,0) 42%), var(--card);
+      border:1px solid rgba(215,181,106,.22);
+      border-top:2px solid var(--gold);
+      overflow:hidden;
+      animation:rise .42s ease both;
     }
+    .card-body{
+      flex:1 1 auto;min-height:0;
+      display:flex;flex-direction:column;justify-content:center;
+      padding:14px 18px 10px;
+    }
+    .card-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
     .lot{
-      color:var(--gold);font-weight:850;letter-spacing:.08em;
-      font-size:clamp(18px, 2vw, 28px);
+      color:var(--gold);font-weight:750;letter-spacing:.12em;
+      font-size:clamp(18px, 1.8vw, 28px);line-height:1;
     }
-    .who{margin-top:8px;font-weight:800;line-height:1.15;font-size:clamp(22px, 2.6vw, 40px)}
+    .seal{
+      flex:0 0 auto;
+      color:var(--gold);
+      border:1px solid var(--gold-dim);
+      padding:4px 8px;
+      font-size:11px;font-weight:800;letter-spacing:.16em;
+    }
+    .who{
+      margin-top:8px;
+      font-weight:750;
+      line-height:1.12;
+      letter-spacing:.01em;
+      display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+    }
     .cccd{
-      margin-top:6px;color:var(--muted);letter-spacing:.18em;
-      font-size:clamp(16px, 1.6vw, 24px);font-weight:750;
+      margin-top:8px;
+      display:flex;align-items:baseline;gap:10px;
+      color:var(--muted);
+      letter-spacing:.16em;
+      font-weight:700;
+      font-variant-numeric:tabular-nums;
+    }
+    .cccd .label{font-size:.72em;letter-spacing:.18em}
+    .cccd .tail{color:var(--ink);letter-spacing:.22em}
+    .price-band{
+      flex:0 0 auto;
+      display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+      padding:10px 18px 12px;
+      background:rgba(0,0,0,.28);
+      border-top:1px solid rgba(215,181,106,.16);
+    }
+    .price-kicker{
+      color:var(--muted);font-size:12px;font-weight:750;letter-spacing:.16em;white-space:nowrap;
     }
     .price{
-      margin-top:10px;font-weight:850;letter-spacing:.02em;
-      font-size:clamp(26px, 3vw, 48px);color:#fff;
+      font-weight:750;letter-spacing:.01em;line-height:1;
+      font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;
+      white-space:nowrap;
     }
-    .price span{font-size:.42em;letter-spacing:.12em;color:var(--gold);margin-left:8px;font-weight:800}
+    .price span{
+      font-size:.42em;letter-spacing:.14em;color:var(--gold);margin-left:8px;font-weight:750;
+    }
+    .d4 .who{font-size:clamp(32px, 3.2vw, 52px)}
+    .d4 .cccd{font-size:clamp(18px, 1.6vw, 26px)}
+    .d4 .price{font-size:clamp(28px, 2.8vw, 46px)}
+    .d6 .who{font-size:clamp(26px, 2.3vw, 38px)}
+    .d6 .cccd{font-size:clamp(16px, 1.3vw, 22px)}
+    .d6 .price{font-size:clamp(22px, 2.1vw, 34px)}
+    .d8 .who{font-size:clamp(22px, 1.8vw, 30px)}
+    .d8 .cccd{font-size:clamp(14px, 1.1vw, 18px)}
+    .d8 .price{font-size:clamp(18px, 1.6vw, 26px)}
+    .d8 .seal{display:none}
+    .d12 .who{font-size:clamp(18px, 1.35vw, 24px)}
+    .d12 .cccd{font-size:clamp(13px, 1vw, 16px);margin-top:4px}
+    .d12 .price{font-size:clamp(16px, 1.3vw, 22px)}
+    .d12 .lot{font-size:clamp(15px, 1.2vw, 20px)}
+    .d12 .seal,.d12 .price-kicker{display:none}
+    .d12 .card-body{padding:10px 14px 6px}
+    .d12 .price-band{padding:8px 14px}
     .empty{
-      margin:auto;text-align:center;color:var(--muted);font-size:22px;font-weight:700;
+      margin:auto;text-align:center;
     }
+    .empty b{
+      display:block;font-size:clamp(26px, 3vw, 40px);font-weight:750;letter-spacing:.08em;
+    }
+    .empty span{display:block;margin-top:8px;color:var(--muted);font-size:18px;font-weight:650}
     .footer{
-      display:flex;align-items:center;justify-content:space-between;gap:12px;
-      padding-top:4px;
+      height:36px;flex:0 0 36px;
+      display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+      align-items:center;gap:16px;
+      color:var(--muted);font-size:14px;font-weight:650;
     }
-    .nav,.tune{display:flex;align-items:center;gap:8px;min-width:0}
-    .icon,.chip,.auto{
-      border:1px solid rgba(231,194,122,.35);
-      background:rgba(255,255,255,.04);
-      color:var(--ink);
-      border-radius:12px;
-      min-height:40px;
-    }
-    .icon{
-      width:42px;display:grid;place-items:center;padding:0;
-    }
-    .icon svg{width:18px;height:18px}
-    .icon:disabled{opacity:.35;cursor:default}
-    .page-label{min-width:148px;text-align:center;font-weight:800;letter-spacing:.08em;font-size:13px}
-    .bar{height:3px;margin-top:4px;background:rgba(255,255,255,.12);border-radius:99px;overflow:hidden}
+    .foot-left,.foot-right{display:flex;align-items:center;gap:10px;min-width:0}
+    .foot-right{justify-content:flex-end}
+    .dot{width:8px;height:8px;border-radius:50%;background:#3DDC84;flex:0 0 auto}
+    .dot.warn{background:#fbbf24}
+    .dot.bad{background:#fb7185}
+    .conn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .page-nav{display:flex;align-items:center;gap:10px}
+    .page-stack{display:flex;flex-direction:column;align-items:center;gap:5px}
+    .page-label{letter-spacing:.08em;font-size:13px;font-weight:750;color:var(--ink)}
+    .bar{width:148px;height:3px;background:rgba(255,255,255,.12);border-radius:99px;overflow:hidden}
     .bar > span{display:block;height:100%;width:0;background:var(--gold)}
-    .auto{padding:0 12px;font-weight:850;letter-spacing:.08em}
-    .auto.on{background:var(--gold);color:#1b1408;border-color:var(--gold)}
-    .tune label{color:var(--muted);font-size:12px;font-weight:750;display:flex;align-items:center;gap:6px}
-    .tune input{
-      width:58px;background:#0c1622;border:1px solid var(--line);border-radius:10px;
-      padding:8px 6px;text-align:center;font-weight:800;
+    .btn{
+      height:30px;padding:0 10px;
+      display:inline-flex;align-items:center;justify-content:center;gap:6px;
+      background:transparent;border:1px solid rgba(215,181,106,.35);border-radius:2px;
+      color:var(--ink);font-size:12px;font-weight:750;letter-spacing:.06em;
     }
-    .step{
-      width:32px;height:32px;border-radius:10px;border:1px solid var(--line);
-      background:transparent;font-size:18px;line-height:1;
+    .btn svg{width:15px;height:15px;display:block}
+    .btn.icon{width:30px;padding:0}
+    .btn:disabled{opacity:.35;cursor:default}
+    .btn.on{background:var(--gold);color:#1b1408;border-color:var(--gold)}
+    .overlay{
+      position:fixed;inset:0;z-index:20;display:none;
+      justify-content:flex-end;background:rgba(7,17,28,.35);
     }
-    .sizes{display:flex;gap:4px}
-    .sizes button{
-      min-width:36px;height:32px;border-radius:10px;border:1px solid var(--line);
-      background:transparent;font-weight:800;
+    .overlay.open{display:flex}
+    .drawer{
+      width:min(420px, 100%);height:100%;
+      background:#0c1828;
+      border-left:1px solid var(--gold-dim);
+      padding:28px 24px;
+      display:flex;flex-direction:column;gap:18px;
     }
+    .drawer h2{
+      margin:0;font-size:12px;letter-spacing:.2em;color:var(--gold);font-weight:750;
+    }
+    .field{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--muted);font-size:15px;font-weight:650}
+    .stepper{display:inline-flex;align-items:center;gap:6px}
+    .stepper input{
+      width:72px;height:42px;text-align:center;font-size:20px;font-weight:750;
+      background:#07111c;border:1px solid var(--gold-dim);border-radius:2px;color:var(--ink);
+    }
+    .stepper button,.sizes button{
+      height:42px;min-width:42px;
+      background:transparent;border:1px solid var(--gold-dim);border-radius:2px;
+      font-size:18px;font-weight:750;
+    }
+    .sizes{display:flex;gap:8px}
     .sizes button.on{background:var(--gold);color:#1b1408;border-color:var(--gold)}
-    .full{
-      border:1px solid var(--line);background:transparent;border-radius:12px;
-      min-height:40px;padding:0 12px;font-weight:750;
+    .hint{color:var(--muted);font-size:13px;line-height:1.45;margin:0}
+    @keyframes rise{
+      from{opacity:0;transform:translateY(10px)}
+      to{opacity:1;transform:none}
+    }
+    @media (prefers-reduced-motion:reduce){
+      .card{animation:none}
+    }
+    @media (max-height:820px){
+      .stage{padding:14px 22px 10px;gap:10px}
+      .frame{padding:12px 14px;gap:10px}
+      h1{font-size:clamp(22px, 2.6vw, 34px)}
+      .plaque b{font-size:36px}
     }
   </style>
 </head>
 <body>
   <div class="stage">
-    <header class="header">
-      <div>
-        <div class="kicker">KẾT QUẢ TRÚNG ĐẤU GIÁ</div>
-        <h1 id="projectTitle">{{ project_name or project or "Chưa chọn dự án" }}</h1>
-        <div class="project" id="projectCode">{{ project or "" }}</div>
-      </div>
-      <div class="live"><span class="dot" id="dot"></span><span id="liveText">Đang tải</span><div>Cập nhật <b id="updated">—</b></div></div>
-    </header>
-    <section class="board" id="board"></section>
+    <div class="frame">
+      <header class="header">
+        <div class="titles">
+          <h1>KẾT QUẢ TRÚNG ĐẤU GIÁ</h1>
+          <div class="code">{{ project or "" }}</div>
+        </div>
+        <div class="plaque">
+          <b id="wonCount">0</b>
+          <span>LÔ TRÚNG</span>
+        </div>
+      </header>
+      <section class="board d6" id="board"></section>
+    </div>
     <footer class="footer">
-      <div class="nav">
-        <button class="icon" type="button" id="btnPrev" aria-label="Trang trước">
+      <div class="foot-left">
+        <span class="dot" id="dot"></span>
+        <span class="conn" id="liveText">Đang tải</span>
+      </div>
+      <div class="page-nav">
+        <button class="btn icon" type="button" id="btnPrev" aria-label="Trang trước">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 5 8 12l7 7"/></svg>
         </button>
-        <div>
+        <div class="page-stack">
           <div class="page-label" id="pageLabel">TRANG 01 / 01</div>
           <div class="bar"><span id="pageFill"></span></div>
         </div>
-        <button class="icon" type="button" id="btnNext" aria-label="Trang sau">
+        <button class="btn icon" type="button" id="btnNext" aria-label="Trang sau">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5l7 7-7 7"/></svg>
         </button>
-        <button class="auto on" type="button" id="btnAuto" aria-pressed="true">AUTO ON</button>
+        <button class="btn on" type="button" id="btnAuto" aria-pressed="true">TỰ CHUYỂN</button>
       </div>
-      <div class="tune">
-        <label>Giây / trang
-          <button class="step" type="button" id="secDown" aria-label="Giảm thời gian">−</button>
-          <input id="seconds" type="number" min="3" max="60" value="12">
-          <button class="step" type="button" id="secUp" aria-label="Tăng thời gian">+</button>
-        </label>
-        <label>Số lô / trang
-          <span class="sizes" id="sizes">
-            <button type="button" data-n="4">4</button>
-            <button type="button" data-n="6">6</button>
-            <button type="button" data-n="8">8</button>
-            <button type="button" data-n="12">12</button>
-          </span>
-        </label>
-        <button class="full" type="button" id="btnFull">Toàn màn hình</button>
+      <div class="foot-right">
+        <button class="btn" type="button" id="btnControls">Điều khiển</button>
+        <button class="btn icon" type="button" id="btnFull" aria-label="Toàn màn hình">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 4H4v4M16 4h4v4M4 16v4h4M20 16v4h-4"/></svg>
+        </button>
       </div>
     </footer>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="drawer" id="drawer" role="dialog" aria-label="Điều khiển trình chiếu">
+      <h2>TRANG CHIẾU</h2>
+      <label class="field">Giây mỗi trang
+        <span class="stepper">
+          <button type="button" id="secDown" aria-label="Giảm thời gian">−</button>
+          <input id="seconds" type="number" min="3" max="60" value="12">
+          <button type="button" id="secUp" aria-label="Tăng thời gian">+</button>
+        </span>
+      </label>
+      <div class="field">Số lô mỗi trang
+        <span class="sizes" id="sizes">
+          <button type="button" data-n="4">4</button>
+          <button type="button" data-n="6">6</button>
+          <button type="button" data-n="8">8</button>
+          <button type="button" data-n="12">12</button>
+        </span>
+      </div>
+      <p class="hint">4 lô cho hội trường rộng. 12 lô khi cần lướt nhanh. Kết quả được cập nhật mỗi 5 giây và vẫn giữ trang đang chiếu.</p>
+    </div>
   </div>
 <script>
   const PROJECT_ID = {{ project_id or "null" }};
@@ -180,6 +321,8 @@
   const btnAuto = document.getElementById("btnAuto");
   const secondsInput = document.getElementById("seconds");
   const sizeButtons = Array.from(document.querySelectorAll("#sizes button"));
+  const overlay = document.getElementById("overlay");
+  const wonCount = document.getElementById("wonCount");
 
   let rows = [];
   let pageIndex = 0;
@@ -208,11 +351,12 @@
   }
   function paintAuto(){
     btnAuto.classList.toggle("on", autoOn);
-    btnAuto.textContent = autoOn ? "AUTO ON" : "AUTO OFF";
+    btnAuto.textContent = autoOn ? "TỰ CHUYỂN" : "DỪNG TRANG";
     btnAuto.setAttribute("aria-pressed", autoOn ? "true" : "false");
   }
   function paintSizes(){
     sizeButtons.forEach(btn => btn.classList.toggle("on", Number(btn.dataset.n) === perPage));
+    board.className = "board d" + perPage;
   }
   function digits(v){ return String(v ?? "").replace(/\D/g, ""); }
   function money(v){
@@ -227,10 +371,10 @@
     }
     return out;
   }
-  function maskCccd(v){
+  function maskParts(v){
     const d = digits(v);
-    if(!d) return "—";
-    return "***" + d.slice(-3);
+    if(!d) return { stars: "", tail: "—" };
+    return { stars: "***", tail: d.slice(-3) };
   }
   function esc(s){
     return String(s ?? "")
@@ -243,8 +387,7 @@
   function gridStyle(n){
     let cols = 2;
     if(n > 4 && n <= 6) cols = 3;
-    else if(n > 6 && n <= 8) cols = 4;
-    else if(n > 8) cols = 4;
+    else if(n > 6) cols = 4;
     const rowsN = Math.ceil(n / cols);
     return `grid-template-columns:repeat(${cols}, minmax(0,1fr));grid-template-rows:repeat(${rowsN}, minmax(0,1fr));`;
   }
@@ -253,23 +396,35 @@
     if(pageIndex >= pages) pageIndex = pages - 1;
     if(pageIndex < 0) pageIndex = 0;
     const slice = rows.slice(pageIndex * perPage, pageIndex * perPage + perPage);
+    wonCount.textContent = String(rows.length);
     pageLabel.textContent = "TRANG " + String(pageIndex + 1).padStart(2,"0") + " / " + String(pages).padStart(2,"0");
+    paintSizes();
     if(!slice.length){
       board.style.cssText = "display:flex;";
-      board.innerHTML = '<div class="empty">Chưa có kết quả trúng.</div>';
+      board.innerHTML = '<div class="empty"><b>CHƯA CÓ KẾT QUẢ</b><span>Các lô trúng sẽ hiện tại đây khi được công bố.</span></div>';
       return;
     }
     board.style.cssText = gridStyle(slice.length);
-    board.innerHTML = slice.map(r => `
-      <article class="card">
-        <div>
-          <div class="lot">${esc(r.lot_code || "—")}</div>
+    board.innerHTML = slice.map((r, i) => {
+      const id = maskParts(r.winner_cccd);
+      const price = money(r.winning_price_vnd);
+      const unit = price === "—" ? "" : "<span>VNĐ</span>";
+      return `
+      <article class="card" style="animation-delay:${i * 40}ms">
+        <div class="card-body">
+          <div class="card-top">
+            <div class="lot">${esc(r.lot_code || "—")}</div>
+            <div class="seal">ĐÃ TRÚNG</div>
+          </div>
           <div class="who">${esc(r.winner_name || "—")}</div>
-          <div class="cccd">${esc(maskCccd(r.winner_cccd))}</div>
+          <div class="cccd"><span class="label">CCCD</span><span>${esc(id.stars)}</span><span class="tail">${esc(id.tail)}</span></div>
         </div>
-        <div class="price">${esc(money(r.winning_price_vnd))}<span>VNĐ</span></div>
-      </article>
-    `).join("");
+        <div class="price-band">
+          <div class="price-kicker">GIÁ TRÚNG</div>
+          <div class="price">${esc(price)}${unit}</div>
+        </div>
+      </article>`;
+    }).join("");
   }
   function go(delta){
     const pages = pageCount();
@@ -299,18 +454,17 @@
       }while(all.length < total && page < 20);
       all.sort((a, b) => Number(a.lot_id || 0) - Number(b.lot_id || 0));
       const next = all.filter(r => String(r.result_status || "").toUpperCase() === "WON" || r.winner_name);
-      const same = JSON.stringify(next.map(r => [r.lot_id, r.winner_name, r.winning_price_vnd, maskCccd(r.winner_cccd)]))
-        === JSON.stringify(rows.map(r => [r.lot_id, r.winner_name, r.winning_price_vnd, maskCccd(r.winner_cccd)]));
+      const sign = list => JSON.stringify(list.map(r => [r.lot_id, r.winner_name, r.winning_price_vnd, digits(r.winner_cccd).slice(-3)]));
+      const same = sign(next) === sign(rows);
       rows = next;
       if(!same) render();
       dot.className = "dot";
-      live.textContent = "Đang chiếu";
       const d = new Date();
       const p = n => String(n).padStart(2,"0");
-      document.getElementById("updated").textContent = `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+      live.textContent = "Cập nhật " + `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
     }catch(e){
       dot.className = "dot warn";
-      live.textContent = "Mất kết nối";
+      live.textContent = rows.length ? "Mất kết nối · đang giữ kết quả vừa chiếu" : "Mất kết nối";
     }finally{
       polling = false;
     }
@@ -318,7 +472,7 @@
   function frame(now){
     const pages = pageCount();
     if(!autoOn || pages < 2){
-      pageFill.style.width = "100%";
+      pageFill.style.width = autoOn ? "100%" : "0%";
     }else{
       const elapsed = now - pageStarted;
       const limit = seconds * 1000;
@@ -326,6 +480,9 @@
       else pageFill.style.width = Math.min(100, elapsed / limit * 100) + "%";
     }
     requestAnimationFrame(frame);
+  }
+  function openControls(open){
+    overlay.classList.toggle("open", open);
   }
 
   document.getElementById("btnPrev").addEventListener("click", () => go(-1));
@@ -353,12 +510,24 @@
     saveConfig();
     render();
   }));
-  document.getElementById("btnFull").addEventListener("click", async () => {
+  async function toggleFull(){
     if(!document.fullscreenElement){
       try{ await document.documentElement.requestFullscreen(); }catch(e){}
     }else{
       try{ await document.exitFullscreen(); }catch(e){}
     }
+  }
+  document.getElementById("btnFull").addEventListener("click", toggleFull);
+  document.getElementById("btnControls").addEventListener("click", () => openControls(true));
+  overlay.addEventListener("click", event => {
+    if(event.target === overlay) openControls(false);
+  });
+  document.addEventListener("keydown", event => {
+    if(event.key === "Escape") openControls(false);
+    if(event.target && (event.target.tagName === "INPUT" || event.target.tagName === "TEXTAREA")) return;
+    if(event.key === "ArrowRight") go(1);
+    if(event.key === "ArrowLeft") go(-1);
+    if(event.key === "f" || event.key === "F") toggleFull();
   });
 
   loadConfig();

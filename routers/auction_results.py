@@ -370,6 +370,33 @@ async def export_auction_results_xlsx(
     }
     return Response(content=content, media_type=headers["Content-Type"], headers=headers)
 
+async def _company_display_name(token: str) -> str:
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            response = await client.get(
+                f"{SERVICE_A_BASE_URL}/api/v1/company/profile",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+        if response.status_code == 200:
+            body = response.json()
+            if isinstance(body, dict):
+                return str(body.get("name") or "").strip()
+    except Exception:
+        return ""
+    return ""
+
+
+def _present_project(selected_project: Optional[dict], selected_code: str) -> tuple[Optional[int], str]:
+    project_name = ""
+    if selected_project:
+        project_name = (
+            selected_project.get("name")
+            or selected_project.get("project_name")
+            or ""
+        )
+    return _project_id_of(selected_project), project_name or selected_code
+
+
 # =========================
 # SSR PAGE: PRESENT
 # =========================
@@ -386,15 +413,7 @@ async def auction_results_present_page(
         return RedirectResponse(url="/login?next=%2Fauction%2Fresults%2Fpresent", status_code=303)
 
     projects, selected_code, selected_project = await _load_projects(token, project)
-    project_id = _project_id_of(selected_project)
-    project_name = ""
-    if selected_project:
-        project_name = (
-            selected_project.get("name")
-            or selected_project.get("project_name")
-            or ""
-        )
-
+    project_id, project_name = _present_project(selected_project, selected_code)
     ctx = {
         "request": request,
         "title": "Trình chiếu kết quả trúng đấu giá",
@@ -403,3 +422,25 @@ async def auction_results_present_page(
         "project_id": project_id,
     }
     return templates.TemplateResponse("auction/auction_results_present.html", ctx)
+
+
+@router.get("/auction/results/scribe", response_class=HTMLResponse)
+async def auction_results_scribe_page(
+    request: Request,
+    project: Optional[str] = Query(None),
+):
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(url="/login?next=%2Fauction%2Fresults%2Fscribe", status_code=303)
+
+    projects, selected_code, selected_project = await _load_projects(token, project)
+    project_id, project_name = _present_project(selected_project, selected_code)
+    ctx = {
+        "request": request,
+        "title": "Ghi biên bản kết quả trúng",
+        "project": selected_code,
+        "project_name": project_name,
+        "project_id": project_id,
+        "company_name": await _company_display_name(token),
+    }
+    return templates.TemplateResponse("auction/auction_results_scribe.html", ctx)
