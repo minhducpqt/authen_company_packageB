@@ -2,6 +2,24 @@
 {% set roster = roster if roster is defined else [] %}
 {% if roster|length > 0 %}
 <style>
+  .sp-roster-break{
+    display: none;
+  }
+  @media print{
+    .sp-roster-break{
+      display: block !important;
+      break-after: page !important;
+      page-break-after: always !important;
+      height: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: 0 !important;
+    }
+    .sp-roster{
+      break-before: page !important;
+      page-break-before: always !important;
+    }
+  }
   .sp-roster{
     break-before: page;
     page-break-before: always;
@@ -46,6 +64,7 @@
     }
   }
 </style>
+<div class="sp-roster-break" aria-hidden="true"></div>
 <section class="sp-roster">
   <div class="roster-title">Danh sách người tham gia đấu giá</div>
   <div class="roster-sub">Đính kèm biên bản. Những người tham gia từ vòng 1. Tổng {{ roster|length }} người.</div>
