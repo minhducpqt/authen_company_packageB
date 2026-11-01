@@ -1,347 +1,371 @@
-{# templates/auction/auction_results_present.html #}
-{% extends "base.html" %}
-{% block title %}Present — Kết quả trúng đấu giá{% endblock %}
-
-{% block content %}
-<style>
-  .p-wrap{max-width:1400px;margin:0 auto}
-  .p-head{
-    display:flex;gap:16px;align-items:flex-start;justify-content:space-between;
-    padding:14px 16px;
-    background:linear-gradient(135deg, rgba(15,23,42,.96), rgba(17,24,39,.92));
-    color:#fff;border-radius:16px;
-    border:1px solid rgba(255,255,255,.10);
-    box-shadow:0 18px 50px rgba(15,23,42,.20);
-    margin-bottom:12px;
-  }
-  .p-h1{font-weight:900;letter-spacing:.06em;font-size:18px}
-  .p-sub{margin-top:6px;color:rgba(255,255,255,.78);font-size:13px}
-  .p-pill{
-    display:inline-flex;align-items:center;gap:6px;
-    padding:2px 10px;border-radius:999px;
-    background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16);
-    font-weight:800;color:#fff
-  }
-  .p-meta{min-width:240px;text-align:right}
-  .p-meta-row{font-size:13px;color:rgba(255,255,255,.85);margin-top:4px}
-  .p-meta-k{color:rgba(255,255,255,.65);margin-right:6px}
-  .p-badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:999px;font-weight:800;border:1px solid transparent}
-  .p-badge-ok{background:rgba(16,185,129,.15);border-color:rgba(16,185,129,.35);color:#a7f3d0}
-  .p-badge-warn{background:rgba(245,158,11,.14);border-color:rgba(245,158,11,.35);color:#fde68a}
-  .p-badge-bad{background:rgba(244,63,94,.12);border-color:rgba(244,63,94,.35);color:#fecdd3}
-
-  .p-board{
-    background:#fff;border:1px solid rgb(226 232 240);
-    border-radius:16px;overflow:hidden;
-    box-shadow:0 10px 30px rgba(15,23,42,.06);
-  }
-  .p-scroll{max-height:calc(100vh - 220px);overflow:auto}
-
-  .p-table{width:100%;border-collapse:separate;border-spacing:0}
-  .p-table thead th{
-    position:sticky;top:0;z-index:2;
-    background:rgb(248 250 252);
-    border-bottom:1px solid rgb(226 232 240);
-    padding:12px 14px;
-    font-size:12px;letter-spacing:.08em;text-transform:uppercase;
-    color:rgb(71 85 105);font-weight:900;
-  }
-  .p-table tbody td{
-    padding:12px 14px;border-bottom:1px solid rgb(241 245 249);
-    vertical-align:middle;
-    font-size:16px;
-  }
-  .p-table tbody tr:hover{background:rgb(248 250 252)}
-  .c-lot{width:140px}
-  .c-name{width:420px}
-  .c-cccd{width:260px}
-  .c-price{width:240px;text-align:right}
-
-  .lot{font-weight:950;font-size:18px;color:rgb(15 23 42)}
-  .name{font-weight:800;color:rgb(15 23 42)}
-  .cccd{
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    font-weight:950;
-    font-size:18px;
-    letter-spacing:.06em;
-    color:rgb(15 23 42);
-  }
-  .money{
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    font-weight:900;
-    font-size:18px;
-    color:rgb(15 23 42);
-    white-space:nowrap;
-  }
-  .muted{color:rgb(148 163 184)}
-  /* Zebra striping: dòng chẵn / lẻ */
-.p-table tbody tr:nth-child(odd){
-  background-color: #ffffff;
-}
-
-.p-table tbody tr:nth-child(even){
-  background-color: #f8fafc; /* slate-50 nhẹ */
-}
-
-/* Hover vẫn nổi bật hơn */
-.p-table tbody tr:hover{
-  background-color: #e2e8f0 !important; /* slate-200 */
-}
-</style>
-
-<div class="p-wrap">
-  <div class="p-head">
-    <div>
-      <div class="p-h1">TRÌNH CHIẾU KẾT QUẢ TRÚNG ĐẤU GIÁ</div>
-      <div class="p-sub">
-        {% if project_obj %}
-          {% set pcode = (project_obj.project_code or project_obj.code or project) %}
-          Dự án: <span class="p-pill">{{ pcode }}</span>
-        {% elif project %}
-          Dự án: <span class="p-pill">{{ project }}</span>
-        {% else %}
-          <span class="p-pill" style="background:rgba(244,63,94,.14);border-color:rgba(244,63,94,.35)">Chưa chọn dự án</span>
-        {% endif %}
-        <span style="margin:0 8px;opacity:.6">•</span>
-        Polling: <b>10s</b> • size mặc định: <b>200</b>
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>{{ title or "Trình chiếu kết quả trúng đấu giá" }}</title>
+  <style>
+    :root{
+      --bg:#071018;
+      --ink:#f6f1e6;
+      --muted:#b7c0cc;
+      --gold:#e7c27a;
+      --line:rgba(231,194,122,.28);
+      --card:#101a28;
+      --font:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--ink)}
+    body{font-family:var(--font)}
+    button,input{font-family:inherit;color:inherit}
+    button{cursor:pointer}
+    button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+    .stage{
+      height:100vh;height:100dvh;
+      display:flex;flex-direction:column;
+      padding:22px 28px 14px;gap:14px;
+      background:
+        radial-gradient(900px 420px at 50% -10%, rgba(231,194,122,.16), transparent 60%),
+        linear-gradient(180deg, #0c1826, var(--bg) 42%);
+    }
+    .header{
+      display:flex;align-items:flex-end;justify-content:space-between;gap:20px;
+      min-height:64px;
+    }
+    .kicker{
+      color:var(--gold);letter-spacing:.28em;font-size:13px;font-weight:800;
+    }
+    h1{
+      margin:4px 0 0;font-size:clamp(26px, 3vw, 40px);font-weight:800;letter-spacing:.04em;
+    }
+    .project{
+      margin-top:4px;color:var(--muted);font-size:16px;font-weight:650;
+      max-width:70vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    .live{
+      text-align:right;color:var(--muted);font-size:13px;font-weight:700;
+    }
+    .live b{color:var(--ink);font-weight:800}
+    .dot{
+      display:inline-block;width:8px;height:8px;border-radius:99px;margin-right:6px;
+      background:#34d399;box-shadow:0 0 10px rgba(52,211,153,.7);
+    }
+    .dot.warn{background:#fbbf24;box-shadow:none}
+    .dot.bad{background:#fb7185;box-shadow:none}
+    .board{
+      flex:1 1 auto;min-height:0;
+      display:grid;gap:14px;
+    }
+    .card{
+      min-width:0;min-height:0;
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.18));
+      padding:16px 18px 14px;
+      display:flex;flex-direction:column;justify-content:space-between;
+      box-shadow:0 16px 40px rgba(0,0,0,.28);
+    }
+    .lot{
+      color:var(--gold);font-weight:850;letter-spacing:.08em;
+      font-size:clamp(18px, 2vw, 28px);
+    }
+    .who{margin-top:8px;font-weight:800;line-height:1.15;font-size:clamp(22px, 2.6vw, 40px)}
+    .cccd{
+      margin-top:6px;color:var(--muted);letter-spacing:.18em;
+      font-size:clamp(16px, 1.6vw, 24px);font-weight:750;
+    }
+    .price{
+      margin-top:10px;font-weight:850;letter-spacing:.02em;
+      font-size:clamp(26px, 3vw, 48px);color:#fff;
+    }
+    .price span{font-size:.42em;letter-spacing:.12em;color:var(--gold);margin-left:8px;font-weight:800}
+    .empty{
+      margin:auto;text-align:center;color:var(--muted);font-size:22px;font-weight:700;
+    }
+    .footer{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      padding-top:4px;
+    }
+    .nav,.tune{display:flex;align-items:center;gap:8px;min-width:0}
+    .icon,.chip,.auto{
+      border:1px solid rgba(231,194,122,.35);
+      background:rgba(255,255,255,.04);
+      color:var(--ink);
+      border-radius:12px;
+      min-height:40px;
+    }
+    .icon{
+      width:42px;display:grid;place-items:center;padding:0;
+    }
+    .icon svg{width:18px;height:18px}
+    .icon:disabled{opacity:.35;cursor:default}
+    .page-label{min-width:148px;text-align:center;font-weight:800;letter-spacing:.08em;font-size:13px}
+    .bar{height:3px;margin-top:4px;background:rgba(255,255,255,.12);border-radius:99px;overflow:hidden}
+    .bar > span{display:block;height:100%;width:0;background:var(--gold)}
+    .auto{padding:0 12px;font-weight:850;letter-spacing:.08em}
+    .auto.on{background:var(--gold);color:#1b1408;border-color:var(--gold)}
+    .tune label{color:var(--muted);font-size:12px;font-weight:750;display:flex;align-items:center;gap:6px}
+    .tune input{
+      width:58px;background:#0c1622;border:1px solid var(--line);border-radius:10px;
+      padding:8px 6px;text-align:center;font-weight:800;
+    }
+    .step{
+      width:32px;height:32px;border-radius:10px;border:1px solid var(--line);
+      background:transparent;font-size:18px;line-height:1;
+    }
+    .sizes{display:flex;gap:4px}
+    .sizes button{
+      min-width:36px;height:32px;border-radius:10px;border:1px solid var(--line);
+      background:transparent;font-weight:800;
+    }
+    .sizes button.on{background:var(--gold);color:#1b1408;border-color:var(--gold)}
+    .full{
+      border:1px solid var(--line);background:transparent;border-radius:12px;
+      min-height:40px;padding:0 12px;font-weight:750;
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <header class="header">
+      <div>
+        <div class="kicker">KẾT QUẢ TRÚNG ĐẤU GIÁ</div>
+        <h1 id="projectTitle">{{ project_name or project or "Chưa chọn dự án" }}</h1>
+        <div class="project" id="projectCode">{{ project or "" }}</div>
       </div>
-    </div>
-
-    <div class="p-meta">
-      <div class="p-meta-row">
-        <span class="p-meta-k">Trạng thái:</span>
-        <span id="netBadge" class="p-badge p-badge-ok">OK</span>
+      <div class="live"><span class="dot" id="dot"></span><span id="liveText">Đang tải</span><div>Cập nhật <b id="updated">—</b></div></div>
+    </header>
+    <section class="board" id="board"></section>
+    <footer class="footer">
+      <div class="nav">
+        <button class="icon" type="button" id="btnPrev" aria-label="Trang trước">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 5 8 12l7 7"/></svg>
+        </button>
+        <div>
+          <div class="page-label" id="pageLabel">TRANG 01 / 01</div>
+          <div class="bar"><span id="pageFill"></span></div>
+        </div>
+        <button class="icon" type="button" id="btnNext" aria-label="Trang sau">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5l7 7-7 7"/></svg>
+        </button>
+        <button class="auto on" type="button" id="btnAuto" aria-pressed="true">AUTO ON</button>
       </div>
-      <div class="p-meta-row">
-        <span class="p-meta-k">Lần cập nhật:</span>
-        <span id="lastUpdated">—</span>
+      <div class="tune">
+        <label>Giây / trang
+          <button class="step" type="button" id="secDown" aria-label="Giảm thời gian">−</button>
+          <input id="seconds" type="number" min="3" max="60" value="12">
+          <button class="step" type="button" id="secUp" aria-label="Tăng thời gian">+</button>
+        </label>
+        <label>Số lô / trang
+          <span class="sizes" id="sizes">
+            <button type="button" data-n="4">4</button>
+            <button type="button" data-n="6">6</button>
+            <button type="button" data-n="8">8</button>
+            <button type="button" data-n="12">12</button>
+          </span>
+        </label>
+        <button class="full" type="button" id="btnFull">Toàn màn hình</button>
       </div>
-    </div>
+    </footer>
   </div>
-
-  <div class="p-board">
-    <div id="scrollBox" class="p-scroll">
-      <table class="p-table">
-        <thead>
-          <tr>
-            <th class="c-lot">Mã lô</th>
-            <th class="c-name">Tên người trúng</th>
-            <th class="c-cccd">CCCD</th>
-            <th class="c-price">Giá trúng</th>
-          </tr>
-        </thead>
-        <tbody id="tbody">
-          {% set rows = (data or {}).get('data') or [] %}
-          {% for r in rows %}
-            <tr data-lot-code="{{ r.lot_code }}">
-              <td class="c-lot"><span class="lot">{{ r.lot_code }}</span></td>
-              <td class="c-name">
-                {% if r.winner_name %}
-                  <span class="name">{{ r.winner_name }}</span>
-                {% else %}
-                  <span class="muted">—</span>
-                {% endif %}
-              </td>
-              <td class="c-cccd">
-                {% if r.winner_cccd %}
-                  <span class="cccd" data-raw-cccd="{{ r.winner_cccd }}">{{ r.winner_cccd }}</span>
-                {% else %}
-                  <span class="muted">—</span>
-                {% endif %}
-              </td>
-              <td class="c-price">
-                {% if r.winning_price_vnd %}
-                  <span class="money" data-value="{{ r.winning_price_vnd }}">—</span>
-                {% else %}
-                  <span class="muted">—</span>
-                {% endif %}
-              </td>
-            </tr>
-          {% endfor %}
-
-          {% if rows|length == 0 %}
-            <tr>
-              <td colspan="4" style="padding:18px 14px;text-align:center" class="muted">
-                {% if project_id %}
-                  Không có dữ liệu (hoặc chưa có lô).
-                {% else %}
-                  Chưa chọn dự án.
-                {% endif %}
-              </td>
-            </tr>
-          {% endif %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
 <script>
-  // --- CONFIG ---
-  const PROJECT_ID = {{ project_id or 'null' }};
-  const POLL_MS = 10000;
-  const DEFAULT_SIZE = 200;
+  const PROJECT_ID = {{ project_id or "null" }};
+  const POLL_MS = 5000;
+  const PAGE_SIZES = [4, 6, 8, 12];
+  const storeKey = "results-present:" + String(PROJECT_ID || "none");
 
-  // --- FORMAT HELPERS ---
-  function digitsOnly(v){
-    return String(v ?? '').replace(/[^\d]/g,'');
+  const board = document.getElementById("board");
+  const pageLabel = document.getElementById("pageLabel");
+  const pageFill = document.getElementById("pageFill");
+  const btnAuto = document.getElementById("btnAuto");
+  const secondsInput = document.getElementById("seconds");
+  const sizeButtons = Array.from(document.querySelectorAll("#sizes button"));
+
+  let rows = [];
+  let pageIndex = 0;
+  let perPage = 6;
+  let seconds = 12;
+  let autoOn = true;
+  let pageStarted = performance.now();
+  let polling = false;
+
+  function loadConfig(){
+    try{
+      const raw = JSON.parse(localStorage.getItem(storeKey) || "{}");
+      if(PAGE_SIZES.indexOf(Number(raw.perPage)) >= 0) perPage = Number(raw.perPage);
+      const sec = Number(raw.seconds);
+      if(sec >= 3 && sec <= 60) seconds = sec;
+      if(typeof raw.autoOn === "boolean") autoOn = raw.autoOn;
+    }catch(e){}
+    secondsInput.value = String(seconds);
+    paintAuto();
+    paintSizes();
   }
-  function groupVi(d){
-    d = digitsOnly(d);
-    if(!d) return '';
-    d = d.replace(/^0+(?=\d)/,'');
-    let out = '';
-    let cnt = 0;
-    for(let i=d.length-1;i>=0;i--){
+  function saveConfig(){
+    try{
+      localStorage.setItem(storeKey, JSON.stringify({ perPage, seconds, autoOn }));
+    }catch(e){}
+  }
+  function paintAuto(){
+    btnAuto.classList.toggle("on", autoOn);
+    btnAuto.textContent = autoOn ? "AUTO ON" : "AUTO OFF";
+    btnAuto.setAttribute("aria-pressed", autoOn ? "true" : "false");
+  }
+  function paintSizes(){
+    sizeButtons.forEach(btn => btn.classList.toggle("on", Number(btn.dataset.n) === perPage));
+  }
+  function digits(v){ return String(v ?? "").replace(/\D/g, ""); }
+  function money(v){
+    const d = digits(v).replace(/^0+(?=\d)/, "");
+    if(!d) return "—";
+    let out = "";
+    let n = 0;
+    for(let i = d.length - 1; i >= 0; i--){
       out = d[i] + out;
-      cnt++;
-      if(cnt % 3 === 0 && i !== 0) out = '.' + out;
+      n++;
+      if(n % 3 === 0 && i !== 0) out = "." + out;
     }
     return out;
   }
-  // CCCD: format 3-3-3-3. Nếu không đủ 12 số thì vẫn nhóm theo 3 từ trái qua (thực tế hay gặp 12 số).
-  function formatCCCDDots(cccd){
-    const d = digitsOnly(cccd);
-    if(!d) return '';
-    // nhóm 3 từ trái
-    return d.replace(/(.{3})/g, '$1.').replace(/\.$/, '');
+  function maskCccd(v){
+    const d = digits(v);
+    if(!d) return "—";
+    return "***" + d.slice(-3);
   }
-  function pad2(n){ return String(n).padStart(2,'0'); }
-  function nowVN(){
-    const d = new Date();
-    return `${pad2(d.getDate())}/${pad2(d.getMonth()+1)}/${d.getFullYear()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+  function esc(s){
+    return String(s ?? "")
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;");
   }
-
-  function setBadge(state){
-    const b = document.getElementById('netBadge');
-    b.className = 'p-badge ' + (state === 'ok' ? 'p-badge-ok' : state === 'warn' ? 'p-badge-warn' : 'p-badge-bad');
-    b.textContent = (state === 'ok' ? 'OK' : state === 'warn' ? 'RETRY' : 'ERROR');
+  function pageCount(){
+    return Math.max(1, Math.ceil(rows.length / perPage));
   }
-
-  function applyInitialFormatting(){
-    document.querySelectorAll('.money').forEach(el=>{
-      const v = el.getAttribute('data-value');
-      el.textContent = groupVi(v) || '—';
-    });
-    document.querySelectorAll('.cccd').forEach(el=>{
-      const raw = el.getAttribute('data-raw-cccd') || el.textContent || '';
-      el.textContent = formatCCCDDots(raw) || '—';
-    });
+  function gridStyle(n){
+    let cols = 2;
+    if(n > 4 && n <= 6) cols = 3;
+    else if(n > 6 && n <= 8) cols = 4;
+    else if(n > 8) cols = 4;
+    const rowsN = Math.ceil(n / cols);
+    return `grid-template-columns:repeat(${cols}, minmax(0,1fr));grid-template-rows:repeat(${rowsN}, minmax(0,1fr));`;
   }
-
-  // --- BUILD API URL ---
-  // "lấy kết quả bằng api của trang trước đó đã gọi" + mặc định size=200
-  // Mình giả định list endpoint hiện tại là:
-  //   GET /auction/results/api/projects/{project_id}/lots?size=200&page=1&q=...&result_status=...
-  // Nếu endpoint thật khác, bạn chỉ cần đổi base path ở đây.
-  function buildApiUrl(){
-    if(!PROJECT_ID) return null;
-
-    const u = new URL(window.location.href);
-    const q = (u.searchParams.get('q') || '').trim();
-    const rs = (u.searchParams.get('result_status') || '').trim();
-
-    const api = new URL(window.location.origin + `/auction/results/api/projects/${PROJECT_ID}/lots`);
-    api.searchParams.set('page', '1');
-    api.searchParams.set('size', String(DEFAULT_SIZE));
-    if(q) api.searchParams.set('q', q);
-    if(rs) api.searchParams.set('result_status', rs);
-
-    return api.toString();
-  }
-
-  // --- UPDATE IN PLACE (không ảnh hưởng scroll) ---
-  function patchTable(rows){
-    const scrollBox = document.getElementById('scrollBox');
-    const savedTop = scrollBox ? scrollBox.scrollTop : 0;
-
-    // map existing rows
-    const map = new Map();
-    document.querySelectorAll('#tbody tr[data-lot-code]').forEach(tr=>{
-      map.set(tr.getAttribute('data-lot-code'), tr);
-    });
-
-    (rows || []).forEach(r=>{
-      const lotCode = r.lot_code || r.lotCode || '';
-      if(!lotCode) return;
-      const tr = map.get(lotCode);
-      if(!tr) return; // danh sách lô tĩnh → không thêm mới để tránh nhảy
-
-      const tds = tr.querySelectorAll('td');
-      if(!tds || tds.length < 4) return;
-
-      const winnerName = r.winner_name || r.winnerName || '';
-      const winnerCccd = r.winner_cccd || r.winnerCccd || '';
-      const winningPrice = r.winning_price_vnd || r.winningPriceVnd || '';
-
-      // Cột 2: tên
-      const nameTd = tds[1];
-      nameTd.innerHTML = winnerName
-        ? `<span class="name">${escapeHtml(winnerName)}</span>`
-        : `<span class="muted">—</span>`;
-
-      // Cột 3: CCCD (in đậm + format .)
-      const cccdTd = tds[2];
-      cccdTd.innerHTML = winnerCccd
-        ? `<span class="cccd" data-raw-cccd="${escapeHtml(winnerCccd)}">${escapeHtml(formatCCCDDots(winnerCccd))}</span>`
-        : `<span class="muted">—</span>`;
-
-      // Cột 4: giá trúng
-      const priceTd = tds[3];
-      priceTd.innerHTML = winningPrice
-        ? `<span class="money" data-value="${escapeHtml(String(winningPrice))}">${escapeHtml(groupVi(winningPrice))}</span>`
-        : `<span class="muted">—</span>`;
-    });
-
-    if(scrollBox){
-      scrollBox.scrollTop = savedTop; // restore vị trí cuộn
-    }
-  }
-
-  function escapeHtml(s){
-    return String(s ?? '')
-      .replace(/&/g,'&amp;')
-      .replace(/</g,'&lt;')
-      .replace(/>/g,'&gt;')
-      .replace(/"/g,'&quot;')
-      .replace(/'/g,'&#039;');
-  }
-
-  async function pollOnce(){
-    const url = buildApiUrl();
-    if(!url){
-      setBadge('bad');
-      document.getElementById('lastUpdated').textContent = '—';
+  function render(){
+    const pages = pageCount();
+    if(pageIndex >= pages) pageIndex = pages - 1;
+    if(pageIndex < 0) pageIndex = 0;
+    const slice = rows.slice(pageIndex * perPage, pageIndex * perPage + perPage);
+    pageLabel.textContent = "TRANG " + String(pageIndex + 1).padStart(2,"0") + " / " + String(pages).padStart(2,"0");
+    if(!slice.length){
+      board.style.cssText = "display:flex;";
+      board.innerHTML = '<div class="empty">Chưa có kết quả trúng.</div>';
       return;
     }
-
+    board.style.cssText = gridStyle(slice.length);
+    board.innerHTML = slice.map(r => `
+      <article class="card">
+        <div>
+          <div class="lot">${esc(r.lot_code || "—")}</div>
+          <div class="who">${esc(r.winner_name || "—")}</div>
+          <div class="cccd">${esc(maskCccd(r.winner_cccd))}</div>
+        </div>
+        <div class="price">${esc(money(r.winning_price_vnd))}<span>VNĐ</span></div>
+      </article>
+    `).join("");
+  }
+  function go(delta){
+    const pages = pageCount();
+    pageIndex = (pageIndex + delta + pages) % pages;
+    pageStarted = performance.now();
+    render();
+  }
+  async function loadAll(){
+    if(!PROJECT_ID || polling) return;
+    polling = true;
+    const dot = document.getElementById("dot");
+    const live = document.getElementById("liveText");
     try{
-      const res = await fetch(url, { headers: { "Accept":"application/json" } });
-      const js = await res.json();
-
-      if(!res.ok){
-        setBadge('warn');
-        document.getElementById('lastUpdated').textContent = nowVN();
-        return;
-      }
-
-      // format: { ok, data: [...], total } hoặc { data: [...], total }
-      const rows = (js && (js.data || (js.result && js.result.data))) || [];
-      patchTable(rows);
-
-      setBadge('ok');
-      document.getElementById('lastUpdated').textContent = nowVN();
+      const all = [];
+      let page = 1;
+      let total = 0;
+      do{
+        const url = `/auction/results/api/projects/${PROJECT_ID}/lots?page=${page}&size=500&result_status=WON`;
+        const res = await fetch(url, { headers: { "Accept":"application/json" } });
+        const js = await res.json().catch(() => ({}));
+        if(!res.ok) throw new Error("http");
+        const chunk = Array.isArray(js.data) ? js.data : [];
+        total = Number(js.total || chunk.length || 0);
+        all.push.apply(all, chunk);
+        page += 1;
+        if(!chunk.length) break;
+      }while(all.length < total && page < 20);
+      all.sort((a, b) => Number(a.lot_id || 0) - Number(b.lot_id || 0));
+      const next = all.filter(r => String(r.result_status || "").toUpperCase() === "WON" || r.winner_name);
+      const same = JSON.stringify(next.map(r => [r.lot_id, r.winner_name, r.winning_price_vnd, maskCccd(r.winner_cccd)]))
+        === JSON.stringify(rows.map(r => [r.lot_id, r.winner_name, r.winning_price_vnd, maskCccd(r.winner_cccd)]));
+      rows = next;
+      if(!same) render();
+      dot.className = "dot";
+      live.textContent = "Đang chiếu";
+      const d = new Date();
+      const p = n => String(n).padStart(2,"0");
+      document.getElementById("updated").textContent = `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
     }catch(e){
-      console.error(e);
-      setBadge('warn');
-      document.getElementById('lastUpdated').textContent = nowVN();
+      dot.className = "dot warn";
+      live.textContent = "Mất kết nối";
+    }finally{
+      polling = false;
     }
   }
+  function frame(now){
+    const pages = pageCount();
+    if(!autoOn || pages < 2){
+      pageFill.style.width = "100%";
+    }else{
+      const elapsed = now - pageStarted;
+      const limit = seconds * 1000;
+      if(elapsed >= limit) go(1);
+      else pageFill.style.width = Math.min(100, elapsed / limit * 100) + "%";
+    }
+    requestAnimationFrame(frame);
+  }
 
-  applyInitialFormatting();
+  document.getElementById("btnPrev").addEventListener("click", () => go(-1));
+  document.getElementById("btnNext").addEventListener("click", () => go(1));
+  btnAuto.addEventListener("click", () => {
+    autoOn = !autoOn;
+    pageStarted = performance.now();
+    paintAuto();
+    saveConfig();
+  });
+  function setSeconds(v){
+    seconds = Math.max(3, Math.min(60, Number(v) || 12));
+    secondsInput.value = String(seconds);
+    pageStarted = performance.now();
+    saveConfig();
+  }
+  document.getElementById("secDown").addEventListener("click", () => setSeconds(seconds - 1));
+  document.getElementById("secUp").addEventListener("click", () => setSeconds(seconds + 1));
+  secondsInput.addEventListener("change", () => setSeconds(secondsInput.value));
+  sizeButtons.forEach(btn => btn.addEventListener("click", () => {
+    perPage = Number(btn.dataset.n);
+    pageIndex = 0;
+    pageStarted = performance.now();
+    paintSizes();
+    saveConfig();
+    render();
+  }));
+  document.getElementById("btnFull").addEventListener("click", async () => {
+    if(!document.fullscreenElement){
+      try{ await document.documentElement.requestFullscreen(); }catch(e){}
+    }else{
+      try{ await document.exitFullscreen(); }catch(e){}
+    }
+  });
 
-  // start polling
-  pollOnce();
-  setInterval(pollOnce, POLL_MS);
+  loadConfig();
+  render();
+  loadAll();
+  setInterval(loadAll, POLL_MS);
+  requestAnimationFrame(frame);
 </script>
-{% endblock %}
+</body>
+</html>

@@ -385,42 +385,21 @@ async def auction_results_present_page(
         # giữ next đúng url present (có thể có query)
         return RedirectResponse(url="/login?next=%2Fauction%2Fresults%2Fpresent", status_code=303)
 
-    # Load project list + selected project giống trang results
     projects, selected_code, selected_project = await _load_projects(token, project)
     project_id = _project_id_of(selected_project)
-
-    # Present luôn cố định page=1 size=200
-    page = 1
-    size = 200
-
-    data: Dict[str, Any] = {"data": [], "total": 0, "page": page, "size": size, "project": None}
-    error: Optional[Dict[str, Any]] = None
-
-    if project_id:
-        params: Dict[str, Any] = {"page": page, "size": size}
-        if q:
-            params["q"] = q
-        if result_status:
-            params["result_status"] = result_status
-
-        st, js = await _get_json(f"/api/v1/auction-results/projects/{project_id}/lots", token, params)
-        if st == 200 and isinstance(js, dict):
-            data = js
-        else:
-            error = {"status": st, "body": js}
+    project_name = ""
+    if selected_project:
+        project_name = (
+            selected_project.get("name")
+            or selected_project.get("project_name")
+            or ""
+        )
 
     ctx = {
         "request": request,
-        "title": "Present — Kết quả trúng đấu giá",
-        "projects": projects,
+        "title": "Trình chiếu kết quả trúng đấu giá",
         "project": selected_code,
-        "project_obj": selected_project,
+        "project_name": project_name,
         "project_id": project_id,
-        "q": q or "",
-        "result_status": (result_status or ""),
-        "page": page,
-        "size": size,
-        "data": data,
-        "error": error,
     }
     return templates.TemplateResponse("auction/auction_results_present.html", ctx)
