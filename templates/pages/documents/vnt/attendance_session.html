@@ -195,8 +195,11 @@
     }
 
     /* Columns (no SL) */
+    .col-idx{  width: 5%;  text-align:center; }
     .col-sbd{  width: 7%;  text-align:center; }
     .col-name{ width: 27%; }
+    table.with-sbd .col-name{ width: 22%; }
+    table.with-sbd .col-sign{ width: 19.5%; }
     .col-id{   width: 16%; }
     .col-bank{ width: 28.5%; }
     .col-sign{ width: 21.5%; }
@@ -291,7 +294,10 @@
         <div class="hr"></div>
       </div>
 
-      <div class="doc-title">DANH SÁCH ĐIỂM DANH THAM DỰ ĐẤU GIÁ</div>
+      <div class="doc-title">{{ doc_title or "DANH SÁCH ĐIỂM DANH THAM DỰ ĐẤU GIÁ" }}</div>
+      {% if round_label %}
+        <div style="text-align:center;font-weight:700;margin-top:4px;">{{ round_label }}</div>
+      {% endif %}
 
       {% if error %}
         <div class="err">
@@ -333,10 +339,15 @@
         {# ✅ Không hiển thị ghi chú #}
       </div>
 
-      <table>
+      <table class="{{ 'with-sbd' if show_sbd else '' }}">
         <thead>
           <tr>
+            {% if show_sbd %}
+            <th class="col-idx">STT</th>
+            <th class="col-sbd">SBD</th>
+            {% else %}
             <th class="col-sbd">STT</th>
+            {% endif %}
             <th class="col-name">Họ và tên / Địa chỉ</th>
             <th class="col-id">CCCD / SĐT</th>
             <th class="col-bank">TK nhận hoàn (Ngân hàng / Số TK / Chủ TK)</th>
@@ -350,9 +361,18 @@
             {% set b = r.refund_bank_accounts if r and r.refund_bank_accounts is defined else {} %}
 
             <tr class="row3">
+              {% if show_sbd %}
+              <td class="col-idx">
+                <div style="font-weight:800;">{{ loop.index }}</div>
+              </td>
               <td class="col-sbd">
                 <div style="font-weight:800;">{{ r.stt or "" }}</div>
               </td>
+              {% else %}
+              <td class="col-sbd">
+                <div style="font-weight:800;">{{ r.stt or "" }}</div>
+              </td>
+              {% endif %}
 
               <td class="col-name">
                 <div class="name" title="{{ c.customer_full_name or '' }}">{{ c.customer_full_name or "" }}</div>
@@ -387,7 +407,7 @@
 
           {% if not items or (items|length == 0) %}
             <tr>
-              <td colspan="5" style="text-align:center; padding: 14px; font-style: italic;">
+              <td colspan="{{ 6 if show_sbd else 5 }}" style="text-align:center; padding: 14px; font-style: italic;">
                 Chưa có dữ liệu điểm danh.
               </td>
             </tr>

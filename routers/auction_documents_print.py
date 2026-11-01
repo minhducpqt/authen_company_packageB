@@ -447,25 +447,17 @@ async def _load_session_attendance_context(
 # =========================================================
 # PRINT: Attendance list (A4)
 # =========================================================
-@router.get(
-    "/auction/sessions/{session_id}/documents/attendance/print",
-    response_class=HTMLResponse,
-)
-async def print_attendance_list(
+async def _render_attendance_sheet(
     request: Request,
-    session_id: int = Path(..., ge=1),
-    title: Optional[str] = Query(None),
-    autoprint: int = Query(0, ge=0, le=1),
+    session_id: int,
+    round_no: int,
+    *,
+    page_title: str,
+    doc_title: str,
+    round_label: str,
+    autoprint: int,
+    show_sbd: bool = False,
 ):
-    """
-    In danh sách điểm danh người tham gia đấu giá (A4).
-    ✅ GỌI THẲNG SERVICE A (không gọi nội bộ B nữa)
-    Flow:
-      1) GET A: /sessions/{id}
-      2) GET A: /sessions/{id}/current  -> round_no
-      3) GET A: /sessions/{id}/rounds/{round_no}/ui
-      4) aggregate attendance from UI
-    """
     token = get_access_token(request)
     if not token:
         return templates.TemplateResponse(
@@ -492,27 +484,13 @@ async def print_attendance_list(
     project_code = sess_data.get("project_code") or sess_data.get("p_project_code") or ""
     registration_mode = "NORMAL"
 
-    # 2) current round
-    round_no = 1
-    st_c, cur = await _a_get_json(f"/api/v1/auction-sessions/sessions/{session_id}/current", token, None, timeout=60.0)
-    if st_c == 200 and isinstance(cur, dict):
-        try:
-            rn = int(cur.get("current_round_no") or 0)
-            round_no = rn if rn > 0 else 1
-        except Exception:
-            round_no = 1
-    else:
-        # không chết ở đây, cứ fallback round 1
-        if not error:
-            error = {"message": f"Không tải được vòng hiện tại (status={st_c})", "body": cur}
-
     # 3) round UI
     attendance_rows: List[Dict[str, Any]] = []
     lot_count = 0
     customer_count = 0
 
     st_ui, ui = await _a_get_json(
-        f"/api/v1/auction-sessions/sessions/{session_id}/rounds/{round_no}/ui",
+        f"/api/v1/auction-sessions/sessions/{session_id}/rounds/{int(round_no)}/ui",
         token,
         None,
         timeout=60.0,
@@ -525,7 +503,7 @@ async def print_attendance_list(
         )
     else:
         if not error:
-            error = {"message": f"Không tải được dữ liệu vòng (status={st_ui})", "body": ui}
+            error = {"message": f"Không tải được dữ liệu vòng {int(round_no)} (status={st_ui})", "body": ui}
 
     # Build template variables
     session_out = {
@@ -563,7 +541,10 @@ async def print_attendance_list(
         attendance_tpl,
         {
             "request": request,
-            "title": title or "Danh sách điểm danh người tham gia đấu giá",
+            "title": page_title,
+            "doc_title": doc_title,
+            "round_label": round_label,
+            "show_sbd": bool(show_sbd),
             "session_id": session_id,
 
             # raw payload (optional debug)
@@ -588,6 +569,53 @@ async def print_attendance_list(
     )
 
 
+@router.get(
+    "/auction/sessions/{session_id}/documents/attendance/print",
+    response_class=HTMLResponse,
+)
+async def print_attendance_list(
+    request: Request,
+    session_id: int = Path(..., ge=1),
+    title: Optional[str] = Query(None),
+    autoprint: int = Query(0, ge=0, le=1),
+):
+    """Danh sách điểm danh full của phiên: luôn lấy người ở vòng 1."""
+    return await _render_attendance_sheet(
+        request,
+        session_id,
+        1,
+        page_title=title or "Danh sách điểm danh người tham gia đấu giá",
+        doc_title="",
+        round_label="",
+        autoprint=autoprint,
+        show_sbd=False,
+    )
+
+
+@router.get(
+    "/auction/sessions/{session_id}/rounds/{round_no}/attendance/print",
+    response_class=HTMLResponse,
+)
+async def print_round_participants(
+    request: Request,
+    session_id: int = Path(..., ge=1),
+    round_no: int = Path(..., ge=1),
+    title: Optional[str] = Query(None),
+    autoprint: int = Query(0, ge=0, le=1),
+):
+    """Danh sách người còn tham gia đúng vòng này."""
+    return await _render_attendance_sheet(
+        request,
+        session_id,
+        int(round_no),
+        page_title=title or f"Danh sách tham dự vòng {int(round_no)}",
+        doc_title=f"DANH SÁCH THAM DỰ VÒNG {int(round_no)}",
+        round_label="Những người còn tham gia vòng này",
+        autoprint=autoprint,
+        show_sbd=True,
+    )
+
+
 # =========================================================
 # PRINT: Public notice (A4) — STT lookup board (NO SIGNATURE)
 #   - Data source & flow: identical to attendance_print above
@@ -608,9 +636,8 @@ async def print_attendance_public_notice(
     ✅ GỌI THẲNG SERVICE A (y hệt attendance/print)
     Flow:
       1) GET A: /sessions/{id}
-      2) GET A: /sessions/{id}/current  -> round_no
-      3) GET A: /sessions/{id}/rounds/{round_no}/ui
-      4) aggregate attendance from UI
+      2) GET A: /sessions/{id}/rounds/1/ui  (luôn danh sách full lúc vào phiên)
+      3) aggregate attendance from UI
     """
     token = get_access_token(request)
     if not token:
@@ -638,18 +665,8 @@ async def print_attendance_public_notice(
     project_code = sess_data.get("project_code") or sess_data.get("p_project_code") or ""
     registration_mode = "NORMAL"
 
-    # 2) current round
+    # Luôn vòng 1: vòng sau chỉ còn người được chốt đi tiếp.
     round_no = 1
-    st_c, cur = await _a_get_json(f"/api/v1/auction-sessions/sessions/{session_id}/current", token, None, timeout=60.0)
-    if st_c == 200 and isinstance(cur, dict):
-        try:
-            rn = int(cur.get("current_round_no") or 0)
-            round_no = rn if rn > 0 else 1
-        except Exception:
-            round_no = 1
-    else:
-        if not error:
-            error = {"message": f"Không tải được vòng hiện tại (status={st_c})", "body": cur}
 
     # 3) round UI
     attendance_rows: List[Dict[str, Any]] = []

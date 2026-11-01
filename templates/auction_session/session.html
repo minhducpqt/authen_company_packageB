@@ -1058,6 +1058,9 @@
           <button type="button" onclick="printRoundResults(); this.closest('.printMenu').style.display='none';">
             <i class="ri-table-line"></i> In kết quả (vòng {{ round_no or 1 }})
           </button>
+          <button type="button" onclick="printRoundParticipants(); this.closest('.printMenu').style.display='none';">
+            <i class="ri-user-3-line"></i> In danh sách tham dự (vòng {{ round_no or 1 }})
+          </button>
         </div>
       </div>
       <button
@@ -2645,6 +2648,15 @@ Modal: Print One Bid Sheet (choose one customer)
   return;
   }
   window.open(`/auction/sessions/${SESSION_ID}/rounds/${rn}/results/print?autoprint=1`, '_blank');
+  }
+
+  function printRoundParticipants(){
+  const rn = Number(ROUND_NO || 0);
+  if(!SESSION_ID || rn <= 0){
+  toast("Thiếu session_id/round_no để in danh sách tham dự.");
+  return;
+  }
+  window.open(`/auction/sessions/${SESSION_ID}/rounds/${rn}/attendance/print?autoprint=1`, '_blank');
   }
 
 
