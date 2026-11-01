@@ -6,12 +6,12 @@
   <title>{{ title or "Trình chiếu kết quả trúng đấu giá" }}</title>
   <style>
     :root{
-      --bg:#090c11;
-      --ink:#f4f7fb;
-      --muted:#9eacbb;
-      --line:rgba(210,216,224,.32);
-      --card:#151b24;
-      --band:#0d1218;
+      --bg:#070b14;
+      --ink:#f7f4ee;
+      --muted:#c5d0dc;
+      --line:rgba(214,196,168,.45);
+      --card:#1a2838;
+      --band:#101a28;
       --font:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
     }
     *{box-sizing:border-box}
@@ -26,8 +26,8 @@
       padding:16px 28px 12px;
       gap:12px;
       background:
-        radial-gradient(1100px 420px at 50% -8%, rgba(255,255,255,.05), transparent 62%),
-        linear-gradient(180deg, #1a1f28 0%, var(--bg) 42%);
+        radial-gradient(900px 360px at 50% -10%, rgba(214,196,168,.08), transparent 60%),
+        linear-gradient(180deg, #10182a 0%, var(--bg) 46%);
     }
     .frame{
       flex:1 1 auto;min-height:0;
@@ -41,21 +41,17 @@
       grid-template-columns:minmax(0,1fr) auto;
       align-items:center;
       gap:28px;
-      padding-bottom:12px;
+      padding-bottom:8px;
       border-bottom:1px solid var(--line);
       position:relative;
     }
-    .header:after{
-      content:"";
-      position:absolute;left:0;right:0;bottom:-5px;height:1px;
-      background:rgba(245,247,250,.55);
-    }
-    .titles{display:flex;align-items:baseline;gap:18px;min-width:0}
+    .titles{display:flex;align-items:baseline;gap:14px;min-width:0}
     h1{
       margin:0;
-      font-size:clamp(26px, 2.6vw, 40px);
-      font-weight:750;
-      letter-spacing:.06em;
+      color:var(--muted);
+      font-size:13px;
+      font-weight:650;
+      letter-spacing:.16em;
       line-height:1;
       white-space:nowrap;
     }
@@ -88,20 +84,23 @@
     }
     .board{
       flex:1 1 auto;min-height:0;
-      display:grid;gap:8px;
+      display:grid;gap:12px;
     }
-    .d24,.d30{gap:6px}
+    .board.d24,.board.d30{gap:8px}
     .card{
       min-width:0;min-height:0;
       container-type:size;
       display:grid;
       grid-template-rows:22% minmax(0,1fr) 30%;
-      background:var(--card);
-      border:1px solid rgba(255,255,255,.08);
-      box-shadow:inset 3px 0 0 rgba(245,247,250,.7);
+      background:linear-gradient(180deg, #24364a 0%, var(--card) 42%);
+      border:1.5px solid rgba(232,220,196,.62);
+      border-radius:16px;
+      box-shadow:0 10px 22px rgba(0,0,0,.32);
       overflow:hidden;
       animation:rise .42s ease both;
     }
+    .board.d16 .card,.board.d20 .card{border-radius:12px}
+    .board.d24 .card,.board.d30 .card{border-radius:10px}
     .lot{
       align-self:end;
       min-width:0;
@@ -142,7 +141,7 @@
       display:flex;align-items:center;
       padding:0 4.5%;
       background:var(--band);
-      border-top:1px solid rgba(255,255,255,.08);
+      border-top:1px solid rgba(232,220,196,.28);
     }
     .price{
       min-width:0;
@@ -229,7 +228,7 @@
     @media (max-height:820px){
       .stage{padding:14px 22px 10px;gap:10px}
       .frame{padding:12px 14px;gap:10px}
-      h1{font-size:clamp(22px, 2.6vw, 34px)}
+      h1{font-size:12px}
       .plaque b{font-size:36px}
     }
   </style>
