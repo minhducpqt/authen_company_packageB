@@ -1585,16 +1585,27 @@ def _build_round_result_rows(
             participant_count=len(participants),
         )
 
-        start_price = _start_price_for_display(
-            auction_mode=_lot_bid_price_unit(lot),
-            start_price_vnd=lot.get("start_price_vnd"),
-            init_starting_price_vnd=(
-                lot.get("init_starting_price_vnd")
-                or snap.get("init_starting_price_vnd")
-                or snap.get("starting_price_vnd")
-            ),
-            area_m2=_lot_area_sqm_value(lot),
-        )
+        unit = _lot_bid_price_unit(lot)
+        area_m2 = _lot_area_sqm_value(lot)
+        if rn > 1:
+            # Giá khởi điểm của vòng này (đã chép từ giá cao nhất vòng trước).
+            start_price = _start_price_for_display(
+                auction_mode=unit,
+                start_price_vnd=lot.get("start_price_vnd"),
+                init_starting_price_vnd=None,
+                area_m2=area_m2,
+            )
+        else:
+            start_price = _start_price_for_display(
+                auction_mode=unit,
+                start_price_vnd=lot.get("start_price_vnd"),
+                init_starting_price_vnd=(
+                    lot.get("init_starting_price_vnd")
+                    or snap.get("init_starting_price_vnd")
+                    or snap.get("starting_price_vnd")
+                ),
+                area_m2=area_m2,
+            )
         highest = lot.get("highest_price_vnd")
 
         rt = _to_str(lot.get("result_type") or "PENDING").upper()
