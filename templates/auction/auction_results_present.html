@@ -6,12 +6,13 @@
   <title>{{ title or "Trình chiếu kết quả trúng đấu giá" }}</title>
   <style>
     :root{
-      --bg:#07111c;
-      --ink:#f7f4ec;
-      --muted:#a9b7c8;
-      --gold:#d7b56a;
-      --gold-dim:rgba(215,181,106,.28);
-      --card:#0d1b2c;
+      --bg:#100e0c;
+      --ink:#fffaf3;
+      --muted:#f0e2cf;
+      --gold:#f3d48a;
+      --gold-dim:rgba(243,212,138,.42);
+      --card:#2a241d;
+      --band:#171410;
       --font:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
     }
     *{box-sizing:border-box}
@@ -26,14 +27,14 @@
       padding:22px 36px 16px;
       gap:16px;
       background:
-        radial-gradient(1100px 420px at 50% -8%, rgba(215,181,106,.14), transparent 62%),
-        linear-gradient(180deg, #0c1a2b 0%, var(--bg) 38%);
+        radial-gradient(1100px 420px at 50% -8%, rgba(243,212,138,.18), transparent 62%),
+        linear-gradient(180deg, #241e17 0%, var(--bg) 42%);
     }
     .frame{
       flex:1 1 auto;min-height:0;
       display:flex;flex-direction:column;gap:16px;
       border:1px solid var(--gold-dim);
-      box-shadow:inset 0 0 0 5px var(--bg), inset 0 0 0 6px rgba(215,181,106,.18);
+      box-shadow:inset 0 0 0 5px var(--bg), inset 0 0 0 6px rgba(243,212,138,.28);
       padding:18px 22px 16px;
     }
     .header{
@@ -48,7 +49,7 @@
     .header:after{
       content:"";
       position:absolute;left:0;right:0;bottom:-5px;height:1px;
-      background:rgba(215,181,106,.45);
+      background:rgba(243,212,138,.72);
     }
     .titles{display:flex;align-items:baseline;gap:18px;min-width:0}
     h1{
@@ -93,8 +94,8 @@
     .card{
       min-width:0;min-height:0;
       display:flex;flex-direction:column;
-      background:linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,0) 42%), var(--card);
-      border:1px solid rgba(215,181,106,.22);
+      background:linear-gradient(180deg, rgba(255,248,236,.07), rgba(255,248,236,0) 42%), var(--card);
+      border:1px solid rgba(243,212,138,.4);
       border-top:2px solid var(--gold);
       overflow:hidden;
       animation:rise .42s ease both;
@@ -118,6 +119,7 @@
     }
     .who{
       margin-top:8px;
+      color:var(--ink);
       font-weight:750;
       line-height:1.12;
       letter-spacing:.01em;
@@ -137,13 +139,14 @@
       flex:0 0 auto;
       display:flex;align-items:baseline;justify-content:space-between;gap:12px;
       padding:10px 18px 12px;
-      background:rgba(0,0,0,.28);
-      border-top:1px solid rgba(215,181,106,.16);
+      background:var(--band);
+      border-top:1px solid rgba(243,212,138,.34);
     }
     .price-kicker{
       color:var(--muted);font-size:12px;font-weight:750;letter-spacing:.16em;white-space:nowrap;
     }
     .price{
+      color:var(--ink);
       font-weight:750;letter-spacing:.01em;line-height:1;
       font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;
       white-space:nowrap;
@@ -168,6 +171,28 @@
     .d12 .seal,.d12 .price-kicker{display:none}
     .d12 .card-body{padding:10px 14px 6px}
     .d12 .price-band{padding:8px 14px}
+    .d16 .who{font-size:clamp(16px, 1.15vw, 20px)}
+    .d16 .cccd{font-size:clamp(12px, .9vw, 15px);margin-top:2px}
+    .d16 .price{font-size:clamp(14px, 1.05vw, 18px)}
+    .d16 .lot{font-size:clamp(14px, 1vw, 18px)}
+    .d16 .seal,.d16 .price-kicker{display:none}
+    .d16 .card-body{padding:8px 12px 4px}
+    .d16 .price-band{padding:6px 12px}
+    .d20,.d24,.d30{gap:8px}
+    .d20 .who,.d24 .who,.d30 .who{-webkit-line-clamp:1}
+    .d20 .who{font-size:clamp(15px, 1vw, 18px)}
+    .d20 .cccd{font-size:clamp(12px, .85vw, 14px);margin-top:2px;letter-spacing:.08em}
+    .d20 .price{font-size:clamp(13px, .95vw, 17px)}
+    .d20 .lot{font-size:clamp(13px, .95vw, 16px);letter-spacing:.06em}
+    .d24 .who,.d30 .who{font-size:clamp(13px, .9vw, 16px);margin-top:4px}
+    .d24 .cccd,.d30 .cccd{font-size:12px;margin-top:2px;letter-spacing:.06em}
+    .d24 .price{font-size:clamp(12px, .85vw, 15px)}
+    .d30 .price{font-size:12px}
+    .d24 .lot,.d30 .lot{font-size:13px;letter-spacing:.04em}
+    .d20 .seal,.d24 .seal,.d30 .seal,.d20 .price-kicker,.d24 .price-kicker,.d30 .price-kicker{display:none}
+    .d20 .card-body,.d24 .card-body,.d30 .card-body{padding:6px 10px 4px}
+    .d20 .price-band,.d24 .price-band,.d30 .price-band{padding:5px 10px}
+    .d24 .price span,.d30 .price span{margin-left:4px}
     .empty{
       margin:auto;text-align:center;
     }
@@ -195,21 +220,21 @@
     .btn{
       height:30px;padding:0 10px;
       display:inline-flex;align-items:center;justify-content:center;gap:6px;
-      background:transparent;border:1px solid rgba(215,181,106,.35);border-radius:2px;
+      background:transparent;border:1px solid rgba(243,212,138,.5);border-radius:2px;
       color:var(--ink);font-size:12px;font-weight:750;letter-spacing:.06em;
     }
     .btn svg{width:15px;height:15px;display:block}
     .btn.icon{width:30px;padding:0}
     .btn:disabled{opacity:.35;cursor:default}
-    .btn.on{background:var(--gold);color:#1b1408;border-color:var(--gold)}
+    .btn.on{background:var(--gold);color:#1a140c;border-color:var(--gold)}
     .overlay{
       position:fixed;inset:0;z-index:20;display:none;
-      justify-content:flex-end;background:rgba(7,17,28,.35);
+      justify-content:flex-end;background:rgba(16,14,12,.4);
     }
     .overlay.open{display:flex}
     .drawer{
       width:min(420px, 100%);height:100%;
-      background:#0c1828;
+      background:#1c1814;
       border-left:1px solid var(--gold-dim);
       padding:28px 24px;
       display:flex;flex-direction:column;gap:18px;
@@ -221,15 +246,15 @@
     .stepper{display:inline-flex;align-items:center;gap:6px}
     .stepper input{
       width:72px;height:42px;text-align:center;font-size:20px;font-weight:750;
-      background:#07111c;border:1px solid var(--gold-dim);border-radius:2px;color:var(--ink);
+      background:#100e0c;border:1px solid var(--gold-dim);border-radius:2px;color:var(--ink);
     }
     .stepper button,.sizes button{
       height:42px;min-width:42px;
       background:transparent;border:1px solid var(--gold-dim);border-radius:2px;
       font-size:18px;font-weight:750;
     }
-    .sizes{display:flex;gap:8px}
-    .sizes button.on{background:var(--gold);color:#1b1408;border-color:var(--gold)}
+    .sizes{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;max-width:250px}
+    .sizes button.on{background:var(--gold);color:#1a140c;border-color:var(--gold)}
     .hint{color:var(--muted);font-size:13px;line-height:1.45;margin:0}
     @keyframes rise{
       from{opacity:0;transform:translateY(10px)}
@@ -304,15 +329,19 @@
           <button type="button" data-n="6">6</button>
           <button type="button" data-n="8">8</button>
           <button type="button" data-n="12">12</button>
+          <button type="button" data-n="16">16</button>
+          <button type="button" data-n="20">20</button>
+          <button type="button" data-n="24">24</button>
+          <button type="button" data-n="30">30</button>
         </span>
       </div>
-      <p class="hint">4 lô cho hội trường rộng. 12 lô khi cần lướt nhanh. Kết quả được cập nhật mỗi 5 giây và vẫn giữ trang đang chiếu.</p>
+      <p class="hint">4 lô cho hội trường rộng. 16 đến 30 lô khi cần xem nhiều hơn trên một trang. Kết quả được cập nhật mỗi 5 giây và vẫn giữ trang đang chiếu.</p>
     </div>
   </div>
 <script>
   const PROJECT_ID = {{ project_id or "null" }};
   const POLL_MS = 5000;
-  const PAGE_SIZES = [4, 6, 8, 12];
+  const PAGE_SIZES = [4, 6, 8, 12, 16, 20, 24, 30];
   const storeKey = "results-present:" + String(PROJECT_ID || "none");
 
   const board = document.getElementById("board");
@@ -386,8 +415,11 @@
   }
   function gridStyle(n){
     let cols = 2;
-    if(n > 4 && n <= 6) cols = 3;
-    else if(n > 6) cols = 4;
+    if(perPage <= 4) cols = 2;
+    else if(perPage <= 6) cols = 3;
+    else if(perPage <= 16) cols = 4;
+    else if(perPage <= 20) cols = 5;
+    else cols = 6;
     const rowsN = Math.ceil(n / cols);
     return `grid-template-columns:repeat(${cols}, minmax(0,1fr));grid-template-rows:repeat(${rowsN}, minmax(0,1fr));`;
   }
