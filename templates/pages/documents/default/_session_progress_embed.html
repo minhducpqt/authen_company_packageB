@@ -229,4 +229,6 @@
       <div class="sp-sec-note">Chưa có dữ liệu vòng đấu.</div>
     {% endif %}
   </div>
+  {% set roster = participants if participants is defined and participants else (prog.participants if prog is defined and prog and prog.participants else []) %}
+  {% include "pages/documents/default/_session_progress_roster.html" %}
 </div>

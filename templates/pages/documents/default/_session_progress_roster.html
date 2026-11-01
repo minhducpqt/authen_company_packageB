@@ -1,0 +1,75 @@
+{# Danh sách khách vòng 1, đính kèm cuối biên bản. Khi in thì sang trang mới. #}
+{% set roster = roster if roster is defined else [] %}
+{% if roster|length > 0 %}
+<style>
+  .sp-roster{
+    break-before: page;
+    page-break-before: always;
+  }
+  .sp-roster .roster-title{
+    text-align: center;
+    font-weight: 800;
+    font-size: 14px;
+    text-transform: uppercase;
+    margin: 0 0 4px;
+  }
+  .sp-roster .roster-sub{
+    text-align: center;
+    font-size: 11px;
+    font-style: italic;
+    margin: 0 0 8px;
+  }
+  .sp-roster table{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+  .sp-roster th, .sp-roster td{
+    border: 1px solid #111;
+    padding: 3px 5px;
+    vertical-align: middle;
+  }
+  .sp-roster th{
+    font-weight: 800;
+    text-align: center;
+    background: #f3f4f6;
+  }
+  .sp-roster td.num{ text-align: center; white-space: nowrap; }
+  .sp-roster td.name{ text-align: left; }
+  .sp-roster thead{ display: table-header-group; }
+  .sp-roster tr{ break-inside: avoid; page-break-inside: avoid; }
+  @media screen{
+    .sp-roster{
+      margin-top: 28px;
+      padding-top: 14px;
+      border-top: 2px dashed #111;
+    }
+  }
+</style>
+<section class="sp-roster">
+  <div class="roster-title">Danh sách người tham gia đấu giá</div>
+  <div class="roster-sub">Đính kèm biên bản. Những người tham gia từ vòng 1. Tổng {{ roster|length }} người.</div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:8%">STT</th>
+        <th>Họ và tên</th>
+        <th style="width:18%">CCCD</th>
+        <th style="width:16%">Số điện thoại</th>
+        <th style="width:12%">Số lô</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in roster %}
+      <tr>
+        <td class="num">{{ r.stt if r.stt not in (none, "") else "—" }}</td>
+        <td class="name">{{ r.full_name or "—" }}</td>
+        <td class="num">{{ r.cccd or "—" }}</td>
+        <td class="num">{{ r.phone or "—" }}</td>
+        <td class="num">{{ r.lot_count if r.lot_count is not none else "—" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}

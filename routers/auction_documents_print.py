@@ -1314,6 +1314,49 @@ def _person_from_participant(p: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _build_round1_participant_roster(ui_r1: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Mỗi khách vòng 1 một dòng: STT gốc, họ tên, CCCD, điện thoại, số lô đã tham gia."""
+    by_cid: Dict[int, Dict[str, Any]] = {}
+    for lot in (ui_r1 or {}).get("lots") or []:
+        if not isinstance(lot, dict):
+            continue
+        seen_in_lot = set()
+        for p in lot.get("participants") or []:
+            if not isinstance(p, dict):
+                continue
+            person = _person_from_participant(p)
+            try:
+                cid = int(person.get("customer_id") or 0)
+            except Exception:
+                cid = 0
+            if cid <= 0 or cid in seen_in_lot:
+                continue
+            seen_in_lot.add(cid)
+            row = by_cid.get(cid)
+            if row is None:
+                by_cid[cid] = {
+                    "customer_id": cid,
+                    "stt": person.get("stt"),
+                    "full_name": person.get("full_name") or "",
+                    "cccd": person.get("cccd") or "",
+                    "phone": person.get("phone") or "",
+                    "lot_count": 1,
+                }
+                continue
+            if not row.get("full_name") and person.get("full_name"):
+                row["full_name"] = person.get("full_name") or ""
+            if not row.get("cccd") and person.get("cccd"):
+                row["cccd"] = person.get("cccd") or ""
+            if not row.get("phone") and person.get("phone"):
+                row["phone"] = person.get("phone") or ""
+            if row.get("stt") in (None, "") and person.get("stt") not in (None, ""):
+                row["stt"] = person.get("stt")
+            row["lot_count"] = int(row.get("lot_count") or 0) + 1
+    rows = list(by_cid.values())
+    rows.sort(key=lambda r: (_stt_sort_key(r.get("stt")), _to_str(r.get("full_name"))))
+    return rows
+
+
 def _person_by_customer_id(participants: List[Dict[str, Any]]) -> Dict[int, Dict[str, Any]]:
     out: Dict[int, Dict[str, Any]] = {}
     for p in participants or []:
@@ -2449,6 +2492,7 @@ async def build_session_progress_data(
         "eligible_lots": eligible_lots,
         "round_sections": round_sections,
         "round_count": len(round_sections),
+        "participants": _build_round1_participant_roster(ui_r1),
         "summary": {
             "failed": len(failed_lots),
             "failed_pre_session": len(failed_lots_pre),
@@ -2535,6 +2579,7 @@ async def print_session_progress(
         "won_lots": prog.get("won_lots") or [],
         "round_sections": prog.get("round_sections") or [],
         "round_count": prog.get("round_count") or 0,
+        "participants": prog.get("participants") or [],
         "summary": prog.get("summary") or {},
         "org_name": ORG_NAME,
         "autoprint": 0 if for_download else int(autoprint),

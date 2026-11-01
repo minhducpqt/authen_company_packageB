@@ -447,6 +447,8 @@
       </div>
 
       <div class="foot">Số liệu giá theo đơn vị {{ lbl_start_u }} — Biên bản phục vụ lưu hồ sơ phiên đấu giá.</div>
+      {% set roster = participants if participants is defined else [] %}
+      {% include "pages/documents/default/_session_progress_roster.html" %}
     </div>
   </div>
 
