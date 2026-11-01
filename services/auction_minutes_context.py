@@ -1,7 +1,6 @@
 # services/auction_minutes_context.py — Dữ liệu biên bản đấu giá TP-ĐGTS-18
 from __future__ import annotations
 
-import asyncio
 import os
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -105,6 +104,7 @@ async def fetch_auction_minutes_context(
         _build_session_won_lots,
         _fetch_ballots_for_lots,
         _fetch_round_rows_for_print,
+        _fetch_session_ballots,
         _price_column_labels,
         _r1_start_prices_map,
         _r1_ui_lots_by_id,
@@ -172,7 +172,11 @@ async def fetch_auction_minutes_context(
             rid = 0
         if rid > 0:
             r1_ids.append(rid)
-    r1_ballots = await _fetch_ballots_for_lots(token, r1_ids)
+    shared_ballots = await _fetch_session_ballots(token, session_id)
+    if shared_ballots is None:
+        r1_ballots = await _fetch_ballots_for_lots(token, r1_ids, session_id=session_id)
+    else:
+        r1_ballots = {rid: shared_ballots.get(rid, {}) for rid in r1_ids}
 
     ineligible_rows: List[Dict[str, Any]] = []
     if pid:
@@ -200,12 +204,17 @@ async def fetch_auction_minutes_context(
         auction_mode=auction_mode,
     )
 
-    round_pairs = await asyncio.gather(
-        *[
-            _fetch_round_rows_for_print(token, session_id, rn, results_by_lot=results_by_lot)
-            for rn in round_nos
-        ]
-    )
+    round_pairs = []
+    for rn in round_nos:
+        round_pairs.append(
+            await _fetch_round_rows_for_print(
+                token,
+                session_id,
+                rn,
+                results_by_lot=results_by_lot,
+                ballots_by_lot=shared_ballots,
+            )
+        )
     round_sections = [
         {"round_no": rn, "rows": rows, "stats": stats}
         for rn, rows, stats in sorted(round_pairs, key=lambda x: x[0])

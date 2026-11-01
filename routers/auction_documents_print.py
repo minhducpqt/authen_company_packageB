@@ -1425,26 +1425,71 @@ def _result_status_label(
     return "Chưa chốt", "pending"
 
 
+async def _fetch_session_ballots(
+    token: str,
+    session_id: int,
+) -> Optional[Dict[int, Dict[str, Any]]]:
+    """Một request cho cả phiên. None khi endpoint chưa trả được, để caller gọi từng lô có giới hạn."""
+    st, js = await _a_get_json(
+        f"/api/v1/auction-sessions/sessions/{int(session_id)}/ballot-counts",
+        token,
+        None,
+        timeout=60.0,
+    )
+    if st != 200 or not isinstance(js, dict):
+        return None
+    out: Dict[int, Dict[str, Any]] = {}
+    for item in js.get("items") or []:
+        if not isinstance(item, dict):
+            continue
+        try:
+            rid = int(item.get("round_lot_id") or 0)
+        except Exception:
+            rid = 0
+        if rid > 0:
+            out[rid] = item
+    return out
+
+
 async def _fetch_ballots_for_lots(
     token: str,
     round_lot_ids: List[int],
+    *,
+    session_id: Optional[int] = None,
 ) -> Dict[int, Dict[str, Any]]:
     import asyncio
 
+    wanted: List[int] = []
+    for raw in round_lot_ids or []:
+        try:
+            rid = int(raw)
+        except Exception:
+            continue
+        if rid > 0:
+            wanted.append(rid)
+    if not wanted:
+        return {}
+
+    if session_id:
+        shared = await _fetch_session_ballots(token, int(session_id))
+        if shared is not None:
+            return {rid: shared.get(rid, {}) for rid in wanted}
+
+    sem = asyncio.Semaphore(4)
+
     async def _one(rlid: int) -> Tuple[int, Dict[str, Any]]:
-        st, js = await _a_get_json(
-            f"/api/v1/auction-sessions/round-lots/{rlid}/ballot-counts",
-            token,
-            None,
-            timeout=30.0,
-        )
+        async with sem:
+            st, js = await _a_get_json(
+                f"/api/v1/auction-sessions/round-lots/{rlid}/ballot-counts",
+                token,
+                None,
+                timeout=30.0,
+            )
         if st == 200 and isinstance(js, dict):
             return rlid, js
         return rlid, {}
 
-    if not round_lot_ids:
-        return {}
-    pairs = await asyncio.gather(*[_one(rid) for rid in round_lot_ids])
+    pairs = await asyncio.gather(*[_one(rid) for rid in wanted])
     return {rid: data for rid, data in pairs}
 
 
@@ -1737,7 +1782,9 @@ async def print_round_results(
         if rid > 0:
             round_lot_ids.append(rid)
 
-    ballots_by_lot = await _fetch_ballots_for_lots(token, round_lot_ids)
+    ballots_by_lot = await _fetch_ballots_for_lots(
+        token, round_lot_ids, session_id=session_id
+    )
     rows = _build_round_result_rows(
         ui,
         results_by_lot=results_by_lot,
@@ -2189,6 +2236,7 @@ async def _fetch_round_rows_for_print(
     round_no: int,
     *,
     results_by_lot: Dict[int, Dict[str, Any]],
+    ballots_by_lot: Optional[Dict[int, Dict[str, Any]]] = None,
 ) -> Tuple[int, List[Dict[str, Any]], Dict[str, int]]:
     st_ui, ui = await _a_get_json(
         f"/api/v1/auction-sessions/sessions/{session_id}/rounds/{round_no}/ui",
@@ -2210,7 +2258,12 @@ async def _fetch_round_rows_for_print(
         if rid > 0:
             round_lot_ids.append(rid)
 
-    ballots_by_lot = await _fetch_ballots_for_lots(token, round_lot_ids)
+    if ballots_by_lot is None:
+        ballots_by_lot = await _fetch_ballots_for_lots(
+            token, round_lot_ids, session_id=session_id
+        )
+    else:
+        ballots_by_lot = {rid: ballots_by_lot.get(rid, {}) for rid in round_lot_ids}
     rows = _build_round_result_rows(
         ui,
         results_by_lot=results_by_lot,
@@ -2225,8 +2278,6 @@ async def build_session_progress_data(
     session_id: int,
 ) -> Dict[str, Any]:
     """Dữ liệu diễn biến phiên (lô không thành, lô trúng, từng vòng) — dùng chung in & biên bản."""
-    import asyncio
-
     error: Optional[Dict[str, Any]] = None
 
     st_s, sess = await _a_get_json(
@@ -2328,7 +2379,13 @@ async def build_session_progress_data(
             rid = 0
         if rid > 0:
             r1_round_lot_ids.append(rid)
-    r1_ballots = await _fetch_ballots_for_lots(token, r1_round_lot_ids)
+    shared_ballots = await _fetch_session_ballots(token, session_id)
+    if shared_ballots is None:
+        r1_ballots = await _fetch_ballots_for_lots(
+            token, r1_round_lot_ids, session_id=session_id
+        )
+    else:
+        r1_ballots = {rid: shared_ballots.get(rid, {}) for rid in r1_round_lot_ids}
 
     ineligible_rows: List[Dict[str, Any]] = []
     if project_id:
@@ -2355,17 +2412,17 @@ async def build_session_progress_data(
     )
     eligible_lots = _build_winner_sign_rows(ui_r1, auction_mode=auction_mode)
 
-    round_pairs = await asyncio.gather(
-        *[
-            _fetch_round_rows_for_print(
+    round_pairs = []
+    for rn in round_nos:
+        round_pairs.append(
+            await _fetch_round_rows_for_print(
                 token,
                 session_id,
                 rn,
                 results_by_lot=results_by_lot,
+                ballots_by_lot=shared_ballots,
             )
-            for rn in round_nos
-        ]
-    )
+        )
     round_sections: List[Dict[str, Any]] = []
     for rn, rows, stats in sorted(round_pairs, key=lambda x: x[0]):
         round_sections.append({"round_no": rn, "rows": rows, "stats": stats})
