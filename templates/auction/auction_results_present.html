@@ -6,12 +6,12 @@
   <title>{{ title or "Trình chiếu kết quả trúng đấu giá" }}</title>
   <style>
     :root{
-      --bg:#101216;
-      --ink:#f5f7fa;
-      --muted:#c9d0da;
-      --line:rgba(210,216,224,.42);
-      --card:#1b2028;
-      --band:#12151b;
+      --bg:#090c11;
+      --ink:#f4f7fb;
+      --muted:#9eacbb;
+      --line:rgba(210,216,224,.32);
+      --card:#151b24;
+      --band:#0d1218;
       --font:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
     }
     *{box-sizing:border-box}
@@ -23,18 +23,18 @@
     .stage{
       height:100vh;height:100dvh;
       display:flex;flex-direction:column;
-      padding:22px 36px 16px;
-      gap:16px;
+      padding:16px 28px 12px;
+      gap:12px;
       background:
         radial-gradient(1100px 420px at 50% -8%, rgba(255,255,255,.05), transparent 62%),
         linear-gradient(180deg, #1a1f28 0%, var(--bg) 42%);
     }
     .frame{
       flex:1 1 auto;min-height:0;
-      display:flex;flex-direction:column;gap:16px;
+      display:flex;flex-direction:column;gap:12px;
       border:1px solid var(--line);
       box-shadow:inset 0 0 0 5px var(--bg), inset 0 0 0 6px rgba(210,216,224,.2);
-      padding:18px 22px 16px;
+      padding:14px 16px 12px;
     }
     .header{
       display:grid;
@@ -88,115 +88,74 @@
     }
     .board{
       flex:1 1 auto;min-height:0;
-      display:grid;gap:12px;
+      display:grid;gap:8px;
     }
+    .d24,.d30{gap:6px}
     .card{
       min-width:0;min-height:0;
-      display:flex;flex-direction:column;
-      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,0) 42%), var(--card);
-      border:1px solid rgba(210,216,224,.28);
-      border-top:2px solid rgba(245,247,250,.72);
+      container-type:size;
+      display:grid;
+      grid-template-rows:22% minmax(0,1fr) 30%;
+      background:var(--card);
+      border:1px solid rgba(255,255,255,.08);
+      box-shadow:inset 3px 0 0 rgba(245,247,250,.7);
       overflow:hidden;
       animation:rise .42s ease both;
     }
-    .card-body{
-      flex:1 1 auto;min-height:0;
-      display:flex;flex-direction:column;justify-content:center;
-      padding:14px 18px 10px;
-    }
-    .card-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
     .lot{
-      color:var(--ink);font-weight:800;letter-spacing:.04em;
-      font-size:clamp(30px, 3vw, 46px);line-height:1;
+      align-self:end;
+      min-width:0;
+      margin:0 4.5% 0;
+      color:var(--ink);font-weight:800;letter-spacing:.03em;line-height:.95;
+      font-size:22px;
+      font-size:clamp(15px, min(17cqh, 13cqw), 84px);
       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
     }
-    .seal{
-      flex:0 0 auto;
-      color:var(--ink);
-      border:1px solid var(--line);
-      padding:4px 8px;
-      font-size:11px;font-weight:800;letter-spacing:.16em;
+    .mid{
+      min-width:0;min-height:0;
+      display:flex;flex-direction:column;justify-content:center;
+      padding:0 4.5%;
     }
     .who{
-      margin-top:8px;
-      color:var(--ink);
+      color:#ffffff;
       font-weight:750;
-      line-height:1.12;
-      letter-spacing:.01em;
+      line-height:1.05;
+      letter-spacing:.005em;
+      font-size:20px;
+      font-size:clamp(16px, min(15cqh, 7.6cqw), 76px);
       display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
     }
     .cccd{
-      margin-top:8px;
-      display:flex;align-items:baseline;gap:10px;
+      margin-top:1.5cqh;
+      display:flex;align-items:baseline;gap:.4em;
       color:var(--muted);
-      letter-spacing:.16em;
+      letter-spacing:.12em;
       font-weight:700;
       font-variant-numeric:tabular-nums;
+      font-size:13px;
+      font-size:clamp(11px, min(5.5cqh, 3cqw), 26px);
+      white-space:nowrap;overflow:hidden;
     }
-    .cccd .label{font-size:.72em;letter-spacing:.18em}
-    .cccd .tail{color:var(--ink);letter-spacing:.22em}
+    .cccd .tail{color:var(--ink);letter-spacing:.14em}
     .price-band{
-      flex:0 0 auto;
-      display:flex;align-items:baseline;justify-content:space-between;gap:12px;
-      padding:10px 18px 12px;
+      min-width:0;
+      display:flex;align-items:center;
+      padding:0 4.5%;
       background:var(--band);
-      border-top:1px solid rgba(210,216,224,.28);
-    }
-    .price-kicker{
-      color:var(--muted);font-size:12px;font-weight:750;letter-spacing:.16em;white-space:nowrap;
+      border-top:1px solid rgba(255,255,255,.08);
     }
     .price{
-      color:var(--ink);
-      font-weight:750;letter-spacing:.01em;line-height:1;
+      min-width:0;
+      color:#ffffff;
+      font-weight:750;letter-spacing:0;line-height:1;
       font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;
-      white-space:nowrap;
+      font-size:20px;
+      font-size:clamp(16px, min(17cqh, 7.2cqw), 80px);
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
     }
     .price span{
-      font-size:.42em;letter-spacing:.14em;color:var(--muted);margin-left:8px;font-weight:750;
+      font-size:.34em;letter-spacing:.12em;color:var(--muted);margin-left:.35em;font-weight:750;
     }
-    .d4 .lot{font-size:clamp(36px, 3.6vw, 56px)}
-    .d4 .who{font-size:clamp(32px, 3.2vw, 52px)}
-    .d4 .cccd{font-size:clamp(18px, 1.6vw, 26px)}
-    .d4 .price{font-size:clamp(28px, 2.8vw, 46px)}
-    .d6 .lot{font-size:clamp(30px, 2.8vw, 42px)}
-    .d6 .who{font-size:clamp(26px, 2.3vw, 38px)}
-    .d6 .cccd{font-size:clamp(16px, 1.3vw, 22px)}
-    .d6 .price{font-size:clamp(22px, 2.1vw, 34px)}
-    .d8 .lot{font-size:clamp(26px, 2.3vw, 34px)}
-    .d8 .who{font-size:clamp(22px, 1.8vw, 30px)}
-    .d8 .cccd{font-size:clamp(14px, 1.1vw, 18px)}
-    .d8 .price{font-size:clamp(18px, 1.6vw, 26px)}
-    .d8 .seal{display:none}
-    .d12 .who{font-size:clamp(18px, 1.35vw, 24px)}
-    .d12 .cccd{font-size:clamp(13px, 1vw, 16px);margin-top:4px}
-    .d12 .price{font-size:clamp(16px, 1.3vw, 22px)}
-    .d12 .lot{font-size:clamp(22px, 1.9vw, 28px)}
-    .d12 .seal,.d12 .price-kicker{display:none}
-    .d12 .card-body{padding:10px 14px 6px}
-    .d12 .price-band{padding:8px 14px}
-    .d16 .who{font-size:clamp(16px, 1.15vw, 20px)}
-    .d16 .cccd{font-size:clamp(12px, .9vw, 15px);margin-top:2px}
-    .d16 .price{font-size:clamp(14px, 1.05vw, 18px)}
-    .d16 .lot{font-size:clamp(18px, 1.55vw, 24px)}
-    .d16 .seal,.d16 .price-kicker{display:none}
-    .d16 .card-body{padding:8px 12px 4px}
-    .d16 .price-band{padding:6px 12px}
-    .d20,.d24,.d30{gap:8px}
-    .d20 .who,.d24 .who,.d30 .who{-webkit-line-clamp:1}
-    .d20 .who{font-size:clamp(15px, 1vw, 18px)}
-    .d20 .cccd{font-size:clamp(12px, .85vw, 14px);margin-top:2px;letter-spacing:.08em}
-    .d20 .price{font-size:clamp(13px, .95vw, 17px)}
-    .d20 .lot{font-size:clamp(17px, 1.35vw, 22px);letter-spacing:.03em}
-    .d24 .who,.d30 .who{font-size:clamp(13px, .9vw, 16px);margin-top:4px}
-    .d24 .cccd,.d30 .cccd{font-size:12px;margin-top:2px;letter-spacing:.06em}
-    .d24 .price{font-size:clamp(12px, .85vw, 15px)}
-    .d30 .price{font-size:12px}
-    .d24 .lot{font-size:clamp(16px, 1.2vw, 20px);letter-spacing:.02em}
-    .d30 .lot{font-size:clamp(15px, 1.1vw, 18px);letter-spacing:.02em}
-    .d20 .seal,.d24 .seal,.d30 .seal,.d20 .price-kicker,.d24 .price-kicker,.d30 .price-kicker{display:none}
-    .d20 .card-body,.d24 .card-body,.d30 .card-body{padding:6px 10px 4px}
-    .d20 .price-band,.d24 .price-band,.d30 .price-band{padding:5px 10px}
-    .d24 .price span,.d30 .price span{margin-left:4px}
     .empty{
       margin:auto;text-align:center;
     }
@@ -447,16 +406,12 @@
       const unit = price === "—" ? "" : "<span>VNĐ</span>";
       return `
       <article class="card" style="animation-delay:${i * 40}ms">
-        <div class="card-body">
-          <div class="card-top">
-            <div class="lot">${esc(r.lot_code || "—")}</div>
-            <div class="seal">ĐÃ TRÚNG</div>
-          </div>
+        <div class="lot">${esc(r.lot_code || "—")}</div>
+        <div class="mid">
           <div class="who">${esc(r.winner_name || "—")}</div>
-          <div class="cccd"><span class="label">CCCD</span><span>${esc(id.stars)}</span><span class="tail">${esc(id.tail)}</span></div>
+          <div class="cccd"><span>${esc(id.stars)}</span><span class="tail">${esc(id.tail)}</span></div>
         </div>
         <div class="price-band">
-          <div class="price-kicker">GIÁ TRÚNG</div>
           <div class="price">${esc(price)}${unit}</div>
         </div>
       </article>`;
