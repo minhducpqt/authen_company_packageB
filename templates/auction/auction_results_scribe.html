@@ -33,32 +33,37 @@
     }
     .top{
       flex:0 0 auto;
-      display:flex;align-items:flex-end;justify-content:space-between;gap:24px;
-      padding-bottom:14px;
+      display:flex;align-items:center;justify-content:space-between;gap:18px;
+      padding-bottom:10px;
       border-bottom:1px solid rgba(138,104,64,.28);
     }
+    .brand{flex:1 1 auto;min-width:0}
     .company{
-      color:var(--gold);letter-spacing:.18em;font-size:11px;font-weight:700;text-transform:uppercase;
+      color:var(--gold);letter-spacing:.14em;font-size:11px;font-weight:700;text-transform:uppercase;
     }
     .company:empty{display:none}
-    .titleline{display:flex;align-items:center;gap:12px;margin-top:4px}
-    h1{margin:0;font-size:26px;font-weight:720;letter-spacing:.01em;line-height:1}
+    .titleline{display:flex;align-items:center;gap:10px;min-width:0;margin-top:4px}
+    h1{margin:0;flex:0 0 auto;font-size:20px;font-weight:720;letter-spacing:.01em;line-height:1}
     .code{
-      display:inline-flex;align-items:center;height:26px;padding:0 10px;
+      display:inline-flex;align-items:center;height:24px;padding:0 8px;flex:0 0 auto;
       border:1px solid rgba(138,104,64,.45);border-radius:999px;
       color:var(--gold);font-size:12px;font-weight:750;letter-spacing:.12em;
     }
     .code:empty{display:none}
-    .project{margin-top:6px;color:var(--muted);font-size:14px;font-weight:650}
+    .project{
+      flex:1 1 auto;min-width:0;margin:0;
+      color:var(--muted);font-size:14px;font-weight:650;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
     .project:empty{display:none}
-    .tools{display:flex;align-items:center;gap:16px;min-width:0}
-    .search{position:relative;display:block}
+    .tools{display:flex;align-items:center;gap:16px;flex:0 0 auto}
+    .search{position:relative;display:block;flex:0 0 auto}
     .search svg{
       position:absolute;left:12px;top:50%;transform:translateY(-50%);
       width:16px;height:16px;color:var(--muted);pointer-events:none;
     }
     .search input{
-      height:42px;width:280px;padding:0 14px 0 36px;
+      height:36px;width:240px;padding:0 14px 0 36px;
       border:1px solid var(--line);border-radius:999px;
       background:#fff;font-size:14px;font-weight:650;
     }
@@ -155,10 +160,11 @@
     .toast.show{opacity:1}
     @media (max-width:1180px){
       .page{padding:16px}
-      .top{flex-direction:column;align-items:stretch;gap:12px}
-      .tools{flex-wrap:wrap}
+      .top{flex-direction:column;align-items:stretch;gap:10px}
+      .titleline{flex-wrap:wrap}
+      .search{flex:1 1 100%}
       .search input{width:100%}
-      .search{flex:1 1 220px}
+      .project{flex:1 1 140px}
       .row{grid-template-columns:1fr;gap:14px;align-items:stretch}
       .id{padding:0 0 12px;border-bottom:1px solid var(--line)}
       .field{padding:0;border-left:0}
@@ -168,23 +174,23 @@
 <body>
   <div class="page">
     <header class="top">
-      <div>
+      <div class="brand">
         <div class="company">{{ company_name }}</div>
         <div class="titleline">
+          <label class="search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M16 16l4 4"/></svg>
+            <input id="find" type="search" placeholder="Tìm mã lô hoặc tên khách" autocomplete="off" aria-label="Tìm mã lô hoặc tên khách">
+          </label>
           <h1>Ghi biên bản</h1>
           {% if project %}<span class="code">{{ project }}</span>{% endif %}
+          {% if project_name and project_name != project %}
+            <div class="project" title="{{ project_name }}">{{ project_name }}</div>
+          {% elif not project %}
+            <div class="project">Chưa chọn dự án</div>
+          {% endif %}
         </div>
-        {% if project_name and project_name != project %}
-          <div class="project">{{ project_name }}</div>
-        {% elif not project %}
-          <div class="project">Chưa chọn dự án</div>
-        {% endif %}
       </div>
       <div class="tools">
-        <label class="search">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M16 16l4 4"/></svg>
-          <input id="find" type="search" placeholder="Tìm mã lô hoặc tên khách" autocomplete="off" aria-label="Tìm mã lô hoặc tên khách">
-        </label>
         <div class="stat"><b id="wonCount">0</b><span>lô trúng</span></div>
         <div class="live"><span class="dot" id="dot"></span><span id="liveText">Đang tải</span></div>
       </div>
