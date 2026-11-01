@@ -238,10 +238,31 @@
 
   function currentUrl(){ return new URL(window.location.href); }
 
+  const PROJECT_MEMORY_KEY = "auction-results:last-project";
+  function rememberProject(code){
+    try{
+      const value = (code || "").trim();
+      if(value) localStorage.setItem(PROJECT_MEMORY_KEY, value);
+      else localStorage.removeItem(PROJECT_MEMORY_KEY);
+    }catch(e){}
+  }
+  function rememberedProject(){
+    try{ return (localStorage.getItem(PROJECT_MEMORY_KEY) || "").trim(); }
+    catch(e){ return ""; }
+  }
+  function matchingProjectOption(code){
+    const sel = document.getElementById("fProject");
+    if(!sel || !code) return "";
+    const want = code.trim().toUpperCase();
+    const opt = Array.from(sel.options).find(o => (o.value || "").trim().toUpperCase() === want);
+    return opt ? opt.value : "";
+  }
+
   function applyFilters(pushHistory=true){
     const u = currentUrl();
 
     const project = (document.getElementById('fProject')?.value || '').trim();
+    rememberProject(project);
     const q = (document.getElementById('fQ')?.value || '').trim();
     const rs = (document.getElementById('fStatus')?.value || '').trim();
     const size = (document.getElementById('fSize')?.value || '').trim();
@@ -270,6 +291,7 @@
   document.getElementById('fQ')?.addEventListener('input', ()=> applyFiltersDebounced());
 
   document.getElementById('btnResetFilters')?.addEventListener('click', ()=>{
+    rememberProject("");
     const u = currentUrl();
     u.searchParams.delete('project');
     u.searchParams.delete('q');
@@ -354,6 +376,24 @@
 
   formatAllMoneyCells();
   formatAllDateCells();
+
+  (function restoreRememberedProject(){
+    const sel = document.getElementById("fProject");
+    if(!sel) return;
+    const fromUrl = (currentUrl().searchParams.get("project") || "").trim();
+    const current = matchingProjectOption(fromUrl || sel.value);
+    if(current){
+      rememberProject(current);
+      return;
+    }
+    const saved = matchingProjectOption(rememberedProject());
+    if(!saved){
+      rememberProject("");
+      return;
+    }
+    sel.value = saved;
+    applyFilters(false);
+  })();
 
   // ===== PRESENT (open tab) =====
   function buildPresentUrl(){
