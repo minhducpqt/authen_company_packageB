@@ -6,13 +6,12 @@
   <title>{{ title or "Trình chiếu kết quả trúng đấu giá" }}</title>
   <style>
     :root{
-      --bg:#100e0c;
-      --ink:#fffaf3;
-      --muted:#f0e2cf;
-      --gold:#f3d48a;
-      --gold-dim:rgba(243,212,138,.42);
-      --card:#2a241d;
-      --band:#171410;
+      --bg:#101216;
+      --ink:#f5f7fa;
+      --muted:#c9d0da;
+      --line:rgba(210,216,224,.42);
+      --card:#1b2028;
+      --band:#12151b;
       --font:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
     }
     *{box-sizing:border-box}
@@ -20,21 +19,21 @@
     body{font-family:var(--font)}
     button,input{font-family:inherit;color:inherit}
     button{cursor:pointer}
-    button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+    button:focus-visible,input:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
     .stage{
       height:100vh;height:100dvh;
       display:flex;flex-direction:column;
       padding:22px 36px 16px;
       gap:16px;
       background:
-        radial-gradient(1100px 420px at 50% -8%, rgba(243,212,138,.18), transparent 62%),
-        linear-gradient(180deg, #241e17 0%, var(--bg) 42%);
+        radial-gradient(1100px 420px at 50% -8%, rgba(255,255,255,.05), transparent 62%),
+        linear-gradient(180deg, #1a1f28 0%, var(--bg) 42%);
     }
     .frame{
       flex:1 1 auto;min-height:0;
       display:flex;flex-direction:column;gap:16px;
-      border:1px solid var(--gold-dim);
-      box-shadow:inset 0 0 0 5px var(--bg), inset 0 0 0 6px rgba(243,212,138,.28);
+      border:1px solid var(--line);
+      box-shadow:inset 0 0 0 5px var(--bg), inset 0 0 0 6px rgba(210,216,224,.2);
       padding:18px 22px 16px;
     }
     .header{
@@ -43,13 +42,13 @@
       align-items:center;
       gap:28px;
       padding-bottom:12px;
-      border-bottom:1px solid var(--gold-dim);
+      border-bottom:1px solid var(--line);
       position:relative;
     }
     .header:after{
       content:"";
       position:absolute;left:0;right:0;bottom:-5px;height:1px;
-      background:rgba(243,212,138,.72);
+      background:rgba(245,247,250,.55);
     }
     .titles{display:flex;align-items:baseline;gap:18px;min-width:0}
     h1{
@@ -61,7 +60,7 @@
       white-space:nowrap;
     }
     .code{
-      color:var(--gold);
+      color:var(--ink);
       font-size:clamp(22px, 2.2vw, 34px);
       font-weight:750;
       letter-spacing:.14em;
@@ -72,7 +71,7 @@
       min-width:148px;
       text-align:right;
       padding-left:22px;
-      border-left:1px solid var(--gold-dim);
+      border-left:1px solid var(--line);
     }
     .plaque b{
       display:block;
@@ -81,7 +80,7 @@
       line-height:.9;
       letter-spacing:.02em;
       font-variant-numeric:tabular-nums;
-      color:var(--gold);
+      color:var(--ink);
     }
     .plaque span{
       display:block;margin-top:6px;
@@ -94,9 +93,9 @@
     .card{
       min-width:0;min-height:0;
       display:flex;flex-direction:column;
-      background:linear-gradient(180deg, rgba(255,248,236,.07), rgba(255,248,236,0) 42%), var(--card);
-      border:1px solid rgba(243,212,138,.4);
-      border-top:2px solid var(--gold);
+      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,0) 42%), var(--card);
+      border:1px solid rgba(210,216,224,.28);
+      border-top:2px solid rgba(245,247,250,.72);
       overflow:hidden;
       animation:rise .42s ease both;
     }
@@ -107,13 +106,14 @@
     }
     .card-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
     .lot{
-      color:var(--gold);font-weight:750;letter-spacing:.12em;
-      font-size:clamp(18px, 1.8vw, 28px);line-height:1;
+      color:var(--ink);font-weight:800;letter-spacing:.04em;
+      font-size:clamp(30px, 3vw, 46px);line-height:1;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
     }
     .seal{
       flex:0 0 auto;
-      color:var(--gold);
-      border:1px solid var(--gold-dim);
+      color:var(--ink);
+      border:1px solid var(--line);
       padding:4px 8px;
       font-size:11px;font-weight:800;letter-spacing:.16em;
     }
@@ -140,7 +140,7 @@
       display:flex;align-items:baseline;justify-content:space-between;gap:12px;
       padding:10px 18px 12px;
       background:var(--band);
-      border-top:1px solid rgba(243,212,138,.34);
+      border-top:1px solid rgba(210,216,224,.28);
     }
     .price-kicker{
       color:var(--muted);font-size:12px;font-weight:750;letter-spacing:.16em;white-space:nowrap;
@@ -152,14 +152,17 @@
       white-space:nowrap;
     }
     .price span{
-      font-size:.42em;letter-spacing:.14em;color:var(--gold);margin-left:8px;font-weight:750;
+      font-size:.42em;letter-spacing:.14em;color:var(--muted);margin-left:8px;font-weight:750;
     }
+    .d4 .lot{font-size:clamp(36px, 3.6vw, 56px)}
     .d4 .who{font-size:clamp(32px, 3.2vw, 52px)}
     .d4 .cccd{font-size:clamp(18px, 1.6vw, 26px)}
     .d4 .price{font-size:clamp(28px, 2.8vw, 46px)}
+    .d6 .lot{font-size:clamp(30px, 2.8vw, 42px)}
     .d6 .who{font-size:clamp(26px, 2.3vw, 38px)}
     .d6 .cccd{font-size:clamp(16px, 1.3vw, 22px)}
     .d6 .price{font-size:clamp(22px, 2.1vw, 34px)}
+    .d8 .lot{font-size:clamp(26px, 2.3vw, 34px)}
     .d8 .who{font-size:clamp(22px, 1.8vw, 30px)}
     .d8 .cccd{font-size:clamp(14px, 1.1vw, 18px)}
     .d8 .price{font-size:clamp(18px, 1.6vw, 26px)}
@@ -167,14 +170,14 @@
     .d12 .who{font-size:clamp(18px, 1.35vw, 24px)}
     .d12 .cccd{font-size:clamp(13px, 1vw, 16px);margin-top:4px}
     .d12 .price{font-size:clamp(16px, 1.3vw, 22px)}
-    .d12 .lot{font-size:clamp(15px, 1.2vw, 20px)}
+    .d12 .lot{font-size:clamp(22px, 1.9vw, 28px)}
     .d12 .seal,.d12 .price-kicker{display:none}
     .d12 .card-body{padding:10px 14px 6px}
     .d12 .price-band{padding:8px 14px}
     .d16 .who{font-size:clamp(16px, 1.15vw, 20px)}
     .d16 .cccd{font-size:clamp(12px, .9vw, 15px);margin-top:2px}
     .d16 .price{font-size:clamp(14px, 1.05vw, 18px)}
-    .d16 .lot{font-size:clamp(14px, 1vw, 18px)}
+    .d16 .lot{font-size:clamp(18px, 1.55vw, 24px)}
     .d16 .seal,.d16 .price-kicker{display:none}
     .d16 .card-body{padding:8px 12px 4px}
     .d16 .price-band{padding:6px 12px}
@@ -183,12 +186,13 @@
     .d20 .who{font-size:clamp(15px, 1vw, 18px)}
     .d20 .cccd{font-size:clamp(12px, .85vw, 14px);margin-top:2px;letter-spacing:.08em}
     .d20 .price{font-size:clamp(13px, .95vw, 17px)}
-    .d20 .lot{font-size:clamp(13px, .95vw, 16px);letter-spacing:.06em}
+    .d20 .lot{font-size:clamp(17px, 1.35vw, 22px);letter-spacing:.03em}
     .d24 .who,.d30 .who{font-size:clamp(13px, .9vw, 16px);margin-top:4px}
     .d24 .cccd,.d30 .cccd{font-size:12px;margin-top:2px;letter-spacing:.06em}
     .d24 .price{font-size:clamp(12px, .85vw, 15px)}
     .d30 .price{font-size:12px}
-    .d24 .lot,.d30 .lot{font-size:13px;letter-spacing:.04em}
+    .d24 .lot{font-size:clamp(16px, 1.2vw, 20px);letter-spacing:.02em}
+    .d30 .lot{font-size:clamp(15px, 1.1vw, 18px);letter-spacing:.02em}
     .d20 .seal,.d24 .seal,.d30 .seal,.d20 .price-kicker,.d24 .price-kicker,.d30 .price-kicker{display:none}
     .d20 .card-body,.d24 .card-body,.d30 .card-body{padding:6px 10px 4px}
     .d20 .price-band,.d24 .price-band,.d30 .price-band{padding:5px 10px}
@@ -209,52 +213,52 @@
     .foot-left,.foot-right{display:flex;align-items:center;gap:10px;min-width:0}
     .foot-right{justify-content:flex-end}
     .dot{width:8px;height:8px;border-radius:50%;background:#3DDC84;flex:0 0 auto}
-    .dot.warn{background:#fbbf24}
+    .dot.warn{background:#d0d6de}
     .dot.bad{background:#fb7185}
     .conn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .page-nav{display:flex;align-items:center;gap:10px}
     .page-stack{display:flex;flex-direction:column;align-items:center;gap:5px}
     .page-label{letter-spacing:.08em;font-size:13px;font-weight:750;color:var(--ink)}
     .bar{width:148px;height:3px;background:rgba(255,255,255,.12);border-radius:99px;overflow:hidden}
-    .bar > span{display:block;height:100%;width:0;background:var(--gold)}
+    .bar > span{display:block;height:100%;width:0;background:var(--ink)}
     .btn{
       height:30px;padding:0 10px;
       display:inline-flex;align-items:center;justify-content:center;gap:6px;
-      background:transparent;border:1px solid rgba(243,212,138,.5);border-radius:2px;
+      background:transparent;border:1px solid var(--line);border-radius:2px;
       color:var(--ink);font-size:12px;font-weight:750;letter-spacing:.06em;
     }
     .btn svg{width:15px;height:15px;display:block}
     .btn.icon{width:30px;padding:0}
     .btn:disabled{opacity:.35;cursor:default}
-    .btn.on{background:var(--gold);color:#1a140c;border-color:var(--gold)}
+    .btn.on{background:var(--ink);color:#101216;border-color:var(--ink)}
     .overlay{
       position:fixed;inset:0;z-index:20;display:none;
-      justify-content:flex-end;background:rgba(16,14,12,.4);
+      justify-content:flex-end;background:rgba(16,18,22,.4);
     }
     .overlay.open{display:flex}
     .drawer{
       width:min(420px, 100%);height:100%;
-      background:#1c1814;
-      border-left:1px solid var(--gold-dim);
+      background:#161a21;
+      border-left:1px solid var(--line);
       padding:28px 24px;
       display:flex;flex-direction:column;gap:18px;
     }
     .drawer h2{
-      margin:0;font-size:12px;letter-spacing:.2em;color:var(--gold);font-weight:750;
+      margin:0;font-size:12px;letter-spacing:.2em;color:var(--ink);font-weight:750;
     }
     .field{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--muted);font-size:15px;font-weight:650}
     .stepper{display:inline-flex;align-items:center;gap:6px}
     .stepper input{
       width:72px;height:42px;text-align:center;font-size:20px;font-weight:750;
-      background:#100e0c;border:1px solid var(--gold-dim);border-radius:2px;color:var(--ink);
+      background:#101216;border:1px solid var(--line);border-radius:2px;color:var(--ink);
     }
     .stepper button,.sizes button{
       height:42px;min-width:42px;
-      background:transparent;border:1px solid var(--gold-dim);border-radius:2px;
+      background:transparent;border:1px solid var(--line);border-radius:2px;
       font-size:18px;font-weight:750;
     }
     .sizes{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;max-width:250px}
-    .sizes button.on{background:var(--gold);color:#1a140c;border-color:var(--gold)}
+    .sizes button.on{background:var(--ink);color:#101216;border-color:var(--ink)}
     .hint{color:var(--muted);font-size:13px;line-height:1.45;margin:0}
     @keyframes rise{
       from{opacity:0;transform:translateY(10px)}
