@@ -6,86 +6,158 @@
   <title>{{ title or "Ghi biên bản kết quả trúng" }}</title>
   <style>
     :root{
-      --bg:#eef1f4;
-      --ink:#122033;
-      --muted:#5d6b7c;
-      --line:#d5dde6;
-      --card:#ffffff;
-      --accent:#0f3d66;
+      --bg:#f3efe8;
+      --ink:#1c1915;
+      --muted:#746c62;
+      --line:#e4dcd0;
+      --card:#fffcf8;
+      --accent:#1d3550;
+      --gold:#8a6840;
       --font:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
-      --mono:ui-monospace,"Cascadia Mono","Segoe UI Mono",Consolas,monospace;
     }
     *{box-sizing:border-box}
     html,body{height:100%;margin:0;background:var(--bg);color:var(--ink)}
-    body{font-family:var(--font)}
+    body{
+      font-family:var(--font);
+      background:
+        radial-gradient(880px 280px at 8% -10%, rgba(29,53,80,.07), transparent 60%),
+        linear-gradient(180deg, #f7f4ee 0%, #f3efe8 220px);
+    }
     button,input{font-family:inherit;color:inherit}
     button{cursor:pointer}
     button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     .page{
       height:100vh;height:100dvh;
       display:flex;flex-direction:column;
-      padding:18px 22px 12px;gap:12px;
+      padding:20px 28px 16px;gap:14px;
     }
     .top{
-      display:flex;align-items:flex-end;justify-content:space-between;gap:18px;
+      flex:0 0 auto;
+      display:flex;align-items:flex-end;justify-content:space-between;gap:24px;
+      padding-bottom:14px;
+      border-bottom:1px solid rgba(138,104,64,.28);
     }
     .company{
-      color:var(--accent);letter-spacing:.16em;font-size:12px;font-weight:750;text-transform:uppercase;
+      color:var(--gold);letter-spacing:.18em;font-size:11px;font-weight:700;text-transform:uppercase;
     }
     .company:empty{display:none}
-    h1{margin:4px 0 0;font-size:28px;font-weight:750;letter-spacing:.02em}
-    .project{margin-top:2px;color:var(--muted);font-size:16px;font-weight:650}
-    .meta{text-align:right;color:var(--muted);font-size:13px;font-weight:700}
-    .meta b{color:var(--ink);font-size:22px;font-weight:750}
-    .dot{display:inline-block;width:8px;height:8px;border-radius:99px;background:#16a34a;margin-right:6px}
-    .dot.warn{background:#d97706}
-    .tools{display:flex;gap:10px;align-items:center}
-    .tools input{
-      height:42px;min-width:260px;padding:0 12px;border:1px solid var(--line);border-radius:8px;
-      background:#fff;font-size:16px;font-weight:650;
+    .titleline{display:flex;align-items:center;gap:12px;margin-top:4px}
+    h1{margin:0;font-size:26px;font-weight:720;letter-spacing:.01em;line-height:1}
+    .code{
+      display:inline-flex;align-items:center;height:26px;padding:0 10px;
+      border:1px solid rgba(138,104,64,.45);border-radius:999px;
+      color:var(--gold);font-size:12px;font-weight:750;letter-spacing:.12em;
     }
-    .list{flex:1 1 auto;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:10px;padding-right:4px}
+    .code:empty{display:none}
+    .project{margin-top:6px;color:var(--muted);font-size:14px;font-weight:650}
+    .project:empty{display:none}
+    .tools{display:flex;align-items:center;gap:16px;min-width:0}
+    .search{position:relative;display:block}
+    .search svg{
+      position:absolute;left:12px;top:50%;transform:translateY(-50%);
+      width:16px;height:16px;color:var(--muted);pointer-events:none;
+    }
+    .search input{
+      height:42px;width:280px;padding:0 14px 0 36px;
+      border:1px solid var(--line);border-radius:999px;
+      background:#fff;font-size:14px;font-weight:650;
+    }
+    .search input::placeholder{color:#a3988c;font-weight:600}
+    .stat{display:flex;align-items:baseline;gap:6px;white-space:nowrap}
+    .stat b{font-size:26px;font-weight:750;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+    .stat span{color:var(--muted);font-size:13px;font-weight:700}
+    .live{
+      display:flex;align-items:center;gap:7px;
+      color:var(--muted);font-size:12px;font-weight:700;white-space:nowrap;
+    }
+    .dot{width:8px;height:8px;border-radius:99px;background:#1f9d55;flex:0 0 auto}
+    .dot.warn{background:#c2410c}
+    .list{
+      flex:1 1 auto;min-height:0;overflow:auto;
+      display:flex;flex-direction:column;gap:12px;
+      padding:2px 4px 8px 0;
+    }
     .row{
       display:grid;
-      grid-template-columns:minmax(120px,160px) minmax(180px,1.1fr) minmax(280px,1.3fr) minmax(320px,1.5fr);
-      gap:16px;align-items:center;
-      background:var(--card);border:1px solid var(--line);border-radius:10px;
-      padding:14px 16px;
+      grid-template-columns:minmax(210px,240px) minmax(280px,1fr) minmax(360px,1.25fr);
+      gap:8px 0;align-items:start;
+      background:var(--card);
+      border:1px solid rgba(28,25,21,.08);
+      border-radius:16px;
+      padding:16px 18px 16px 20px;
+      box-shadow:0 10px 24px rgba(48,36,18,.04);
     }
-    .kicker{color:var(--muted);font-size:11px;font-weight:750;letter-spacing:.14em}
-    .lot{margin-top:2px;font-size:28px;font-weight:750;letter-spacing:.04em;color:var(--accent)}
-    .who{margin-top:2px;font-size:24px;font-weight:750;line-height:1.2}
-    .numline{display:flex;align-items:flex-end;gap:8px;min-width:0}
-    .groups{display:flex;align-items:flex-end;gap:0;min-width:0;user-select:all}
-    .grp{display:flex;flex-direction:column;align-items:center;min-width:3ch}
+    .id{min-width:0;padding:2px 18px 0 0}
+    .idhead{display:flex;align-items:center;justify-content:space-between;gap:8px;height:30px}
+    .field{padding:2px 0 0 20px;border-left:1px solid var(--line)}
+    .lot{
+      margin-top:8px;
+      font-size:28px;font-weight:780;letter-spacing:.02em;line-height:1;color:var(--accent);
+    }
+    .who{
+      margin-top:8px;
+      font-size:16px;font-weight:700;line-height:1.3;color:var(--ink);
+    }
+    .field{min-width:0}
+    .print{
+      width:30px;height:30px;padding:0;border-radius:999px;
+      border:1px solid #e5d9c8;background:#faf7f2;color:var(--accent);
+      display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;
+    }
+    .print svg{width:15px;height:15px;display:block}
+    .print:hover{border-color:var(--accent);background:#fff}
+    .fieldhead{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      height:30px;margin-bottom:8px;
+    }
+    .kicker{
+      color:var(--muted);font-size:11px;font-weight:750;letter-spacing:.16em;
+    }
+    .numline{min-width:0}
+    .groups{
+      display:flex;align-items:flex-start;flex-wrap:wrap;gap:0;
+      min-width:0;user-select:all;
+    }
+    .grp{display:flex;flex-direction:column;align-items:center;min-width:2.4ch}
     .grp b{
-      font-family:var(--mono);font-size:34px;font-weight:700;letter-spacing:.04em;line-height:1;
-      font-variant-numeric:tabular-nums;
+      font-size:30px;font-weight:720;letter-spacing:.03em;line-height:1;
+      font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;
+      color:#171410;
     }
+    .price .grp b{font-size:32px}
     .grp small{
-      margin-top:4px;color:var(--muted);font-size:11px;font-weight:750;letter-spacing:.04em;font-family:var(--font);
+      margin-top:6px;color:var(--gold);font-size:11px;font-weight:700;letter-spacing:.04em;
     }
     .sep{
-      font-family:var(--mono);font-size:34px;font-weight:700;line-height:1;color:#8aa0b5;padding:0 2px 0 1px;
+      font-size:28px;font-weight:650;line-height:1;color:#8f8376;
+      padding:1px 3px 0;
     }
-    .price .sep{align-self:flex-start}
     .copy{
-      flex:0 0 auto;height:36px;padding:0 10px;border-radius:8px;
-      border:1px solid var(--line);background:#f8fafc;font-size:13px;font-weight:750;color:var(--accent);
+      flex:0 0 auto;height:30px;padding:0 12px;border-radius:999px;
+      border:1px solid #e5d9c8;background:#faf7f2;
+      font-size:12px;font-weight:750;letter-spacing:.02em;color:var(--accent);
     }
-    .copy:hover{border-color:var(--accent)}
-    .empty{margin:auto;text-align:center;color:var(--muted);font-size:20px;font-weight:700}
+    .copy:hover{border-color:var(--accent);background:#fff}
+    .copy.done{background:var(--accent);border-color:var(--accent);color:#fff}
+    .empty{
+      margin:auto;text-align:center;color:var(--muted);
+      font-size:18px;font-weight:700;letter-spacing:.01em;
+    }
     .toast{
       position:fixed;left:50%;bottom:22px;transform:translateX(-50%);
-      background:#122033;color:#fff;border-radius:8px;padding:8px 14px;
-      font-size:14px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .15s linear;
+      background:#1c1915;color:#f7f3ec;border-radius:999px;padding:8px 16px;
+      font-size:13px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .15s linear;
     }
     .toast.show{opacity:1}
-    @media (max-width:1100px){
-      .row{grid-template-columns:1fr 1fr}
-      .tools input{min-width:0;width:100%}
-      .top{flex-direction:column;align-items:stretch}
-      .meta{text-align:left}
+    @media (max-width:1180px){
+      .page{padding:16px}
+      .top{flex-direction:column;align-items:stretch;gap:12px}
+      .tools{flex-wrap:wrap}
+      .search input{width:100%}
+      .search{flex:1 1 220px}
+      .row{grid-template-columns:1fr;gap:14px;align-items:stretch}
+      .id{padding:0 0 12px;border-bottom:1px solid var(--line)}
+      .field{padding:0;border-left:0}
     }
   </style>
 </head>
@@ -94,17 +166,25 @@
     <header class="top">
       <div>
         <div class="company">{{ company_name }}</div>
-        <h1>Ghi biên bản</h1>
-        <div class="project">{{ project_name or project or "Chưa chọn dự án" }}</div>
+        <div class="titleline">
+          <h1>Ghi biên bản</h1>
+          {% if project %}<span class="code">{{ project }}</span>{% endif %}
+        </div>
+        {% if project_name and project_name != project %}
+          <div class="project">{{ project_name }}</div>
+        {% elif not project %}
+          <div class="project">Chưa chọn dự án</div>
+        {% endif %}
       </div>
-      <div class="meta">
-        <b id="wonCount">0</b> lô trúng
-        <div><span class="dot" id="dot"></span><span id="liveText">Đang tải</span></div>
+      <div class="tools">
+        <label class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M16 16l4 4"/></svg>
+          <input id="find" type="search" placeholder="Tìm mã lô hoặc tên khách" autocomplete="off" aria-label="Tìm mã lô hoặc tên khách">
+        </label>
+        <div class="stat"><b id="wonCount">0</b><span>lô trúng</span></div>
+        <div class="live"><span class="dot" id="dot"></span><span id="liveText">Đang tải</span></div>
       </div>
     </header>
-    <div class="tools">
-      <input id="find" type="search" placeholder="Tìm mã lô hoặc tên khách" autocomplete="off">
-    </div>
     <section class="list" id="list"></section>
   </div>
   <div class="toast" id="toast"></div>
@@ -175,29 +255,30 @@
       const price = groupsOf(r.winning_price_vnd, true);
       const cccdText = cccd.length ? joined(cccd) : "";
       const priceText = price.length ? joined(price) : "";
+      const roundLotId = Number(r.round_lot_id || 0);
+      const printBtn = roundLotId > 0
+        ? `<button class="print" type="button" data-print="${roundLotId}" title="In phiếu trúng" aria-label="In phiếu trúng"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 9V4h10v5"/><path d="M7 17H6a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-1"/><rect x="7" y="14" width="10" height="6" rx="1"/></svg></button>`
+        : "";
       return `
       <article class="row">
-        <div>
-          <div class="kicker">MÃ LÔ</div>
+        <div class="id">
+          <div class="idhead"><div class="kicker">MÃ LÔ</div>${printBtn}</div>
           <div class="lot">${esc(r.lot_code || "—")}</div>
-        </div>
-        <div>
-          <div class="kicker">TÊN KHÁCH</div>
           <div class="who">${esc(r.winner_name || "—")}</div>
         </div>
-        <div>
-          <div class="kicker">CCCD</div>
-          <div class="numline">
-            <div class="groups">${groupsHtml(cccd, null)}</div>
-            ${cccdText ? `<button class="copy" type="button" data-copy="${esc(cccdText)}" data-toast="Đã chép CCCD">Chép</button>` : ""}
+        <div class="field">
+          <div class="fieldhead">
+            <div class="kicker">CCCD</div>
+            ${cccdText ? `<button class="copy" type="button" data-copy="${esc(cccdText)}" data-toast="Đã chép CCCD">Sao chép</button>` : ""}
           </div>
+          <div class="numline"><div class="groups">${groupsHtml(cccd, null)}</div></div>
         </div>
-        <div class="price">
-          <div class="kicker">GIÁ TRÚNG</div>
-          <div class="numline">
-            <div class="groups">${groupsHtml(price, PRICE_LABELS)}</div>
-            ${priceText ? `<button class="copy" type="button" data-copy="${esc(priceText)}" data-toast="Đã chép giá">Chép</button>` : ""}
+        <div class="field price">
+          <div class="fieldhead">
+            <div class="kicker">GIÁ TRÚNG</div>
+            ${priceText ? `<button class="copy" type="button" data-copy="${esc(priceText)}" data-toast="Đã chép giá">Sao chép</button>` : ""}
           </div>
+          <div class="numline"><div class="groups">${groupsHtml(price, PRICE_LABELS)}</div></div>
         </div>
       </article>`;
     }).join("");
@@ -243,7 +324,7 @@
       }while(all.length < total && page < 20);
       all.sort((a, b) => Number(a.lot_id || 0) - Number(b.lot_id || 0));
       const next = all.filter(r => String(r.result_status || "").toUpperCase() === "WON" || r.winner_name);
-      const sign = listRows => JSON.stringify(listRows.map(r => [r.lot_id, r.lot_code, r.winner_name, r.winning_price_vnd, digits(r.winner_cccd)]));
+      const sign = listRows => JSON.stringify(listRows.map(r => [r.lot_id, r.lot_code, r.winner_name, r.winning_price_vnd, digits(r.winner_cccd), r.round_lot_id]));
       const same = sign(next) === sign(rows);
       rows = next;
       if(!same) render();
@@ -261,10 +342,22 @@
 
   find.addEventListener("input", render);
   list.addEventListener("click", async event => {
+    const printBtn = event.target.closest("[data-print]");
+    if(printBtn){
+      const id = Number(printBtn.getAttribute("data-print") || 0);
+      if(id > 0) window.open(`/auction/sessions/round-lots/${id}/winner/print`, "_blank");
+      return;
+    }
     const btn = event.target.closest("[data-copy]");
     if(!btn) return;
     await copyText(btn.getAttribute("data-copy") || "");
+    btn.classList.add("done");
+    btn.textContent = "Đã chép";
     showToast(btn.getAttribute("data-toast") || "Đã chép");
+    setTimeout(() => {
+      btn.classList.remove("done");
+      btn.textContent = "Sao chép";
+    }, 1200);
   });
 
   render();
