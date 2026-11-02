@@ -4,8 +4,10 @@ import io
 import httpx
 from typing import List, Tuple, Dict, Any
 
+from pathlib import Path
+
 from fastapi import APIRouter, UploadFile, Request, Form, Query
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 
 from utils.templates import templates
 from utils.auth import get_access_token
@@ -14,6 +16,7 @@ from .registry import sniff_and_parse
 SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 
 router = APIRouter(prefix="/giao-dich-ngan-hang/import", tags=["bank-import"])
+_WOORI_TEMPLATE = Path(__file__).resolve().parents[2] / "samples" / "woori_sao_ke_mau.xlsx"
 
 # Helper
 async def _api_get(client: httpx.AsyncClient, path: str, token: str, params: List[Tuple[str, str | int]] | None = None):
@@ -32,6 +35,18 @@ async def _api_post_json(client: httpx.AsyncClient, path: str, token: str, paylo
         json=payload,
         timeout=45.0,
     )
+
+@router.get("/woori-template.xlsx")
+async def download_woori_statement_template(request: Request):
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(url="/login?next=%2Fgiao-dich-ngan-hang%2Fimport", status_code=303)
+    return FileResponse(
+        _WOORI_TEMPLATE,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename="woori_sao_ke_mau.xlsx",
+    )
+
 
 @router.get("", response_class=HTMLResponse)
 async def import_upload_form(request: Request, account_id: int | None = Query(None)):
