@@ -1,124 +1,138 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="bg-white rounded-xl border border-slate-200 p-4">
-  <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+{% set err = request.query_params.get('err') %}
+{% set err_msg = request.query_params.get('err_msg','') %}
+{% set err_hint = request.query_params.get('err_hint','') %}
+{% set err_fields = request.query_params.get('err_fields','') %}
+{% set toggled = request.query_params.get('msg') == 'toggled' %}
+{% set account_err = ('tài khoản nhận tiền' in (err_msg ~ ' ' ~ err_fields)|lower) %}
+
+<div class="bg-white rounded-2xl border border-slate-200 shadow-sm">
+  <div class="flex flex-wrap items-end justify-between gap-3 px-4 pt-4 pb-3 border-b border-slate-100">
     <div class="min-w-0">
-      <h2 class="text-lg font-semibold text-slate-800 leading-tight">Quản lý dự án</h2>
-      <p class="text-slate-500 text-xs mt-0.5">Tìm kiếm · lọc trạng thái · chi tiết</p>
+      <h2 class="text-lg font-semibold text-slate-900 leading-tight">Quản lý dự án</h2>
+      <p class="text-slate-500 text-xs mt-1">
+        {{ page.total or 0 }} dự án
+        <span class="text-slate-300 mx-1">·</span>
+        Hạn hồ sơ, hạn cọc, phiên đấu và tài khoản nhận tiền
+      </p>
     </div>
     <div class="flex gap-2 shrink-0">
-      <a href="/projects/template" class="topbtn border border-slate-300 bg-white text-slate-700 text-xs py-1.5 px-2.5">
-        <i class="ri-download-2-line mr-1"></i> Template
+      <a href="/projects/template" class="inline-flex items-center h-8 px-2.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-xs font-medium hover:bg-slate-50">
+        <i class="ri-download-2-line mr-1 text-slate-400"></i> Template
       </a>
-      <a href="/projects/import" class="topbtn bg-indigo-600 text-white hover:bg-indigo-700 text-xs py-1.5 px-2.5">
+      <a href="/projects/import" class="inline-flex items-center h-8 px-2.5 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700">
         <i class="ri-upload-2-line mr-1"></i> Import
       </a>
     </div>
   </div>
 
   {% if load_err %}
-    <div class="mb-3 p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-sm">
+    <div class="mx-4 mt-3 p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-sm">
       <i class="ri-error-warning-line mr-1"></i> {{ load_err }}
     </div>
   {% endif %}
 
-  {% set err = request.query_params.get('err') %}
-  {% if err == 'toggle_failed' %}
-    {% set err_msg = request.query_params.get('err_msg','') %}
-    {% set err_hint = request.query_params.get('err_hint','') %}
-    {% set err_fields = request.query_params.get('err_fields','') %}
-    {% set err_code = request.query_params.get('err_code','') %}
-
-    <div class="mb-3 p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-sm">
-      <div class="flex items-start gap-2">
-        <i class="ri-error-warning-line mt-0.5"></i>
-        <div class="space-y-1">
-          <div class="font-semibold">
-            {{ err_msg or 'Không thể thay đổi trạng thái dự án.' }}
-            {% if err_code %}<span class="text-xs font-normal text-rose-600">(HTTP {{ err_code }})</span>{% endif %}
-          </div>
-
-          {% if err_fields %}
-            <pre class="whitespace-pre-wrap text-xs text-rose-700 bg-white/60 border border-rose-100 rounded p-2">{{ err_fields }}</pre>
-          {% endif %}
-
-          {% if err_hint %}
-            <div class="text-xs text-rose-700">{{ err_hint }}</div>
-          {% endif %}
-        </div>
-      </div>
+  {% if toggled %}
+    <div class="mx-4 mt-3 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm">
+      Đã cập nhật trạng thái dự án.
     </div>
   {% endif %}
 
-  <form id="filterForm" action="/projects" method="get" class="flex flex-wrap gap-2 items-end mb-3">
-    <div>
-      <label class="block text-[11px] text-slate-500 mb-0.5 font-medium">Tìm kiếm</label>
-      <input id="qInput" name="q" value="{{ filters.q }}" placeholder="Tên hoặc mã…"
-             class="rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm w-56" autofocus />
+  <form id="filterForm" action="/projects" method="get" class="flex flex-wrap gap-2 items-end px-4 py-3">
+    <div class="flex-1 min-w-[14rem]">
+      <label class="block text-[11px] text-slate-500 mb-1 font-medium" for="qInput">Tìm kiếm</label>
+      <input id="qInput" name="q" value="{{ filters.q }}" placeholder="Tên hoặc mã dự án"
+             class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm focus:bg-white focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100" autofocus />
     </div>
     <div>
-      <label class="block text-[11px] text-slate-500 mb-0.5 font-medium">Trạng thái</label>
-      <select id="statusSelect" name="status" class="rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm">
-        <option value="ALL"      {% if filters.status=='ALL' %}selected{% endif %}>ALL</option>
-        <option value="ACTIVE"   {% if filters.status=='ACTIVE' %}selected{% endif %}>ACTIVE</option>
-        <option value="INACTIVE" {% if filters.status=='INACTIVE' %}selected{% endif %}>INACTIVE</option>
+      <label class="block text-[11px] text-slate-500 mb-1 font-medium" for="statusSelect">Trạng thái</label>
+      <select id="statusSelect" name="status" class="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm">
+        <option value="ALL"      {% if filters.status=='ALL' %}selected{% endif %}>Tất cả</option>
+        <option value="ACTIVE"   {% if filters.status=='ACTIVE' %}selected{% endif %}>Đang hoạt động</option>
+        <option value="INACTIVE" {% if filters.status=='INACTIVE' %}selected{% endif %}>Ngừng</option>
       </select>
     </div>
   </form>
 
-  <div class="overflow-x-auto border border-slate-200 rounded-lg">
+  <div class="overflow-x-auto">
     <table class="min-w-full text-sm">
-      <thead class="bg-slate-50">
-        <tr class="text-left text-slate-600 text-xs">
-          <th class="px-2.5 py-1.5 border-b font-semibold">#</th>
-          <th class="px-2.5 py-1.5 border-b font-semibold">Mã</th>
-          <th class="px-2.5 py-1.5 border-b font-semibold">Tên dự án</th>
-          <th class="px-2.5 py-1.5 border-b font-semibold">Trạng thái</th>
-          <th class="px-2.5 py-1.5 border-b font-semibold">Vị trí</th>
-          <th class="px-2.5 py-1.5 border-b text-center whitespace-nowrap w-[120px] font-semibold">Thao tác</th>
+      <thead>
+        <tr class="text-left text-[11px] uppercase tracking-wide text-slate-400 border-y border-slate-100 bg-slate-50/80">
+          <th class="px-4 py-2 font-semibold w-12">#</th>
+          <th class="px-3 py-2 font-semibold">Mã</th>
+          <th class="px-3 py-2 font-semibold">Dự án</th>
+          <th class="px-3 py-2 font-semibold">Trạng thái</th>
+          <th class="px-3 py-2 font-semibold">Vị trí</th>
+          <th class="px-4 py-2 font-semibold text-right">Thao tác</th>
         </tr>
       </thead>
       <tbody>
       {% for p in page.data %}
-        <tr class="hover:bg-slate-50/80">
-          <td class="px-2.5 py-1.5 border-b text-slate-500">{{ loop.index + (page.page-1)*page.size }}</td>
-          <td class="px-2.5 py-1.5 border-b font-mono text-xs">{{ p.project_code }}</td>
-          <td class="px-2.5 py-1.5 border-b">
-            <div class="text-slate-800">{{ p.name }}</div>
-            <div class="mt-1 grid grid-cols-2 gap-x-4 gap-y-0.5 text-[11px] leading-4 w-max max-w-full">
+        <tr class="border-b border-slate-100 last:border-0 hover:bg-slate-50/70">
+          <td class="px-4 py-3 text-slate-400 tabular-nums">{{ loop.index + (page.page-1)*page.size }}</td>
+          <td class="px-3 py-3">
+            <span class="inline-flex font-mono text-[11px] font-medium text-slate-700 bg-slate-100 rounded px-1.5 py-0.5">{{ p.project_code }}</span>
+          </td>
+          <td class="px-3 py-3">
+            <div class="font-medium text-slate-900 leading-5">{{ p.name }}</div>
+            <div class="mt-1.5 grid grid-cols-2 gap-1 w-max max-w-full">
               {% for c in p.setup_chips or [] %}
                 <span title="{{ c.title }}"
-                      class="inline-flex items-baseline gap-1.5 {% if c.state == 'good' %}text-emerald-700{% elif c.state == 'miss' %}text-amber-700{% else %}text-slate-600{% endif %}">
-                  <span class="w-11 shrink-0 text-slate-400">{{ c.label }}</span>
+                      class="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[11px] leading-4
+                        {% if c.state == 'good' %}bg-emerald-50 text-emerald-800
+                        {% elif c.state == 'miss' %}bg-amber-50 text-amber-800
+                        {% else %}bg-slate-50 text-slate-700{% endif %}">
+                  <span class="h-1.5 w-1.5 rounded-full shrink-0
+                    {% if c.state == 'good' %}bg-emerald-500
+                    {% elif c.state == 'miss' %}bg-amber-500
+                    {% else %}bg-slate-400{% endif %}"></span>
+                  <span class="text-slate-500">{{ c.label }}</span>
                   <span class="font-medium tabular-nums">{{ c.text }}</span>
                 </span>
               {% endfor %}
             </div>
           </td>
-          <td class="px-2.5 py-1.5 border-b">
-            <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold
-              {% if p.status=='ACTIVE' %} bg-emerald-100 text-emerald-700
+          <td class="px-3 py-3">
+            <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium
+              {% if p.status=='ACTIVE' %} bg-emerald-50 text-emerald-700
               {% else %} bg-slate-100 text-slate-600 {% endif %}">
-              {{ p.status }}
+              <span class="h-1.5 w-1.5 rounded-full {% if p.status=='ACTIVE' %}bg-emerald-500{% else %}bg-slate-400{% endif %}"></span>
+              {{ 'Đang mở' if p.status=='ACTIVE' else 'Ngừng' }}
             </span>
           </td>
-          <td class="px-2.5 py-1.5 border-b text-slate-600 truncate max-w-[12rem]">{{ p.location }}</td>
-          <td class="px-2.5 py-1.5 border-b whitespace-nowrap">
-            <div class="flex items-center justify-center gap-1.5 min-w-[110px]">
+          <td class="px-3 py-3 text-slate-600 max-w-[14rem]">
+            <span class="block truncate" title="{{ p.location or '' }}">{{ p.location or '—' }}</span>
+          </td>
+          <td class="px-4 py-3 whitespace-nowrap">
+            <div class="flex items-center justify-end gap-1.5">
               <a href="/projects/{{ p.id }}"
-                 class="inline-flex items-center justify-center px-2 py-1 rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 whitespace-nowrap leading-none text-xs">
+                 class="inline-flex items-center h-7 px-2 rounded-md text-xs font-medium text-slate-600 hover:bg-slate-100">
                 Chi tiết
               </a>
-
               {% if me.role in ['SUPER_ADMIN','COMPANY_ADMIN'] %}
                 <button type="button"
-                        class="inline-flex items-center justify-center px-2 py-1 rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 whitespace-nowrap leading-none text-xs"
-                        onclick="confirmToggle('{{ p.id }}','{{ 'disable' if p.status=='ACTIVE' else 'enable' }}','{{ filters.q }}','{{ filters.status }}')">
-                  {{ 'Disable' if p.status=='ACTIVE' else 'Enable' }}
+                        class="js-toggle inline-flex items-center h-7 px-2 rounded-md border text-xs font-medium
+                          {% if p.status=='ACTIVE' %}border-slate-200 text-slate-600 hover:bg-slate-50
+                          {% else %}border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100{% endif %}"
+                        data-id="{{ p.id }}"
+                        data-action="{{ 'disable' if p.status=='ACTIVE' else 'enable' }}"
+                        data-code="{{ p.project_code or '' }}"
+                        data-name="{{ p.name or '' }}"
+                        data-known="{{ '1' if p.account_flags_known else '0' }}"
+                        data-app="{{ '1' if p.receiving_account_application else '0' }}"
+                        data-dep="{{ '1' if p.receiving_account_deposit else '0' }}"
+                        data-q="{{ filters.q }}"
+                        data-status="{{ filters.status }}">
+                  {{ 'Tạm dừng' if p.status=='ACTIVE' else 'Kích hoạt' }}
                 </button>
               {% endif %}
             </div>
           </td>
+        </tr>
+      {% else %}
+        <tr>
+          <td colspan="6" class="px-4 py-12 text-center text-sm text-slate-500">Không có dự án phù hợp.</td>
         </tr>
       {% endfor %}
       </tbody>
@@ -126,24 +140,52 @@
   </div>
 </div>
 
-<!-- Popup Confirm -->
-<div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50">
-  <div class="bg-white rounded-xl shadow-lg p-6 w-96">
-    <h3 class="text-lg font-semibold mb-4">Xác nhận thay đổi</h3>
-    <p id="confirmText" class="mb-6 text-slate-700"></p>
-    <div class="flex justify-end gap-3">
-      <button type="button" onclick="closeModal()" class="px-4 py-2 rounded border border-slate-300 hover:bg-slate-50">Hủy</button>
+<div id="confirmModal" class="fixed inset-0 bg-slate-900/40 hidden items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-5">
+    <h3 id="confirmTitle" class="text-base font-semibold text-slate-900">Xác nhận</h3>
+    <p id="confirmText" class="mt-2 text-sm text-slate-600 leading-5"></p>
+    <div class="mt-5 flex justify-end gap-2">
+      <button type="button" onclick="closeModal('confirmModal')" class="h-9 px-3 rounded-lg border border-slate-200 text-sm text-slate-700 hover:bg-slate-50">Hủy</button>
       <form id="confirmForm" method="post">
         <input type="hidden" name="action" id="confirmAction">
         <input type="hidden" name="next" id="confirmNext">
-        <button type="submit" class="px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700">Xác nhận</button>
+        <button type="submit" id="confirmSubmit" class="h-9 px-3 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">Xác nhận</button>
       </form>
     </div>
   </div>
 </div>
 
+<div id="warnModal" class="fixed inset-0 bg-slate-900/40 {% if err == 'toggle_failed' %}flex{% else %}hidden{% endif %} items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-5">
+    <div class="flex items-start gap-3">
+      <div class="h-9 w-9 shrink-0 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
+        <i class="ri-error-warning-line text-lg"></i>
+      </div>
+      <div class="min-w-0">
+        <h3 id="warnTitle" class="text-base font-semibold text-slate-900">Chưa thể kích hoạt dự án</h3>
+        <p id="warnText" class="mt-1 text-sm text-slate-600 leading-5">{{ err_msg or 'Không thể thay đổi trạng thái dự án.' }}</p>
+      </div>
+    </div>
+    <ul id="warnList" class="mt-3 space-y-1.5 text-sm text-slate-800">
+      {% for line in (err_fields or '').splitlines() %}
+        {% set item = line.strip().lstrip('-').strip() %}
+        {% if item %}
+          <li class="flex gap-2"><span class="text-amber-500">•</span><span>{{ item }}</span></li>
+        {% endif %}
+      {% endfor %}
+    </ul>
+    <p id="warnHint" class="mt-3 text-xs text-slate-500 leading-5 {% if not err_hint %}hidden{% endif %}">{{ err_hint }}</p>
+    <div class="mt-5 flex justify-end gap-2">
+      <button type="button" onclick="closeModal('warnModal')" class="h-9 px-3 rounded-lg border border-slate-200 text-sm text-slate-700 hover:bg-slate-50">Đóng</button>
+      <a id="warnAccountLink" href="/projects/payment-accounts"
+         class="h-9 px-3 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 inline-flex items-center {% if not account_err %}hidden{% endif %}">
+        Khai báo tài khoản
+      </a>
+    </div>
+  </div>
+</div>
+
 <script>
-  // Debounce helper
   function debounce(fn, wait) {
     let t; return function(...args) {
       clearTimeout(t); t = setTimeout(() => fn.apply(this, args), wait);
@@ -154,7 +196,6 @@
   const qInput = document.getElementById('qInput');
   const statusSelect = document.getElementById('statusSelect');
 
-  // Khôi phục focus & vị trí con trỏ sau khi reload
   window.addEventListener('DOMContentLoaded', () => {
     if (sessionStorage.getItem('projects_q_focus') === '1') {
       const pos = parseInt(sessionStorage.getItem('projects_q_cursor') || qInput.value.length, 10);
@@ -165,7 +206,6 @@
     }
   });
 
-  // Tìm kiếm: debounce, lưu vị trí con trỏ & focus trước khi submit
   const submitWithCaret = debounce(() => {
     try {
       sessionStorage.setItem('projects_q_focus', '1');
@@ -175,25 +215,75 @@
   }, 450);
 
   qInput.addEventListener('input', submitWithCaret);
-
-  // Đổi trạng thái: submit ngay
   statusSelect.addEventListener('change', () => form.submit());
 
-  // Modal confirm cho toggle
-  function confirmToggle(id, action, q, status) {
-    document.getElementById('confirmText').innerText =
-      `Bạn có chắc muốn ${action.toUpperCase()} dự án #${id}?`;
-    document.getElementById('confirmForm').action = `/projects/${id}/toggle`;
-    document.getElementById('confirmAction').value = action;
-    document.getElementById('confirmNext').value =
-      `/projects?q=${encodeURIComponent(q||'')}&status=${encodeURIComponent(status||'ALL')}`;
-    const m = document.getElementById('confirmModal');
-    m.classList.remove('hidden'); m.classList.add('flex');
+  function openModal(id) {
+    const m = document.getElementById(id);
+    m.classList.remove('hidden');
+    m.classList.add('flex');
   }
 
-  function closeModal() {
-    const m = document.getElementById('confirmModal');
-    m.classList.add('hidden'); m.classList.remove('flex');
+  function closeModal(id) {
+    const m = document.getElementById(id);
+    m.classList.add('hidden');
+    m.classList.remove('flex');
   }
+
+  function showAccountWarning(code, name, missing) {
+    document.getElementById('warnTitle').textContent = 'Chưa thể kích hoạt dự án';
+    const who = [code, name].filter(Boolean).join(' — ');
+    document.getElementById('warnText').textContent =
+      (who ? who + ' ' : '') + 'chưa khai báo đủ tài khoản nhận tiền.';
+    const list = document.getElementById('warnList');
+    list.replaceChildren();
+    missing.forEach((text) => {
+      const li = document.createElement('li');
+      li.className = 'flex gap-2';
+      const dot = document.createElement('span');
+      dot.className = 'text-amber-500';
+      dot.textContent = '•';
+      const span = document.createElement('span');
+      span.textContent = text;
+      li.append(dot, span);
+      list.appendChild(li);
+    });
+    const hint = document.getElementById('warnHint');
+    hint.textContent = 'Hãy khai báo tài khoản nhận tiền mua hồ sơ và tài khoản nhận tiền đặt cọc trước khi kích hoạt.';
+    hint.classList.remove('hidden');
+    document.getElementById('warnAccountLink').classList.remove('hidden');
+    openModal('warnModal');
+  }
+
+  document.querySelectorAll('.js-toggle').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const action = btn.dataset.action;
+      const code = btn.dataset.code || '';
+      const name = btn.dataset.name || '';
+      if (action === 'enable' && btn.dataset.known === '1' && (btn.dataset.app !== '1' || btn.dataset.dep !== '1')) {
+        const missing = [];
+        if (btn.dataset.app !== '1') missing.push('Chưa khai báo tài khoản nhận tiền mua hồ sơ.');
+        if (btn.dataset.dep !== '1') missing.push('Chưa khai báo tài khoản nhận tiền đặt cọc.');
+        showAccountWarning(code, name, missing);
+        return;
+      }
+      const label = action === 'enable' ? 'kích hoạt' : 'tạm dừng';
+      document.getElementById('confirmTitle').textContent = action === 'enable' ? 'Kích hoạt dự án' : 'Tạm dừng dự án';
+      document.getElementById('confirmText').textContent =
+        `Bạn có chắc muốn ${label} dự án ${code || ('#' + btn.dataset.id)}?`;
+      document.getElementById('confirmForm').action = `/projects/${btn.dataset.id}/toggle`;
+      document.getElementById('confirmAction').value = action;
+      document.getElementById('confirmNext').value =
+        `/projects?q=${encodeURIComponent(btn.dataset.q || '')}&status=${encodeURIComponent(btn.dataset.status || 'ALL')}`;
+      document.getElementById('confirmSubmit').textContent = action === 'enable' ? 'Kích hoạt' : 'Tạm dừng';
+      openModal('confirmModal');
+    });
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeModal('confirmModal');
+      closeModal('warnModal');
+    }
+  });
 </script>
 {% endblock %}

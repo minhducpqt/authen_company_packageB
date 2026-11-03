@@ -132,10 +132,7 @@ def _pack_toggle_error(status_code: int, data: dict | None) -> tuple[str, str, s
             for e in errs:
                 if isinstance(e, dict):
                     m = (e.get("message") or e.get("msg") or "").strip()
-                    f = (e.get("field") or "").strip()
-                    if m and f:
-                        lines.append(f"- {m} ({f})")
-                    elif m:
+                    if m:
                         lines.append(f"- {m}")
             if lines:
                 err_fields = "\n".join(lines)
@@ -551,6 +548,10 @@ async def list_projects(
                 for row in rows:
                     if isinstance(row, dict):
                         row["setup_chips"] = _project_setup_chips(row)
+                        row["account_flags_known"] = (
+                            "receiving_account_application" in row
+                            and "receiving_account_deposit" in row
+                        )
                 page_data = {
                     "data": rows,
                     "page": data.get("page", page),
