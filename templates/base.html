@@ -1,3 +1,34 @@
+{% set l1_path = request.url.path.rstrip('/') or '/' %}
+{% set l1_on = l1_path in [
+  '/reports',
+  '/profit',
+  '/projects',
+  '/projects/payment-accounts',
+  '/announcements',
+  '/transactions/dossiers',
+  '/transactions/deposits',
+  '/transactions/summary',
+  '/registration-forms/collections',
+  '/giao-dich-ngan-hang',
+  '/invoice-exports',
+  '/billing',
+  '/billing/invoices',
+  '/billing/admin/companies',
+  '/billing/admin/contracts',
+  '/billing/admin/bank-transactions',
+  '/customers',
+  '/_admin/customer-documents',
+  '/auction-banned-persons',
+  '/bid-attendance',
+  '/auction/sessions',
+  '/auction/results',
+  '/auction/refunds',
+  '/settings/company',
+  '/settings/bank-accounts',
+  '/account',
+  '/bieu-mau',
+  '/huong-dan'
+] %}
 <!doctype html>
 <html lang="vi">
 <head>
@@ -8,6 +39,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css">
   <link rel="stylesheet" href="/static/style.css"/>
+  {% if l1_on %}<link rel="stylesheet" href="/static/level1.css"/>{% endif %}
   {% block head_extra %}{% endblock %}
 
   <style>
@@ -1019,7 +1051,7 @@
     </aside>
     {% endif %}
 
-    <main class="app-main flex-1">
+    <main class="app-main flex-1{% if l1_on %} l1{% endif %}">
       {% if nav_locked %}
       <div class="billing-nav-lock-banner" role="alert">
         <b>Công ty đang bị khóa do quá hạn thanh toán phí phần mềm</b>
