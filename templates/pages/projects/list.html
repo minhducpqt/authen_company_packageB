@@ -83,7 +83,18 @@
         <tr class="hover:bg-slate-50/80">
           <td class="px-2.5 py-1.5 border-b text-slate-500">{{ loop.index + (page.page-1)*page.size }}</td>
           <td class="px-2.5 py-1.5 border-b font-mono text-xs">{{ p.project_code }}</td>
-          <td class="px-2.5 py-1.5 border-b">{{ p.name }}</td>
+          <td class="px-2.5 py-1.5 border-b">
+            <div class="text-slate-800">{{ p.name }}</div>
+            <div class="mt-1 grid grid-cols-2 gap-x-4 gap-y-0.5 text-[11px] leading-4 w-max max-w-full">
+              {% for c in p.setup_chips or [] %}
+                <span title="{{ c.title }}"
+                      class="inline-flex items-baseline gap-1.5 {% if c.state == 'good' %}text-emerald-700{% elif c.state == 'miss' %}text-amber-700{% else %}text-slate-600{% endif %}">
+                  <span class="w-11 shrink-0 text-slate-400">{{ c.label }}</span>
+                  <span class="font-medium tabular-nums">{{ c.text }}</span>
+                </span>
+              {% endfor %}
+            </div>
+          </td>
           <td class="px-2.5 py-1.5 border-b">
             <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold
               {% if p.status=='ACTIVE' %} bg-emerald-100 text-emerald-700

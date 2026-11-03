@@ -4,8 +4,10 @@ from __future__ import annotations
 import os
 import json
 import base64
+from datetime import datetime
 from typing import Optional
 from urllib.parse import urlencode, quote
+from zoneinfo import ZoneInfo
 
 import httpx
 from fastapi import (
@@ -450,6 +452,70 @@ async def import_apply(
         status_code=303,
     )
 
+_VN_TZ = ZoneInfo("Asia/Ho_Chi_Minh")
+
+
+def _fmt_project_when(raw) -> tuple[str, str]:
+    """Return (dd/mm HH:MM, dd/mm/yyyy HH:MM) in Vietnam time."""
+    if raw is None:
+        return "", ""
+    if isinstance(raw, datetime):
+        dt = raw
+    else:
+        s = str(raw).strip()
+        if not s:
+            return "", ""
+        try:
+            dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+        except ValueError:
+            return s, s
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=_VN_TZ)
+    else:
+        dt = dt.astimezone(_VN_TZ)
+    return dt.strftime("%d/%m %H:%M"), dt.strftime("%d/%m/%Y %H:%M")
+
+
+def _project_setup_chips(p: dict) -> list[dict]:
+    def when_chip(label: str, title: str, raw) -> dict:
+        short, full = _fmt_project_when(raw)
+        if short:
+            return {"label": label, "text": short, "title": f"{title}: {full}", "state": "set"}
+        return {"label": label, "text": "Chưa", "title": f"Chưa có {title.lower()}", "state": "miss"}
+
+    app_ok = bool(p.get("receiving_account_application"))
+    dep_ok = bool(p.get("receiving_account_deposit"))
+    if app_ok and dep_ok:
+        account = {
+            "label": "TK",
+            "text": "Đã có",
+            "title": "Đã cấu hình tài khoản nhận tiền mua hồ sơ và đặt cọc",
+            "state": "good",
+        }
+    elif app_ok or dep_ok:
+        missing = "đặt cọc" if app_ok else "mua hồ sơ"
+        account = {
+            "label": "TK",
+            "text": "Thiếu",
+            "title": f"Chưa cấu hình tài khoản nhận tiền {missing}",
+            "state": "miss",
+        }
+    else:
+        account = {
+            "label": "TK",
+            "text": "Chưa",
+            "title": "Chưa cấu hình tài khoản nhận tiền",
+            "state": "miss",
+        }
+
+    return [
+        when_chip("Hồ sơ", "Hạn mua hồ sơ", p.get("application_deadline_at")),
+        when_chip("Cọc", "Hạn đặt cọc", p.get("deposit_deadline_at")),
+        when_chip("Phiên", "Thời điểm diễn ra phiên đấu", p.get("auction_at")),
+        account,
+    ]
+
+
 # =========================
 # 2) LIST
 # =========================
@@ -481,8 +547,12 @@ async def list_projects(
                 client, f"{EP_LIST}?{urlencode(params)}", {"Authorization": f"Bearer {token}"}
             )
             if st == 200 and isinstance(data, dict):
+                rows = data.get("data", []) or []
+                for row in rows:
+                    if isinstance(row, dict):
+                        row["setup_chips"] = _project_setup_chips(row)
                 page_data = {
-                    "data": data.get("data", []),
+                    "data": rows,
                     "page": data.get("page", page),
                     "size": data.get("size", size),
                     "total": data.get("total", 0),
