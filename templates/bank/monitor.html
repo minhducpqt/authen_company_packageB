@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}Monitor tài khoản ngân hàng{% endblock %}
+{% block content %}
+<style>
+  .mon-miss td { background: #fff7f7; }
+  .mon-miss td.sr { color: #be123c; font-weight: 700; }
+  .mon-txn td { background: #fff; }
+  .mon-acc.is-open { outline: 2px solid #4f46e5; }
+</style>
+
+<div class="bg-white rounded-xl border border-slate-200 p-5">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-xl font-semibold text-slate-800">3.1 Giao dịch ngân hàng</h2>
+      <p class="text-slate-500 text-sm">Theo dõi số thứ tự HT001 còn thiếu của các tài khoản đang hoạt động.</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="/giao-dich-ngan-hang/import/woori-template.xlsx" title="Tải mẫu sao kê Woori" class="h-10 w-10 rounded-lg border border-slate-300 text-slate-600 flex items-center justify-center">
+        <i class="ri-download-2-line"></i>
+      </a>
+      <a href="/giao-dich-ngan-hang/import" class="h-10 px-4 rounded-lg bg-emerald-600 text-white flex items-center gap-2">
+        <i class="ri-upload-2-line"></i> Import sao kê
+      </a>
+    </div>
+  </div>
+
+  <div class="flex gap-2 mb-4 text-sm">
+    <a href="/giao-dich-ngan-hang" class="h-9 px-3 rounded-lg border border-slate-300 text-slate-700 inline-flex items-center">Giao dịch</a>
+    <a href="/giao-dich-ngan-hang/monitor" class="h-9 px-3 rounded-lg bg-indigo-600 text-white inline-flex items-center">Monitor tài khoản</a>
+  </div>
+
+  <form id="monForm" class="grid grid-cols-12 gap-3 items-end mb-4" onsubmit="return false;">
+    <div class="col-span-12 md:col-span-4">
+      <label class="block text-xs text-slate-500 mb-1">Từ</label>
+      <input id="monFrom" type="datetime-local" class="h-10 w-full rounded-lg border border-slate-300 px-3">
+    </div>
+    <div class="col-span-12 md:col-span-4">
+      <label class="block text-xs text-slate-500 mb-1">Đến</label>
+      <input id="monTo" type="datetime-local" class="h-10 w-full rounded-lg border border-slate-300 px-3">
+    </div>
+    <div class="col-span-12 md:col-span-4">
+      <button id="monApply" type="button" class="h-10 px-4 rounded-lg bg-indigo-600 text-white">Xem</button>
+    </div>
+  </form>
+
+  <p class="text-xs text-slate-500 mb-3">Mỗi số <b>trn_srno</b> bị khuyết trong ngày là một dòng trống. Chỉ hiện giao dịch ngay trước và ngay sau đoạn thiếu.</p>
+  <div id="monError" class="hidden mb-3 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-sm px-3 py-2"></div>
+
+  <div class="overflow-auto border border-slate-200 rounded-lg">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-50 text-slate-600">
+        <tr>
+          <th class="text-left px-3 py-2">Ngân hàng</th>
+          <th class="text-left px-3 py-2">Số tài khoản</th>
+          <th class="text-left px-3 py-2">Chủ tài khoản</th>
+          <th class="text-right px-3 py-2">Đã nhận</th>
+          <th class="text-right px-3 py-2">Thiếu</th>
+          <th class="px-3 py-2"></th>
+        </tr>
+      </thead>
+      <tbody id="monAccounts">
+        <tr><td colspan="6" class="px-3 py-6 text-center text-slate-400">Đang tải…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="monDetail" class="mt-4"></div>
+</div>
+
+<script>
+(function () {
+  const fromEl = document.getElementById('monFrom');
+  const toEl = document.getElementById('monTo');
+  const body = document.getElementById('monAccounts');
+  const detail = document.getElementById('monDetail');
+  const errorBox = document.getElementById('monError');
+  const pad = (n) => String(n).padStart(2, '0');
+  const localValue = (d) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  const now = new Date();
+  toEl.value = localValue(now);
+  fromEl.value = localValue(new Date(now.getTime() - 24 * 60 * 60 * 1000));
+
+  const money = (v) => (v === null || v === undefined || v === '') ? '' : new Intl.NumberFormat('vi-VN').format(v);
+  const when = (v) => {
+    if (!v) return '';
+    const d = new Date(v);
+    if (Number.isNaN(d.getTime())) return '';
+    return new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(d);
+  };
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+  const showError = (msg) => { errorBox.textContent = msg || ''; errorBox.classList.toggle('hidden', !msg); };
+
+  function rangeParams() {
+    return 'from=' + encodeURIComponent(fromEl.value) + '&to=' + encodeURIComponent(toEl.value);
+  }
+
+  async function loadAccounts() {
+    showError('');
+    detail.innerHTML = '';
+    body.innerHTML = '<tr><td colspan="6" class="px-3 py-6 text-center text-slate-400">Đang tải…</td></tr>';
+    const res = await fetch('/giao-dich-ngan-hang/monitor/data?' + rangeParams(), { headers: { 'Accept': 'application/json' } });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      body.innerHTML = '';
+      showError(data.error || 'Không tải được danh sách tài khoản');
+      return;
+    }
+    const rows = data.accounts || [];
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="6" class="px-3 py-6 text-center text-slate-400">Không có tài khoản đang hoạt động</td></tr>';
+      return;
+    }
+    body.innerHTML = rows.map((a) => `
+      <tr class="mon-acc border-t border-slate-100" data-id="${a.id}">
+        <td class="px-3 py-2">${esc(a.bank_code)}</td>
+        <td class="px-3 py-2 font-medium">${esc(a.account_number)}</td>
+        <td class="px-3 py-2">${esc(a.account_name)}</td>
+        <td class="px-3 py-2 text-right">${money(a.received_count)}</td>
+        <td class="px-3 py-2 text-right font-semibold ${a.missed_count ? 'text-rose-600' : 'text-emerald-600'}">${money(a.missed_count)}</td>
+        <td class="px-3 py-2 text-right"><button type="button" class="h-8 px-3 rounded-lg border border-slate-300 text-xs" data-open="${a.id}">Xem đoạn thiếu</button></td>
+      </tr>
+    `).join('');
+  }
+
+  function renderDetail(data) {
+    const segments = data.segments || [];
+    const title = `${esc(data.account.bank_code)} — ${esc(data.account.account_number)}`;
+    if (!segments.length) {
+      detail.innerHTML = `<div class="rounded-lg border border-slate-200 p-4 text-sm text-slate-500">${title}: không có số thiếu trong khoảng này.</div>`;
+      return;
+    }
+    const blocks = segments.map((seg) => {
+      const day = seg.trn_dt || '';
+      const label = day.length === 8 ? `${day.slice(6,8)}/${day.slice(4,6)}/${day.slice(0,4)}` : day;
+      const lines = (seg.rows || []).map((row) => {
+        if (row.kind === 'miss') {
+          return `<tr class="mon-miss"><td class="sr px-3 py-2">${esc(row.trn_srno)}</td><td class="px-3 py-2"></td><td class="px-3 py-2"></td><td class="px-3 py-2"></td><td class="px-3 py-2"></td><td class="px-3 py-2"></td></tr>`;
+        }
+        return `<tr class="mon-txn border-t border-slate-100"><td class="px-3 py-2">${esc(row.trn_srno)}</td><td class="px-3 py-2">${esc(when(row.txn_time))}</td><td class="px-3 py-2 text-right">${money(row.money_in)}</td><td class="px-3 py-2 text-right">${money(row.money_out)}</td><td class="px-3 py-2 text-right">${money(row.balance_after)}</td><td class="px-3 py-2">${esc(row.content)}</td></tr>`;
+      }).join('');
+      return `
+        <div class="mb-4">
+          <div class="text-sm font-medium text-slate-700 mb-2">Ngày ${label} · thiếu ${seg.missing_count} số (${seg.missing_from}–${seg.missing_to})</div>
+          <div class="overflow-auto border border-slate-200 rounded-lg">
+            <table class="min-w-full text-sm">
+              <thead class="bg-slate-50 text-slate-600">
+                <tr>
+                  <th class="text-left px-3 py-2">trn_srno</th>
+                  <th class="text-left px-3 py-2">Thời gian</th>
+                  <th class="text-right px-3 py-2">Tiền vào</th>
+                  <th class="text-right px-3 py-2">Tiền ra</th>
+                  <th class="text-right px-3 py-2">Số dư</th>
+                  <th class="text-left px-3 py-2">Nội dung</th>
+                </tr>
+              </thead>
+              <tbody>${lines}</tbody>
+            </table>
+          </div>
+        </div>`;
+    }).join('');
+    const hidden = data.hidden_missed ? `<p class="text-xs text-amber-700 mb-2">Còn ${data.hidden_missed} số thiếu chưa hiện trên trang này.</p>` : '';
+    detail.innerHTML = `<h3 class="text-base font-semibold text-slate-800 mb-3">${title}</h3>${hidden}${blocks}`;
+  }
+
+  body.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-open]');
+    if (!button) return;
+    const id = button.getAttribute('data-open');
+    body.querySelectorAll('.mon-acc').forEach((row) => row.classList.toggle('is-open', row.getAttribute('data-id') === id));
+    detail.innerHTML = '<p class="text-sm text-slate-400">Đang tải đoạn thiếu…</p>';
+    const res = await fetch('/giao-dich-ngan-hang/monitor/accounts/' + id + '?' + rangeParams(), { headers: { 'Accept': 'application/json' } });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showError(data.error || 'Không tải được đoạn thiếu');
+      detail.innerHTML = '';
+      return;
+    }
+    showError('');
+    renderDetail(data);
+  });
+
+  document.getElementById('monApply').addEventListener('click', loadAccounts);
+  loadAccounts();
+})();
+</script>
+{% endblock %}

@@ -283,3 +283,65 @@ async def bank_txn_data(
     if r_txn.status_code >= 400:
         return JSONResponse({"error": "upstream", "status": r_txn.status_code}, status_code=502)
     return JSONResponse(r_txn.json(), status_code=200)
+
+
+@router.get("/giao-dich-ngan-hang/monitor", response_class=HTMLResponse)
+async def bank_account_monitor_page(request: Request):
+    token = get_access_token(request)
+    if not token:
+        return HTMLResponse(
+            "Redirecting...",
+            status_code=303,
+            headers={"Location": "/login?next=%2Fgiao-dich-ngan-hang%2Fmonitor"},
+        )
+    return templates.TemplateResponse("bank/monitor.html", {"request": request})
+
+
+async def _monitor_company(client: httpx.AsyncClient, token: str) -> str:
+    me = await _api_get(client, "/auth/me", token)
+    if me.status_code != 200:
+        return ""
+    return ((me.json() or {}).get("company_code") or "").strip()
+
+
+async def _monitor_proxy(request: Request, path: str, raw_from: str, raw_to: str):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    params: List[Tuple[str, str | int]] = []
+    if raw_from:
+        params.append(("from", raw_from))
+    if raw_to:
+        params.append(("to", raw_to))
+    async with httpx.AsyncClient() as client:
+        company = await _monitor_company(client, token)
+        if company:
+            params.append(("company_code", company))
+        upstream = await _api_get(client, path, token, params)
+    if upstream.status_code >= 400:
+        detail = ""
+        try:
+            detail = (upstream.json() or {}).get("detail") or ""
+        except Exception:
+            detail = ""
+        return JSONResponse({"error": detail or "upstream", "status": upstream.status_code}, status_code=502)
+    return JSONResponse(upstream.json(), status_code=200)
+
+
+@router.get("/giao-dich-ngan-hang/monitor/data")
+async def bank_account_monitor_data(
+    request: Request,
+    raw_from: str = Query("", alias="from"),
+    raw_to: str = Query("", alias="to"),
+):
+    return await _monitor_proxy(request, "/api/v1/bank-account-monitor", raw_from, raw_to)
+
+
+@router.get("/giao-dich-ngan-hang/monitor/accounts/{account_id}")
+async def bank_account_monitor_gaps(
+    request: Request,
+    account_id: int,
+    raw_from: str = Query("", alias="from"),
+    raw_to: str = Query("", alias="to"),
+):
+    return await _monitor_proxy(request, f"/api/v1/bank-account-monitor/{account_id}", raw_from, raw_to)
