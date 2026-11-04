@@ -145,7 +145,8 @@
       const label = day.length === 8 ? `${day.slice(6,8)}/${day.slice(4,6)}/${day.slice(0,4)}` : day;
       const lines = (seg.rows || []).map((row) => {
         if (row.kind === 'miss') {
-          return `<tr class="mon-miss"><td class="sr px-3 py-2">${esc(row.trn_srno)}</td><td class="px-3 py-2"></td><td class="px-3 py-2"></td><td class="px-3 py-2"></td><td class="px-3 py-2"></td><td class="px-3 py-2"></td></tr>`;
+          const accountNo = data.account.account_number || '';
+          return `<tr class="mon-miss"><td class="sr px-3 py-2">${esc(row.trn_srno)}</td><td class="px-3 py-2"></td><td class="px-3 py-2"></td><td class="px-3 py-2"></td><td class="px-3 py-2"></td><td class="px-3 py-2"><button type="button" class="mon-copy h-7 px-2 rounded border border-rose-300 bg-white text-xs text-rose-700" data-copy-account="${esc(accountNo)}" data-copy-day="${esc(day)}" data-copy-srno="${esc(row.trn_srno)}">Copy thông điệp</button></td></tr>`;
         }
         return `<tr class="mon-txn border-t border-slate-100"><td class="px-3 py-2">${esc(row.trn_srno)}</td><td class="px-3 py-2">${esc(when(row.txn_time))}</td><td class="px-3 py-2 text-right">${money(row.money_in)}</td><td class="px-3 py-2 text-right">${money(row.money_out)}</td><td class="px-3 py-2 text-right">${money(row.balance_after)}</td><td class="px-3 py-2">${esc(row.content)}</td></tr>`;
       }).join('');
@@ -173,6 +174,31 @@
     detail.innerHTML = `<h3 class="text-base font-semibold text-slate-800 mb-3">${title}</h3>${hidden}${blocks}`;
   }
 
+  function resendMessage(accountNo, dayKey, srno) {
+    const day = String(dayKey || '');
+    const label = day.length === 8 ? day.slice(6, 8) + '/' + day.slice(4, 6) + '/' + day.slice(0, 4) : day;
+    const serial = String(srno || '').replace(/\D/g, '').padStart(7, '0');
+    return [
+      'Đề nghị gửi lại bản tin HT001.',
+      'STK: ' + accountNo,
+      'Ngày: ' + label,
+      'trn_srno: ' + serial,
+    ].join('\n');
+  }
+
+  async function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+    const box = document.createElement('textarea');
+    box.value = text;
+    document.body.appendChild(box);
+    box.select();
+    document.execCommand('copy');
+    box.remove();
+  }
+
   body.addEventListener('click', async (event) => {
     const button = event.target.closest('[data-open]');
     if (!button) return;
@@ -188,6 +214,24 @@
     }
     showError('');
     renderDetail(data);
+  });
+
+  detail.addEventListener('click', async (event) => {
+    const button = event.target.closest('.mon-copy');
+    if (!button) return;
+    const text = resendMessage(
+      button.getAttribute('data-copy-account') || '',
+      button.getAttribute('data-copy-day') || '',
+      button.getAttribute('data-copy-srno') || ''
+    );
+    try {
+      await copyText(text);
+      const old = button.textContent;
+      button.textContent = 'Đã copy';
+      setTimeout(() => { button.textContent = old; }, 1200);
+    } catch (err) {
+      showError('Không copy được thông điệp');
+    }
   });
 
   presetEl.addEventListener('change', () => {
