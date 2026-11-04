@@ -5,6 +5,8 @@
   .mon-miss td { background: #fff7f7; }
   .mon-miss td.sr { color: #be123c; font-weight: 700; }
   .mon-txn td { background: #fff; }
+  .mon-acc.has-miss td { background: #fff1f2; }
+  .mon-acc.has-miss td.miss-count { color: #be123c; }
   .mon-acc.is-open { outline: 2px solid #4f46e5; }
 </style>
 
@@ -121,16 +123,21 @@
       body.innerHTML = '<tr><td colspan="6" class="px-3 py-6 text-center text-slate-400">Không có tài khoản đang hoạt động</td></tr>';
       return;
     }
-    body.innerHTML = rows.map((a) => `
-      <tr class="mon-acc border-t border-slate-100" data-id="${a.id}">
+    body.innerHTML = rows.map((a) => {
+      const missed = Number(a.missed_count) || 0;
+      const action = missed >= 1
+        ? `<button type="button" class="h-8 px-3 rounded-lg border border-rose-300 bg-white text-xs font-medium text-rose-700" data-open="${a.id}">Xem đoạn thiếu</button>`
+        : '';
+      return `
+      <tr class="mon-acc border-t ${missed >= 1 ? 'has-miss border-rose-100' : 'border-slate-100'}" data-id="${a.id}">
         <td class="px-3 py-2">${esc(a.bank_code)}</td>
         <td class="px-3 py-2 font-medium">${esc(a.account_number)}</td>
         <td class="px-3 py-2">${esc(a.account_name)}</td>
         <td class="px-3 py-2 text-right">${money(a.received_count)}</td>
-        <td class="px-3 py-2 text-right font-semibold ${a.missed_count ? 'text-rose-600' : 'text-emerald-600'}">${money(a.missed_count)}</td>
-        <td class="px-3 py-2 text-right"><button type="button" class="h-8 px-3 rounded-lg border border-slate-300 text-xs" data-open="${a.id}">Xem đoạn thiếu</button></td>
-      </tr>
-    `).join('');
+        <td class="miss-count px-3 py-2 text-right font-semibold ${missed >= 1 ? '' : 'text-emerald-600'}">${money(a.missed_count)}</td>
+        <td class="px-3 py-2 text-right">${action}</td>
+      </tr>`;
+    }).join('');
   }
 
   function renderDetail(data) {
