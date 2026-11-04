@@ -337,6 +337,72 @@ async def bank_account_monitor_data(
     return await _monitor_proxy(request, "/api/v1/bank-account-monitor", raw_from, raw_to)
 
 
+@router.get("/giao-dich-ngan-hang/history", response_class=HTMLResponse)
+async def bank_account_history_page(request: Request):
+    token = get_access_token(request)
+    if not token:
+        return HTMLResponse(
+            "Redirecting...",
+            status_code=303,
+            headers={"Location": "/login?next=%2Fgiao-dich-ngan-hang%2Fhistory"},
+        )
+    accounts: list[dict] = []
+    async with httpx.AsyncClient() as client:
+        company = await _monitor_company(client, token)
+        params_acc: List[Tuple[str, str | int]] = [("status", True), ("page", 1), ("size", 200)]
+        if company:
+            params_acc.append(("company_code", company))
+        upstream = await _api_get(client, "/api/v1/company_bank_accounts", token, params_acc)
+        if upstream.status_code == 200:
+            try:
+                payload = upstream.json()
+                accounts = payload.get("data", []) if isinstance(payload, dict) else []
+            except Exception:
+                accounts = []
+    return templates.TemplateResponse(
+        "bank/history.html",
+        {"request": request, "accounts": accounts},
+    )
+
+
+@router.get("/giao-dich-ngan-hang/history/data")
+async def bank_account_history_data(
+    request: Request,
+    raw_from: str = Query("", alias="from"),
+    raw_to: str = Query("", alias="to"),
+    account_id: str = Query(""),
+    q: str = Query(""),
+    page: int = Query(1, ge=1),
+    size: int = Query(50, ge=1, le=200),
+):
+    token = get_access_token(request)
+    if not token:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    params: List[Tuple[str, str | int]] = [("page", page), ("size", size)]
+    if raw_from:
+        params.append(("from", raw_from))
+    if raw_to:
+        params.append(("to", raw_to))
+    if q.strip():
+        params.append(("q", q.strip()))
+    account_id_int = _to_int_or_none(account_id)
+    if account_id_int is not None:
+        params.append(("account_id", account_id_int))
+    async with httpx.AsyncClient() as client:
+        company = await _monitor_company(client, token)
+        if company:
+            params.append(("company_code", company))
+        upstream = await _api_get(client, "/api/v1/bank-account-monitor/history", token, params)
+    if upstream.status_code >= 400:
+        detail = ""
+        try:
+            detail = (upstream.json() or {}).get("detail") or ""
+        except Exception:
+            detail = ""
+        return JSONResponse({"error": detail or "upstream", "status": upstream.status_code}, status_code=502)
+    return JSONResponse(upstream.json(), status_code=200)
+
+
 @router.get("/giao-dich-ngan-hang/monitor/accounts/{account_id}")
 async def bank_account_monitor_gaps(
     request: Request,

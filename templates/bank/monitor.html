@@ -27,23 +27,25 @@
   <div class="flex gap-2 mb-4 text-sm">
     <a href="/giao-dich-ngan-hang" class="h-9 px-3 rounded-lg border border-slate-300 text-slate-700 inline-flex items-center">Giao dịch</a>
     <a href="/giao-dich-ngan-hang/monitor" class="h-9 px-3 rounded-lg bg-indigo-600 text-white inline-flex items-center">Monitor tài khoản</a>
+    <a href="/giao-dich-ngan-hang/history" class="h-9 px-3 rounded-lg border border-slate-300 text-slate-700 inline-flex items-center">Lịch sử vào/ra</a>
   </div>
 
-  <form id="monForm" class="grid grid-cols-12 gap-3 items-end mb-4" onsubmit="return false;">
-    <div class="col-span-12 md:col-span-4">
-      <label class="block text-xs text-slate-500 mb-1">Từ</label>
-      <input id="monFrom" type="datetime-local" class="h-10 w-full rounded-lg border border-slate-300 px-3">
-    </div>
-    <div class="col-span-12 md:col-span-4">
-      <label class="block text-xs text-slate-500 mb-1">Đến</label>
-      <input id="monTo" type="datetime-local" class="h-10 w-full rounded-lg border border-slate-300 px-3">
-    </div>
-    <div class="col-span-12 md:col-span-4">
-      <button id="monApply" type="button" class="h-10 px-4 rounded-lg bg-indigo-600 text-white">Xem</button>
-    </div>
+  <form id="monForm" class="flex flex-wrap items-center gap-2 mb-3" onsubmit="return false;">
+    <select id="monPreset" class="h-9 rounded-lg border border-slate-300 bg-white px-2 text-sm text-slate-700" aria-label="Khoảng ngày gần nhất">
+      <option value="1">1 ngày gần nhất</option>
+      <option value="3">3 ngày gần nhất</option>
+      <option value="10">10 ngày gần nhất</option>
+      <option value="30">30 ngày gần nhất</option>
+      <option value="custom">Tùy chọn</option>
+    </select>
+    <label for="monFrom" class="text-xs text-slate-500">Từ</label>
+    <input id="monFrom" type="datetime-local" class="h-9 rounded-lg border border-slate-300 px-2 text-sm">
+    <label for="monTo" class="text-xs text-slate-500">Đến</label>
+    <input id="monTo" type="datetime-local" class="h-9 rounded-lg border border-slate-300 px-2 text-sm">
+    <button id="monApply" type="button" class="h-9 px-3 rounded-lg bg-indigo-600 text-white text-sm">Xem</button>
   </form>
 
-  <p class="text-xs text-slate-500 mb-3">Mỗi số <b>trn_srno</b> bị khuyết trong ngày là một dòng trống. Chỉ hiện giao dịch ngay trước và ngay sau đoạn thiếu.</p>
+  <p class="text-xs text-slate-500 mb-3">Số thiếu là <b>trn_srno</b> không có trong sổ HT001 đã nhận, tính cả tiền vào và tiền ra. Mỗi số thiếu là một dòng trống, kẹp giữa giao dịch ngay trước và ngay sau.</p>
   <div id="monError" class="hidden mb-3 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-sm px-3 py-2"></div>
 
   <div class="overflow-auto border border-slate-200 rounded-lg">
@@ -69,6 +71,7 @@
 
 <script>
 (function () {
+  const presetEl = document.getElementById('monPreset');
   const fromEl = document.getElementById('monFrom');
   const toEl = document.getElementById('monTo');
   const body = document.getElementById('monAccounts');
@@ -76,9 +79,17 @@
   const errorBox = document.getElementById('monError');
   const pad = (n) => String(n).padStart(2, '0');
   const localValue = (d) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
-  const now = new Date();
-  toEl.value = localValue(now);
-  fromEl.value = localValue(new Date(now.getTime() - 24 * 60 * 60 * 1000));
+  let fillingPreset = false;
+
+  function applyPreset(days) {
+    const end = new Date();
+    fillingPreset = true;
+    toEl.value = localValue(end);
+    fromEl.value = localValue(new Date(end.getTime() - days * 24 * 60 * 60 * 1000));
+    fillingPreset = false;
+  }
+
+  applyPreset(1);
 
   const money = (v) => (v === null || v === undefined || v === '') ? '' : new Intl.NumberFormat('vi-VN').format(v);
   const when = (v) => {
@@ -179,6 +190,14 @@
     renderDetail(data);
   });
 
+  presetEl.addEventListener('change', () => {
+    if (presetEl.value === 'custom') return;
+    applyPreset(Number(presetEl.value));
+    loadAccounts();
+  });
+  const markCustom = () => { if (!fillingPreset) presetEl.value = 'custom'; };
+  fromEl.addEventListener('input', markCustom);
+  toEl.addEventListener('input', markCustom);
   document.getElementById('monApply').addEventListener('click', loadAccounts);
   loadAccounts();
 })();

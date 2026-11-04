@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}Lịch sử giao dịch vào ra{% endblock %}
+{% block content %}
+<div class="bg-white rounded-xl border border-slate-200 p-5">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-xl font-semibold text-slate-800">3.1 Giao dịch ngân hàng</h2>
+      <p class="text-slate-500 text-sm">Lịch sử HT001 đã nhận, gồm tiền vào và tiền ra.</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="/giao-dich-ngan-hang/import/woori-template.xlsx" title="Tải mẫu sao kê Woori" class="h-10 w-10 rounded-lg border border-slate-300 text-slate-600 flex items-center justify-center">
+        <i class="ri-download-2-line"></i>
+      </a>
+      <a href="/giao-dich-ngan-hang/import" class="h-10 px-4 rounded-lg bg-emerald-600 text-white flex items-center gap-2">
+        <i class="ri-upload-2-line"></i> Import sao kê
+      </a>
+    </div>
+  </div>
+
+  <div class="flex gap-2 mb-4 text-sm">
+    <a href="/giao-dich-ngan-hang" class="h-9 px-3 rounded-lg border border-slate-300 text-slate-700 inline-flex items-center">Giao dịch</a>
+    <a href="/giao-dich-ngan-hang/monitor" class="h-9 px-3 rounded-lg border border-slate-300 text-slate-700 inline-flex items-center">Monitor tài khoản</a>
+    <a href="/giao-dich-ngan-hang/history" class="h-9 px-3 rounded-lg bg-indigo-600 text-white inline-flex items-center">Lịch sử vào/ra</a>
+  </div>
+
+  <form id="histForm" class="flex flex-wrap items-center gap-2 mb-3" onsubmit="return false;">
+    <select id="histAccount" class="h-9 min-w-56 rounded-lg border border-slate-300 bg-white px-2 text-sm text-slate-700" aria-label="Tài khoản">
+      <option value="">Tất cả tài khoản</option>
+      {% for a in accounts %}
+        <option value="{{ a.id }}">{{ a.bank_code or '—' }} — {{ a.account_number }} ({{ a.account_name or '—' }})</option>
+      {% endfor %}
+    </select>
+    <input id="histQ" type="search" placeholder="Nội dung thanh toán" class="h-9 w-64 rounded-lg border border-slate-300 px-2 text-sm">
+    <select id="histPreset" class="h-9 rounded-lg border border-slate-300 bg-white px-2 text-sm text-slate-700" aria-label="Khoảng ngày gần nhất">
+      <option value="1">1 ngày gần nhất</option>
+      <option value="3">3 ngày gần nhất</option>
+      <option value="10">10 ngày gần nhất</option>
+      <option value="30">30 ngày gần nhất</option>
+      <option value="custom">Tùy chọn</option>
+    </select>
+    <label for="histFrom" class="text-xs text-slate-500">Từ</label>
+    <input id="histFrom" type="datetime-local" class="h-9 rounded-lg border border-slate-300 px-2 text-sm">
+    <label for="histTo" class="text-xs text-slate-500">Đến</label>
+    <input id="histTo" type="datetime-local" class="h-9 rounded-lg border border-slate-300 px-2 text-sm">
+    <button id="histApply" type="button" class="h-9 px-3 rounded-lg bg-indigo-600 text-white text-sm">Xem</button>
+  </form>
+
+  <div id="histError" class="hidden mb-3 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-sm px-3 py-2"></div>
+  <div class="overflow-auto border border-slate-200 rounded-lg">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-50 text-slate-600">
+        <tr>
+          <th class="text-left px-3 py-2">trn_srno</th>
+          <th class="text-left px-3 py-2">Thời gian</th>
+          <th class="text-left px-3 py-2">Tài khoản</th>
+          <th class="text-right px-3 py-2">Tiền vào</th>
+          <th class="text-right px-3 py-2">Tiền ra</th>
+          <th class="text-right px-3 py-2">Số dư</th>
+          <th class="text-left px-3 py-2">Nội dung</th>
+        </tr>
+      </thead>
+      <tbody id="histBody">
+        <tr><td colspan="7" class="px-3 py-6 text-center text-slate-400">Đang tải…</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="flex items-center justify-between mt-3 text-sm text-slate-600">
+    <span id="histTotal"></span>
+    <div class="flex gap-2">
+      <button id="histPrev" type="button" class="h-8 px-3 rounded-lg border border-slate-300">Trước</button>
+      <button id="histNext" type="button" class="h-8 px-3 rounded-lg border border-slate-300">Sau</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const accountEl = document.getElementById('histAccount');
+  const qEl = document.getElementById('histQ');
+  const presetEl = document.getElementById('histPreset');
+  const fromEl = document.getElementById('histFrom');
+  const toEl = document.getElementById('histTo');
+  const body = document.getElementById('histBody');
+  const errorBox = document.getElementById('histError');
+  const totalEl = document.getElementById('histTotal');
+  const pad = (n) => String(n).padStart(2, '0');
+  const localValue = (d) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  let fillingPreset = false;
+  let page = 1;
+  const size = 50;
+
+  function applyPreset(days) {
+    const end = new Date();
+    fillingPreset = true;
+    toEl.value = localValue(end);
+    fromEl.value = localValue(new Date(end.getTime() - days * 24 * 60 * 60 * 1000));
+    fillingPreset = false;
+  }
+  applyPreset(1);
+
+  const money = (v) => (v === null || v === undefined || v === '') ? '' : new Intl.NumberFormat('vi-VN').format(v);
+  const when = (v) => {
+    if (!v) return '';
+    const d = new Date(v);
+    if (Number.isNaN(d.getTime())) return '';
+    return new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(d);
+  };
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+  const showError = (msg) => { errorBox.textContent = msg || ''; errorBox.classList.toggle('hidden', !msg); };
+
+  function query() {
+    const params = new URLSearchParams();
+    params.set('from', fromEl.value);
+    params.set('to', toEl.value);
+    params.set('page', String(page));
+    params.set('size', String(size));
+    if (accountEl.value) params.set('account_id', accountEl.value);
+    if (qEl.value.trim()) params.set('q', qEl.value.trim());
+    return params.toString();
+  }
+
+  async function loadRows() {
+    showError('');
+    body.innerHTML = '<tr><td colspan="7" class="px-3 py-6 text-center text-slate-400">Đang tải…</td></tr>';
+    const res = await fetch('/giao-dich-ngan-hang/history/data?' + query(), { headers: { 'Accept': 'application/json' } });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      body.innerHTML = '';
+      totalEl.textContent = '';
+      showError(data.error || 'Không tải được lịch sử');
+      return;
+    }
+    const rows = data.data || [];
+    totalEl.textContent = 'Tổng ' + (data.total || 0) + ' dòng · trang ' + data.page;
+    document.getElementById('histNext').dataset.total = String(data.total || 0);
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="7" class="px-3 py-6 text-center text-slate-400">Không có giao dịch trong khoảng này</td></tr>';
+      return;
+    }
+    body.innerHTML = rows.map((row) => `
+      <tr class="border-t border-slate-100">
+        <td class="px-3 py-2 font-medium">${esc(row.trn_srno)}</td>
+        <td class="px-3 py-2">${esc(when(row.txn_time))}</td>
+        <td class="px-3 py-2">${esc(row.account_number)}</td>
+        <td class="px-3 py-2 text-right">${money(row.money_in)}</td>
+        <td class="px-3 py-2 text-right">${money(row.money_out)}</td>
+        <td class="px-3 py-2 text-right">${money(row.balance_after)}</td>
+        <td class="px-3 py-2">${esc(row.content)}</td>
+      </tr>
+    `).join('');
+  }
+
+  presetEl.addEventListener('change', () => {
+    if (presetEl.value === 'custom') return;
+    applyPreset(Number(presetEl.value));
+    page = 1;
+    loadRows();
+  });
+  const markCustom = () => { if (!fillingPreset) presetEl.value = 'custom'; };
+  fromEl.addEventListener('input', markCustom);
+  toEl.addEventListener('input', markCustom);
+  document.getElementById('histApply').addEventListener('click', () => { page = 1; loadRows(); });
+  accountEl.addEventListener('change', () => { page = 1; loadRows(); });
+  document.getElementById('histPrev').addEventListener('click', () => { if (page > 1) { page -= 1; loadRows(); } });
+  document.getElementById('histNext').addEventListener('click', () => {
+    const shown = page * size;
+    const total = Number(document.getElementById('histNext').dataset.total || 0);
+    if (shown < total) { page += 1; loadRows(); }
+  });
+  loadRows();
+})();
+</script>
+{% endblock %}
