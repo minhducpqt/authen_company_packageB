@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import os
+from urllib.parse import urlencode
+
 import httpx
 from typing import Optional, Dict, Any
 
@@ -34,17 +36,19 @@ async def page_projects_payment_accounts(
     me = await fetch_me(request)
 
     params = []
-    if q: params.append(("q", q))
-    if status: params.append(("status", status))
-    qs = "&".join([f"{k}={v}" for k, v in params]) if params else ""
-    url_projects = f"{API_BASE_URL}/api/v1/projects" + (f"?{qs}" if qs else "")
+    if q and q.strip():
+        params.append(("q", q.strip()))
+    if status in ("ACTIVE", "INACTIVE", "CLOSED"):
+        params.append(("status", status))
+    qs = urlencode(params)
+    url_overview = f"{API_BASE_URL}/api/v1/projects/payment-accounts/overview" + (f"?{qs}" if qs else "")
 
     async with httpx.AsyncClient() as client:
-        # 1) Projects
-        projects_resp = await _fetch_json(client, url_projects, access)
-        projects = projects_resp.get("data", [])
+        overview = await _fetch_json(client, url_overview, access)
+        projects = overview.get("projects", []) if isinstance(overview, dict) else []
+        total = int(overview.get("total") or len(projects)) if isinstance(overview, dict) else len(projects)
 
-        # 2) Company Bank Accounts (để render label & chọn)
+        # Company Bank Accounts (để render label & chọn)
         url_cba = f"{API_BASE_URL}/api/v1/company_bank_accounts?size=200&status=true"
         cba_page = await _fetch_json(client, url_cba, access)
         company_accounts = cba_page.get("data", [])
@@ -69,31 +73,21 @@ async def page_projects_payment_accounts(
                 "account_number": (c.get("account_number") or "").strip(),
             }
 
-        # 3) Summaries cho từng project
         summaries: Dict[int, Dict[str, Any]] = {}
-        # 4) Freeze status cho từng project
         freeze_map: Dict[int, Dict[str, Any]] = {}
-
         for p in projects:
             pid = p["id"]
-            url_summary = f"{API_BASE_URL}/api/v1/projects/{pid}/payment-accounts/summary"
-            url_freeze = f"{API_BASE_URL}/api/v1/projects/{pid}/payment-accounts/freeze-status"
-            try:
-                s = await _fetch_json(client, url_summary, access)
-            except Exception:
-                s = {"project_id": pid, "payment_accounts": {}, "cba_application_id": None, "cba_deposit_id": None}
-            summaries[pid] = s
-
-            try:
-                fz = await _fetch_json(client, url_freeze, access)
-                freeze_map[pid] = {
-                    "frozen": bool(fz.get("frozen", False)),
-                    "frozen_at": fz.get("frozen_at"),
-                    "reason": fz.get("reason"),
-                    "otp_required": bool(fz.get("otp_required", False)),
-                }
-            except Exception:
-                freeze_map[pid] = {"frozen": False, "frozen_at": None, "reason": None}
+            summaries[pid] = {
+                "project_id": pid,
+                "cba_application_id": p.get("cba_application_id"),
+                "cba_deposit_id": p.get("cba_deposit_id"),
+            }
+            freeze_map[pid] = {
+                "frozen": bool(p.get("frozen", False)),
+                "frozen_at": p.get("frozen_at"),
+                "reason": p.get("reason"),
+                "otp_required": bool(p.get("otp_required", False)),
+            }
 
     return templates.TemplateResponse(
         "projects/payment_accounts_list.html",
@@ -106,7 +100,8 @@ async def page_projects_payment_accounts(
             "cba_options": cba_options,
             "cba_map": cba_map,           # <-- thêm map để hiển thị đẹp
             "q": q or "",
-            "status": status or "",
+            "status": status if status in ("ACTIVE", "INACTIVE", "CLOSED") else "",
+            "total": total,
             "title": "Cấu hình nhận tiền",
         }
     )

@@ -320,16 +320,17 @@
     </div>
   </div>
 
-  <form method="get" class="mb-4 flex gap-2 flex-wrap">
-    <input name="q" value="{{ q }}" placeholder="Tìm mã/tên dự án…" class="h-10 w-64 rounded-lg border border-slate-300 px-3" />
-    <select name="status" class="h-10 rounded-lg border border-slate-300 px-3">
+  <form id="payFilter" method="get" class="mb-2 flex gap-2 flex-wrap" onsubmit="return false;">
+    <input id="payQ" name="q" value="{{ q }}" placeholder="Tìm mã/tên dự án…" autocomplete="off" class="h-10 w-64 rounded-lg border border-slate-300 px-3" />
+    <select id="payStatus" name="status" class="h-10 rounded-lg border border-slate-300 px-3">
       <option value="">-- Trạng thái --</option>
       {% for st in ["ACTIVE","INACTIVE","CLOSED"] %}
         <option value="{{ st }}" {% if status==st %}selected{% endif %}>{{ st }}</option>
       {% endfor %}
     </select>
-    <button class="btn btn-slate">Lọc</button>
+    <button id="payReset" type="button" class="btn btn-slate">Xóa lọc</button>
   </form>
+  <p class="text-xs text-slate-500 mb-3">Đang hiện {{ projects|length }} / {{ total }} dự án. Tối đa 30 dự án mỗi lần tải.</p>
 
   <div class="overflow-x-auto border border-slate-200 rounded-xl">
     <table class="table text-sm">
@@ -593,6 +594,42 @@
     </div>
   </div>
 </div>
+
+<script>
+  (function () {
+    const qEl = document.getElementById('payQ');
+    const statusEl = document.getElementById('payStatus');
+    let searchTimer = 0;
+    function applyFilter() {
+      const params = new URLSearchParams();
+      const q = (qEl.value || '').trim();
+      const status = statusEl.value || '';
+      if (q) params.set('q', q);
+      if (status === 'ACTIVE' || status === 'INACTIVE' || status === 'CLOSED') params.set('status', status);
+      const next = '/projects/payment-accounts' + (params.toString() ? '?' + params.toString() : '');
+      const current = window.location.pathname + window.location.search;
+      if (next !== current) window.location.assign(next);
+    }
+    qEl.addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(applyFilter, 300);
+    });
+    qEl.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        clearTimeout(searchTimer);
+        applyFilter();
+      }
+    });
+    statusEl.addEventListener('change', () => {
+      clearTimeout(searchTimer);
+      applyFilter();
+    });
+    document.getElementById('payReset').addEventListener('click', () => {
+      window.location.assign('/projects/payment-accounts');
+    });
+  })();
+</script>
 
 <script>
   (function () {
