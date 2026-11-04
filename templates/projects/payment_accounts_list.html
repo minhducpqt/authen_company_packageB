@@ -331,6 +331,12 @@
     <button id="payReset" type="button" class="btn btn-slate">Xóa lọc</button>
   </form>
   <p class="text-xs text-slate-500 mb-3">Đang hiện {{ projects|length }} / {{ total }} dự án. Tối đa 30 dự án mỗi lần tải.</p>
+  <template id="cbaOptionSource">
+    <option value="">— Chọn tài khoản —</option>
+    {% for opt in cba_options %}
+      <option value="{{ opt.id }}">{{ opt.label }}</option>
+    {% endfor %}
+  </template>
 
   <div class="overflow-x-auto border border-slate-200 rounded-xl">
     <table class="table text-sm">
@@ -477,25 +483,11 @@
               <fieldset {% if is_frozen %}disabled{% endif %}>
                 <div>
                   <label class="text-sm text-slate-600 mb-1 block">Tài khoản mua hồ sơ</label>
-                  <select name="cba_application_id" class="w-full h-10 rounded-lg border border-slate-300 px-3">
-                    <option value="">— Chọn tài khoản —</option>
-                    {% for opt in cba_options %}
-                      <option value="{{ opt.id }}" {% if cba_app and opt.id==cba_app %}selected{% endif %}>
-                        {{ opt.label }}
-                      </option>
-                    {% endfor %}
-                  </select>
+                  <select name="cba_application_id" data-selected="{{ cba_app or '' }}" class="w-full h-10 rounded-lg border border-slate-300 px-3"></select>
                 </div>
                 <div>
                   <label class="text-sm text-slate-600 mb-1 block">Tài khoản đặt cọc</label>
-                  <select name="cba_deposit_id" class="w-full h-10 rounded-lg border border-slate-300 px-3">
-                    <option value="">— Chọn tài khoản —</option>
-                    {% for opt in cba_options %}
-                      <option value="{{ opt.id }}" {% if cba_dep and opt.id==cba_dep %}selected{% endif %}>
-                        {{ opt.label }}
-                      </option>
-                    {% endfor %}
-                  </select>
+                  <select name="cba_deposit_id" data-selected="{{ cba_dep or '' }}" class="w-full h-10 rounded-lg border border-slate-300 px-3"></select>
                 </div>
                 <div class="flex items-end justify-end gap-2">
                   <button type="button" class="btn btn-ghost" data-cancel="{{ p.id }}">Đóng</button>
@@ -640,6 +632,13 @@
         if (!row) return;
         const frozen = row.getAttribute('data-frozen') === '1';
         if (frozen) return;
+        const source = document.getElementById('cbaOptionSource');
+        row.querySelectorAll('select[data-selected]').forEach((select) => {
+          if (select.dataset.ready === '1' || !source) return;
+          select.append(source.content.cloneNode(true));
+          select.value = select.dataset.selected || '';
+          select.dataset.ready = '1';
+        });
         row.classList.toggle('hidden');
       });
     });
