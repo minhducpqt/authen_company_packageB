@@ -6,7 +6,7 @@ import httpx
 from typing import Optional, Dict, Any
 
 from fastapi import APIRouter, Request, Form, Query, Path
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from utils.templates import templates
 from utils.auth import get_access_token, fetch_me
@@ -90,6 +90,7 @@ async def page_projects_payment_accounts(
                     "frozen": bool(fz.get("frozen", False)),
                     "frozen_at": fz.get("frozen_at"),
                     "reason": fz.get("reason"),
+                    "otp_required": bool(fz.get("otp_required", False)),
                 }
             except Exception:
                 freeze_map[pid] = {"frozen": False, "frozen_at": None, "reason": None}
@@ -170,3 +171,56 @@ async def freeze_project_payment_accounts_ui(
                 status_code=303
             )
     return RedirectResponse(url="/projects/payment-accounts?status=OK:FROZEN", status_code=303)
+
+
+def _proxy_detail(response: httpx.Response) -> str:
+    try:
+        body = response.json()
+    except Exception:
+        return (response.text or "Không thực hiện được")[:400]
+    detail = body.get("detail") if isinstance(body, dict) else None
+    if isinstance(detail, dict):
+        return str(detail.get("error") or detail.get("detail") or "Không thực hiện được")
+    if isinstance(detail, str) and detail.strip():
+        return detail.strip()[:400]
+    return "Không thực hiện được"
+
+
+@router.post("/{project_id}/unfreeze/otp")
+async def request_unfreeze_otp(request: Request, project_id: int = Path(..., ge=1)):
+    access = get_access_token(request)
+    if not access:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    async with httpx.AsyncClient() as client:
+        upstream = await client.post(
+            f"{API_BASE_URL}/api/v1/projects/{project_id}/payment-accounts/unfreeze/otp/request",
+            headers={"Authorization": f"Bearer {access}"},
+            timeout=20.0,
+        )
+    if upstream.status_code >= 400:
+        return JSONResponse({"error": _proxy_detail(upstream)}, status_code=upstream.status_code)
+    return JSONResponse(upstream.json(), status_code=200)
+
+
+@router.post("/{project_id}/unfreeze")
+async def unfreeze_project_payment_accounts_ui(request: Request, project_id: int = Path(..., ge=1)):
+    access = get_access_token(request)
+    if not access:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    try:
+        payload = await request.json()
+    except Exception:
+        payload = {}
+    async with httpx.AsyncClient() as client:
+        upstream = await client.post(
+            f"{API_BASE_URL}/api/v1/projects/{project_id}/payment-accounts/unfreeze",
+            headers={"Authorization": f"Bearer {access}", "Content-Type": "application/json"},
+            json={
+                "challenge_id": (payload or {}).get("challenge_id") or "",
+                "otp_code": (payload or {}).get("otp_code") or "",
+            },
+            timeout=20.0,
+        )
+    if upstream.status_code >= 400:
+        return JSONResponse({"error": _proxy_detail(upstream)}, status_code=upstream.status_code)
+    return JSONResponse(upstream.json(), status_code=200)

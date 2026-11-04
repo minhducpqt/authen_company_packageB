@@ -129,6 +129,17 @@
     border-color:#fda4af;
   }
 
+  .btn-action-unlock{
+    background:#eff6ff;
+    color:#1d4ed8;
+    border-color:#bfdbfe;
+  }
+
+  .btn-action-unlock:hover{
+    background:#dbeafe;
+    border-color:#93c5fd;
+  }
+
   .btn-action-disabled{
     background:#f1f5f9 !important;
     color:#94a3b8 !important;
@@ -302,7 +313,7 @@
   <div class="flex items-center justify-between toolbar mb-4">
     <div>
       <h2 class="text-xl font-extrabold text-slate-900">Cấu hình nhận tiền</h2>
-      <p class="muted text-sm">Chọn tài khoản nhận tiền mua hồ sơ và đặt cọc cho từng dự án. Có thể <strong>đóng băng</strong> để chặn mọi thay đổi.</p>
+      <p class="muted text-sm">Chọn tài khoản nhận tiền mua hồ sơ và đặt cọc cho từng dự án. Có thể <strong>khóa</strong> để chặn mọi thay đổi. Công ty đã cấu hình OTP thì mở khóa phải nhập mã Telegram.</p>
     </div>
     <div>
       <a href="/projects" class="btn btn-ghost">← Quản lý dự án</a>
@@ -433,6 +444,21 @@
                   </svg>
                   Khóa
                 </button>
+              {% else %}
+                <button class="btn btn-action btn-action-unlock"
+                        type="button"
+                        data-open-unfreeze
+                        data-project-id="{{ p.id }}"
+                        data-project-code="{{ p.project_code }}"
+                        data-project-name="{{ p.name }}"
+                        data-otp-required="{{ '1' if f.get('otp_required') else '0' }}">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="5" y="11" width="14" height="10" rx="2"/>
+                    <path d="M8 11V7a4 4 0 0 1 7.2-2.4"/>
+                  </svg>
+                  Mở khóa
+                </button>
               {% endif %}
             </div>
           </td>
@@ -442,7 +468,7 @@
           <td class="td" colspan="6">
             {% if is_frozen %}
               <div class="mb-3 p-3 rounded-lg border border-red-300 bg-red-50 text-red-700 text-sm">
-                Dự án đã <strong>đóng băng</strong>. Không thể chỉnh sửa cấu hình tài khoản nhận tiền.
+                Dự án đã <strong>khóa</strong>. Bấm <strong>Mở khóa</strong> để sửa lại. Công ty đã cấu hình OTP thì phải nhập mã gửi qua Telegram.
               </div>
             {% endif %}
             <form method="post" action="/projects/payment-accounts/{{ p.id }}"
@@ -500,7 +526,7 @@
           Bạn sắp <span class="font-semibold text-slate-900">ĐÓNG BĂNG</span> cấu hình nhận tiền của dự án:
           <span id="freeze-project-name" class="font-semibold"></span>
           <span class="text-slate-400">(<span id="freeze-project-code"></span>)</span>.
-          Sau khi đóng băng sẽ <span class="font-semibold">không thể sửa</span> qua giao diện (chỉ có thể thay đổi trực tiếp DB).
+          Sau khi khóa sẽ <span class="font-semibold">không thể sửa</span> cho đến khi mở khóa. Công ty đã cấu hình OTP thì mở khóa cần mã Telegram.
         </div>
 
         <div class="rounded-lg border border-amber-300 bg-amber-50 text-amber-900 p-3 text-sm">
@@ -535,6 +561,36 @@
         <button type="submit" id="freeze-confirm" class="btn btn-danger disabled:opacity-50" disabled>Xác nhận đóng băng</button>
       </div>
     </form>
+  </div>
+</div>
+
+<div id="unfreeze-backdrop" class="modal-backdrop"></div>
+<div id="unfreeze-modal" class="modal-wrap" role="dialog" aria-modal="true" aria-labelledby="unfreeze-title">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3 id="unfreeze-title" class="text-lg font-semibold text-slate-800">Mở khóa cấu hình nhận tiền</h3>
+    </div>
+    <div class="modal-body space-y-3">
+      <div id="unfreeze-note" class="text-sm text-slate-600">
+        Mở khóa dự án
+        <span id="unfreeze-project-name" class="font-semibold text-slate-900"></span>
+        <span class="text-slate-400">(<span id="unfreeze-project-code"></span>)</span>.
+        <span id="unfreeze-hint">Mã OTP được gửi qua Telegram tới người nhận OTP của công ty.</span>
+      </div>
+      <p id="unfreeze-error" class="text-xs text-red-600 hidden"></p>
+      <div id="unfreeze-sent" class="hidden text-sm text-slate-600"></div>
+      <div id="unfreeze-otp-box">
+        <label class="text-sm text-slate-700 mb-1 block" for="unfreeze-otp">Mã OTP</label>
+        <input id="unfreeze-otp" type="text" inputmode="numeric" maxlength="8"
+               class="w-full h-10 rounded-lg border border-slate-300 px-3 mono tracking-widest"
+               placeholder="Nhập mã OTP" autocomplete="one-time-code" />
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" id="unfreeze-cancel" class="btn btn-ghost">Huỷ</button>
+      <button type="button" id="unfreeze-send" class="btn btn-slate">Gửi OTP</button>
+      <button type="button" id="unfreeze-confirm" class="btn btn-primary disabled:opacity-50" disabled>Mở khóa</button>
+    </div>
   </div>
 </div>
 
@@ -652,6 +708,139 @@
       if (!(v.length === 4 && v === currentCode)) {
         e.preventDefault();
         validate();
+      }
+    });
+
+    const $uBackdrop = document.getElementById('unfreeze-backdrop');
+    const $uModal = document.getElementById('unfreeze-modal');
+    const $uName = document.getElementById('unfreeze-project-name');
+    const $uCode = document.getElementById('unfreeze-project-code');
+    const $uOtp = document.getElementById('unfreeze-otp');
+    const $uErr = document.getElementById('unfreeze-error');
+    const $uSent = document.getElementById('unfreeze-sent');
+    const $uSend = document.getElementById('unfreeze-send');
+    const $uConfirm = document.getElementById('unfreeze-confirm');
+    const $uNote = document.getElementById('unfreeze-note');
+    const $uOtpBox = document.getElementById('unfreeze-otp-box');
+    let unfreezeId = '';
+    let challengeId = '';
+    let otpRequired = true;
+
+    function showUnfreezeError(msg) {
+      $uErr.textContent = msg || '';
+      $uErr.classList.toggle('hidden', !msg);
+    }
+
+    function openUnfreeze(info) {
+      unfreezeId = info.id;
+      challengeId = '';
+      otpRequired = info.otpRequired !== false;
+      $uName.textContent = info.name || '';
+      $uCode.textContent = info.code || '';
+      $uOtp.value = '';
+      $uSent.classList.add('hidden');
+      $uSent.textContent = '';
+      showUnfreezeError('');
+      $uSend.classList.toggle('hidden', !otpRequired);
+      $uOtpBox.classList.toggle('hidden', !otpRequired);
+      $uSend.disabled = false;
+      $uSend.textContent = 'Gửi OTP';
+      const hint = document.getElementById('unfreeze-hint');
+      if (otpRequired) {
+        hint.textContent = 'Mã OTP được gửi qua Telegram tới người nhận OTP của công ty.';
+        $uConfirm.disabled = true;
+      } else {
+        hint.textContent = 'Công ty chưa cấu hình OTP, mở khóa không cần mã.';
+        $uConfirm.disabled = false;
+      }
+      $uBackdrop.style.display = 'block';
+      $uModal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeUnfreeze() {
+      $uBackdrop.style.display = 'none';
+      $uModal.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+
+    document.querySelectorAll('[data-open-unfreeze]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        openUnfreeze({
+          id: btn.getAttribute('data-project-id'),
+          code: btn.getAttribute('data-project-code'),
+          name: btn.getAttribute('data-project-name'),
+          otpRequired: btn.getAttribute('data-otp-required') === '1',
+        });
+      });
+    });
+    document.getElementById('unfreeze-cancel').addEventListener('click', closeUnfreeze);
+    $uBackdrop.addEventListener('click', closeUnfreeze);
+
+    $uOtp.addEventListener('input', () => {
+      const v = ($uOtp.value || '').replace(/\D/g, '');
+      $uOtp.value = v;
+      $uConfirm.disabled = !(challengeId && v.length >= 4);
+    });
+
+    async function readError(res) {
+      const data = await res.json().catch(() => ({}));
+      const detail = data.detail || data.error || '';
+      if (detail && typeof detail === 'object') return detail.error || 'Không thực hiện được';
+      return detail || 'Không thực hiện được';
+    }
+
+    $uSend.addEventListener('click', async () => {
+      if (!unfreezeId) return;
+      showUnfreezeError('');
+      $uSend.disabled = true;
+      $uSend.textContent = 'Đang gửi…';
+      try {
+        const res = await fetch('/projects/payment-accounts/' + unfreezeId + '/unfreeze/otp', {
+          method: 'POST',
+          headers: { 'Accept': 'application/json' },
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          showUnfreezeError(typeof data.detail === 'string' ? data.detail : (data.error || 'Không gửi được OTP'));
+          $uSend.disabled = false;
+          $uSend.textContent = 'Gửi lại OTP';
+          return;
+        }
+        challengeId = data.challenge_id || '';
+        const targets = (data.masked_targets || []).join(', ');
+        $uSent.textContent = 'Đã gửi OTP' + (targets ? ' tới ' + targets : ' qua Telegram') + '.';
+        $uSent.classList.remove('hidden');
+        $uSend.disabled = false;
+        $uSend.textContent = 'Gửi lại OTP';
+        $uOtp.focus();
+        $uConfirm.disabled = ($uOtp.value || '').length < 4;
+      } catch (err) {
+        showUnfreezeError('Không gửi được OTP');
+        $uSend.disabled = false;
+        $uSend.textContent = 'Gửi lại OTP';
+      }
+    });
+
+    $uConfirm.addEventListener('click', async () => {
+      if (!unfreezeId || (otpRequired && !challengeId)) return;
+      showUnfreezeError('');
+      $uConfirm.disabled = true;
+      try {
+        const res = await fetch('/projects/payment-accounts/' + unfreezeId + '/unfreeze', {
+          method: 'POST',
+          headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ challenge_id: challengeId, otp_code: ($uOtp.value || '').trim() }),
+        });
+        if (!res.ok) {
+          showUnfreezeError(await readError(res));
+          $uConfirm.disabled = false;
+          return;
+        }
+        window.location.href = '/projects/payment-accounts?status=OK:UNFROZEN';
+      } catch (err) {
+        showUnfreezeError('Không mở khóa được');
+        $uConfirm.disabled = false;
       }
     });
   })();
