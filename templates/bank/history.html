@@ -30,6 +30,11 @@
         <option value="{{ a.id }}">{{ a.bank_code or '—' }} — {{ a.account_number }} ({{ a.account_name or '—' }})</option>
       {% endfor %}
     </select>
+    <select id="histDirection" class="h-9 rounded-lg border border-slate-300 bg-white px-2 text-sm text-slate-700" aria-label="Chiều giao dịch">
+      <option value="all">Tất cả</option>
+      <option value="in">Tiền vào</option>
+      <option value="out">Tiền ra</option>
+    </select>
     <input id="histQ" type="search" placeholder="Nội dung thanh toán" class="h-9 w-64 rounded-lg border border-slate-300 px-2 text-sm">
     <select id="histPreset" class="h-9 rounded-lg border border-slate-300 bg-white px-2 text-sm text-slate-700" aria-label="Khoảng ngày gần nhất">
       <option value="1">1 ngày gần nhất</option>
@@ -54,7 +59,7 @@
           <th class="text-left px-3 py-2">Thời gian</th>
           <th class="text-left px-3 py-2">Tài khoản</th>
           <th class="text-right px-3 py-2">Tiền vào</th>
-          <th class="text-right px-3 py-2">Tiền ra</th>
+          <th class="text-right px-3 py-2 text-rose-700">Tiền ra</th>
           <th class="text-right px-3 py-2">Số dư</th>
           <th class="text-left px-3 py-2">Nội dung</th>
         </tr>
@@ -76,6 +81,7 @@
 <script>
 (function () {
   const accountEl = document.getElementById('histAccount');
+  const directionEl = document.getElementById('histDirection');
   const qEl = document.getElementById('histQ');
   const presetEl = document.getElementById('histPreset');
   const fromEl = document.getElementById('histFrom');
@@ -115,6 +121,7 @@
     params.set('page', String(page));
     params.set('size', String(size));
     if (accountEl.value) params.set('account_id', accountEl.value);
+    if (directionEl.value && directionEl.value !== 'all') params.set('direction', directionEl.value);
     if (qEl.value.trim()) params.set('q', qEl.value.trim());
     return params.toString();
   }
@@ -137,17 +144,20 @@
       body.innerHTML = '<tr><td colspan="7" class="px-3 py-6 text-center text-slate-400">Không có giao dịch trong khoảng này</td></tr>';
       return;
     }
-    body.innerHTML = rows.map((row) => `
-      <tr class="border-t border-slate-100">
+    body.innerHTML = rows.map((row) => {
+      const outbound = row.direction === 'out';
+      return `
+      <tr class="border-t ${outbound ? 'border-rose-100 bg-rose-50' : 'border-slate-100'}">
         <td class="px-3 py-2 font-medium">${esc(row.trn_srno)}</td>
         <td class="px-3 py-2">${esc(when(row.txn_time))}</td>
         <td class="px-3 py-2">${esc(row.account_number)}</td>
-        <td class="px-3 py-2 text-right">${money(row.money_in)}</td>
-        <td class="px-3 py-2 text-right">${money(row.money_out)}</td>
+        <td class="px-3 py-2 text-right text-emerald-700">${money(row.money_in)}</td>
+        <td class="px-3 py-2 text-right font-semibold text-rose-700">${money(row.money_out)}</td>
         <td class="px-3 py-2 text-right">${money(row.balance_after)}</td>
         <td class="px-3 py-2">${esc(row.content)}</td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
   }
 
   presetEl.addEventListener('change', () => {
@@ -161,6 +171,7 @@
   toEl.addEventListener('input', markCustom);
   document.getElementById('histApply').addEventListener('click', () => { page = 1; loadRows(); });
   accountEl.addEventListener('change', () => { page = 1; loadRows(); });
+  directionEl.addEventListener('change', () => { page = 1; loadRows(); });
   document.getElementById('histPrev').addEventListener('click', () => { if (page > 1) { page -= 1; loadRows(); } });
   document.getElementById('histNext').addEventListener('click', () => {
     const shown = page * size;

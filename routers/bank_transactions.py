@@ -359,6 +359,11 @@ async def bank_account_history_page(request: Request):
                 accounts = payload.get("data", []) if isinstance(payload, dict) else []
             except Exception:
                 accounts = []
+        if company:
+            accounts = [
+                item for item in accounts
+                if str(item.get("company_code") or "").strip().lower() == company.lower()
+            ]
     return templates.TemplateResponse(
         "bank/history.html",
         {"request": request, "accounts": accounts},
@@ -371,6 +376,7 @@ async def bank_account_history_data(
     raw_from: str = Query("", alias="from"),
     raw_to: str = Query("", alias="to"),
     account_id: str = Query(""),
+    direction: str = Query(""),
     q: str = Query(""),
     page: int = Query(1, ge=1),
     size: int = Query(50, ge=1, le=200),
@@ -385,6 +391,8 @@ async def bank_account_history_data(
         params.append(("to", raw_to))
     if q.strip():
         params.append(("q", q.strip()))
+    if direction.strip().lower() in ("in", "out"):
+        params.append(("direction", direction.strip().lower()))
     account_id_int = _to_int_or_none(account_id)
     if account_id_int is not None:
         params.append(("account_id", account_id_int))
