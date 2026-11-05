@@ -9,6 +9,8 @@ from typing import Optional
 from urllib.parse import urlencode, quote
 from zoneinfo import ZoneInfo
 
+from utils.project_schedule_warnings import project_schedule_warnings
+
 import httpx
 from fastapi import (
     APIRouter,
@@ -548,6 +550,11 @@ async def list_projects(
                 for row in rows:
                     if isinstance(row, dict):
                         row["setup_chips"] = _project_setup_chips(row)
+                        row["schedule_warnings"] = project_schedule_warnings(
+                            row.get("application_deadline_at"),
+                            row.get("deposit_deadline_at"),
+                            row.get("auction_at"),
+                        )
                         row["account_flags_known"] = (
                             "receiving_account_application" in row
                             and "receiving_account_deposit" in row
