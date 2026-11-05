@@ -17,6 +17,35 @@
   .rec-row.is-abnormal td { background: #fff1f2; }
   .rec-flag { color: #9f1239; font-size: 12px; line-height: 1.45; }
   .rec-sub { color: #475569; font-size: 13px; line-height: 1.45; }
+  .rec-tx-btn {
+    margin-top: 6px; display: inline-flex; align-items: center; gap: 4px;
+    border: 1px solid #bae6fd; background: #f0f9ff; color: #0369a1;
+    border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 700; cursor: pointer;
+  }
+  .rec-tx-btn:hover { background: #e0f2fe; }
+  .rec-modal {
+    display: none; position: fixed; inset: 0; z-index: 80;
+    background: rgba(15, 23, 42, .45); align-items: center; justify-content: center; padding: 16px;
+  }
+  .rec-modal.is-on { display: flex; }
+  .rec-modal-card {
+    width: min(920px, 100%); max-height: min(80vh, 720px); overflow: auto;
+    background: #fff; border-radius: 16px; box-shadow: 0 24px 60px rgba(15, 23, 42, .25);
+  }
+  .rec-modal-hd {
+    display: flex; justify-content: space-between; gap: 12px; align-items: center;
+    padding: 14px 16px; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; background: #fff;
+  }
+  .rec-modal-hd b { font-size: 16px; color: #0f172a; }
+  .rec-modal-x {
+    width: 32px; height: 32px; border-radius: 10px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer;
+  }
+  .rec-tx.is-notable td { background: #fff1f2; }
+  .rec-kind {
+    display: inline-block; border-radius: 999px; padding: 2px 8px; font-size: 12px; font-weight: 700;
+  }
+  .rec-kind-dossier { background: #ecfeff; color: #0e7490; }
+  .rec-kind-deposit { background: #f0fdf4; color: #166534; }
 </style>
 
 <div class="grp-wrap">
@@ -94,6 +123,7 @@
             <th>CCCD</th>
             <th>Từng nhóm</th>
             <th>Ghi chú</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -118,9 +148,14 @@
                 {% endfor %}
               {% endfor %}
             </td>
+            <td>
+              <button type="button" class="rec-tx-btn" data-customer-id="{{ c.customer_id }}">
+                <i class="ri-bank-card-line"></i> Xem giao dịch
+              </button>
+            </td>
           </tr>
         {% else %}
-          <tr><td colspan="4" class="rd-empty">Chưa có hồ sơ hoặc tiền đặt trước.</td></tr>
+          <tr><td colspan="5" class="rd-empty">Chưa có hồ sơ hoặc tiền đặt trước.</td></tr>
         {% endfor %}
         </tbody>
       </table>
@@ -128,13 +163,120 @@
   </div>
   {% endif %}
 </div>
+
+<div class="rec-modal" id="recTxModal">
+  <div class="rec-modal-card" role="dialog" aria-modal="true" aria-labelledby="recTxTitle">
+    <div class="rec-modal-hd">
+      <div>
+        <b id="recTxTitle">Giao dịch</b>
+        <div class="text-xs text-slate-500" id="recTxSub"></div>
+      </div>
+      <button type="button" class="rec-modal-x" id="recTxClose" aria-label="Đóng"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="rd-table-wrap">
+      <table class="min-w-full text-sm rd-table">
+        <thead>
+          <tr>
+            <th>Thời gian</th>
+            <th>Loại</th>
+            <th>Nhóm</th>
+            <th>Mã đơn</th>
+            <th>Số tiền</th>
+            <th>Nội dung chuyển khoản</th>
+          </tr>
+        </thead>
+        <tbody id="recTxBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<script type="application/json" id="recCustomers">{{ customers|tojson }}</script>
 <script>
 (function () {
   const sel = document.getElementById('projectSelect');
-  if (!sel) return;
-  sel.addEventListener('change', function () {
-    if (!sel.value) return;
-    window.location.href = '/reports/v2/projects/' + sel.value + '/groups/reconciliation';
+  if (sel) {
+    sel.addEventListener('change', function () {
+      if (!sel.value) return;
+      window.location.href = '/reports/v2/projects/' + sel.value + '/groups/reconciliation';
+    });
+  }
+
+  const raw = document.getElementById('recCustomers');
+  const customers = raw ? JSON.parse(raw.textContent || '[]') : [];
+  const byId = {};
+  customers.forEach(function (row) { byId[String(row.customer_id)] = row; });
+  const modal = document.getElementById('recTxModal');
+  const title = document.getElementById('recTxTitle');
+  const sub = document.getElementById('recTxSub');
+  const body = document.getElementById('recTxBody');
+  if (!modal || !body) return;
+
+  function money(n) {
+    const v = Math.round(Number(n) || 0);
+    return v.toLocaleString('vi-VN') + ' đ';
+  }
+
+  function closeModal() { modal.classList.remove('is-on'); }
+
+  function openCustomer(id) {
+    const row = byId[String(id)] || {};
+    const txs = row.transactions || [];
+    title.textContent = row.customer_full_name || ('Khách #' + id);
+    sub.textContent = txs.length ? (txs.length + ' giao dịch hồ sơ và tiền đặt trước') : 'Chưa có giao dịch hồ sơ hoặc tiền đặt trước';
+    body.innerHTML = '';
+    if (!txs.length) {
+      body.innerHTML = '<tr><td colspan="6" class="rd-empty">Chưa có giao dịch.</td></tr>';
+    }
+    function td(text, className) {
+      const cell = document.createElement('td');
+      if (className) cell.className = className;
+      cell.textContent = text || '';
+      return cell;
+    }
+    txs.forEach(function (tx) {
+      const tr = document.createElement('tr');
+      if (tx.notable) tr.className = 'rec-tx is-notable';
+      tr.appendChild(td(tx.received_at_text || tx.received_at || '', 'whitespace-nowrap'));
+      const kindCell = document.createElement('td');
+      const kind = document.createElement('span');
+      kind.className = tx.kind === 'DOSSIER' ? 'rec-kind rec-kind-dossier' : 'rec-kind rec-kind-deposit';
+      kind.textContent = tx.kind_label || '';
+      kindCell.appendChild(kind);
+      tr.appendChild(kindCell);
+      tr.appendChild(td(tx.group_name || ''));
+      const orderCell = document.createElement('td');
+      const code = document.createElement('div');
+      code.className = 'font-mono text-xs';
+      code.textContent = tx.order_code || '';
+      const orderNote = document.createElement('div');
+      orderNote.className = 'text-xs text-slate-500';
+      orderNote.textContent = tx.order_code ? ('Đơn ' + money(tx.order_paid_vnd) + ' / ' + money(tx.order_total_vnd)) : '';
+      orderCell.appendChild(code);
+      orderCell.appendChild(orderNote);
+      tr.appendChild(orderCell);
+      tr.appendChild(td(money(tx.amount_vnd), 'font-semibold whitespace-nowrap'));
+      const noteCell = document.createElement('td');
+      noteCell.className = 'text-xs';
+      noteCell.textContent = tx.description || tx.ref_extracted || '';
+      if (tx.source_label) {
+        const src = document.createElement('div');
+        src.className = 'text-slate-400';
+        src.textContent = tx.source_label;
+        noteCell.appendChild(src);
+      }
+      tr.appendChild(noteCell);
+      body.appendChild(tr);
+    });
+    modal.classList.add('is-on');
+  }
+
+  document.querySelectorAll('.rec-tx-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () { openCustomer(btn.getAttribute('data-customer-id')); });
+  });
+  document.getElementById('recTxClose')?.addEventListener('click', closeModal);
+  modal.addEventListener('click', function (event) { if (event.target === modal) closeModal(); });
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') closeModal();
   });
 })();
 </script>
