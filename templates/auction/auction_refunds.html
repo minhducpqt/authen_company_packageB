@@ -1319,4 +1319,14 @@
   }
 </script>
 {% endif %}
+<script>
+  function bustExportHref(anchor){
+    if(!anchor || !anchor.href || anchor.getAttribute('href') === '#') return;
+    const url = new URL(anchor.href, window.location.origin);
+    url.searchParams.set('t', String(Date.now()));
+    anchor.href = url.pathname + url.search;
+  }
+  document.getElementById('btnExportXlsxTop')?.addEventListener('click', function(){ bustExportHref(this); });
+  document.getElementById('btnExportWoori')?.addEventListener('click', function(){ bustExportHref(this); });
+</script>
 {% endblock %}

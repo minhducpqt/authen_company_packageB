@@ -391,7 +391,9 @@ async def export_refunds_xlsx_proxy(
         cd = headers.get("content-disposition") or headers.get("Content-Disposition")
         resp_headers = {
             "Content-Disposition": cd
-            or f'attachment; filename="refunds_project_{project_id}.xlsx"'
+            or f'attachment; filename="refunds_project_{project_id}.xlsx"',
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+            "Pragma": "no-cache",
         }
 
         return Response(
@@ -446,7 +448,9 @@ async def export_refunds_woori_xlsx_proxy(
         cd = headers.get("content-disposition") or headers.get("Content-Disposition")
         resp_headers = {
             "Content-Disposition": cd
-            or f'attachment; filename="hoan_tien_woori_project_{project_id}.xlsx"'
+            or f'attachment; filename="hoan_tien_woori_project_{project_id}.xlsx"',
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+            "Pragma": "no-cache",
         }
 
         return Response(
