@@ -234,6 +234,16 @@
         </span>
       </div>
       <div class="rph-cards">
+        <a href="#" data-hub-href="/reports/v2/projects/__PID__/groups/reconciliation" data-hub-mode="group" class="rph-card">
+          <div class="rph-card-bar bg-sky-500"></div>
+          <div class="rph-card-top">
+            <div>
+              <div class="rph-card-title">Tổng hợp hồ sơ và cọc</div>
+              <div class="rph-card-desc">Tiền theo nhóm và khách bất thường</div>
+            </div>
+            <div class="rph-card-ico rph-card-ico-sky"><i class="ri-pie-chart-2-fill"></i></div>
+          </div>
+        </a>
         <a href="#" data-hub-href="/reports/v2/projects/__PID__/groups/eligible" data-hub-mode="group" class="rph-card">
           <div class="rph-card-bar bg-teal-500"></div>
           <div class="rph-card-top">
@@ -326,6 +336,7 @@
 
               <div class="flex flex-wrap items-center gap-1.5 text-xs lg:justify-end">
                 {% if is_group %}
+                  <a href="/reports/v2/projects/{{ pid }}/groups/reconciliation" class="px-2 py-1 rounded-full bg-sky-50 text-sky-700 hover:bg-sky-100">Tổng hợp</a>
                   <a href="/reports/v2/projects/{{ pid }}/groups/eligible" class="px-2 py-1 rounded-full bg-teal-50 text-teal-700 hover:bg-teal-100">Nhóm đủ</a>
                   <a href="/reports/v2/projects/{{ pid }}/groups/ineligible" class="px-2 py-1 rounded-full bg-rose-50 text-rose-700 hover:bg-rose-100">Nhóm không đủ</a>
                   <a href="/reports/v2/projects/{{ pid }}/groups/customers/eligible" class="px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100">KH đủ</a>

@@ -1556,6 +1556,18 @@ async def _group_report_ctx(
     }
 
 
+@router.get("/reports/v2/projects/{project_id}/groups/reconciliation", response_class=HTMLResponse)
+async def v2_group_reconciliation_page(
+    request: Request,
+    project_id: int = Path(..., ge=1),
+):
+    token = get_access_token(request)
+    if not token:
+        return RedirectResponse(url="/login?next=%2Freports", status_code=303)
+    ctx = await _group_report_ctx(request, token, project_id, None, "groups/reconciliation")
+    return templates.TemplateResponse("reports/group_reconciliation.html", ctx)
+
+
 @router.get("/reports/v2/projects/{project_id}/groups/eligible", response_class=HTMLResponse)
 async def v2_groups_eligible_page(request: Request, project_id: int = Path(..., ge=1), limit: Optional[int] = Query(10000)):
     token = get_access_token(request)

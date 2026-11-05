@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Tổng hợp hồ sơ và tiền đặt trước{% endblock %}
+{% block content %}
+{% include "reports/_detail_styles.html" %}
+{% set report = data if data is mapping else {} %}
+{% set groups = report.get('groups') or [] %}
+{% set customers = report.get('customers') or [] %}
+{% macro vnd(n) -%}{{ '{:,.0f}'.format((n or 0)|float).replace(',', '.') }}{%- endmacro %}
+
+<style>
+  .rec-grid { display: grid; gap: 12px; grid-template-columns: 1fr; }
+  @media (min-width: 900px) { .rec-grid { grid-template-columns: 1fr 1fr; } }
+  .rec-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 14px 16px; }
+  .rec-card h2 { margin: 0 0 4px; font-size: 15px; color: #0f172a; }
+  .rec-total { font-size: 22px; font-weight: 800; color: #0f766e; }
+  .rec-line { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid #f1f5f9; font-size: 13px; }
+  .rec-row.is-abnormal td { background: #fff1f2; }
+  .rec-flag { color: #9f1239; font-size: 12px; line-height: 1.45; }
+  .rec-sub { color: #475569; font-size: 13px; line-height: 1.45; }
+</style>
+
+<div class="grp-wrap">
+  <div class="grp-head rd-theme-teal">
+    <div class="rd-title">
+      <div>
+        <h1>
+          <span class="rd-h1-icon rd-icon-teal"><i class="ri-pie-chart-2-fill"></i></span>
+          Tổng hợp hồ sơ và tiền đặt trước
+        </h1>
+        <p>Chỉ dùng cho đấu nhóm. Tiền hồ sơ theo từng nhóm, tiền đặt trước đã nhận, và khách có tiền cọc vượt số hồ sơ hoặc vượt mức một lô.</p>
+      </div>
+      <div class="rd-pill"><span class="rd-dot"></span> Đấu nhóm</div>
+    </div>
+    <div class="grp-controls">
+      <div class="grp-sel min-w-0">
+        <label>Dự án</label>
+        <select id="projectSelect">
+          <option value="">— Chọn dự án —</option>
+          {% for p in (projects or []) %}
+            {% set pid = p.id or p.project_id %}
+            {% set code = p.project_code or p.code or '' %}
+            <option value="{{ pid }}" {% if pid and project_id and (pid|string) == (project_id|string) %}selected{% endif %}>
+              {{ code|upper }} — {{ p.name or '' }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <a class="grp-btn" href="/reports"><i class="ri-arrow-left-line"></i> Báo cáo dự án</a>
+    </div>
+    {% if error %}
+      <div class="grp-err">Không tải được dữ liệu (HTTP {{ error.status }}).
+        {% if error.body is mapping and error.body.detail %}{{ error.body.detail }}{% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+  {% if not error %}
+  <div class="rec-grid">
+    <div class="rec-card">
+      <h2>Hồ sơ đã mua</h2>
+      <div class="rec-total">{{ vnd(report.get('dossier_total_vnd')) }} đ</div>
+      <div class="text-xs text-slate-500">{{ report.get('dossier_qty') or 0 }} hồ sơ</div>
+      {% for g in groups %}
+      <div class="rec-line">
+        <span>{{ g.group_name }}</span>
+        <b>{{ g.dossier_qty }} hồ sơ · {{ vnd(g.dossier_amount_vnd) }} đ</b>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="rec-card">
+      <h2>Tiền đặt trước đã nhận</h2>
+      <div class="rec-total">{{ vnd(report.get('deposit_total_vnd')) }} đ</div>
+      <div class="text-xs text-slate-500">{{ report.get('deposit_order_count') or 0 }} đơn cọc</div>
+      {% for g in groups %}
+      <div class="rec-line">
+        <span>{{ g.group_name }} · mức {{ vnd(g.deposit_vnd) }}</span>
+        <b>{{ g.deposit_order_count }} đơn · {{ vnd(g.deposit_amount_vnd) }} đ</b>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="rd-count-bar" style="margin-top:12px;">
+    <b>{{ report.get('abnormal_count') or 0 }}</b> khách cần xem
+    · {{ report.get('customer_count') or 0 }} khách có hồ sơ hoặc tiền đặt trước
+  </div>
+
+  <div class="rd-card" style="margin-top:12px;">
+    <div class="rd-table-wrap">
+      <table class="min-w-full text-sm rd-table">
+        <thead>
+          <tr>
+            <th>Khách</th>
+            <th>CCCD</th>
+            <th>Từng nhóm</th>
+            <th>Ghi chú</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for c in customers %}
+          <tr class="rec-row {% if c.abnormal %}is-abnormal{% endif %}">
+            <td class="font-semibold">{{ c.customer_full_name or ('#' ~ c.customer_id) }}</td>
+            <td class="font-mono text-xs">{{ c.cccd or '' }}</td>
+            <td>
+              {% for g in c.groups %}
+                <div class="rec-sub">
+                  <b>{{ g.group_name }}</b>
+                  · {{ g.dossier_qty }} hồ sơ
+                  · cọc {{ g.deposit_order_count }} lô
+                  · {{ vnd(g.deposit_amount_vnd) }} đ
+                </div>
+              {% endfor %}
+            </td>
+            <td>
+              {% for g in c.groups %}
+                {% for reason in g.reasons %}
+                  <div class="rec-flag">{{ reason }}</div>
+                {% endfor %}
+              {% endfor %}
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="4" class="rd-empty">Chưa có hồ sơ hoặc tiền đặt trước.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+</div>
+<script>
+(function () {
+  const sel = document.getElementById('projectSelect');
+  if (!sel) return;
+  sel.addEventListener('change', function () {
+    if (!sel.value) return;
+    window.location.href = '/reports/v2/projects/' + sel.value + '/groups/reconciliation';
+  });
+})();
+</script>
+{% endblock %}
