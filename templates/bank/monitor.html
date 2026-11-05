@@ -8,6 +8,8 @@
   .mon-acc.has-miss td { background: #fff1f2; }
   .mon-acc.has-miss td.miss-count { color: #be123c; }
   .mon-acc.is-open { outline: 2px solid #4f46e5; }
+  .mon-modal { display: none !important; }
+  .mon-modal.is-on { display: flex !important; }
 </style>
 
 <div class="bg-white rounded-xl border border-slate-200 p-5">
@@ -35,7 +37,7 @@
   <form id="monForm" class="flex flex-wrap items-center gap-2 mb-3" onsubmit="return false;">
     <select id="monPreset" class="h-9 rounded-lg border border-slate-300 bg-white px-2 text-sm text-slate-700" aria-label="Khoảng ngày gần nhất">
       <option value="1">1 ngày gần nhất</option>
-      <option value="3">3 ngày gần nhất</option>
+      <option value="3" selected>3 ngày gần nhất</option>
       <option value="10">10 ngày gần nhất</option>
       <option value="30">30 ngày gần nhất</option>
       <option value="custom">Tùy chọn</option>
@@ -68,7 +70,21 @@
     </table>
   </div>
 
-  <div id="monDetail" class="mt-4"></div>
+</div>
+
+<div id="monModal" class="mon-modal fixed inset-0 z-50 items-center justify-center bg-slate-900/45 p-4">
+  <div class="flex w-full max-w-5xl max-h-[min(86vh,820px)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="monModalTitle">
+    <div class="flex items-start justify-between gap-3 border-b border-slate-200 px-4 py-3">
+      <div class="min-w-0">
+        <h3 id="monModalTitle" class="text-base font-semibold text-slate-900">Đoạn thiếu</h3>
+        <p id="monModalSub" class="mt-0.5 text-xs text-slate-500"></p>
+      </div>
+      <button type="button" id="monModalClose" class="h-8 w-8 shrink-0 rounded-lg border border-slate-200 text-slate-600" aria-label="Đóng">
+        <i class="ri-close-line"></i>
+      </button>
+    </div>
+    <div id="monDetail" class="overflow-y-auto px-4 py-3"></div>
+  </div>
 </div>
 
 <script>
@@ -77,6 +93,9 @@
   const fromEl = document.getElementById('monFrom');
   const toEl = document.getElementById('monTo');
   const body = document.getElementById('monAccounts');
+  const modal = document.getElementById('monModal');
+  const modalTitle = document.getElementById('monModalTitle');
+  const modalSub = document.getElementById('monModalSub');
   const detail = document.getElementById('monDetail');
   const errorBox = document.getElementById('monError');
   const pad = (n) => String(n).padStart(2, '0');
@@ -91,7 +110,7 @@
     fillingPreset = false;
   }
 
-  applyPreset(1);
+  applyPreset(3);
 
   const money = (v) => (v === null || v === undefined || v === '') ? '' : new Intl.NumberFormat('vi-VN').format(v);
   const when = (v) => {
@@ -107,8 +126,18 @@
     return 'from=' + encodeURIComponent(fromEl.value) + '&to=' + encodeURIComponent(toEl.value);
   }
 
+  function closeModal() {
+    modal.classList.remove('is-on');
+    body.querySelectorAll('.mon-acc.is-open').forEach((row) => row.classList.remove('is-open'));
+  }
+
+  function openModal() {
+    modal.classList.add('is-on');
+  }
+
   async function loadAccounts() {
     showError('');
+    closeModal();
     detail.innerHTML = '';
     body.innerHTML = '<tr><td colspan="6" class="px-3 py-6 text-center text-slate-400">Đang tải…</td></tr>';
     const res = await fetch('/giao-dich-ngan-hang/monitor/data?' + rangeParams(), { headers: { 'Accept': 'application/json' } });
@@ -143,8 +172,10 @@
   function renderDetail(data) {
     const segments = data.segments || [];
     const title = `${esc(data.account.bank_code)} — ${esc(data.account.account_number)}`;
+    modalTitle.textContent = title;
+    modalSub.textContent = data.account.account_name || '';
     if (!segments.length) {
-      detail.innerHTML = `<div class="rounded-lg border border-slate-200 p-4 text-sm text-slate-500">${title}: không có số thiếu trong khoảng này.</div>`;
+      detail.innerHTML = `<div class="rounded-lg border border-slate-200 p-4 text-sm text-slate-500">Không có số thiếu trong khoảng này.</div>`;
       return;
     }
     const blocks = segments.map((seg) => {
@@ -177,8 +208,8 @@
           </div>
         </div>`;
     }).join('');
-    const hidden = data.hidden_missed ? `<p class="text-xs text-amber-700 mb-2">Còn ${data.hidden_missed} số thiếu chưa hiện trên trang này.</p>` : '';
-    detail.innerHTML = `<h3 class="text-base font-semibold text-slate-800 mb-3">${title}</h3>${hidden}${blocks}`;
+    const hidden = data.hidden_missed ? `<p class="text-xs text-amber-700 mb-2">Còn ${data.hidden_missed} số thiếu chưa hiện trong cửa sổ này.</p>` : '';
+    detail.innerHTML = `${hidden}${blocks}`;
   }
 
   function resendMessage(accountNo, dayKey, srno) {
@@ -210,17 +241,21 @@
     const button = event.target.closest('[data-open]');
     if (!button) return;
     const id = button.getAttribute('data-open');
-    body.querySelectorAll('.mon-acc').forEach((row) => row.classList.toggle('is-open', row.getAttribute('data-id') === id));
+    const row = button.closest('.mon-acc');
+    body.querySelectorAll('.mon-acc').forEach((item) => item.classList.toggle('is-open', item === row));
+    modalTitle.textContent = 'Đoạn thiếu';
+    modalSub.textContent = '';
     detail.innerHTML = '<p class="text-sm text-slate-400">Đang tải đoạn thiếu…</p>';
+    openModal();
     const res = await fetch('/giao-dich-ngan-hang/monitor/accounts/' + id + '?' + rangeParams(), { headers: { 'Accept': 'application/json' } });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      showError(data.error || 'Không tải được đoạn thiếu');
-      detail.innerHTML = '';
+      detail.innerHTML = '<p class="text-sm text-rose-700">' + esc(data.error || 'Không tải được đoạn thiếu') + '</p>';
       return;
     }
     showError('');
     renderDetail(data);
+    detail.scrollTop = 0;
   });
 
   detail.addEventListener('click', async (event) => {
@@ -250,6 +285,9 @@
   fromEl.addEventListener('input', markCustom);
   toEl.addEventListener('input', markCustom);
   document.getElementById('monApply').addEventListener('click', loadAccounts);
+  document.getElementById('monModalClose').addEventListener('click', closeModal);
+  modal.addEventListener('click', (event) => { if (event.target === modal) closeModal(); });
+  document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeModal(); });
   loadAccounts();
 })();
 </script>
