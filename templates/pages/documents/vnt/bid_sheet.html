@@ -850,7 +850,7 @@
           <span class="flag-lot-code">{{ t.lot_code or lot_code_display }}</span>
         </div>
         {% endif %}
-        <span class="flag-code">{{ stt_code }}-C{{ t.customer_id }}-S{{ qty_lots }}{% if t.session_id %}-P{{ t.session_id }}{% endif %}</span>
+        <span class="flag-code">{{ stt_code }}-C{{ t.customer_id }}-S{{ qty_lots }}{% if t.ticket_seq and t.ticket_total and t.ticket_total > 1 %}-{{ t.ticket_seq }}{% endif %}{% if t.session_id %}-P{{ t.session_id }}{% endif %}</span>
       </aside>
 
       <div class="masthead">
@@ -1068,7 +1068,7 @@
       <div class="notes">
         <span class="bold" style="color:var(--ink);">Ghi chú:</span>
         {% if is_blank_ticket %}
-        Phiếu đấu nhóm — khách tự điền <span class="bold">mã lô</span> và <span class="bold">giá trả</span>;
+        Phiếu đấu nhóm{% if t.ticket_total and t.ticket_total > 1 %} {{ t.ticket_seq }}/{{ t.ticket_total }}{% endif %} — khách tự điền <span class="bold">mã lô</span> và <span class="bold">giá trả</span>;
         {% elif is_preprint_blank %}
         Phiếu in sẵn trước phiên — tự điền <span class="bold">giá khởi điểm</span> và <span class="bold">giá trả</span> khi vòng diễn ra;
         {% endif %}
