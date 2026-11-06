@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import os
+import threading
+import time
 from typing import Optional, Dict, Any, List, Tuple
 
 import httpx
@@ -15,6 +17,31 @@ from utils.auth import account_menu_info, get_access_token
 router = APIRouter(tags=["auction_sessions"])
 
 SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
+
+_autolock_guard = threading.Lock()
+_autolock_last: Dict[str, float] = {}
+
+
+def _kick_session_autolock(token: str, company_code: str) -> None:
+    """Gọi job khoá phiên ở thread riêng. Trang vận hành không chờ và không báo lỗi."""
+    cc = (company_code or "").strip().lower()
+    if not token or not cc:
+        return
+    now = time.monotonic()
+    with _autolock_guard:
+        if now - _autolock_last.get(cc, 0.0) < 3600:
+            return
+        _autolock_last[cc] = now
+
+    def _run() -> None:
+        try:
+            url = f"{SERVICE_A_BASE_URL}/api/v1/auction-sessions/sessions/auto-lock-sweep"
+            with httpx.Client(timeout=3.0) as client:
+                client.post(url, headers={"Authorization": f"Bearer {token}"})
+        except Exception:
+            return
+
+    threading.Thread(target=_run, daemon=True).start()
 
 
 # =========================================================
@@ -227,6 +254,8 @@ async def auction_sessions_page(
     token = get_access_token(request)
     if not token:
         return _redirect_login(request)
+
+    _kick_session_autolock(token, account_menu_info(request).get("company_code") or "")
 
     # =====================================================
     # status_effective: gửi sang Service A
