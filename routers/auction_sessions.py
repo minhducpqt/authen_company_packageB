@@ -308,6 +308,7 @@ async def auction_session_detail_page(
 
     sess_data = (sess.get("data") or sess) if isinstance(sess, dict) else {}
     sess_status = (sess_data.get("status") or "").upper()
+    sess_locked = bool(sess_data.get("is_locked"))
 
     # 2) Load current round
     st_c, cur = await _get_json(f"/api/v1/auction-sessions/sessions/{session_id}/current", token, None)
@@ -320,7 +321,8 @@ async def auction_session_detail_page(
 
     # 3) AUTO START nếu đang DRAFT hoặc chưa có round (current_round_no=0)
     #    Mục tiêu: tránh lỗi 404 khi gọi /rounds/1/ui
-    if sess_status == "DRAFT" or current_round_no == 0:
+    #    Phiên đã khoá không được tự tạo vòng.
+    if (not sess_locked) and (sess_status == "DRAFT" or current_round_no == 0):
         st_start, js_start = await _post_json(
             "/api/v1/auction-sessions/sessions/start",
             token,

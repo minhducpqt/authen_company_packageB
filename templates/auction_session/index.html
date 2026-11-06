@@ -706,7 +706,7 @@
                                     <i class="ri-play-circle-line"></i> Mở
                                   </button>
 
-                                  {% if (s.status or '')|upper != 'OPEN' %}
+                                  {% if (s.status or '')|upper != 'OPEN' and not is_locked %}
                                     <button class="btn mini" type="button" onclick="openStartSession({{ s.id }})">
                                       <i class="ri-rocket-line"></i> Start
                                     </button>
@@ -727,7 +727,7 @@
                               {% endif %}
 
 
-                              {% if can_delete %}
+                              {% if can_delete and not is_locked %}
                                 <button class="btn danger mini" type="button" onclick="openDeleteSession({{ s.id }})" title="Xoá phiên (phiên trắng)">
                                   <i class="ri-delete-bin-6-line"></i> Xoá
                                 </button>
@@ -814,7 +814,7 @@
                                   <i class="ri-play-circle-line"></i> Mở
                                 </button>
 
-                                {% if (s.status or '')|upper != 'OPEN' %}
+                                {% if (s.status or '')|upper != 'OPEN' and not is_locked %}
                                   <button class="btn mini" type="button" onclick="openStartSession({{ s.id }})">
                                     <i class="ri-rocket-line"></i> Start
                                   </button>
@@ -836,7 +836,7 @@
                             {% endif %}
 
 
-                            {% if can_delete %}
+                            {% if can_delete and not is_locked %}
                               <button class="btn danger mini" type="button" onclick="openDeleteSession({{ s.id }})" title="Xoá phiên (phiên trắng)">
                                 <i class="ri-delete-bin-6-line"></i> Xoá
                               </button>

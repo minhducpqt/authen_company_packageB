@@ -864,6 +864,15 @@
       }
       @keyframes backupSpin{to{transform:rotate(360deg);}}
       .backup-spin{display:inline-block;animation:backupSpin .8s linear infinite;}
+      .session-lock-banner{
+        margin-top:12px;
+        border:1px solid rgba(217,119,6,.35);
+        background:rgba(245,158,11,.12);
+        color:#92400e;
+        padding:10px 12px;
+        border-radius:16px;
+        font-weight:650;
+      }
 
     </style>
 
@@ -886,6 +895,7 @@
                 <button
                 class="dangerMiniBtn"
                 type="button"
+                id="btnDeleteLastRound"
                 onclick="deleteLastRoundFlow()"
                 title="Xoá vòng cuối (nguy hiểm)">
                 <i class="ri-delete-bin-6-line"></i>
@@ -967,12 +977,12 @@
 
 
     {% if not is_open %}
-      <button class="btn" type="button" onclick="startSessionIfNeeded()">
+      <button class="btn" type="button" id="btnStartSession" onclick="startSessionIfNeeded()">
         <i class="ri-rocket-line"></i> Start
       </button>
     {% endif %}
 
-    <button class="btn primary" type="button" onclick="createNextRound()">
+    <button class="btn primary" type="button" id="btnCreateNextRound" onclick="createNextRound()">
       <i class="ri-skip-forward-line"></i> Tạo vòng sau
     </button>
 
@@ -982,6 +992,12 @@
   </div>
 
 </div>
+
+{% if session is defined and session.is_locked %}
+  <div class="session-lock-banner">
+    <i class="ri-lock-2-line"></i> Phiên đã khoá. Chỉ xem kết quả, in và xuất file.
+  </div>
+{% endif %}
 
 {% if error %}
   <div style="margin-top:12px;border:1px solid rgba(239,68,68,.25);background:rgba(239,68,68,.06);color:#991b1b;padding:10px 12px;border-radius:16px;">
@@ -1067,6 +1083,7 @@
         class="miniBtn ghost bidTicketCfgBtn"
         type="button"
         title="Cấu hình tiêu đề phiếu trả giá"
+        id="btnBidTicketCfg"
         onclick="openBidTicketTitleConfig()"
       >
         <i class="ri-settings-3-line"></i>
@@ -1118,7 +1135,7 @@ Modal: Decide Lot
           </div>
           <div class="box-b" id="mLotInfo"></div>
           <div class="box-b" style="padding-top:0;">
-            <button class="roster-quiet" type="button" onclick="askEditRoster()">Sửa danh sách hoặc giá khởi điểm của vòng này</button>
+            <button class="roster-quiet" type="button" id="btnEditRoster" onclick="askEditRoster()">Sửa danh sách hoặc giá khởi điểm của vòng này</button>
           </div>
         </div>
 
@@ -1410,10 +1427,10 @@ onclick="nudgePrice('highestPrice', +5)">+5
 <div class="foot">
   <div class="hint" id="mHint" style="display:none;"></div>
   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-left:auto;">
-    <button class="btn danger" type="button" onclick="resetPending()"><i class="ri-restart-line"></i> Reset
+    <button class="btn danger" type="button" id="btnResetPending" onclick="resetPending()"><i class="ri-restart-line"></i> Reset
       PENDING
     </button>
-    <button class="btn primary" type="button" onclick="submitDecide()"><i class="ri-check-line"></i> Lưu kết
+    <button class="btn primary" type="button" id="btnSaveDecide" onclick="submitDecide()"><i class="ri-check-line"></i> Lưu kết
       quả
     </button>
   </div>
@@ -1681,6 +1698,34 @@ Modal: Print One Bid Sheet (choose one customer)
     }catch(_e){
       return false;
     }
+  }
+
+  function refuseIfSessionLocked(){
+    if(!isSessionHardLocked()) return false;
+    toast('Phiên đã khoá — chỉ xem');
+    return true;
+  }
+
+  function applyLockedSessionChrome(){
+    if(!isSessionHardLocked()) return;
+    const ids = [
+      'btnDeleteLastRound','btnStartSession','btnCreateNextRound','btnEditRoster',
+      'btnResetPending','btnSaveDecide','btnBidTicketCfg','bidTicketCfgSaveBtn',
+      'segWinner','segNext','segNoValid','btnAutoCorrectWinner'
+    ];
+    ids.forEach((id) => {
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.disabled = true;
+      if(!el.title) el.title = 'Phiên đã khoá';
+    });
+    document.querySelectorAll('#modeWinner button, #modeWinner select, #modeWinner textarea, #modeWinner input, #modeNext button, #modeNext select, #modeNext textarea, #modeNext input, #modeNoValid textarea, #modeNoValid input, #listIn button, #listNext button').forEach((el) => {
+      el.disabled = true;
+    });
+    ['winnerSearch', 'filterIn', 'filterNext'].forEach((id) => {
+      const el = document.getElementById(id);
+      if(el) el.disabled = false;
+    });
   }
 
   // =========================
@@ -2192,6 +2237,7 @@ Modal: Print One Bid Sheet (choose one customer)
   // Session actions
   // =========================
   async function startSessionIfNeeded(){
+  if(refuseIfSessionLocked()) return;
   const html = `
   <div class="cCard">
     <div class="cTop">
@@ -2232,6 +2278,7 @@ Modal: Print One Bid Sheet (choose one customer)
   }
 
   async function createNextRound(){
+  if(refuseIfSessionLocked()) return;
   let inputEl = null;
   let okBtn = null;
 
@@ -2333,6 +2380,7 @@ Modal: Print One Bid Sheet (choose one customer)
   // DELETE LAST ROUND (rare, dangerous)
   // =========================
   async function deleteLastRoundFlow(){
+  if(refuseIfSessionLocked()) return;
   const rn = Number(ROUND_NO || 0);
   if(!SESSION_ID || rn <= 0){
   showError("Thiếu thông tin", "Thiếu session_id / round_no.");
@@ -2552,6 +2600,7 @@ Modal: Print One Bid Sheet (choose one customer)
   }
 
   async function openBidTicketTitleConfig(){
+  if(refuseIfSessionLocked()) return;
   const rn = Number(ROUND_NO || 0);
   if(!SESSION_ID || rn <= 0){
   toast('Thiếu session_id/round_no để cấu hình tiêu đề phiếu.');
@@ -2589,6 +2638,7 @@ Modal: Print One Bid Sheet (choose one customer)
   }
 
   async function saveBidTicketTitleConfig(){
+  if(refuseIfSessionLocked()) return;
   const rn = Number(ROUND_NO || 0);
   if(!SESSION_ID || rn <= 0) return;
 
@@ -2824,7 +2874,7 @@ Modal: Print One Bid Sheet (choose one customer)
   }
 
   // Không await lock — hiện modal ngay, lock chạy nền (tránh đứng màn)
-  void tryLock(roundLotId);
+  if(!isSessionHardLocked()) void tryLock(roundLotId);
 
   currentParticipants = (currentLot.participants || []).map(p => {
   const snap = participantSnapshot(p);
@@ -2900,6 +2950,7 @@ Modal: Print One Bid Sheet (choose one customer)
     hideBallotBox();
   }
   document.getElementById('backdrop').style.display = 'flex';
+  applyLockedSessionChrome();
   }
 
   // =========================
@@ -3335,6 +3386,7 @@ Modal: Print One Bid Sheet (choose one customer)
   onMoneyInput('winningPrice');
   updatePriceMeta('winningPrice');
   }
+  applyLockedSessionChrome();
   }
 
   // =========================
@@ -3397,6 +3449,7 @@ Modal: Print One Bid Sheet (choose one customer)
   }
 
   function autoCorrectPrice(inputId){
+  if(refuseIfSessionLocked()) return;
   if(!currentLot) return;
 
   const { sp, step } = getBaseAndStep();
@@ -3422,6 +3475,7 @@ Modal: Print One Bid Sheet (choose one customer)
   }
 
   function nudgePrice(inputId, deltaSteps){
+  if(refuseIfSessionLocked()) return;
   if(!currentLot) return;
 
   const { sp, step } = getBaseAndStep();
@@ -3462,6 +3516,7 @@ Modal: Print One Bid Sheet (choose one customer)
   const div = document.createElement('div');
   div.className = 'pitem' + ((Number(p.customer_id) === Number(selectedWinnerId)) ? ' selected' : '');
   div.onclick = ()=> {
+  if(isSessionHardLocked()) return;
   selectedWinnerId = Number(p.customer_id);
   document.getElementById('winnerCustomerId').value = String(selectedWinnerId);
   renderWinnerPicker();
@@ -3567,9 +3622,11 @@ Modal: Print One Bid Sheet (choose one customer)
   `;
   nxEl.appendChild(div);
   }
+  applyLockedSessionChrome();
   }
 
   function moveOneToNext(customerId){
+  if(refuseIfSessionLocked()) return;
   customerId = Number(customerId);
   const idx = dualIn.findIndex(x => x.customer_id === customerId);
   if(idx >= 0){
@@ -3579,6 +3636,7 @@ Modal: Print One Bid Sheet (choose one customer)
   }
   }
   function moveOneToIn(customerId){
+  if(refuseIfSessionLocked()) return;
   customerId = Number(customerId);
   const idx = dualNext.findIndex(x => x.customer_id === customerId);
   if(idx >= 0){
@@ -3588,11 +3646,13 @@ Modal: Print One Bid Sheet (choose one customer)
   }
   }
   function moveAllToNext(){
+  if(refuseIfSessionLocked()) return;
   dualNext = dualNext.concat(dualIn);
   dualIn = [];
   renderDualLists();
   }
   function moveAllToIn(){
+  if(refuseIfSessionLocked()) return;
   dualIn = dualIn.concat(dualNext);
   dualNext = [];
   renderDualLists();
@@ -3742,6 +3802,7 @@ Modal: Print One Bid Sheet (choose one customer)
   }
 
   async function resetPending(){
+  if(refuseIfSessionLocked()) return;
   if(!currentLot) return;
 
   const html = `
@@ -3796,6 +3857,7 @@ Modal: Print One Bid Sheet (choose one customer)
   }
 
   async function submitDecide(){
+  if(refuseIfSessionLocked()) return;
   if(!currentLot) return;
 
   const mode = window.__mode || 'WINNER';
@@ -4263,6 +4325,7 @@ Modal: Print One Bid Sheet (choose one customer)
   }
 
   async function askEditRoster(){
+    if(refuseIfSessionLocked()) return;
     if(!currentLot){
       toast('Hãy mở xử lý một lô trước.');
       return;
@@ -4277,6 +4340,7 @@ Modal: Print One Bid Sheet (choose one customer)
   }
 
   async function openRosterEditor(){
+    if(refuseIfSessionLocked()) return;
     if(!currentLot) return;
     const r = await fetch(`/auction/sessions/api/round-lots/${Number(currentLot.id)}/roster`);
     const js = await r.json().catch(() => ({}));
@@ -4397,6 +4461,7 @@ Modal: Print One Bid Sheet (choose one customer)
   }
 
   async function saveRoster(){
+    if(refuseIfSessionLocked()) return;
     if(!currentLot || rosterSaving) return;
     const price = parseMoneyInput('rosterStartPrice');
     if(price === null){
@@ -4455,11 +4520,11 @@ Modal: Print One Bid Sheet (choose one customer)
       }
     } finally {
       rosterSaving = false;
-      if(btn) btn.disabled = false;
+      if(btn) btn.disabled = isSessionHardLocked();
     }
   }
 
-
+  applyLockedSessionChrome();
 
 </script>
 {% endblock %}
