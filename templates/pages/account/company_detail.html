@@ -30,6 +30,14 @@
   <div class="co-section">
     <div class="co-section-tt">Cấu hình hệ thống</div>
     <div class="co-hub">
+      <a href="/account/company/{{ company_code }}/roles" class="co-card">
+        <div class="co-card-top">
+          <span class="co-card-ico otp"><i class="ri-shield-user-line"></i></span>
+        </div>
+        <h3 class="co-card-ttl">Quyền menu theo role</h3>
+        <p class="co-card-desc">Gán menu riêng cho từng role của công ty này. Chưa gán thì dùng quyền mặc định.</p>
+        <span class="co-card-link">Cấu hình quyền →</span>
+      </a>
       <a href="/account/company/{{ company_code }}/telegram-notify" class="co-card">
         <div class="co-card-top">
           <span class="co-card-ico tg"><i class="ri-telegram-fill"></i></span>
@@ -125,10 +133,16 @@
     <label class="block">
       <span class="sr-only">Role</span>
       <select name="role" class="input">
+        {% if assignable_roles %}
+          {% for r in assignable_roles %}
+          <option value="{{ r.code }}">{{ r.label }} ({{ r.code }})</option>
+          {% endfor %}
+        {% else %}
         <option value="STAFF">STAFF</option>
         <option value="VIEWER">VIEWER</option>
         <option value="ACCOUNTANT">ACCOUNTANT</option>
         <option value="COMPANY_ADMIN">COMPANY_ADMIN</option>
+        {% endif %}
       </select>
     </label>
 

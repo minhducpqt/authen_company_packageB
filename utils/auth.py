@@ -172,9 +172,16 @@ def account_menu_info(request) -> Dict[str, Any]:
             if claim_u and not claim_u.isdigit():
                 username = claim_u
 
+    label = _ROLE_LABELS.get(role, role or "—")
+    try:
+        extra = getattr(request.state, "nav_role_label", "") or ""
+        if extra:
+            label = extra
+    except Exception:
+        pass
     return {
         "username": username,
         "company_code": company_code,
         "role": role,
-        "role_label": _ROLE_LABELS.get(role, role or "—"),
+        "role_label": label,
     }

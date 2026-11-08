@@ -602,6 +602,7 @@
     {% if not request.url.path.startswith('/login') %}
     <aside id="appSidebarScroll" class="app-sidebar rounded-2xl overflow-y-auto">
       <ul class="p-2">
+        {% set nav_legacy = request.state.nav_menu_legacy|default(true) %}
 
         {# =========================================================
            MENU: Billing LOCKED — chỉ Billing (+ Tài khoản / Sổ tay bên dưới)
@@ -652,7 +653,7 @@
         {# =========================================================
            MENU: ADMIN (GIỮ Y NGUYÊN BẢN GỐC)
            ========================================================= #}
-        {% elif is_admin %}
+        {% elif is_admin and nav_legacy %}
 
           {# ✅ Báo cáo dự án (hub NORMAL + GROUP): CHỈ ADMIN #}
           <li class="side-title mt-0">Dashboard</li>
@@ -813,7 +814,7 @@
         {# =========================================================
            MENU: ACCOUNTANT (GIỮ NGUYÊN)
            ========================================================= #}
-        {% elif is_accountant %}
+        {% elif is_accountant and nav_legacy %}
 
           {# ===== 1. Dự án & Giao dịch (FULL 1.1-1.3) ===== #}
           <li class="side-title mt-0">1. Dự án & Giao dịch</li>
@@ -917,7 +918,7 @@
         {# =========================================================
            MENU: STAFF (GIỮ NGUYÊN NHƯ HIỆN TẠI)
            ========================================================= #}
-        {% elif is_staff %}
+        {% elif is_staff and nav_legacy %}
 
           {# ===== 1. Dự án & Giao dịch (FULL 1.1-1.3) ===== #}
           <li class="side-title mt-0">1. Dự án & Giao dịch</li>
@@ -1011,7 +1012,7 @@
         {# =========================================================
            MENU: VIEWER (CHỈ HIỆN 2.1, 2.2, 4.0, 4.1) - YÊU CẦU MỚI
            ========================================================= #}
-        {% elif is_viewer %}
+        {% elif is_viewer and nav_legacy %}
 
           {# ===== 2. Giao dịch (CHỈ 2.1-2.2) ===== #}
           <li class="side-title mt-0">2. Giao dịch</li>
@@ -1043,6 +1044,17 @@
             </a>
           </li>
 
+        {% elif not nav_legacy %}
+          {% for group in request.state.nav_menu_groups|default([]) %}
+          <li class="side-title {% if loop.first %}mt-0{% else %}mt-4{% endif %}">{{ group.title }}</li>
+          {% for item in group['items'] %}
+          <li>
+            <a class="side-link {% if item.active %}active{% endif %}" href="{{ item.href }}">
+              <i class="{{ item.icon }}"></i> {{ item.label }}
+            </a>
+          </li>
+          {% endfor %}
+          {% endfor %}
         {% endif %}
 
         {# ===== Tài khoản (mọi role) ===== #}

@@ -3,6 +3,8 @@ import os
 import httpx
 from starlette.responses import RedirectResponse, JSONResponse
 
+from utils.menu_access import always_allowed, resolve_nav, rules_allow_path
+
 SERVICE_A_BASE_URL = os.getenv("SERVICE_A_BASE_URL", "http://127.0.0.1:8824")
 
 ACCESS_COOKIE_NAME = os.getenv("ACCESS_COOKIE_NAME", "access_token")
@@ -141,6 +143,15 @@ async def rbac_guard_middleware(request, call_next):
         return await call_next(request)
 
     role = await _get_role(request)
+    nav = {"legacy": True, "groups": [], "rules": [], "label": "", "first_href": "/transactions/dossiers"}
+    if role != "SUPER_ADMIN":
+        nav = await resolve_nav(request, role)
+    try:
+        request.state.nav_menu_legacy = bool(nav.get("legacy", True))
+        request.state.nav_menu_groups = nav.get("groups") or []
+        request.state.nav_role_label = nav.get("label") or ""
+    except Exception:
+        pass
 
     # ✅ Nếu SUPER_ADMIN: sau login / landing -> đưa về /account
     # (Áp dụng cho các path "home" hay gặp sau login)
@@ -150,21 +161,37 @@ async def rbac_guard_middleware(request, call_next):
         # SUPER_ADMIN toàn quyền, không hạn chế
         return await call_next(request)
 
-    # ✅ COMPANY_ADMIN: không giới hạn gì cả
-    if role == "COMPANY_ADMIN":
+    # Role sẵn có, quyền mặc định chưa sửa, công ty chưa có quyền riêng: giữ chặn trang cũ.
+    if nav.get("legacy", True):
+        if role == "COMPANY_ADMIN":
+            return await call_next(request)
+        logical_path = _normalize_path(path)
+        if _is_admin_only(logical_path, role):
+            if _is_api_like(path):
+                return JSONResponse(
+                    {"error": "forbidden", "role": role},
+                    status_code=403
+                )
+            return _redirect_non_admin_home()
         return await call_next(request)
 
-    # Normalize path để check logic
     logical_path = _normalize_path(path)
+    if (
+        path.startswith("/api/")
+        or path.startswith("/apis/")
+        or always_allowed(path)
+        or always_allowed(logical_path)
+        or rules_allow_path(logical_path, nav.get("rules") or [])
+        or rules_allow_path(path, nav.get("rules") or [])
+    ):
+        return await call_next(request)
 
-    # ❌ Non-admin + admin-only path => chặn
-    if _is_admin_only(logical_path, role):
-        if _is_api_like(path):
-            return JSONResponse(
-                {"error": "forbidden", "role": role},
-                status_code=403
-            )
-        return _redirect_non_admin_home()
-
-    # ✅ Còn lại cho qua hết
-    return await call_next(request)
+    home = nav.get("first_href") or "/account"
+    if _is_api_like(path):
+        return JSONResponse(
+            {"error": "forbidden", "role": role},
+            status_code=403
+        )
+    if path == home:
+        return await call_next(request)
+    return RedirectResponse(url=home, status_code=303)

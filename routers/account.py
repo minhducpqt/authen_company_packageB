@@ -59,11 +59,16 @@ async def account_home(request: Request):
 
     super_companies = None
     admin_users = None
+    assignable_roles = None
     load_err = None
 
     try:
         async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=8.0) as client:
             headers = {"Authorization": f"Bearer {acc}"}
+            if role in ("SUPER_ADMIN", "COMPANY_ADMIN"):
+                st_roles, role_data = await _get_json(client, "/api/v1/admin/menu-roles/assignable", headers)
+                if st_roles == 200 and isinstance(role_data, dict):
+                    assignable_roles = role_data.get("data") or None
 
             if role == "SUPER_ADMIN":
                 # size <= 200 để không bị 422
@@ -91,6 +96,7 @@ async def account_home(request: Request):
             "profile": profile,
             "super_companies": super_companies,
             "admin_users": admin_users,
+            "assignable_roles": assignable_roles,
             "load_err": load_err,
         }
     )
@@ -109,10 +115,14 @@ async def company_detail(request: Request, company_code: str):
     load_err = None
     company = None
     users = None
+    assignable_roles = None
 
     try:
         async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=8.0) as client:
             headers = {"Authorization": f"Bearer {acc}"}
+            st_roles, role_data = await _get_json(client, "/api/v1/admin/menu-roles/assignable", headers)
+            if st_roles == 200 and isinstance(role_data, dict):
+                assignable_roles = role_data.get("data") or None
 
             # lấy thông tin công ty (size <= 200)
             st, data = await _get_json(client, "/api/v1/admin/companies?page=1&size=200", headers)
@@ -137,6 +147,7 @@ async def company_detail(request: Request, company_code: str):
             "company_code": company_code,
             "company": company,
             "users": users,
+            "assignable_roles": assignable_roles,
             "load_err": load_err,
         }
     )
@@ -326,3 +337,202 @@ async def logout_all(request: Request):
     resp = _clear_auth_cookies(resp)
     clear_device_cookies_for_user(resp, username)
     return resp
+
+
+def _detail_text(status: int, body) -> str:
+    if isinstance(body, dict):
+        detail = body.get("detail")
+        if isinstance(detail, str) and detail.strip():
+            return detail.strip()
+    return f"HTTP {status}"
+
+
+def _menu_groups(catalog: list) -> list[dict]:
+    groups: list[dict] = []
+    current = None
+    for item in catalog or []:
+        title = item.get("group") or ""
+        if current is None or current["title"] != title:
+            current = {"title": title, "items": []}
+            groups.append(current)
+        current["items"].append(item)
+    return groups
+
+
+async def _request_json(method: str, path: str, token: str | None, payload: dict | None = None):
+    headers = {"Authorization": f"Bearer {token}"} if token else {}
+    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=8.0) as client:
+        response = await client.request(method, path, headers=headers, json=payload)
+    try:
+        body = response.json()
+    except Exception:
+        body = None
+    return response.status_code, body
+
+
+def _token(request: Request) -> str | None:
+    return request.cookies.get(ACCESS_COOKIE) or request.cookies.get(ACCESS_COOKIE_NAME)
+
+
+@router.get("/roles", response_class=HTMLResponse)
+async def roles_page(request: Request, msg: str | None = None, err: str | None = None):
+    me = await _me(request)
+    if not me:
+        return RedirectResponse(url="/login?next=/account/roles", status_code=303)
+    role = (me.get("role") or "").upper()
+    token = _token(request)
+    if role == "SUPER_ADMIN":
+        status, data = await _request_json("GET", "/api/v1/admin/menu-roles", token)
+        if status != 200 or not isinstance(data, dict):
+            return templates.TemplateResponse(
+                "pages/account/roles.html",
+                {
+                    "request": request, "mode": "defaults", "roles": [], "groups": [],
+                    "company_code": "", "msg": msg, "err": err,
+                    "load_err": _detail_text(status, data),
+                },
+            )
+        defaults = data.get("defaults") or {}
+        roles = []
+        for row in data.get("roles") or []:
+            roles.append({
+                "code": row.get("code"),
+                "label": row.get("label"),
+                "is_system": bool(row.get("is_system")),
+                "has_override": False,
+                "menu_keys": defaults.get(row.get("code")) or [],
+            })
+        return templates.TemplateResponse(
+            "pages/account/roles.html",
+            {
+                "request": request, "mode": "defaults", "roles": roles,
+                "groups": _menu_groups(data.get("catalog") or []),
+                "company_code": "", "msg": msg, "err": err, "load_err": None,
+            },
+        )
+    if role == "COMPANY_ADMIN":
+        company = (me.get("company_code") or "").strip()
+        status, data = await _request_json(
+            "GET", f"/api/v1/admin/menu-roles/company/{quote(company)}", token
+        )
+        if status != 200 or not isinstance(data, dict):
+            return templates.TemplateResponse(
+                "pages/account/roles.html",
+                {
+                    "request": request, "mode": "readonly", "roles": [], "groups": [],
+                    "company_code": company, "msg": msg, "err": err,
+                    "load_err": _detail_text(status, data),
+                },
+            )
+        return templates.TemplateResponse(
+            "pages/account/roles.html",
+            {
+                "request": request, "mode": "readonly",
+                "roles": data.get("roles") or [],
+                "groups": _menu_groups(data.get("catalog") or []),
+                "company_code": company, "msg": msg, "err": err, "load_err": None,
+            },
+        )
+    return RedirectResponse(url="/account", status_code=303)
+
+
+@router.get("/company/{company_code}/roles", response_class=HTMLResponse)
+async def company_roles_page(
+    request: Request, company_code: str, msg: str | None = None, err: str | None = None
+):
+    me = await _me(request)
+    if not me:
+        return RedirectResponse(
+            url=f"/login?next=/account/company/{quote(company_code)}/roles", status_code=303
+        )
+    role = (me.get("role") or "").upper()
+    if role != "SUPER_ADMIN":
+        return RedirectResponse(url="/account?err=forbidden", status_code=303)
+    status, data = await _request_json(
+        "GET", f"/api/v1/admin/menu-roles/company/{quote(company_code)}", _token(request)
+    )
+    if status != 200 or not isinstance(data, dict):
+        return templates.TemplateResponse(
+            "pages/account/roles.html",
+            {
+                "request": request, "mode": "company", "roles": [], "groups": [],
+                "company_code": company_code, "msg": msg, "err": err,
+                "load_err": _detail_text(status, data),
+            },
+        )
+    return templates.TemplateResponse(
+        "pages/account/roles.html",
+        {
+            "request": request, "mode": "company",
+            "roles": data.get("roles") or [],
+            "groups": _menu_groups(data.get("catalog") or []),
+            "company_code": company_code, "msg": msg, "err": err, "load_err": None,
+        },
+    )
+
+
+@router.post("/roles/create")
+async def roles_create(request: Request, code: str = Form(...), label: str = Form(...)):
+    status, body = await _request_json(
+        "POST", "/api/v1/admin/menu-roles", _token(request),
+        {"code": code, "label": label},
+    )
+    if status == 200:
+        return RedirectResponse(url="/account/roles?msg=Đã thêm role", status_code=303)
+    return RedirectResponse(url=f"/account/roles?err={quote(_detail_text(status, body))}", status_code=303)
+
+
+@router.post("/roles/delete")
+async def roles_delete(request: Request, code: str = Form(...)):
+    status, body = await _request_json(
+        "DELETE", f"/api/v1/admin/menu-roles/{quote(code)}", _token(request)
+    )
+    if status == 200:
+        return RedirectResponse(url="/account/roles?msg=Đã xoá role", status_code=303)
+    return RedirectResponse(url=f"/account/roles?err={quote(_detail_text(status, body))}", status_code=303)
+
+
+@router.post("/roles/default")
+async def roles_save_default(request: Request):
+    form = await request.form()
+    role_code = str(form.get("role_code") or "")
+    menu_keys = form.getlist("menu_keys")
+    status, body = await _request_json(
+        "PUT", "/api/v1/admin/menu-roles/defaults", _token(request),
+        {"role_code": role_code, "menu_keys": menu_keys},
+    )
+    if status == 200:
+        return RedirectResponse(url="/account/roles?msg=Đã lưu quyền mặc định", status_code=303)
+    return RedirectResponse(url=f"/account/roles?err={quote(_detail_text(status, body))}", status_code=303)
+
+
+@router.post("/company/{company_code}/roles/save")
+async def company_roles_save(request: Request, company_code: str):
+    form = await request.form()
+    role_code = str(form.get("role_code") or "")
+    menu_keys = form.getlist("menu_keys")
+    status, body = await _request_json(
+        "PUT",
+        f"/api/v1/admin/menu-roles/company/{quote(company_code)}",
+        _token(request),
+        {"role_code": role_code, "menu_keys": menu_keys},
+    )
+    dest = f"/account/company/{quote(company_code)}/roles"
+    if status == 200:
+        return RedirectResponse(url=f"{dest}?msg=Đã lưu quyền riêng", status_code=303)
+    return RedirectResponse(url=f"{dest}?err={quote(_detail_text(status, body))}", status_code=303)
+
+
+@router.post("/company/{company_code}/roles/clear")
+async def company_roles_clear(request: Request, company_code: str):
+    form = await request.form()
+    role_code = str(form.get("role_code") or "")
+    status, body = await _request_json(
+        "DELETE",
+        f"/api/v1/admin/menu-roles/company/{quote(company_code)}/{quote(role_code)}",
+        _token(request),
+    )
+    dest = f"/account/company/{quote(company_code)}/roles"
+    if status == 200:
+        return RedirectResponse(url=f"{dest}?msg=Đã trở lại quyền mặc định", status_code=303)
+    return RedirectResponse(url=f"{dest}?err={quote(_detail_text(status, body))}", status_code=303)

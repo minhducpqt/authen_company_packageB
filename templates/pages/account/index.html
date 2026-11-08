@@ -58,6 +58,16 @@
     </div>
   </div>
 
+  <div class="sa-card">
+    <div class="sa-card-hd">
+      <div>
+        <h2 class="sa-card-hd-t">Role và quyền menu</h2>
+        <p class="sa-card-hd-s">Bộ role dùng chung. Quyền mặc định áp dụng khi công ty chưa có quyền riêng.</p>
+      </div>
+      <a class="sa-btn sa-btn--primary sa-btn--sm" href="/account/roles">Cấu hình role</a>
+    </div>
+  </div>
+
   <div class="sa-section">
     <div class="sa-toolbar">
       <div class="sa-section-tt" style="margin:0">Danh sách công ty</div>
@@ -167,16 +177,25 @@
 {% if role == "COMPANY_ADMIN" %}
   <div class="mb-8">
     <h2 class="text-lg font-semibold text-slate-700 mb-3">Tài khoản công ty</h2>
+    <p class="text-sm text-slate-600 mb-3">
+      <a class="link" href="/account/roles">Xem quyền menu đang áp dụng</a>
+    </p>
 
     <form id="createUserForm" action="/account/admin/user/create" method="post" class="flex flex-wrap gap-2 mb-1 items-end">
       <input type="hidden" name="company_code" value="{{ profile.company_code or '' }}">
       <input id="usernameInput" name="username" placeholder="username (a-z0-9_)" class="input" required>
       <input name="password" placeholder="password" type="password" class="input" required>
       <select name="role" class="input">
+        {% if assignable_roles %}
+          {% for r in assignable_roles %}
+          <option value="{{ r.code }}">{{ r.label }} ({{ r.code }})</option>
+          {% endfor %}
+        {% else %}
         <option value="STAFF">STAFF</option>
         <option value="VIEWER">VIEWER</option>
         <option value="ACCOUNTANT">ACCOUNTANT</option>
         <option value="COMPANY_ADMIN">COMPANY_ADMIN</option>
+        {% endif %}
       </select>
       <button class="btn-primary" type="submit">Thêm tài khoản</button>
     </form>

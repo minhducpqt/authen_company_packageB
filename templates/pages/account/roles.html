@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block head_extra %}
+<link rel="stylesheet" href="/static/css/super_admin.css">
+<style>
+  .role-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px 16px;margin-top:8px}
+  .role-grid label{display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#334155}
+  .role-block{margin-top:18px}
+  .role-block h3{font-size:15px;font-weight:700;color:#0f172a;margin:0 0 8px}
+</style>
+{% endblock %}
+{% block content %}
+<div class="sa-wrap">
+  <a href="{% if mode == 'company' or mode == 'company-readonly' %}/account/company/{{ company_code }}{% else %}/account{% endif %}" class="co-back">&larr; Quay lại</a>
+  <div class="sa-head">
+    <h1 class="sa-title">
+      {% if mode == 'defaults' %}Role và quyền mặc định
+      {% else %}Quyền menu — {{ company_code }}{% endif %}
+    </h1>
+    <p class="sa-sub">
+      {% if mode == 'defaults' %}
+        Bộ role này dùng cho mọi công ty. Công ty chưa có quyền riêng thì dùng đúng các menu được tick ở đây.
+      {% elif mode == 'readonly' %}
+        Đây là quyền đang áp dụng cho công ty. Chỉ super admin sửa được.
+      {% else %}
+        Tick menu rồi lưu để công ty dùng quyền riêng. Role chưa lưu riêng vẫn lấy quyền mặc định.
+      {% endif %}
+    </p>
+  </div>
+
+  {% if err %}<div class="sa-alert sa-alert--err">{{ err }}</div>{% endif %}
+  {% if msg %}<div class="sa-alert sa-alert--ok">{{ msg }}</div>{% endif %}
+  {% if load_err %}<div class="sa-alert sa-alert--err">{{ load_err }}</div>{% endif %}
+
+  {% if mode == 'defaults' %}
+  <div class="sa-card">
+    <div class="sa-card-hd">
+      <div>
+        <h2 class="sa-card-hd-t">Thêm role</h2>
+        <p class="sa-card-hd-s">Role mới xuất hiện ở mọi công ty, chưa có menu cho đến khi được tick.</p>
+      </div>
+    </div>
+    <div class="sa-card-bd">
+      <form action="/account/roles/create" method="post" class="sa-form-inline">
+        <div class="sa-field" style="max-width:200px">
+          <label class="sa-label">Mã</label>
+          <input name="code" class="input" placeholder="VD: THU_NGAN" required autocomplete="off">
+        </div>
+        <div class="sa-field" style="flex:1;min-width:180px">
+          <label class="sa-label">Tên hiển thị</label>
+          <input name="label" class="input" placeholder="Thu ngân" required>
+        </div>
+        <button class="sa-btn sa-btn--primary" type="submit">Thêm role</button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  {% for role in roles %}
+  <div class="sa-card">
+    <div class="sa-card-hd">
+      <div>
+        <h2 class="sa-card-hd-t">{{ role.label }} <span class="mono text-slate-500">{{ role.code }}</span></h2>
+        <p class="sa-card-hd-s">
+          {% if mode == 'defaults' %}
+            {% if role.is_system %}Role sẵn có, không xoá được.{% else %}Role thêm mới.{% endif %}
+          {% elif role.has_override %}
+            Đang dùng quyền riêng của công ty.
+          {% else %}
+            Đang dùng quyền mặc định.
+          {% endif %}
+        </p>
+      </div>
+      {% if mode == 'defaults' and not role.is_system %}
+      <form action="/account/roles/delete" method="post" onsubmit="return confirm('Xoá role {{ role.code }}?');">
+        <input type="hidden" name="code" value="{{ role.code }}">
+        <button class="sa-btn sa-btn--danger sa-btn--sm" type="submit">Xoá role</button>
+      </form>
+      {% endif %}
+    </div>
+    <div class="sa-card-bd">
+      {% if mode != 'readonly' %}<form action="{% if mode == 'defaults' %}/account/roles/default{% else %}/account/company/{{ company_code }}/roles/save{% endif %}" method="post">{% endif %}
+        <input type="hidden" name="role_code" value="{{ role.code }}">
+        {% for group in groups %}
+        <div class="role-block">
+          <h3>{{ group.title }}</h3>
+          <div class="role-grid">
+            {% for item in group['items'] %}
+            <label>
+              <input type="checkbox" name="menu_keys" value="{{ item.key }}"
+                     {% if item.key in role.menu_keys %}checked{% endif %}
+                     {% if mode == 'readonly' %}disabled{% endif %}>
+              <span>{{ item.label }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+        {% if mode != 'readonly' %}
+        <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="sa-btn sa-btn--primary" type="submit">
+            {% if mode == 'defaults' %}Lưu quyền mặc định{% else %}Lưu quyền riêng{% endif %}
+          </button>
+        </div>
+        {% endif %}
+      {% if mode != 'readonly' %}</form>{% endif %}
+      {% if mode == 'company' and role.has_override %}
+      <form action="/account/company/{{ company_code }}/roles/clear" method="post" style="margin-top:8px"
+            onsubmit="return confirm('Bỏ quyền riêng của {{ role.code }} và dùng lại quyền mặc định?');">
+        <input type="hidden" name="role_code" value="{{ role.code }}">
+        <button class="sa-btn sa-btn--secondary sa-btn--sm" type="submit">Dùng lại quyền mặc định</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

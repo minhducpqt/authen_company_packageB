@@ -128,8 +128,24 @@ async def _finalize_login(request: Request, data: dict, safe_next: str, username
     except Exception:
         role = None
     role_u = (role or data.get("role") or "").upper().strip()
-    if role_u != "COMPANY_ADMIN":
+    if role_u == "COMPANY_ADMIN":
+        pass
+    elif role_u in ("SUPER_ADMIN", "STAFF", "VIEWER", "ACCOUNTANT"):
         safe_next = _first_menu_for_non_admin(role_u)
+    else:
+        safe_next = "/account"
+        try:
+            async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=2.5) as client:
+                mine = await client.get(
+                    "/api/v1/admin/menu-roles/mine",
+                    headers={"Authorization": f"Bearer {access}"} if access else {},
+                )
+            if mine.status_code == 200:
+                body = mine.json()
+                if isinstance(body, dict) and not body.get("legacy"):
+                    safe_next = body.get("first_href") or "/account"
+        except Exception:
+            safe_next = "/account"
     resp = RedirectResponse(url=safe_next, status_code=303)
     _set_auth_cookies(resp, access, refresh, role_u)
     _set_device_cookie(resp, username, data.get("device_id"))
