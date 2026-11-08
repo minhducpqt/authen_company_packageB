@@ -42,8 +42,17 @@ async def _post_json(client: httpx.AsyncClient, url: str, headers: dict, payload
 def _username_valid(u: str) -> bool:
     return re.fullmatch(r"[a-z0-9_]{3,32}", u or "") is not None
 
+def _redirect_with(url: str, **params: str) -> str:
+    from urllib.parse import parse_qsl, urlsplit, urlunsplit, urlencode
+    parts = urlsplit(url or "/account")
+    query = dict(parse_qsl(parts.query, keep_blank_values=True))
+    query.update({key: value for key, value in params.items() if value is not None})
+    path = parts.path or "/account"
+    return urlunsplit(("", "", path, urlencode(query), ""))
+
+
 @router.get("", response_class=HTMLResponse)
-async def account_home(request: Request):
+async def account_home(request: Request, visibility: str | None = None):
     me = await _me(request)
     if not me:
         return RedirectResponse(url="/login?next=/account", status_code=303)
@@ -61,6 +70,12 @@ async def account_home(request: Request):
     admin_users = None
     assignable_roles = None
     load_err = None
+    if role == "COMPANY_ADMIN":
+        visibility = (visibility or "show").strip().lower()
+        if visibility not in ("show", "hide", "all"):
+            visibility = "show"
+    else:
+        visibility = "show"
 
     try:
         async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=8.0) as client:
@@ -79,7 +94,11 @@ async def account_home(request: Request):
                     load_err = f"Không tải được danh sách công ty (HTTP {st})."
 
             elif role == "COMPANY_ADMIN":
-                st, data = await _get_json(client, "/api/v1/admin/users?page=1&size=50", headers)
+                st, data = await _get_json(
+                    client,
+                    f"/api/v1/admin/users?page=1&size=200&visibility={visibility}",
+                    headers,
+                )
                 if st == 200 and isinstance(data, dict):
                     admin_users = data.get("data", data)
                 else:
@@ -98,6 +117,7 @@ async def account_home(request: Request):
             "admin_users": admin_users,
             "assignable_roles": assignable_roles,
             "load_err": load_err,
+            "visibility": visibility,
         }
     )
 
@@ -275,8 +295,31 @@ async def admin_user_toggle(
             {"Authorization": f"Bearer {acc}"}, None
         )
     redir = next or "/account"
-    to = f"{redir}?msg=user_toggled" if st == 200 else f"{redir}?err=user_toggle_failed"
-    return RedirectResponse(url=to, status_code=303)
+    key = "msg" if st == 200 else "err"
+    value = "user_toggled" if st == 200 else "user_toggle_failed"
+    return RedirectResponse(url=_redirect_with(redir, **{key: value}), status_code=303)
+
+
+@router.post("/admin/user/listing")
+async def admin_user_listing(
+    request: Request,
+    user_id: int = Form(...),
+    action: str = Form(...),
+    next: str | None = Form(None),
+):
+    acc = request.cookies.get(ACCESS_COOKIE) or request.cookies.get(ACCESS_COOKIE_NAME)
+    action = (action or "").lower()
+    redir = next or "/account"
+    if action not in ("show", "hide"):
+        return RedirectResponse(url=_redirect_with(redir, err="bad_action"), status_code=303)
+    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=8.0) as client:
+        st, _ = await _post_json(
+            client, f"/api/v1/admin/users/{user_id}/{action}",
+            {"Authorization": f"Bearer {acc}"}, None
+        )
+    key = "msg" if st == 200 else "err"
+    value = "user_listed" if st == 200 else "user_list_failed"
+    return RedirectResponse(url=_redirect_with(redir, **{key: value}), status_code=303)
 
 @router.post("/admin/user/set-password")
 async def admin_user_set_password(
@@ -293,8 +336,9 @@ async def admin_user_set_password(
             {"new_password": new_password}
         )
     redir = next or "/account"
-    to = f"{redir}?msg=pass_set" if st == 200 else f"{redir}?err=set_pass_failed"
-    return RedirectResponse(url=to, status_code=303)
+    key = "msg" if st == 200 else "err"
+    value = "pass_set" if st == 200 else "set_pass_failed"
+    return RedirectResponse(url=_redirect_with(redir, **{key: value}), status_code=303)
 
 def _clear_auth_cookies(resp: RedirectResponse):
     resp.delete_cookie(ACCESS_COOKIE, path="/")
