@@ -321,6 +321,27 @@ async def admin_user_listing(
     value = "user_listed" if st == 200 else "user_list_failed"
     return RedirectResponse(url=_redirect_with(redir, **{key: value}), status_code=303)
 
+@router.post("/admin/user/role")
+async def admin_user_set_role(
+    request: Request,
+    user_id: int = Form(...),
+    role: str = Form(...),
+    next: str | None = Form(None),
+):
+    acc = request.cookies.get(ACCESS_COOKIE) or request.cookies.get(ACCESS_COOKIE_NAME)
+    redir = next or "/account"
+    async with httpx.AsyncClient(base_url=SERVICE_A_BASE_URL, timeout=8.0) as client:
+        st, _ = await _post_json(
+            client,
+            f"/api/v1/admin/users/{user_id}/role",
+            {"Authorization": f"Bearer {acc}"},
+            {"role": role},
+        )
+    key = "msg" if st == 200 else "err"
+    value = "role_set" if st == 200 else "role_failed"
+    return RedirectResponse(url=_redirect_with(redir, **{key: value}), status_code=303)
+
+
 @router.post("/admin/user/set-password")
 async def admin_user_set_password(
     request: Request,

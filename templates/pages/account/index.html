@@ -159,6 +159,7 @@
 </script>
 {% else %}
 
+{% if role != "COMPANY_ADMIN" %}
 <div class="mb-6">
   <h2 class="text-lg font-semibold text-slate-700 mb-2">Tài khoản</h2>
   <div class="text-sm text-slate-600">
@@ -167,6 +168,7 @@
     <div><b>Company:</b> {{ profile.company_code or "-" }}</div>
   </div>
 </div>
+{% endif %}
 
 {% if load_err %}
   <div class="p-3 rounded bg-red-50 text-red-700 text-sm mb-6">{{ load_err }}</div>
@@ -176,6 +178,26 @@
 {# ===== COMPANY_ADMIN: quản lý user công ty mình ===== #}
 {% if role == "COMPANY_ADMIN" %}
   <div class="sa-wrap ca-account">
+    <div class="sa-profile">
+      <div class="sa-profile-item">
+        <div class="sa-profile-label">Tài khoản</div>
+        <div class="sa-profile-value mono">{{ profile.username }}</div>
+      </div>
+      <div class="sa-profile-item">
+        <div class="sa-profile-label">Vai trò</div>
+        <div class="sa-profile-value">{{ role }}</div>
+      </div>
+      <div class="sa-profile-item">
+        <div class="sa-profile-label">Công ty</div>
+        <div class="sa-profile-value mono">{{ profile.company_code or "-" }}</div>
+      </div>
+    </div>
+    {% if request.query_params.get('msg') == 'role_set' %}
+      <div class="sa-alert sa-alert--ok">Đã đổi role. Tài khoản đó cần đăng nhập lại để dùng role mới.</div>
+    {% elif request.query_params.get('err') == 'role_failed' %}
+      <div class="sa-alert sa-alert--err">Không đổi được role. Chỉ đổi được tài khoản khác trong công ty, và role phải nằm trong bộ role của hệ thống.</div>
+    {% endif %}
+
     <a class="ca-perm-link" href="/account/roles">
       <span class="ca-perm-ico"><i class="ri-shield-user-line"></i></span>
       <span class="ca-perm-copy">
@@ -233,7 +255,7 @@
       <div class="sa-card-hd">
         <div>
           <h2 class="sa-card-hd-t">Danh sách tài khoản</h2>
-          <p class="sa-card-hd-s">Mặc định chỉ hiện tài khoản Show. Hide vẫn giữ tài khoản và lịch sử, chỉ giấu khỏi danh sách này.</p>
+          <p class="sa-card-hd-s">Mặc định chỉ hiện tài khoản Show. Đổi role ở cột Role. Không đổi được role của chính tài khoản đang đăng nhập.</p>
         </div>
         <div class="ca-filter">
           <a href="/account?visibility=show" class="{% if visibility != 'hide' and visibility != 'all' %}is-on{% endif %}">Show</a>
@@ -241,87 +263,126 @@
           <a href="/account?visibility=all" class="{% if visibility == 'all' %}is-on{% endif %}">Tất cả</a>
         </div>
       </div>
-      <div class="sa-card-bd">
+      <div class="sa-card-bd ca-list-bd">
     {% if admin_users and admin_users|length > 0 %}
-      <div class="overflow-x-auto border rounded">
-        <table class="min-w-full text-sm">
-          <thead class="bg-slate-100">
+      <div class="ca-table-wrap">
+        <table class="sa-table ca-users">
+          <thead>
             <tr>
-              <th class="px-3 py-2 text-left">ID</th>
-              <th class="px-3 py-2 text-left">Username</th>
-              <th class="px-3 py-2 text-left">Role</th>
-              <th class="px-3 py-2 text-left">Đăng nhập</th>
-              <th class="px-3 py-2 text-left">Danh sách</th>
-              <th class="px-3 py-2 text-left">Hành động</th>
+              <th>Tài khoản</th>
+              <th>Role</th>
+              <th>Đăng nhập</th>
+              <th>Danh sách</th>
+              <th>Hành động</th>
             </tr>
           </thead>
           <tbody>
             {% for u in admin_users %}
-            <tr class="border-t">
-              <td class="px-3 py-2">{{ u.id }}</td>
-              <td class="px-3 py-2 font-mono js-username">{{ u.username }}</td>
-              <td class="px-3 py-2">{{ u.role }}</td>
-              <td class="px-3 py-2">
-                {% if u.is_active %}<span class="text-green-600">Active</span>
-                {% else %}<span class="text-slate-500">Disabled</span>{% endif %}
+            <tr>
+              <td>
+                <div class="ca-user">
+                  <span class="ca-user-av">{{ (u.username or '?')[:1]|upper }}</span>
+                  <span>
+                    <span class="ca-user-name js-username">{{ u.username }}</span>
+                    <span class="ca-user-id">#{{ u.id }}</span>
+                  </span>
+                </div>
               </td>
-              <td class="px-3 py-2">
+              <td>
+                {% if me and (u.id|string) == (me.id|string) %}
+                  <span class="ca-role">{{ u.role }}</span>
+                  <span class="ca-role-self">Tài khoản của bạn</span>
+                {% elif u.role == 'SUPER_ADMIN' %}
+                  <span class="ca-role">{{ u.role }}</span>
+                {% else %}
+                  <form action="/account/admin/user/role" method="post" class="js-role-form ca-role-form"
+                        data-username="{{ u.username }}" data-current="{{ u.role }}">
+                    <input type="hidden" name="user_id" value="{{ u.id }}">
+                    <input type="hidden" name="next" value="/account?visibility={{ visibility or 'show' }}">
+                    <select name="role" class="ca-role-select" aria-label="Role của {{ u.username }}">
+                      {% set ns = namespace(found=false) %}
+                      {% if assignable_roles %}
+                        {% for r in assignable_roles %}
+                          {% if r.code == u.role %}{% set ns.found = true %}{% endif %}
+                          <option value="{{ r.code }}" {% if r.code == u.role %}selected{% endif %}>{{ r.label }}</option>
+                        {% endfor %}
+                      {% else %}
+                        {% for code in ['STAFF', 'VIEWER', 'ACCOUNTANT', 'COMPANY_ADMIN'] %}
+                          {% if code == u.role %}{% set ns.found = true %}{% endif %}
+                          <option value="{{ code }}" {% if code == u.role %}selected{% endif %}>{{ code }}</option>
+                        {% endfor %}
+                      {% endif %}
+                      {% if not ns.found %}
+                        <option value="{{ u.role }}" selected>{{ u.role }}</option>
+                      {% endif %}
+                    </select>
+                    <button class="ca-act ca-act--role" type="submit">Lưu</button>
+                  </form>
+                {% endif %}
+              </td>
+              <td>
+                {% if u.is_active %}<span class="ca-badge ca-badge--on">Active</span>
+                {% else %}<span class="ca-badge ca-badge--off">Disabled</span>{% endif %}
+              </td>
+              <td>
                 {% if u.is_shown == false %}
                   <span class="ca-badge ca-badge--hide">Hide</span>
                 {% else %}
                   <span class="ca-badge ca-badge--show">Show</span>
                 {% endif %}
               </td>
-              <td class="px-3 py-2">
-                <div class="sa-actions">
+              <td>
+                <div class="ca-row-actions">
                 {% if u.is_active %}
-                  <form action="/account/admin/user/toggle" method="post" class="inline js-confirm-form"
+                  <form action="/account/admin/user/toggle" method="post" class="js-confirm-form"
                         data-confirm-title="Xác nhận"
                         data-confirm-message="Disable user {{ u.username }} ?">
                     <input type="hidden" name="user_id" value="{{ u.id }}">
                     <input type="hidden" name="action" value="disable">
                     <input type="hidden" name="next" value="/account?visibility={{ visibility or 'show' }}">
-                    <button class="btn-secondary" type="submit">Disable</button>
+                    <button class="ca-act ca-act--login-off" type="submit"><i class="ri-lock-line"></i> Tắt đăng nhập</button>
                   </form>
                 {% else %}
-                  <form action="/account/admin/user/toggle" method="post" class="inline js-confirm-form"
+                  <form action="/account/admin/user/toggle" method="post" class="js-confirm-form"
                         data-confirm-title="Xác nhận"
                         data-confirm-message="Enable user {{ u.username }} ?">
                     <input type="hidden" name="user_id" value="{{ u.id }}">
                     <input type="hidden" name="action" value="enable">
                     <input type="hidden" name="next" value="/account?visibility={{ visibility or 'show' }}">
-                    <button class="btn-primary" type="submit">Enable</button>
+                    <button class="ca-act ca-act--login-on" type="submit"><i class="ri-lock-unlock-line"></i> Bật đăng nhập</button>
                   </form>
                 {% endif %}
 
                 {% if u.is_shown == false %}
-                  <form action="/account/admin/user/listing" method="post" class="inline js-confirm-form"
+                  <form action="/account/admin/user/listing" method="post" class="js-confirm-form"
                         data-confirm-title="Hiện tài khoản"
                         data-confirm-message="Hiện lại {{ u.username }} trong danh sách?">
                     <input type="hidden" name="user_id" value="{{ u.id }}">
                     <input type="hidden" name="action" value="show">
                     <input type="hidden" name="next" value="/account?visibility={{ visibility or 'show' }}">
-                    <button class="btn-primary" type="submit">Hiện</button>
+                    <button class="ca-act ca-act--show" type="submit"><i class="ri-eye-line"></i> Hiện lại</button>
                   </form>
                 {% else %}
-                  <form action="/account/admin/user/listing" method="post" class="inline js-confirm-form"
+                  <form action="/account/admin/user/listing" method="post" class="js-confirm-form"
                         data-confirm-title="Ẩn tài khoản"
                         data-confirm-message="Ẩn {{ u.username }} khỏi danh sách? Tài khoản không bị xoá.">
                     <input type="hidden" name="user_id" value="{{ u.id }}">
                     <input type="hidden" name="action" value="hide">
                     <input type="hidden" name="next" value="/account?visibility={{ visibility or 'show' }}">
-                    <button class="btn-secondary" type="submit">Ẩn</button>
+                    <button class="ca-act ca-act--hide" type="submit"><i class="ri-eye-off-line"></i> Ẩn danh sách</button>
                   </form>
                 {% endif %}
 
+                <span class="ca-split" aria-hidden="true"></span>
+
                 {# ✅ Set password: bỏ input inline, dùng popup; endpoint giữ nguyên #}
                 <form action="/account/admin/user/set-password" method="post"
-                      class="inline js-setpass-form"
+                      class="js-setpass-form"
                       data-username="{{ u.username }}">
                   <input type="hidden" name="user_id" value="{{ u.id }}">
                   <input type="hidden" name="new_password" value="">
                   <input type="hidden" name="next" value="/account?visibility={{ visibility or 'show' }}">
-                  <button class="btn-primary" type="submit">Set password</button>
+                  <button class="ca-act ca-act--pass" type="submit"><i class="ri-key-2-line"></i> Đặt mật khẩu</button>
                 </form>
                 </div>
               </td>
@@ -331,7 +392,7 @@
         </table>
       </div>
     {% else %}
-      <div class="text-slate-500 text-sm">
+      <div class="ca-empty">
         {% if visibility == 'hide' %}Không có tài khoản đang ẩn.
         {% elif visibility == 'all' %}Chưa có tài khoản nào.
         {% else %}Không có tài khoản đang hiện.{% endif %}
@@ -583,6 +644,33 @@
       const title = form.dataset.confirmTitle || "Xác nhận";
       const msg = form.dataset.confirmMessage || "Bạn có chắc chắn?";
       const ok = await showConfirm({title, message: msg, variant:"warn", okText:"Xác nhận", cancelText:"Hủy"});
+      if (ok) form.submit();
+    });
+  });
+
+  document.querySelectorAll("form.js-role-form").forEach(form=>{
+    form.addEventListener("submit", async (e)=>{
+      e.preventDefault();
+      const select = form.querySelector('select[name="role"]');
+      const nextRole = (select && select.value || "").trim();
+      const current = form.dataset.current || "";
+      const username = form.dataset.username || "";
+      if (!nextRole || nextRole === current){
+        await showAlert({
+          title: "Đổi role",
+          message: "Role chưa thay đổi.",
+          variant: "info",
+          okText: "Đóng"
+        });
+        return;
+      }
+      const ok = await showConfirm({
+        title: "Đổi role",
+        message: "Đổi role của " + username + " từ " + current + " sang " + nextRole + "?\nTài khoản này phải đăng nhập lại để dùng role mới.",
+        variant: "warn",
+        okText: "Đổi role",
+        cancelText: "Hủy"
+      });
       if (ok) form.submit();
     });
   });
