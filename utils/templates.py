@@ -6,12 +6,25 @@ import os
 templates = Jinja2Templates(directory="templates")
 
 ACCESS_COOKIE_NAME = os.getenv("ACCESS_COOKIE_NAME", "access_token")
+_STATIC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "static"))
+
+
+def static_url(rel_path: str) -> str:
+    """Đường dẫn static kèm mốc sửa file, để trình duyệt không giữ CSS cũ sau khi deploy."""
+    rel = (rel_path or "").lstrip("/")
+    full = os.path.join(_STATIC_DIR, rel)
+    try:
+        stamp = str(int(os.path.getmtime(full)))
+    except OSError:
+        stamp = "0"
+    return f"/static/{rel}?v={stamp}"
 
 
 def is_logged_in(request) -> bool:
     return bool(get_access_token(request))
 
 templates.env.globals["ACCESS_COOKIE_NAME"] = ACCESS_COOKIE_NAME
+templates.env.globals["static_url"] = static_url
 templates.env.globals["is_logged_in"] = is_logged_in
 templates.env.globals["account_menu_info"] = account_menu_info
 
