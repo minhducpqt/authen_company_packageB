@@ -257,11 +257,14 @@
           <h2 class="sa-card-hd-t">Danh sách tài khoản</h2>
           <p class="sa-card-hd-s">Mặc định chỉ hiện tài khoản Show. Đổi role ở cột Role. Không đổi được role của chính tài khoản đang đăng nhập.</p>
         </div>
-        <div class="ca-filter">
-          <a href="/account?visibility=show" class="{% if visibility != 'hide' and visibility != 'all' %}is-on{% endif %}">Show</a>
-          <a href="/account?visibility=hide" class="{% if visibility == 'hide' %}is-on{% endif %}">Hide</a>
-          <a href="/account?visibility=all" class="{% if visibility == 'all' %}is-on{% endif %}">Tất cả</a>
-        </div>
+        <label class="ca-filter">
+          <span>Hiển thị</span>
+          <select class="ca-filter-select" aria-label="Lọc danh sách tài khoản" onchange="if (this.value) location.href = this.value">
+            <option value="/account?visibility=show" {% if visibility != 'hide' and visibility != 'all' %}selected{% endif %}>Show</option>
+            <option value="/account?visibility=hide" {% if visibility == 'hide' %}selected{% endif %}>Hide</option>
+            <option value="/account?visibility=all" {% if visibility == 'all' %}selected{% endif %}>Tất cả</option>
+          </select>
+        </label>
       </div>
       <div class="sa-card-bd ca-list-bd">
     {% if admin_users and admin_users|length > 0 %}
@@ -280,13 +283,7 @@
             {% for u in admin_users %}
             <tr>
               <td>
-                <div class="ca-user">
-                  <span class="ca-user-av">{{ (u.username or '?')[:1]|upper }}</span>
-                  <span>
-                    <span class="ca-user-name js-username">{{ u.username }}</span>
-                    <span class="ca-user-id">#{{ u.id }}</span>
-                  </span>
-                </div>
+                <span class="ca-user-name js-username">{{ u.username }}</span>
               </td>
               <td>
                 {% if me and (u.id|string) == (me.id|string) %}
