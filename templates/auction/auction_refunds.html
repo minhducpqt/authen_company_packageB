@@ -490,34 +490,64 @@
 
 <div id="auditError" class="hidden mb-4 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl p-3 text-sm"></div>
 
+<div id="auditMoneyWrap" class="mb-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
+  <div class="bg-white border rounded-2xl shadow-sm p-4">
+    <div class="text-xs text-slate-500 font-semibold">Tổng tiền cọc</div>
+    <div class="mt-1 text-2xl font-semibold text-slate-900">
+      <b class="money font-mono tabular-nums" id="sDepositTotal" data-value="0">—</b>
+      <span class="text-sm font-medium text-slate-400">VND</span>
+    </div>
+    <div class="text-xs text-slate-500 mt-1">Toàn bộ tiền khách đã nộp cọc cho dự án</div>
+  </div>
+  <div class="bg-white border rounded-2xl shadow-sm p-4">
+    <div class="text-xs text-emerald-700 font-semibold">Phải hoàn</div>
+    <div class="mt-1 text-2xl font-semibold text-emerald-700">
+      <b class="money font-mono tabular-nums" id="sMustRefundAmount" data-value="0">—</b>
+      <span class="text-sm font-medium text-emerald-400">VND</span>
+    </div>
+    <div class="text-xs text-slate-500 mt-1">Số tiền sẽ chuyển trả khách</div>
+  </div>
+  <div class="bg-white border rounded-2xl shadow-sm p-4">
+    <div class="text-xs text-slate-500 font-semibold">Không hoàn</div>
+    <div class="mt-1 text-2xl font-semibold text-slate-900">
+      <b class="money font-mono tabular-nums" id="sExcludedAmount" data-value="0">—</b>
+      <span class="text-sm font-medium text-slate-400">VND</span>
+    </div>
+    <div class="text-xs text-slate-500 mt-1">Giá trị cọc của khách trúng, chuyển kho bạc</div>
+  </div>
+  <div class="bg-white border rounded-2xl shadow-sm p-4">
+    <div class="text-xs text-amber-700 font-semibold">Nộp thừa</div>
+    <div class="mt-1 text-2xl font-semibold text-amber-700">
+      <b class="money font-mono tabular-nums" id="sOverpay" data-value="0">—</b>
+      <span class="text-sm font-medium text-amber-400">VND</span>
+    </div>
+    <div class="text-xs text-slate-500 mt-1">Chỉ cộng phần thừa của các lô nộp thừa</div>
+  </div>
+  <div class="bg-white border rounded-2xl shadow-sm p-4">
+    <div class="text-xs text-rose-700 font-semibold">Nộp thiếu</div>
+    <div class="mt-1 text-2xl font-semibold text-rose-700">
+      <b class="money font-mono tabular-nums" id="sUnderpay" data-value="0">—</b>
+      <span class="text-sm font-medium text-rose-400">VND</span>
+    </div>
+    <div class="text-xs text-slate-500 mt-1">Chỉ cộng phần thiếu của các lô nộp thiếu</div>
+  </div>
+</div>
+
 <div id="auditSummaryWrap" class="mb-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
   <div class="bg-white border rounded-2xl shadow-sm p-4">
     <div class="text-xs text-slate-500 font-semibold">Tổng giao dịch</div>
     <div class="mt-1 text-2xl font-semibold text-slate-900" id="sTotalTxn">—</div>
-    <div class="text-xs text-slate-500 mt-1">Tổng tiền: <b class="money" id="sTotalAmount" data-value="0">—</b> VND</div>
+    <div class="text-xs text-slate-500 mt-1">Số dòng trong snapshot hoàn tiền</div>
   </div>
 
   <div class="bg-white border rounded-2xl shadow-sm p-4">
-    <div class="text-xs text-slate-500 font-semibold">Phải hoàn / Không hoàn</div>
+    <div class="text-xs text-slate-500 font-semibold">Số dòng phải hoàn / không hoàn</div>
     <div class="mt-1 flex items-baseline gap-3">
       <div class="text-xl font-semibold text-emerald-700"><span id="sMustRefundTxn">—</span></div>
       <div class="text-slate-300">/</div>
       <div class="text-xl font-semibold text-slate-700"><span id="sExcludedTxn">—</span></div>
     </div>
-    <div class="mt-2 text-xs text-slate-500 space-y-1">
-    <div class="grid grid-cols-[88px_1fr_auto] items-baseline gap-2">
-      <span>Phải hoàn:</span>
-      <b class="money font-mono text-slate-900 text-right tabular-nums" id="sMustRefundAmount" data-value="0">—</b>
-      <span class="text-slate-400">VND</span>
-    </div>
-
-    <div class="grid grid-cols-[88px_1fr_auto] items-baseline gap-2">
-      <span>Không hoàn:</span>
-      <b class="money font-mono text-slate-900 text-right tabular-nums" id="sExcludedAmount" data-value="0">—</b>
-      <span class="text-slate-400">VND</span>
-    </div>
-  </div>
-
+    <div class="text-xs text-slate-500 mt-2">Đếm dòng snapshot. Khách trúng nộp thừa vẫn nằm ở phải hoàn với phần thừa, còn giá trị cọc nằm ở Không hoàn.</div>
   </div>
 
   <div class="bg-white border rounded-2xl shadow-sm p-4">
@@ -1181,12 +1211,14 @@
 
       const s = js.summary || {};
       setText('sTotalTxn', (s.total_txn ?? '—'));
-      setMoney('sTotalAmount', s.total_amount_vnd ?? 0);
+      setMoney('sDepositTotal', s.deposit_total_vnd ?? 0);
 
       setText('sMustRefundTxn', (s.must_refund_txn ?? '—'));
       setText('sExcludedTxn', (s.excluded_txn ?? '—'));
       setMoney('sMustRefundAmount', s.must_refund_amount_vnd ?? 0);
       setMoney('sExcludedAmount', s.excluded_amount_vnd ?? 0);
+      setMoney('sOverpay', s.overpay_vnd ?? 0);
+      setMoney('sUnderpay', s.underpay_vnd ?? 0);
 
       setText('sHasBank', (s.has_refund_bank_txn ?? '—'));
       setText('sNoBank', (s.no_refund_bank_txn ?? '—'));
