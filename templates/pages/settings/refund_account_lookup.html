@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-xl">
+  <h1 class="text-xl font-bold text-slate-900 mb-2">Tra cứu số tài khoản hoàn cọc</h1>
+  <p class="text-sm text-slate-600 mb-4">
+    Áp dụng cho toàn hệ thống. Khi tắt, khách hàng và admin vẫn nhập tên chủ tài khoản như hiện tại.
+    Khi bật, hệ thống lấy tên từ ngân hàng. Nếu dịch vụ tra cứu hỏng, form cho nhập tên tay.
+  </p>
+  {% if saved %}
+  <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">Đã lưu.</div>
+  {% endif %}
+  {% if load_err %}
+  <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{{ load_err }}</div>
+  {% endif %}
+  <form method="post" action="/settings/refund-account-lookup" class="rounded-2xl border border-slate-200 bg-white p-5">
+    <label class="flex items-start gap-3 text-sm text-slate-800">
+      <input type="checkbox" name="enabled" value="1" class="mt-1" {% if enabled %}checked{% endif %}>
+      <span>
+        <span class="font-semibold">Bật tra cứu tự động</span>
+        <span class="block text-slate-500 mt-1">Mặc định tắt. Chỉ super admin đổi được công tắc này.</span>
+      </span>
+    </label>
+    <button type="submit" class="mt-5 h-10 px-4 rounded-xl bg-indigo-600 text-white text-sm font-semibold">Lưu</button>
+  </form>
+</div>
+{% endblock %}

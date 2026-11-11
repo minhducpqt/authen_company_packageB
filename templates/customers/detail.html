@@ -330,7 +330,10 @@
             <div class="cd-h">Tài khoản hoàn tiền</div>
             <div class="cd-sub" id="bankSubText">Chỉ xem, không chỉnh sửa</div>
           </div>
-          <button type="button" id="btnBankEdit" class="cd-btn-primary hidden">Sửa STK</button>
+          <div class="flex items-center gap-2">
+            <button type="button" id="btnBankCheck" class="cd-btn-primary hidden">Kiểm tra STK</button>
+            <button type="button" id="btnBankEdit" class="cd-btn-primary hidden">Sửa STK</button>
+          </div>
         </div>
 
         <div id="bankView">
@@ -400,6 +403,7 @@
             <div class="cd-kv-item is-editing">
               <div class="cd-label">Tên chủ TK * <span class="font-normal text-slate-400">(IN HOA KHÔNG DẤU)</span></div>
               <input id="bank_account_name" class="cd-input" placeholder="NGUYEN VAN A" autocapitalize="characters" spellcheck="false" autocomplete="off">
+              <p id="bankLookupNote" class="mt-1 text-xs text-slate-500 hidden"></p>
             </div>
             <div class="cd-kv-item md:col-span-2 is-editing">
               <div class="cd-label">Chi nhánh</div>
@@ -1449,6 +1453,74 @@
     }
   });
 
+  let refundLookupEnabled = false;
+  function setBankLookupNote(text){
+    const note = el('bankLookupNote');
+    if (!note) return;
+    note.textContent = text || '';
+    note.classList.toggle('hidden', !text);
+  }
+  async function lookupCustomerRefundAccount(bankCode, accountNumber){
+    const r = await fetch('/customers/refund-account-lookup', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: [{ bank_code: bankCode, account_number: accountNumber }] }),
+    });
+    const data = await r.json().catch(() => ({}));
+    return (data.items && data.items[0]) || { status: data.enabled === false ? 'disabled' : 'unavailable', message: '' };
+  }
+  async function refreshRefundLookupMode(){
+    try {
+      const r = await fetch('/customers/refund-account-lookup/mode', { credentials: 'same-origin' });
+      const data = await r.json();
+      refundLookupEnabled = !!(data && data.enabled);
+    } catch (_) {
+      refundLookupEnabled = false;
+    }
+    el('btnBankCheck')?.classList.toggle('hidden', !refundLookupEnabled);
+  }
+  el('btnBankCheck')?.addEventListener('click', async () => {
+    if (!bankInitial.bank_code || !bankInitial.account_number) {
+      toast('Khách chưa có tài khoản hoàn tiền.', 'error');
+      return;
+    }
+    const btn = el('btnBankCheck');
+    if (btn) btn.disabled = true;
+    try {
+      const item = await lookupCustomerRefundAccount(bankInitial.bank_code, bankInitial.account_number);
+      const stored = (bankInitial.account_name || '').trim().toUpperCase();
+      const found = (item.account_name || '').trim().toUpperCase();
+      if (item.status === 'found' && found && stored === found) toast('Tên chủ tài khoản khớp.', 'success');
+      else if (item.status === 'found') toast('Tên ngân hàng trả về: ' + item.account_name, 'error');
+      else if (item.status === 'rejected') toast(item.message || 'Số tài khoản không đúng.', 'error');
+      else toast('Chưa kiểm được vì dịch vụ tra cứu đang gián đoạn.', 'error');
+    } catch (_) {
+      toast('Chưa kiểm được vì dịch vụ tra cứu đang gián đoạn.', 'error');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
+  el('bank_account_number')?.addEventListener('blur', async () => {
+    if (!refundLookupEnabled) return;
+    const v = bankFormValues();
+    if (!v.bank_code || v.account_number.length < 6) return;
+    try {
+      const item = await lookupCustomerRefundAccount(v.bank_code, v.account_number);
+      if (item.status === 'found' && item.account_name) {
+        if (el('bank_account_name')) el('bank_account_name').value = item.account_name;
+        setBankLookupNote('Tên lấy từ ngân hàng.');
+      } else if (item.status === 'rejected') {
+        if (el('bank_account_name')) el('bank_account_name').value = '';
+        setBankLookupNote(item.message || 'Không tra được tên chủ tài khoản.');
+      } else if (item.status !== 'disabled') {
+        setBankLookupNote('Dịch vụ tra cứu đang gián đoạn. Hãy nhập tên chủ tài khoản.');
+      }
+    } catch (_) {
+      setBankLookupNote('Dịch vụ tra cứu đang gián đoạn. Hãy nhập tên chủ tài khoản.');
+    }
+  });
+
   el('btnBankSave')?.addEventListener('click', async () => {
     const v = bankFormValues();
     if (!v.bank_code || !selectedBank) {
@@ -1459,6 +1531,20 @@
     if (v.account_number.length < 6) {
       toast('Số tài khoản phải có ít nhất 6 chữ số.', 'error');
       return;
+    }
+    if (refundLookupEnabled) {
+      try {
+        const item = await lookupCustomerRefundAccount(v.bank_code, v.account_number);
+        if (item.status === 'found' && item.account_name) {
+          v.account_name = item.account_name;
+          if (el('bank_account_name')) el('bank_account_name').value = item.account_name;
+        } else if (item.status === 'rejected') {
+          toast(item.message || 'Không tra được tên chủ tài khoản.', 'error');
+          return;
+        }
+      } catch (_) {
+        setBankLookupNote('Dịch vụ tra cứu đang gián đoạn. Hãy nhập tên chủ tài khoản.');
+      }
     }
     if (v.account_name.length < 3) {
       toast('Tên chủ TK phải IN HOA, không dấu (tối thiểu 3 ký tự).', 'error');
@@ -1480,6 +1566,10 @@
         return;
       }
       otpChallengeId = data.challenge_id;
+      if (data.account_name) {
+        pendingBankPayload.account_name = data.account_name;
+        if (el('bank_account_name')) el('bank_account_name').value = data.account_name;
+      }
       setBankOtpRequestLoading(false);
       openOtpModal(data.purpose_label || 'Sửa tài khoản hoàn tiền khách hàng');
     } catch (_) {
@@ -1488,6 +1578,7 @@
     }
   });
 
+  refreshRefundLookupMode();
   el('btnOtpCancel')?.addEventListener('click', closeOtpModal);
   el('otpMask')?.addEventListener('click', closeOtpModal);
 

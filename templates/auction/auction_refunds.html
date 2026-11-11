@@ -198,6 +198,9 @@
   </div>
 
   <div class="flex items-center gap-3 ml-auto flex-wrap justify-end">
+    <button type="button" id="btnVerifyAccounts" class="hidden h-10 px-4 rounded-xl border border-indigo-200 text-sm font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100">
+      Kiểm tra số tài khoản
+    </button>
     <button type="button" id="btnResetFilters"
             class="h-10 px-4 rounded-xl border border-slate-300 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 inline-flex items-center gap-2">
       <i class="ri-refresh-line"></i> Reset
@@ -277,9 +280,13 @@
 
           <td class="px-4 py-3 text-slate-700">
             {% if r.account_number or r.bank_code %}
-              <div class="text-xs row-account">
+              <div class="text-xs row-account"
+                   data-bank-code="{{ r.bank_code or '' }}"
+                   data-account-number="{{ r.account_number or '' }}"
+                   data-account-name="{{ r.account_name or '' }}">
                 <div class="font-semibold">{{ r.bank_code or '' }} — {{ r.account_number or '' }}</div>
                 <div class="acc-name text-slate-600">{{ r.account_name or '' }}</div>
+                <div class="lookup-result"></div>
               </div>
             {% else %}
               <span class="text-slate-400 text-xs">Chưa có TK hoàn</span>
@@ -1360,5 +1367,74 @@
   }
   document.getElementById('btnExportXlsxTop')?.addEventListener('click', function(){ bustExportHref(this); });
   document.getElementById('btnExportWoori')?.addEventListener('click', function(){ bustExportHref(this); });
+
+  const btnVerifyAccounts = document.getElementById('btnVerifyAccounts');
+  function paintLookup(cell, text, tone){
+    const slot = cell.querySelector('.lookup-result');
+    if(!slot) return;
+    slot.textContent = text || '';
+    slot.className = text ? ('lookup-result mt-1 ' + (tone || '')) : 'lookup-result';
+  }
+  async function loadRefundLookupMode(){
+    if(!btnVerifyAccounts) return;
+    try{
+      const r = await fetch('/auction/refunds/lookup-mode', {credentials:'same-origin'});
+      const data = await r.json();
+      if(data && data.enabled) btnVerifyAccounts.classList.remove('hidden');
+    }catch(_){}
+  }
+  btnVerifyAccounts?.addEventListener('click', async ()=>{
+    const cells = Array.from(document.querySelectorAll('.row-account[data-account-number]'));
+    const items = [];
+    const seen = new Set();
+    cells.forEach((cell)=>{
+      const bank = (cell.dataset.bankCode || '').trim();
+      const account = (cell.dataset.accountNumber || '').trim();
+      const key = bank.toUpperCase() + '|' + account;
+      if(!bank || account.length < 6 || seen.has(key)) return;
+      seen.add(key);
+      items.push({bank_code: bank, account_number: account});
+    });
+    if(!items.length) return;
+    btnVerifyAccounts.disabled = true;
+    cells.forEach((cell)=> paintLookup(cell, 'Đang kiểm tra…', 'text-slate-400'));
+    try{
+      const r = await fetch('/auction/refunds/verify-accounts', {
+        method:'POST',
+        credentials:'same-origin',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({items: items.slice(0, 40)}),
+      });
+      const data = await r.json();
+      const byKey = new Map();
+      (data.items || []).forEach((item)=>{
+        byKey.set(String(item.bank_code || '').toUpperCase() + '|' + String(item.account_number || ''), item);
+      });
+      cells.forEach((cell)=>{
+        const key = (cell.dataset.bankCode || '').trim().toUpperCase() + '|' + (cell.dataset.accountNumber || '').trim();
+        const item = byKey.get(key);
+        if(!item){
+          paintLookup(cell, 'Chưa kiểm được', 'text-amber-700');
+          return;
+        }
+        const stored = (cell.dataset.accountName || '').trim().toUpperCase();
+        const found = (item.account_name || '').trim().toUpperCase();
+        if(item.status === 'found' && found && stored === found){
+          paintLookup(cell, 'Khớp tên', 'text-emerald-700');
+        }else if(item.status === 'found'){
+          paintLookup(cell, 'Tên ngân hàng: ' + (item.account_name || '') + ' — cần cập nhật', 'text-rose-700');
+        }else if(item.status === 'rejected'){
+          paintLookup(cell, item.message || 'Số tài khoản không đúng', 'text-rose-700');
+        }else{
+          paintLookup(cell, 'Chưa kiểm được vì dịch vụ tra cứu đang gián đoạn', 'text-amber-700');
+        }
+      });
+    }catch(_){
+      cells.forEach((cell)=> paintLookup(cell, 'Chưa kiểm được vì dịch vụ tra cứu đang gián đoạn', 'text-amber-700'));
+    }finally{
+      btnVerifyAccounts.disabled = false;
+    }
+  });
+  loadRefundLookupMode();
 </script>
 {% endblock %}

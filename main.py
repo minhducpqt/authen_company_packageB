@@ -27,6 +27,7 @@ from routers.project_payment_accounts import router as ppa_router
 from routers.customers import router as customers_router
 from routers.settings.settings_bank_accounts import router as settings_bank_accounts_router
 from routers.settings.settings_company import router as settings_company_router
+from routers.refund_account_lookup import router as refund_account_lookup_router
 from routers import bank_transactions
 from routers.bank_import.router import router as bank_import_router
 from routers.send_info_dossier import router as send_info_dossier_router
@@ -133,6 +134,7 @@ app.include_router(lots_router)  # <-- NEW: /lots/*
 
 app.include_router(settings_bank_accounts_router)
 app.include_router(settings_company_router)
+app.include_router(refund_account_lookup_router)
 app.include_router(customers_router)
 app.include_router(bank_transactions.router)
 app.include_router(bank_import_router)
